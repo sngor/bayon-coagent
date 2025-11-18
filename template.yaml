@@ -72,10 +72,7 @@ Resources:
           RequireNumbers: true
           RequireSymbols: true
           TemporaryPasswordValidityDays: 7
-      MfaConfiguration: OPTIONAL
-      EnabledMfas:
-        - SOFTWARE_TOKEN_MFA
-        - SMS_MFA
+      MfaConfiguration: "OFF"
       AccountRecoverySetting:
         RecoveryMechanisms:
           - Name: verified_email
@@ -171,23 +168,15 @@ Resources:
                   - dynamodb:DeleteItem
                   - dynamodb:Query
                 Resource: !GetAtt DynamoDBTable.Arn
-                Condition:
-                  ForAllValues:StringLike:
-                    dynamodb:LeadingKeys:
-                      - USER#${cognito-identity.amazonaws.com:sub}
               - Effect: Allow
                 Action:
                   - s3:GetObject
                   - s3:PutObject
                   - s3:DeleteObject
-                Resource: !Sub ${StorageBucket.Arn}/users/$${cognito-identity.amazonaws.com:sub}/*
+                Resource: !Sub ${StorageBucket.Arn}/*
               - Effect: Allow
                 Action: s3:ListBucket
                 Resource: !GetAtt StorageBucket.Arn
-                Condition:
-                  StringLike:
-                    s3:prefix:
-                      - users/${cognito-identity.amazonaws.com:sub}/*
 
   # ==========================================
   # DynamoDB Table
