@@ -1,0 +1,460 @@
+
+'use client';
+
+import { useMemo, useState, useActionState, useEffect } from 'react';
+import { useFormStatus } from 'react-dom';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  LabelList,
+} from 'recharts';
+import { PageHeader } from '@/components/page-header';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { ArrowUp, ArrowDown, Minus, Star, PlusCircle, Sparkles, Loader2, Search } from 'lucide-react';
+import type { Competitor, KeywordRanking, Profile, Review } from '@/lib/types';
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { doc, collection, query } from 'firebase/firestore';
+import { CompetitorForm } from '@/components/competitor-form';
+import { findCompetitorsAction, getKeywordRankingsAction } from '@/app/actions';
+import { toast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+
+const chartConfig = {
+  reviewCount: {
+    label: 'Reviews',
+  },
+  you: {
+    label: 'You',
+    color: 'hsl(var(--chart-1))',
+  },
+  competitor: {
+    label: 'Competitor',
+    color: 'hsl(var(--muted))',
+  },
+};
+
+type CompetitorSuggestion = {
+    name: string;
+    agency: string;
+    reviewCount: number;
+    avgRating: number;
+    socialFollowers: number;
+    domainAuthority: number;
+}
+
+type FindCompetitorsState = {
+  message: string;
+  data: CompetitorSuggestion[];
+  errors: any;
+};
+
+const initialFindCompetitorsState: FindCompetitorsState = {
+  message: '',
+  data: [],
+  errors: {},
+};
+
+
+type KeywordRankingsState = {
+  message: string;
+  data: KeywordRanking[] | null;
+  errors: any;
+}
+
+const initialKeywordRankingsState: KeywordRankingsState = {
+    message: '',
+    data: null,
+    errors: {}
+}
+
+
+function FindButton({ disabled, children, ...props }: React.ComponentProps<typeof Button> & { disabled?: boolean }) {
+    const { pending } = useFormStatus();
+    return (
+        <Button type="submit" variant={pending ? 'shimmer' : 'ai'} disabled={pending || disabled} {...props}>
+            {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+            {pending ? 'Searching...' : children}
+        </Button>
+    )
+}
+
+function TrackRankingsButton({ disabled }: { disabled?: boolean }) {
+    const { pending } = useFormStatus();
+    return (
+        <Button type="submit" variant={pending ? 'shimmer' : 'ai'} disabled={pending || disabled}>
+            {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+            {pending ? 'Analyzing...' : 'Analyze Keyword'}
+        </Button>
+    )
+}
+
+
+export default function CompetitiveAnalysisPage() {
+    const { user, isUserLoading } = useUser();
+    const firestore = useFirestore();
+    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [selectedCompetitor, setSelectedCompetitor] = useState<Competitor | null>(null);
+
+    const [findState, findFormAction] = useActionState(findCompetitorsAction, initialFindCompetitorsState);
+    const [rankingState, rankingFormAction] = useActionState(getKeywordRankingsAction, initialKeywordRankingsState);
+
+    const agentProfileRef = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return doc(firestore, `users/${user.uid}/agentProfiles/main`);
+    }, [firestore, user]);
+
+    const competitorsRef = useMemoFirebase(() => {
+        if (!firestore || !user) return null;
+        return collection(firestore, `users/${user.uid}/competitors`);
+    }, [firestore, user]);
+    
+    const allReviewsRef = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'reviews'));
+    }, [firestore]);
+
+    const { data: agentProfileData, isLoading: isProfileLoading } = useDoc<Profile>(agentProfileRef);
+    const { data: competitorsData, isLoading: areCompetitorsLoading } = useCollection<Omit<Competitor, 'id'>>(competitorsRef);
+    const { data: allReviews, isLoading: areReviewsLoading } = useCollection<Review>(allReviewsRef);
+
+    
+    const yourData = useMemo(() => {
+        if (!agentProfileData || !user || !allReviews) return null;
+
+        const myReviews = allReviews.filter(review => review.agentId === user.uid);
+        const totalRating = myReviews.reduce((acc, review) => acc + review.rating, 0);
+        const avgRating = myReviews.length > 0 ? totalRating / myReviews.length : 0;
+        const reviewCount = myReviews.length;
+
+        return {
+            id: user.uid,
+            name: agentProfileData.name || 'You',
+            agency: agentProfileData.agencyName || 'Your Agency',
+            reviewCount: reviewCount,
+            avgRating: avgRating,
+            socialFollowers: 0, // This would need to be integrated from a social media API
+            domainAuthority: agentProfileData.domainAuthority || 0,
+            isYou: true,
+        };
+    }, [agentProfileData, allReviews, user]);
+
+    const allCompetitors = useMemo(() => {
+        const others = competitorsData || [];
+        return yourData ? [yourData, ...others] : others;
+    }, [yourData, competitorsData]);
+
+
+    const topCompetitor = useMemo(() => {
+        return allCompetitors
+            .filter(c => !c.isYou)
+            .sort((a, b) => b.reviewCount - a.reviewCount)[0];
+    }, [allCompetitors]);
+
+    const chartData = useMemo(() => {
+        return allCompetitors.map(c => ({
+            name: c.name.split(' ')[0],
+            reviewCount: c.reviewCount,
+            fill: c.isYou ? 'hsl(var(--chart-1))' : 'hsl(var(--muted))',
+        })).sort((a,b) => b.reviewCount - a.reviewCount);
+    }, [allCompetitors]);
+
+    const handleEdit = (competitor: Competitor) => {
+        setSelectedCompetitor(competitor);
+        setIsFormOpen(true);
+    };
+
+    const handleAddNew = () => {
+        setSelectedCompetitor(null);
+        setIsFormOpen(true);
+    };
+
+    const handleAddSuggestion = (suggestion: CompetitorSuggestion) => {
+        if (!competitorsRef) return;
+        addDocumentNonBlocking(competitorsRef, suggestion);
+        toast({
+            title: "Competitor Added",
+            description: `${suggestion.name} is now being tracked.`
+        })
+    }
+
+     useEffect(() => {
+        if (findState.message && findState.message !== 'success') {
+            toast({
+                variant: 'destructive',
+                title: 'Search Failed',
+                description: findState.message,
+            });
+        }
+    }, [findState]);
+
+     useEffect(() => {
+        if (rankingState.message && rankingState.message !== 'success') {
+            toast({
+                variant: 'destructive',
+                title: 'Ranking Failed',
+                description: rankingState.message,
+            });
+        }
+    }, [rankingState]);
+
+    const isFindDisabled = isUserLoading || isProfileLoading || !agentProfileData?.name || !agentProfileData?.agencyName || !agentProfileData?.address;
+    const isRankingDisabled = isUserLoading || isProfileLoading || !agentProfileData?.address;
+    const isLoadingTable = areCompetitorsLoading || isProfileLoading || areReviewsLoading;
+
+  return (
+    <div className="space-y-8 fade-in">
+      <PageHeader
+        title="Competitive Analysis"
+        description="Track and compare your market position against your top competitors."
+      />
+
+       <Card>
+          <CardHeader>
+            <CardTitle className="font-headline">AI Competitor Discovery</CardTitle>
+            <CardDescription>
+                Use AI to automatically discover top competitors in your market based on your profile.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form action={findFormAction} className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Your Agent Name</Label>
+                        <Input id="name" name="name" placeholder="e.g., John Smith" value={agentProfileData?.name || ''} readOnly className="bg-secondary" />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="agencyName">Your Agency Name</Label>
+                        <Input id="agencyName" name="agencyName" placeholder="e.g., Seattle Homes Realty" value={agentProfileData?.agencyName || ''} readOnly className="bg-secondary" />
+                    </div>
+                </div>
+                 <input type="hidden" name="address" value={agentProfileData?.address || ''} />
+                <FindButton disabled={isFindDisabled}>Auto-Find Competitors</FindButton>
+            </form>
+            {findState.data && findState.data.length > 0 && (
+                <div className="mt-6">
+                    <Separator />
+                    <h3 className="text-lg font-medium font-headline my-4">AI Suggestions</h3>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {findState.data.map((suggestion, index) => (
+                            <Card key={index} className="card-interactive">
+                                <CardHeader>
+                                    <CardTitle className="text-base">{suggestion.name}</CardTitle>
+                                    <CardDescription>{suggestion.agency}</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-2">
+                                     <p className="text-sm"><strong>Reviews:</strong> {suggestion.reviewCount}</p>
+                                     <p className="text-sm"><strong>Avg. Rating:</strong> {suggestion.avgRating.toFixed(1)}</p>
+                                     <p className="text-sm"><strong>Followers:</strong> {(suggestion.socialFollowers / 1000).toFixed(1)}k</p>
+                                     <p className="text-sm"><strong>Domain Authority:</strong> {suggestion.domainAuthority}</p>
+                                    <Button size="sm" variant="outline" onClick={() => handleAddSuggestion(suggestion)} className="mt-2">
+                                        <PlusCircle className="mr-2 h-4 w-4" />
+                                        Add to Tracker
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </div>
+            )}
+             {findState.message && findState.message !== 'success' && (
+                <p className="text-sm text-destructive mt-4">{findState.message}</p>
+             )}
+          </CardContent>
+        </Card>
+
+
+      <div className="grid gap-8 lg:grid-cols-3">
+        <Card className="lg:col-span-3">
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <CardTitle className="font-headline">
+                Market Snapshot: At a Glance
+                </CardTitle>
+                <CardDescription>
+                Direct comparison of key performance indicators. Click a competitor to edit.
+                </CardDescription>
+            </div>
+            <Button onClick={handleAddNew} className="w-full sm:w-auto flex-shrink-0">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Competitor
+            </Button>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Agent</TableHead>
+                  <TableHead className="text-center">Reviews</TableHead>
+                  <TableHead className="text-center">Avg. Rating</TableHead>
+                  <TableHead className="text-center">Social Followers</TableHead>
+                  <TableHead className="text-center">Domain Authority</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoadingTable ? (
+                    <TableRow>
+                        <TableCell colSpan={5} className="text-center">Loading competitors...</TableCell>
+                    </TableRow>
+                ) : (
+                    allCompetitors.map((competitor) => (
+                    <TableRow
+                        key={competitor.id}
+                        onClick={() => !competitor.isYou && handleEdit(competitor)}
+                        className={cn(
+                            competitor.isYou ? 'bg-secondary/70' : 'cursor-pointer hover:bg-secondary transition-colors'
+                        )}
+                    >
+                        <TableCell>
+                        <div className="font-medium">{competitor.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                            {competitor.agency}
+                        </div>
+                        </TableCell>
+                        <TableCell className="text-center font-semibold">
+                        {competitor.reviewCount}
+                        </TableCell>
+                        <TableCell className="text-center font-semibold flex items-center justify-center gap-1">
+                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                        {competitor.avgRating.toFixed(1)}
+                        </TableCell>
+                        <TableCell className="text-center font-semibold">
+                        {(competitor.socialFollowers / 1000).toFixed(1)}k
+                        </TableCell>
+                        <TableCell className="text-center font-semibold">
+                        {competitor.domainAuthority}
+                        </TableCell>
+                    </TableRow>
+                    ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="font-headline">Review Volume</CardTitle>
+            <CardDescription>
+              Total number of reviews across major platforms.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="max-h-[300px]">
+              <BarChart
+                accessibilityLayer
+                data={chartData}
+                layout="vertical"
+                margin={{ left: 10, right: 30 }}
+                animationDuration={500}
+              >
+                <CartesianGrid horizontal={false} />
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  tickLine={false}
+                  tickMargin={10}
+                  axisLine={false}
+                  className="text-xs"
+                />
+                <XAxis dataKey="reviewCount" type="number" hide />
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent hideLabel />}
+                />
+                <Bar
+                  dataKey="reviewCount"
+                  radius={5}
+                  background={{ fill: 'hsl(var(--border))', radius: 5 }}
+                >
+                  <LabelList
+                    position="right"
+                    offset={10}
+                    className="fill-foreground"
+                    fontSize={12}
+                  />
+                </Bar>
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle className="font-headline">Local Keyword Rankings</CardTitle>
+            <CardDescription>
+              Discover the top 5 agents for a specific local search term.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form className="space-y-4" action={rankingFormAction}>
+                <div className="space-y-2">
+                    <Label htmlFor="keyword">Keyword to Analyze</Label>
+                    <Input id="keyword" name="keyword" placeholder="e.g., best real estate agent Seattle" />
+                     {rankingState.errors?.keyword && <p className="text-sm text-destructive">{rankingState.errors.keyword[0]}</p>}
+                </div>
+                 <input type="hidden" name="location" value={agentProfileData?.address || ''} />
+                <TrackRankingsButton disabled={isRankingDisabled} />
+                {rankingState.message && rankingState.message !== 'success' && <p className="text-sm text-destructive mt-2">{rankingState.message}</p>}
+            </form>
+
+            {rankingState.data && (
+                <div className="mt-6 overflow-x-auto">
+                    <h3 className="font-medium mb-2">Top 5 Results for "{rankingState.data[0]?.keyword || 'your keyword'}"</h3>
+                    <Table>
+                    <TableHeader>
+                        <TableRow>
+                        <TableHead className="text-center">Rank</TableHead>
+                        <TableHead>Agent</TableHead>
+                        <TableHead>Agency</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {rankingState.data.map((ranking) => (
+                        <TableRow key={ranking.rank}>
+                            <TableCell className="text-center font-bold">#{ranking.rank}</TableCell>
+                            <TableCell className="font-medium">{ranking.agentName}</TableCell>
+                            <TableCell className="text-muted-foreground">{ranking.agencyName}</TableCell>
+                        </TableRow>
+                        ))}
+                    </TableBody>
+                    </Table>
+                </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      <CompetitorForm
+        isOpen={isFormOpen}
+        setIsOpen={setIsFormOpen}
+        competitor={selectedCompetitor}
+      />
+    </div>
+  );
+}

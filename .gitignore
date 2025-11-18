@@ -1,0 +1,50 @@
+node_modules
+
+# LocalStack data
+localstack-data/
+
+# Environment files
+.env.local
+.env.production
+.env*.local
+.env.migration
+
+# Migration data
+migration-data/
+serviceAccountKey.json
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+*.pem
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# CDK Infrastructure
+infrastructure/node_modules/
+infrastructure/cdk.out/
+infrastructure/.cdk.staging/
+infrastructure/outputs.json
+infrastructure/*.js
+infrastructure/*.d.ts
+infrastructure/lib/*.js
+infrastructure/lib/*.d.ts
+infrastructure/bin/*.js
+infrastructure/bin/*.d.ts
+infrastructure/.env
+infrastructure/.env.*
+!infrastructure/.env.example

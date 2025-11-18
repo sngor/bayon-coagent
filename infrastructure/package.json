@@ -1,0 +1,28 @@
+{
+    "name": "bayon-coagent-infrastructure",
+    "version": "1.0.0",
+    "description": "AWS CDK Infrastructure for Bayon CoAgent",
+    "private": true,
+    "scripts": {
+        "build": "tsc",
+        "watch": "tsc -w",
+        "cdk": "cdk",
+        "deploy": "cdk deploy --all",
+        "deploy:dev": "cdk deploy --all --context environment=development",
+        "deploy:prod": "cdk deploy --all --context environment=production",
+        "diff": "cdk diff",
+        "synth": "cdk synth",
+        "destroy": "cdk destroy --all",
+        "bootstrap": "cdk bootstrap"
+    },
+    "dependencies": {
+        "aws-cdk-lib": "^2.170.0",
+        "constructs": "^10.0.0",
+        "source-map-support": "^0.5.21"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "aws-cdk": "^2.170.0",
+        "typescript": "^5.0.0"
+    }
+}

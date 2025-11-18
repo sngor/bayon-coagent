@@ -1,0 +1,325 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "CloudWatch Monitoring Infrastructure for Bayon CoAgent"
+
+Parameters:
+  Environment:
+    Type: String
+    Default: production
+    AllowedValues:
+      - development
+      - staging
+      - production
+    Description: Environment name
+
+  AlertEmail:
+    Type: String
+    Description: Email address for alarm notifications
+    Default: alerts@example.com
+
+Resources:
+  # ============================================================================
+  # CloudWatch Log Groups
+  # ============================================================================
+
+  ApplicationLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/bayon-coagent/${Environment}/application"
+      RetentionInDays: 30
+
+  AuthLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/bayon-coagent/${Environment}/auth"
+      RetentionInDays: 30
+
+  DatabaseLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/bayon-coagent/${Environment}/database"
+      RetentionInDays: 30
+
+  AILogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/bayon-coagent/${Environment}/ai"
+      RetentionInDays: 30
+
+  StorageLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/bayon-coagent/${Environment}/storage"
+      RetentionInDays: 30
+
+  # ============================================================================
+  # SNS Topic for Alarms
+  # ============================================================================
+
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "bayon-coagent-${Environment}-alarms"
+      DisplayName: Bayon CoAgent Alarms
+      Subscription:
+        - Endpoint: !Ref AlertEmail
+          Protocol: email
+
+  # ============================================================================
+  # CloudWatch Alarms
+  # ============================================================================
+
+  HighErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "BayonCoAgent-${Environment}-HighErrorRate"
+      AlarmDescription: Alert when error rate exceeds 5% over 5 minutes
+      MetricName: ErrorRate
+      Namespace: BayonCoAgent
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  HighLatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "BayonCoAgent-${Environment}-HighLatency"
+      AlarmDescription: Alert when p95 API latency exceeds 1000ms
+      MetricName: APILatency
+      Namespace: BayonCoAgent
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 1000
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  DynamoDBThrottlingAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "BayonCoAgent-${Environment}-DynamoDBThrottling"
+      AlarmDescription: Alert when DynamoDB throttling occurs
+      MetricName: UserErrors
+      Namespace: AWS/DynamoDB
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  BedrockQuotaAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "BayonCoAgent-${Environment}-BedrockQuota"
+      AlarmDescription: Alert when Bedrock invocations approach quota limit
+      MetricName: Invocations
+      Namespace: AWS/Bedrock
+      Statistic: Sum
+      Period: 3600
+      EvaluationPeriods: 1
+      Threshold: 10000
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  S3UploadFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "BayonCoAgent-${Environment}-S3UploadFailures"
+      AlarmDescription: Alert when S3 upload failures exceed threshold
+      MetricName: 5xxErrors
+      Namespace: AWS/S3
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  AuthFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "BayonCoAgent-${Environment}-AuthFailures"
+      AlarmDescription: Alert when authentication failures spike
+      MetricName: SignInThrottles
+      Namespace: AWS/Cognito
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 20
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  DatabaseLatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "BayonCoAgent-${Environment}-DatabaseLatency"
+      AlarmDescription: Alert when database query latency exceeds 100ms (p95)
+      MetricName: SuccessfulRequestLatency
+      Namespace: AWS/DynamoDB
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 100
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  AIGenerationFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "BayonCoAgent-${Environment}-AIGenerationFailures"
+      AlarmDescription: Alert when AI generation failures exceed threshold
+      MetricName: InvocationServerErrors
+      Namespace: AWS/Bedrock
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  # ============================================================================
+  # CloudWatch Dashboard
+  # ============================================================================
+
+  SystemHealthDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub "BayonCoAgent-${Environment}-SystemHealth"
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "text",
+              "x": 0,
+              "y": 0,
+              "width": 24,
+              "height": 1,
+              "properties": {
+                "markdown": "# Bayon CoAgent - System Health Dashboard (${Environment})"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 1,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "title": "Authentication Success Rate",
+                "metrics": [
+                  ["AWS/Cognito", "SignInSuccesses", {"stat": "Sum", "label": "Successful"}],
+                  [".", "SignInThrottles", {"stat": "Sum", "label": "Throttled"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "yAxis": {
+                  "left": {
+                    "min": 0
+                  }
+                }
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 1,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "title": "DynamoDB Operations",
+                "metrics": [
+                  ["AWS/DynamoDB", "SuccessfulRequestLatency", {"stat": "Average"}],
+                  [".", "UserErrors", {"stat": "Sum"}],
+                  [".", "SystemErrors", {"stat": "Sum"}]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 7,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "title": "Bedrock AI Requests",
+                "metrics": [
+                  ["AWS/Bedrock", "Invocations", {"stat": "Sum", "label": "Total Requests"}],
+                  [".", "InvocationLatency", {"stat": "Average", "label": "Avg Latency (ms)"}],
+                  [".", "InvocationClientErrors", {"stat": "Sum", "label": "Client Errors"}],
+                  [".", "InvocationServerErrors", {"stat": "Sum", "label": "Server Errors"}]
+                ],
+                "period": 300,
+                "region": "${AWS::Region}"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 7,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "title": "S3 Storage Operations",
+                "metrics": [
+                  ["AWS/S3", "AllRequests", {"stat": "Sum", "label": "Total Requests"}],
+                  [".", "4xxErrors", {"stat": "Sum", "label": "4xx Errors"}],
+                  [".", "5xxErrors", {"stat": "Sum", "label": "5xx Errors"}]
+                ],
+                "period": 300,
+                "region": "${AWS::Region}"
+              }
+            },
+            {
+              "type": "log",
+              "x": 0,
+              "y": 13,
+              "width": 24,
+              "height": 6,
+              "properties": {
+                "title": "Recent Error Logs",
+                "query": "SOURCE '${ApplicationLogGroup}'\n| fields @timestamp, message, context.userId, error.message\n| filter level = \"ERROR\"\n| sort @timestamp desc\n| limit 20",
+                "region": "${AWS::Region}"
+              }
+            }
+          ]
+        }
+
+Outputs:
+  AlarmTopicArn:
+    Description: ARN of the SNS topic for alarms
+    Value: !Ref AlarmTopic
+    Export:
+      Name: !Sub "${AWS::StackName}-AlarmTopicArn"
+
+  ApplicationLogGroupName:
+    Description: Name of the application log group
+    Value: !Ref ApplicationLogGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-ApplicationLogGroup"
+
+  DashboardURL:
+    Description: URL to the CloudWatch Dashboard
+    Value: !Sub "https://console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=BayonCoAgent-${Environment}-SystemHealth"

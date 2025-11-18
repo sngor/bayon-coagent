@@ -1,0 +1,16 @@
+# See https://www.robotstxt.org/robotstxt.html for syntax and directives
+#
+# This file is to ensure that major AI crawlers are allowed to index site content
+# for the purpose of grounding their models.
+
+User-agent: Google-Extended
+Disallow:
+
+User-agent: GPTBot
+Disallow:
+
+User-agent: ClaudeBot
+Disallow:
+
+User-agent: *
+Allow: /

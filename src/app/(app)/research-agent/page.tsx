@@ -1,0 +1,272 @@
+
+'use client';
+
+import { useActionState, useEffect, useTransition, useState, useMemo } from 'react';
+import { useFormStatus } from 'react-dom';
+import { useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/page-header';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { runResearchAgentAction } from '@/app/actions';
+import { Loader2, BrainCircuit, ExternalLink, Download, Share2, Library, Calendar, FileText, Share } from 'lucide-react';
+import { marked } from 'marked';
+import { type RunResearchAgentOutput } from '@/aws/bedrock/flows';
+import { toast } from '@/hooks/use-toast';
+import { useUser } from '@/aws/auth';
+import { useQuery } from '@/aws/dynamodb/hooks';
+import { getRepository } from '@/aws/dynamodb';
+import { getResearchReportKeys } from '@/aws/dynamodb/keys';
+import type { ResearchReport } from '@/lib/types';
+import Link from 'next/link';
+import { Skeleton } from '@/components/ui/skeleton';
+
+type ResearchInitialState = {
+  message: string;
+  data: (RunResearchAgentOutput & { reportId?: string }) | null;
+  errors: any;
+};
+
+const researchInitialState: ResearchInitialState = {
+  message: '',
+  data: null,
+  errors: {},
+};
+
+function SubmitButton({ disabled }: { disabled?: boolean }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" variant={pending ? 'shimmer' : 'ai'} disabled={pending || disabled} className="w-full md:w-auto">
+      {pending ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Researching...
+        </>
+      ) : (
+        <>
+          <BrainCircuit className="mr-2 h-4 w-4" />
+          Start Research
+        </>
+      )}
+    </Button>
+  );
+}
+
+function ReportListSkeleton() {
+  return (
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {[...Array(3)].map((_, i) => (
+        <Card key={i}>
+          <CardHeader>
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </CardHeader>
+          <CardFooter>
+            <Skeleton className="h-4 w-1/4" />
+          </CardFooter>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+
+export default function ResearchAgentPage() {
+  const [state, formAction, isPending] = useActionState(
+    runResearchAgentAction,
+    researchInitialState
+  );
+  const router = useRouter();
+
+  const { user, isUserLoading } = useUser();
+
+  // Memoize DynamoDB keys
+  const reportsPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
+  const reportsSKPrefix = useMemo(() => 'REPORT#', []);
+
+  const { data: savedReports, isLoading: isLoadingReports } = useQuery<ResearchReport>(reportsPK, reportsSKPrefix, {
+    limit: 3,
+    scanIndexForward: false, // descending order
+  });
+
+  useEffect(() => {
+    if (state.message === 'success' && state.data && user?.id) {
+      const saveReport = async () => {
+        try {
+          const repository = getRepository();
+          const reportId = Date.now().toString();
+          const keys = getResearchReportKeys(user.id, reportId);
+          const dataToSave = {
+            ...state.data,
+            topic: (state.errors as any)?.topic || "Untitled Report",
+            createdAt: new Date().toISOString(),
+          };
+          await repository.put({
+            ...keys,
+            EntityType: 'ResearchReport',
+            Data: dataToSave,
+            CreatedAt: Date.now(),
+            UpdatedAt: Date.now()
+          });
+          toast({ title: 'Report Saved!', description: 'Your new research report has been saved to your Knowledge Base.' });
+          router.push(`/knowledge-base/${reportId}`);
+        } catch (error) {
+          console.error('Failed to save report:', error);
+          toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save report.' });
+        }
+      };
+      saveReport();
+    } else if (state.message && state.message !== 'success') {
+      toast({
+        variant: 'destructive',
+        title: 'Research Failed',
+        description: state.message,
+      })
+    }
+  }, [state, user?.id, router]);
+
+
+  const displayData = state.data;
+  const displayTopic = (state as any).topic; // a bit of a hack to get topic from action state
+
+  const handleDownload = () => {
+    if (!displayData?.report) return;
+
+    const blob = new Blob([displayData.report], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const topic = displayTopic || 'research';
+    const fileName = `${topic.toLowerCase().replace(/\s+/g, '-')}-report.md`;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({ title: 'Report Downloaded', description: `Saved as ${fileName}` });
+  };
+
+  const handleShare = async () => {
+    if (!displayData?.report) return;
+
+    const shareData = {
+      title: 'AI Research Report',
+      text: displayData.report,
+    };
+
+    if (navigator.share && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (error) {
+        console.error('Sharing failed', error);
+        toast({
+          variant: 'destructive',
+          title: 'Sharing Failed',
+          description: 'Could not share the report.',
+        });
+      }
+    } else {
+      // Fallback for browsers that don't support Web Share API
+      navigator.clipboard.writeText(displayData.report);
+      toast({
+        title: 'Sharing Not Available',
+        description: 'Report content has been copied to your clipboard.',
+      });
+    }
+  };
+
+  const handleCreateContent = (path: string) => {
+    if (displayData?.report) {
+      sessionStorage.setItem('genkit-topic', `Summarize the following report:\n\n${displayData.report}`);
+      router.push(path);
+    }
+  };
+
+  return (
+    <div className="animate-fade-in-up space-y-8">
+      <PageHeader
+        title="AI Research Agent"
+        description="Delegate deep-dive research. Your AI agent will compile a comprehensive report that you can save to your knowledge base."
+      />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-headline">New Research Task</CardTitle>
+          <CardDescription>
+            Enter a topic, and the AI agent will perform iterative web searches to compile a comprehensive report with citations.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={formAction} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="topic">Research Topic</Label>
+              <Textarea
+                id="topic"
+                name="topic"
+                placeholder="e.g., 'The impact of rising interest rates on the commercial real estate market in New York City'"
+                rows={3}
+              />
+              {state.errors?.topic && (
+                <p className="text-sm text-destructive">{state.errors.topic[0]}</p>
+              )}
+            </div>
+            <SubmitButton disabled={isUserLoading} />
+            {state.message && state.message !== 'success' && (
+              <p className="text-destructive mt-4">{state.message}</p>
+            )}
+          </form>
+        </CardContent>
+      </Card>
+
+      <div className="space-y-4 pt-8">
+        <div className="flex justify-between items-center">
+          <h2 className="font-headline text-2xl font-bold">Recent Reports</h2>
+          <Button variant="ghost" asChild>
+            <Link href="/knowledge-base">View All</Link>
+          </Button>
+        </div>
+        {isLoadingReports && <ReportListSkeleton />}
+
+        {!isLoadingReports && savedReports && savedReports.length > 0 && (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {savedReports.map(report => (
+              <Link key={report.id} href={`/knowledge-base/${report.id}`} passHref>
+                <Card className="h-full flex flex-col card-interactive">
+                  <CardHeader>
+                    <CardTitle className="font-headline text-xl line-clamp-2">{report.topic}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex-grow" />
+                  <CardFooter>
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>{new Date(report.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </CardFooter>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {!isLoadingReports && (!savedReports || savedReports.length === 0) && (
+          <div className="flex flex-col items-center justify-center text-center py-20 border rounded-lg">
+            <Library className="h-16 w-16 mb-4 text-muted-foreground" />
+            <h3 className="font-headline text-2xl">Your Knowledge Base is Empty</h3>
+            <p className="mt-2 text-muted-foreground">
+              You haven't saved any research reports yet. Use the form above to create your first one.
+            </p>
+          </div>
+        )}
+      </div>
+
+    </div>
+  );
+}
