@@ -4,7 +4,7 @@
  * @fileOverview Bedrock flow for generating neighborhood guides.
  */
 
-import { defineFlow, definePrompt } from '../flow-base';
+import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
 import { z } from 'zod';
 
 const GenerateNeighborhoodGuideInputSchema = z.object({
@@ -34,6 +34,7 @@ const prompt = definePrompt({
   name: 'generateNeighborhoodGuidePrompt',
   inputSchema: GenerateNeighborhoodGuideInputSchema,
   outputSchema: GenerateNeighborhoodGuideOutputSchema,
+  options: MODEL_CONFIGS.LONG_FORM,
   prompt: `You are an expert real estate content writer specializing in creating hyper-local neighborhood guides. Your sole purpose is to create content for people looking to move to a new area.
 
 You will use your internal knowledge, public data, and market statistics to create a comprehensive and engaging guide for the specified target market and pillar topic.

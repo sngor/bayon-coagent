@@ -7,6 +7,8 @@
 
 import { z } from 'zod';
 import { getBedrockClient, BedrockError, BedrockParseError } from './client';
+import { getConfig } from '@/aws/config';
+import { categorizeFlow, type ExecutionMetadata } from './execution-logger';
 
 /**
  * Base interface for AI flows
@@ -19,6 +21,62 @@ export interface AIFlow<TInput, TOutput> {
 }
 
 /**
+ * Bedrock model identifiers
+ * 
+ * Note: Sonnet 3.5 v2 requires inference profile ARN for cross-region inference.
+ * Using us.anthropic.claude-3-5-sonnet-20241022-v2:0 for cross-region support.
+ */
+export const BEDROCK_MODELS = {
+  HAIKU: 'anthropic.claude-3-haiku-20240307-v1:0',
+  SONNET_3: 'anthropic.claude-3-sonnet-20240229-v1:0',
+  SONNET_3_5_V1: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+  SONNET_3_5_V2: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+  OPUS: 'anthropic.claude-3-opus-20240229-v1:0',
+} as const;
+
+/**
+ * Model configuration presets
+ */
+export const MODEL_CONFIGS = {
+  // Fast, simple tasks
+  SIMPLE: {
+    modelId: BEDROCK_MODELS.HAIKU,
+    temperature: 0.3,
+    maxTokens: 2048,
+  },
+  // Balanced general purpose
+  BALANCED: {
+    modelId: BEDROCK_MODELS.SONNET_3_5_V2,
+    temperature: 0.5,
+    maxTokens: 4096,
+  },
+  // Creative content
+  CREATIVE: {
+    modelId: BEDROCK_MODELS.SONNET_3_5_V2,
+    temperature: 0.7,
+    maxTokens: 4096,
+  },
+  // Long-form content
+  LONG_FORM: {
+    modelId: BEDROCK_MODELS.SONNET_3_5_V2,
+    temperature: 0.6,
+    maxTokens: 8192,
+  },
+  // Analytical tasks
+  ANALYTICAL: {
+    modelId: BEDROCK_MODELS.SONNET_3_5_V2,
+    temperature: 0.2,
+    maxTokens: 4096,
+  },
+  // Critical accuracy
+  CRITICAL: {
+    modelId: BEDROCK_MODELS.OPUS,
+    temperature: 0.1,
+    maxTokens: 4096,
+  },
+} as const;
+
+/**
  * Options for creating a flow
  */
 export interface FlowOptions {
@@ -26,6 +84,17 @@ export interface FlowOptions {
   maxTokens?: number;
   topP?: number;
   modelId?: string;
+}
+
+/**
+ * Runtime override options for flow execution
+ */
+export interface FlowExecutionOptions {
+  modelId?: string;
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+  userId?: string;
 }
 
 /**
@@ -61,7 +130,7 @@ export function defineFlow<TInput, TOutput>(
  * Creates a prompt-based flow that invokes Bedrock with a template
  * 
  * @param config - Prompt configuration
- * @returns Function that executes the prompt
+ * @returns Function that executes the prompt with optional runtime overrides
  */
 export function definePrompt<TInput extends Record<string, any>, TOutput>(
   config: {
@@ -72,8 +141,8 @@ export function definePrompt<TInput extends Record<string, any>, TOutput>(
     systemPrompt?: string;
     options?: FlowOptions;
   }
-): (input: TInput) => Promise<TOutput> {
-  return async (input: TInput): Promise<TOutput> => {
+): (input: TInput, runtimeOptions?: FlowExecutionOptions) => Promise<TOutput> {
+  return async (input: TInput, runtimeOptions?: FlowExecutionOptions): Promise<TOutput> => {
     // Validate input
     const validatedInput = config.inputSchema.parse(input);
     
@@ -81,11 +150,32 @@ export function definePrompt<TInput extends Record<string, any>, TOutput>(
     let userPrompt = config.prompt;
     for (const [key, value] of Object.entries(validatedInput)) {
       const regex = new RegExp(`{{{${key}}}}`, 'g');
-      userPrompt = userPrompt.replace(regex, String(value));
+      const formattedValue = formatPromptValue(value);
+      userPrompt = userPrompt.replace(regex, formattedValue);
+      
+      // Also support {{{json key}}} format for explicit JSON formatting
+      const jsonRegex = new RegExp(`{{{json ${key}}}}`, 'g');
+      const jsonValue = typeof value === 'object' ? JSON.stringify(value, null, 2) : formattedValue;
+      userPrompt = userPrompt.replace(jsonRegex, jsonValue);
     }
     
-    // Get Bedrock client
-    const client = getBedrockClient(config.options?.modelId);
+    // Merge runtime options with config options (runtime takes precedence)
+    const effectiveModelId = runtimeOptions?.modelId ?? config.options?.modelId;
+    const effectiveTemperature = runtimeOptions?.temperature ?? config.options?.temperature ?? 0.7;
+    const effectiveMaxTokens = runtimeOptions?.maxTokens ?? config.options?.maxTokens ?? 4096;
+    const effectiveTopP = runtimeOptions?.topP ?? config.options?.topP ?? 1;
+    
+    // Get Bedrock client with effective model ID
+    const client = getBedrockClient(effectiveModelId);
+    
+    // Create execution metadata for logging
+    const executionMetadata: ExecutionMetadata = {
+      userId: runtimeOptions?.userId,
+      featureCategory: categorizeFlow(config.name),
+      temperature: effectiveTemperature,
+      maxTokens: effectiveMaxTokens,
+      topP: effectiveTopP,
+    };
     
     // Construct full prompt
     const systemPrompt = config.systemPrompt || '';
@@ -94,14 +184,16 @@ export function definePrompt<TInput extends Record<string, any>, TOutput>(
       : `Human: ${userPrompt}\n\nAssistant: I'll provide the response in valid JSON format matching the required schema.`;
     
     try {
-      // Invoke Bedrock
+      // Invoke Bedrock with effective options and execution logging
       const response = await client.invoke(
         fullPrompt,
         config.outputSchema,
         {
-          temperature: config.options?.temperature,
-          maxTokens: config.options?.maxTokens,
-          topP: config.options?.topP,
+          temperature: effectiveTemperature,
+          maxTokens: effectiveMaxTokens,
+          topP: effectiveTopP,
+          flowName: config.name,
+          executionMetadata,
         }
       );
       
@@ -144,17 +236,46 @@ export function formatPromptValue(value: unknown): string {
 }
 
 /**
- * Helper to create a streaming flow
+ * Helper to create a streaming flow with optional runtime overrides
  */
 export async function* invokeStream(
   prompt: string,
-  options?: FlowOptions
+  options?: FlowOptions,
+  runtimeOptions?: FlowExecutionOptions
 ): AsyncIterable<string> {
-  const client = getBedrockClient(options?.modelId);
+  // Merge runtime options with config options (runtime takes precedence)
+  const effectiveModelId = runtimeOptions?.modelId ?? options?.modelId;
+  const effectiveTemperature = runtimeOptions?.temperature ?? options?.temperature;
+  const effectiveMaxTokens = runtimeOptions?.maxTokens ?? options?.maxTokens;
+  const effectiveTopP = runtimeOptions?.topP ?? options?.topP;
+  
+  const client = getBedrockClient(effectiveModelId);
   
   yield* client.invokeStream(prompt, {
-    temperature: options?.temperature,
-    maxTokens: options?.maxTokens,
-    topP: options?.topP,
+    temperature: effectiveTemperature,
+    maxTokens: effectiveMaxTokens,
+    topP: effectiveTopP,
   });
+}
+
+/**
+ * Helper to merge flow options with runtime overrides
+ * Useful for testing and debugging
+ * 
+ * @param configOptions - Options defined in flow configuration
+ * @param runtimeOptions - Runtime override options
+ * @returns Merged effective options
+ */
+export function mergeFlowOptions(
+  configOptions?: FlowOptions,
+  runtimeOptions?: FlowExecutionOptions
+): Required<FlowOptions> {
+  const config = getConfig();
+  
+  return {
+    modelId: runtimeOptions?.modelId ?? configOptions?.modelId ?? config.bedrock.modelId,
+    temperature: runtimeOptions?.temperature ?? configOptions?.temperature ?? 0.7,
+    maxTokens: runtimeOptions?.maxTokens ?? configOptions?.maxTokens ?? 4096,
+    topP: runtimeOptions?.topP ?? configOptions?.topP ?? 1,
+  };
 }

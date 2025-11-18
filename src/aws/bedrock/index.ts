@@ -14,3 +14,15 @@ export {
   type InvokeStreamOptions,
   type RetryConfig,
 } from './client';
+
+export {
+  ExecutionLogger,
+  createExecutionLogger,
+  extractTokenUsage,
+  categorizeFlow,
+  FlowExecutionLogSchema,
+  type FlowExecutionLog,
+  type TokenUsage,
+  type ExecutionError,
+  type ExecutionMetadata,
+} from './execution-logger';

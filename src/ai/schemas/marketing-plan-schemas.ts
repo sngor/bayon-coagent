@@ -9,7 +9,7 @@ export const GenerateMarketingPlanInputSchema = z.object({
 });
 
 export const GenerateMarketingPlanOutputSchema = z.object({
-  steps: z.array(z.object({
+  plan: z.array(z.object({
     task: z.string().describe('The marketing task to perform'),
     rationale: z.string().describe('Why this task is important'),
     tool: z.string().describe('The tool to use in the app'),

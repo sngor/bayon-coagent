@@ -1,3 +1,6 @@
+/* Import Inter variable font with weights 400-900 */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -35,6 +38,10 @@ body {
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
     --radius: 0.5rem;
+
+    /* Typography tokens */
+    --font-display: "Inter", system-ui, -apple-system, sans-serif;
+    --font-body: "Inter", system-ui, -apple-system, sans-serif;
 
     /* Success palette */
     --success: 142 71% 45%;
@@ -220,12 +227,28 @@ body {
 @layer components {
   .card-interactive {
     @apply transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-xl hover:bg-secondary/50;
+    /* GPU acceleration */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  .card-interactive:hover {
+    /* Strategic will-change hint on hover */
+    will-change: transform, box-shadow;
   }
 
   /* Enhanced button micro-interactions */
   .button-interactive {
     @apply relative overflow-hidden transition-all duration-200 ease-in-out;
     @apply hover:shadow-md active:scale-95;
+    /* GPU acceleration */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  .button-interactive:hover {
+    /* Strategic will-change hint on hover */
+    will-change: transform, box-shadow;
   }
 
   .button-ripple {
@@ -256,21 +279,43 @@ body {
   .card-hover-lift {
     @apply transition-all duration-300 ease-out;
     @apply hover:-translate-y-1 hover:shadow-lg;
+    /* GPU acceleration */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  .card-hover-lift:hover {
+    will-change: transform, box-shadow;
   }
 
   .card-hover-glow {
     @apply transition-all duration-300 ease-out;
     @apply hover:shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)];
+    /* GPU acceleration */
+    transform: translateZ(0);
+  }
+
+  .card-hover-glow:hover {
+    will-change: box-shadow;
   }
 
   .card-hover-scale {
     @apply transition-all duration-300 ease-out;
     @apply hover:scale-[1.02];
+    /* GPU acceleration */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  .card-hover-scale:hover {
+    will-change: transform;
   }
 
   .card-hover-border {
     @apply transition-all duration-300 ease-out;
     @apply hover:border-primary/50;
+    /* Optimize border transitions */
+    transform: translateZ(0);
   }
 
   /* Success feedback */
@@ -297,6 +342,9 @@ body {
     background-size: 200% 200%;
     animation: gradient-animation 8s ease infinite;
     color: hsl(var(--primary-foreground));
+    /* GPU acceleration for gradient animation */
+    will-change: background-position;
+    transform: translateZ(0);
   }
 
   .shimmer-gradient {
@@ -309,42 +357,56 @@ body {
     background-size: 200% 100%;
     animation: shimmer-animation 2s linear infinite;
     color: hsl(var(--primary-foreground));
+    /* GPU acceleration for shimmer animation */
+    will-change: background-position;
+    transform: translateZ(0);
   }
 
   /* Glassmorphism effects */
   .glass-effect {
     background: hsl(var(--glass-bg));
-    backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
+    backdrop-filter: blur(var(--glass-blur));
     border: 1px solid hsl(var(--glass-border));
+    /* GPU acceleration for backdrop-filter */
+    transform: translateZ(0);
+    will-change: backdrop-filter;
   }
 
   .glass-effect-sm {
     background: hsl(var(--glass-bg));
-    backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
     border: 1px solid hsl(var(--glass-border));
+    /* GPU acceleration */
+    transform: translateZ(0);
   }
 
   .glass-effect-md {
     background: hsl(var(--glass-bg));
-    backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
     border: 1px solid hsl(var(--glass-border));
+    /* GPU acceleration */
+    transform: translateZ(0);
   }
 
   .glass-effect-lg {
     background: hsl(var(--glass-bg));
-    backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
     border: 1px solid hsl(var(--glass-border));
+    /* GPU acceleration */
+    transform: translateZ(0);
   }
 
   .glass-effect-xl {
     background: hsl(var(--glass-bg));
-    backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
     border: 1px solid hsl(var(--glass-border));
+    /* GPU acceleration */
+    transform: translateZ(0);
   }
 
   /* Gradient borders */
@@ -786,74 +848,119 @@ body {
   }
 }
 
-/* Animation utility classes */
+/* Animation utility classes with GPU acceleration */
 @layer utilities {
   .animate-fade-in-up {
     animation: fade-in-up 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    /* GPU acceleration */
+    will-change: opacity, transform;
+    backface-visibility: hidden;
   }
 
   .animate-fade-in {
     animation: fade-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* GPU acceleration */
+    will-change: opacity;
   }
 
   .animate-fade-out {
     animation: fade-out 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    /* GPU acceleration */
+    will-change: opacity;
   }
 
   .animate-page-transition {
     animation: page-transition-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* GPU acceleration */
+    will-change: opacity, transform;
+    backface-visibility: hidden;
   }
 
   .animate-scale-in {
     animation: scale-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    /* GPU acceleration */
+    will-change: opacity, transform;
+    backface-visibility: hidden;
   }
 
   .animate-slide-in-right {
     animation: slide-in-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* GPU acceleration */
+    will-change: opacity, transform;
+    backface-visibility: hidden;
   }
 
   .animate-slide-in-left {
     animation: slide-in-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* GPU acceleration */
+    will-change: opacity, transform;
+    backface-visibility: hidden;
   }
 
   .animate-slide-down {
     animation: slide-down 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* GPU acceleration */
+    will-change: opacity, transform;
+    backface-visibility: hidden;
   }
 
   .animate-bounce-in {
     animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    /* GPU acceleration */
+    will-change: opacity, transform;
+    backface-visibility: hidden;
   }
 
   .animate-confetti {
     animation: confetti 3s ease-out forwards;
+    /* GPU acceleration */
+    will-change: transform, opacity;
+    backface-visibility: hidden;
   }
 
   .animate-ripple {
     animation: ripple 0.6s ease-out;
+    /* GPU acceleration */
+    will-change: transform, opacity;
   }
 
   .animate-pulse-success {
     animation: pulse-success 0.5s ease-in-out;
+    /* GPU acceleration */
+    will-change: opacity, transform;
   }
 
   .animate-shake {
     animation: shake 0.5s ease-in-out;
+    /* GPU acceleration */
+    will-change: transform;
+    backface-visibility: hidden;
   }
 
   .animate-button-press {
     animation: button-press 0.2s ease-in-out;
+    /* GPU acceleration */
+    will-change: transform;
+    backface-visibility: hidden;
   }
 
   .animate-card-lift {
     animation: card-lift 0.3s ease-out forwards;
+    /* GPU acceleration */
+    will-change: transform;
+    backface-visibility: hidden;
   }
 
   .animate-glow {
     animation: glow 2s ease-in-out infinite;
+    /* GPU acceleration */
+    will-change: box-shadow;
   }
 
   .animate-success-ping {
     animation: success-ping 0.6s cubic-bezier(0, 0, 0.2, 1);
+    /* GPU acceleration */
+    will-change: transform, opacity;
   }
 
   /* Staggered animation delays */
@@ -880,14 +987,23 @@ body {
   /* Gradient mesh animations */
   .animate-float-slow {
     animation: float-slow 25s ease-in-out infinite;
+    /* GPU acceleration */
+    will-change: transform;
+    backface-visibility: hidden;
   }
 
   .animate-float-medium {
     animation: float-medium 20s ease-in-out infinite;
+    /* GPU acceleration */
+    will-change: transform;
+    backface-visibility: hidden;
   }
 
   .animate-float-fast {
     animation: float-fast 15s ease-in-out infinite;
+    /* GPU acceleration */
+    will-change: transform;
+    backface-visibility: hidden;
   }
 
   /* Scrollbar utilities for responsive tables */
@@ -920,6 +1036,180 @@ body {
 
   .scrollbar-track-transparent {
     scrollbar-color: hsl(var(--muted-foreground)) transparent;
+  }
+
+  /* Bold Typography System for Real Estate */
+
+  /* Display text utilities - Hero sizes */
+  .text-display-hero {
+    font-size: 4.5rem; /* 72px */
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-family: var(--font-display);
+  }
+
+  .text-display-large {
+    font-size: 3.5rem; /* 56px */
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    font-family: var(--font-display);
+  }
+
+  .text-display-medium {
+    font-size: 2.5rem; /* 40px */
+    font-weight: 700;
+    line-height: 1.2;
+    font-family: var(--font-display);
+  }
+
+  /* Metric number styles with tabular nums */
+  .text-metric-large {
+    font-size: 3rem; /* 48px */
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    font-family: var(--font-display);
+  }
+
+  .text-metric-medium {
+    font-size: 2rem; /* 32px */
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    font-family: var(--font-display);
+  }
+
+  .text-metric-small {
+    font-size: 1.5rem; /* 24px */
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    font-family: var(--font-display);
+  }
+
+  /* Gradient text effects for headings */
+  .text-gradient {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--foreground)) 0%,
+      hsl(var(--foreground) / 0.7) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-primary {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary)) 0%,
+      hsl(var(--primary-hover)) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-accent {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--gradient-start)) 0%,
+      hsl(var(--gradient-end)) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-success {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--success)) 0%,
+      hsl(var(--success-hover)) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Bold CTA text styles */
+  .text-bold-cta {
+    font-size: 1.125rem; /* 18px */
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: var(--font-display);
+  }
+
+  .text-bold-cta-large {
+    font-size: 1.25rem; /* 20px */
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: var(--font-display);
+  }
+
+  /* Heading styles with authority */
+  .text-heading-1 {
+    font-size: 2rem; /* 32px */
+    font-weight: 700;
+    line-height: 1.3;
+    font-family: var(--font-display);
+  }
+
+  .text-heading-2 {
+    font-size: 1.5rem; /* 24px */
+    font-weight: 600;
+    line-height: 1.4;
+    font-family: var(--font-display);
+  }
+
+  .text-heading-3 {
+    font-size: 1.25rem; /* 20px */
+    font-weight: 600;
+    line-height: 1.4;
+    font-family: var(--font-display);
+  }
+
+  /* Responsive typography adjustments */
+  @media (max-width: 768px) {
+    .text-display-hero {
+      font-size: 2.5rem; /* 40px on mobile */
+      line-height: 1.2;
+    }
+
+    .text-display-large {
+      font-size: 2rem; /* 32px on mobile */
+      line-height: 1.3;
+    }
+
+    .text-display-medium {
+      font-size: 1.75rem; /* 28px on mobile */
+      line-height: 1.3;
+    }
+
+    .text-metric-large {
+      font-size: 2rem; /* 32px on mobile */
+    }
+
+    .text-metric-medium {
+      font-size: 1.5rem; /* 24px on mobile */
+    }
+  }
+
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .text-display-hero {
+      font-size: 3.5rem; /* 56px on tablet */
+    }
+
+    .text-display-large {
+      font-size: 2.75rem; /* 44px on tablet */
+    }
+
+    .text-display-medium {
+      font-size: 2rem; /* 32px on tablet */
+    }
   }
 }
 

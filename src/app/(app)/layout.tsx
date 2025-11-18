@@ -16,14 +16,10 @@ import {
   SidebarToggle,
 } from '@/components/ui/sidebar';
 import {
-  Home,
   User,
-  BookText,
   PanelLeft,
   LogOut,
   ShieldCheck,
-  Users,
-  BrainCircuit,
   Plug,
   GraduationCap,
   Settings,
@@ -35,6 +31,12 @@ import {
   TrendingUp,
   HeartPulse,
 } from 'lucide-react';
+import {
+  HouseIcon,
+  ContentIcon,
+  UsersIcon,
+  AISparkleIcon,
+} from '@/components/ui/real-estate-icons';
 import Link from 'next/link';
 import { usePathname, redirect } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -43,12 +45,12 @@ import { PageTransition } from '@/components/page-transition';
 import { TooltipProvider } from '@/contexts/tooltip-context';
 
 const navItems = [
-  { href: '/dashboard', icon: Home, label: 'Dashboard' },
+  { href: '/dashboard', icon: HouseIcon, label: 'Dashboard', customIcon: true },
   { href: '/marketing-plan', icon: Target, label: 'Marketing Plan' },
   { href: '/brand-audit', icon: ShieldCheck, label: 'Brand Audit' },
-  { href: '/competitive-analysis', icon: Users, label: 'Competitive Analysis' },
-  { href: '/content-engine', icon: BookText, label: 'Content Engine' },
-  { href: '/research-agent', icon: BrainCircuit, label: 'Research Agent' },
+  { href: '/competitive-analysis', icon: UsersIcon, label: 'Competitive Analysis', customIcon: true },
+  { href: '/content-engine', icon: ContentIcon, label: 'Content Engine', customIcon: true },
+  { href: '/research-agent', icon: AISparkleIcon, label: 'Research Agent', customIcon: true },
   { href: '/projects', icon: Folder, label: 'Projects' },
   { href: '/knowledge-base', icon: Library, label: 'Knowledge Base' },
   { href: '/training-hub', icon: GraduationCap, label: 'Training Hub' },
@@ -116,7 +118,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     tooltip={item.label}
                   >
                     <Link href={item.href}>
-                      <item.icon />
+                      {item.customIcon ? (
+                        <item.icon animated={false} className="w-5 h-5" />
+                      ) : (
+                        <item.icon />
+                      )}
                       <span>{item.label}</span>
                     </Link>
                   </SidebarMenuButton>

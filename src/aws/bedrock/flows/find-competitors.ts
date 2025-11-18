@@ -7,7 +7,7 @@
  */
 
 import { z } from 'zod';
-import { defineFlow, definePrompt } from '../flow-base';
+import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
 import { getSearchClient } from '@/aws/search';
 import {
   FindCompetitorsInputSchema,
@@ -28,6 +28,7 @@ const enrichCompetitorPrompt = definePrompt({
     searchContext: z.string().optional(),
   }),
   outputSchema: EnrichCompetitorDataOutputSchema,
+  options: MODEL_CONFIGS.ANALYTICAL,
   prompt: `You are a real estate market intelligence analyst. Your task is to find key performance metrics for a competitor agent based on web search results.
 
 Agent Name: {{{name}}}
@@ -94,6 +95,7 @@ const findCompetitorsPrompt = definePrompt({
     searchContext: z.string().optional(),
   }),
   outputSchema: FindCompetitorsOutputSchema,
+  options: MODEL_CONFIGS.ANALYTICAL,
   prompt: `You are an expert real estate market research analyst. Your task is to identify the top 3-5 real estate agent competitors for the given agent in their primary market based on web search results.
 
 Agent Details:

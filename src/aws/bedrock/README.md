@@ -10,6 +10,55 @@ This module provides a client for interacting with AWS Bedrock foundation models
 - **Automatic retry logic** with exponential backoff for throttling errors
 - **Error handling** with custom error types
 - **Prompt construction utilities** for Claude models
+- **Multi-model support** with optimized configurations for different use cases
+- **Runtime model overrides** for testing and experimentation
+- **Performance monitoring** and execution logging
+
+## Documentation
+
+📚 **[Complete Documentation Index](./DOCUMENTATION_INDEX.md)** - Start here for all documentation
+
+### Quick Links
+
+- **[Model Configuration Guide](./MODEL_CONFIGURATION_GUIDE.md)** - Comprehensive guide to model selection and configuration
+- **[Quick Reference](./MODEL_SELECTION_QUICK_REFERENCE.md)** - Quick decision tree and cheat sheet
+- **[Model Override Guide](./MODEL_OVERRIDE_GUIDE.md)** - Runtime configuration overrides
+- **[Benchmarking Guide](./BENCHMARKING_GUIDE.md)** - Testing and benchmarking models
+- **[Flow Examples](./flows/)** - Individual AI flow implementations
+
+## Model Selection
+
+The platform uses multiple Claude models optimized for different use cases:
+
+- **Claude 3 Haiku**: Fast, cost-effective for simple tasks (bios, sentiment analysis)
+- **Claude 3.5 Sonnet v2**: Balanced performance for most features (blog posts, analysis)
+- **Claude 3 Opus**: Highest quality for critical accuracy requirements
+
+See the [Model Configuration Guide](./MODEL_CONFIGURATION_GUIDE.md) for detailed selection criteria.
+
+### Configuration Presets
+
+```typescript
+import { MODEL_CONFIGS } from "@/aws/bedrock/flow-base";
+
+// Fast & cheap for simple tasks
+MODEL_CONFIGS.SIMPLE;
+
+// Balanced general purpose
+MODEL_CONFIGS.BALANCED;
+
+// Creative content generation
+MODEL_CONFIGS.CREATIVE;
+
+// Long-form content (8K tokens)
+MODEL_CONFIGS.LONG_FORM;
+
+// Analytical/data extraction
+MODEL_CONFIGS.ANALYTICAL;
+
+// Critical accuracy
+MODEL_CONFIGS.CRITICAL;
+```
 
 ## Usage
 

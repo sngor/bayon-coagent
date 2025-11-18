@@ -24,7 +24,16 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-states';
-import { Star, Award, User, Briefcase, Calendar, TrendingUp, Megaphone, ArrowRight, Newspaper, RefreshCcw, Loader2, Sparkles, MessageSquare } from 'lucide-react';
+import { Star, Award, User, Briefcase, Calendar, TrendingUp, ArrowRight, Newspaper, RefreshCcw, Loader2, MessageSquare } from 'lucide-react';
+import {
+    HouseIcon,
+    ChartIcon,
+    ContentIcon,
+    AISparkleIcon,
+    SuccessIcon,
+    EmptyStateHouseIcon,
+    EmptyStateContentIcon,
+} from '@/components/ui/real-estate-icons';
 import { useUser } from '@/aws/auth';
 import { ProfileCompletionBanner } from '@/components/profile-completion-banner';
 import { SuggestedNextSteps } from '@/components/suggested-next-steps';
@@ -165,10 +174,14 @@ export default function DashboardPage() {
     return (
         <div className="space-y-6 md:space-y-8">
             <div className="animate-fade-in-up">
-                <PageHeader
-                    title="Dashboard"
-                    description={isLoadingProfile ? "Welcome back..." : `Welcome back, ${agentProfile?.name || 'Agent'}. Here's a snapshot of your authority.`}
-                />
+                <div className="space-y-4">
+                    <h1 className="text-display-large text-gradient-primary">
+                        Dashboard
+                    </h1>
+                    <p className="text-heading-3 text-muted-foreground">
+                        {isLoadingProfile ? "Welcome back..." : `Welcome back, ${agentProfile?.name || 'Agent'}. Here's a snapshot of your authority.`}
+                    </p>
+                </div>
             </div>
 
             {/* Profile Completion Banner */}
@@ -183,11 +196,11 @@ export default function DashboardPage() {
 
                     <Card className="animate-fade-in-up animate-delay-200 shadow-md hover:shadow-lg transition-all duration-300">
                         <CardHeader className="pb-3">
-                            <CardTitle className="font-headline flex items-center gap-2 text-xl md:text-2xl">
-                                <Megaphone className="text-primary h-5 w-5 md:h-6 md:w-6" />
+                            <CardTitle className="text-heading-2 flex items-center gap-2">
+                                <ContentIcon animated={true} className="text-primary h-5 w-5 md:h-6 md:w-6" />
                                 Your Next Steps
                             </CardTitle>
-                            <CardDescription className="text-sm md:text-base">
+                            <CardDescription className="text-base md:text-lg">
                                 Your AI-generated marketing plan is ready.
                             </CardDescription>
                         </CardHeader>
@@ -214,7 +227,7 @@ export default function DashboardPage() {
                                 </div>
                             ) : (
                                 <EmptyState
-                                    icon={<Sparkles className="h-8 w-8 text-primary" />}
+                                    icon={<AISparkleIcon animated={true} className="h-8 w-8 text-primary" />}
                                     title="No Marketing Plan Yet"
                                     description="Let AI create a personalized marketing strategy tailored to your business goals and market position."
                                     action={{
@@ -237,11 +250,11 @@ export default function DashboardPage() {
 
                     <Card className="animate-fade-in-up animate-delay-300 shadow-md hover:shadow-lg transition-all duration-300">
                         <CardHeader className="pb-3">
-                            <CardTitle className="font-headline flex items-center gap-2 text-xl md:text-2xl">
+                            <CardTitle className="text-heading-2 flex items-center gap-2">
                                 <Star className="text-primary h-5 w-5 md:h-6 md:w-6" />
                                 Reputation Snapshot
                             </CardTitle>
-                            <CardDescription className="text-sm md:text-base">
+                            <CardDescription className="text-base md:text-lg">
                                 Your latest client feedback from across the web.
                             </CardDescription>
                         </CardHeader>
@@ -427,10 +440,10 @@ export default function DashboardPage() {
                                         />
                                         <div className="absolute inset-0 rounded-full bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                     </div>
-                                    <CardTitle className="font-headline text-xl md:text-2xl mt-4 tracking-tight">
+                                    <CardTitle className="text-heading-2 mt-4">
                                         {agentProfile?.name}
                                     </CardTitle>
-                                    <CardDescription className="text-sm md:text-base font-medium">
+                                    <CardDescription className="text-base font-medium">
                                         {agentProfile?.agencyName}
                                     </CardDescription>
                                 </CardHeader>
@@ -474,7 +487,7 @@ export default function DashboardPage() {
                     <Card className="animate-fade-in-up animate-delay-400 shadow-md hover:shadow-lg transition-all duration-300">
                         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3">
                             <div className="flex-1 min-w-0">
-                                <CardTitle className="font-headline flex items-center gap-2 text-lg md:text-xl">
+                                <CardTitle className="text-heading-3 flex items-center gap-2">
                                     <Newspaper className="text-primary h-5 w-5 flex-shrink-0" />
                                     <span className="truncate">Real Estate News</span>
                                 </CardTitle>

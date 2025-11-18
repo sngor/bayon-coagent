@@ -4,7 +4,7 @@
  * @fileOverview Bedrock flow for a deep research AI agent.
  */
 
-import { defineFlow, definePrompt } from '../flow-base';
+import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
 import {
   RunResearchAgentInputSchema,
   RunResearchAgentOutputSchema,
@@ -18,6 +18,7 @@ const researchPrompt = definePrompt({
   name: 'researchPrompt',
   inputSchema: RunResearchAgentInputSchema,
   outputSchema: RunResearchAgentOutputSchema,
+  options: MODEL_CONFIGS.LONG_FORM,
   prompt: `You are an expert research analyst. Your goal is to produce a comprehensive, well-structured, and factual research report on the given topic, based on your most up-to-date internal knowledge.
 
 Topic: {{{topic}}}
@@ -30,9 +31,6 @@ Follow these instructions precisely:
 Return a JSON response with two fields:
 - "report": A single Markdown string containing the full research report
 - "citations": An array of source URLs (strings) that were referenced in the report`,
-  options: {
-    maxTokens: 8192, // Allow longer responses for comprehensive reports
-  },
 });
 
 const runResearchAgentFlow = defineFlow(

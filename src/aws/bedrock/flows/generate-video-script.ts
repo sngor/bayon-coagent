@@ -4,7 +4,7 @@
  * @fileOverview Bedrock flow for generating video scripts.
  */
 
-import { defineFlow, definePrompt } from '../flow-base';
+import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
 import {
   GenerateVideoScriptInputSchema,
   GenerateVideoScriptOutputSchema,
@@ -18,6 +18,7 @@ const prompt = definePrompt({
   name: 'generateVideoScriptPrompt',
   inputSchema: GenerateVideoScriptInputSchema,
   outputSchema: GenerateVideoScriptOutputSchema,
+  options: MODEL_CONFIGS.CREATIVE,
   prompt: `You are an expert video scriptwriter for real estate content. Your responses must be related to real estate.
 
 Create a compelling 60-second video script for the following topic, using the specified tone and targeting the given audience.

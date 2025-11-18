@@ -1,6 +1,7 @@
 module.exports = {
-    preset: 'ts-jest',
+    preset: 'ts-jest/presets/default-esm',
     testEnvironment: 'node',
+    extensionsToTreatAsEsm: ['.ts', '.tsx'],
     roots: ['<rootDir>/src'],
     testMatch: ['**/*.test.ts', '**/*.test.tsx'],
     moduleNameMapper: {
@@ -18,13 +19,17 @@ module.exports = {
     coverageReporters: ['text', 'lcov', 'html'],
     setupFilesAfterEnv: [],
     testTimeout: 30000,
-    globals: {
-        'ts-jest': {
-            tsconfig: {
-                esModuleInterop: true,
-                allowSyntheticDefaultImports: true,
+    transform: {
+        '^.+\\.tsx?$': [
+            'ts-jest',
+            {
+                useESM: true,
+                tsconfig: {
+                    esModuleInterop: true,
+                    allowSyntheticDefaultImports: true,
+                },
             },
-        },
+        ],
     },
     // fast-check configuration
     // Increase timeout for property-based tests which run multiple iterations

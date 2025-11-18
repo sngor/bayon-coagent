@@ -4,7 +4,7 @@
  * @fileOverview Bedrock flow for analyzing the sentiment of a client review.
  */
 
-import { defineFlow, definePrompt } from '../flow-base';
+import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
 import {
   AnalyzeReviewSentimentInputSchema,
   AnalyzeReviewSentimentOutputSchema,
@@ -18,6 +18,7 @@ const prompt = definePrompt({
   name: 'analyzeReviewSentimentPrompt',
   inputSchema: AnalyzeReviewSentimentInputSchema,
   outputSchema: AnalyzeReviewSentimentOutputSchema,
+  options: MODEL_CONFIGS.SIMPLE,
   prompt: `You are an expert sentiment analyst specializing in the real estate industry.
 
 Your task is to analyze the following client review. Determine if the overall sentiment is Positive, Negative, or Neutral.

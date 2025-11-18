@@ -55,8 +55,8 @@ function SignInForm({ onSwitch, onShowVerify }: { onSwitch: () => void; onShowVe
     return (
         <div className="grid gap-6 animate-fade-in">
             <div className="grid gap-3 text-center">
-                <h1 className="text-4xl font-bold font-headline tracking-tight">Welcome Back</h1>
-                <p className="text-base text-muted-foreground">
+                <h1 className="text-display-medium text-gradient-primary">Welcome Back</h1>
+                <p className="text-heading-3 text-muted-foreground">
                     Sign in to continue your marketing journey
                 </p>
             </div>
@@ -109,7 +109,7 @@ function SignInForm({ onSwitch, onShowVerify }: { onSwitch: () => void; onShowVe
                             </p>
                         )}
                     </div>
-                    <AuthButton>Sign In</AuthButton>
+                    <AuthButton><span className="text-bold-cta">Sign In</span></AuthButton>
                 </div>
             </form>
             {error && (
@@ -226,8 +226,8 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
         return (
             <div className="grid gap-6 animate-fade-in">
                 <div className="grid gap-3 text-center">
-                    <h1 className="text-4xl font-bold font-headline tracking-tight">Verify Your Email</h1>
-                    <p className="text-base text-muted-foreground">
+                    <h1 className="text-display-medium text-gradient-primary">Verify Your Email</h1>
+                    <p className="text-heading-3 text-muted-foreground">
                         We sent a verification code to <span className="font-semibold text-foreground">{userEmail}</span>
                     </p>
                 </div>
@@ -246,9 +246,9 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                                 maxLength={6}
                             />
                         </div>
-                        <Button type="submit" disabled={isVerifying} className="w-full h-12 text-base font-semibold">
+                        <Button type="submit" disabled={isVerifying} className="w-full h-12">
                             {isVerifying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-                            Verify Email
+                            <span className="text-bold-cta">Verify Email</span>
                         </Button>
                     </div>
                 </form>
@@ -285,8 +285,8 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     return (
         <div className="grid gap-6 animate-fade-in">
             <div className="grid gap-3 text-center">
-                <h1 className="text-4xl font-bold font-headline tracking-tight">Start Your Journey</h1>
-                <p className="text-base text-muted-foreground">
+                <h1 className="text-display-medium text-gradient-primary">Start Your Journey</h1>
+                <p className="text-heading-3 text-muted-foreground">
                     Create your account and unlock AI-powered marketing
                 </p>
             </div>
@@ -342,7 +342,7 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                             Must be at least 8 characters with uppercase, lowercase, and numbers
                         </p>
                     </div>
-                    <AuthButton>Create Account</AuthButton>
+                    <AuthButton><span className="text-bold-cta">Create Account</span></AuthButton>
                 </div>
             </form>
             {error && (
@@ -433,8 +433,8 @@ function VerifyEmailForm({ onBack }: { onBack: () => void }) {
         return (
             <div className="grid gap-6 animate-fade-in">
                 <div className="grid gap-3 text-center">
-                    <h1 className="text-4xl font-bold font-headline tracking-tight">Verify Your Email</h1>
-                    <p className="text-base text-muted-foreground">
+                    <h1 className="text-display-medium text-gradient-primary">Verify Your Email</h1>
+                    <p className="text-heading-3 text-muted-foreground">
                         Enter your email to receive a verification code
                     </p>
                 </div>
@@ -452,9 +452,9 @@ function VerifyEmailForm({ onBack }: { onBack: () => void }) {
                                 className="h-11"
                             />
                         </div>
-                        <Button type="submit" disabled={isResending} className="w-full h-12 text-base font-semibold">
+                        <Button type="submit" disabled={isResending} className="w-full h-12">
                             {isResending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Mail className="mr-2 h-5 w-5" />}
-                            Send Verification Code
+                            <span className="text-bold-cta">Send Verification Code</span>
                         </Button>
                         <Button
                             type="button"
@@ -498,8 +498,8 @@ function VerifyEmailForm({ onBack }: { onBack: () => void }) {
     return (
         <div className="grid gap-6 animate-fade-in">
             <div className="grid gap-3 text-center">
-                <h1 className="text-4xl font-bold font-headline tracking-tight">Enter Verification Code</h1>
-                <p className="text-base text-muted-foreground">
+                <h1 className="text-display-medium text-gradient-primary">Enter Verification Code</h1>
+                <p className="text-heading-3 text-muted-foreground">
                     We sent a code to <span className="font-semibold text-foreground">{email}</span>
                 </p>
             </div>
@@ -613,14 +613,14 @@ export default function LoginPage() {
                         {/* Content */}
                         <div className="flex flex-col justify-center px-12 py-16 space-y-12">
                             <div className="space-y-6 animate-fade-in-up">
-                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary font-medium text-sm">
+                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary font-bold text-sm uppercase tracking-wide">
                                     <Sparkles className="w-4 h-4" />
                                     AI-Powered Marketing Platform
                                 </div>
-                                <h1 className="text-5xl font-bold font-headline tracking-tight text-foreground leading-tight">
+                                <h1 className="text-display-hero text-gradient-primary">
                                     Transform Your Real Estate Marketing
                                 </h1>
-                                <p className="text-xl text-muted-foreground leading-relaxed">
+                                <p className="text-heading-2 text-muted-foreground leading-relaxed">
                                     Harness the power of AI to build your brand, track your market, and create winning content that converts.
                                 </p>
                             </div>
@@ -632,8 +632,8 @@ export default function LoginPage() {
                                         <TrendingUp className="w-6 h-6 text-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-lg text-foreground mb-1">Brand Intelligence</h3>
-                                        <p className="text-muted-foreground">
+                                        <h3 className="text-heading-3 text-foreground mb-1">Brand Intelligence</h3>
+                                        <p className="text-base text-muted-foreground">
                                             Monitor your online presence and track competitor strategies in real-time.
                                         </p>
                                     </div>
@@ -644,8 +644,8 @@ export default function LoginPage() {
                                         <Zap className="w-6 h-6 text-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-lg text-foreground mb-1">Content Generation</h3>
-                                        <p className="text-muted-foreground">
+                                        <h3 className="text-heading-3 text-foreground mb-1">Content Generation</h3>
+                                        <p className="text-base text-muted-foreground">
                                             Create compelling blog posts, social media content, and marketing materials instantly.
                                         </p>
                                     </div>
@@ -656,8 +656,8 @@ export default function LoginPage() {
                                         <Target className="w-6 h-6 text-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-lg text-foreground mb-1">Strategic Planning</h3>
-                                        <p className="text-muted-foreground">
+                                        <h3 className="text-heading-3 text-foreground mb-1">Strategic Planning</h3>
+                                        <p className="text-base text-muted-foreground">
                                             Get personalized marketing plans tailored to your market and goals.
                                         </p>
                                     </div>
@@ -704,8 +704,8 @@ export default function LoginPage() {
                                                 <Users className="w-5 h-5 text-primary" />
                                             </div>
                                         </div>
-                                        <p className="text-lg font-bold text-foreground">500+</p>
-                                        <p className="text-xs text-muted-foreground">Active Agents</p>
+                                        <p className="text-metric-small text-primary">500+</p>
+                                        <p className="text-xs text-muted-foreground font-medium">Active Agents</p>
                                     </div>
                                     <div className="text-center space-y-1">
                                         <div className="flex justify-center">
@@ -713,8 +713,8 @@ export default function LoginPage() {
                                                 <Award className="w-5 h-5 text-primary" />
                                             </div>
                                         </div>
-                                        <p className="text-lg font-bold text-foreground">10K+</p>
-                                        <p className="text-xs text-muted-foreground">Content Created</p>
+                                        <p className="text-metric-small text-primary">10K+</p>
+                                        <p className="text-xs text-muted-foreground font-medium">Content Created</p>
                                     </div>
                                     <div className="text-center space-y-1">
                                         <div className="flex justify-center">
@@ -722,8 +722,8 @@ export default function LoginPage() {
                                                 <CheckCircle2 className="w-5 h-5 text-primary" />
                                             </div>
                                         </div>
-                                        <p className="text-lg font-bold text-foreground">98%</p>
-                                        <p className="text-xs text-muted-foreground">Satisfaction</p>
+                                        <p className="text-metric-small text-primary">98%</p>
+                                        <p className="text-xs text-muted-foreground font-medium">Satisfaction</p>
                                     </div>
                                 </div>
 

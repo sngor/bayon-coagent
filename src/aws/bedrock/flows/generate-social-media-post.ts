@@ -4,7 +4,7 @@
  * @fileOverview Bedrock flow for generating social media posts.
  */
 
-import { defineFlow, definePrompt } from '../flow-base';
+import { defineFlow, definePrompt, MODEL_CONFIGS, BEDROCK_MODELS } from '../flow-base';
 import {
   GenerateSocialMediaPostInputSchema,
   GenerateSocialMediaPostOutputSchema,
@@ -18,22 +18,28 @@ const prompt = definePrompt({
   name: 'generateSocialMediaPostPrompt',
   inputSchema: GenerateSocialMediaPostInputSchema,
   outputSchema: GenerateSocialMediaPostOutputSchema,
-  prompt: `You are a social media marketing expert for real estate agents. Your responses must be related to real estate.
+  options: {
+    modelId: BEDROCK_MODELS.HAIKU,
+    temperature: 0.7,
+    maxTokens: 2048,
+  },
+  prompt: `You are a social media marketing expert for real estate agents.
 
-Generate a set of social media posts for the following topic, tailored for each specified platform. The tone should be {{{tone}}}.
-If the topic is not related to real estate, you must politely decline and state that you only create content for real estate topics.
+Generate social media posts for the following real estate topic. The tone should be {{{tone}}}.
 
 Topic: {{{topic}}}
 
-Platforms to generate for:
-- LinkedIn: A professional post, slightly longer, using professional language and relevant hashtags.
-- Twitter/X: A short, punchy post, under 280 characters, with engaging hashtags.
-- Facebook: A friendly, community-focused post that encourages engagement and comments.
+Create posts for these platforms:
+- LinkedIn: Professional post with relevant hashtags
+- Twitter/X: Short, punchy post UNDER 280 characters with hashtags
+- Facebook: Friendly, engaging post that encourages comments
 
-Return a JSON response with three fields:
-- "linkedin": The LinkedIn post
-- "twitter": The Twitter/X post
-- "facebook": The Facebook post`,
+IMPORTANT: Return ONLY valid JSON with no additional text. The JSON must have exactly these three fields:
+{
+  "linkedin": "your linkedin post here",
+  "twitter": "your twitter post here (max 280 chars)",
+  "facebook": "your facebook post here"
+}`,
 });
 
 const generateSocialMediaPostFlow = defineFlow(

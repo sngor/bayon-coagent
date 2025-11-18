@@ -4,7 +4,7 @@
  * @fileOverview Bedrock flow for generating a personalized marketing plan.
  */
 
-import { defineFlow, definePrompt } from '../flow-base';
+import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
 import {
   GenerateMarketingPlanInputSchema,
   GenerateMarketingPlanOutputSchema,
@@ -18,6 +18,7 @@ const prompt = definePrompt({
   name: 'generateMarketingPlanPrompt',
   inputSchema: GenerateMarketingPlanInputSchema,
   outputSchema: GenerateMarketingPlanOutputSchema,
+  options: MODEL_CONFIGS.BALANCED,
   prompt: `You are an expert marketing consultant for real estate agents. Your task is to analyze the provided brand audit and competitor data to create a concise, actionable 3-step marketing plan.
 
 For each step, provide a clear 'task', a brief 'rationale' explaining why it's important, the specific 'tool' in the Co-agent Marketer app to use, and a direct 'toolLink' to that tool.

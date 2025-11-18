@@ -4,7 +4,7 @@
  * @fileOverview Bedrock flow for generating a real estate market update.
  */
 
-import { defineFlow, definePrompt } from '../flow-base';
+import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
 import {
   GenerateMarketUpdateInputSchema,
   GenerateMarketUpdateOutputSchema,
@@ -18,6 +18,7 @@ const prompt = definePrompt({
   name: 'generateMarketUpdatePrompt',
   inputSchema: GenerateMarketUpdateInputSchema,
   outputSchema: GenerateMarketUpdateOutputSchema,
+  options: MODEL_CONFIGS.BALANCED,
   prompt: `You are an expert real estate analyst and copywriter. Your sole purpose is to create content about the real estate market.
 
 Write a market update for the given location and time period, specifically targeting the provided audience.

@@ -22,18 +22,21 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Loader2,
-  Sparkles,
   Target,
   ArrowRight,
   BookText,
   ShieldCheck,
   Users,
-  Lightbulb,
   TrendingUp,
   PartyPopper,
   AlertCircle,
   RefreshCw,
 } from 'lucide-react';
+import {
+  AISparkleIcon,
+  SuccessIcon,
+  ContentIcon,
+} from '@/components/ui/real-estate-icons';
 import { AILoader, StepLoader } from '@/components/ui/loading-states';
 import { EmptyState } from '@/components/ui/empty-states';
 import { useUser } from '@/aws/auth';
@@ -72,7 +75,7 @@ function GeneratePlanButton({ disabled }: { disabled?: boolean }) {
       {pending ? (
         <Loader2 className="h-5 w-5 animate-spin" />
       ) : (
-        <Sparkles className="h-5 w-5" />
+        <AISparkleIcon animated={false} className="h-5 w-5" />
       )}
       {pending ? 'Generating Plan...' : 'Generate My Marketing Plan'}
     </Button>
@@ -303,7 +306,7 @@ export default function MarketingPlanPage() {
         <div className="space-y-6">
           <EmptyState
             variant="prominent"
-            icon={<Lightbulb className="h-8 w-8 text-primary" />}
+            icon={<AISparkleIcon animated={true} className="h-8 w-8 text-primary" />}
             title="Your Marketing Success Starts Here"
             description="Let AI analyze your brand presence and competitive landscape to create a personalized, actionable marketing plan. Get strategic recommendations tailored to your unique position in the market."
             action={{
@@ -396,7 +399,7 @@ export default function MarketingPlanPage() {
         <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-purple-600/5">
           <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary animate-pulse" />
+              <AISparkleIcon animated={true} className="h-5 w-5 text-primary" />
               Creating Your Marketing Plan
             </CardTitle>
             <CardDescription>

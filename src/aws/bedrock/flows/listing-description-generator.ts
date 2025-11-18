@@ -4,7 +4,7 @@
  * @fileOverview Bedrock flow for generating listing descriptions.
  */
 
-import { defineFlow, definePrompt } from '../flow-base';
+import { defineFlow, definePrompt, BEDROCK_MODELS } from '../flow-base';
 import { z } from 'zod';
 
 const GenerateListingDescriptionInputSchema = z.object({
@@ -21,6 +21,11 @@ const prompt = definePrompt({
   name: 'generateListingDescriptionPrompt',
   inputSchema: GenerateListingDescriptionInputSchema,
   outputSchema: GenerateListingDescriptionOutputSchema,
+  options: {
+    modelId: BEDROCK_MODELS.HAIKU,
+    temperature: 0.7,
+    maxTokens: 2048,
+  },
   prompt: `You are an expert real estate copywriter specializing in compelling property listings.
 
 Based on the following property details, create an engaging, professional listing description that highlights the property's best features and appeals to potential buyers.

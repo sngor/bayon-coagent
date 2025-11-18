@@ -4,7 +4,7 @@
  * @fileOverview Bedrock flow for generating FAQ sections for real estate listings.
  */
 
-import { defineFlow, definePrompt } from '../flow-base';
+import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
 import { z } from 'zod';
 
 const GenerateListingFaqsInputSchema = z.object({
@@ -32,6 +32,7 @@ const prompt = definePrompt({
   name: 'generateListingFaqsPrompt',
   inputSchema: GenerateListingFaqsInputSchema,
   outputSchema: GenerateListingFaqsOutputSchema,
+  options: MODEL_CONFIGS.BALANCED,
   prompt: `You are an expert real estate copywriter specializing in Answer Engine Optimization (AEO).
 
 Based on the following property description, generate a list of 4-5 common questions a potential buyer might ask. Provide a concise answer for each question based *only* on the information available in the description. If the information is not available, state that in the answer.

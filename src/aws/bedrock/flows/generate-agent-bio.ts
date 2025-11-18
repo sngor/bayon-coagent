@@ -4,7 +4,7 @@
  * @fileOverview Bedrock flow for generating a real estate agent bio.
  */
 
-import { defineFlow, definePrompt } from '../flow-base';
+import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
 import {
   GenerateAgentBioInputSchema,
   GenerateAgentBioOutputSchema,
@@ -18,6 +18,7 @@ const prompt = definePrompt({
   name: 'generateAgentBioPrompt',
   inputSchema: GenerateAgentBioInputSchema,
   outputSchema: GenerateAgentBioOutputSchema,
+  options: MODEL_CONFIGS.SIMPLE,
   prompt: `You are an expert copywriter for real estate professionals.
 
 Write a compelling, professional, and concise (3-4 sentences) biography for a real estate agent using the following details.

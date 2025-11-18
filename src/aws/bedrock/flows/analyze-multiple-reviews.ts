@@ -4,7 +4,7 @@
  * @fileOverview Bedrock flow for analyzing the sentiment of multiple client reviews in bulk.
  */
 
-import { defineFlow, definePrompt } from '../flow-base';
+import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
 import {
   AnalyzeMultipleReviewsInputSchema,
   AnalyzeMultipleReviewsOutputSchema,
@@ -18,6 +18,7 @@ const prompt = definePrompt({
   name: 'analyzeMultipleReviewsPrompt',
   inputSchema: AnalyzeMultipleReviewsInputSchema,
   outputSchema: AnalyzeMultipleReviewsOutputSchema,
+  options: MODEL_CONFIGS.ANALYTICAL,
   prompt: `You are a sentiment analysis expert for the real estate industry. Your task is to analyze a batch of client reviews and provide a high-level summary.
 
 Analyze the following reviews:

@@ -9,7 +9,7 @@
  * for production use.
  */
 
-import { defineFlow, definePrompt } from '../flow-base';
+import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
 import {
   GenerateBlogPostInputSchema,
   GenerateBlogPostOutputSchema,
@@ -23,6 +23,7 @@ const textPrompt = definePrompt({
   name: 'generateBlogPostTextPrompt',
   inputSchema: GenerateBlogPostInputSchema,
   outputSchema: GenerateBlogPostOutputSchema,
+  options: MODEL_CONFIGS.LONG_FORM,
   prompt: `You are an expert real estate content writer and SEO specialist. Your goal is to produce a well-structured, engaging, and SEO-friendly blog post.
 
 **Topic:** {{{topic}}}

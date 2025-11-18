@@ -7,13 +7,21 @@
 
 import {
   BedrockRuntimeClient,
-  InvokeModelCommand,
-  InvokeModelWithResponseStreamCommand,
-  type InvokeModelCommandInput,
-  type InvokeModelWithResponseStreamCommandInput,
+  ConverseCommand,
+  ConverseStreamCommand,
+  type ConverseCommandInput,
+  type ConverseStreamCommandInput,
+  type Message,
+  type ContentBlock,
 } from '@aws-sdk/client-bedrock-runtime';
 import { getConfig, getAWSCredentials } from '@/aws/config';
 import { z } from 'zod';
+import { 
+  createExecutionLogger, 
+  extractTokenUsage, 
+  type ExecutionMetadata,
+  type ExecutionLogger 
+} from './execution-logger';
 
 /**
  * Error thrown when Bedrock API calls fail
@@ -69,6 +77,8 @@ export interface InvokeOptions {
   maxTokens?: number;
   topP?: number;
   retryConfig?: Partial<RetryConfig>;
+  flowName?: string;
+  executionMetadata?: ExecutionMetadata;
 }
 
 /**
@@ -106,65 +116,43 @@ export class BedrockClient {
   }
 
   /**
-   * Constructs a prompt for Claude models
+   * Constructs messages for Converse API
    */
-  private constructClaudePrompt(
+  private constructMessages(
     systemPrompt: string,
     userPrompt: string
-  ): string {
-    return `${systemPrompt}\n\nHuman: ${userPrompt}\n\nAssistant:`;
-  }
-
-  /**
-   * Constructs the request body for Claude models
-   */
-  private constructClaudeRequestBody(
-    prompt: string,
-    options: InvokeOptions = {}
-  ): string {
-    const body = {
-      prompt,
-      max_tokens_to_sample: options.maxTokens || 4096,
-      temperature: options.temperature ?? 0.7,
-      top_p: options.topP ?? 1,
-      anthropic_version: 'bedrock-2023-05-31',
+  ): { system: Array<{ text: string }>, messages: Message[] } {
+    return {
+      system: [{ text: systemPrompt }],
+      messages: [
+        {
+          role: 'user',
+          content: [{ text: userPrompt }],
+        },
+      ],
     };
-
-    return JSON.stringify(body);
   }
 
   /**
-   * Parses Claude model response
+   * Extracts text from Converse API response
    */
-  private parseClaudeResponse(responseBody: string): string {
-    try {
-      const parsed = JSON.parse(responseBody);
-      
-      if (parsed.completion) {
-        return parsed.completion;
-      }
-      
-      if (parsed.content && Array.isArray(parsed.content)) {
-        const textContent = parsed.content.find((c: any) => c.type === 'text');
-        if (textContent?.text) {
-          return textContent.text;
-        }
-      }
-
+  private extractTextFromResponse(content: ContentBlock[] | undefined): string {
+    if (!content || content.length === 0) {
       throw new BedrockParseError(
-        'Unable to extract text from Claude response',
-        parsed
-      );
-    } catch (error) {
-      if (error instanceof BedrockParseError) {
-        throw error;
-      }
-      throw new BedrockParseError(
-        'Failed to parse Claude response',
-        responseBody,
-        error instanceof Error ? undefined : undefined
+        'Empty content in Converse response',
+        content
       );
     }
+
+    const textContent = content.find((block) => 'text' in block);
+    if (textContent && 'text' in textContent) {
+      return textContent.text || '';
+    }
+
+    throw new BedrockParseError(
+      'No text content found in Converse response',
+      content
+    );
   }
 
   /**
@@ -172,7 +160,8 @@ export class BedrockClient {
    */
   private async withRetry<T>(
     operation: () => Promise<T>,
-    retryConfig: RetryConfig = DEFAULT_RETRY_CONFIG
+    retryConfig: RetryConfig = DEFAULT_RETRY_CONFIG,
+    executionLogger?: ExecutionLogger
   ): Promise<T> {
     let lastError: Error | undefined;
     let delay = retryConfig.initialDelayMs;
@@ -188,6 +177,11 @@ export class BedrockClient {
         
         if (!isRetryable || attempt === retryConfig.maxRetries) {
           throw lastError;
+        }
+
+        // Increment retry count in logger
+        if (executionLogger) {
+          executionLogger.incrementRetry();
         }
 
         // Wait before retrying
@@ -231,7 +225,7 @@ export class BedrockClient {
   }
 
   /**
-   * Invokes a Bedrock model synchronously with schema validation
+   * Invokes a Bedrock model synchronously with schema validation using Converse API
    * 
    * @param prompt - The prompt to send to the model
    * @param outputSchema - Zod schema for validating the response
@@ -248,27 +242,45 @@ export class BedrockClient {
       ...options.retryConfig,
     };
 
+    // Create execution logger if metadata provided
+    let executionLogger: ExecutionLogger | undefined;
+    if (options.flowName && options.executionMetadata) {
+      executionLogger = createExecutionLogger(
+        options.flowName,
+        this.modelId,
+        options.executionMetadata
+      );
+    }
+
     return this.withRetry(async () => {
       try {
-        // Construct request body based on model type
-        const body = this.constructClaudeRequestBody(prompt, options);
-
-        const command = new InvokeModelCommand({
+        // Construct Converse API request
+        const input: ConverseCommandInput = {
           modelId: this.modelId,
-          contentType: 'application/json',
-          accept: 'application/json',
-          body: body,
-        });
+          messages: [
+            {
+              role: 'user',
+              content: [{ text: prompt }],
+            },
+          ],
+          inferenceConfig: {
+            temperature: options.temperature ?? 0.7,
+            maxTokens: options.maxTokens || 4096,
+            topP: options.topP ?? 1,
+          },
+        };
 
+        const command = new ConverseCommand(input);
         const response = await this.client.send(command);
 
-        if (!response.body) {
+        if (!response.output) {
           throw new BedrockError('Empty response from Bedrock');
         }
 
-        // Parse response body
-        const responseBody = new TextDecoder().decode(response.body);
-        const textResponse = this.parseClaudeResponse(responseBody);
+        // Extract text from response
+        const textResponse = this.extractTextFromResponse(
+          response.output.message?.content
+        );
 
         // Try to parse as JSON for structured output
         let parsedOutput: unknown;
@@ -290,8 +302,24 @@ export class BedrockClient {
           );
         }
 
+        // Log successful execution with token usage
+        if (executionLogger) {
+          const tokenUsage = extractTokenUsage(response);
+          executionLogger.logSuccess(tokenUsage);
+        }
+
         return validationResult.data;
       } catch (error) {
+        // Log error if logger exists
+        if (executionLogger) {
+          const err = error as any;
+          executionLogger.logError(
+            error instanceof Error ? error : new Error(String(error)),
+            err.code || err.name,
+            err.statusCode || err.$metadata?.httpStatusCode
+          );
+        }
+
         if (error instanceof BedrockError || error instanceof BedrockParseError) {
           throw error;
         }
@@ -304,11 +332,11 @@ export class BedrockClient {
           error
         );
       }
-    }, retryConfig);
+    }, retryConfig, executionLogger);
   }
 
   /**
-   * Invokes a Bedrock model with streaming response
+   * Invokes a Bedrock model with streaming response using Converse Stream API
    * 
    * @param prompt - The prompt to send to the model
    * @param options - Optional configuration for the request
@@ -319,42 +347,33 @@ export class BedrockClient {
     options: InvokeStreamOptions = {}
   ): AsyncIterable<string> {
     try {
-      // Construct request body
-      const body = this.constructClaudeRequestBody(prompt, options);
-
-      const command = new InvokeModelWithResponseStreamCommand({
+      // Construct Converse Stream API request
+      const input: ConverseStreamCommandInput = {
         modelId: this.modelId,
-        contentType: 'application/json',
-        accept: 'application/json',
-        body: body,
-      });
+        messages: [
+          {
+            role: 'user',
+            content: [{ text: prompt }],
+          },
+        ],
+        inferenceConfig: {
+          temperature: options.temperature ?? 0.7,
+          maxTokens: options.maxTokens || 4096,
+          topP: options.topP ?? 1,
+        },
+      };
 
+      const command = new ConverseStreamCommand(input);
       const response = await this.client.send(command);
 
-      if (!response.body) {
+      if (!response.stream) {
         throw new BedrockError('Empty streaming response from Bedrock');
       }
 
       // Process the stream
-      for await (const event of response.body) {
-        if (event.chunk) {
-          const chunkBody = new TextDecoder().decode(event.chunk.bytes);
-          
-          try {
-            const parsed = JSON.parse(chunkBody);
-            
-            // Extract text from chunk based on model response format
-            if (parsed.completion) {
-              yield parsed.completion;
-            } else if (parsed.delta?.text) {
-              yield parsed.delta.text;
-            } else if (parsed.delta?.completion) {
-              yield parsed.delta.completion;
-            }
-          } catch (error) {
-            // If chunk is not JSON, yield as-is
-            yield chunkBody;
-          }
+      for await (const event of response.stream) {
+        if (event.contentBlockDelta?.delta && 'text' in event.contentBlockDelta.delta) {
+          yield event.contentBlockDelta.delta.text || '';
         }
       }
     } catch (error) {
@@ -373,7 +392,7 @@ export class BedrockClient {
   }
 
   /**
-   * Helper method to invoke with a system prompt and user input
+   * Helper method to invoke with a system prompt and user input using Converse API
    */
   async invokeWithPrompts<TOutput>(
     systemPrompt: string,
@@ -381,20 +400,157 @@ export class BedrockClient {
     outputSchema: z.ZodSchema<TOutput>,
     options: InvokeOptions = {}
   ): Promise<TOutput> {
-    const fullPrompt = this.constructClaudePrompt(systemPrompt, userPrompt);
-    return this.invoke(fullPrompt, outputSchema, options);
+    const retryConfig = {
+      ...DEFAULT_RETRY_CONFIG,
+      ...options.retryConfig,
+    };
+
+    // Create execution logger if metadata provided
+    let executionLogger: ExecutionLogger | undefined;
+    if (options.flowName && options.executionMetadata) {
+      executionLogger = createExecutionLogger(
+        options.flowName,
+        this.modelId,
+        options.executionMetadata
+      );
+    }
+
+    return this.withRetry(async () => {
+      try {
+        // Construct Converse API request with system prompt
+        const input: ConverseCommandInput = {
+          modelId: this.modelId,
+          system: [{ text: systemPrompt }],
+          messages: [
+            {
+              role: 'user',
+              content: [{ text: userPrompt }],
+            },
+          ],
+          inferenceConfig: {
+            temperature: options.temperature ?? 0.7,
+            maxTokens: options.maxTokens || 4096,
+            topP: options.topP ?? 1,
+          },
+        };
+
+        const command = new ConverseCommand(input);
+        const response = await this.client.send(command);
+
+        if (!response.output) {
+          throw new BedrockError('Empty response from Bedrock');
+        }
+
+        // Extract text from response
+        const textResponse = this.extractTextFromResponse(
+          response.output.message?.content
+        );
+
+        // Try to parse as JSON for structured output
+        let parsedOutput: unknown;
+        try {
+          parsedOutput = JSON.parse(textResponse);
+        } catch {
+          // If not JSON, wrap in object
+          parsedOutput = { result: textResponse };
+        }
+
+        // Validate against schema
+        const validationResult = outputSchema.safeParse(parsedOutput);
+        
+        if (!validationResult.success) {
+          throw new BedrockParseError(
+            'Response does not match expected schema',
+            parsedOutput,
+            validationResult.error
+          );
+        }
+
+        // Log successful execution with token usage
+        if (executionLogger) {
+          const tokenUsage = extractTokenUsage(response);
+          executionLogger.logSuccess(tokenUsage);
+        }
+
+        return validationResult.data;
+      } catch (error) {
+        // Log error if logger exists
+        if (executionLogger) {
+          const err = error as any;
+          executionLogger.logError(
+            error instanceof Error ? error : new Error(String(error)),
+            err.code || err.name,
+            err.statusCode || err.$metadata?.httpStatusCode
+          );
+        }
+
+        if (error instanceof BedrockError || error instanceof BedrockParseError) {
+          throw error;
+        }
+
+        const err = error as any;
+        throw new BedrockError(
+          err.message || 'Failed to invoke Bedrock model',
+          err.code || err.name,
+          err.statusCode || err.$metadata?.httpStatusCode,
+          error
+        );
+      }
+    }, retryConfig, executionLogger);
   }
 
   /**
-   * Helper method to stream with a system prompt and user input
+   * Helper method to stream with a system prompt and user input using Converse Stream API
    */
   async *invokeStreamWithPrompts(
     systemPrompt: string,
     userPrompt: string,
     options: InvokeStreamOptions = {}
   ): AsyncIterable<string> {
-    const fullPrompt = this.constructClaudePrompt(systemPrompt, userPrompt);
-    yield* this.invokeStream(fullPrompt, options);
+    try {
+      // Construct Converse Stream API request with system prompt
+      const input: ConverseStreamCommandInput = {
+        modelId: this.modelId,
+        system: [{ text: systemPrompt }],
+        messages: [
+          {
+            role: 'user',
+            content: [{ text: userPrompt }],
+          },
+        ],
+        inferenceConfig: {
+          temperature: options.temperature ?? 0.7,
+          maxTokens: options.maxTokens || 4096,
+          topP: options.topP ?? 1,
+        },
+      };
+
+      const command = new ConverseStreamCommand(input);
+      const response = await this.client.send(command);
+
+      if (!response.stream) {
+        throw new BedrockError('Empty streaming response from Bedrock');
+      }
+
+      // Process the stream
+      for await (const event of response.stream) {
+        if (event.contentBlockDelta?.delta && 'text' in event.contentBlockDelta.delta) {
+          yield event.contentBlockDelta.delta.text || '';
+        }
+      }
+    } catch (error) {
+      if (error instanceof BedrockError) {
+        throw error;
+      }
+
+      const err = error as any;
+      throw new BedrockError(
+        err.message || 'Failed to stream from Bedrock model',
+        err.code || err.name,
+        err.statusCode || err.$metadata?.httpStatusCode,
+        error
+      );
+    }
   }
 }
 

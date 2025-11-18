@@ -7,7 +7,7 @@
  */
 
 import { z } from 'zod';
-import { defineFlow, definePrompt } from '../flow-base';
+import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
 import { getSearchClient } from '@/aws/search';
 import {
   GetKeywordRankingsInputSchema,
@@ -24,6 +24,7 @@ const prompt = definePrompt({
     searchContext: z.string().optional(),
   }),
   outputSchema: GetKeywordRankingsOutputSchema,
+  options: MODEL_CONFIGS.ANALYTICAL,
   prompt: `You are an expert SEO analyst specializing in local real estate.
 
 Your task is to identify the top 5 real estate agents that rank on Google for a specific keyword in a given location based on web search results.
@@ -39,11 +40,12 @@ Based on the search results above, identify the top 5 real estate agents or agen
 For each of the top 5 results that are real estate agents, return:
 - rank: An integer from 1 to 5 (based on their position in search results)
 - agentName: The name of the agent
-- agencyName: The name of their agency
+- agency: The name of their agency
+- url: The website URL from the search result
 
 Return a JSON response with a "rankings" array containing up to 5 objects with the above fields.
 
-Your answer must be based on the search results. Do not invent or hallucinate rankings or agent details.`,
+Your answer must be based on the search results. Do not invent or hallucinate rankings or agent details. If you cannot find a URL, use an empty string.`,
 });
 
 const getKeywordRankingsFlow = defineFlow(

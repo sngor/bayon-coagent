@@ -29,6 +29,20 @@ export interface BedrockConfig {
   endpoint?: string;
 }
 
+/**
+ * Valid Bedrock model IDs
+ */
+export const VALID_BEDROCK_MODELS = [
+  'anthropic.claude-3-haiku-20240307-v1:0',
+  'anthropic.claude-3-sonnet-20240229-v1:0',
+  'anthropic.claude-3-5-sonnet-20240620-v1:0',
+  'anthropic.claude-3-5-sonnet-20241022-v2:0',
+  'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+  'anthropic.claude-3-opus-20240229-v1:0',
+] as const;
+
+export type ValidBedrockModel = typeof VALID_BEDROCK_MODELS[number];
+
 export interface AWSConfig {
   region: string;
   environment: Environment;
@@ -94,7 +108,7 @@ export function getAWSConfig(): AWSConfig {
     bedrock: {
       modelId:
         process.env.BEDROCK_MODEL_ID ||
-        'anthropic.claude-3-5-sonnet-20241022-v2:0',
+        'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
       region: process.env.BEDROCK_REGION || region,
       endpoint: undefined, // Bedrock typically doesn't have local emulation
     },
@@ -124,6 +138,13 @@ export function getAWSCredentials() {
 }
 
 /**
+ * Validates that a model ID is a valid Bedrock model
+ */
+export function isValidBedrockModel(modelId: string): boolean {
+  return VALID_BEDROCK_MODELS.includes(modelId as ValidBedrockModel);
+}
+
+/**
  * Validates that required environment variables are set
  */
 export function validateConfig(): { valid: boolean; errors: string[] } {
@@ -148,6 +169,11 @@ export function validateConfig(): { valid: boolean; errors: string[] } {
 
   if (!config.bedrock.modelId) {
     errors.push('BEDROCK_MODEL_ID is not set');
+  } else if (!isValidBedrockModel(config.bedrock.modelId)) {
+    errors.push(
+      `BEDROCK_MODEL_ID "${config.bedrock.modelId}" is not a valid model. ` +
+      `Valid models: ${VALID_BEDROCK_MODELS.join(', ')}`
+    );
   }
 
   return {

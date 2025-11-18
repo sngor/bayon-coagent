@@ -8,7 +8,7 @@
  */
 
 import { z } from 'zod';
-import { defineFlow, definePrompt } from '../flow-base';
+import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
 import { getSearchClient } from '@/aws/search';
 import {
   RunNapAuditInputSchema,
@@ -25,6 +25,7 @@ const napAuditPrompt = definePrompt({
     searchContext: z.string().optional(),
   }),
   outputSchema: RunNapAuditOutputSchema,
+  options: MODEL_CONFIGS.ANALYTICAL,
   prompt: `You are an expert local SEO auditor. Your task is to perform a NAP (Name, Address, Phone) consistency audit for a real estate agent based on web search results.
 
 Official Agent Information (Source of Truth):

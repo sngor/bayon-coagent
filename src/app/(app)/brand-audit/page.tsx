@@ -24,7 +24,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle2, AlertCircle, ArrowRight, Loader2, Sparkles, ServerCrash, Lightbulb, ExternalLink, Star, Globe, Home, Building, MessageSquareQuote, Bot, Trash2, TrendingUp, Award, Shield } from 'lucide-react';
+import { CheckCircle2, AlertCircle, ArrowRight, Loader2, ServerCrash, Lightbulb, ExternalLink, Star, Globe, Home, Building, MessageSquareQuote, Bot, Trash2, TrendingUp, Award, Shield } from 'lucide-react';
+import {
+    AISparkleIcon,
+    SuccessIcon,
+    ChartIcon,
+} from '@/components/ui/real-estate-icons';
 import {
     Table,
     TableBody,
@@ -163,7 +168,7 @@ function RunAuditButton({ disabled }: { disabled?: boolean }) {
     const { pending } = useFormStatus();
     return (
         <Button type="submit" variant={pending ? 'shimmer' : 'ai'} disabled={pending || disabled}>
-            {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+            {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <AISparkleIcon animated={false} className="mr-2 h-4 w-4" />}
             {pending ? 'Auditing...' : 'Run Audit'}
         </Button>
     )
@@ -173,7 +178,7 @@ function FetchReviewsButton({ disabled }: { disabled?: boolean }) {
     const { pending } = useFormStatus();
     return (
         <Button type="submit" disabled={pending || disabled}>
-            {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+            {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <AISparkleIcon animated={false} className="mr-2 h-4 w-4" />}
             {pending ? 'Fetching...' : 'Fetch Reviews'}
         </Button>
     )
@@ -515,7 +520,7 @@ export default function BrandAuditPage() {
                             {/* Show empty state if no audit has been run */}
                             {!displayAuditData ? (
                                 <FirstTimeUseEmptyState
-                                    icon={<Shield className="h-8 w-8 text-primary" />}
+                                    icon={<ChartIcon animated={true} className="h-8 w-8 text-primary" />}
                                     title="Run Your First Brand Audit"
                                     description="A Brand Audit checks your Name, Address, and Phone (NAP) consistency across major platforms like Google, Yelp, and Facebook. Consistent NAP information is crucial for local SEO and helps potential clients find you easily. Complete your profile information below, then run your first audit to see how your business appears online."
                                     action={{
