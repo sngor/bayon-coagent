@@ -19,6 +19,13 @@ export function getUserProfileKeys(userId: string): DynamoDBKey {
 }
 
 /**
+ * Alias for getUserProfileKeys for consistency
+ */
+export function getProfileKeys(userId: string): DynamoDBKey {
+  return getUserProfileKeys(userId);
+}
+
+/**
  * Generates keys for RealEstateAgentProfile
  * Pattern: PK: USER#<userId>, SK: AGENT#<agentProfileId>
  */

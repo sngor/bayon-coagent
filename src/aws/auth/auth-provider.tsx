@@ -17,7 +17,9 @@ interface AuthContextValue {
     isLoading: boolean;
     error: Error | null;
     signIn: (email: string, password: string) => Promise<void>;
-    signUp: (email: string, password: string) => Promise<void>;
+    signUp: (email: string, password: string) => Promise<{ userConfirmed: boolean }>;
+    confirmSignUp: (email: string, code: string) => Promise<void>;
+    resendConfirmationCode: (email: string) => Promise<void>;
     signOut: () => Promise<void>;
     refreshSession: () => Promise<void>;
 }
@@ -110,11 +112,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setIsLoading(true);
             setError(null);
 
-            await cognitoClient.signUp(email, password);
+            const result = await cognitoClient.signUp(email, password);
 
-            // After signup, automatically sign in
-            // Note: In production, you might want to require email verification first
-            await signIn(email, password);
+            // Return whether user needs to confirm email
+            return { userConfirmed: result.userConfirmed };
         } catch (err) {
             const error = err instanceof Error ? err : new Error('Failed to sign up');
             setError(error);
@@ -122,7 +123,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } finally {
             setIsLoading(false);
         }
-    }, [cognitoClient, signIn]);
+    }, [cognitoClient]);
+
+    /**
+     * Confirm sign up with verification code
+     */
+    const confirmSignUp = useCallback(async (email: string, code: string) => {
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            await cognitoClient.confirmSignUp(email, code);
+        } catch (err) {
+            const error = err instanceof Error ? err : new Error('Failed to confirm sign up');
+            setError(error);
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    }, [cognitoClient]);
+
+    /**
+     * Resend confirmation code
+     */
+    const resendConfirmationCode = useCallback(async (email: string) => {
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            await cognitoClient.resendConfirmationCode(email);
+        } catch (err) {
+            const error = err instanceof Error ? err : new Error('Failed to resend confirmation code');
+            setError(error);
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    }, [cognitoClient]);
 
     /**
      * Sign out the current user
@@ -214,6 +251,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         error,
         signIn,
         signUp,
+        confirmSignUp,
+        resendConfirmationCode,
         signOut,
         refreshSession,
     };

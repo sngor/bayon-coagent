@@ -28,7 +28,7 @@ function ReportSkeleton() {
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-5/6" />
-                     <Skeleton className="h-4 w-full mt-4" />
+                    <Skeleton className="h-4 w-full mt-4" />
                     <Skeleton className="h-4 w-2/3" />
                 </CardContent>
             </Card>
@@ -56,7 +56,7 @@ export default function ReportClientPage({ reportId }: { reportId: string }) {
         setIsDownloading(true);
         const topic = report.topic || 'research';
         const fileName = `${topic.toLowerCase().replace(/\s+/g, '-')}-report.pdf`;
-        
+
         try {
             const canvas = await html2canvas(reportContentRef.current, {
                 scale: 2, // Increase resolution
@@ -95,9 +95,9 @@ export default function ReportClientPage({ reportId }: { reportId: string }) {
             pdf.save(fileName);
 
             toast({ title: 'Report Downloaded', description: `Saved as ${fileName}` });
-        } catch(e) {
-             toast({ variant: 'destructive', title: 'Download Failed', description: 'Could not generate PDF.' });
-             console.error(e);
+        } catch (e) {
+            toast({ variant: 'destructive', title: 'Download Failed', description: 'Could not generate PDF.' });
+            console.error(e);
         } finally {
             setIsDownloading(false);
         }
@@ -115,13 +115,13 @@ export default function ReportClientPage({ reportId }: { reportId: string }) {
 
     return (
         <div className="space-y-8 fade-in">
-             <Button variant="outline" asChild>
-                <Link href="/knowledge-base">
+            <Link href="/knowledge-base">
+                <Button variant="outline">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Knowledge Base
-                </Link>
-            </Button>
-            
+                </Button>
+            </Link>
+
             {isLoading && <ReportSkeleton />}
 
             {report && (
@@ -169,7 +169,7 @@ export default function ReportClientPage({ reportId }: { reportId: string }) {
             )}
 
             {!isLoading && !report && (
-                 <PageHeader
+                <PageHeader
                     title="Report Not Found"
                     description="The requested research report could not be found."
                 />

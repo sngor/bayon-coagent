@@ -23,9 +23,16 @@ function createDynamoDBClient(): DynamoDBClient {
     region: config.region,
   };
 
-  // Add credentials for local development
-  if (config.environment === 'local') {
+  // Add credentials if available
+  if (credentials.accessKeyId && credentials.secretAccessKey) {
     clientConfig.credentials = credentials;
+  } else if (typeof window === 'undefined') {
+    // Server-side: credentials should come from environment or IAM role
+    // No explicit credentials needed
+  } else {
+    // Browser-side: Skip DynamoDB operations for now
+    // TODO: Implement Cognito Identity Pool credential exchange
+    console.warn('DynamoDB credentials not configured for browser. Data operations will be skipped.');
   }
 
   // Add custom endpoint for local development

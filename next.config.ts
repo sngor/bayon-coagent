@@ -9,7 +9,55 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  
+  // Expose environment variables to the browser
+  env: {
+    AWS_REGION: process.env.AWS_REGION,
+    COGNITO_USER_POOL_ID: process.env.COGNITO_USER_POOL_ID,
+    COGNITO_CLIENT_ID: process.env.COGNITO_CLIENT_ID,
+    DYNAMODB_TABLE_NAME: process.env.DYNAMODB_TABLE_NAME,
+    S3_BUCKET_NAME: process.env.S3_BUCKET_NAME,
+    BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID,
+    BEDROCK_REGION: process.env.BEDROCK_REGION,
+    USE_LOCAL_AWS: process.env.USE_LOCAL_AWS,
+  },
+  
+  // Webpack configuration for module aliases
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'firebase/firestore': require.resolve('./src/firebase/firestore.ts'),
+    };
+    return config;
+  },
+  
+  // Performance optimizations
+  compiler: {
+    // Remove console logs in production
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
+  },
+  
+  // Enable experimental features for better performance
+  experimental: {
+    // Optimize package imports
+    optimizePackageImports: [
+      'lucide-react',
+      '@radix-ui/react-icons',
+      'recharts',
+      'framer-motion',
+    ],
+  },
+  
   images: {
+    // Enable modern image formats
+    formats: ['image/avif', 'image/webp'],
+    // Add device sizes for responsive images
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // Minimize layout shift with proper sizing
+    minimumCacheTTL: 60,
     remotePatterns: [
       {
         protocol: 'https',
@@ -57,6 +105,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  
+  // Optimize production builds
+  swcMinify: true,
+  
+  // Enable compression
+  compress: true,
+  
+  // Optimize fonts
+  optimizeFonts: true,
 };
 
 export default nextConfig;

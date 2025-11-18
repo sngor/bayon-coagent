@@ -139,7 +139,7 @@ export type TrainingProgress = {
 
 export type MarketingPlan = {
   id: string;
-  plan: MarketingTask[];
+  steps: MarketingTask[];
   createdAt: string;
 }
 

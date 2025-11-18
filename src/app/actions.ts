@@ -1306,3 +1306,29 @@ export async function getRealEstateNewsAction(prevState: any, formData: FormData
     };
   }
 }
+
+/**
+ * Track content creation for AI suggestions
+ */
+export async function trackContentCreationAction(
+  contentType: string,
+  success: boolean
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { getContentSuggestionsEngine } = await import('@/lib/ai-content-suggestions');
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    
+    const user = await getCurrentUser();
+    if (!user) {
+      return { success: false, error: 'User not authenticated' };
+    }
+
+    const engine = getContentSuggestionsEngine();
+    await engine.trackContentCreation(user.id, contentType, success);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to track content creation:', error);
+    return { success: false, error: 'Failed to track content creation' };
+  }
+}

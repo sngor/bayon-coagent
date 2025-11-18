@@ -1,0 +1,331 @@
+'use client';
+
+import { useMemo } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { CheckCircle2, Circle, ArrowRight, Sparkles } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import type { Profile } from '@/lib/types';
+import Link from 'next/link';
+
+interface ProfileField {
+    key: keyof Profile;
+    label: string;
+    benefit: string;
+    required: boolean;
+}
+
+const PROFILE_FIELDS: ProfileField[] = [
+    {
+        key: 'name',
+        label: 'Full Name',
+        benefit: 'Personalizes your marketing content',
+        required: true,
+    },
+    {
+        key: 'agencyName',
+        label: 'Agency Name',
+        benefit: 'Builds your brand identity',
+        required: true,
+    },
+    {
+        key: 'phone',
+        label: 'Phone Number',
+        benefit: 'Enables NAP consistency checks',
+        required: true,
+    },
+    {
+        key: 'address',
+        label: 'Business Address',
+        benefit: 'Powers local SEO features',
+        required: true,
+    },
+    {
+        key: 'bio',
+        label: 'Professional Bio',
+        benefit: 'Enhances your E-E-A-T profile',
+        required: true,
+    },
+    {
+        key: 'yearsOfExperience',
+        label: 'Years of Experience',
+        benefit: 'Demonstrates expertise',
+        required: false,
+    },
+    {
+        key: 'licenseNumber',
+        label: 'License Number',
+        benefit: 'Builds trust and credibility',
+        required: false,
+    },
+    {
+        key: 'website',
+        label: 'Website URL',
+        benefit: 'Improves online presence',
+        required: false,
+    },
+    {
+        key: 'photoURL',
+        label: 'Profile Photo',
+        benefit: 'Makes your content more personal',
+        required: false,
+    },
+];
+
+interface ProfileCompletionBannerProps {
+    profile: Partial<Profile>;
+    className?: string;
+}
+
+export function ProfileCompletionBanner({
+    profile,
+    className,
+}: ProfileCompletionBannerProps) {
+    const completionData = useMemo(() => {
+        const completed = PROFILE_FIELDS.filter((field) => {
+            const value = profile[field.key];
+            if (Array.isArray(value)) {
+                return value.length > 0;
+            }
+            return value !== undefined && value !== null && value !== '';
+        });
+
+        const requiredFields = PROFILE_FIELDS.filter((f) => f.required);
+        const completedRequired = completed.filter((f) => f.required);
+        const missingFields = PROFILE_FIELDS.filter((field) => {
+            const value = profile[field.key];
+            if (Array.isArray(value)) {
+                return value.length === 0;
+            }
+            return value === undefined || value === null || value === '';
+        });
+
+        const percentage = Math.round(
+            (completed.length / PROFILE_FIELDS.length) * 100
+        );
+        const isComplete = percentage === 100;
+        const hasRequiredFields = completedRequired.length === requiredFields.length;
+
+        return {
+            completed: completed.length,
+            total: PROFILE_FIELDS.length,
+            percentage,
+            isComplete,
+            hasRequiredFields,
+            missingFields,
+            nextField: missingFields[0],
+        };
+    }, [profile]);
+
+    // Don't show banner if profile is complete
+    if (completionData.isComplete) {
+        return null;
+    }
+
+    const getNextStepMessage = () => {
+        if (!completionData.hasRequiredFields) {
+            return 'Complete required fields to unlock AI-powered marketing tools';
+        }
+        return 'Complete your profile to maximize your marketing potential';
+    };
+
+    const getNextStepAction = () => {
+        if (completionData.hasRequiredFields) {
+            return {
+                label: 'Generate Marketing Plan',
+                href: '/marketing-plan',
+                icon: Sparkles,
+            };
+        }
+        return null;
+    };
+
+    const nextAction = getNextStepAction();
+
+    return (
+        <Card
+            className={cn(
+                'border-primary/20 bg-gradient-to-br from-primary/5 to-purple-600/5',
+                className
+            )}
+        >
+            <CardContent className="pt-6">
+                <div className="space-y-4">
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-1">
+                            <h3 className="text-lg font-semibold font-headline">
+                                Complete Your Profile
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                                {getNextStepMessage()}
+                            </p>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-2xl font-bold text-primary">
+                                {completionData.percentage}%
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                                {completionData.completed} of {completionData.total}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <Progress value={completionData.percentage} className="h-2" />
+
+                    {/* Missing Fields */}
+                    {completionData.missingFields.length > 0 && (
+                        <div className="space-y-2">
+                            <p className="text-sm font-medium">Missing Information:</p>
+                            <div className="grid gap-2 sm:grid-cols-2">
+                                {completionData.missingFields.slice(0, 4).map((field) => (
+                                    <div
+                                        key={field.key}
+                                        className="flex items-start gap-2 rounded-lg bg-background/50 p-3"
+                                    >
+                                        <Circle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                                        <div className="space-y-0.5 min-w-0">
+                                            <p className="text-sm font-medium">
+                                                {field.label}
+                                                {field.required && (
+                                                    <span className="text-destructive ml-1">*</span>
+                                                )}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {field.benefit}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            {completionData.missingFields.length > 4 && (
+                                <p className="text-xs text-muted-foreground">
+                                    +{completionData.missingFields.length - 4} more fields
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                        <Button asChild className="flex-1">
+                            <Link href="/profile">
+                                Complete Profile
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
+                        {nextAction && completionData.hasRequiredFields && (
+                            <Button asChild variant="outline" className="flex-1">
+                                <Link href={nextAction.href}>
+                                    <nextAction.icon className="mr-2 h-4 w-4" />
+                                    {nextAction.label}
+                                </Link>
+                            </Button>
+                        )}
+                    </div>
+
+                    {/* Benefits */}
+                    {!completionData.hasRequiredFields && (
+                        <div className="rounded-lg bg-primary/5 p-3 border border-primary/10">
+                            <p className="text-xs text-muted-foreground">
+                                <strong className="text-foreground">Why complete your profile?</strong>{' '}
+                                A complete profile enables AI-powered features like marketing plan
+                                generation, brand audits, and personalized content creation.
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+interface ProfileCompletionChecklistProps {
+    profile: Partial<Profile>;
+    className?: string;
+}
+
+export function ProfileCompletionChecklist({
+    profile,
+    className,
+}: ProfileCompletionChecklistProps) {
+    const fieldStatus = useMemo(() => {
+        return PROFILE_FIELDS.map((field) => {
+            const value = profile[field.key];
+            let isComplete = false;
+
+            if (Array.isArray(value)) {
+                isComplete = value.length > 0;
+            } else {
+                isComplete = value !== undefined && value !== null && value !== '';
+            }
+
+            return {
+                ...field,
+                isComplete,
+            };
+        });
+    }, [profile]);
+
+    const requiredComplete = fieldStatus.filter(
+        (f) => f.required && f.isComplete
+    ).length;
+    const requiredTotal = fieldStatus.filter((f) => f.required).length;
+
+    return (
+        <Card className={className}>
+            <CardContent className="pt-6">
+                <div className="space-y-4">
+                    <div>
+                        <h3 className="text-lg font-semibold font-headline">
+                            Profile Checklist
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                            {requiredComplete === requiredTotal
+                                ? 'All required fields complete! Add optional fields to enhance your profile.'
+                                : `Complete ${requiredTotal - requiredComplete} required field${requiredTotal - requiredComplete !== 1 ? 's' : ''} to get started.`}
+                        </p>
+                    </div>
+
+                    <div className="space-y-2">
+                        {fieldStatus.map((field) => (
+                            <div
+                                key={field.key}
+                                className={cn(
+                                    'flex items-start gap-3 rounded-lg p-3 transition-colors',
+                                    field.isComplete
+                                        ? 'bg-success/5 border border-success/20'
+                                        : 'bg-muted/50'
+                                )}
+                            >
+                                {field.isComplete ? (
+                                    <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
+                                ) : (
+                                    <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                                )}
+                                <div className="space-y-0.5 min-w-0 flex-1">
+                                    <p
+                                        className={cn(
+                                            'text-sm font-medium',
+                                            field.isComplete && 'text-success'
+                                        )}
+                                    >
+                                        {field.label}
+                                        {field.required && !field.isComplete && (
+                                            <span className="text-destructive ml-1">*</span>
+                                        )}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {field.benefit}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}

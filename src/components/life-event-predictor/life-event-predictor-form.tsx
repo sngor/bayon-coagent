@@ -10,15 +10,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState } from 'react';
-import { useActions } from 'ai/rsc';
-import { predictLifeEvents } from '@/app/actions';
-import { Loader } from '@/components/loader';
-import { lifeEventPredictorSchema } from '@/ai/zod-schemas/life-event-predictor-schema';
+import { Loader2 } from 'lucide-react';
+import { lifeEventPredictorSchema } from '@/ai/schemas/life-event-predictor-schemas';
+import { toast } from '@/hooks/use-toast';
 
 export function LifeEventPredictorForm() {
   const [generation, setGeneration] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { predictLifeEvents: generate } = useActions();
 
   const form = useForm<z.infer<typeof lifeEventPredictorSchema>>({
     resolver: zodResolver(lifeEventPredictorSchema),
@@ -29,9 +27,24 @@ export function LifeEventPredictorForm() {
 
   async function onSubmit(values: z.infer<typeof lifeEventPredictorSchema>) {
     setIsLoading(true);
-    const result = await generate(values);
-    setGeneration(result.result as string);
-    setIsLoading(false);
+    try {
+      // TODO: Implement predictLifeEvents server action
+      // For now, just show a placeholder message
+      setGeneration('Life event prediction feature is under development.');
+      toast({
+        title: 'Feature Coming Soon',
+        description: 'Life event prediction will be available in a future update.',
+      });
+    } catch (error) {
+      console.error('Failed to predict life events:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Prediction Failed',
+        description: 'Could not generate life event prediction.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -59,7 +72,8 @@ export function LifeEventPredictorForm() {
               )}
             />
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? <Loader /> : 'Generate'}
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isLoading ? 'Generating...' : 'Generate'}
             </Button>
           </form>
         </Form>

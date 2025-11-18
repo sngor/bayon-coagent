@@ -32,7 +32,17 @@ import {
   generateBlogPostAction,
   regenerateImageAction,
 } from '@/app/actions';
-import { buyerPersonas } from '@/lib/data';
+
+// Buyer personas for listing optimization
+const buyerPersonas = [
+  { value: 'First-Time Homebuyer', label: 'First-Time Homebuyer' },
+  { value: 'Growing Family', label: 'Growing Family' },
+  { value: 'Empty Nester', label: 'Empty Nester' },
+  { value: 'Investor', label: 'Investor' },
+  { value: 'Luxury Buyer', label: 'Luxury Buyer' },
+  { value: 'Downsizer', label: 'Downsizer' },
+];
+
 import {
   BedDouble,
   Bath,
@@ -67,7 +77,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { type GenerateSocialMediaPostOutput } from '@/ai/flows/generate-social-media-post';
+import { type GenerateSocialMediaPostOutput } from '@/aws/bedrock/flows/generate-social-media-post';
 import { useWebAI } from '@/hooks/useWebAI';
 import {
   Accordion,
@@ -372,14 +382,32 @@ function GeneratingContentPlaceholder() {
   }, [messages]);
 
   return (
-    <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-full p-8 transition-all duration-300">
-      <div className="relative mb-6">
+    <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-full p-12 transition-all duration-300">
+      <div className="relative mb-8">
+        {/* Outer pulsing ring */}
+        <div className="absolute inset-0 w-20 h-20 -left-2 -top-2 border-4 border-primary/10 rounded-full animate-ping" />
+        {/* Middle rotating ring */}
         <div className="w-16 h-16 border-4 border-primary/20 rounded-full" />
+        {/* Inner spinning ring */}
         <div className="absolute top-0 left-0 w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-        <Sparkles className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-primary animate-pulse" />
+        {/* Sparkles icon with pulse */}
+        <Sparkles className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-7 h-7 text-primary animate-pulse" />
+        {/* Floating sparkles */}
+        <div className="absolute -top-2 -right-2 w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+        <div className="absolute -bottom-2 -left-2 w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
+        <div className="absolute top-1/2 -right-3 w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }} />
       </div>
-      <p className="font-semibold text-lg animate-pulse">{currentMessage}</p>
-      <p className="text-sm mt-1">This may take a few moments.</p>
+      <div className="space-y-3 max-w-md">
+        <p className="font-semibold text-lg animate-pulse bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+          {currentMessage}
+        </p>
+        <p className="text-sm">This may take a few moments.</p>
+        <div className="flex justify-center gap-1 mt-4">
+          <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
+          <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+          <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -664,32 +692,68 @@ export default function ContentEnginePage() {
       />
 
       {!activeTab && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up">
-          {contentTypes.map((type, index) => {
-            const Icon = type.icon;
-            return (
-              <Card
-                key={type.id}
-                className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border-2 hover:border-primary/50"
-                onClick={() => setActiveTab(type.id)}
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <CardHeader>
-                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${type.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon className="w-6 h-6 text-white" />
-                  </div>
-                  <CardTitle className="font-headline text-xl">{type.title}</CardTitle>
-                  <CardDescription className="text-base">{type.description}</CardDescription>
-                </CardHeader>
-                <CardFooter>
-                  <Button variant="ghost" className="w-full group-hover:bg-primary/10">
-                    Get Started
-                    <Sparkles className="ml-2 h-4 w-4" />
-                  </Button>
-                </CardFooter>
-              </Card>
-            );
-          })}
+        <div className="space-y-8">
+          {/* Empty State Header */}
+          <Card className="border-2 border-dashed border-primary/20 bg-gradient-to-br from-primary/5 to-purple-600/5">
+            <CardContent className="text-center py-12">
+              <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center mb-6 shadow-lg">
+                <Sparkles className="w-10 h-10 text-white animate-pulse" />
+              </div>
+              <h2 className="text-3xl font-bold font-headline mb-3 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                Create Engaging Content with AI
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
+                Generate professional marketing content in seconds. Choose a content type below to get started.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                  <span>AI-Powered Generation</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                  <span>Multi-Platform Ready</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                  <span>Save & Organize</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Content Type Grid */}
+          <div>
+            <h3 className="text-xl font-semibold mb-4 font-headline">Choose Your Content Type</h3>
+            <div className="grid grid-cols-1 tablet-portrait:grid-cols-2 tablet-landscape:grid-cols-3 lg:grid-cols-3 gap-4 tablet:gap-6 orientation-transition">
+              {contentTypes.map((type, index) => {
+                const Icon = type.icon;
+                return (
+                  <Card
+                    key={type.id}
+                    className="group cursor-pointer hover:shadow-2xl transition-all duration-500 hover:scale-105 border-2 hover:border-primary/50 relative overflow-hidden animate-fade-in-up"
+                    onClick={() => setActiveTab(type.id)}
+                    style={{ animationDelay: `${index * 75}ms` }}
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-br ${type.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
+                    <CardHeader className="relative">
+                      <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${type.color} flex items-center justify-center mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg`}>
+                        <Icon className="w-7 h-7 text-white" />
+                      </div>
+                      <CardTitle className="font-headline text-xl group-hover:text-primary transition-colors duration-300">{type.title}</CardTitle>
+                      <CardDescription className="text-base">{type.description}</CardDescription>
+                    </CardHeader>
+                    <CardFooter className="relative">
+                      <Button variant="ghost" className="w-full group-hover:bg-primary/10 group-hover:text-primary transition-all duration-300">
+                        Get Started
+                        <Sparkles className="ml-2 h-4 w-4 group-hover:animate-pulse" />
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 
@@ -774,25 +838,56 @@ export default function ContentEnginePage() {
                     <CardTitle className="font-headline">
                       Generated Market Update
                     </CardTitle>
-                    <Button variant="outline" size="sm" onClick={() => openSaveDialog(marketUpdateContent, 'Market Update')}>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save
-                    </Button>
+                    {marketUpdateContent && (
+                      <div className="flex gap-2">
+                        <Button
+                          variant={copiedStates['market-update'] ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => copyToClipboard(marketUpdateContent, 'market-update')}
+                        >
+                          {copiedStates['market-update'] ? (
+                            <>
+                              <Check className="mr-2 h-4 w-4" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="mr-2 h-4 w-4" />
+                              Copy
+                            </>
+                          )}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => openSaveDialog(marketUpdateContent, 'Market Update')}>
+                          <Save className="mr-2 h-4 w-4" />
+                          Save
+                        </Button>
+                      </div>
+                    )}
                   </CardHeader>
                   <CardContent>
                     {isMarketUpdatePending ? (
                       <GeneratingContentPlaceholder />
                     ) : marketUpdateContent ? (
-                      <Textarea
-                        value={marketUpdateContent}
-                        onChange={(e) => setMarketUpdateContent(e.target.value)}
-                        rows={15}
-                        className="w-full h-full font-mono text-sm"
-                      />
+                      <div className="space-y-4">
+                        <Textarea
+                          value={marketUpdateContent}
+                          onChange={(e) => setMarketUpdateContent(e.target.value)}
+                          rows={15}
+                          className="w-full h-full font-mono text-sm resize-none"
+                        />
+                      </div>
                     ) : (
-                      <p className="text-muted-foreground">
-                        Your generated market update will appear here.
-                      </p>
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                          <TrendingUp className="w-8 h-8 text-primary" />
+                        </div>
+                        <p className="text-muted-foreground text-lg">
+                          Your generated market update will appear here.
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Fill in the form and click Generate to create content.
+                        </p>
+                      </div>
                     )}
                     <ErrorDisplay message={marketUpdateState.message !== 'success' ? marketUpdateState.message : null} />
                   </CardContent>
@@ -837,25 +932,46 @@ export default function ContentEnginePage() {
                     <CardTitle className="font-headline">
                       Generated Blog Post
                     </CardTitle>
-                    <Button variant="outline" size="sm" onClick={() => openSaveDialog(blogPostContent, 'Blog Post')}>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save
-                    </Button>
+                    {blogPostContent && (
+                      <div className="flex gap-2">
+                        <Button
+                          variant={copiedStates['blog-post'] ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => copyToClipboard(blogPostContent, 'blog-post')}
+                        >
+                          {copiedStates['blog-post'] ? (
+                            <>
+                              <Check className="mr-2 h-4 w-4" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="mr-2 h-4 w-4" />
+                              Copy
+                            </>
+                          )}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => openSaveDialog(blogPostContent, 'Blog Post')}>
+                          <Save className="mr-2 h-4 w-4" />
+                          Save
+                        </Button>
+                      </div>
+                    )}
                   </CardHeader>
                   <CardContent>
                     {isBlogPostPending ? (
                       <GeneratingContentPlaceholder />
                     ) : blogPostContent ? (
-                      <div>
+                      <div className="space-y-4">
                         {headerImage && (
-                          <div className="relative aspect-video mb-6 overflow-hidden rounded-lg group">
+                          <div className="relative aspect-video mb-6 overflow-hidden rounded-lg group shadow-lg">
                             <Image
                               src={headerImage}
                               alt={blogTopic || 'Blog post header'}
                               fill
                               objectFit="cover"
                             />
-                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
                               <form action={imageAction}>
                                 <input
                                   type="hidden"
@@ -863,7 +979,7 @@ export default function ContentEnginePage() {
                                   value={blogTopic}
                                 />
                                 <RegenerateImageButton>
-                                  Regenerate
+                                  Regenerate Image
                                 </RegenerateImageButton>
                               </form>
                             </div>
@@ -873,13 +989,21 @@ export default function ContentEnginePage() {
                           value={blogPostContent}
                           onChange={(e) => setBlogPostContent(e.target.value)}
                           rows={20}
-                          className="w-full h-full font-mono text-sm"
+                          className="w-full h-full font-mono text-sm resize-none"
                         />
                       </div>
                     ) : (
-                      <p className="text-muted-foreground">
-                        Your generated blog post and header image will appear here.
-                      </p>
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                          <FileText className="w-8 h-8 text-primary" />
+                        </div>
+                        <p className="text-muted-foreground text-lg">
+                          Your generated blog post and header image will appear here.
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Enter a topic and click Generate to create your blog post.
+                        </p>
+                      </div>
                     )}
                     <ErrorDisplay message={blogPostState.message !== 'success' ? blogPostState.message : null} />
                   </CardContent>
@@ -958,25 +1082,56 @@ export default function ContentEnginePage() {
                     <CardTitle className="font-headline">
                       Generated Video Script
                     </CardTitle>
-                    <Button variant="outline" size="sm" onClick={() => openSaveDialog(videoScriptContent, 'Video Script')}>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save
-                    </Button>
+                    {videoScriptContent && (
+                      <div className="flex gap-2">
+                        <Button
+                          variant={copiedStates['video-script'] ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => copyToClipboard(videoScriptContent, 'video-script')}
+                        >
+                          {copiedStates['video-script'] ? (
+                            <>
+                              <Check className="mr-2 h-4 w-4" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="mr-2 h-4 w-4" />
+                              Copy
+                            </>
+                          )}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => openSaveDialog(videoScriptContent, 'Video Script')}>
+                          <Save className="mr-2 h-4 w-4" />
+                          Save
+                        </Button>
+                      </div>
+                    )}
                   </CardHeader>
                   <CardContent>
                     {isVideoScriptPending ? (
                       <GeneratingContentPlaceholder />
                     ) : videoScriptContent ? (
-                      <Textarea
-                        value={videoScriptContent}
-                        onChange={(e) => setVideoScriptContent(e.target.value)}
-                        rows={15}
-                        className="w-full h-full font-mono text-sm"
-                      />
+                      <div className="space-y-4">
+                        <Textarea
+                          value={videoScriptContent}
+                          onChange={(e) => setVideoScriptContent(e.target.value)}
+                          rows={15}
+                          className="w-full h-full font-mono text-sm resize-none"
+                        />
+                      </div>
                     ) : (
-                      <p className="text-muted-foreground">
-                        Your generated video script will appear here.
-                      </p>
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                          <Video className="w-8 h-8 text-primary" />
+                        </div>
+                        <p className="text-muted-foreground text-lg">
+                          Your generated video script will appear here.
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Configure your script settings and click Generate.
+                        </p>
+                      </div>
                     )}
                     <ErrorDisplay message={videoScriptState.message !== 'success' ? videoScriptState.message : null} />
                   </CardContent>
@@ -1042,29 +1197,57 @@ export default function ContentEnginePage() {
                     <CardTitle className="font-headline">
                       Generated Neighborhood Guide
                     </CardTitle>
-                    <Button variant="outline" size="sm" onClick={() => openSaveDialog(guideContent, 'Neighborhood Guide')}>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save
-                    </Button>
+                    {guideContent && (
+                      <div className="flex gap-2">
+                        <Button
+                          variant={copiedStates['guide'] ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => copyToClipboard(guideContent, 'guide')}
+                        >
+                          {copiedStates['guide'] ? (
+                            <>
+                              <Check className="mr-2 h-4 w-4" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="mr-2 h-4 w-4" />
+                              Copy
+                            </>
+                          )}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => openSaveDialog(guideContent, 'Neighborhood Guide')}>
+                          <Save className="mr-2 h-4 w-4" />
+                          Save
+                        </Button>
+                      </div>
+                    )}
                   </CardHeader>
                   <CardContent>
                     {isGuidePending ? (
                       <GeneratingContentPlaceholder />
                     ) : guideContent ? (
-                      <div>
+                      <div className="space-y-4">
                         <Textarea
                           value={guideContent}
                           onChange={(e) => setGuideContent(e.target.value)}
                           rows={20}
-                          className="w-full h-full font-mono text-sm"
+                          className="w-full h-full font-mono text-sm resize-none"
                         />
                         <IdxFeedPlaceholder url={guideState.data.idxFeedUrl} />
                       </div>
                     ) : (
-                      <p className="text-muted-foreground">
-                        Your generated guide will appear here. Add your personal,
-                        on-the-ground insights to provide unique value.
-                      </p>
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                          <MapPin className="w-8 h-8 text-primary" />
+                        </div>
+                        <p className="text-muted-foreground text-lg">
+                          Your generated guide will appear here.
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Add your personal, on-the-ground insights to provide unique value.
+                        </p>
+                      </div>
                     )}
                     <ErrorDisplay message={guideState.message !== 'success' ? guideState.message : null} />
                   </CardContent>
@@ -1137,11 +1320,13 @@ export default function ContentEnginePage() {
                         <GeneratingContentPlaceholder />
                       ) : socialPostContent ? (
                         <>
-                          <Card className="hover:shadow-lg transition-shadow duration-300">
-                            <CardHeader className="flex flex-row items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Linkedin className="w-5 h-5 text-blue-700" />
-                                <h3 className="font-bold">LinkedIn</h3>
+                          <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-700/30">
+                            <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-blue-700/5 to-transparent">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-blue-700 flex items-center justify-center">
+                                  <Linkedin className="w-5 h-5 text-white" />
+                                </div>
+                                <h3 className="font-bold text-lg">LinkedIn</h3>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.linkedin || '', 'Social Post (LinkedIn)')}>
@@ -1149,7 +1334,7 @@ export default function ContentEnginePage() {
                                   Save
                                 </Button>
                                 <Button
-                                  variant={copiedStates['linkedin'] ? 'default' : 'ghost'}
+                                  variant={copiedStates['linkedin'] ? 'default' : 'outline'}
                                   size="sm"
                                   onClick={() =>
                                     copyToClipboard(
@@ -1172,20 +1357,22 @@ export default function ContentEnginePage() {
                                 </Button>
                               </div>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="pt-6">
                               <Textarea
                                 value={socialPostContent.linkedin}
                                 onChange={(e) => setSocialPostContent(prev => ({ ...prev!, linkedin: e.target.value }))}
                                 rows={6}
-                                className="w-full h-full font-mono text-sm"
+                                className="w-full h-full font-mono text-sm resize-none"
                               />
                             </CardContent>
                           </Card>
-                          <Card className="hover:shadow-lg transition-shadow duration-300">
-                            <CardHeader className="flex flex-row items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Facebook className="w-5 h-5 text-blue-600" />
-                                <h3 className="font-bold">Facebook</h3>
+                          <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-600/30">
+                            <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-blue-600/5 to-transparent">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
+                                  <Facebook className="w-5 h-5 text-white" />
+                                </div>
+                                <h3 className="font-bold text-lg">Facebook</h3>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.facebook || '', 'Social Post (Facebook)')}>
@@ -1193,7 +1380,7 @@ export default function ContentEnginePage() {
                                   Save
                                 </Button>
                                 <Button
-                                  variant={copiedStates['facebook'] ? 'default' : 'ghost'}
+                                  variant={copiedStates['facebook'] ? 'default' : 'outline'}
                                   size="sm"
                                   onClick={() =>
                                     copyToClipboard(
@@ -1216,20 +1403,22 @@ export default function ContentEnginePage() {
                                 </Button>
                               </div>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="pt-6">
                               <Textarea
                                 value={socialPostContent.facebook}
                                 onChange={(e) => setSocialPostContent(prev => ({ ...prev!, facebook: e.target.value }))}
                                 rows={6}
-                                className="w-full h-full font-mono text-sm"
+                                className="w-full h-full font-mono text-sm resize-none"
                               />
                             </CardContent>
                           </Card>
-                          <Card className="hover:shadow-lg transition-shadow duration-300">
-                            <CardHeader className="flex flex-row items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Twitter className="w-5 h-5 text-sky-500" />
-                                <h3 className="font-bold">X (Twitter)</h3>
+                          <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-sky-500/30">
+                            <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-sky-500/5 to-transparent">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-sky-500 flex items-center justify-center">
+                                  <Twitter className="w-5 h-5 text-white" />
+                                </div>
+                                <h3 className="font-bold text-lg">X (Twitter)</h3>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.twitter || '', 'Social Post (X/Twitter)')}>
@@ -1237,7 +1426,7 @@ export default function ContentEnginePage() {
                                   Save
                                 </Button>
                                 <Button
-                                  variant={copiedStates['twitter'] ? 'default' : 'ghost'}
+                                  variant={copiedStates['twitter'] ? 'default' : 'outline'}
                                   size="sm"
                                   onClick={() =>
                                     copyToClipboard(
@@ -1260,21 +1449,28 @@ export default function ContentEnginePage() {
                                 </Button>
                               </div>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="pt-6">
                               <Textarea
                                 value={socialPostContent.twitter}
                                 onChange={(e) => setSocialPostContent(prev => ({ ...prev!, twitter: e.target.value }))}
                                 rows={4}
-                                className="w-full h-full font-mono text-sm"
+                                className="w-full h-full font-mono text-sm resize-none"
                               />
                             </CardContent>
                           </Card>
                         </>
                       ) : (
-                        <p className="text-muted-foreground">
-                          Your generated social media posts for different platforms
-                          will appear here.
-                        </p>
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                            <MessageSquare className="w-8 h-8 text-primary" />
+                          </div>
+                          <p className="text-muted-foreground text-lg">
+                            Your generated social media posts will appear here.
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-2">
+                            Posts will be optimized for LinkedIn, Facebook, and X (Twitter).
+                          </p>
+                        </div>
                       )}
                       <ErrorDisplay message={socialState.message !== 'success' ? socialState.message : null} />
                     </CardContent>
@@ -1359,24 +1555,51 @@ export default function ContentEnginePage() {
                           The description rewritten for your target persona.
                         </CardDescription>
                       </div>
-                      <Button variant="outline" size="sm" onClick={() => openSaveDialog(rewrittenDescription, 'Listing Description')}>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save
-                      </Button>
+                      {rewrittenDescription && (
+                        <div className="flex gap-2">
+                          <Button
+                            variant={copiedStates['listing-description'] ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => copyToClipboard(rewrittenDescription, 'listing-description')}
+                          >
+                            {copiedStates['listing-description'] ? (
+                              <>
+                                <Check className="mr-2 h-4 w-4" />
+                                Copied!
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="mr-2 h-4 w-4" />
+                                Copy
+                              </>
+                            )}
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => openSaveDialog(rewrittenDescription, 'Listing Description')}>
+                            <Save className="mr-2 h-4 w-4" />
+                            Save
+                          </Button>
+                        </div>
+                      )}
                     </CardHeader>
                     <CardContent>
                       {isListingOptimizing ? (
                         <GeneratingContentPlaceholder />
-                      ) : (
+                      ) : rewrittenDescription ? (
                         <Textarea
                           rows={8}
                           readOnly
-                          className="bg-secondary/50"
+                          className="bg-secondary/50 resize-none"
                           value={rewrittenDescription}
-                          placeholder={
-                            'Your AI-generated description will appear here.'
-                          }
                         />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                            <Home className="w-6 h-6 text-primary" />
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Your AI-generated description will appear here.
+                          </p>
+                        </div>
                       )}
                       <ErrorDisplay message={listingState.message !== 'success' ? listingState.message : null} />
                     </CardContent>
@@ -1392,10 +1615,31 @@ export default function ContentEnginePage() {
                           Common questions based on the description.
                         </CardDescription>
                       </div>
-                      <Button variant="outline" size="sm" onClick={() => openSaveDialog(listingFaqs.map(faq => `Q: ${faq.q}\nA: ${faq.a}`).join('\n\n'), 'Listing FAQ')}>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save
-                      </Button>
+                      {listingFaqs.length > 0 && (
+                        <div className="flex gap-2">
+                          <Button
+                            variant={copiedStates['listing-faq'] ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => copyToClipboard(listingFaqs.map(faq => `Q: ${faq.q}\nA: ${faq.a}`).join('\n\n'), 'listing-faq')}
+                          >
+                            {copiedStates['listing-faq'] ? (
+                              <>
+                                <Check className="mr-2 h-4 w-4" />
+                                Copied!
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="mr-2 h-4 w-4" />
+                                Copy
+                              </>
+                            )}
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => openSaveDialog(listingFaqs.map(faq => `Q: ${faq.q}\nA: ${faq.a}`).join('\n\n'), 'Listing FAQ')}>
+                            <Save className="mr-2 h-4 w-4" />
+                            Save
+                          </Button>
+                        </div>
+                      )}
                     </CardHeader>
                     <CardContent>
                       {isListingPending ? (
@@ -1404,15 +1648,20 @@ export default function ContentEnginePage() {
                         <Accordion type="single" collapsible className="w-full">
                           {listingFaqs.map((faq, index) => (
                             <AccordionItem value={`item-${index}`} key={index}>
-                              <AccordionTrigger>{faq.q}</AccordionTrigger>
-                              <AccordionContent>{faq.a}</AccordionContent>
+                              <AccordionTrigger className="text-left">{faq.q}</AccordionTrigger>
+                              <AccordionContent className="text-muted-foreground">{faq.a}</AccordionContent>
                             </AccordionItem>
                           ))}
                         </Accordion>
                       ) : (
-                        <p className="text-sm text-muted-foreground">
-                          The generated FAQ will appear here.
-                        </p>
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                            <MessageSquare className="w-6 h-6 text-primary" />
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            The generated FAQ will appear here.
+                          </p>
+                        </div>
                       )}
                     </CardContent>
                   </Card>

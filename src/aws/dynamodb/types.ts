@@ -19,7 +19,8 @@ export type EntityType =
   | 'TrainingProgress'
   | 'MarketingPlan'
   | 'ReviewAnalysis'
-  | 'OAuthToken';
+  | 'OAuthToken'
+  | 'PersonalizationProfile';
 
 /**
  * Base DynamoDB item structure

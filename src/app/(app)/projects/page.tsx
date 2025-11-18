@@ -395,11 +395,11 @@ export default function ProjectsPage() {
                         You haven't saved any content yet.
                     </CardDescription>
                     <CardContent className="mt-6">
-                        <Button asChild>
-                            <Link href="/content-engine">
+                        <Link href="/content-engine">
+                            <Button>
                                 Go to the Co-Marketing Studio
-                            </Link>
-                        </Button>
+                            </Button>
+                        </Link>
                     </CardContent>
                 </Card>
             )}

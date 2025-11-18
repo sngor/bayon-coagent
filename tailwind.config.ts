@@ -10,6 +10,11 @@ export default {
   ],
   theme: {
     extend: {
+      screens: {
+        'tablet': {'min': '768px', 'max': '1024px'},
+        'tablet-portrait': {'min': '768px', 'max': '1024px', 'raw': '(orientation: portrait)'},
+        'tablet-landscape': {'min': '768px', 'max': '1024px', 'raw': '(orientation: landscape)'},
+      },
       fontFamily: {
         body: ['"PT Sans"', 'sans-serif'],
         headline: ['"Playfair Display"', 'serif'],
@@ -107,6 +112,10 @@ export default {
           '10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-5px)' },
           '20%, 40%, 60%, 80%': { transform: 'translateX(5px)' },
         },
+        'shimmer': {
+          '0%': { backgroundPosition: '200% 0' },
+          '100%': { backgroundPosition: '-200% 0' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -114,6 +123,7 @@ export default {
         'fade-in': 'fade-in 0.5s ease-in-out',
         'fade-in-up': 'fade-in-up 0.5s ease-in-out',
         'shake': 'shake 0.5s ease-in-out',
+        'shimmer': 'shimmer 2s linear infinite',
       },
     },
   },

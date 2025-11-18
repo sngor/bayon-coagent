@@ -68,7 +68,13 @@ export class DynamoDBRepository {
         return item.Data;
       }, this.retryOptions);
     } catch (error: any) {
-      throw wrapDynamoDBError(error);
+      const wrappedError = wrapDynamoDBError(error);
+      // If credentials are missing in browser, return null instead of throwing
+      if (typeof window !== 'undefined' && wrappedError.message.includes('Credential is missing')) {
+        console.warn('DynamoDB operation skipped: credentials not configured for browser');
+        return null;
+      }
+      throw wrappedError;
     }
   }
 

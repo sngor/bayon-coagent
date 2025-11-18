@@ -10,15 +10,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState } from 'react';
-import { useStreamableValue, useActions } from 'ai/rsc';
-import { generateListingDescription } from '@/app/actions';
-import { Loader } from '@/components/loader';
-import { generateListingDescriptionSchema } from '@/ai/zod-schemas/listing-description-generator-schema';
+import { Loader2 } from 'lucide-react';
+import { generateListingDescriptionSchema } from '@/ai/schemas/listing-description-schemas';
+import { toast } from '@/hooks/use-toast';
 
 export function ListingDescriptionGeneratorForm() {
   const [generation, setGeneration] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { generateListingDescription: generate } = useActions();
 
   const form = useForm<z.infer<typeof generateListingDescriptionSchema>>({
     resolver: zodResolver(generateListingDescriptionSchema),
@@ -29,9 +27,24 @@ export function ListingDescriptionGeneratorForm() {
 
   async function onSubmit(values: z.infer<typeof generateListingDescriptionSchema>) {
     setIsLoading(true);
-    const result = await generate(values);
-    setGeneration(result.result as string);
-    setIsLoading(false);
+    try {
+      // TODO: Implement generateListingDescription server action
+      // For now, just show a placeholder message
+      setGeneration('Listing description generation feature is under development.');
+      toast({
+        title: 'Feature Coming Soon',
+        description: 'Listing description generation will be available in a future update.',
+      });
+    } catch (error) {
+      console.error('Failed to generate listing description:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Generation Failed',
+        description: 'Could not generate listing description.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -59,7 +72,8 @@ export function ListingDescriptionGeneratorForm() {
               )}
             />
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? <Loader /> : 'Generate'}
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isLoading ? 'Generating...' : 'Generate'}
             </Button>
           </form>
         </Form>

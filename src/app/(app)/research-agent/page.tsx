@@ -6,6 +6,9 @@ import { useFormStatus } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
+import { SearchInput } from '@/components/ui/search-input';
+import { NoResultsEmptyState } from '@/components/ui/empty-states';
+import { filterBySearch, highlightMatches } from '@/lib/search-utils';
 import {
   Card,
   CardContent,
@@ -17,7 +20,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { runResearchAgentAction } from '@/app/actions';
-import { Loader2, BrainCircuit, ExternalLink, Download, Share2, Library, Calendar, FileText, Share } from 'lucide-react';
+import { Loader2, BrainCircuit, ExternalLink, Download, Share2, Library, Calendar, FileText, Share, Search } from 'lucide-react';
 import { marked } from 'marked';
 import { type RunResearchAgentOutput } from '@/aws/bedrock/flows';
 import { toast } from '@/hooks/use-toast';
@@ -85,6 +88,7 @@ export default function ResearchAgentPage() {
     researchInitialState
   );
   const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { user, isUserLoading } = useUser();
 
@@ -96,6 +100,14 @@ export default function ResearchAgentPage() {
     limit: 3,
     scanIndexForward: false, // descending order
   });
+
+  // Filter reports based on search query
+  const filteredReports = useMemo(() => {
+    if (!savedReports) return [];
+    return filterBySearch(savedReports, searchQuery, (report) => [
+      report.topic || '',
+    ]);
+  }, [savedReports, searchQuery]);
 
   useEffect(() => {
     if (state.message === 'success' && state.data && user?.id) {
@@ -229,19 +241,49 @@ export default function ResearchAgentPage() {
       <div className="space-y-4 pt-8">
         <div className="flex justify-between items-center">
           <h2 className="font-headline text-2xl font-bold">Recent Reports</h2>
-          <Button variant="ghost" asChild>
-            <Link href="/knowledge-base">View All</Link>
-          </Button>
+          <Link href="/knowledge-base">
+            <Button variant="ghost">View All</Button>
+          </Link>
         </div>
+
+        {/* Search Input */}
+        {!isLoadingReports && savedReports && savedReports.length > 0 && (
+          <div className="max-w-md">
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              onClear={() => setSearchQuery('')}
+              placeholder="Search recent reports..."
+              aria-label="Search recent reports"
+            />
+          </div>
+        )}
+
         {isLoadingReports && <ReportListSkeleton />}
 
-        {!isLoadingReports && savedReports && savedReports.length > 0 && (
+        {/* No search results */}
+        {!isLoadingReports && savedReports && savedReports.length > 0 && searchQuery && filteredReports.length === 0 && (
+          <NoResultsEmptyState
+            searchTerm={searchQuery}
+            onClearSearch={() => setSearchQuery('')}
+            icon={<Search className="w-8 h-8 text-muted-foreground" />}
+          />
+        )}
+
+        {!isLoadingReports && filteredReports && filteredReports.length > 0 && (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {savedReports.map(report => (
+            {filteredReports.map(report => (
               <Link key={report.id} href={`/knowledge-base/${report.id}`} passHref>
                 <Card className="h-full flex flex-col card-interactive">
                   <CardHeader>
-                    <CardTitle className="font-headline text-xl line-clamp-2">{report.topic}</CardTitle>
+                    <CardTitle
+                      className="font-headline text-xl line-clamp-2"
+                      dangerouslySetInnerHTML={{
+                        __html: searchQuery
+                          ? highlightMatches(report.topic || '', searchQuery)
+                          : report.topic || ''
+                      }}
+                    />
                   </CardHeader>
                   <CardContent className="flex-grow" />
                   <CardFooter>

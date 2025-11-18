@@ -24,8 +24,9 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useUser, useFirestore, useMemoFirebase, setDocumentNonBlocking, addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
-import { doc, collection } from 'firebase/firestore';
+import { useUser } from '@/aws/auth';
+import { getRepository } from '@/aws/dynamodb';
+import { getCompetitorKeys } from '@/aws/dynamodb/keys';
 import { toast } from '@/hooks/use-toast';
 import type { Competitor } from '@/lib/types';
 import { Trash2, Sparkles, Loader2, Search } from 'lucide-react';
@@ -48,126 +49,126 @@ type CompetitorFormProps = {
 };
 
 type EnrichState = {
-    message: string;
-    data: z.infer<typeof formSchema> | null;
-    errors: any;
+  message: string;
+  data: z.infer<typeof formSchema> | null;
+  errors: any;
 }
 
 const initialEnrichState: EnrichState = {
-    message: '',
-    data: null,
-    errors: {}
+  message: '',
+  data: null,
+  errors: {}
 }
 
 function FindCompetitorButton() {
-    const { pending } = useFormStatus();
+  const { pending } = useFormStatus();
 
-    return (
-        <Button 
-            type="submit" 
-            variant={pending ? 'shimmer' : 'ai'}
-            disabled={pending}>
-            {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
-            {pending ? 'Searching...' : 'Search'}
-        </Button>
-    )
+  return (
+    <Button
+      type="submit"
+      variant={pending ? 'shimmer' : 'ai'}
+      disabled={pending}>
+      {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+      {pending ? 'Searching...' : 'Search'}
+    </Button>
+  )
 }
 
 function SearchForm() {
-    const form = useFormContext();
-    return (
-        <div className="space-y-4">
-             <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Competitor Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Jane Smith" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="agency"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Agency</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Cityscape Realty" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FindCompetitorButton />
-        </div>
-    )
+  const form = useFormContext();
+  return (
+    <div className="space-y-4">
+      <FormField
+        control={form.control}
+        name="name"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Competitor Name</FormLabel>
+            <FormControl>
+              <Input placeholder="e.g., Jane Smith" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="agency"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Agency</FormLabel>
+            <FormControl>
+              <Input placeholder="e.g., Cityscape Realty" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FindCompetitorButton />
+    </div>
+  )
 }
 
 function PopulatedForm({ isEditing }: { isEditing: boolean }) {
-    const form = useFormContext();
-    const competitorData = form.getValues();
+  const form = useFormContext();
+  const competitorData = form.getValues();
 
-    return (
-        <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-                <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Competitor Name</FormLabel>
-                        <FormControl>
-                            <Input readOnly className="bg-secondary" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="agency"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Agency</FormLabel>
-                        <FormControl>
-                            <Input readOnly className="bg-secondary" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            </div>
-            { isEditing ? (
-                 <p className="text-sm text-muted-foreground">Below is the latest data for this competitor.</p>
-            ) : (
-                <p className="text-sm text-muted-foreground">The AI has found the following data for this competitor.</p>
-            )}
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Competitor Name</FormLabel>
+              <FormControl>
+                <Input readOnly className="bg-secondary" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="agency"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Agency</FormLabel>
+              <FormControl>
+                <Input readOnly className="bg-secondary" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+      {isEditing ? (
+        <p className="text-sm text-muted-foreground">Below is the latest data for this competitor.</p>
+      ) : (
+        <p className="text-sm text-muted-foreground">The AI has found the following data for this competitor.</p>
+      )}
 
-            <div className="grid grid-cols-2 gap-4 rounded-md border p-4">
-                <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Review Count</p>
-                    <p className="text-lg font-semibold">{competitorData.reviewCount}</p>
-                </div>
-                 <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Avg. Rating</p>
-                    <p className="text-lg font-semibold">{competitorData.avgRating.toFixed(1)}</p>
-                </div>
-                 <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Social Followers</p>
-                    <p className="text-lg font-semibold">{(competitorData.socialFollowers / 1000).toFixed(1)}k</p>
-                </div>
-                 <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Domain Authority</p>
-                    <p className="text-lg font-semibold">{competitorData.domainAuthority}</p>
-                </div>
-            </div>
+      <div className="grid grid-cols-2 gap-4 rounded-md border p-4">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-muted-foreground">Review Count</p>
+          <p className="text-lg font-semibold">{competitorData.reviewCount}</p>
         </div>
-    )
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-muted-foreground">Avg. Rating</p>
+          <p className="text-lg font-semibold">{competitorData.avgRating.toFixed(1)}</p>
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-muted-foreground">Social Followers</p>
+          <p className="text-lg font-semibold">{(competitorData.socialFollowers / 1000).toFixed(1)}k</p>
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-muted-foreground">Domain Authority</p>
+          <p className="text-lg font-semibold">{competitorData.domainAuthority}</p>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function CompetitorForm({
@@ -176,8 +177,7 @@ export function CompetitorForm({
   competitor,
 }: CompetitorFormProps) {
   const { user } = useUser();
-  const firestore = useFirestore();
-  
+
   const [enrichState, enrichFormAction] = useActionState(enrichCompetitorAction, initialEnrichState);
 
   const isEditing = !!competitor;
@@ -198,63 +198,74 @@ export function CompetitorForm({
   // Effect to reset form when dialog opens/closes or competitor changes
   useEffect(() => {
     if (isOpen) {
-        if (competitor) {
-            form.reset(competitor);
-        } else {
-            form.reset({
-                name: '', agency: '', reviewCount: 0,
-                avgRating: 0, socialFollowers: 0, domainAuthority: 0,
-            });
-        }
+      if (competitor) {
+        form.reset(competitor);
+      } else {
+        form.reset({
+          name: '', agency: '', reviewCount: 0,
+          avgRating: 0, socialFollowers: 0, domainAuthority: 0,
+        });
+      }
     }
   }, [competitor, isOpen, form]);
 
   // Effect to populate form with data from AI search
   useEffect(() => {
     if (enrichState.message === 'success' && enrichState.data) {
-        form.reset(enrichState.data);
+      form.reset(enrichState.data);
     } else if (enrichState.message && enrichState.message !== 'success') {
-        toast({
-            variant: 'destructive',
-            title: 'Search Failed',
-            description: enrichState.message,
-        })
+      toast({
+        variant: 'destructive',
+        title: 'Search Failed',
+        description: enrichState.message,
+      })
     }
   }, [enrichState, form]);
 
-  const competitorsColRef = useMemoFirebase(() => {
-      if (!firestore || !user) return null;
-      return collection(firestore, `users/${user.uid}/competitors`);
-  }, [firestore, user]);
-
   async function handleSave(values: z.infer<typeof formSchema>) {
-    if (!competitorsColRef) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Not authenticated.'});
-        return;
-    };
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Not authenticated.' });
+      return;
+    }
 
     try {
-        if (competitor?.id) {
-             const docRef = doc(competitorsColRef, competitor.id);
-             setDocumentNonBlocking(docRef, values, { merge: true });
-             toast({ title: 'Competitor Updated', description: `${values.name} has been updated.` });
-        } else {
-            addDocumentNonBlocking(competitorsColRef, values);
-            toast({ title: 'Competitor Added', description: `${values.name} has been added to your list.` });
-        }
-        setIsOpen(false);
-    } catch(e) {
-        console.error("Error saving competitor: ", e);
-        toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save competitor details.'})
+      const repository = getRepository();
+      const competitorId = competitor?.id || Date.now().toString();
+      const keys = getCompetitorKeys(user.id, competitorId);
+
+      await repository.put({
+        ...keys,
+        EntityType: 'Competitor',
+        Data: values,
+        CreatedAt: competitor?.createdAt ? new Date(competitor.createdAt).getTime() : Date.now(),
+        UpdatedAt: Date.now()
+      });
+
+      if (competitor?.id) {
+        toast({ title: 'Competitor Updated', description: `${values.name} has been updated.` });
+      } else {
+        toast({ title: 'Competitor Added', description: `${values.name} has been added to your list.` });
+      }
+      setIsOpen(false);
+    } catch (e) {
+      console.error("Error saving competitor: ", e);
+      toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save competitor details.' })
     }
   }
 
-  function handleDelete() {
-    if (!competitorsColRef || !competitor?.id) return;
-    const docRef = doc(competitorsColRef, competitor.id);
-    deleteDocumentNonBlocking(docRef);
-    toast({ title: "Competitor Removed", description: `${competitor.name} has been removed.`});
-    setIsOpen(false);
+  async function handleDelete() {
+    if (!user || !competitor?.id) return;
+
+    try {
+      const repository = getRepository();
+      const keys = getCompetitorKeys(user.id, competitor.id);
+      await repository.delete(keys.PK, keys.SK);
+      toast({ title: "Competitor Removed", description: `${competitor.name} has been removed.` });
+      setIsOpen(false);
+    } catch (e) {
+      console.error("Error deleting competitor: ", e);
+      toast({ variant: 'destructive', title: 'Delete Failed', description: 'Could not delete competitor.' })
+    }
   }
 
   return (
@@ -270,33 +281,33 @@ export function CompetitorForm({
               : 'Find a competitor by name and agency to get their latest performance data.'}
           </DialogDescription>
         </DialogHeader>
-        
+
         {isEditing || isFound ? (
-             <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleSave)}>
-                    <PopulatedForm isEditing={isEditing} />
-                    <DialogFooter className="pt-4">
-                        {isEditing && (
-                            <Button type="button" variant="destructive" onClick={handleDelete} className="mr-auto">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                            </Button>
-                        )}
-                        <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
-                            {isEditing ? 'Close' : 'Cancel'}
-                        </Button>
-                        <Button type="submit" >{isEditing ? 'Save Changes' : 'Add to Tracker'}</Button>
-                    </DialogFooter>
-                </form>
-            </Form>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSave)}>
+              <PopulatedForm isEditing={isEditing} />
+              <DialogFooter className="pt-4">
+                {isEditing && (
+                  <Button type="button" variant="destructive" onClick={handleDelete} className="mr-auto">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+                )}
+                <Button type="button" variant="ghost" onClick={() => setIsOpen(false)}>
+                  {isEditing ? 'Close' : 'Cancel'}
+                </Button>
+                <Button type="submit" >{isEditing ? 'Save Changes' : 'Add to Tracker'}</Button>
+              </DialogFooter>
+            </form>
+          </Form>
         ) : (
-            <Form {...form}>
-                <form action={enrichFormAction}>
-                    <SearchForm />
-                </form>
-            </Form>
+          <Form {...form}>
+            <form action={enrichFormAction}>
+              <SearchForm />
+            </form>
+          </Form>
         )}
-            
+
         {enrichState.message && enrichState.message !== 'success' && <p className="text-sm text-destructive pt-4">{enrichState.message}</p>}
 
       </DialogContent>

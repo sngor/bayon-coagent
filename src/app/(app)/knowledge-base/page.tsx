@@ -10,9 +10,13 @@ import { getRepository } from '@/aws/dynamodb';
 import { getResearchReportKeys } from '@/aws/dynamodb/keys';
 import type { ResearchReport } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Library, Calendar, Trash2 } from 'lucide-react';
+import { Library, Calendar, Trash2, Search } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { SearchInput } from '@/components/ui/search-input';
+import { NoResultsEmptyState } from '@/components/ui/empty-states';
+import { filterBySearchAndFilters, highlightMatches, countFilterOptions } from '@/lib/search-utils';
+import { FilterControls, useFilters, type FilterGroup } from '@/components/ui/filter-controls';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -47,6 +51,8 @@ function ReportListSkeleton() {
 export default function KnowledgeBasePage() {
     const { user } = useUser();
     const [reportToDelete, setReportToDelete] = useState<ResearchReport | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const { selectedFilters, handleFilterChange, handleClearAll, hasActiveFilters } = useFilters();
 
     // Memoize DynamoDB keys
     const reportsPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
@@ -55,6 +61,58 @@ export default function KnowledgeBasePage() {
     const { data: reports, isLoading } = useQuery<ResearchReport>(reportsPK, reportsSKPrefix, {
         scanIndexForward: false, // descending order
     });
+
+    // Helper to get time period from date
+    const getTimePeriod = (dateValue: any): string => {
+        if (!dateValue) return 'Unknown';
+        let date: Date;
+        if (typeof dateValue === 'object' && 'seconds' in dateValue) {
+            date = new Date(dateValue.seconds * 1000);
+        } else {
+            date = new Date(dateValue);
+        }
+
+        const now = new Date();
+        const diffTime = now.getTime() - date.getTime();
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 7) return 'Last 7 days';
+        if (diffDays < 30) return 'Last 30 days';
+        if (diffDays < 90) return 'Last 3 months';
+        return 'Older';
+    };
+
+    // Calculate time period counts
+    const timePeriodCounts = useMemo(() => {
+        if (!reports) return {};
+        return countFilterOptions(reports, (report) => getTimePeriod(report.createdAt));
+    }, [reports]);
+
+    // Define filter groups
+    const filterGroups: FilterGroup[] = useMemo(() => [
+        {
+            id: 'timePeriod',
+            label: 'Time Period',
+            options: [
+                { value: 'Last 7 days', label: 'Last 7 days', count: timePeriodCounts['Last 7 days'] || 0 },
+                { value: 'Last 30 days', label: 'Last 30 days', count: timePeriodCounts['Last 30 days'] || 0 },
+                { value: 'Last 3 months', label: 'Last 3 months', count: timePeriodCounts['Last 3 months'] || 0 },
+                { value: 'Older', label: 'Older', count: timePeriodCounts['Older'] || 0 },
+            ],
+        },
+    ], [timePeriodCounts]);
+
+    // Filter reports based on search query and filters
+    const filteredReports = useMemo(() => {
+        if (!reports) return [];
+        return filterBySearchAndFilters(
+            reports,
+            searchQuery,
+            selectedFilters,
+            (report) => [report.topic || ''],
+            (report) => ({ timePeriod: getTimePeriod(report.createdAt) })
+        );
+    }, [reports, searchQuery, selectedFilters]);
 
     const formatDate = (dateValue: any): string => {
         if (!dateValue) return 'Unknown date';
@@ -94,16 +152,58 @@ export default function KnowledgeBasePage() {
                 description="A centralized library of all your saved AI-generated research reports."
             />
 
+            {/* Search and Filter Controls */}
+            {!isLoading && reports && reports.length > 0 && (
+                <div className="space-y-4">
+                    <div className="max-w-md">
+                        <SearchInput
+                            value={searchQuery}
+                            onChange={setSearchQuery}
+                            onClear={() => setSearchQuery('')}
+                            placeholder="Search reports by topic..."
+                            aria-label="Search research reports"
+                        />
+                    </div>
+
+                    {/* Filter Controls */}
+                    <FilterControls
+                        filterGroups={filterGroups}
+                        selectedFilters={selectedFilters}
+                        onFilterChange={handleFilterChange}
+                        onClearAll={handleClearAll}
+                    />
+                </div>
+            )}
+
             {isLoading && <ReportListSkeleton />}
 
-            {!isLoading && reports && reports.length > 0 && (
+            {/* No search results */}
+            {!isLoading && reports && reports.length > 0 && (searchQuery || hasActiveFilters) && filteredReports.length === 0 && (
+                <NoResultsEmptyState
+                    searchTerm={searchQuery}
+                    onClearSearch={() => {
+                        setSearchQuery('');
+                        handleClearAll();
+                    }}
+                    icon={<Search className="w-8 h-8 text-muted-foreground" />}
+                />
+            )}
+
+            {!isLoading && filteredReports && filteredReports.length > 0 && (
                 <AlertDialog>
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {reports.map(report => (
+                        {filteredReports.map(report => (
                             <Card key={report.id} className="h-full flex flex-col group/card card-interactive">
                                 <Link href={`/knowledge-base/${report.id}`} passHref className="flex-grow flex flex-col">
                                     <CardHeader>
-                                        <CardTitle className="font-headline text-xl">{report.topic}</CardTitle>
+                                        <CardTitle
+                                            className="font-headline text-xl"
+                                            dangerouslySetInnerHTML={{
+                                                __html: searchQuery
+                                                    ? highlightMatches(report.topic || '', searchQuery)
+                                                    : report.topic || ''
+                                            }}
+                                        />
                                     </CardHeader>
                                     <CardContent className="flex-grow" />
                                 </Link>
@@ -156,11 +256,11 @@ export default function KnowledgeBasePage() {
                         You haven't saved any research reports yet.
                     </CardDescription>
                     <CardContent className="mt-6">
-                        <Button asChild>
-                            <Link href="/research-agent">
+                        <Link href="/research-agent">
+                            <Button>
                                 Go to the AI Research Agent
-                            </Link>
-                        </Button>
+                            </Button>
+                        </Link>
                     </CardContent>
                 </Card>
             )}

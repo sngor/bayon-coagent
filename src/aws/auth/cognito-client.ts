@@ -12,6 +12,8 @@ import {
   InitiateAuthCommand,
   GlobalSignOutCommand,
   GetUserCommand,
+  ConfirmSignUpCommand,
+  ResendConfirmationCodeCommand,
   AuthFlowType,
   SignUpCommandOutput,
   InitiateAuthCommandOutput,
@@ -95,6 +97,39 @@ export class CognitoAuthClient {
       };
     } catch (error) {
       throw this.handleError(error, 'Failed to sign up');
+    }
+  }
+
+  /**
+   * Confirm user sign up with verification code
+   */
+  async confirmSignUp(email: string, code: string): Promise<void> {
+    try {
+      const command = new ConfirmSignUpCommand({
+        ClientId: this.clientId,
+        Username: email,
+        ConfirmationCode: code,
+      });
+
+      await this.client.send(command);
+    } catch (error) {
+      throw this.handleError(error, 'Failed to confirm sign up');
+    }
+  }
+
+  /**
+   * Resend confirmation code
+   */
+  async resendConfirmationCode(email: string): Promise<void> {
+    try {
+      const command = new ResendConfirmationCodeCommand({
+        ClientId: this.clientId,
+        Username: email,
+      });
+
+      await this.client.send(command);
+    } catch (error) {
+      throw this.handleError(error, 'Failed to resend confirmation code');
     }
   }
 
@@ -320,22 +355,31 @@ export class CognitoAuthClient {
       const message = error.message;
       
       if (message.includes('UserNotFoundException')) {
-        return new Error('User not found. Please check your credentials.');
+        return new Error('No account found with this email. Please sign up first.');
       }
       if (message.includes('NotAuthorizedException')) {
-        return new Error('Invalid credentials. Please try again.');
+        return new Error('Incorrect email or password. Please try again.');
       }
       if (message.includes('UserNotConfirmedException')) {
-        return new Error('Please verify your email before signing in.');
+        return new Error('Please verify your email with the confirmation code sent to your inbox before signing in.');
       }
       if (message.includes('UsernameExistsException')) {
-        return new Error('An account with this email already exists.');
+        return new Error('An account with this email already exists. Please sign in instead.');
       }
       if (message.includes('InvalidPasswordException')) {
-        return new Error('Password does not meet requirements.');
+        return new Error('Password must be at least 8 characters with uppercase, lowercase, numbers, and symbols.');
       }
       if (message.includes('TooManyRequestsException')) {
-        return new Error('Too many attempts. Please try again later.');
+        return new Error('Too many attempts. Please wait a few minutes and try again.');
+      }
+      if (message.includes('CodeMismatchException')) {
+        return new Error('Invalid verification code. Please check and try again.');
+      }
+      if (message.includes('ExpiredCodeException')) {
+        return new Error('Verification code has expired. Please request a new one.');
+      }
+      if (message.includes('LimitExceededException')) {
+        return new Error('Attempt limit exceeded. Please try again later.');
       }
       
       return new Error(`${defaultMessage}: ${message}`);

@@ -5,9 +5,11 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { AlertCircle } from "lucide-react"
+import { getInputType } from "@/lib/mobile-optimization"
 
 const inputVariants = cva(
-  "flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50",
+  // Mobile-optimized: min-h-[44px] for touch targets, text-base on mobile to prevent zoom, touch-manipulation
+  "flex min-h-[44px] w-full rounded-md border bg-background px-3 py-2 text-base sm:text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation",
   {
     variants: {
       variant: {
@@ -47,6 +49,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       required,
       showErrorIcon = true,
       id,
+      name,
       ...props
     },
     ref
@@ -55,6 +58,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const errorId = `${inputId}-error`
     const helperId = `${inputId}-helper`
     const hasError = !!error
+
+    // Auto-detect appropriate input type for mobile keyboards if not specified
+    // This ensures proper mobile keyboard (email, tel, url, etc.) based on field name
+    const inputType = type || (name || id ? getInputType(name || id || '') : 'text');
 
     // Determine variant based on error state
     const effectiveVariant = hasError ? "error" : variant
@@ -84,8 +91,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         )}
         <div className="relative">
           <input
-            type={type}
+            type={inputType}
             id={inputId}
+            name={name}
             className={cn(
               inputVariants({ variant: effectiveVariant }),
               hasError && showErrorIcon && "pr-10",

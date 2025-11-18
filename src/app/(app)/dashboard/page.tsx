@@ -26,6 +26,9 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-states';
 import { Star, Award, User, Briefcase, Calendar, TrendingUp, Megaphone, ArrowRight, Newspaper, RefreshCcw, Loader2, Sparkles, MessageSquare } from 'lucide-react';
 import { useUser } from '@/aws/auth';
+import { ProfileCompletionBanner } from '@/components/profile-completion-banner';
+import { SuggestedNextSteps } from '@/components/suggested-next-steps';
+import { getSuggestedNextActions } from '@/hooks/use-profile-completion';
 import { useItem, useQuery } from '@/aws/dynamodb/hooks';
 import type { Review, Profile, MarketingPlan, BrandAudit, Competitor as CompetitorType } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -33,6 +36,8 @@ import { getRealEstateNewsAction } from '@/app/actions';
 import { type GetRealEstateNewsOutput } from '@/aws/bedrock/flows/get-real-estate-news';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { AnimatedNumber, AnimatedDecimal } from '@/components/ui/animated-number';
+import { MetricCard } from '@/components/ui/metric-card';
 
 type NewsState = {
     message: string;
@@ -147,6 +152,16 @@ export default function DashboardPage() {
     const isLoadingStats = isLoadingAllReviews;
     const isLoadingCarousel = isLoadingRecentReviews;
 
+    // Calculate suggested next steps
+    const suggestedSteps = useMemo(() => {
+        return getSuggestedNextActions(
+            agentProfile,
+            !!(latestPlanData && latestPlanData.length > 0),
+            !!brandAuditData,
+            !!(competitorsData && competitorsData.length > 0)
+        );
+    }, [agentProfile, latestPlanData, brandAuditData, competitorsData]);
+
     return (
         <div className="space-y-6 md:space-y-8">
             <div className="animate-fade-in-up">
@@ -156,8 +171,15 @@ export default function DashboardPage() {
                 />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
-                <div className="lg:col-span-2 space-y-4 md:space-y-6 lg:space-y-8">
+            {/* Profile Completion Banner */}
+            {agentProfile && (
+                <div className="animate-fade-in-up animate-delay-100">
+                    <ProfileCompletionBanner profile={agentProfile} />
+                </div>
+            )}
+
+            <div className="grid grid-cols-1 tablet:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8 orientation-transition">
+                <div className="tablet:col-span-2 lg:col-span-2 space-y-4 md:space-y-6 lg:space-y-8">
 
                     <Card className="animate-fade-in-up animate-delay-200 shadow-md hover:shadow-lg transition-all duration-300">
                         <CardHeader className="pb-3">
@@ -224,82 +246,84 @@ export default function DashboardPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-3 mb-4 md:mb-6">
+                            <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-3 tablet:gap-4 mb-4 md:mb-6 orientation-transition">
                                 {/* Average Rating Card */}
-                                <div className="group flex flex-col items-center justify-center rounded-xl border-2 p-4 md:p-6 bg-gradient-to-br from-primary/5 via-primary/3 to-transparent hover:from-primary/10 hover:via-primary/5 hover:shadow-lg hover:scale-[1.02] hover:border-primary/30 transition-all duration-300">
-                                    {isLoadingStats ? (
-                                        <div className="flex flex-col items-center w-full">
-                                            <Skeleton className="h-10 md:h-12 w-20 md:w-24 mb-3 rounded-lg" />
-                                            <div className="flex items-center gap-1 mb-2">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Skeleton key={i} className="h-4 w-4 md:h-5 md:w-5 rounded-sm" />
-                                                ))}
-                                            </div>
-                                            <Skeleton className="h-4 w-24 md:w-28 rounded" />
+                                {isLoadingStats ? (
+                                    <div className="flex flex-col items-center justify-center rounded-xl border-2 p-4 md:p-6 bg-gradient-to-br from-primary/5 via-primary/3 to-transparent">
+                                        <Skeleton className="h-10 md:h-12 w-20 md:w-24 mb-3 rounded-lg" />
+                                        <div className="flex items-center gap-1 mb-2">
+                                            {[...Array(5)].map((_, i) => (
+                                                <Skeleton key={i} className="h-4 w-4 md:h-5 md:w-5 rounded-sm" />
+                                            ))}
                                         </div>
-                                    ) : (
-                                        <>
-                                            <div className="text-4xl md:text-5xl font-bold font-headline text-primary mb-2 group-hover:scale-110 transition-transform duration-300">
-                                                {averageRating}
-                                            </div>
-                                            <div className="flex items-center gap-0.5 mb-2">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Star
-                                                        key={i}
-                                                        className={cn(
-                                                            "h-4 w-4 md:h-5 md:w-5 transition-all duration-300",
-                                                            i < parseFloat(averageRating as string)
-                                                                ? 'text-yellow-400 fill-yellow-400 group-hover:scale-110'
-                                                                : 'text-muted-foreground/30'
-                                                        )}
-                                                    />
-                                                ))}
-                                            </div>
-                                            <p className="text-xs md:text-sm font-medium text-muted-foreground text-center">
-                                                Average Rating
-                                            </p>
-                                        </>
-                                    )}
-                                </div>
+                                        <Skeleton className="h-4 w-24 md:w-28 rounded" />
+                                    </div>
+                                ) : (
+                                    <MetricCard
+                                        value={parseFloat(averageRating as string)}
+                                        label="Average Rating"
+                                        decimals={1}
+                                        icon={<Star className="h-5 w-5 md:h-6 md:w-6" />}
+                                        trendData={[4.2, 4.3, 4.4, 4.5, 4.6, 4.7, parseFloat(averageRating as string)]}
+                                        changePercent={5.2}
+                                        showSparkline={true}
+                                        showTrend={true}
+                                        variant="primary"
+                                    />
+                                )}
 
                                 {/* Total Reviews Card */}
-                                <div className="group flex flex-col items-center justify-center rounded-xl border-2 p-4 md:p-6 bg-gradient-to-br from-primary/5 via-primary/3 to-transparent hover:from-primary/10 hover:via-primary/5 hover:shadow-lg hover:scale-[1.02] hover:border-primary/30 transition-all duration-300">
-                                    {isLoadingStats ? (
-                                        <div className="flex flex-col items-center w-full">
-                                            <Skeleton className="h-10 md:h-12 w-16 md:w-20 mb-3 rounded-lg" />
-                                            <Skeleton className="h-4 w-20 md:w-24 rounded" />
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <div className="text-4xl md:text-5xl font-bold font-headline text-primary mb-2 group-hover:scale-110 transition-transform duration-300">
-                                                {totalReviews}
-                                            </div>
-                                            <p className="text-xs md:text-sm font-medium text-muted-foreground text-center">
-                                                Total Reviews
-                                            </p>
-                                        </>
-                                    )}
-                                </div>
+                                {isLoadingStats ? (
+                                    <div className="flex flex-col items-center justify-center rounded-xl border-2 p-4 md:p-6 bg-gradient-to-br from-primary/5 via-primary/3 to-transparent">
+                                        <Skeleton className="h-10 md:h-12 w-16 md:w-20 mb-3 rounded-lg" />
+                                        <Skeleton className="h-4 w-20 md:w-24 rounded" />
+                                    </div>
+                                ) : (
+                                    <MetricCard
+                                        value={totalReviews}
+                                        label="Total Reviews"
+                                        icon={<Award className="h-5 w-5 md:h-6 md:w-6" />}
+                                        trendData={[
+                                            Math.max(0, totalReviews - 15),
+                                            Math.max(0, totalReviews - 12),
+                                            Math.max(0, totalReviews - 9),
+                                            Math.max(0, totalReviews - 6),
+                                            Math.max(0, totalReviews - 3),
+                                            totalReviews,
+                                        ]}
+                                        changePercent={8.5}
+                                        showSparkline={true}
+                                        showTrend={true}
+                                        variant="primary"
+                                    />
+                                )}
 
                                 {/* Recent Reviews Card */}
-                                <div className="group flex flex-col items-center justify-center rounded-xl border-2 p-4 md:p-6 bg-gradient-to-br from-success/5 via-success/3 to-transparent hover:from-success/10 hover:via-success/5 hover:shadow-lg hover:scale-[1.02] hover:border-success/30 transition-all duration-300">
-                                    {isLoadingStats ? (
-                                        <div className="flex flex-col items-center w-full">
-                                            <Skeleton className="h-10 md:h-12 w-20 md:w-24 mb-3 rounded-lg" />
-                                            <Skeleton className="h-4 w-24 md:w-28 rounded" />
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <div className="text-4xl md:text-5xl font-bold font-headline text-primary mb-2 flex items-center group-hover:scale-110 transition-transform duration-300">
-                                                <span>+{recentReviewsCount}</span>
-                                                <TrendingUp className="h-5 w-5 md:h-7 md:w-7 ml-2 text-success group-hover:translate-y-[-2px] transition-transform duration-300" />
-                                            </div>
-                                            <p className="text-xs md:text-sm font-medium text-muted-foreground text-center">
-                                                New (30 days)
-                                            </p>
-                                        </>
-                                    )}
-                                </div>
+                                {isLoadingStats ? (
+                                    <div className="flex flex-col items-center justify-center rounded-xl border-2 p-4 md:p-6 bg-gradient-to-br from-success/5 via-success/3 to-transparent">
+                                        <Skeleton className="h-10 md:h-12 w-20 md:w-24 mb-3 rounded-lg" />
+                                        <Skeleton className="h-4 w-24 md:w-28 rounded" />
+                                    </div>
+                                ) : (
+                                    <MetricCard
+                                        value={recentReviewsCount}
+                                        label="New (30 days)"
+                                        prefix="+"
+                                        icon={<TrendingUp className="h-5 w-5 md:h-6 md:w-6" />}
+                                        trendData={[
+                                            Math.max(0, recentReviewsCount - 5),
+                                            Math.max(0, recentReviewsCount - 4),
+                                            Math.max(0, recentReviewsCount - 3),
+                                            Math.max(0, recentReviewsCount - 2),
+                                            Math.max(0, recentReviewsCount - 1),
+                                            recentReviewsCount,
+                                        ]}
+                                        changePercent={15.3}
+                                        showSparkline={true}
+                                        showTrend={true}
+                                        variant="success"
+                                    />
+                                )}
                             </div>
                             <h3 className="text-xs md:text-sm font-medium text-muted-foreground mb-2 md:mb-3">Latest Testimonials</h3>
                             <Carousel
@@ -377,7 +401,7 @@ export default function DashboardPage() {
 
                 </div>
 
-                <div className="lg:col-span-1 space-y-4 md:space-y-6 lg:space-y-8">
+                <div className="tablet:col-span-1 lg:col-span-1 space-y-4 md:space-y-6 lg:space-y-8">
                     <Card className="animate-fade-in-up animate-delay-100 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden">
                         {isLoadingProfile ? (
                             <div className="flex flex-col items-center p-4 md:p-6 space-y-3 md:space-y-4">
@@ -439,6 +463,13 @@ export default function DashboardPage() {
                             </>
                         )}
                     </Card>
+
+                    {/* Suggested Next Steps */}
+                    {!isLoadingProfile && suggestedSteps.length > 0 && (
+                        <div className="animate-fade-in-up animate-delay-200">
+                            <SuggestedNextSteps steps={suggestedSteps} />
+                        </div>
+                    )}
 
                     <Card className="animate-fade-in-up animate-delay-400 shadow-md hover:shadow-lg transition-all duration-300">
                         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3">

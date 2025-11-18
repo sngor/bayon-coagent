@@ -33,6 +33,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { ResponsiveTableWrapper } from '@/components/ui/responsive-table';
 import {
     ChartContainer,
     ChartTooltip,
@@ -64,6 +65,7 @@ import { toast } from '@/hooks/use-toast';
 import { JsonLdDisplay } from '@/components/json-ld-display';
 import { useFormStatus } from 'react-dom';
 import { FirstTimeUseEmptyState } from '@/components/ui/empty-states';
+import { Celebration } from '@/components/ui/celebration';
 
 
 type AuditResult = {
@@ -265,6 +267,7 @@ export default function BrandAuditPage() {
     const [bulkAnalysisState, bulkAnalysisFormAction] = useActionState(analyzeMultipleReviewsAction, initialBulkAnalysisState);
 
     const [reviewToDelete, setReviewToDelete] = useState<Review | null>(null);
+    const [showCelebration, setShowCelebration] = useState(false);
 
     // Memoize keys for DynamoDB queries
     const agentProfilePK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
@@ -345,6 +348,7 @@ export default function BrandAuditPage() {
 
     useEffect(() => {
         if (auditState.message === 'success' && auditState.data) {
+            setShowCelebration(true);
             toast({
                 title: 'Audit Complete',
                 description: "Your NAP consistency results have been updated."
@@ -497,8 +501,8 @@ export default function BrandAuditPage() {
                 </EnhancedCardContent>
             </EnhancedCard>
 
-            <div className="grid gap-8 lg:grid-cols-3">
-                <div className="lg:col-span-2 space-y-8">
+            <div className="grid gap-6 tablet:gap-8 tablet:grid-cols-3 lg:grid-cols-3 orientation-transition">
+                <div className="tablet:col-span-2 lg:col-span-2 space-y-6 tablet:space-y-8">
 
                     <EnhancedCard variant="elevated" className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                         <EnhancedCardHeader>
@@ -590,7 +594,7 @@ export default function BrandAuditPage() {
                                         </div>
                                     </div>
 
-                                    <div className="border rounded-lg overflow-hidden">
+                                    <ResponsiveTableWrapper mobileLayout="scroll" showScrollIndicator={true}>
                                         <Table>
                                             <TableHeader>
                                                 <TableRow className="bg-muted/50">
@@ -612,8 +616,8 @@ export default function BrandAuditPage() {
                                                             result.status === 'Consistent' && "bg-green-50/50 dark:bg-green-900/10"
                                                         )}
                                                     >
-                                                        <TableCell className="font-semibold">{result.platform}</TableCell>
-                                                        <TableCell>
+                                                        <TableCell className="font-semibold whitespace-nowrap">{result.platform}</TableCell>
+                                                        <TableCell className="whitespace-nowrap">
                                                             <Badge
                                                                 variant={result.status === 'Consistent' ? 'default' : result.status === 'Inconsistent' ? 'destructive' : 'secondary'}
                                                                 className={cn(
@@ -629,24 +633,24 @@ export default function BrandAuditPage() {
                                                             </Badge>
                                                         </TableCell>
                                                         <TableCell className={cn(
-                                                            "text-sm",
+                                                            "text-sm min-w-[150px]",
                                                             result.status === 'Inconsistent' && isDifferent(result.foundName, agentProfileData?.name) && 'text-red-700 dark:text-red-400 font-bold bg-red-100/50 dark:bg-red-900/20'
                                                         )}>
                                                             {result.foundName || <span className="text-muted-foreground italic">N/A</span>}
                                                         </TableCell>
                                                         <TableCell className={cn(
-                                                            "text-sm",
+                                                            "text-sm min-w-[200px]",
                                                             result.status === 'Inconsistent' && isDifferent(result.foundAddress, agentProfileData?.address) && 'text-red-700 dark:text-red-400 font-bold bg-red-100/50 dark:bg-red-900/20'
                                                         )}>
                                                             {result.foundAddress || <span className="text-muted-foreground italic">N/A</span>}
                                                         </TableCell>
                                                         <TableCell className={cn(
-                                                            "text-sm",
+                                                            "text-sm whitespace-nowrap",
                                                             result.status === 'Inconsistent' && isDifferent(result.foundPhone, agentProfileData?.phone) && 'text-red-700 dark:text-red-400 font-bold bg-red-100/50 dark:bg-red-900/20'
                                                         )}>
                                                             {result.foundPhone || <span className="text-muted-foreground italic">N/A</span>}
                                                         </TableCell>
-                                                        <TableCell className="text-right">
+                                                        <TableCell className="text-right whitespace-nowrap">
                                                             {result.platformUrl && (
                                                                 <Button
                                                                     variant={result.status === 'Inconsistent' ? 'default' : 'outline'}
@@ -666,7 +670,7 @@ export default function BrandAuditPage() {
                                                 ))}
                                             </TableBody>
                                         </Table>
-                                    </div>
+                                    </ResponsiveTableWrapper>
 
                                     {/* Help Section */}
                                     <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -702,7 +706,7 @@ export default function BrandAuditPage() {
                     </EnhancedCard>
 
                 </div>
-                <div className="lg:col-span-1 space-y-6">
+                <div className="tablet:col-span-1 lg:col-span-1 space-y-6">
                     {/* Profile Completeness Card */}
                     <EnhancedCard variant="bordered" className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                         <EnhancedCardHeader>
@@ -734,11 +738,11 @@ export default function BrandAuditPage() {
                             </p>
                         </EnhancedCardContent>
                         <EnhancedCardFooter>
-                            <Button variant="outline" className="w-full" asChild>
-                                <Link href="/profile">
+                            <Link href="/profile" className="w-full">
+                                <Button variant="outline" className="w-full">
                                     Edit Profile <ArrowRight className="ml-2 h-4 w-4" />
-                                </Link>
-                            </Button>
+                                </Button>
+                            </Link>
                         </EnhancedCardFooter>
                     </EnhancedCard>
 
@@ -792,11 +796,11 @@ export default function BrandAuditPage() {
                         </EnhancedCardContent>
                         {!gbpConnected && (
                             <EnhancedCardFooter>
-                                <Button variant="default" className="w-full bg-green-600 hover:bg-green-700" asChild>
-                                    <Link href="/integrations">
+                                <Link href="/integrations" className="w-full">
+                                    <Button variant="default" className="w-full bg-green-600 hover:bg-green-700">
                                         Connect Now <ArrowRight className="ml-2 h-4 w-4" />
-                                    </Link>
-                                </Button>
+                                    </Button>
+                                </Link>
                             </EnhancedCardFooter>
                         )}
                     </EnhancedCard>
@@ -859,7 +863,7 @@ export default function BrandAuditPage() {
             </div>
 
             {/* Bottom Section - Zillow Importer and Review Feed */}
-            <div className="grid gap-8 lg:grid-cols-2">
+            <div className="grid gap-6 tablet:gap-8 tablet:grid-cols-2 lg:grid-cols-2 orientation-transition">
                 <EnhancedCard variant="elevated" className="lg:col-span-1 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
                     <EnhancedCardHeader>
                         <div className="flex items-center gap-2">
@@ -1045,6 +1049,14 @@ export default function BrandAuditPage() {
                     </EnhancedCardContent>
                 </EnhancedCard>
             </div>
+
+            {/* Celebration animation for successful audit completion */}
+            <Celebration
+                show={showCelebration}
+                type="success"
+                message="✅ Brand Audit Complete!"
+                onComplete={() => setShowCelebration(false)}
+            />
         </div>
     );
 }

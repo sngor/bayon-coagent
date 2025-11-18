@@ -185,7 +185,7 @@ const Sidebar = React.forwardRef<
             <SheetContent
               data-sidebar="sidebar"
               data-mobile="true"
-              className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+              className="w-[--sidebar-width] bg-sidebar/95 backdrop-blur-xl p-0 text-sidebar-foreground [&>button]:hidden border-r border-white/10 dark:border-white/5"
               style={
                 {
                   "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -208,7 +208,7 @@ const Sidebar = React.forwardRef<
           className={cn(
             "group peer fixed inset-y-0 z-10 hidden md:flex flex-col text-sidebar-foreground",
             side === 'left' ? "left-0 border-r" : "right-0 border-l",
-            "w-[--sidebar-width] bg-sidebar",
+            "w-[--sidebar-width] bg-sidebar/95 backdrop-blur-xl border-r border-white/10 dark:border-white/5",
             className
           )}
           {...props}
@@ -229,7 +229,7 @@ const Sidebar = React.forwardRef<
           <SheetContent
             data-sidebar="sidebar"
             data-mobile="true"
-            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+            className="w-[--sidebar-width] bg-sidebar/95 backdrop-blur-xl p-0 text-sidebar-foreground [&>button]:hidden border-r border-white/10 dark:border-white/5"
             style={
               {
                 "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -262,7 +262,7 @@ const Sidebar = React.forwardRef<
       >
         <div
           data-sidebar="sidebar"
-          className="flex h-full w-full flex-col bg-sidebar"
+          className="flex h-full w-full flex-col bg-sidebar/95 backdrop-blur-xl border-r border-white/10 dark:border-white/5"
         >
           {children}
         </div>
@@ -568,7 +568,7 @@ const SidebarMenuItem = React.forwardRef<
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button relative flex w-full items-center overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[state=collapsed]/sidebar-wrapper:justify-center group-data-[state=collapsed]/sidebar-wrapper:px-0 group-data-[state=expanded]/sidebar-wrapper:gap-3 [&>span:last-child]:group-data-[state=collapsed]/sidebar-wrapper:opacity-0 [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[active=true]:before:absolute data-[active=true]:before:left-0 data-[active=true]:before:h-6 data-[active=true]:before:w-1 data-[active=true]:before:rounded-r-md data-[active=true]:before:bg-primary",
+  "peer/menu-button relative flex w-full items-center overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-all duration-300 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[state=collapsed]/sidebar-wrapper:justify-center group-data-[state=collapsed]/sidebar-wrapper:px-0 group-data-[state=expanded]/sidebar-wrapper:gap-3 [&>span:last-child]:group-data-[state=collapsed]/sidebar-wrapper:opacity-0 [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-[0_0_20px_hsl(var(--glow-active))] data-[active=true]:before:absolute data-[active=true]:before:left-0 data-[active=true]:before:h-6 data-[active=true]:before:w-1 data-[active=true]:before:rounded-r-md data-[active=true]:before:bg-primary data-[active=true]:before:shadow-[0_0_10px_hsl(var(--primary))]",
   {
     variants: {
       variant: {

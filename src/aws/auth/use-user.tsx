@@ -39,14 +39,16 @@ export const useUser = (): UserAuthState => {
 
 /**
  * Hook for accessing authentication methods.
- * Provides sign in, sign up, and sign out functionality.
+ * Provides sign in, sign up, sign out, and email verification functionality.
  */
 export const useAuthMethods = () => {
-    const { signIn, signUp, signOut, refreshSession } = useAuth();
+    const { signIn, signUp, confirmSignUp, resendConfirmationCode, signOut, refreshSession } = useAuth();
 
     return {
         signIn,
         signUp,
+        confirmSignUp,
+        resendConfirmationCode,
         signOut,
         refreshSession,
     };

@@ -39,6 +39,8 @@ import Link from 'next/link';
 import { usePathname, redirect } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useUser, useAuthMethods } from '@/aws/auth/use-user';
+import { PageTransition } from '@/components/page-transition';
+import { TooltipProvider } from '@/contexts/tooltip-context';
 
 const navItems = [
   { href: '/dashboard', icon: Home, label: 'Dashboard' },
@@ -96,73 +98,77 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <SidebarProvider>
-      <Sidebar collapsible="icon">
-        <SidebarHeader>
-          <div className="flex items-center justify-between">
-            <Logo />
-          </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith(item.href)}
-                  tooltip={item.label}
-                >
-                  <Link href={item.href}>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-        <SidebarToggle tooltip="Collapse" />
-        <SidebarFooter>
-          <div className="p-2">
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.startsWith('/profile')} tooltip="Profile">
-                  <Link href="/profile">
-                    <User />
-                    <span>Profile</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.startsWith('/settings')} tooltip="Settings">
-                  <Link href="/settings">
-                    <Settings />
-                    <span>Settings</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={handleSignOut} tooltip="Sign Out">
-                  <LogOut />
-                  <span>Sign Out</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </div>
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-14 items-center justify-end md:justify-end px-4 border-b bg-background/80 backdrop-blur-sm">
-          {isMounted && (
-            <div className="md:hidden">
-              <SidebarTrigger>
-                <PanelLeft />
-              </SidebarTrigger>
+    <TooltipProvider>
+      <SidebarProvider>
+        <Sidebar collapsible="icon">
+          <SidebarHeader>
+            <div className="flex items-center justify-between">
+              <Logo />
             </div>
-          )}
-        </header>
-        <main className="p-4 md:p-8 lg:p-10">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarMenu>
+              {navItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith(item.href)}
+                    tooltip={item.label}
+                  >
+                    <Link href={item.href}>
+                      <item.icon />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarContent>
+          <SidebarToggle tooltip="Collapse" />
+          <SidebarFooter>
+            <div className="p-2">
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname.startsWith('/profile')} tooltip="Profile">
+                    <Link href="/profile">
+                      <User />
+                      <span>Profile</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname.startsWith('/settings')} tooltip="Settings">
+                    <Link href="/settings">
+                      <Settings />
+                      <span>Settings</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton onClick={handleSignOut} tooltip="Sign Out">
+                    <LogOut />
+                    <span>Sign Out</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </div>
+          </SidebarFooter>
+        </Sidebar>
+        <SidebarInset>
+          <header className="sticky top-0 z-10 flex h-14 items-center justify-end md:justify-end px-4 border-b bg-background/80 backdrop-blur-sm">
+            {isMounted && (
+              <div className="md:hidden">
+                <SidebarTrigger>
+                  <PanelLeft />
+                </SidebarTrigger>
+              </div>
+            )}
+          </header>
+          <main className="p-4 md:p-8 lg:p-10">
+            <PageTransition>{children}</PageTransition>
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+    </TooltipProvider>
   );
 }

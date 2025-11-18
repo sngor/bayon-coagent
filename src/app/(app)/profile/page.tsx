@@ -29,6 +29,7 @@ import { Separator } from '@/components/ui/separator';
 import { useWebAI } from '@/hooks/useWebAI';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProfileImageUpload } from '@/components/profile-image-upload';
+import { ProfileCompletionChecklist } from '@/components/profile-completion-banner';
 
 const initialBioState = {
     message: '',
@@ -369,16 +370,25 @@ export default function ProfilePage() {
                     <TabsTrigger value="schema">Schema</TabsTrigger>
                 </TabsList>
                 <TabsContent value="profile" className="mt-6">
-                    <ProfileForm
-                        profile={profile}
-                        onInputChange={handleInputChange}
-                        onSave={handleSave}
-                        isSaving={isSaving}
-                        isLoading={isLoading}
-                        bioFormAction={bioFormAction}
-                        userId={user?.id || ''}
-                        onImageUpdate={handleImageUpdate}
-                    />
+                    <div className="grid gap-6 lg:grid-cols-3">
+                        <div className="lg:col-span-2">
+                            <ProfileForm
+                                profile={profile}
+                                onInputChange={handleInputChange}
+                                onSave={handleSave}
+                                isSaving={isSaving}
+                                isLoading={isLoading}
+                                bioFormAction={bioFormAction}
+                                userId={user?.id || ''}
+                                onImageUpdate={handleImageUpdate}
+                            />
+                        </div>
+                        <div className="lg:col-span-1">
+                            <div className="sticky top-6">
+                                <ProfileCompletionChecklist profile={profile} />
+                            </div>
+                        </div>
+                    </div>
                 </TabsContent>
                 <TabsContent value="schema" className="mt-6">
                     <div className="grid gap-8 md:grid-cols-2">

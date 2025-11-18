@@ -11,19 +11,19 @@ import {
 } from "./card";
 
 const enhancedCardVariants = cva(
-    "rounded-xl transition-all duration-300",
+    "rounded-xl transition-all duration-300 ease-out",
     {
         variants: {
             variant: {
-                default: "bg-card border shadow-sm",
-                elevated: "bg-card shadow-lg hover:shadow-xl",
-                bordered: "bg-card border-2 border-primary/20",
-                glass: "bg-card/80 backdrop-blur-sm border shadow-lg",
+                default: "bg-card border shadow-sm hover:shadow-md",
+                elevated: "bg-card shadow-lg hover:shadow-xl hover:-translate-y-1",
+                bordered: "bg-card border-2 border-primary/20 hover:border-primary/40",
+                glass: "bg-card/80 backdrop-blur-sm border shadow-lg hover:shadow-xl",
                 gradient:
-                    "bg-gradient-to-br from-primary/10 to-purple-600/10 border border-primary/20",
+                    "bg-gradient-to-br from-primary/10 to-purple-600/10 border border-primary/20 hover:from-primary/15 hover:to-purple-600/15",
             },
             interactive: {
-                true: "cursor-pointer hover:scale-[1.02] hover:shadow-xl",
+                true: "cursor-pointer hover:scale-[1.02] hover:shadow-xl active:scale-[0.99]",
                 false: "",
             },
         },

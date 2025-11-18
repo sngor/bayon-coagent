@@ -10,29 +10,41 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState } from 'react';
-import { useActions } from 'ai/rsc';
-import { findInvestmentOpportunities } from '@/app/actions';
-import { Loader } from '@/components/loader';
-import { investmentOpportunityIdentificatorSchema } from '@/ai/zod-schemas/investment-opportunity-identification-schema';
+import { Loader2 } from 'lucide-react';
+import { investmentOpportunityIdentificatorSchema } from '@/ai/schemas/investment-opportunity-schemas';
+import { toast } from '@/hooks/use-toast';
 
 export function InvestmentOpportunityIdentificationForm() {
   const [generation, setGeneration] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { findInvestmentOpportunities: generate } = useActions();
 
   const form = useForm<z.infer<typeof investmentOpportunityIdentificatorSchema>>({
     resolver: zodResolver(investmentOpportunityIdentificatorSchema),
     defaultValues: {
-      market_trends: '',
-      client_profile: '',
+      market_data: '',
     },
   });
 
   async function onSubmit(values: z.infer<typeof investmentOpportunityIdentificatorSchema>) {
     setIsLoading(true);
-    const result = await generate(values);
-    setGeneration(result.result as string);
-    setIsLoading(false);
+    try {
+      // TODO: Implement findInvestmentOpportunities server action
+      // For now, just show a placeholder message
+      setGeneration('Investment opportunity identification feature is under development.');
+      toast({
+        title: 'Feature Coming Soon',
+        description: 'Investment opportunity identification will be available in a future update.',
+      });
+    } catch (error) {
+      console.error('Failed to identify investment opportunities:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Identification Failed',
+        description: 'Could not identify investment opportunities.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -45,29 +57,13 @@ export function InvestmentOpportunityIdentificationForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <FormField
               control={form.control}
-              name="market_trends"
+              name="market_data"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Market Trends</FormLabel>
+                  <FormLabel>Market Data</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Enter market trends here..."
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="client_profile"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Client Profile</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Enter client profile here..."
+                      placeholder="Enter market data here..."
                       {...field}
                     />
                   </FormControl>
@@ -76,7 +72,8 @@ export function InvestmentOpportunityIdentificationForm() {
               )}
             />
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? <Loader /> : 'Generate'}
+              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isLoading ? 'Generating...' : 'Generate'}
             </Button>
           </form>
         </Form>

@@ -36,17 +36,20 @@ import {
 } from 'lucide-react';
 import { AILoader, StepLoader } from '@/components/ui/loading-states';
 import { EmptyState } from '@/components/ui/empty-states';
-import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
-import { doc, collection, query, orderBy, limit } from 'firebase/firestore';
+import { useUser } from '@/aws/auth';
+import { useItem, useQuery } from '@/aws/dynamodb/hooks';
+import { getRepository } from '@/aws/dynamodb';
+import { getMarketingPlanKeys } from '@/aws/dynamodb/keys';
 import type { BrandAudit, Competitor, MarketingPlan as MarketingPlanType } from '@/lib/types';
 import { generateMarketingPlanAction } from '@/app/actions';
 import { showSuccessToast, showErrorToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { Celebration } from '@/components/ui/celebration';
 
 type GeneratePlanState = {
   message: string;
-  data: MarketingPlanType | null;
+  data: { id: string; steps: any[]; createdAt: string } | null;
   errors: any;
 };
 
@@ -84,7 +87,6 @@ const toolIcons: { [key: string]: React.ReactNode } = {
 
 export default function MarketingPlanPage() {
   const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const [generationStep, setGenerationStep] = useState(0);
@@ -102,28 +104,20 @@ export default function MarketingPlanPage() {
     'Finalizing your action plan...',
   ];
 
-  const brandAuditRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return doc(firestore, `users/${user.uid}/brandAudits/main`);
-  }, [firestore, user]);
+  // Memoize DynamoDB keys
+  const auditPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
+  const auditSK = useMemo(() => 'AUDIT#main', []);
+  const competitorsPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
+  const competitorsSKPrefix = useMemo(() => 'COMPETITOR#', []);
+  const plansPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
+  const plansSKPrefix = useMemo(() => 'PLAN#', []);
 
-  const competitorsRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return collection(firestore, `users/${user.uid}/competitors`);
-  }, [firestore, user]);
-
-  const latestPlanRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return query(
-      collection(firestore, `users/${user.uid}/marketingPlans`),
-      orderBy('createdAt', 'desc'),
-      limit(1)
-    );
-  }, [firestore, user]);
-
-  const { data: brandAuditData, isLoading: isAuditLoading } = useDoc<BrandAudit>(brandAuditRef);
-  const { data: competitorsData, isLoading: areCompetitorsLoading } = useCollection<Competitor>(competitorsRef);
-  const { data: latestPlanData, isLoading: isPlanLoading } = useCollection<MarketingPlanType>(latestPlanRef);
+  const { data: brandAuditData, isLoading: isAuditLoading } = useItem<BrandAudit>(auditPK, auditSK);
+  const { data: competitorsData, isLoading: areCompetitorsLoading } = useQuery<Competitor>(competitorsPK, competitorsSKPrefix);
+  const { data: latestPlanData, isLoading: isPlanLoading } = useQuery<MarketingPlanType>(plansPK, plansSKPrefix, {
+    limit: 1,
+    scanIndexForward: false,
+  });
 
   const isDataReady = !isAuditLoading && !areCompetitorsLoading && !!brandAuditData && !!competitorsData;
   const displayPlan = state.data ?? (latestPlanData && latestPlanData[0]);
@@ -148,8 +142,24 @@ export default function MarketingPlanPage() {
 
   useEffect(() => {
     if (state.message === 'success' && state.data) {
-      if (user?.uid) {
-        addDocumentNonBlocking(`users/${user.uid}/marketingPlans`, state.data);
+      if (user?.id) {
+        const savePlan = async () => {
+          try {
+            const repository = getRepository();
+            const planId = Date.now().toString();
+            const keys = getMarketingPlanKeys(user.id, planId);
+            await repository.put({
+              ...keys,
+              EntityType: 'MarketingPlan',
+              Data: state.data,
+              CreatedAt: Date.now(),
+              UpdatedAt: Date.now()
+            });
+          } catch (error) {
+            console.error('Failed to save marketing plan:', error);
+          }
+        };
+        savePlan();
 
         // Show celebratory animation
         setShowCelebration(true);
@@ -177,7 +187,7 @@ export default function MarketingPlanPage() {
       );
       setIsGenerating(false);
     }
-  }, [state, user?.uid]);
+  }, [state, user?.id]);
 
   // Show plan when it loads from Firestore
   useEffect(() => {
@@ -220,8 +230,8 @@ export default function MarketingPlanPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={formAction}>
-            <input type="hidden" name="userId" value={user?.uid || ''} />
+          <form action={handleFormSubmit}>
+            <input type="hidden" name="userId" value={user?.id || ''} />
             <input type="hidden" name="brandAudit" value={JSON.stringify(brandAuditData || { results: [] })} />
             <input type="hidden" name="competitors" value={JSON.stringify(competitorsData || [])} />
             <GeneratePlanButton disabled={!isDataReady} />
@@ -257,7 +267,7 @@ export default function MarketingPlanPage() {
           </CardHeader>
           <CardContent>
             <ul className="space-y-6">
-              {displayPlan.plan.map((item, index) => (
+              {(displayPlan as any).steps?.map((item: any, index: number) => (
                 <li
                   key={index}
                   className={cn(
@@ -466,6 +476,14 @@ export default function MarketingPlanPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Celebration animation for successful plan generation */}
+      <Celebration
+        show={showCelebration}
+        type="confetti"
+        message="🎉 Marketing Plan Generated!"
+        onComplete={() => setShowCelebration(false)}
+      />
     </div>
   );
 }
