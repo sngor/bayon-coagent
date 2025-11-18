@@ -11,11 +11,22 @@ import type {
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
 
+// Duration constants (in milliseconds)
+const TOAST_DURATION = {
+  SUCCESS: 3000,
+  ERROR: 5000,
+  WARNING: 4000,
+  AI: 4000,
+  DEFAULT: 4000,
+  PERSISTENT: Infinity,
+} as const
+
 type ToasterToast = ToastProps & {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
+  duration?: number
 }
 
 const actionTypes = {
@@ -142,7 +153,7 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
-function toast({ ...props }: Toast) {
+function toast({ duration = TOAST_DURATION.DEFAULT, ...props }: Toast) {
   const id = genId()
 
   const update = (props: ToasterToast) =>
@@ -158,11 +169,19 @@ function toast({ ...props }: Toast) {
       ...props,
       id,
       open: true,
+      duration,
       onOpenChange: (open) => {
         if (!open) dismiss()
       },
     },
   })
+
+  // Auto-dismiss after duration (unless persistent)
+  if (duration !== TOAST_DURATION.PERSISTENT) {
+    setTimeout(() => {
+      dismiss()
+    }, duration)
+  }
 
   return {
     id: id,
@@ -191,4 +210,67 @@ function useToast() {
   }
 }
 
-export { useToast, toast }
+// Helper function for success toasts
+function showSuccessToast(title: string, description?: string) {
+  return toast({
+    title,
+    description,
+    variant: "success",
+    duration: TOAST_DURATION.SUCCESS,
+  })
+}
+
+// Helper function for error toasts
+function showErrorToast(title: string, description?: string) {
+  return toast({
+    title,
+    description,
+    variant: "destructive",
+    duration: TOAST_DURATION.ERROR,
+  })
+}
+
+// Helper function for warning toasts
+function showWarningToast(title: string, description?: string) {
+  return toast({
+    title,
+    description,
+    variant: "warning",
+    duration: TOAST_DURATION.WARNING,
+  })
+}
+
+// Helper function for AI operation toasts
+function showAIToast(title: string, description?: string) {
+  return toast({
+    title,
+    description,
+    variant: "ai",
+    duration: TOAST_DURATION.AI,
+  })
+}
+
+// Helper function for persistent toasts that require manual dismissal
+function showPersistentToast(
+  title: string,
+  description?: string,
+  variant: ToastProps["variant"] = "default"
+) {
+  return toast({
+    title,
+    description,
+    variant,
+    duration: TOAST_DURATION.PERSISTENT,
+  })
+}
+
+export {
+  useToast,
+  toast,
+  showSuccessToast,
+  showErrorToast,
+  showWarningToast,
+  showAIToast,
+  showPersistentToast,
+  TOAST_DURATION,
+}

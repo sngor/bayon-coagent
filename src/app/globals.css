@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -17,6 +16,8 @@ body {
     --popover-foreground: 224 71.4% 4.1%;
     --primary: 220 60% 50%;
     --primary-foreground: 210 20% 98%;
+    --primary-hover: 220 60% 45%;
+    --primary-active: 220 60% 40%;
     --secondary: 220 14.3% 95.9%;
     --secondary-foreground: 220 9.1% 42.9%;
     --muted: 220 14.3% 95.9%;
@@ -34,6 +35,62 @@ body {
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
     --radius: 0.5rem;
+
+    /* Success palette */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 71% 95%;
+    --success-hover: 142 71% 40%;
+
+    /* Warning palette */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 38 92% 95%;
+    --warning-hover: 38 92% 45%;
+
+    /* Error palette */
+    --error: 0 84% 60%;
+    --error-foreground: 0 0% 100%;
+    --error-light: 0 84% 95%;
+    --error-hover: 0 84% 55%;
+
+    /* Enhanced gray palette */
+    --gray-50: 220 20% 98%;
+    --gray-100: 220 20% 95%;
+    --gray-200: 220 15% 90%;
+    --gray-300: 220 15% 80%;
+    --gray-400: 220 10% 60%;
+    --gray-500: 220 10% 45%;
+    --gray-600: 220 15% 30%;
+    --gray-700: 220 20% 20%;
+    --gray-800: 220 25% 12%;
+    --gray-900: 220 30% 8%;
+
+    /* Gradient stops */
+    --gradient-start: 220 60% 50%;
+    --gradient-end: 260 60% 50%;
+
+    /* Enhanced spacing tokens */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+    --spacing-3xl: 4rem;
+
+    /* Enhanced shadow tokens */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+
+    /* Transition tokens */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: 500ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --sidebar-background: 224 71.4% 4.1%;
     --sidebar-foreground: 210 20% 98%;
@@ -54,6 +111,8 @@ body {
     --popover-foreground: 210 20% 98%;
     --primary: 220 60% 50%;
     --primary-foreground: 210 20% 98%;
+    --primary-hover: 220 60% 55%;
+    --primary-active: 220 60% 60%;
     --secondary: 215 27.9% 16.9%;
     --secondary-foreground: 210 20% 98%;
     --muted: 215 27.9% 16.9%;
@@ -70,6 +129,47 @@ body {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+
+    /* Success palette - dark mode */
+    --success: 142 71% 50%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 71% 15%;
+    --success-hover: 142 71% 55%;
+
+    /* Warning palette - dark mode */
+    --warning: 38 92% 55%;
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 38 92% 15%;
+    --warning-hover: 38 92% 60%;
+
+    /* Error palette - dark mode */
+    --error: 0 84% 65%;
+    --error-foreground: 0 0% 100%;
+    --error-light: 0 84% 15%;
+    --error-hover: 0 84% 70%;
+
+    /* Enhanced gray palette - dark mode */
+    --gray-50: 220 30% 8%;
+    --gray-100: 220 25% 12%;
+    --gray-200: 220 20% 20%;
+    --gray-300: 220 15% 30%;
+    --gray-400: 220 10% 45%;
+    --gray-500: 220 10% 60%;
+    --gray-600: 220 15% 80%;
+    --gray-700: 220 15% 90%;
+    --gray-800: 220 20% 95%;
+    --gray-900: 220 20% 98%;
+
+    /* Gradient stops - dark mode */
+    --gradient-start: 220 60% 50%;
+    --gradient-end: 260 60% 50%;
+
+    /* Shadow tokens - dark mode (more subtle) */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.6);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.7);
 
     --sidebar-background: 224 71.4% 4.1%;
     --sidebar-foreground: 210 20% 98%;
@@ -97,14 +197,23 @@ body {
   }
 
   .ai-gradient {
-    background: linear-gradient(-45deg, hsl(var(--primary)), hsl(var(--primary) / 0.7));
+    background: linear-gradient(
+      -45deg,
+      hsl(var(--primary)),
+      hsl(var(--primary) / 0.7)
+    );
     background-size: 200% 200%;
     animation: gradient-animation 8s ease infinite;
     color: hsl(var(--primary-foreground));
   }
-  
+
   .shimmer-gradient {
-    background: linear-gradient(110deg, hsl(var(--primary) / 0.9) 8%, hsl(var(--primary)) 18%, hsl(var(--primary) / 0.9) 33%);
+    background: linear-gradient(
+      110deg,
+      hsl(var(--primary) / 0.9) 8%,
+      hsl(var(--primary)) 18%,
+      hsl(var(--primary) / 0.9) 33%
+    );
     background-size: 200% 100%;
     animation: shimmer-animation 2s linear infinite;
     color: hsl(var(--primary-foreground));
@@ -112,13 +221,194 @@ body {
 }
 
 @keyframes gradient-animation {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 @keyframes shimmer-animation {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
+/* Enhanced animation keyframes */
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-in-right {
+  0% {
+    opacity: 0;
+    transform: translateX(-1rem);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-left {
+  0% {
+    opacity: 0;
+    transform: translateX(1rem);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-down {
+  0% {
+    opacity: 0;
+    transform: translateY(-1rem);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes confetti {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Animation utility classes */
+@layer utilities {
+  .animate-fade-in-up {
+    animation: fade-in-up 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-slide-in-left {
+    animation: slide-in-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-slide-down {
+    animation: slide-down 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-bounce-in {
+    animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  .animate-confetti {
+    animation: confetti 3s ease-out forwards;
+  }
+
+  /* Staggered animation delays */
+  .animate-delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .animate-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animate-delay-300 {
+    animation-delay: 300ms;
+  }
+
+  .animate-delay-400 {
+    animation-delay: 400ms;
+  }
+
+  .animate-delay-500 {
+    animation-delay: 500ms;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-fade-in-up,
+  .animate-fade-in,
+  .animate-scale-in,
+  .animate-slide-in-right,
+  .animate-slide-in-left,
+  .animate-slide-down {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

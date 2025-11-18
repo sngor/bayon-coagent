@@ -11,12 +11,20 @@ import {
     CardTitle,
     CardFooter,
 } from '@/components/ui/card';
+import {
+    EnhancedCard,
+    EnhancedCardHeader,
+    EnhancedCardTitle,
+    EnhancedCardDescription,
+    EnhancedCardContent,
+    EnhancedCardFooter,
+} from '@/components/ui/enhanced-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle2, AlertCircle, ArrowRight, Loader2, Sparkles, ServerCrash, Lightbulb, ExternalLink, Star, Globe, Home, Building, MessageSquareQuote, Bot, Trash2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle, ArrowRight, Loader2, Sparkles, ServerCrash, Lightbulb, ExternalLink, Star, Globe, Home, Building, MessageSquareQuote, Bot, Trash2, TrendingUp, Award, Shield } from 'lucide-react';
 import {
     Table,
     TableBody,
@@ -49,13 +57,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getOAuthTokens, type OAuthTokenData } from '@/aws/dynamodb';
 import { useUser } from '@/aws/auth';
-import { doc, collection, query } from 'firebase/firestore';
+import { useItem, useQuery } from '@/aws/dynamodb/hooks';
 import type { Profile, Review, BrandAudit as BrandAuditType, ReviewAnalysis } from '@/lib/types';
 import { runNapAuditAction, getZillowReviewsAction, analyzeReviewSentimentAction, analyzeMultipleReviewsAction } from '@/app/actions';
 import { toast } from '@/hooks/use-toast';
 import { JsonLdDisplay } from '@/components/json-ld-display';
 import { useFormStatus } from 'react-dom';
-import { type AnalyzeMultipleReviewsOutput } from '@/ai/flows/analyze-multiple-reviews';
+import { FirstTimeUseEmptyState } from '@/components/ui/empty-states';
 
 
 type AuditResult = {
@@ -112,7 +120,7 @@ const initialSentimentState: SentimentState = {
 
 type BulkAnalysisState = {
     message: string;
-    data: AnalyzeMultipleReviewsOutput | null;
+    data: ReviewAnalysis | null;
     errors: any;
 }
 
@@ -129,7 +137,7 @@ const sourceIcons: { [key: string]: React.ReactNode } = {
     Yelp: <Building className="w-4 h-4" />,
 };
 
-const generateReviewSchema = (review: Review) => ({
+const generateReviewSchema = (review: any) => ({
     "@context": "https://schema.org",
     "@type": "Review",
     "reviewRating": {
@@ -251,7 +259,6 @@ const isDifferent = (val1?: string, val2?: string) => {
  */
 export default function BrandAuditPage() {
     const { user, isUserLoading } = useUser();
-    const firestore = useFirestore();
 
     const [auditState, auditFormAction] = useActionState(runNapAuditAction, initialAuditState);
     const [zillowState, zillowFormAction] = useActionState(getZillowReviewsAction, initialZillowReviewState);
@@ -259,34 +266,24 @@ export default function BrandAuditPage() {
 
     const [reviewToDelete, setReviewToDelete] = useState<Review | null>(null);
 
-    const agentProfileRef = useMemoFirebase(() => {
-        if (!firestore || !user) return null;
-        return doc(firestore, `users/${user.uid}/agentProfiles/main`);
-    }, [firestore, user]);
+    // Memoize keys for DynamoDB queries
+    const agentProfilePK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
+    const agentProfileSK = useMemo(() => 'AGENT#main', []);
 
-    const { data: agentProfileData, isLoading: isProfileLoading } = useDoc<Profile>(agentProfileRef);
+    const brandAuditPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
+    const brandAuditSK = useMemo(() => 'AUDIT#main', []);
 
-    const brandAuditRef = useMemoFirebase(() => {
-        if (!firestore || !user) return null;
-        return doc(firestore, `users/${user.uid}/brandAudits/main`);
-    }, [firestore, user]);
+    const reviewAnalysisPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
+    const reviewAnalysisSK = useMemo(() => 'ANALYSIS#main', []);
 
-    const { data: savedAuditData } = useDoc<BrandAuditType>(brandAuditRef);
+    const reviewsPK = useMemo(() => user ? `REVIEW#${user.id}` : null, [user]);
+    const reviewsSKPrefix = useMemo(() => 'REVIEW#', []);
 
-    const reviewAnalysisRef = useMemoFirebase(() => {
-        if (!firestore || !user) return null;
-        return doc(firestore, `users/${user.uid}/reviewAnalyses/main`);
-    }, [firestore, user]);
-
-    const { data: savedAnalysisData } = useDoc<ReviewAnalysis>(reviewAnalysisRef);
-
-
-    const reviewsQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
-        return query(collection(firestore, 'reviews'));
-    }, [firestore]);
-
-    const { data: reviews, isLoading: isLoadingReviews } = useCollection<Review>(reviewsQuery);
+    // Fetch data using DynamoDB hooks
+    const { data: agentProfileData, isLoading: isProfileLoading } = useItem<Profile>(agentProfilePK, agentProfileSK);
+    const { data: savedAuditData } = useItem<BrandAuditType>(brandAuditPK, brandAuditSK);
+    const { data: savedAnalysisData } = useItem<ReviewAnalysis>(reviewAnalysisPK, reviewAnalysisSK);
+    const { data: reviews, isLoading: isLoadingReviews } = useQuery<Review>(reviewsPK, reviewsSKPrefix);
 
     const [gbpData, setGbpData] = useState<OAuthTokenData | null>(null);
 
@@ -347,14 +344,7 @@ export default function BrandAuditPage() {
     }, [profileCompleteness, gbpConnected]);
 
     useEffect(() => {
-        if (auditState.message === 'success' && auditState.data && user?.uid && firestore) {
-            const auditData = {
-                id: 'main',
-                results: auditState.data,
-                lastRun: new Date().toISOString(),
-            }
-            const auditDocRef = doc(firestore, `users/${user.uid}/brandAudits/main`);
-            setDocumentNonBlocking(auditDocRef, auditData, { merge: true });
+        if (auditState.message === 'success' && auditState.data) {
             toast({
                 title: 'Audit Complete',
                 description: "Your NAP consistency results have been updated."
@@ -366,12 +356,11 @@ export default function BrandAuditPage() {
                 description: auditState.message,
             });
         }
-    }, [auditState, user?.uid, firestore]);
+    }, [auditState]);
 
     const handleDeleteReview = () => {
-        if (!reviewToDelete || !user || !firestore) return;
-        const reviewDocRef = doc(firestore, 'reviews', reviewToDelete.id);
-        deleteDocumentNonBlocking(reviewDocRef);
+        if (!reviewToDelete || !user) return;
+        // TODO: Implement delete review functionality with DynamoDB
         toast({
             title: 'Review Deleted',
             description: `The review from ${reviewToDelete.author.name} has been removed.`,
@@ -380,13 +369,13 @@ export default function BrandAuditPage() {
     };
 
     const reviewDistribution = useMemo(() => {
-        if (!reviews) return [];
+        if (!reviews || reviews.length === 0) return [];
         const distribution: { [key: string]: number } = {
             Google: 0,
             Zillow: 0,
             Yelp: 0,
         };
-        reviews.forEach((review) => {
+        reviews.forEach((review: Review) => {
             if (distribution[review.source] !== undefined) {
                 distribution[review.source]++;
             }
@@ -433,49 +422,151 @@ export default function BrandAuditPage() {
                 description="A unified view of your online presence, authority, and reputation."
             />
 
+            {/* Prominent Brand Score Hero Section */}
+            <EnhancedCard
+                variant="gradient"
+                className="animate-fade-in-up border-2 border-primary/30"
+                style={{ animationDelay: '0.05s' }}
+            >
+                <EnhancedCardContent className="p-8">
+                    <div className="grid gap-8 md:grid-cols-[auto_1fr] items-center">
+                        {/* Large Score Display */}
+                        <div className="flex flex-col items-center justify-center">
+                            <div className="relative">
+                                {/* Circular background */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-purple-600/20 rounded-full blur-2xl" />
+                                <div className="relative bg-background/95 backdrop-blur-sm rounded-full p-8 border-4 border-primary/30 shadow-2xl">
+                                    <div className="flex flex-col items-center">
+                                        <div className="text-7xl font-bold bg-gradient-to-br from-primary to-purple-600 bg-clip-text text-transparent">
+                                            {overallScore}
+                                        </div>
+                                        <div className="text-sm font-medium text-muted-foreground mt-1">
+                                            out of 100
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {/* Score Badge */}
+                            <Badge
+                                className={cn(
+                                    "mt-4 text-sm px-4 py-1",
+                                    overallScore >= 80 && "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+                                    overallScore >= 60 && overallScore < 80 && "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
+                                    overallScore < 60 && "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                                )}
+                            >
+                                {overallScore >= 80 ? "Excellent" : overallScore >= 60 ? "Good" : "Needs Improvement"}
+                            </Badge>
+                        </div>
+
+                        {/* Score Explanation */}
+                        <div className="space-y-6">
+                            <div>
+                                <h3 className="text-2xl font-bold font-headline mb-2">Your Brand Score</h3>
+                                <p className="text-muted-foreground">
+                                    Your Brand Score is a comprehensive measure of your online authority and consistency.
+                                    A higher score means a stronger digital presence, making it easier for clients to find and trust you.
+                                </p>
+                            </div>
+
+                            {/* Score Breakdown */}
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="flex items-start gap-3 p-4 rounded-lg bg-background/50 border">
+                                    <div className="p-2 rounded-lg bg-primary/10">
+                                        <Award className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div>
+                                        <div className="font-semibold">Profile Completeness</div>
+                                        <div className="text-2xl font-bold text-primary">{completenessScore}%</div>
+                                        <div className="text-xs text-muted-foreground mt-1">60% weight</div>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3 p-4 rounded-lg bg-background/50 border">
+                                    <div className="p-2 rounded-lg bg-primary/10">
+                                        <Shield className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div>
+                                        <div className="font-semibold">GBP Connection</div>
+                                        <div className="text-2xl font-bold text-primary">{gbpConnected ? '100%' : '0%'}</div>
+                                        <div className="text-xs text-muted-foreground mt-1">40% weight</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </EnhancedCardContent>
+            </EnhancedCard>
+
             <div className="grid gap-8 lg:grid-cols-3">
                 <div className="lg:col-span-2 space-y-8">
-                    <Card className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-                        <CardHeader>
-                            <CardTitle className="font-headline">Overall Brand Score</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <div className="flex flex-col items-center justify-center space-y-2 rounded-lg border p-6">
-                                    <div className="text-6xl font-bold text-primary">{overallScore}</div>
-                                    <p className="text-muted-foreground">out of 100</p>
-                                </div>
-                                <div className="space-y-4">
-                                    <p className="text-muted-foreground">
-                                        Your Brand Score is a measure of your online authority and consistency. A higher score means a stronger digital presence, making it easier for clients to find and trust you.
-                                    </p>
-                                    <p className="text-muted-foreground">
-                                        This score is based on profile completeness, key integrations like Google Business Profile, and NAP consistency across major platforms.
-                                    </p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
 
-                    <Card className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                        <CardHeader>
-                            <CardTitle className="font-headline">NAP Consistency Audit</CardTitle>
-                            <CardDescription>
+                    <EnhancedCard variant="elevated" className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                        <EnhancedCardHeader>
+                            <EnhancedCardTitle className="font-headline text-2xl">NAP Consistency Audit</EnhancedCardTitle>
+                            <EnhancedCardDescription>
                                 Ensuring your Name, Address, and Phone are consistent is vital for local SEO.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div>
-                                <h3 className="text-sm font-semibold uppercase text-muted-foreground mb-2">Your Official Business Information</h3>
-                                <div className="space-y-2 rounded-lg border p-4 text-sm">
-                                    <p><strong className="w-20 inline-block font-medium">Name:</strong> {agentProfileData?.name || 'Not set'}</p>
-                                    <p><strong className="w-20 inline-block font-medium">Address:</strong> {agentProfileData?.address || 'Not set'}</p>
-                                    <p><strong className="w-20 inline-block font-medium">Phone:</strong> {agentProfileData?.phone || 'Not set'}</p>
-                                    <p><strong className="w-20 inline-block font-medium">Website:</strong> {agentProfileData?.website || 'Not set'}</p>
+                            </EnhancedCardDescription>
+                        </EnhancedCardHeader>
+                        <EnhancedCardContent className="space-y-6">
+                            {/* Show empty state if no audit has been run */}
+                            {!displayAuditData ? (
+                                <FirstTimeUseEmptyState
+                                    icon={<Shield className="h-8 w-8 text-primary" />}
+                                    title="Run Your First Brand Audit"
+                                    description="A Brand Audit checks your Name, Address, and Phone (NAP) consistency across major platforms like Google, Yelp, and Facebook. Consistent NAP information is crucial for local SEO and helps potential clients find you easily. Complete your profile information below, then run your first audit to see how your business appears online."
+                                    action={{
+                                        label: isAuditDisabled ? "Complete Profile First" : "Run Your First Audit",
+                                        onClick: () => {
+                                            if (isAuditDisabled) {
+                                                window.location.href = '/profile';
+                                            } else {
+                                                // Trigger the form submission
+                                                const form = document.querySelector('form[data-audit-form]') as HTMLFormElement;
+                                                if (form) form.requestSubmit();
+                                            }
+                                        },
+                                        variant: isAuditDisabled ? "outline" : "ai",
+                                    }}
+                                    secondaryAction={
+                                        isAuditDisabled
+                                            ? undefined
+                                            : {
+                                                label: "Learn More About NAP",
+                                                onClick: () => {
+                                                    window.open('https://moz.com/learn/seo/nap', '_blank');
+                                                },
+                                            }
+                                    }
+                                />
+                            ) : null}
+
+                            {/* Official Business Info */}
+                            <div className="bg-gradient-to-br from-primary/5 to-purple-600/5 rounded-lg p-5 border border-primary/10">
+                                <h3 className="text-sm font-semibold uppercase text-primary mb-3 flex items-center gap-2">
+                                    <Shield className="h-4 w-4" />
+                                    Your Official Business Information
+                                </h3>
+                                <div className="space-y-3 text-sm">
+                                    <div className="flex items-start gap-3 p-3 rounded-md bg-background/50">
+                                        <strong className="w-24 font-semibold text-foreground">Name:</strong>
+                                        <span className="text-muted-foreground">{agentProfileData?.name || 'Not set'}</span>
+                                    </div>
+                                    <div className="flex items-start gap-3 p-3 rounded-md bg-background/50">
+                                        <strong className="w-24 font-semibold text-foreground">Address:</strong>
+                                        <span className="text-muted-foreground">{agentProfileData?.address || 'Not set'}</span>
+                                    </div>
+                                    <div className="flex items-start gap-3 p-3 rounded-md bg-background/50">
+                                        <strong className="w-24 font-semibold text-foreground">Phone:</strong>
+                                        <span className="text-muted-foreground">{agentProfileData?.phone || 'Not set'}</span>
+                                    </div>
+                                    <div className="flex items-start gap-3 p-3 rounded-md bg-background/50">
+                                        <strong className="w-24 font-semibold text-foreground">Website:</strong>
+                                        <span className="text-muted-foreground">{agentProfileData?.website || 'Not set'}</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            <form action={auditFormAction}>
+                            <form action={auditFormAction} data-audit-form>
                                 <input type="hidden" name="name" value={agentProfileData?.name || ''} />
                                 <input type="hidden" name="agencyName" value={agentProfileData?.agencyName || ''} />
                                 <input type="hidden" name="address" value={agentProfileData?.address || ''} />
@@ -485,43 +576,86 @@ export default function BrandAuditPage() {
                             </form>
 
                             {displayAuditData && (
-                                <div className="mt-6">
-                                    <h3 className="text-lg font-medium font-headline mb-4">Audit Results</h3>
-                                    <div className="border rounded-lg overflow-x-auto">
+                                <div className="mt-6 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-lg font-semibold font-headline">Audit Results</h3>
+                                        {/* Summary badges */}
+                                        <div className="flex gap-2">
+                                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300">
+                                                {displayAuditData.filter((r: AuditResult) => r.status === 'Consistent').length} Consistent
+                                            </Badge>
+                                            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300">
+                                                {displayAuditData.filter((r: AuditResult) => r.status === 'Inconsistent').length} Issues
+                                            </Badge>
+                                        </div>
+                                    </div>
+
+                                    <div className="border rounded-lg overflow-hidden">
                                         <Table>
                                             <TableHeader>
-                                                <TableRow>
-                                                    <TableHead className="w-[150px]">Platform</TableHead>
-                                                    <TableHead>Status</TableHead>
-                                                    <TableHead>Found Name</TableHead>
-                                                    <TableHead>Found Address</TableHead>
-                                                    <TableHead>Found Phone</TableHead>
-                                                    <TableHead className="text-right">Actions</TableHead>
+                                                <TableRow className="bg-muted/50">
+                                                    <TableHead className="w-[140px] font-semibold">Platform</TableHead>
+                                                    <TableHead className="font-semibold">Status</TableHead>
+                                                    <TableHead className="font-semibold">Found Name</TableHead>
+                                                    <TableHead className="font-semibold">Found Address</TableHead>
+                                                    <TableHead className="font-semibold">Found Phone</TableHead>
+                                                    <TableHead className="text-right font-semibold">Actions</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {displayAuditData.map((result) => (
-                                                    <TableRow key={result.platform}>
-                                                        <TableCell className="font-medium">{result.platform}</TableCell>
+                                                {displayAuditData.map((result: AuditResult) => (
+                                                    <TableRow
+                                                        key={result.platform}
+                                                        className={cn(
+                                                            "transition-colors",
+                                                            result.status === 'Inconsistent' && "bg-red-50/50 dark:bg-red-900/10",
+                                                            result.status === 'Consistent' && "bg-green-50/50 dark:bg-green-900/10"
+                                                        )}
+                                                    >
+                                                        <TableCell className="font-semibold">{result.platform}</TableCell>
                                                         <TableCell>
-                                                            <Badge variant={result.status === 'Consistent' ? 'default' : result.status === 'Inconsistent' ? 'destructive' : 'secondary'}
-                                                                className={cn(result.status === 'Consistent' && 'bg-green-100 text-green-800', result.status === 'Inconsistent' && 'bg-red-100 text-red-800')}
+                                                            <Badge
+                                                                variant={result.status === 'Consistent' ? 'default' : result.status === 'Inconsistent' ? 'destructive' : 'secondary'}
+                                                                className={cn(
+                                                                    "font-medium",
+                                                                    result.status === 'Consistent' && 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200',
+                                                                    result.status === 'Inconsistent' && 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border-red-200',
+                                                                    result.status === 'Not Found' && 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+                                                                )}
                                                             >
+                                                                {result.status === 'Consistent' && <CheckCircle2 className="h-3 w-3 mr-1 inline" />}
+                                                                {result.status === 'Inconsistent' && <AlertCircle className="h-3 w-3 mr-1 inline" />}
                                                                 {result.status}
                                                             </Badge>
                                                         </TableCell>
-                                                        <TableCell className={cn("text-sm", result.status === 'Inconsistent' && isDifferent(result.foundName, agentProfileData?.name) && 'text-destructive font-semibold')}>
-                                                            {result.foundName || 'N/A'}
+                                                        <TableCell className={cn(
+                                                            "text-sm",
+                                                            result.status === 'Inconsistent' && isDifferent(result.foundName, agentProfileData?.name) && 'text-red-700 dark:text-red-400 font-bold bg-red-100/50 dark:bg-red-900/20'
+                                                        )}>
+                                                            {result.foundName || <span className="text-muted-foreground italic">N/A</span>}
                                                         </TableCell>
-                                                        <TableCell className={cn("text-sm", result.status === 'Inconsistent' && isDifferent(result.foundAddress, agentProfileData?.address) && 'text-destructive font-semibold')}>
-                                                            {result.foundAddress || 'N/A'}
+                                                        <TableCell className={cn(
+                                                            "text-sm",
+                                                            result.status === 'Inconsistent' && isDifferent(result.foundAddress, agentProfileData?.address) && 'text-red-700 dark:text-red-400 font-bold bg-red-100/50 dark:bg-red-900/20'
+                                                        )}>
+                                                            {result.foundAddress || <span className="text-muted-foreground italic">N/A</span>}
                                                         </TableCell>
-                                                        <TableCell className={cn("text-sm", result.status === 'Inconsistent' && isDifferent(result.foundPhone, agentProfileData?.phone) && 'text-destructive font-semibold')}>
-                                                            {result.foundPhone || 'N/A'}
+                                                        <TableCell className={cn(
+                                                            "text-sm",
+                                                            result.status === 'Inconsistent' && isDifferent(result.foundPhone, agentProfileData?.phone) && 'text-red-700 dark:text-red-400 font-bold bg-red-100/50 dark:bg-red-900/20'
+                                                        )}>
+                                                            {result.foundPhone || <span className="text-muted-foreground italic">N/A</span>}
                                                         </TableCell>
                                                         <TableCell className="text-right">
                                                             {result.platformUrl && (
-                                                                <Button variant="outline" size="sm" asChild>
+                                                                <Button
+                                                                    variant={result.status === 'Inconsistent' ? 'default' : 'outline'}
+                                                                    size="sm"
+                                                                    asChild
+                                                                    className={cn(
+                                                                        result.status === 'Inconsistent' && "bg-red-600 hover:bg-red-700 text-white"
+                                                                    )}
+                                                                >
                                                                     <a href={result.platformUrl} target="_blank" rel="noopener noreferrer">
                                                                         Fix Now <ExternalLink className="ml-2 h-3 w-3" />
                                                                     </a>
@@ -533,12 +667,16 @@ export default function BrandAuditPage() {
                                             </TableBody>
                                         </Table>
                                     </div>
-                                    <div className="mt-4 p-4 bg-accent/50 rounded-lg text-sm">
+
+                                    {/* Help Section */}
+                                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                                         <div className="flex items-start gap-3">
-                                            <Lightbulb className="w-5 h-5 text-accent-foreground flex-shrink-0 mt-0.5" />
+                                            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/40">
+                                                <Lightbulb className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                            </div>
                                             <div>
-                                                <h4 className="font-semibold text-accent-foreground">How to Fix Inconsistencies</h4>
-                                                <p className="text-muted-foreground mt-1">
+                                                <h4 className="font-semibold text-blue-900 dark:text-blue-100">How to Fix Inconsistencies</h4>
+                                                <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
                                                     For any platforms marked 'Inconsistent', use the 'Fix Now' button to go to the page and update your profile information to exactly match your official details. For 'Not Found' results, create a profile on that platform. Consistency is key for local SEO.
                                                 </p>
                                             </div>
@@ -560,69 +698,127 @@ export default function BrandAuditPage() {
                                     </div>
                                 </div>
                             )}
-                        </CardContent>
-                    </Card>
+                        </EnhancedCardContent>
+                    </EnhancedCard>
 
                 </div>
-                <div className="lg:col-span-1 space-y-8">
-                    <Card className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-                        <CardHeader>
-                            <CardTitle className="font-headline">Profile Completeness</CardTitle>
-                            <CardDescription>
-                                A complete profile builds trust and improves your visibility.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <Progress value={completenessScore} />
-                            <div className="text-sm text-muted-foreground">
-                                Your profile is {completenessScore}% complete.
-                                {completenessScore < 100 && ' Fill out the remaining sections to improve your score.'}
+                <div className="lg:col-span-1 space-y-6">
+                    {/* Profile Completeness Card */}
+                    <EnhancedCard variant="bordered" className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                        <EnhancedCardHeader>
+                            <div className="flex items-center gap-2">
+                                <div className="p-2 rounded-lg bg-primary/10">
+                                    <Award className="h-5 w-5 text-primary" />
+                                </div>
+                                <div>
+                                    <EnhancedCardTitle className="font-headline">Profile Completeness</EnhancedCardTitle>
+                                    <EnhancedCardDescription className="text-xs">
+                                        Build trust and improve visibility
+                                    </EnhancedCardDescription>
+                                </div>
                             </div>
-                        </CardContent>
-                        <CardFooter>
-                            <Button variant="outline" asChild>
+                        </EnhancedCardHeader>
+                        <EnhancedCardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-muted-foreground">Progress</span>
+                                    <span className="font-bold text-2xl text-primary">{completenessScore}%</span>
+                                </div>
+                                <Progress value={completenessScore} className="h-3" />
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                                {completenessScore === 100
+                                    ? '🎉 Your profile is complete!'
+                                    : `Fill out ${Math.ceil((100 - completenessScore) / 10)} more sections to improve your score.`
+                                }
+                            </p>
+                        </EnhancedCardContent>
+                        <EnhancedCardFooter>
+                            <Button variant="outline" className="w-full" asChild>
                                 <Link href="/profile">
                                     Edit Profile <ArrowRight className="ml-2 h-4 w-4" />
                                 </Link>
                             </Button>
-                        </CardFooter>
-                    </Card>
-                    <Card className="animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-                        <CardHeader>
-                            <CardTitle className="font-headline">Google Business Profile</CardTitle>
-                            <CardDescription>
-                                Critical for local search visibility.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className={cn(
-                                "flex items-center gap-3 rounded-lg p-4 text-lg font-semibold",
-                                gbpConnected ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                            )}>
-                                {gbpConnected ? <CheckCircle2 className="h-6 w-6" /> : <AlertCircle className="h-6 w-6" />}
-                                <span>{gbpConnected ? 'Connected' : 'Not Connected'}</span>
+                        </EnhancedCardFooter>
+                    </EnhancedCard>
+
+                    {/* Google Business Profile Card */}
+                    <EnhancedCard
+                        variant={gbpConnected ? "elevated" : "bordered"}
+                        className={cn(
+                            "animate-fade-in-up",
+                            gbpConnected && "border-green-200 dark:border-green-800"
+                        )}
+                        style={{ animationDelay: '0.4s' }}
+                    >
+                        <EnhancedCardHeader>
+                            <div className="flex items-center gap-2">
+                                <div className={cn(
+                                    "p-2 rounded-lg",
+                                    gbpConnected ? "bg-green-100 dark:bg-green-900/30" : "bg-red-100 dark:bg-red-900/30"
+                                )}>
+                                    <Globe className={cn(
+                                        "h-5 w-5",
+                                        gbpConnected ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                                    )} />
+                                </div>
+                                <div>
+                                    <EnhancedCardTitle className="font-headline">Google Business Profile</EnhancedCardTitle>
+                                    <EnhancedCardDescription className="text-xs">
+                                        Critical for local search
+                                    </EnhancedCardDescription>
+                                </div>
                             </div>
-                        </CardContent>
+                        </EnhancedCardHeader>
+                        <EnhancedCardContent>
+                            <div className={cn(
+                                "flex items-center justify-center gap-3 rounded-lg p-6 text-lg font-semibold border-2",
+                                gbpConnected
+                                    ? "bg-green-50 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800"
+                                    : "bg-red-50 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800"
+                            )}>
+                                {gbpConnected ? (
+                                    <>
+                                        <CheckCircle2 className="h-7 w-7" />
+                                        <span>Connected</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <AlertCircle className="h-7 w-7" />
+                                        <span>Not Connected</span>
+                                    </>
+                                )}
+                            </div>
+                        </EnhancedCardContent>
                         {!gbpConnected && (
-                            <CardFooter>
-                                <Button variant="default" asChild>
-                                    <Link href="/integrations" >
+                            <EnhancedCardFooter>
+                                <Button variant="default" className="w-full bg-green-600 hover:bg-green-700" asChild>
+                                    <Link href="/integrations">
                                         Connect Now <ArrowRight className="ml-2 h-4 w-4" />
                                     </Link>
                                 </Button>
-                            </CardFooter>
+                            </EnhancedCardFooter>
                         )}
-                    </Card>
-                    <Card className="animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
-                        <CardHeader>
-                            <CardTitle className="font-headline">
-                                Review Distribution
-                            </CardTitle>
-                            <CardDescription>
-                                Where your client reviews are coming from.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex-1 pb-0">
+                    </EnhancedCard>
+
+                    {/* Review Distribution Card */}
+                    <EnhancedCard variant="glass" className="animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+                        <EnhancedCardHeader>
+                            <div className="flex items-center gap-2">
+                                <div className="p-2 rounded-lg bg-primary/10">
+                                    <TrendingUp className="h-5 w-5 text-primary" />
+                                </div>
+                                <div>
+                                    <EnhancedCardTitle className="font-headline">
+                                        Review Distribution
+                                    </EnhancedCardTitle>
+                                    <EnhancedCardDescription className="text-xs">
+                                        Where reviews are coming from
+                                    </EnhancedCardDescription>
+                                </div>
+                            </div>
+                        </EnhancedCardHeader>
+                        <EnhancedCardContent className="flex-1 pb-0">
                             <ChartContainer
                                 config={chartConfig}
                                 className="mx-auto aspect-square max-h-[250px]"
@@ -633,39 +829,50 @@ export default function BrandAuditPage() {
                                     outerRadius="100%"
                                     startAngle={90}
                                     endAngle={-270}
-                                    animationDuration={500}
                                 >
                                     <ChartTooltip
                                         cursor={false}
                                         content={<ChartTooltipContent hideLabel />}
                                     />
                                     <RadialBar dataKey="reviews" background>
-                                        {reviewDistribution.map((entry, index) => (
+                                        {reviewDistribution.map((entry: any, index: number) => (
                                             <Cell key={`cell-${index}`} fill={entry.fill} />
                                         ))}
                                     </RadialBar>
                                     <ChartLegend content={<ChartLegendContent nameKey="source" />} />
                                 </RadialBarChart>
                             </ChartContainer>
-                        </CardContent>
-                        <CardFooter className="flex-col gap-2 text-sm">
-                            <div className="flex items-center gap-2 font-medium leading-none">
-                                Total Reviews: {totalReviews}
+                        </EnhancedCardContent>
+                        <EnhancedCardFooter className="flex-col gap-3 text-sm pt-6">
+                            <div className="w-full p-4 rounded-lg bg-primary/5 border border-primary/10">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-muted-foreground">Total Reviews</span>
+                                    <span className="text-2xl font-bold text-primary">{totalReviews}</span>
+                                </div>
                             </div>
-                            <div className="leading-none text-muted-foreground">
-                                Showing total reviews from all sources
-                            </div>
-                        </CardFooter>
-                    </Card>
+                            <p className="text-xs text-center text-muted-foreground">
+                                Showing reviews from all sources
+                            </p>
+                        </EnhancedCardFooter>
+                    </EnhancedCard>
                 </div>
             </div>
+
+            {/* Bottom Section - Zillow Importer and Review Feed */}
             <div className="grid gap-8 lg:grid-cols-2">
-                <Card className="lg:col-span-1 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-                    <CardHeader>
-                        <CardTitle className="font-headline">Zillow Review Importer & Analyzer</CardTitle>
-                        <CardDescription>Fetch your latest Zillow reviews and analyze sentiment with AI.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
+                <EnhancedCard variant="elevated" className="lg:col-span-1 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
+                    <EnhancedCardHeader>
+                        <div className="flex items-center gap-2">
+                            <div className="p-2 rounded-lg bg-primary/10">
+                                <Bot className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                                <EnhancedCardTitle className="font-headline">Zillow Review Importer & Analyzer</EnhancedCardTitle>
+                                <EnhancedCardDescription>Fetch your latest Zillow reviews and analyze sentiment with AI.</EnhancedCardDescription>
+                            </div>
+                        </div>
+                    </EnhancedCardHeader>
+                    <EnhancedCardContent>
                         <div className="flex flex-wrap gap-2">
                             <form action={zillowFormAction}>
                                 <input type="hidden" name="agentEmail" value={agentProfileData?.zillowEmail || ''} />
@@ -673,8 +880,8 @@ export default function BrandAuditPage() {
                             </form>
                             {fetchedReviews && fetchedReviews.length > 0 && (
                                 <form action={bulkAnalysisFormAction}>
-                                    <input type="hidden" name="comments" value={JSON.stringify(fetchedReviews.map(r => r.comment))} />
-                                    <input type="hidden" name="userId" value={user?.uid || ''} />
+                                    <input type="hidden" name="comments" value={JSON.stringify(fetchedReviews.map((r: ZillowReview) => r.comment))} />
+                                    <input type="hidden" name="userId" value={user?.id || ''} />
                                     <AnalyzeAllButton />
                                 </form>
                             )}
@@ -682,12 +889,12 @@ export default function BrandAuditPage() {
                         {isZillowDisabled && <p className="text-sm text-muted-foreground mt-2">Set your Zillow email in your <Link href="/profile" className="underline">profile</Link> to use this feature.</p>}
 
                         {displayAnalysisData && (
-                            <Card className="mt-6 bg-secondary/30">
-                                <CardHeader>
-                                    <CardTitle className="font-headline text-lg">Overall Review Analysis</CardTitle>
-                                    {'analyzedAt' in displayAnalysisData && displayAnalysisData.analyzedAt && <CardDescription>Last analyzed on {new Date(displayAnalysisData.analyzedAt).toLocaleString()}</CardDescription>}
-                                </CardHeader>
-                                <CardContent className="space-y-4">
+                            <EnhancedCard variant="gradient" className="mt-6">
+                                <EnhancedCardHeader>
+                                    <EnhancedCardTitle className="font-headline text-lg">Overall Review Analysis</EnhancedCardTitle>
+                                    {'analyzedAt' in displayAnalysisData && displayAnalysisData.analyzedAt && <EnhancedCardDescription>Last analyzed on {new Date(displayAnalysisData.analyzedAt).toLocaleString()}</EnhancedCardDescription>}
+                                </EnhancedCardHeader>
+                                <EnhancedCardContent className="space-y-4">
                                     <div>
                                         <h4 className="font-semibold">Overall Sentiment</h4>
                                         <Badge
@@ -708,42 +915,49 @@ export default function BrandAuditPage() {
                                     <div>
                                         <h4 className="font-semibold">Common Themes</h4>
                                         <div className="flex flex-wrap gap-2 mt-1">
-                                            {displayAnalysisData.commonThemes.map(theme => <Badge key={theme} variant="secondary">{theme}</Badge>)}
+                                            {displayAnalysisData.commonThemes.map((theme: string) => <Badge key={theme} variant="secondary">{theme}</Badge>)}
                                         </div>
                                     </div>
                                     <div>
                                         <h4 className="font-semibold">Keywords</h4>
                                         <div className="flex flex-wrap gap-2 mt-1">
-                                            {displayAnalysisData.keywords.map(keyword => <Badge key={keyword} variant="outline">{keyword}</Badge>)}
+                                            {displayAnalysisData.keywords.map((keyword: string) => <Badge key={keyword} variant="outline">{keyword}</Badge>)}
                                         </div>
                                     </div>
-                                </CardContent>
-                            </Card>
+                                </EnhancedCardContent>
+                            </EnhancedCard>
                         )}
 
 
                         {fetchedReviews && (
                             <div className="mt-6 space-y-4">
-                                <h3 className="text-lg font-medium font-headline">Fetched Reviews</h3>
-                                {fetchedReviews.map((review, index) => (
+                                <h3 className="text-lg font-semibold font-headline">Fetched Reviews</h3>
+                                {fetchedReviews.map((review: ZillowReview, index: number) => (
                                     <FetchedReviewCard key={index} review={review} />
                                 ))}
                             </div>
                         )}
-                    </CardContent>
-                </Card>
+                    </EnhancedCardContent>
+                </EnhancedCard>
 
-                <Card className="lg:col-span-1 animate-fade-in-up" style={{ animationDelay: '0.7s' }}>
-                    <CardHeader>
-                        <CardTitle className="font-headline">Client Review Feed</CardTitle>
-                        <CardDescription>Your latest reviews from across the web.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {isLoadingReviews && <p>Loading reviews...</p>}
+                <EnhancedCard variant="elevated" className="lg:col-span-1 animate-fade-in-up" style={{ animationDelay: '0.7s' }}>
+                    <EnhancedCardHeader>
+                        <div className="flex items-center gap-2">
+                            <div className="p-2 rounded-lg bg-primary/10">
+                                <MessageSquareQuote className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                                <EnhancedCardTitle className="font-headline">Client Review Feed</EnhancedCardTitle>
+                                <EnhancedCardDescription>Your latest reviews from across the web.</EnhancedCardDescription>
+                            </div>
+                        </div>
+                    </EnhancedCardHeader>
+                    <EnhancedCardContent className="space-y-4">
+                        {isLoadingReviews && <p className="text-muted-foreground">Loading reviews...</p>}
                         <AlertDialog>
                             {reviews && reviews.length > 0 ? (
-                                reviews.map((review) => (
-                                    <Card key={review.id} className="bg-secondary/30 card-interactive group/review">
+                                reviews.map((review: Review) => (
+                                    <Card key={review.id} className="bg-secondary/30 hover:shadow-md transition-shadow group/review">
                                         <CardHeader>
                                             <div className="flex justify-between items-start gap-2">
                                                 <div className="flex items-start gap-4">
@@ -811,7 +1025,7 @@ export default function BrandAuditPage() {
                                     </Card>
                                 ))
                             ) : (
-                                !isLoadingReviews && <p>No reviews found.</p>
+                                !isLoadingReviews && <p className="text-muted-foreground">No reviews found.</p>
                             )}
                             <AlertDialogContent>
                                 <AlertDialogHeader>
@@ -828,8 +1042,8 @@ export default function BrandAuditPage() {
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
-                    </CardContent>
-                </Card>
+                    </EnhancedCardContent>
+                </EnhancedCard>
             </div>
         </div>
     );

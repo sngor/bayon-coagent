@@ -48,6 +48,13 @@ import {
   RefreshCw,
   ServerCrash,
   ShieldAlert,
+  TrendingUp,
+  FileText,
+  Video,
+  MapPin,
+  MessageSquare,
+  Home,
+  Check,
 } from 'lucide-react';
 import { marked } from 'marked';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -366,8 +373,12 @@ function GeneratingContentPlaceholder() {
 
   return (
     <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-full p-8 transition-all duration-300">
-      <Loader2 className="h-10 w-10 mb-4 animate-spin text-primary" />
-      <p className="font-semibold text-lg">{currentMessage}</p>
+      <div className="relative mb-6">
+        <div className="w-16 h-16 border-4 border-primary/20 rounded-full" />
+        <div className="absolute top-0 left-0 w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <Sparkles className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-primary animate-pulse" />
+      </div>
+      <p className="font-semibold text-lg animate-pulse">{currentMessage}</p>
       <p className="text-sm mt-1">This may take a few moments.</p>
     </div>
   );
@@ -449,12 +460,19 @@ export default function ContentEnginePage() {
     scanIndexForward: false, // descending order
   });
 
-  const copyToClipboard = (text: string, e: React.MouseEvent<HTMLElement>) => {
-    e.currentTarget.focus();
+  const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
+
+  const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
+    setCopiedStates(prev => ({ ...prev, [id]: true }));
     toast({
       title: 'Copied to Clipboard!',
+      description: 'Content is ready to paste',
+      duration: 2000,
     });
+    setTimeout(() => {
+      setCopiedStates(prev => ({ ...prev, [id]: false }));
+    }, 2000);
   };
 
   const openSaveDialog = (content: string, type: string) => {
@@ -593,6 +611,51 @@ export default function ContentEnginePage() {
 
   const isListingOptimizing = isListingPending || isClientGenerating;
 
+  const contentTypes = [
+    {
+      id: 'market-update',
+      title: 'Market Updates',
+      description: 'Create hyper-local market updates for your audience',
+      icon: TrendingUp,
+      color: 'from-blue-500 to-cyan-500',
+    },
+    {
+      id: 'blog-post',
+      title: 'Blog Posts',
+      description: 'Generate SEO-friendly long-form content',
+      icon: FileText,
+      color: 'from-purple-500 to-pink-500',
+    },
+    {
+      id: 'video-script',
+      title: 'Video Scripts',
+      description: 'Create engaging 60-second video scripts',
+      icon: Video,
+      color: 'from-orange-500 to-red-500',
+    },
+    {
+      id: 'guide',
+      title: 'Neighborhood Guides',
+      description: 'Comprehensive guides for local areas',
+      icon: MapPin,
+      color: 'from-green-500 to-emerald-500',
+    },
+    {
+      id: 'social',
+      title: 'Social Media',
+      description: 'Multi-platform social media posts',
+      icon: MessageSquare,
+      color: 'from-indigo-500 to-blue-500',
+    },
+    {
+      id: 'listing',
+      title: 'Listing Optimizer',
+      description: 'Optimize listings for target personas',
+      icon: Home,
+      color: 'from-amber-500 to-yellow-500',
+    },
+  ];
+
   return (
     <div className="space-y-8 fade-in">
       <PageHeader
@@ -600,694 +663,765 @@ export default function ContentEnginePage() {
         description="Use generative AI to create hyper-local content, social posts, and video scripts."
       />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="overflow-x-auto pb-2">
-          <TabsList className="grid w-full grid-cols-[repeat(6,minmax(max-content,1fr))] h-auto md:grid-cols-6">
-            <TabsTrigger value="market-update">Market Updates</TabsTrigger>
-            <TabsTrigger value="blog-post">Blog Posts</TabsTrigger>
-            <TabsTrigger value="video-script">Video Scripts</TabsTrigger>
-            <TabsTrigger value="guide">Neighborhood Guides</TabsTrigger>
-            <TabsTrigger value="social">Social Media</TabsTrigger>
-            <TabsTrigger value="listing">Listing Optimizer</TabsTrigger>
-          </TabsList>
-        </div>
-        <TabsContent value="market-update" className="mt-6">
-          <div className="grid gap-8 lg:grid-cols-3">
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle className="font-headline">
-                  Market Update Generator
-                </CardTitle>
-                <CardDescription>
-                  Create a hyper-local market update for a specific audience.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form action={marketUpdateAction} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
-                    <Input
-                      id="location"
-                      name="location"
-                      placeholder="e.g., Seattle, WA"
-                    />
-                    {marketUpdateState.errors?.location && (
-                      <p className="text-sm text-destructive">
-                        {marketUpdateState.errors.location[0]}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="timePeriod">Time Period</Label>
-                    <Input
-                      id="timePeriod"
-                      name="timePeriod"
-                      placeholder="e.g., October 2025"
-                    />
-                    {marketUpdateState.errors?.timePeriod && (
-                      <p className="text-sm text-destructive">
-                        {marketUpdateState.errors.timePeriod[0]}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="audience">Target Audience</Label>
-                    <Input
-                      id="audience"
-                      name="audience"
-                      placeholder="e.g., First-time buyers"
-                    />
-                    {marketUpdateState.errors?.audience && (
-                      <p className="text-sm text-destructive">
-                        {marketUpdateState.errors.audience[0]}
-                      </p>
-                    )}
-                  </div>
-                  <GenerateButton>Generate Update</GenerateButton>
-                </form>
-              </CardContent>
-            </Card>
-            <Card className="lg:col-span-2 min-h-[400px]">
-              <CardHeader className="flex flex-row justify-between items-center">
-                <CardTitle className="font-headline">
-                  Generated Market Update
-                </CardTitle>
-                <Button variant="outline" size="sm" onClick={() => openSaveDialog(marketUpdateContent, 'Market Update')}>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {isMarketUpdatePending ? (
-                  <GeneratingContentPlaceholder />
-                ) : marketUpdateContent ? (
-                  <Textarea
-                    value={marketUpdateContent}
-                    onChange={(e) => setMarketUpdateContent(e.target.value)}
-                    rows={15}
-                    className="w-full h-full font-mono text-sm"
-                  />
-                ) : (
-                  <p className="text-muted-foreground">
-                    Your generated market update will appear here.
-                  </p>
-                )}
-                <ErrorDisplay message={marketUpdateState.message !== 'success' ? marketUpdateState.message : null} />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-        <TabsContent value="blog-post" className="mt-6">
-          <div className="grid gap-8 lg:grid-cols-3">
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle className="font-headline">
-                  Blog Post Generator
-                </CardTitle>
-                <CardDescription>
-                  Create a long-form, SEO-friendly blog post on any topic.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form action={blogPostAction} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="blogTopic">Blog Topic</Label>
-                    <Textarea
-                      id="blogTopic"
-                      name="topic"
-                      placeholder="e.g., The top 5 neighborhoods in Seattle for young professionals"
-                      rows={5}
-                      value={blogTopic}
-                      onChange={e => setBlogTopic(e.target.value)}
-                    />
-                    {blogPostState.errors?.topic && (
-                      <p className="text-sm text-destructive">
-                        {blogPostState.errors.topic[0]}
-                      </p>
-                    )}
-                  </div>
-                  <GenerateButton>Generate Blog Post</GenerateButton>
-                </form>
-              </CardContent>
-            </Card>
-            <Card className="lg:col-span-2 min-h-[400px]">
-              <CardHeader className="flex flex-row justify-between items-center">
-                <CardTitle className="font-headline">
-                  Generated Blog Post
-                </CardTitle>
-                <Button variant="outline" size="sm" onClick={() => openSaveDialog(blogPostContent, 'Blog Post')}>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {isBlogPostPending ? (
-                  <GeneratingContentPlaceholder />
-                ) : blogPostContent ? (
-                  <div>
-                    {headerImage && (
-                      <div className="relative aspect-video mb-6 overflow-hidden rounded-lg group">
-                        <Image
-                          src={headerImage}
-                          alt={blogTopic || 'Blog post header'}
-                          fill
-                          objectFit="cover"
-                        />
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <form action={imageAction}>
-                            <input
-                              type="hidden"
-                              name="topic"
-                              value={blogTopic}
-                            />
-                            <RegenerateImageButton>
-                              Regenerate
-                            </RegenerateImageButton>
-                          </form>
-                        </div>
-                      </div>
-                    )}
-                    <Textarea
-                      value={blogPostContent}
-                      onChange={(e) => setBlogPostContent(e.target.value)}
-                      rows={20}
-                      className="w-full h-full font-mono text-sm"
-                    />
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">
-                    Your generated blog post and header image will appear here.
-                  </p>
-                )}
-                <ErrorDisplay message={blogPostState.message !== 'success' ? blogPostState.message : null} />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-        <TabsContent value="video-script" className="mt-6">
-          <div className="grid gap-8 lg:grid-cols-3">
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle className="font-headline">
-                  Video Script Generator
-                </CardTitle>
-                <CardDescription>
-                  Create a 60-second video script with fine-tuned controls.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form action={videoScriptAction} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="videoTopic">Topic</Label>
-                    <Textarea
-                      id="videoTopic"
-                      name="topic"
-                      placeholder="e.g., What is an assumable mortgage?"
-                      rows={3}
-                    />
-                    {videoScriptState.errors?.topic && (
-                      <p className="text-sm text-destructive">
-                        {videoScriptState.errors.topic[0]}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="videoTone">Tone of Voice</Label>
-                    <Select name="tone" defaultValue="Engaging">
-                      <SelectTrigger id="videoTone">
-                        <SelectValue placeholder="Select a tone" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Engaging">Engaging</SelectItem>
-                        <SelectItem value="Professional">
-                          Professional
-                        </SelectItem>
-                        <SelectItem value="Humorous">Humorous</SelectItem>
-                        <SelectItem value="Inspirational">
-                          Inspirational
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {videoScriptState.errors?.tone && (
-                      <p className="text-sm text-destructive">
-                        {videoScriptState.errors.tone[0]}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="videoAudience">Target Audience</Label>
-                    <Input
-                      id="videoAudience"
-                      name="audience"
-                      placeholder="e.g., First-time buyers"
-                    />
-                    {videoScriptState.errors?.audience && (
-                      <p className="text-sm text-destructive">
-                        {videoScriptState.errors.audience[0]}
-                      </p>
-                    )}
-                  </div>
-                  <GenerateButton>Generate Script</GenerateButton>
-                </form>
-              </CardContent>
-            </Card>
-            <Card className="lg:col-span-2 min-h-[400px]">
-              <CardHeader className="flex flex-row justify-between items-center">
-                <CardTitle className="font-headline">
-                  Generated Video Script
-                </CardTitle>
-                <Button variant="outline" size="sm" onClick={() => openSaveDialog(videoScriptContent, 'Video Script')}>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {isVideoScriptPending ? (
-                  <GeneratingContentPlaceholder />
-                ) : videoScriptContent ? (
-                  <Textarea
-                    value={videoScriptContent}
-                    onChange={(e) => setVideoScriptContent(e.target.value)}
-                    rows={15}
-                    className="w-full h-full font-mono text-sm"
-                  />
-                ) : (
-                  <p className="text-muted-foreground">
-                    Your generated video script will appear here.
-                  </p>
-                )}
-                <ErrorDisplay message={videoScriptState.message !== 'success' ? videoScriptState.message : null} />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-        <TabsContent value="guide" className="mt-6">
-          <div className="grid gap-8 lg:grid-cols-3">
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle className="font-headline">
-                  Content Generator
-                </CardTitle>
-                <CardDescription>
-                  Define your topic to draft a comprehensive guide.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form action={guideFormAction} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="targetMarket">Target Market</Label>
-                    <Input
-                      id="targetMarket"
-                      name="targetMarket"
-                      placeholder="e.g., 'Seattle, WA'"
-                      defaultValue="Seattle, WA"
-                    />
-                    {guideState.errors?.targetMarket && (
-                      <p className="text-sm text-destructive">
-                        {guideState.errors.targetMarket[0]}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="pillarTopic">Pillar Topic</Label>
-                    <Input
-                      id="pillarTopic"
-                      name="pillarTopic"
-                      placeholder="e.g., 'The Ultimate Guide to Living in Seattle'"
-                      defaultValue="The Ultimate Guide to Living in the Capitol Hill Neighborhood"
-                    />
-                    {guideState.errors?.pillarTopic && (
-                      <p className="text-sm text-destructive">
-                        {guideState.errors.pillarTopic[0]}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="idxFeedUrl">IDX Feed URL (Optional)</Label>
-                    <Input
-                      id="idxFeedUrl"
-                      name="idxFeedUrl"
-                      placeholder="e.g., 'https://my-idx-provider.com/seattle-capitol-hill'"
-                    />
-                  </div>
-                  <GenerateButton>Generate Guide</GenerateButton>
-                </form>
-              </CardContent>
-            </Card>
-
-            <Card className="lg:col-span-2 min-h-[400px]">
-              <CardHeader className="flex flex-row justify-between items-center">
-                <CardTitle className="font-headline">
-                  Generated Neighborhood Guide
-                </CardTitle>
-                <Button variant="outline" size="sm" onClick={() => openSaveDialog(guideContent, 'Neighborhood Guide')}>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {isGuidePending ? (
-                  <GeneratingContentPlaceholder />
-                ) : guideContent ? (
-                  <div>
-                    <Textarea
-                      value={guideContent}
-                      onChange={(e) => setGuideContent(e.target.value)}
-                      rows={20}
-                      className="w-full h-full font-mono text-sm"
-                    />
-                    <IdxFeedPlaceholder url={guideState.data.idxFeedUrl} />
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">
-                    Your generated guide will appear here. Add your personal,
-                    on-the-ground insights to provide unique value.
-                  </p>
-                )}
-                <ErrorDisplay message={guideState.message !== 'success' ? guideState.message : null} />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-        <TabsContent value="social" className="mt-6">
-          <div className="grid gap-8 lg:grid-cols-3">
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle className="font-headline">Post Generator</CardTitle>
-                <CardDescription>
-                  Define your topic and tone to generate social posts.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form action={socialFormAction} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="topic">Topic</Label>
-                    <Textarea
-                      id="topic"
-                      name="topic"
-                      placeholder="e.g., 'The benefits of using a real estate agent for first-time homebuyers'"
-                      rows={5}
-                      value={socialPostContent?.topic || ''}
-                      onChange={e => setSocialPostContent(prev => ({ ...prev, topic: e.target.value } as GenerateSocialMediaPostOutput))}
-                    />
-                    {socialState.errors?.topic && (
-                      <p className="text-sm text-destructive">
-                        {socialState.errors.topic[0]}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tone">Tone of Voice</Label>
-                    <Select name="tone" defaultValue="Professional">
-                      <SelectTrigger id="tone">
-                        <SelectValue placeholder="Select a tone" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Professional">
-                          Professional
-                        </SelectItem>
-                        <SelectItem value="Casual">Casual</SelectItem>
-                        <SelectItem value="Enthusiastic">
-                          Enthusiastic
-                        </SelectItem>
-                        <SelectItem value="Humorous">Humorous</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {socialState.errors?.tone && (
-                      <p className="text-sm text-destructive">
-                        {socialState.errors.tone[0]}
-                      </p>
-                    )}
-                  </div>
-                  <GenerateButton>Generate Posts</GenerateButton>
-                </form>
-              </CardContent>
-            </Card>
-            <div className="lg:col-span-2">
-              <Card className="min-h-[400px]">
+      {!activeTab && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up">
+          {contentTypes.map((type, index) => {
+            const Icon = type.icon;
+            return (
+              <Card
+                key={type.id}
+                className="group cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border-2 hover:border-primary/50"
+                onClick={() => setActiveTab(type.id)}
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
                 <CardHeader>
-                  <CardTitle className="font-headline">
-                    Generated Social Media Posts
-                  </CardTitle>
+                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${type.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon className="w-6 h-6 text-white" />
+                  </div>
+                  <CardTitle className="font-headline text-xl">{type.title}</CardTitle>
+                  <CardDescription className="text-base">{type.description}</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {isSocialPending ? (
-                    <GeneratingContentPlaceholder />
-                  ) : socialPostContent ? (
-                    <>
-                      <Card>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Linkedin className="w-5 h-5 text-blue-700" />
-                            <h3 className="font-bold">LinkedIn</h3>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.linkedin || '', 'Social Post (LinkedIn)')}>
-                              <Save className="mr-2 h-4 w-4" />
-                              Save
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={e =>
-                                copyToClipboard(
-                                  socialPostContent.linkedin || '',
-                                  e
-                                )
-                              }
-                            >
-                              <Copy className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <Textarea
-                            value={socialPostContent.linkedin}
-                            onChange={(e) => setSocialPostContent(prev => ({ ...prev!, linkedin: e.target.value }))}
-                            rows={6}
-                            className="w-full h-full font-mono text-sm"
-                          />
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Facebook className="w-5 h-5 text-blue-600" />
-                            <h3 className="font-bold">Facebook</h3>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.facebook || '', 'Social Post (Facebook)')}>
-                              <Save className="mr-2 h-4 w-4" />
-                              Save
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={e =>
-                                copyToClipboard(
-                                  socialPostContent.facebook || '',
-                                  e
-                                )
-                              }
-                            >
-                              <Copy className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <Textarea
-                            value={socialPostContent.facebook}
-                            onChange={(e) => setSocialPostContent(prev => ({ ...prev!, facebook: e.target.value }))}
-                            rows={6}
-                            className="w-full h-full font-mono text-sm"
-                          />
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Twitter className="w-5 h-5 text-sky-500" />
-                            <h3 className="font-bold">X (Twitter)</h3>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.twitter || '', 'Social Post (X/Twitter)')}>
-                              <Save className="mr-2 h-4 w-4" />
-                              Save
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={e =>
-                                copyToClipboard(
-                                  socialPostContent.twitter || '',
-                                  e
-                                )
-                              }
-                            >
-                              <Copy className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <Textarea
-                            value={socialPostContent.twitter}
-                            onChange={(e) => setSocialPostContent(prev => ({ ...prev!, twitter: e.target.value }))}
-                            rows={4}
-                            className="w-full h-full font-mono text-sm"
-                          />
-                        </CardContent>
-                      </Card>
-                    </>
-                  ) : (
-                    <p className="text-muted-foreground">
-                      Your generated social media posts for different platforms
-                      will appear here.
-                    </p>
-                  )}
-                  <ErrorDisplay message={socialState.message !== 'success' ? socialState.message : null} />
-                </CardContent>
+                <CardFooter>
+                  <Button variant="ghost" className="w-full group-hover:bg-primary/10">
+                    Get Started
+                    <Sparkles className="ml-2 h-4 w-4" />
+                  </Button>
+                </CardFooter>
               </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {activeTab && (
+        <div className="space-y-4">
+          <Button
+            variant="outline"
+            onClick={() => setActiveTab('')}
+            className="mb-4"
+          >
+            ← Back to Content Types
+          </Button>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="overflow-x-auto pb-2">
+              <TabsList className="grid w-full grid-cols-[repeat(6,minmax(max-content,1fr))] h-auto md:grid-cols-6">
+                <TabsTrigger value="market-update">Market Updates</TabsTrigger>
+                <TabsTrigger value="blog-post">Blog Posts</TabsTrigger>
+                <TabsTrigger value="video-script">Video Scripts</TabsTrigger>
+                <TabsTrigger value="guide">Neighborhood Guides</TabsTrigger>
+                <TabsTrigger value="social">Social Media</TabsTrigger>
+                <TabsTrigger value="listing">Listing Optimizer</TabsTrigger>
+              </TabsList>
             </div>
-          </div>
-        </TabsContent>
-        <TabsContent value="listing" className="mt-6">
-          <div className="grid gap-8 lg:grid-cols-2">
-            <div className="lg:col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="font-headline">
-                    Listing Optimizer
-                  </CardTitle>
-                  <CardDescription>
-                    Rewrite a listing description for a specific buyer persona.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form action={listingFormAction}>
-                    <div className="space-y-4">
+            <TabsContent value="market-update" className="mt-6">
+              <div className="grid gap-8 lg:grid-cols-3">
+                <Card className="lg:col-span-1">
+                  <CardHeader>
+                    <CardTitle className="font-headline">
+                      Market Update Generator
+                    </CardTitle>
+                    <CardDescription>
+                      Create a hyper-local market update for a specific audience.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form action={marketUpdateAction} className="space-y-4">
                       <div className="space-y-2">
-                        <Label>Original Description</Label>
-                        <Textarea
-                          id="propertyDescription"
-                          name="propertyDescription"
-                          rows={8}
-                          defaultValue={
-                            'Charming 3-bedroom, 2-bathroom single-family home in a quiet, tree-lined neighborhood. Features a recently updated kitchen with granite countertops, stainless steel appliances, and a large island. The open-concept living area has hardwood floors and a wood-burning fireplace. A spacious, fenced-in backyard with a deck is perfect for entertaining. The master suite includes a walk-in closet and an en-suite bathroom with a double vanity. Located in a top-rated school district, close to parks and shopping centers.'
-                          }
+                        <Label htmlFor="location">Location</Label>
+                        <Input
+                          id="location"
+                          name="location"
+                          placeholder="e.g., Seattle, WA"
                         />
-                        {listingState.errors?.propertyDescription && (
+                        {marketUpdateState.errors?.location && (
                           <p className="text-sm text-destructive">
-                            {listingState.errors.propertyDescription[0]}
+                            {marketUpdateState.errors.location[0]}
                           </p>
                         )}
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="buyerPersona">
-                          Target Buyer Persona
-                        </Label>
-                        <Select
-                          name="buyerPersona"
-                          defaultValue="First-Time Homebuyer"
-                        >
-                          <SelectTrigger id="buyerPersona" className="w-full">
-                            <SelectValue placeholder="Select a persona" />
+                        <Label htmlFor="timePeriod">Time Period</Label>
+                        <Input
+                          id="timePeriod"
+                          name="timePeriod"
+                          placeholder="e.g., October 2025"
+                        />
+                        {marketUpdateState.errors?.timePeriod && (
+                          <p className="text-sm text-destructive">
+                            {marketUpdateState.errors.timePeriod[0]}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="audience">Target Audience</Label>
+                        <Input
+                          id="audience"
+                          name="audience"
+                          placeholder="e.g., First-time buyers"
+                        />
+                        {marketUpdateState.errors?.audience && (
+                          <p className="text-sm text-destructive">
+                            {marketUpdateState.errors.audience[0]}
+                          </p>
+                        )}
+                      </div>
+                      <GenerateButton>Generate Update</GenerateButton>
+                    </form>
+                  </CardContent>
+                </Card>
+                <Card className="lg:col-span-2 min-h-[400px]">
+                  <CardHeader className="flex flex-row justify-between items-center">
+                    <CardTitle className="font-headline">
+                      Generated Market Update
+                    </CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => openSaveDialog(marketUpdateContent, 'Market Update')}>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {isMarketUpdatePending ? (
+                      <GeneratingContentPlaceholder />
+                    ) : marketUpdateContent ? (
+                      <Textarea
+                        value={marketUpdateContent}
+                        onChange={(e) => setMarketUpdateContent(e.target.value)}
+                        rows={15}
+                        className="w-full h-full font-mono text-sm"
+                      />
+                    ) : (
+                      <p className="text-muted-foreground">
+                        Your generated market update will appear here.
+                      </p>
+                    )}
+                    <ErrorDisplay message={marketUpdateState.message !== 'success' ? marketUpdateState.message : null} />
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            <TabsContent value="blog-post" className="mt-6">
+              <div className="grid gap-8 lg:grid-cols-3">
+                <Card className="lg:col-span-1">
+                  <CardHeader>
+                    <CardTitle className="font-headline">
+                      Blog Post Generator
+                    </CardTitle>
+                    <CardDescription>
+                      Create a long-form, SEO-friendly blog post on any topic.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form action={blogPostAction} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="blogTopic">Blog Topic</Label>
+                        <Textarea
+                          id="blogTopic"
+                          name="topic"
+                          placeholder="e.g., The top 5 neighborhoods in Seattle for young professionals"
+                          rows={5}
+                          value={blogTopic}
+                          onChange={e => setBlogTopic(e.target.value)}
+                        />
+                        {blogPostState.errors?.topic && (
+                          <p className="text-sm text-destructive">
+                            {blogPostState.errors.topic[0]}
+                          </p>
+                        )}
+                      </div>
+                      <GenerateButton>Generate Blog Post</GenerateButton>
+                    </form>
+                  </CardContent>
+                </Card>
+                <Card className="lg:col-span-2 min-h-[400px]">
+                  <CardHeader className="flex flex-row justify-between items-center">
+                    <CardTitle className="font-headline">
+                      Generated Blog Post
+                    </CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => openSaveDialog(blogPostContent, 'Blog Post')}>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {isBlogPostPending ? (
+                      <GeneratingContentPlaceholder />
+                    ) : blogPostContent ? (
+                      <div>
+                        {headerImage && (
+                          <div className="relative aspect-video mb-6 overflow-hidden rounded-lg group">
+                            <Image
+                              src={headerImage}
+                              alt={blogTopic || 'Blog post header'}
+                              fill
+                              objectFit="cover"
+                            />
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <form action={imageAction}>
+                                <input
+                                  type="hidden"
+                                  name="topic"
+                                  value={blogTopic}
+                                />
+                                <RegenerateImageButton>
+                                  Regenerate
+                                </RegenerateImageButton>
+                              </form>
+                            </div>
+                          </div>
+                        )}
+                        <Textarea
+                          value={blogPostContent}
+                          onChange={(e) => setBlogPostContent(e.target.value)}
+                          rows={20}
+                          className="w-full h-full font-mono text-sm"
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">
+                        Your generated blog post and header image will appear here.
+                      </p>
+                    )}
+                    <ErrorDisplay message={blogPostState.message !== 'success' ? blogPostState.message : null} />
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            <TabsContent value="video-script" className="mt-6">
+              <div className="grid gap-8 lg:grid-cols-3">
+                <Card className="lg:col-span-1">
+                  <CardHeader>
+                    <CardTitle className="font-headline">
+                      Video Script Generator
+                    </CardTitle>
+                    <CardDescription>
+                      Create a 60-second video script with fine-tuned controls.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form action={videoScriptAction} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="videoTopic">Topic</Label>
+                        <Textarea
+                          id="videoTopic"
+                          name="topic"
+                          placeholder="e.g., What is an assumable mortgage?"
+                          rows={3}
+                        />
+                        {videoScriptState.errors?.topic && (
+                          <p className="text-sm text-destructive">
+                            {videoScriptState.errors.topic[0]}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="videoTone">Tone of Voice</Label>
+                        <Select name="tone" defaultValue="Engaging">
+                          <SelectTrigger id="videoTone">
+                            <SelectValue placeholder="Select a tone" />
                           </SelectTrigger>
                           <SelectContent>
-                            {buyerPersonas.map(persona => (
-                              <SelectItem
-                                key={persona.value}
-                                value={persona.value}
-                              >
-                                {persona.label}
-                              </SelectItem>
-                            ))}
+                            <SelectItem value="Engaging">Engaging</SelectItem>
+                            <SelectItem value="Professional">
+                              Professional
+                            </SelectItem>
+                            <SelectItem value="Humorous">Humorous</SelectItem>
+                            <SelectItem value="Inspirational">
+                              Inspirational
+                            </SelectItem>
                           </SelectContent>
                         </Select>
-                        {listingState.errors?.buyerPersona && (
+                        {videoScriptState.errors?.tone && (
                           <p className="text-sm text-destructive">
-                            {listingState.errors.buyerPersona[0]}
+                            {videoScriptState.errors.tone[0]}
                           </p>
                         )}
                       </div>
-                      <OptimizerButton />
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="lg:col-span-1 space-y-8">
-              <Card>
-                <CardHeader className="flex flex-row justify-between items-center">
-                  <div>
+                      <div className="space-y-2">
+                        <Label htmlFor="videoAudience">Target Audience</Label>
+                        <Input
+                          id="videoAudience"
+                          name="audience"
+                          placeholder="e.g., First-time buyers"
+                        />
+                        {videoScriptState.errors?.audience && (
+                          <p className="text-sm text-destructive">
+                            {videoScriptState.errors.audience[0]}
+                          </p>
+                        )}
+                      </div>
+                      <GenerateButton>Generate Script</GenerateButton>
+                    </form>
+                  </CardContent>
+                </Card>
+                <Card className="lg:col-span-2 min-h-[400px]">
+                  <CardHeader className="flex flex-row justify-between items-center">
                     <CardTitle className="font-headline">
-                      Rewritten Description
+                      Generated Video Script
+                    </CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => openSaveDialog(videoScriptContent, 'Video Script')}>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {isVideoScriptPending ? (
+                      <GeneratingContentPlaceholder />
+                    ) : videoScriptContent ? (
+                      <Textarea
+                        value={videoScriptContent}
+                        onChange={(e) => setVideoScriptContent(e.target.value)}
+                        rows={15}
+                        className="w-full h-full font-mono text-sm"
+                      />
+                    ) : (
+                      <p className="text-muted-foreground">
+                        Your generated video script will appear here.
+                      </p>
+                    )}
+                    <ErrorDisplay message={videoScriptState.message !== 'success' ? videoScriptState.message : null} />
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            <TabsContent value="guide" className="mt-6">
+              <div className="grid gap-8 lg:grid-cols-3">
+                <Card className="lg:col-span-1">
+                  <CardHeader>
+                    <CardTitle className="font-headline">
+                      Content Generator
                     </CardTitle>
                     <CardDescription>
-                      The description rewritten for your target persona.
+                      Define your topic to draft a comprehensive guide.
                     </CardDescription>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => openSaveDialog(rewrittenDescription, 'Listing Description')}>
-                    <Save className="mr-2 h-4 w-4" />
-                    Save
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  {isListingOptimizing ? (
-                    <GeneratingContentPlaceholder />
-                  ) : (
-                    <Textarea
-                      rows={8}
-                      readOnly
-                      className="bg-secondary/50"
-                      value={rewrittenDescription}
-                      placeholder={
-                        'Your AI-generated description will appear here.'
-                      }
-                    />
-                  )}
-                  <ErrorDisplay message={listingState.message !== 'success' ? listingState.message : null} />
-                </CardContent>
-              </Card>
+                  </CardHeader>
+                  <CardContent>
+                    <form action={guideFormAction} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="targetMarket">Target Market</Label>
+                        <Input
+                          id="targetMarket"
+                          name="targetMarket"
+                          placeholder="e.g., 'Seattle, WA'"
+                          defaultValue="Seattle, WA"
+                        />
+                        {guideState.errors?.targetMarket && (
+                          <p className="text-sm text-destructive">
+                            {guideState.errors.targetMarket[0]}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="pillarTopic">Pillar Topic</Label>
+                        <Input
+                          id="pillarTopic"
+                          name="pillarTopic"
+                          placeholder="e.g., 'The Ultimate Guide to Living in Seattle'"
+                          defaultValue="The Ultimate Guide to Living in the Capitol Hill Neighborhood"
+                        />
+                        {guideState.errors?.pillarTopic && (
+                          <p className="text-sm text-destructive">
+                            {guideState.errors.pillarTopic[0]}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="idxFeedUrl">IDX Feed URL (Optional)</Label>
+                        <Input
+                          id="idxFeedUrl"
+                          name="idxFeedUrl"
+                          placeholder="e.g., 'https://my-idx-provider.com/seattle-capitol-hill'"
+                        />
+                      </div>
+                      <GenerateButton>Generate Guide</GenerateButton>
+                    </form>
+                  </CardContent>
+                </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row justify-between items-center">
-                  <div>
+                <Card className="lg:col-span-2 min-h-[400px]">
+                  <CardHeader className="flex flex-row justify-between items-center">
                     <CardTitle className="font-headline">
-                      Generated FAQ
+                      Generated Neighborhood Guide
                     </CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => openSaveDialog(guideContent, 'Neighborhood Guide')}>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {isGuidePending ? (
+                      <GeneratingContentPlaceholder />
+                    ) : guideContent ? (
+                      <div>
+                        <Textarea
+                          value={guideContent}
+                          onChange={(e) => setGuideContent(e.target.value)}
+                          rows={20}
+                          className="w-full h-full font-mono text-sm"
+                        />
+                        <IdxFeedPlaceholder url={guideState.data.idxFeedUrl} />
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">
+                        Your generated guide will appear here. Add your personal,
+                        on-the-ground insights to provide unique value.
+                      </p>
+                    )}
+                    <ErrorDisplay message={guideState.message !== 'success' ? guideState.message : null} />
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            <TabsContent value="social" className="mt-6">
+              <div className="grid gap-8 lg:grid-cols-3">
+                <Card className="lg:col-span-1">
+                  <CardHeader>
+                    <CardTitle className="font-headline">Post Generator</CardTitle>
                     <CardDescription>
-                      Common questions based on the description.
+                      Define your topic and tone to generate social posts.
                     </CardDescription>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => openSaveDialog(listingFaqs.map(faq => `Q: ${faq.q}\nA: ${faq.a}`).join('\n\n'), 'Listing FAQ')}>
-                    <Save className="mr-2 h-4 w-4" />
-                    Save
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  {isListingPending ? (
-                    <GeneratingContentPlaceholder />
-                  ) : listingFaqs.length > 0 ? (
-                    <Accordion type="single" collapsible className="w-full">
-                      {listingFaqs.map((faq, index) => (
-                        <AccordionItem value={`item-${index}`} key={index}>
-                          <AccordionTrigger>{faq.q}</AccordionTrigger>
-                          <AccordionContent>{faq.a}</AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      The generated FAQ will appear here.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+                  </CardHeader>
+                  <CardContent>
+                    <form action={socialFormAction} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="topic">Topic</Label>
+                        <Textarea
+                          id="topic"
+                          name="topic"
+                          placeholder="e.g., 'The benefits of using a real estate agent for first-time homebuyers'"
+                          rows={5}
+                          value={socialPostContent?.topic || ''}
+                          onChange={e => setSocialPostContent(prev => ({ ...prev, topic: e.target.value } as GenerateSocialMediaPostOutput))}
+                        />
+                        {socialState.errors?.topic && (
+                          <p className="text-sm text-destructive">
+                            {socialState.errors.topic[0]}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="tone">Tone of Voice</Label>
+                        <Select name="tone" defaultValue="Professional">
+                          <SelectTrigger id="tone">
+                            <SelectValue placeholder="Select a tone" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Professional">
+                              Professional
+                            </SelectItem>
+                            <SelectItem value="Casual">Casual</SelectItem>
+                            <SelectItem value="Enthusiastic">
+                              Enthusiastic
+                            </SelectItem>
+                            <SelectItem value="Humorous">Humorous</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {socialState.errors?.tone && (
+                          <p className="text-sm text-destructive">
+                            {socialState.errors.tone[0]}
+                          </p>
+                        )}
+                      </div>
+                      <GenerateButton>Generate Posts</GenerateButton>
+                    </form>
+                  </CardContent>
+                </Card>
+                <div className="lg:col-span-2">
+                  <Card className="min-h-[400px]">
+                    <CardHeader>
+                      <CardTitle className="font-headline">
+                        Generated Social Media Posts
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {isSocialPending ? (
+                        <GeneratingContentPlaceholder />
+                      ) : socialPostContent ? (
+                        <>
+                          <Card className="hover:shadow-lg transition-shadow duration-300">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Linkedin className="w-5 h-5 text-blue-700" />
+                                <h3 className="font-bold">LinkedIn</h3>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.linkedin || '', 'Social Post (LinkedIn)')}>
+                                  <Save className="mr-2 h-4 w-4" />
+                                  Save
+                                </Button>
+                                <Button
+                                  variant={copiedStates['linkedin'] ? 'default' : 'ghost'}
+                                  size="sm"
+                                  onClick={() =>
+                                    copyToClipboard(
+                                      socialPostContent.linkedin || '',
+                                      'linkedin'
+                                    )
+                                  }
+                                >
+                                  {copiedStates['linkedin'] ? (
+                                    <>
+                                      <Check className="w-4 h-4 mr-2" />
+                                      Copied!
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="w-4 h-4 mr-2" />
+                                      Copy
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <Textarea
+                                value={socialPostContent.linkedin}
+                                onChange={(e) => setSocialPostContent(prev => ({ ...prev!, linkedin: e.target.value }))}
+                                rows={6}
+                                className="w-full h-full font-mono text-sm"
+                              />
+                            </CardContent>
+                          </Card>
+                          <Card className="hover:shadow-lg transition-shadow duration-300">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Facebook className="w-5 h-5 text-blue-600" />
+                                <h3 className="font-bold">Facebook</h3>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.facebook || '', 'Social Post (Facebook)')}>
+                                  <Save className="mr-2 h-4 w-4" />
+                                  Save
+                                </Button>
+                                <Button
+                                  variant={copiedStates['facebook'] ? 'default' : 'ghost'}
+                                  size="sm"
+                                  onClick={() =>
+                                    copyToClipboard(
+                                      socialPostContent.facebook || '',
+                                      'facebook'
+                                    )
+                                  }
+                                >
+                                  {copiedStates['facebook'] ? (
+                                    <>
+                                      <Check className="w-4 h-4 mr-2" />
+                                      Copied!
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="w-4 h-4 mr-2" />
+                                      Copy
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <Textarea
+                                value={socialPostContent.facebook}
+                                onChange={(e) => setSocialPostContent(prev => ({ ...prev!, facebook: e.target.value }))}
+                                rows={6}
+                                className="w-full h-full font-mono text-sm"
+                              />
+                            </CardContent>
+                          </Card>
+                          <Card className="hover:shadow-lg transition-shadow duration-300">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Twitter className="w-5 h-5 text-sky-500" />
+                                <h3 className="font-bold">X (Twitter)</h3>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.twitter || '', 'Social Post (X/Twitter)')}>
+                                  <Save className="mr-2 h-4 w-4" />
+                                  Save
+                                </Button>
+                                <Button
+                                  variant={copiedStates['twitter'] ? 'default' : 'ghost'}
+                                  size="sm"
+                                  onClick={() =>
+                                    copyToClipboard(
+                                      socialPostContent.twitter || '',
+                                      'twitter'
+                                    )
+                                  }
+                                >
+                                  {copiedStates['twitter'] ? (
+                                    <>
+                                      <Check className="w-4 h-4 mr-2" />
+                                      Copied!
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="w-4 h-4 mr-2" />
+                                      Copy
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <Textarea
+                                value={socialPostContent.twitter}
+                                onChange={(e) => setSocialPostContent(prev => ({ ...prev!, twitter: e.target.value }))}
+                                rows={4}
+                                className="w-full h-full font-mono text-sm"
+                              />
+                            </CardContent>
+                          </Card>
+                        </>
+                      ) : (
+                        <p className="text-muted-foreground">
+                          Your generated social media posts for different platforms
+                          will appear here.
+                        </p>
+                      )}
+                      <ErrorDisplay message={socialState.message !== 'success' ? socialState.message : null} />
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="listing" className="mt-6">
+              <div className="grid gap-8 lg:grid-cols-2">
+                <div className="lg:col-span-1">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="font-headline">
+                        Listing Optimizer
+                      </CardTitle>
+                      <CardDescription>
+                        Rewrite a listing description for a specific buyer persona.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <form action={listingFormAction}>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>Original Description</Label>
+                            <Textarea
+                              id="propertyDescription"
+                              name="propertyDescription"
+                              rows={8}
+                              defaultValue={
+                                'Charming 3-bedroom, 2-bathroom single-family home in a quiet, tree-lined neighborhood. Features a recently updated kitchen with granite countertops, stainless steel appliances, and a large island. The open-concept living area has hardwood floors and a wood-burning fireplace. A spacious, fenced-in backyard with a deck is perfect for entertaining. The master suite includes a walk-in closet and an en-suite bathroom with a double vanity. Located in a top-rated school district, close to parks and shopping centers.'
+                              }
+                            />
+                            {listingState.errors?.propertyDescription && (
+                              <p className="text-sm text-destructive">
+                                {listingState.errors.propertyDescription[0]}
+                              </p>
+                            )}
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="buyerPersona">
+                              Target Buyer Persona
+                            </Label>
+                            <Select
+                              name="buyerPersona"
+                              defaultValue="First-Time Homebuyer"
+                            >
+                              <SelectTrigger id="buyerPersona" className="w-full">
+                                <SelectValue placeholder="Select a persona" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {buyerPersonas.map(persona => (
+                                  <SelectItem
+                                    key={persona.value}
+                                    value={persona.value}
+                                  >
+                                    {persona.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {listingState.errors?.buyerPersona && (
+                              <p className="text-sm text-destructive">
+                                {listingState.errors.buyerPersona[0]}
+                              </p>
+                            )}
+                          </div>
+                          <OptimizerButton />
+                        </div>
+                      </form>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="lg:col-span-1 space-y-8">
+                  <Card>
+                    <CardHeader className="flex flex-row justify-between items-center">
+                      <div>
+                        <CardTitle className="font-headline">
+                          Rewritten Description
+                        </CardTitle>
+                        <CardDescription>
+                          The description rewritten for your target persona.
+                        </CardDescription>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => openSaveDialog(rewrittenDescription, 'Listing Description')}>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save
+                      </Button>
+                    </CardHeader>
+                    <CardContent>
+                      {isListingOptimizing ? (
+                        <GeneratingContentPlaceholder />
+                      ) : (
+                        <Textarea
+                          rows={8}
+                          readOnly
+                          className="bg-secondary/50"
+                          value={rewrittenDescription}
+                          placeholder={
+                            'Your AI-generated description will appear here.'
+                          }
+                        />
+                      )}
+                      <ErrorDisplay message={listingState.message !== 'success' ? listingState.message : null} />
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row justify-between items-center">
+                      <div>
+                        <CardTitle className="font-headline">
+                          Generated FAQ
+                        </CardTitle>
+                        <CardDescription>
+                          Common questions based on the description.
+                        </CardDescription>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => openSaveDialog(listingFaqs.map(faq => `Q: ${faq.q}\nA: ${faq.a}`).join('\n\n'), 'Listing FAQ')}>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save
+                      </Button>
+                    </CardHeader>
+                    <CardContent>
+                      {isListingPending ? (
+                        <GeneratingContentPlaceholder />
+                      ) : listingFaqs.length > 0 ? (
+                        <Accordion type="single" collapsible className="w-full">
+                          {listingFaqs.map((faq, index) => (
+                            <AccordionItem value={`item-${index}`} key={index}>
+                              <AccordionTrigger>{faq.q}</AccordionTrigger>
+                              <AccordionContent>{faq.a}</AccordionContent>
+                            </AccordionItem>
+                          ))}
+                        </Accordion>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          The generated FAQ will appear here.
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      )}
       <SaveDialog dialogInfo={saveDialogInfo} setDialogInfo={setSaveDialogInfo} projects={projects} />
     </div>
   );

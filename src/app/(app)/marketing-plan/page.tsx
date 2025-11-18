@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useMemo, useActionState, useEffect } from 'react';
+import { useMemo, useActionState, useEffect, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { PageHeader } from '@/components/page-header';
 import {
@@ -11,6 +11,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  EnhancedCard,
+  EnhancedCardContent,
+  EnhancedCardDescription,
+  EnhancedCardHeader,
+  EnhancedCardTitle,
+} from '@/components/ui/enhanced-card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -21,13 +28,21 @@ import {
   BookText,
   ShieldCheck,
   Users,
+  Lightbulb,
+  TrendingUp,
+  PartyPopper,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
+import { AILoader, StepLoader } from '@/components/ui/loading-states';
+import { EmptyState } from '@/components/ui/empty-states';
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
 import { doc, collection, query, orderBy, limit } from 'firebase/firestore';
 import type { BrandAudit, Competitor, MarketingPlan as MarketingPlanType } from '@/lib/types';
 import { generateMarketingPlanAction } from '@/app/actions';
-import { toast } from '@/hooks/use-toast';
+import { showSuccessToast, showErrorToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 type GeneratePlanState = {
   message: string;
@@ -48,12 +63,13 @@ function GeneratePlanButton({ disabled }: { disabled?: boolean }) {
       type="submit"
       variant={pending ? 'shimmer' : 'ai'}
       disabled={pending || disabled}
-      size="lg"
+      size="xl"
+      className="min-w-[280px]"
     >
       {pending ? (
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        <Loader2 className="h-5 w-5 animate-spin" />
       ) : (
-        <Sparkles className="mr-2 h-4 w-4" />
+        <Sparkles className="h-5 w-5" />
       )}
       {pending ? 'Generating Plan...' : 'Generate My Marketing Plan'}
     </Button>
@@ -69,8 +85,22 @@ const toolIcons: { [key: string]: React.ReactNode } = {
 export default function MarketingPlanPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showPlan, setShowPlan] = useState(false);
+  const [generationStep, setGenerationStep] = useState(0);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
   const [state, formAction] = useActionState(generateMarketingPlanAction, initialPlanState);
+
+  // Generation steps for progress indicator
+  const generationSteps = [
+    'Analyzing your brand audit data...',
+    'Evaluating competitor landscape...',
+    'Identifying key opportunities...',
+    'Crafting personalized strategies...',
+    'Finalizing your action plan...',
+  ];
 
   const brandAuditRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -98,23 +128,82 @@ export default function MarketingPlanPage() {
   const isDataReady = !isAuditLoading && !areCompetitorsLoading && !!brandAuditData && !!competitorsData;
   const displayPlan = state.data ?? (latestPlanData && latestPlanData[0]);
 
+  // Simulate step progression during generation
+  useEffect(() => {
+    if (isGenerating) {
+      const stepInterval = setInterval(() => {
+        setGenerationStep((prev) => {
+          if (prev < generationSteps.length - 1) {
+            return prev + 1;
+          }
+          return prev;
+        });
+      }, 2000); // Progress through steps every 2 seconds
+
+      return () => clearInterval(stepInterval);
+    } else {
+      setGenerationStep(0);
+    }
+  }, [isGenerating, generationSteps.length]);
+
   useEffect(() => {
     if (state.message === 'success' && state.data) {
-        if (user?.uid) {
-             addDocumentNonBlocking(`users/${user.uid}/marketingPlans`, state.data);
-             toast({
-                 title: 'Plan Generated!',
-                 description: 'Your new personalized marketing plan is ready.',
-             });
-        }
+      if (user?.uid) {
+        addDocumentNonBlocking(`users/${user.uid}/marketingPlans`, state.data);
+
+        // Show celebratory animation
+        setShowCelebration(true);
+
+        // Show success toast
+        showSuccessToast(
+          '🎉 Plan Generated!',
+          'Your personalized marketing plan is ready to help you grow your business.'
+        );
+
+        setIsGenerating(false);
+        setGenerationError(null);
+
+        // Trigger reveal animation after celebration
+        setTimeout(() => {
+          setShowCelebration(false);
+          setShowPlan(true);
+        }, 2000);
+      }
     } else if (state.message && state.message !== 'success') {
-      toast({
-        variant: 'destructive',
-        title: 'Failed to Generate Plan',
-        description: state.message,
-      });
+      setGenerationError(state.message);
+      showErrorToast(
+        'Failed to Generate Plan',
+        state.message || 'An unexpected error occurred. Please try again.'
+      );
+      setIsGenerating(false);
     }
   }, [state, user?.uid]);
+
+  // Show plan when it loads from Firestore
+  useEffect(() => {
+    if (displayPlan && !isGenerating) {
+      setShowPlan(true);
+    }
+  }, [displayPlan, isGenerating]);
+
+  const handleFormSubmit = async (formData: FormData) => {
+    setIsGenerating(true);
+    setShowPlan(false);
+    setGenerationError(null);
+    setGenerationStep(0);
+    formAction(formData);
+  };
+
+  const handleRetry = () => {
+    setGenerationError(null);
+    const form = document.querySelector('form') as HTMLFormElement;
+    if (form) {
+      setIsGenerating(true);
+      setShowPlan(false);
+      setGenerationStep(0);
+      form.requestSubmit();
+    }
+  };
 
   return (
     <div className="animate-fade-in-up space-y-8">
@@ -146,20 +235,20 @@ export default function MarketingPlanPage() {
       </Card>
 
       {isPlanLoading && !displayPlan && (
-         <Card>
-            <CardHeader>
-                <CardTitle className="font-headline">Your Action Plan</CardTitle>
-                <CardDescription>Here are your personalized next steps.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-center justify-center h-48">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="ml-4 text-muted-foreground">Loading your latest plan...</p>
-            </CardContent>
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-headline">Your Action Plan</CardTitle>
+            <CardDescription>Here are your personalized next steps.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center justify-center h-48">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ml-4 text-muted-foreground">Loading your latest plan...</p>
+          </CardContent>
         </Card>
       )}
 
-      {displayPlan && (
-        <Card>
+      {displayPlan && showPlan && (
+        <Card className="animate-fade-in-up">
           <CardHeader>
             <CardTitle className="font-headline">Your Action Plan</CardTitle>
             <CardDescription>
@@ -171,7 +260,13 @@ export default function MarketingPlanPage() {
               {displayPlan.plan.map((item, index) => (
                 <li
                   key={index}
-                  className="flex items-start gap-4 p-4 rounded-lg border bg-secondary/30"
+                  className={cn(
+                    "flex items-start gap-4 p-4 rounded-lg border bg-secondary/30 transition-all duration-300 hover:shadow-md hover:border-primary/20",
+                    "animate-fade-in-up",
+                    index === 0 && "animate-delay-100",
+                    index === 1 && "animate-delay-200",
+                    index === 2 && "animate-delay-300"
+                  )}
                 >
                   <div className="flex-shrink-0 font-bold text-primary text-3xl font-headline">
                     {index + 1}
@@ -179,7 +274,7 @@ export default function MarketingPlanPage() {
                   <div className="flex-grow">
                     <h3 className="font-semibold text-lg">{item.task}</h3>
                     <p className="text-sm text-muted-foreground mt-1 mb-3">{item.rationale}</p>
-                    <Button asChild size="sm">
+                    <Button asChild size="sm" className="transition-all hover:scale-105">
                       <Link href={item.toolLink}>
                         {toolIcons[item.tool] || <Target className="mr-2 h-4 w-4" />}
                         Use {item.tool}
@@ -194,15 +289,181 @@ export default function MarketingPlanPage() {
         </Card>
       )}
 
-      {!isPlanLoading && !displayPlan && (
-         <Card className="text-center py-12">
-            <CardContent>
-                <Target className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-medium">No Plan Generated Yet</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                    Click the button above to create your first personalized marketing plan.
+      {!isPlanLoading && !displayPlan && !isGenerating && (
+        <div className="space-y-6">
+          <EmptyState
+            variant="prominent"
+            icon={<Lightbulb className="h-8 w-8 text-primary" />}
+            title="Your Marketing Success Starts Here"
+            description="Let AI analyze your brand presence and competitive landscape to create a personalized, actionable marketing plan. Get strategic recommendations tailored to your unique position in the market."
+            action={{
+              label: isDataReady ? "Generate My Marketing Plan" : "Complete Prerequisites First",
+              onClick: () => {
+                if (isDataReady) {
+                  const form = document.querySelector('form') as HTMLFormElement;
+                  if (form) {
+                    setIsGenerating(true);
+                    setShowPlan(false);
+                    form.requestSubmit();
+                  }
+                }
+              },
+              variant: isDataReady ? "ai" : "outline",
+            }}
+            className="border-2 border-dashed border-primary/20"
+          />
+
+          {/* Prerequisites guidance */}
+          {!isDataReady && (
+            <Card className="border-warning/50 bg-warning/5">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-warning" />
+                  Prerequisites Required
+                </CardTitle>
+                <CardDescription>
+                  To generate your personalized marketing plan, we need some data about your brand and competitors.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold",
+                      brandAuditData ? "bg-success text-white" : "bg-muted text-muted-foreground"
+                    )}>
+                      {brandAuditData ? "✓" : "1"}
+                    </div>
+                    <div className="flex-grow">
+                      <h4 className="font-medium text-sm">Complete Your Brand Audit</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Run a brand audit to analyze your online presence, NAP consistency, and review sentiment.
+                      </p>
+                      {!brandAuditData && (
+                        <Button asChild variant="outline" size="sm" className="mt-2">
+                          <Link href="/brand-audit">
+                            <ShieldCheck className="mr-2 h-4 w-4" />
+                            Go to Brand Audit
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Link>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold",
+                      competitorsData && competitorsData.length > 0 ? "bg-success text-white" : "bg-muted text-muted-foreground"
+                    )}>
+                      {competitorsData && competitorsData.length > 0 ? "✓" : "2"}
+                    </div>
+                    <div className="flex-grow">
+                      <h4 className="font-medium text-sm">Add Your Competitors</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Add at least one competitor to understand your competitive landscape and identify opportunities.
+                      </p>
+                      {(!competitorsData || competitorsData.length === 0) && (
+                        <Button asChild variant="outline" size="sm" className="mt-2">
+                          <Link href="/competitive-analysis">
+                            <Users className="mr-2 h-4 w-4" />
+                            Go to Competitive Analysis
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Link>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Step-by-step progress indicator during generation */}
+      {isGenerating && !displayPlan && !generationError && (
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-purple-600/5">
+          <CardHeader>
+            <CardTitle className="font-headline flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary animate-pulse" />
+              Creating Your Marketing Plan
+            </CardTitle>
+            <CardDescription>
+              Our AI is analyzing your data to create a personalized strategy...
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StepLoader steps={generationSteps} currentStep={generationStep} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Celebratory animation on successful generation */}
+      {showCelebration && (
+        <Card className="border-success bg-gradient-to-br from-success/10 to-success/5 animate-scale-in">
+          <CardContent className="py-16 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative">
+                <PartyPopper className="h-16 w-16 text-success animate-bounce" />
+                <div className="absolute inset-0 animate-ping">
+                  <PartyPopper className="h-16 w-16 text-success opacity-75" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-2xl font-bold font-headline text-success">
+                  Success!
+                </h3>
+                <p className="text-muted-foreground">
+                  Your personalized marketing plan is ready
                 </p>
-            </CardContent>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Error handling with recovery options */}
+      {generationError && !isGenerating && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardHeader>
+            <CardTitle className="font-headline flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              Generation Failed
+            </CardTitle>
+            <CardDescription>
+              We encountered an issue while creating your marketing plan.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-lg bg-background p-4 border border-destructive/20">
+              <p className="text-sm text-muted-foreground">{generationError}</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button onClick={handleRetry} variant="default" className="flex-1">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Try Again
+              </Button>
+              <Button asChild variant="outline" className="flex-1">
+                <Link href="/brand-audit">
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  Check Brand Audit
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="flex-1">
+                <Link href="/competitive-analysis">
+                  <Users className="mr-2 h-4 w-4" />
+                  Check Competitors
+                </Link>
+              </Button>
+            </div>
+            <div className="pt-2 border-t">
+              <p className="text-xs text-muted-foreground">
+                <strong>Common issues:</strong> Make sure you have completed your Brand Audit and added at least one competitor.
+                If the problem persists, please contact support.
+              </p>
+            </div>
+          </CardContent>
         </Card>
       )}
     </div>
