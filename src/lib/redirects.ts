@@ -9,19 +9,30 @@ export const REDIRECT_MAP: Record<string, string> = {
   '/listing-description-generator': '/studio/describe',
   '/reimagine': '/studio/reimagine',
 
-  // Intelligence Hub
-  '/research-agent': '/intelligence/research',
-  '/knowledge-base': '/intelligence/research?tab=saved',
-  '/competitive-analysis': '/intelligence/competitors',
-  '/investment-opportunity-identification': '/intelligence/market-insights?tool=investment',
-  '/life-event-predictor': '/intelligence/market-insights?tool=life-events',
+  // Market Hub (formerly Intelligence)
+  '/intelligence': '/market',
+  '/intelligence/research': '/market/research',
+  '/intelligence/competitors': '/brand/competitors',
+  '/intelligence/market-insights': '/market/trends',
+  '/research-agent': '/market/research',
+  '/knowledge-base': '/library/reports',
+  '/competitive-analysis': '/brand/competitors',
+  '/investment-opportunity-identification': '/market/opportunities',
+  '/life-event-predictor': '/market/trends',
 
-  // Brand Center Hub
-  '/profile': '/brand-center/profile',
-  '/brand-audit': '/brand-center/audit',
-  '/marketing-plan': '/brand-center/strategy',
+  // Brand Hub (formerly Brand Center)
+  '/brand-center': '/brand',
+  '/brand-center/profile': '/brand/profile',
+  '/brand-center/audit': '/brand/audit',
+  '/brand-center/strategy': '/brand/strategy',
+  '/profile': '/brand/profile',
+  '/brand-audit': '/brand/audit',
+  '/marketing-plan': '/brand/strategy',
 
-  // Training (simple rename)
+  // Library (formerly Projects)
+  '/projects': '/library/content',
+
+  // Training (removed from main nav)
   '/training-hub': '/training',
 };
 

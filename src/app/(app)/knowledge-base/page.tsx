@@ -8,9 +8,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { StandardEmptyState } from '@/components/standard/empty-state';
 import { useUser } from '@/aws/auth';
 import { useQuery } from '@/aws/dynamodb/hooks';
-import { getRepository } from '@/aws/dynamodb';
-import { getResearchReportKeys } from '@/aws/dynamodb/keys';
 import type { ResearchReport } from '@/lib/types';
+import { deleteResearchReportAction } from '@/app/actions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Library, Calendar, Trash2, Search } from 'lucide-react';
 import Link from 'next/link';
@@ -128,16 +127,23 @@ export default function KnowledgeBasePage() {
     };
 
     const handleDeleteReport = async () => {
-        if (!reportToDelete || !user) return;
+        if (!reportToDelete) return;
         try {
-            const repository = getRepository();
-            const keys = getResearchReportKeys(user.id, reportToDelete.id);
-            await repository.delete(keys.PK, keys.SK);
-            toast({
-                title: 'Report Deleted',
-                description: `"${reportToDelete.topic}" has been removed from your knowledge base.`,
-            });
-            setReportToDelete(null);
+            const result = await deleteResearchReportAction(reportToDelete.id);
+
+            if (result.errors || !result.data) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: result.message,
+                });
+            } else {
+                toast({
+                    title: 'Report Deleted',
+                    description: `"${reportToDelete.topic}" has been removed from your knowledge base.`,
+                });
+                setReportToDelete(null);
+            }
         } catch (error) {
             console.error('Failed to delete report:', error);
             toast({

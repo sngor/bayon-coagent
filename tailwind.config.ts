@@ -16,8 +16,8 @@ export default {
         'tablet-landscape': {'min': '768px', 'max': '1024px', 'raw': '(orientation: landscape)'},
       },
       fontFamily: {
-        body: ['"PT Sans"', 'sans-serif'],
-        headline: ['"Playfair Display"', 'serif'],
+        body: ['var(--font-pt-sans)', '"PT Sans"', 'sans-serif'],
+        headline: ['var(--font-playfair)', '"Playfair Display"', 'serif'],
         code: ['monospace'],
       },
       colors: {

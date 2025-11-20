@@ -17,11 +17,11 @@
 - **`/src/app/(app)`**: Authenticated routes organized by hubs
   - **Hub Structure**: Each hub has a layout with tabs
     - `/studio`: Content creation hub (Write, Describe, Reimagine)
-    - `/intelligence`: Research & analysis hub (Research, Competitors, Market Insights)
-    - `/brand-center`: Brand identity hub (Profile, Audit, Strategy)
+    - `/brand`: Brand identity & strategy hub (Profile, Audit, Competitors, Strategy)
+    - `/market`: Research & insights hub (Research, Opportunities, Trends, Analytics)
+    - `/library`: Content & knowledge management hub (Content, Reports, Media, Templates)
     - `/dashboard`: Overview and metrics
-    - `/projects`: Work organization
-    - `/training`: Educational content
+    - `/assistant`: AI chat assistant
   - Use Server Components by default
   - Client components marked with `'use client'`
 - **`/src/app/api`**: API routes (OAuth callbacks, webhooks)
@@ -142,15 +142,19 @@ All hubs use consistent components from `/src/components/hub`:
 Old URLs automatically redirect to new hub structure via middleware:
 
 - `/content-engine` → `/studio/write`
-- `/research-agent` → `/intelligence/research`
-- `/profile` → `/brand-center/profile`
+- `/intelligence` → `/market`
+- `/brand-center` → `/brand`
+- `/projects` → `/library/content`
+- `/research-agent` → `/market/research`
+- `/competitive-analysis` → `/brand/competitors`
+- `/marketing-plan` → `/brand/strategy`
 - See `/src/lib/redirects.ts` for complete mapping
 
 ### Navigation Hierarchy
 
 ```
 Level 1: Main Navigation (Sidebar) - 6 items
-  └─ Level 2: Hub Tabs (Horizontal) - 2-3 tabs per hub
+  └─ Level 2: Hub Tabs (Horizontal) - 3-4 tabs per hub
       └─ Level 3: Section Content (Page-specific)
           └─ Level 4: Feature Details (Modal/Drawer)
 ```

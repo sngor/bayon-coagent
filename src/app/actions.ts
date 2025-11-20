@@ -104,6 +104,12 @@ import {
     type TrainingPlanInput,
     type TrainingPlanOutput
 } from '@/aws/bedrock/flows/training-plan-flow';
+import {
+    generateRolePlayResponse,
+    type RolePlayInput,
+    type RolePlayOutput,
+    type RolePlayMessage
+} from '@/aws/bedrock/flows/role-play-flow';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { getRepository } from '@/aws/dynamodb/repository';
@@ -112,6 +118,11 @@ import {
   getUserProfileKeys,
   getMarketingPlanKeys,
   getReviewAnalysisKeys,
+  getProjectKeys,
+  getSavedContentKeys,
+  getResearchReportKeys,
+  getCompetitorKeys,
+  getTrainingProgressKeys,
 } from '@/aws/dynamodb/keys';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -1490,6 +1501,870 @@ export async function saveTrainingPlanAction(
     console.error('Save training plan error:', error);
     return {
       message: 'Failed to save training plan',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Start a new role-play session
+ */
+export async function startRolePlayAction(
+  scenarioId: string
+): Promise<{
+  message: string;
+  data: { sessionId: string } | null;
+  errors?: string[];
+}> {
+  try {
+    // Get current user from Cognito
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to start role-play sessions'],
+      };
+    }
+
+    const repository = getRepository();
+    const sessionId = `roleplay-${Date.now()}-${uuidv4().substring(0, 8)}`;
+    
+    // Create initial session record
+    await repository.put({
+      PK: `USER#${user.id}`,
+      SK: `ROLEPLAY#${sessionId}`,
+      EntityType: 'RolePlaySession',
+      Data: {
+        id: sessionId,
+        scenarioId,
+        messages: [],
+        feedback: null,
+        completedAt: null,
+        duration: 0,
+      },
+      CreatedAt: Date.now(),
+      UpdatedAt: Date.now(),
+    });
+
+    return {
+      message: 'Role-play session started',
+      data: { sessionId },
+    };
+  } catch (error: any) {
+    console.error('Start role-play session error:', error);
+    return {
+      message: 'Failed to start role-play session',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Send a message in a role-play session and get AI response
+ */
+export async function sendRolePlayMessageAction(
+  sessionId: string,
+  scenarioId: string,
+  scenarioTitle: string,
+  personaName: string,
+  personaBackground: string,
+  personaPersonality: string,
+  personaGoals: string[],
+  personaConcerns: string[],
+  personaCommunicationStyle: string,
+  conversationHistory: RolePlayMessage[],
+  userMessage: string
+): Promise<{
+  message: string;
+  data: RolePlayOutput | null;
+  errors?: string[];
+}> {
+  try {
+    // Get current user from Cognito
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to send messages'],
+      };
+    }
+
+    // Generate AI response
+    const result = await generateRolePlayResponse({
+      scenarioId,
+      scenarioTitle,
+      personaName,
+      personaBackground,
+      personaPersonality,
+      personaGoals,
+      personaConcerns,
+      personaCommunicationStyle,
+      conversationHistory,
+      userMessage,
+      isEndingSession: false,
+    });
+
+    // Update session with new messages
+    const repository = getRepository();
+    const timestamp = new Date().toISOString();
+    
+    const updatedMessages = [
+      ...conversationHistory,
+      { role: 'user' as const, content: userMessage, timestamp },
+      { role: 'ai' as const, content: result.response, timestamp },
+    ];
+
+    await repository.put({
+      PK: `USER#${user.id}`,
+      SK: `ROLEPLAY#${sessionId}`,
+      EntityType: 'RolePlaySession',
+      Data: {
+        id: sessionId,
+        scenarioId,
+        messages: updatedMessages,
+        feedback: null,
+        completedAt: null,
+        duration: 0,
+      },
+      CreatedAt: Date.now(),
+      UpdatedAt: Date.now(),
+    });
+
+    return {
+      message: 'Message sent successfully',
+      data: result,
+    };
+  } catch (error: any) {
+    console.error('Send role-play message error:', error);
+    return {
+      message: 'Failed to send message',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * End a role-play session and get feedback
+ */
+export async function endRolePlayAction(
+  sessionId: string,
+  scenarioId: string,
+  scenarioTitle: string,
+  personaName: string,
+  personaBackground: string,
+  personaPersonality: string,
+  personaGoals: string[],
+  personaConcerns: string[],
+  personaCommunicationStyle: string,
+  conversationHistory: RolePlayMessage[],
+  startTime: number
+): Promise<{
+  message: string;
+  data: { feedback: string } | null;
+  errors?: string[];
+}> {
+  try {
+    // Get current user from Cognito
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to end sessions'],
+      };
+    }
+
+    // Generate feedback
+    const result = await generateRolePlayResponse({
+      scenarioId,
+      scenarioTitle,
+      personaName,
+      personaBackground,
+      personaPersonality,
+      personaGoals,
+      personaConcerns,
+      personaCommunicationStyle,
+      conversationHistory,
+      userMessage: 'Thank you for the practice session.',
+      isEndingSession: true,
+    });
+
+    // Calculate session duration
+    const duration = Math.floor((Date.now() - startTime) / 1000); // in seconds
+
+    // Save final session with feedback
+    const repository = getRepository();
+    const timestamp = new Date().toISOString();
+    
+    await repository.put({
+      PK: `USER#${user.id}`,
+      SK: `ROLEPLAY#${sessionId}`,
+      EntityType: 'RolePlaySession',
+      Data: {
+        id: sessionId,
+        scenarioId,
+        messages: conversationHistory,
+        feedback: result.feedback || '',
+        completedAt: timestamp,
+        duration,
+      },
+      CreatedAt: Date.now(),
+      UpdatedAt: Date.now(),
+    });
+
+    return {
+      message: 'Session ended successfully',
+      data: { feedback: result.feedback || '' },
+    };
+  } catch (error: any) {
+    console.error('End role-play session error:', error);
+    return {
+      message: 'Failed to end session',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Get past role-play sessions for a user
+ */
+export async function getRolePlaySessionsAction(): Promise<{
+  message: string;
+  data: any[] | null;
+  errors?: string[];
+}> {
+  try {
+    // Get current user from Cognito
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to view sessions'],
+      };
+    }
+
+    const repository = getRepository();
+    const sessions = await repository.query({
+      KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+      ExpressionAttributeValues: {
+        ':pk': `USER#${user.id}`,
+        ':sk': 'ROLEPLAY#',
+      },
+    });
+
+    // Sort by most recent first
+    const sortedSessions = sessions.items
+      .map(item => item.Data)
+      .sort((a: any, b: any) => {
+        const aTime = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+        const bTime = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+        return bTime - aTime;
+      });
+
+    return {
+      message: 'Sessions retrieved successfully',
+      data: sortedSessions,
+    };
+  } catch (error: any) {
+    console.error('Get role-play sessions error:', error);
+    return {
+      message: 'Failed to retrieve sessions',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Get personalized dashboard data for the current user
+ */
+export async function getPersonalizedDashboardAction(): Promise<{
+  message: string;
+  data: any | null;
+  errors?: string[];
+}> {
+  try {
+    // Get current user from Cognito
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to view personalized dashboard'],
+      };
+    }
+
+    const { getPersonalizationEngine } = await import('@/lib/ai-personalization');
+    const engine = getPersonalizationEngine();
+    const dashboardData = await engine.getPersonalizedDashboard(user.id);
+
+    return {
+      message: 'Dashboard data retrieved successfully',
+      data: dashboardData,
+    };
+  } catch (error: any) {
+    console.error('Get personalized dashboard error:', error);
+    return {
+      message: 'Failed to retrieve dashboard data',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Create a new project
+ */
+export async function createProjectAction(
+  prevState: any,
+  formData: FormData
+): Promise<{
+  message: string;
+  data: any | null;
+  errors?: string[];
+}> {
+  try {
+    const name = formData.get('name') as string;
+
+    if (!name?.trim()) {
+      return {
+        message: 'Project name is required',
+        data: null,
+        errors: ['Project name cannot be empty'],
+      };
+    }
+
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to create a project'],
+      };
+    }
+
+    const repository = getRepository();
+    const projectId = Date.now().toString();
+    const keys = getProjectKeys(user.id, projectId);
+    
+    await repository.put({
+      ...keys,
+      EntityType: 'Project',
+      Data: {
+        name,
+        createdAt: new Date().toISOString(),
+      },
+      CreatedAt: Date.now(),
+      UpdatedAt: Date.now()
+    });
+
+    return {
+      message: 'Project created successfully',
+      data: { id: projectId, name },
+    };
+  } catch (error: any) {
+    console.error('Create project error:', error);
+    return {
+      message: 'Failed to create project',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Move content to a project
+ */
+export async function moveContentToProjectAction(
+  contentId: string,
+  projectId: string | null
+): Promise<{
+  message: string;
+  data: any | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to move content'],
+      };
+    }
+
+    const repository = getRepository();
+    const keys = getSavedContentKeys(user.id, contentId);
+    await repository.update(keys.PK, keys.SK, { projectId: projectId || null });
+
+    return {
+      message: 'Content moved successfully',
+      data: { contentId, projectId },
+    };
+  } catch (error: any) {
+    console.error('Move content error:', error);
+    return {
+      message: 'Failed to move content',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Delete saved content
+ */
+export async function deleteContentAction(
+  contentId: string
+): Promise<{
+  message: string;
+  data: any | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to delete content'],
+      };
+    }
+
+    const repository = getRepository();
+    const keys = getSavedContentKeys(user.id, contentId);
+    await repository.delete(keys.PK, keys.SK);
+
+    return {
+      message: 'Content deleted successfully',
+      data: { contentId },
+    };
+  } catch (error: any) {
+    console.error('Delete content error:', error);
+    return {
+      message: 'Failed to delete content',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Rename saved content
+ */
+export async function renameContentAction(
+  contentId: string,
+  name: string
+): Promise<{
+  message: string;
+  data: any | null;
+  errors?: string[];
+}> {
+  try {
+    if (!name?.trim()) {
+      return {
+        message: 'Content name is required',
+        data: null,
+        errors: ['Content name cannot be empty'],
+      };
+    }
+
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to rename content'],
+      };
+    }
+
+    const repository = getRepository();
+    const keys = getSavedContentKeys(user.id, contentId);
+    await repository.update(keys.PK, keys.SK, { name });
+
+    return {
+      message: 'Content renamed successfully',
+      data: { contentId, name },
+    };
+  } catch (error: any) {
+    console.error('Rename content error:', error);
+    return {
+      message: 'Failed to rename content',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Delete research report
+ */
+export async function deleteResearchReportAction(
+  reportId: string
+): Promise<{
+  message: string;
+  data: any | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to delete reports'],
+      };
+    }
+
+    const repository = getRepository();
+    const keys = getResearchReportKeys(user.id, reportId);
+    await repository.delete(keys.PK, keys.SK);
+
+    return {
+      message: 'Report deleted successfully',
+      data: { reportId },
+    };
+  } catch (error: any) {
+    console.error('Delete report error:', error);
+    return {
+      message: 'Failed to delete report',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Save content to projects
+ */
+export async function saveContentAction(
+  content: string,
+  type: string,
+  name?: string,
+  projectId?: string | null
+): Promise<{
+  message: string;
+  data: any | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to save content'],
+      };
+    }
+
+    const repository = getRepository();
+    const contentId = Date.now().toString();
+    const keys = getSavedContentKeys(user.id, contentId);
+    
+    await repository.put({
+      ...keys,
+      EntityType: 'SavedContent',
+      Data: {
+        content,
+        type,
+        name: name || type,
+        projectId: projectId || null,
+        createdAt: new Date().toISOString(),
+      },
+      CreatedAt: Date.now(),
+      UpdatedAt: Date.now()
+    });
+
+    return {
+      message: 'Content saved successfully',
+      data: { id: contentId, content, type, name },
+    };
+  } catch (error: any) {
+    console.error('Save content error:', error);
+    return {
+      message: 'Failed to save content',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Save research report
+ */
+export async function saveResearchReportAction(
+  topic: string,
+  report: string
+): Promise<{
+  message: string;
+  data: any | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to save reports'],
+      };
+    }
+
+    const repository = getRepository();
+    const reportId = Date.now().toString();
+    const keys = getResearchReportKeys(user.id, reportId);
+    
+    await repository.put({
+      ...keys,
+      EntityType: 'ResearchReport',
+      Data: {
+        topic,
+        report,
+        createdAt: new Date().toISOString(),
+      },
+      CreatedAt: Date.now(),
+      UpdatedAt: Date.now()
+    });
+
+    return {
+      message: 'Report saved successfully',
+      data: { id: reportId, topic, report },
+    };
+  } catch (error: any) {
+    console.error('Save report error:', error);
+    return {
+      message: 'Failed to save report',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Save competitor
+ */
+export async function saveCompetitorAction(
+  name: string,
+  website: string,
+  description?: string
+): Promise<{
+  message: string;
+  data: any | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to save competitors'],
+      };
+    }
+
+    const repository = getRepository();
+    const competitorId = Date.now().toString();
+    const keys = getCompetitorKeys(user.id, competitorId);
+    
+    await repository.put({
+      ...keys,
+      EntityType: 'Competitor',
+      Data: {
+        name,
+        website,
+        description: description || '',
+        createdAt: new Date().toISOString(),
+      },
+      CreatedAt: Date.now(),
+      UpdatedAt: Date.now()
+    });
+
+    return {
+      message: 'Competitor saved successfully',
+      data: { id: competitorId, name, website },
+    };
+  } catch (error: any) {
+    console.error('Save competitor error:', error);
+    return {
+      message: 'Failed to save competitor',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Save marketing plan
+ */
+export async function saveMarketingPlanAction(
+  plan: string,
+  name?: string
+): Promise<{
+  message: string;
+  data: any | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to save marketing plans'],
+      };
+    }
+
+    const repository = getRepository();
+    const planId = Date.now().toString();
+    const keys = getMarketingPlanKeys(user.id, planId);
+    
+    await repository.put({
+      ...keys,
+      EntityType: 'MarketingPlan',
+      Data: {
+        plan,
+        name: name || 'Marketing Plan',
+        createdAt: new Date().toISOString(),
+      },
+      CreatedAt: Date.now(),
+      UpdatedAt: Date.now()
+    });
+
+    return {
+      message: 'Marketing plan saved successfully',
+      data: { id: planId, plan, name },
+    };
+  } catch (error: any) {
+    console.error('Save marketing plan error:', error);
+    return {
+      message: 'Failed to save marketing plan',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Update profile photo URL
+ */
+export async function updateProfilePhotoUrlAction(
+  photoURL: string
+): Promise<{
+  message: string;
+  data: any | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to update profile photo'],
+      };
+    }
+
+    const repository = getRepository();
+    const keys = getAgentProfileKeys(user.id, 'main');
+    await repository.update(keys.PK, keys.SK, { photoURL });
+
+    return {
+      message: 'Profile photo updated successfully',
+      data: { photoURL },
+    };
+  } catch (error: any) {
+    console.error('Update profile photo error:', error);
+    return {
+      message: 'Failed to update profile photo',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Save training progress
+ */
+export async function saveTrainingProgressAction(
+  moduleId: string,
+  completed: boolean
+): Promise<{
+  message: string;
+  data: any | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to save training progress'],
+      };
+    }
+
+    const repository = getRepository();
+    const keys = getTrainingProgressKeys(user.id, moduleId);
+    
+    await repository.put({
+      ...keys,
+      EntityType: 'TrainingProgress',
+      Data: {
+        moduleId,
+        completed,
+        completedAt: completed ? new Date().toISOString() : null,
+      },
+      CreatedAt: Date.now(),
+      UpdatedAt: Date.now()
+    });
+
+    return {
+      message: 'Training progress saved successfully',
+      data: { moduleId, completed },
+    };
+  } catch (error: any) {
+    console.error('Save training progress error:', error);
+    return {
+      message: 'Failed to save training progress',
       data: null,
       errors: [error.message || 'Unknown error occurred'],
     };

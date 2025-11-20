@@ -12,29 +12,32 @@ All content creation and editing tools in one place:
 - **Describe**: Persona-driven listing descriptions
 - **Reimagine**: AI-powered image editing (virtual staging, day-to-dusk, enhancement, item removal, renovation)
 
-### 🧠 Intelligence - Research & Analysis Hub
+### 🎯 Brand - Brand Identity & Strategy Hub
 
-AI-powered research and market insights:
-
-- **Research**: Autonomous deep-dive research with saved reports (formerly Knowledge Base)
-- **Competitors**: AI-powered competitor discovery and Google keyword ranking tracking
-- **Market Insights**: Investment opportunity identification and life event predictions
-
-### 🎯 Brand Center - Brand Identity Hub
-
-Your brand identity and marketing strategy:
+Build authority and stand out from competitors:
 
 - **Profile**: Centralized professional information with SEO-friendly schema markup
 - **Audit**: NAP (Name, Address, Phone) consistency checks and review imports from Zillow
+- **Competitors**: AI-powered competitor discovery and Google keyword ranking tracking
 - **Strategy**: Personalized 3-step AI marketing plans based on brand audit and competitor analysis
 
-### 📁 Projects
+### 📊 Market - Research & Insights Hub
 
-Work organization and content management across all features
+Data-driven insights for smarter decisions:
 
-### 🎓 Training
+- **Research**: Autonomous deep-dive research with saved reports
+- **Opportunities**: Investment opportunity identification
+- **Trends**: Life event predictions and market patterns
+- **Analytics**: Market metrics, neighborhood data, pricing trends (coming soon)
 
-Educational content on local SEO, social media, and content marketing
+### 📁 Library - Content & Knowledge Management Hub
+
+Your marketing assets, organized and ready:
+
+- **Content**: All created content (blog posts, social media, descriptions)
+- **Reports**: Saved research reports and market analyses
+- **Media**: Images, videos, documents (coming soon)
+- **Templates**: Saved templates and reusable content (coming soon)
 
 ### ⚙️ Settings
 
@@ -50,8 +53,9 @@ SaaS platform for real estate professionals with AWS-powered infrastructure for 
 
 ## Key User Flows
 
-1. **Onboarding**: Brand Center → Profile setup → Audit → Strategy generation
-2. **Content Creation**: Studio → Choose type (Write/Describe/Reimagine) → Create → Save to Projects
-3. **Research**: Intelligence → Research → Submit topic → View report → Access from Saved Reports
-4. **Market Analysis**: Intelligence → Competitors or Market Insights → Run analysis → Track results
-5. **Integration**: Brand Center → Profile → Connect Google Business Profile → Import reviews
+1. **Onboarding**: Brand → Profile setup → Audit → Competitors → Strategy generation
+2. **Content Creation**: Studio → Choose type (Write/Describe/Reimagine) → Create → Save to Library
+3. **Research**: Market → Research → Submit topic → View report → Access from Library → Reports
+4. **Market Analysis**: Market → Opportunities or Trends → Run analysis → Track results
+5. **Brand Building**: Brand → Profile → Audit → Competitors → Strategy → Execute in Studio
+6. **Integration**: Brand → Profile → Connect Google Business Profile → Import reviews

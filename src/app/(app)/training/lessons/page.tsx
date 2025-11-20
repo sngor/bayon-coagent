@@ -156,8 +156,6 @@ export default function TrainingLessonsPage() {
 
     return (
         <StandardPageLayout
-            title="Training Lessons"
-            description="Master local SEO, social media, and content marketing strategies"
             spacing="default"
         >
             {/* Overall Progress Card */}

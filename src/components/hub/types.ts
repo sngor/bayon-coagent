@@ -21,6 +21,7 @@ export interface HubLayoutProps {
   tabs: HubTab[];
   children: React.ReactNode;
   actions?: React.ReactNode;
+  tabsVariant?: 'default' | 'pills' | 'underline';
 }
 
 export interface HubTabsProps {

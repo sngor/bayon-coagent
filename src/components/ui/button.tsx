@@ -79,19 +79,25 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         onClick={asChild ? onClick : handleClick}
         {...props}
       >
-        {props.children}
-        {!asChild && ripples.map((ripple) => (
-          <span
-            key={ripple.id}
-            className="absolute rounded-full bg-white/30 pointer-events-none animate-ripple"
-            style={{
-              left: ripple.x,
-              top: ripple.y,
-              width: 0,
-              height: 0,
-            }}
-          />
-        ))}
+        {asChild ? (
+          props.children
+        ) : (
+          <>
+            {props.children}
+            {ripples.map((ripple) => (
+              <span
+                key={ripple.id}
+                className="absolute rounded-full bg-white/30 pointer-events-none animate-ripple"
+                style={{
+                  left: ripple.x,
+                  top: ripple.y,
+                  width: 0,
+                  height: 0,
+                }}
+              />
+            ))}
+          </>
+        )}
       </Comp>
     )
   }

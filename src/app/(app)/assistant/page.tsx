@@ -61,41 +61,29 @@ export default function AssistantPage() {
 
     if (!user) {
         return (
-            <StandardPageLayout
-                title="AI Assistant"
-                description="Your intelligent real estate assistant"
-                spacing="default"
-            >
+            <div className="space-y-6">
                 <Alert>
                     <Info className="h-4 w-4" />
                     <AlertDescription>
                         Please sign in to use the AI assistant.
                     </AlertDescription>
                 </Alert>
-            </StandardPageLayout>
+            </div>
         );
     }
 
     if (isLoading) {
         return (
-            <StandardPageLayout
-                title="AI Assistant"
-                description="Your intelligent real estate assistant"
-                spacing="default"
-            >
+            <div className="space-y-6">
                 <div className="flex items-center justify-center py-12">
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
-            </StandardPageLayout>
+            </div>
         );
     }
 
     return (
-        <StandardPageLayout
-            title="AI Assistant"
-            description="Get instant answers, research insights, and personalized content recommendations"
-            spacing="default"
-        >
+        <div className="space-y-6">
             <div className="space-y-6">
                 {/* Profile Setup Alert with Glass Effect */}
                 {!profile && (
@@ -112,7 +100,7 @@ export default function AssistantPage() {
                                     onClick={() => setActiveTab('profile')}
                                 >
                                     <Settings className="h-4 w-4 mr-2" />
-                                    Setup Profile
+                                    <span>Setup Profile</span>
                                 </Button>
                             </div>
                         </GlassCardContent>
@@ -152,9 +140,7 @@ export default function AssistantPage() {
                                 </CardHeader>
                                 <CardContent>
                                     <Button asChild>
-                                        <Link href="/brand-center/profile">
-                                            Go to Brand Center to Setup Profile
-                                        </Link>
+                                        <Link href="/brand/profile">Go to Brand to Setup Profile</Link>
                                     </Button>
                                 </CardContent>
                             </Card>
@@ -162,6 +148,6 @@ export default function AssistantPage() {
                     </TabsContent>
                 </Tabs>
             </div>
-        </StandardPageLayout>
+        </div>
     );
 }

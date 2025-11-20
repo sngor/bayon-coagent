@@ -640,8 +640,6 @@ export default function ContentEnginePage() {
 
   return (
     <StandardPageLayout
-      title="Co-Marketing Studio"
-      description="Use generative AI to create hyper-local content, social posts, and video scripts."
       spacing="default"
     >
 

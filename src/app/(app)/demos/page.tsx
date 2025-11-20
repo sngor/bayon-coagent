@@ -38,9 +38,7 @@ import {
     Users,
     Workflow,
     Eye,
-    TestTube2,
     Layout,
-    Tablet,
     Home,
 } from 'lucide-react';
 
@@ -54,32 +52,6 @@ interface Demo {
 }
 
 const demos: Demo[] = [
-    // AI Features
-    {
-        name: 'AI Dashboard',
-        path: '/ai-dashboard-demo',
-        description: 'AI-powered personalized dashboard with recommendations',
-        category: 'AI Features',
-        icon: Sparkles,
-        tags: ['ai', 'dashboard', 'personalization'],
-    },
-    {
-        name: 'AI Operation Progress',
-        path: '/ai-operation-progress-demo',
-        description: 'Real-time progress tracking for AI operations',
-        category: 'AI Features',
-        icon: Activity,
-        tags: ['ai', 'progress', 'loading'],
-    },
-    {
-        name: 'AI Assistant Demo',
-        path: '/kiro-assistant-demo',
-        description: 'Agent profile management and chat interface',
-        category: 'AI Features',
-        icon: MessageSquare,
-        tags: ['ai', 'chat', 'assistant'],
-    },
-
     // Animations
     {
         name: 'Animated Charts',
@@ -124,30 +96,6 @@ const demos: Demo[] = [
 
     // UI Components
     {
-        name: 'Glass Cards',
-        path: '/glass-card-demo',
-        description: 'Glass morphism card designs',
-        category: 'UI Components',
-        icon: Layers,
-        tags: ['cards', 'glass', 'design'],
-    },
-    {
-        name: 'Gradient Borders',
-        path: '/gradient-border-demo',
-        description: 'Gradient border effects',
-        category: 'UI Components',
-        icon: Palette,
-        tags: ['borders', 'gradients', 'design'],
-    },
-    {
-        name: 'Gradient Mesh',
-        path: '/gradient-mesh-demo',
-        description: 'Gradient mesh backgrounds',
-        category: 'UI Components',
-        icon: Palette,
-        tags: ['backgrounds', 'gradients', 'design'],
-    },
-    {
         name: 'Contextual Tooltips',
         path: '/contextual-tooltip-demo',
         description: 'Smart contextual tooltip system',
@@ -170,22 +118,6 @@ const demos: Demo[] = [
         category: 'UI Components',
         icon: ThumbsUp,
         tags: ['feedback', 'notifications', 'ui'],
-    },
-    {
-        name: 'Intelligent Empty States',
-        path: '/intelligent-empty-state-demo',
-        description: 'Smart empty state designs with actions',
-        category: 'UI Components',
-        icon: Layout,
-        tags: ['empty-states', 'ui', 'ux'],
-    },
-    {
-        name: 'Real Estate Icons',
-        path: '/real-estate-icons-demo',
-        description: 'Custom real estate icon set',
-        category: 'UI Components',
-        icon: Home,
-        tags: ['icons', 'real-estate', 'design'],
     },
     {
         name: 'Sticky Title',
@@ -213,22 +145,6 @@ const demos: Demo[] = [
     },
 
     // Data Display
-    {
-        name: 'Metric Cards',
-        path: '/metric-card-demo',
-        description: 'Metric card displays with trends',
-        category: 'Data Display',
-        icon: TrendingUp,
-        tags: ['metrics', 'cards', 'data'],
-    },
-    {
-        name: 'Sparklines',
-        path: '/sparkline-demo',
-        description: 'Sparkline chart components',
-        category: 'Data Display',
-        icon: LineChart,
-        tags: ['charts', 'sparklines', 'data'],
-    },
     {
         name: 'Responsive Tables',
         path: '/responsive-table-demo',
@@ -270,64 +186,6 @@ const demos: Demo[] = [
         category: 'Interactions',
         icon: MousePointer2,
         tags: ['micro-interactions', 'ux', 'testing'],
-    },
-    {
-        name: 'Profile Completion',
-        path: '/profile-completion-demo',
-        description: 'Profile completion UI patterns',
-        category: 'Interactions',
-        icon: User,
-        tags: ['profile', 'onboarding', 'progress'],
-    },
-    {
-        name: 'Search',
-        path: '/search-demo',
-        description: 'Search component showcase',
-        category: 'Interactions',
-        icon: SearchIcon,
-        tags: ['search', 'input', 'ui'],
-    },
-    {
-        name: 'Usage Tracking',
-        path: '/usage-tracking-demo',
-        description: 'Usage tracking UI components',
-        category: 'Interactions',
-        icon: Activity,
-        tags: ['tracking', 'analytics', 'ui'],
-    },
-    {
-        name: 'User Flow',
-        path: '/user-flow-demo',
-        description: 'User flow demonstrations',
-        category: 'Interactions',
-        icon: Users,
-        tags: ['flows', 'ux', 'onboarding'],
-    },
-    {
-        name: 'Workflow Optimization',
-        path: '/workflow-optimization-demo',
-        description: 'Workflow optimization patterns',
-        category: 'Interactions',
-        icon: Workflow,
-        tags: ['workflow', 'optimization', 'ux'],
-    },
-
-    // Testing
-    {
-        name: 'Mobile Test',
-        path: '/mobile-test',
-        description: 'Mobile responsiveness testing',
-        category: 'Testing',
-        icon: Smartphone,
-        tags: ['mobile', 'responsive', 'testing'],
-    },
-    {
-        name: 'Tablet Test',
-        path: '/tablet-test',
-        description: 'Tablet responsiveness testing',
-        category: 'Testing',
-        icon: Tablet,
-        tags: ['tablet', 'responsive', 'testing'],
     },
 ];
 

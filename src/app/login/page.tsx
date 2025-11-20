@@ -342,6 +342,16 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                             Must be at least 8 characters with uppercase, lowercase, and numbers
                         </p>
                     </div>
+                    <div className="text-xs text-muted-foreground text-center">
+                        By creating an account, you agree to our{' '}
+                        <Link href="/terms" className="text-primary hover:underline">
+                            Terms of Service
+                        </Link>{' '}
+                        and{' '}
+                        <Link href="/privacy" className="text-primary hover:underline">
+                            Privacy Policy
+                        </Link>
+                    </div>
                     <AuthButton><span className="text-bold-cta">Create Account</span></AuthButton>
                 </div>
             </form>

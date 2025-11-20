@@ -26,7 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getPersonalizationEngine } from '@/lib/ai-personalization';
+import { getPersonalizedDashboardAction } from '@/app/actions';
 import type {
     PersonalizedDashboard,
     PriorityAction,
@@ -154,10 +154,13 @@ export function AIDashboard({ userId, userName }: AIDashboardProps) {
                 setIsLoading(true);
                 setError(null);
 
-                const engine = getPersonalizationEngine();
-                const data = await engine.getPersonalizedDashboard(userId);
+                const result = await getPersonalizedDashboardAction();
 
-                setDashboardData(data);
+                if (result.errors || !result.data) {
+                    setError(result.message || 'Unable to load personalized recommendations.');
+                } else {
+                    setDashboardData(result.data);
+                }
             } catch (err) {
                 console.error('Failed to load AI dashboard:', err);
                 setError('Unable to load personalized recommendations. Please try again later.');

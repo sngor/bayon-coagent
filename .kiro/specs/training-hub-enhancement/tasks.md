@@ -142,7 +142,7 @@
   - DynamoDB query performance is optimized
   - _Requirements: All_
 
-- [ ] 9. Implement AI Role-Play feature
+- [x] 9. Implement AI Role-Play feature
 
   - Create role-play-flow.ts Bedrock flow with conversation context handling
   - Implement AIRolePlay component with scenario selection and chat interface
@@ -152,7 +152,7 @@
   - Add role-play access point in Training Hub (new tab or page)
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
 
-- [ ] 9.1 Define role-play scenarios
+- [x] 9.1 Define role-play scenarios
 
   - Create scenario definitions with persona descriptions
   - Include buyer scenarios (first-time, investor, luxury, relocating)
@@ -161,7 +161,7 @@
   - Store scenarios in training-data.ts or separate file
   - _Requirements: 8.1_
 
-- [ ] 9.2 Create role-play Bedrock flow
+- [x] 9.2 Create role-play Bedrock flow
 
   - Implement role-play-flow.ts with persona-based system prompts
   - Handle conversation history context
@@ -170,7 +170,7 @@
   - Use Claude 3.5 Sonnet model
   - _Requirements: 8.2, 8.3, 8.4_
 
-- [ ] 9.3 Implement role-play server actions
+- [x] 9.3 Implement role-play server actions
 
   - Create startRolePlayAction to initialize session
   - Create sendRolePlayMessageAction to handle user messages
@@ -179,7 +179,7 @@
   - Add error handling and validation
   - _Requirements: 8.2, 8.3, 8.4, 8.5_
 
-- [ ] 9.4 Build AIRolePlay component
+- [x] 9.4 Build AIRolePlay component
 
   - Create chat interface with message history display
   - Implement scenario selection dropdown
@@ -190,7 +190,7 @@
   - Style with consistent design system
   - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
-- [ ] 9.5 Integrate role-play into Training Hub
+- [x] 9.5 Integrate role-play into Training Hub
 
   - Add "Practice" tab to training hub layout
   - Create /training/practice page with AIRolePlay component

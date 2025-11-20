@@ -18,6 +18,7 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
             description="Create and edit all your marketing content"
             icon={Wand2}
             tabs={tabs}
+            tabsVariant="pills"
             actions={
                 <Button>
                     <Plus className="h-4 w-4 mr-2" />

@@ -1,10 +1,28 @@
 
 import type { Metadata } from 'next';
+import { PT_Sans, Playfair_Display } from 'next/font/google';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 import { AWSClientProvider } from '@/aws/client-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { PerformanceMonitor } from '@/components/performance-monitor';
+
+// Optimize font loading with Next.js font optimization
+const ptSans = PT_Sans({
+  weight: ['400', '700'],
+  style: ['normal', 'italic'],
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-pt-sans',
+});
+
+const playfairDisplay = Playfair_Display({
+  weight: ['400', '500', '600', '700', '800', '900'],
+  style: ['normal', 'italic'],
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-playfair',
+});
 
 export const metadata: Metadata = {
   title: {
@@ -65,37 +83,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        {/* Theme color for browser chrome */}
-        <meta name="theme-color" content="#3B82F6" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#1E293B" media="(prefers-color-scheme: dark)" />
-
-        {/* Viewport optimization for mobile */}
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-
-        {/* Preconnect to external domains for faster resource loading */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-
-        {/* DNS prefetch for external resources */}
-        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
-
-        {/* Load fonts with display=swap to prevent blocking */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap"
-          rel="stylesheet"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap"
-          rel="stylesheet"
-        />
-
-        {/* Favicon and app icons */}
-        <link rel="icon" href="/icon-192x192.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/icon-192x192.svg" />
-      </head>
+    <html lang="en" suppressHydrationWarning className={`${ptSans.variable} ${playfairDisplay.variable}`}>
       <body className="font-body antialiased" suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
@@ -108,8 +96,7 @@ export default function RootLayout({
           </AWSClientProvider>
           <Toaster />
         </ThemeProvider>
-        {/* Performance monitoring in development */}
-        <PerformanceMonitor />
+        {process.env.NODE_ENV === 'development' && <PerformanceMonitor />}
       </body>
     </html>
   );

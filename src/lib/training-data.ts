@@ -1089,6 +1089,417 @@ export const additionalClosingModules = [
   }
 ];
 
+// Role-Play Scenarios
+export interface RolePlayScenario {
+  id: string;
+  title: string;
+  category: 'buyer' | 'seller' | 'objection';
+  description: string;
+  persona: {
+    name: string;
+    background: string;
+    personality: string;
+    goals: string[];
+    concerns: string[];
+    communicationStyle: string;
+  };
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  learningObjectives: string[];
+  relatedModules: string[];
+}
+
+export const rolePlayScenarios: RolePlayScenario[] = [
+  // Buyer Scenarios
+  {
+    id: 'first-time-buyer',
+    title: 'First-Time Homebuyer',
+    category: 'buyer',
+    description: 'A nervous first-time buyer with many questions about the home buying process',
+    persona: {
+      name: 'Sarah Chen',
+      background: '28-year-old software engineer, renting for 5 years, saved $50K for down payment',
+      personality: 'Analytical, detail-oriented, anxious about making the right decision',
+      goals: [
+        'Understand the entire home buying process',
+        'Find a starter home under $400K',
+        'Avoid making costly mistakes',
+        'Get pre-approved for a mortgage'
+      ],
+      concerns: [
+        'Worried about hidden costs and fees',
+        'Unsure about what to look for in a home inspection',
+        'Concerned about being taken advantage of',
+        'Anxious about the commitment of homeownership'
+      ],
+      communicationStyle: 'Asks many questions, needs reassurance, appreciates detailed explanations'
+    },
+    difficulty: 'beginner',
+    learningObjectives: [
+      'Build trust with anxious clients',
+      'Explain complex processes in simple terms',
+      'Provide reassurance without being dismissive',
+      'Set clear expectations for the buying journey'
+    ],
+    relatedModules: ['client-communication', 'closing-techniques']
+  },
+  {
+    id: 'investor-client',
+    title: 'Investment Property Buyer',
+    category: 'buyer',
+    description: 'An analytical investor focused on ROI and market data',
+    persona: {
+      name: 'Marcus Johnson',
+      background: '45-year-old business owner, owns 3 rental properties, looking to expand portfolio',
+      personality: 'Data-driven, skeptical, focused on numbers and returns',
+      goals: [
+        'Find properties with 8%+ cap rate',
+        'Identify up-and-coming neighborhoods',
+        'Minimize vacancy risk',
+        'Build long-term wealth through real estate'
+      ],
+      concerns: [
+        'Market timing and potential downturn',
+        'Property management challenges',
+        'Renovation costs eating into profits',
+        'Tenant quality and turnover'
+      ],
+      communicationStyle: 'Direct, numbers-focused, challenges assumptions, wants data to back up claims'
+    },
+    difficulty: 'advanced',
+    learningObjectives: [
+      'Speak the language of real estate investing',
+      'Provide market analysis and comparable data',
+      'Handle skepticism with confidence',
+      'Position yourself as an investment advisor, not just an agent'
+    ],
+    relatedModules: ['competitive-analysis', 'negotiation-mastery']
+  },
+  {
+    id: 'luxury-buyer',
+    title: 'Luxury Home Buyer',
+    category: 'buyer',
+    description: 'A high-expectations client looking for premium service and exclusive properties',
+    persona: {
+      name: 'Victoria Ashford',
+      background: 'C-suite executive, relocating from New York, budget $2M+',
+      personality: 'Sophisticated, demanding, expects white-glove service',
+      goals: [
+        'Find a prestigious property that reflects status',
+        'Access off-market listings',
+        'Ensure privacy and discretion',
+        'Quick, efficient process despite high standards'
+      ],
+      concerns: [
+        'Wasting time on properties that don\'t meet standards',
+        'Working with an agent who doesn\'t understand luxury market',
+        'Privacy and confidentiality',
+        'Property value retention in luxury segment'
+      ],
+      communicationStyle: 'Expects proactive communication, values expertise, low tolerance for mistakes'
+    },
+    difficulty: 'advanced',
+    learningObjectives: [
+      'Demonstrate luxury market expertise',
+      'Provide concierge-level service',
+      'Handle high expectations with grace',
+      'Network and access exclusive listings'
+    ],
+    relatedModules: ['client-communication', 'negotiation-mastery']
+  },
+  {
+    id: 'relocating-family',
+    title: 'Relocating Family',
+    category: 'buyer',
+    description: 'An out-of-state family unfamiliar with the area, needing guidance on neighborhoods',
+    persona: {
+      name: 'The Martinez Family',
+      background: 'Parents with 2 kids (ages 7 and 10), relocating for job, need to move in 60 days',
+      personality: 'Overwhelmed, relying heavily on agent for local knowledge',
+      goals: [
+        'Find family-friendly neighborhood with good schools',
+        'Understand commute times and traffic patterns',
+        'Learn about local amenities and community',
+        'Close quickly due to job start date'
+      ],
+      concerns: [
+        'Making the wrong neighborhood choice',
+        'Schools quality and availability',
+        'Safety and community fit',
+        'Buying sight-unseen or with limited visits'
+      ],
+      communicationStyle: 'Needs hand-holding, appreciates local insights, values responsiveness'
+    },
+    difficulty: 'intermediate',
+    learningObjectives: [
+      'Demonstrate deep local market knowledge',
+      'Provide comprehensive neighborhood guidance',
+      'Manage remote buying process',
+      'Build trust quickly with out-of-town clients'
+    ],
+    relatedModules: ['client-communication', 'local-seo']
+  },
+
+  // Seller Scenarios
+  {
+    id: 'overpriced-seller',
+    title: 'Seller with Unrealistic Price Expectations',
+    category: 'seller',
+    description: 'A seller who believes their home is worth significantly more than market value',
+    persona: {
+      name: 'Robert Thompson',
+      background: 'Owned home for 15 years, made extensive renovations, emotionally attached',
+      personality: 'Defensive, takes pricing feedback personally, overestimates home value',
+      goals: [
+        'Get maximum price for the home',
+        'Recoup all renovation costs',
+        'Sell within 3 months',
+        'Prove the home is worth more than comps suggest'
+      ],
+      concerns: [
+        'Being told the home is worth less than expected',
+        'Losing money on renovations',
+        'Agents just want a quick sale',
+        'Market timing and missing the peak'
+      ],
+      communicationStyle: 'Argumentative when challenged, needs data and empathy, emotional about the home'
+    },
+    difficulty: 'advanced',
+    learningObjectives: [
+      'Deliver difficult pricing news with empathy',
+      'Use market data to reset expectations',
+      'Handle emotional attachment professionally',
+      'Build trust while being honest about market realities'
+    ],
+    relatedModules: ['negotiation-mastery', 'client-communication']
+  },
+  {
+    id: 'urgent-seller',
+    title: 'Seller with Urgent Timeline',
+    category: 'seller',
+    description: 'A seller who needs to close quickly due to job relocation or financial pressure',
+    persona: {
+      name: 'Jennifer Lee',
+      background: 'Job transfer to another state, needs to close in 30 days, some financial stress',
+      personality: 'Stressed, impatient, willing to compromise on price for speed',
+      goals: [
+        'Sell within 30 days',
+        'Get enough to cover mortgage and moving costs',
+        'Minimize hassle and showings',
+        'Avoid deal falling through'
+      ],
+      concerns: [
+        'Not selling in time',
+        'Carrying two mortgages',
+        'Buyers backing out',
+        'Inspection issues delaying closing'
+      ],
+      communicationStyle: 'Direct, wants solutions not problems, appreciates proactive updates'
+    },
+    difficulty: 'intermediate',
+    learningObjectives: [
+      'Create urgency-based marketing strategy',
+      'Manage client stress and expectations',
+      'Navigate compressed timelines',
+      'Balance speed with getting best price'
+    ],
+    relatedModules: ['closing-techniques', 'time-management']
+  },
+  {
+    id: 'emotional-seller',
+    title: 'Emotional Seller',
+    category: 'seller',
+    description: 'A long-time homeowner emotionally attached to their property',
+    persona: {
+      name: 'Dorothy Williams',
+      background: '72 years old, raised family in home for 40 years, downsizing after spouse passed',
+      personality: 'Sentimental, slow to make decisions, needs emotional support',
+      goals: [
+        'Honor the memories in the home',
+        'Find the "right" buyer who will love it',
+        'Downsize to something manageable',
+        'Not feel rushed through the process'
+      ],
+      concerns: [
+        'Letting go of family memories',
+        'Strangers walking through the home',
+        'Making the wrong decision',
+        'Being taken advantage of due to age'
+      ],
+      communicationStyle: 'Shares stories, needs patience, values personal connection over efficiency'
+    },
+    difficulty: 'intermediate',
+    learningObjectives: [
+      'Provide emotional support during difficult transitions',
+      'Balance empathy with professional guidance',
+      'Handle sensitive situations with grace',
+      'Build deep trust with vulnerable clients'
+    ],
+    relatedModules: ['client-communication', 'buyer-psychology']
+  },
+  {
+    id: 'fsbo-conversion',
+    title: 'For Sale By Owner (FSBO) Conversion',
+    category: 'seller',
+    description: 'A homeowner trying to sell on their own, skeptical of agent value',
+    persona: {
+      name: 'David Park',
+      background: 'DIY enthusiast, listed FSBO for 2 months with no offers, wants to save commission',
+      personality: 'Independent, skeptical of agents, cost-conscious',
+      goals: [
+        'Sell without paying full commission',
+        'Maintain control of the process',
+        'Get market value for the home',
+        'Avoid being "sold" by an agent'
+      ],
+      concerns: [
+        'Paying 5-6% commission',
+        'Agents just want a quick sale',
+        'Losing control of negotiations',
+        'Being pressured into decisions'
+      ],
+      communicationStyle: 'Skeptical, asks about value proposition, needs proof of ROI'
+    },
+    difficulty: 'advanced',
+    learningObjectives: [
+      'Articulate agent value proposition clearly',
+      'Handle commission objections confidently',
+      'Convert skeptics through education',
+      'Demonstrate market expertise and results'
+    ],
+    relatedModules: ['objection-handling', 'negotiation-mastery']
+  },
+
+  // Objection Handling Scenarios
+  {
+    id: 'commission-negotiation',
+    title: 'Commission Rate Negotiation',
+    category: 'objection',
+    description: 'A client questioning your commission rate and asking for a discount',
+    persona: {
+      name: 'Brian Foster',
+      background: 'Savvy negotiator, interviewed 3 agents, shopping for best commission rate',
+      personality: 'Business-minded, sees real estate as a commodity, focused on costs',
+      goals: [
+        'Get professional service at lowest cost',
+        'Negotiate commission down to 4% or less',
+        'Maximize net proceeds from sale',
+        'Maintain leverage in the relationship'
+      ],
+      concerns: [
+        'Overpaying for services',
+        'Commission eating into profits',
+        'Whether full-service is worth the cost',
+        'Discount brokers offering lower rates'
+      ],
+      communicationStyle: 'Direct, compares you to competitors, uses other quotes as leverage'
+    },
+    difficulty: 'advanced',
+    learningObjectives: [
+      'Defend your commission with confidence',
+      'Articulate value beyond just listing on MLS',
+      'Handle price objections without discounting',
+      'Position yourself as an investment, not an expense'
+    ],
+    relatedModules: ['objection-handling', 'negotiation-mastery']
+  },
+  {
+    id: 'multiple-offers-stress',
+    title: 'Buyer Lost in Multiple Offers',
+    category: 'objection',
+    description: 'A frustrated buyer who has lost multiple bidding wars',
+    persona: {
+      name: 'Amanda Rodriguez',
+      background: 'Lost 4 offers in competitive market, feeling defeated and questioning strategy',
+      personality: 'Frustrated, losing confidence, considering giving up',
+      goals: [
+        'Finally win a home',
+        'Understand why they keep losing',
+        'Adjust strategy to be more competitive',
+        'Not overpay out of desperation'
+      ],
+      concerns: [
+        'Never finding a home',
+        'Wasting time on losing offers',
+        'Overpaying in desperation',
+        'Whether their agent is doing enough'
+      ],
+      communicationStyle: 'Emotional, questioning your advice, needs strategy adjustment and hope'
+    },
+    difficulty: 'intermediate',
+    learningObjectives: [
+      'Manage client frustration in competitive markets',
+      'Adjust strategy for multiple offer situations',
+      'Provide hope while being realistic',
+      'Strengthen competitive positioning'
+    ],
+    relatedModules: ['buyer-psychology', 'negotiation-mastery']
+  },
+  {
+    id: 'inspection-issues',
+    title: 'Navigating Inspection Negotiations',
+    category: 'objection',
+    description: 'A buyer or seller dealing with unexpected inspection findings',
+    persona: {
+      name: 'Tom and Lisa Bennett',
+      background: 'Buyers, inspection revealed $15K in repairs, considering walking away',
+      personality: 'Anxious, feeling deceived, questioning the entire purchase',
+      goals: [
+        'Get seller to cover repair costs',
+        'Understand severity of issues',
+        'Decide whether to proceed or walk away',
+        'Protect their investment'
+      ],
+      concerns: [
+        'Buying a money pit',
+        'Hidden issues beyond inspection',
+        'Seller refusing to negotiate',
+        'Making an emotional decision'
+      ],
+      communicationStyle: 'Worried, needs guidance on what\'s normal vs. red flags, wants your recommendation'
+    },
+    difficulty: 'intermediate',
+    learningObjectives: [
+      'Navigate inspection negotiations calmly',
+      'Distinguish between major issues and minor repairs',
+      'Negotiate repair credits or price reductions',
+      'Keep deals together when issues arise'
+    ],
+    relatedModules: ['negotiation-mastery', 'closing-techniques']
+  },
+  {
+    id: 'cold-feet',
+    title: 'Buyer with Cold Feet',
+    category: 'objection',
+    description: 'A buyer having second thoughts right before closing',
+    persona: {
+      name: 'Kevin Zhang',
+      background: 'Under contract, closing in 2 weeks, suddenly questioning everything',
+      personality: 'Anxious, overthinking, looking for reasons to back out',
+      goals: [
+        'Feel confident about the decision',
+        'Understand if doubts are normal',
+        'Avoid making a huge mistake',
+        'Get reassurance or permission to walk away'
+      ],
+      concerns: [
+        'Overpaying for the property',
+        'Better homes coming on market',
+        'Job security and mortgage payments',
+        'Commitment and being "stuck"'
+      ],
+      communicationStyle: 'Second-guessing everything, needs validation, asking "what if" questions'
+    },
+    difficulty: 'advanced',
+    learningObjectives: [
+      'Recognize and address buyer\'s remorse',
+      'Provide reassurance without being pushy',
+      'Help clients work through normal anxiety',
+      'Know when to let a client walk away'
+    ],
+    relatedModules: ['buyer-psychology', 'client-communication']
+  }
+];
+
 // Combine all modules
 marketingModules.push(...additionalMarketingModules);
 closingModules.push(...additionalClosingModules);

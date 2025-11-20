@@ -61,12 +61,11 @@ import { StandardLoadingSpinner } from '@/components/standard';
 
 const navItems = [
   { href: '/dashboard', icon: HouseIcon, label: 'Dashboard', customIcon: true },
-  { href: '/assistant', icon: MessageSquare, label: 'AI Assistant' },
+  { href: '/assistant', icon: MessageSquare, label: 'Chat' },
   { href: '/studio', icon: Wand2, label: 'Studio' },
-  { href: '/intelligence', icon: AISparkleIcon, label: 'Intelligence', customIcon: true },
-  { href: '/brand-center', icon: Target, label: 'Brand Center' },
-  { href: '/projects', icon: Folder, label: 'Projects' },
-  { href: '/training', icon: GraduationCap, label: 'Training' },
+  { href: '/brand', icon: Target, label: 'Brand' },
+  { href: '/market', icon: AISparkleIcon, label: 'Market', customIcon: true },
+  { href: '/library', icon: Library, label: 'Library' },
 ];
 
 function AppLoadingScreen() {
@@ -108,8 +107,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setIsMounted(true);
   }, []);
 
-  // Extract page title and handle scroll detection
+  // Extract page title and handle scroll detection - optimized with RAF
   useEffect(() => {
+    let rafId: number | null = null;
+    let timeoutId: NodeJS.Timeout;
+
     const updateTitle = () => {
       const mainElement = document.querySelector('main');
       if (mainElement) {
@@ -124,35 +126,34 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     };
 
     const checkScroll = () => {
-      const mainElement = document.querySelector('main');
-      if (!mainElement) {
-        console.log('❌ No main element found');
-        return;
-      }
+      if (rafId) return; // Throttle with RAF
 
-      const h1 = mainElement.querySelector('h1');
-      if (!h1) {
-        console.log('❌ No h1 found');
-        setShowStickyTitle(false);
-        return;
-      }
+      rafId = requestAnimationFrame(() => {
+        const mainElement = document.querySelector('main');
+        if (!mainElement) {
+          rafId = null;
+          return;
+        }
 
-      const rect = h1.getBoundingClientRect();
-      const shouldShow = rect.bottom < 100;
-      console.log('📊 Scroll check:', {
-        bottom: rect.bottom,
-        shouldShow,
-        currentlyShowing: showStickyTitle,
-        title: h1.textContent?.substring(0, 30)
+        const h1 = mainElement.querySelector('h1');
+        if (!h1) {
+          setShowStickyTitle(false);
+          rafId = null;
+          return;
+        }
+
+        const rect = h1.getBoundingClientRect();
+        const shouldShow = rect.bottom < 100;
+        setShowStickyTitle(shouldShow);
+        rafId = null;
       });
-      setShowStickyTitle(shouldShow);
     };
 
     // Update title when pathname changes
-    const timeoutId = setTimeout(() => {
+    timeoutId = setTimeout(() => {
       updateTitle();
       checkScroll();
-    }, 300);
+    }, 100); // Reduced from 300ms
 
     // Listen for scroll events on the main element (SidebarInset)
     const mainElement = document.querySelector('main');
@@ -162,18 +163,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       // Also observe DOM changes to catch dynamically rendered titles
       const observer = new MutationObserver(() => {
         updateTitle();
-        setTimeout(checkScroll, 50);
+        checkScroll();
       });
       observer.observe(mainElement, { childList: true, subtree: true });
 
       return () => {
         clearTimeout(timeoutId);
+        if (rafId) cancelAnimationFrame(rafId);
         mainElement.removeEventListener('scroll', checkScroll);
         observer.disconnect();
       };
     }
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, [pathname]);
 
   useEffect(() => {
@@ -225,7 +230,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               ))}
             </SidebarMenu>
           </SidebarContent>
-          <SidebarFooter />
+          <SidebarFooter>
+            <div className="px-3 py-2 text-xs text-muted-foreground space-y-1">
+              <div className="flex gap-3 justify-center group-data-[collapsible=icon]:hidden">
+                <Link href="/privacy" className="hover:text-foreground transition-colors">
+                  Privacy
+                </Link>
+                <Link href="/terms" className="hover:text-foreground transition-colors">
+                  Terms
+                </Link>
+              </div>
+            </div>
+          </SidebarFooter>
         </Sidebar>
         <SidebarInset>
           <header className="sticky top-0 z-10 flex h-20 items-center justify-between px-4 mx-3 mt-3 mb-0 bg-background/95 backdrop-blur-sm rounded-t-xl">

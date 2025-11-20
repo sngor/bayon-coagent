@@ -180,26 +180,7 @@ export default function DashboardPage() {
     }, [agentProfile, latestPlanData, brandAuditData, competitorsData]);
 
     return (
-        <StandardPageLayout
-            title="Dashboard"
-            description={isLoadingProfile ? "Welcome back..." : `Welcome back, ${agentProfile?.name || 'Agent'}. Here's a snapshot of your authority.`}
-            spacing="default"
-        >
-            {/* Welcome Glass Card */}
-            {agentProfile && (
-                <GlassCard blur="xl" tint="light" className="mb-6 animate-fade-in-up">
-                    <GlassCardHeader>
-                        <GlassCardTitle className="text-2xl font-headline flex items-center gap-2">
-                            <AISparkleIcon animated={true} className="h-6 w-6 text-primary" />
-                            Welcome back, {agentProfile.name}
-                        </GlassCardTitle>
-                        <GlassCardDescription className="text-base">
-                            Your real estate success dashboard - track your authority, manage your brand, and grow your business.
-                        </GlassCardDescription>
-                    </GlassCardHeader>
-                </GlassCard>
-            )}
-
+        <div className="space-y-6">
             {/* Profile Completion Banner */}
             {agentProfile && (
                 <div className="animate-fade-in-up animate-delay-100">
@@ -220,7 +201,7 @@ export default function DashboardPage() {
                         description="Your AI-generated marketing plan is ready."
                         actions={latestPlanData && latestPlanData.length > 0 ? (
                             <Button variant="outline" size="sm" asChild className="w-full sm:w-auto">
-                                <Link href="/marketing-plan">View Full Plan</Link>
+                                <Link href="/brand/strategy">View Full Plan</Link>
                             </Button>
                         ) : undefined}
                         variant="elevated"
@@ -250,7 +231,7 @@ export default function DashboardPage() {
                                 description="Let AI create a personalized marketing strategy tailored to your business goals and market position."
                                 action={{
                                     label: "Generate Your Plan",
-                                    onClick: () => window.location.href = '/marketing-plan',
+                                    onClick: () => window.location.href = '/brand/strategy',
                                     variant: "ai"
                                 }}
                                 variant="compact"
@@ -345,7 +326,7 @@ export default function DashboardPage() {
                                     recentReviews.map((review) => (
                                         <CarouselItem key={review.id} className="md:basis-full lg:basis-1/2">
                                             <div className="p-1 h-full">
-                                                <Link href="/brand-audit">
+                                                <Link href="/brand/audit">
                                                     <div className="h-full flex flex-col p-4 md:p-6 bg-secondary/30 hover:bg-secondary/50 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] rounded-lg border">
                                                         <div className="flex items-start gap-4 pb-3">
                                                             {review.avatarUrl && <Image
@@ -380,7 +361,7 @@ export default function DashboardPage() {
                                                 description="Start building your online reputation by collecting client testimonials and reviews from various platforms."
                                                 action={{
                                                     label: "Run Brand Audit",
-                                                    onClick: () => window.location.href = '/brand-audit',
+                                                    onClick: () => window.location.href = '/brand/audit',
                                                     variant: "default"
                                                 }}
                                                 variant="compact"
@@ -517,6 +498,6 @@ export default function DashboardPage() {
                     </StandardCard>
                 </div>
             </div>
-        </StandardPageLayout >
+        </div>
     );
 }
