@@ -13,7 +13,7 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
     return (
         <HubLayout
             title="Studio"
-            description="Create and edit all your marketing content"
+            description="Turn ideas into polished content in minutes"
             icon={Wand2}
             tabs={tabs}
             tabsVariant="pills"

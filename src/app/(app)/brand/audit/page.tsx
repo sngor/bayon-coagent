@@ -163,7 +163,7 @@ function RunAuditButton({ disabled }: { disabled?: boolean }) {
     return (
         <StandardFormActions
             primaryAction={{
-                label: 'Run Audit',
+                label: 'Check My Listings',
                 type: 'submit',
                 variant: 'ai',
                 loading: pending,
@@ -179,7 +179,7 @@ function FetchReviewsButton({ disabled }: { disabled?: boolean }) {
     return (
         <StandardFormActions
             primaryAction={{
-                label: 'Fetch Reviews',
+                label: 'Import Reviews',
                 type: 'submit',
                 variant: 'default',
                 loading: pending,
@@ -345,7 +345,7 @@ export default function BrandAuditPage() {
                 toast({ title: 'No New Reviews', description: 'No reviews were found for this Zillow profile.' });
             }
         } else if (zillowState.message && zillowState.message !== 'success') {
-            toast({ variant: 'destructive', title: 'Failed to Fetch Reviews', description: zillowState.message });
+            toast({ variant: 'destructive', title: 'Couldn\'t Import Reviews', description: zillowState.message });
         }
     }, [zillowState]);
 
@@ -525,7 +525,7 @@ export default function BrandAuditPage() {
                         <CardHeader>
                             <CardTitle className="font-headline">NAP Consistency Audit</CardTitle>
                             <CardDescription>
-                                Ensuring your Name, Address, and Phone are consistent is vital for local SEO.
+                                Make sure clients can find you everywhere—with the exact same info.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
@@ -534,7 +534,7 @@ export default function BrandAuditPage() {
                                 <FirstTimeUseEmptyState
                                     icon={<TrendingUp className="h-8 w-8 text-primary" />}
                                     title="Run Your First Brand Audit"
-                                    description="A Brand Audit checks your Name, Address, and Phone (NAP) consistency across major platforms like Google, Yelp, and Facebook. Consistent NAP information is crucial for local SEO and helps potential clients find you easily. Complete your profile information below, then run your first audit to see how your business appears online."
+                                    description="We'll check if your business name, address, and phone number match across Google, Yelp, and Facebook. When they match, clients can find you easier and you rank higher in local searches. Complete your profile first, then run your audit to see how you look online."
                                     action={{
                                         label: isAuditDisabled ? "Complete Profile First" : "Run Your First Audit",
                                         onClick: () => {

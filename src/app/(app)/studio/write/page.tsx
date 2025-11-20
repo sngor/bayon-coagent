@@ -199,7 +199,7 @@ function GenerateButton({
       ) : (
         <Sparkles className="mr-2 h-4 w-4" />
       )}
-      {pending ? 'Generating...' : children}
+      {pending ? 'Creating...' : children}
     </Button>
   );
 }
@@ -216,7 +216,7 @@ function RegenerateImageButton({
       ) : (
         <RefreshCw className="mr-2 h-4 w-4" />
       )}
-      {pending ? 'Generating...' : children}
+      {pending ? 'Creating...' : children}
     </Button>
   );
 }
@@ -592,35 +592,35 @@ export default function ContentEnginePage() {
     {
       id: 'market-update',
       title: 'Market Updates',
-      description: 'Create hyper-local market updates for your audience',
+      description: 'Share market insights that position you as the local expert',
       icon: TrendingUp,
       color: 'from-blue-500 to-cyan-500',
     },
     {
       id: 'blog-post',
       title: 'Blog Posts',
-      description: 'Generate SEO-friendly long-form content',
+      description: 'Publish blog posts that rank and convert',
       icon: FileText,
       color: 'from-purple-500 to-pink-500',
     },
     {
       id: 'video-script',
       title: 'Video Scripts',
-      description: 'Create engaging 60-second video scripts',
+      description: 'Script videos that stop the scroll and start conversations',
       icon: Video,
       color: 'from-orange-500 to-red-500',
     },
     {
       id: 'guide',
       title: 'Neighborhood Guides',
-      description: 'Comprehensive guides for local areas',
+      description: 'Become the go-to expert for every neighborhood you serve',
       icon: MapPin,
       color: 'from-green-500 to-emerald-500',
     },
     {
       id: 'social',
       title: 'Social Media',
-      description: 'Multi-platform social media posts',
+      description: 'Post consistently across all platforms without the hassle',
       icon: MessageSquare,
       color: 'from-indigo-500 to-blue-500',
     },
@@ -789,7 +789,7 @@ export default function ContentEnginePage() {
               </CardHeader>
               <CardContent>
                 {isMarketUpdatePending ? (
-                  <StandardLoadingSpinner variant="ai" message="Generating your market update..." />
+                  <StandardLoadingSpinner variant="ai" message="Writing your market update..." />
                 ) : marketUpdateContent ? (
                   <div className="space-y-4">
                     <Textarea
@@ -805,10 +805,10 @@ export default function ContentEnginePage() {
                       <TrendingUp className="w-8 h-8 text-primary" />
                     </div>
                     <p className="text-muted-foreground text-lg">
-                      Your generated market update will appear here.
+                      Your market update will appear here.
                     </p>
                     <p className="text-sm text-muted-foreground mt-2">
-                      Fill in the form and click Generate to create content.
+                      Fill in the details and we'll write it for you.
                     </p>
                   </div>
                 )}
@@ -924,7 +924,7 @@ export default function ContentEnginePage() {
               </CardHeader>
               <CardContent>
                 {isBlogPostPending ? (
-                  <StandardLoadingSpinner variant="ai" message="Generating your blog post..." />
+                  <StandardLoadingSpinner variant="ai" message="Writing your blog post..." />
                 ) : blogPostContent ? (
                   <div className="space-y-4">
                     {headerImage && (
@@ -962,10 +962,10 @@ export default function ContentEnginePage() {
                       <FileText className="w-8 h-8 text-primary" />
                     </div>
                     <p className="text-muted-foreground text-lg">
-                      Your generated blog post and header image will appear here.
+                      Your blog post and header image will appear here.
                     </p>
                     <p className="text-sm text-muted-foreground mt-2">
-                      Enter a topic and click Generate to create your blog post.
+                      Pick a topic and we'll write a complete blog post with an image.
                     </p>
                   </div>
                 )}
@@ -1100,7 +1100,7 @@ export default function ContentEnginePage() {
               </CardHeader>
               <CardContent>
                 {isVideoScriptPending ? (
-                  <StandardLoadingSpinner variant="ai" message="Generating your video script..." />
+                  <StandardLoadingSpinner variant="ai" message="Writing your video script..." />
                 ) : videoScriptContent ? (
                   <div className="space-y-4">
                     <Textarea
@@ -1116,10 +1116,10 @@ export default function ContentEnginePage() {
                       <Video className="w-8 h-8 text-primary" />
                     </div>
                     <p className="text-muted-foreground text-lg">
-                      Your generated video script will appear here.
+                      Your video script will appear here.
                     </p>
                     <p className="text-sm text-muted-foreground mt-2">
-                      Configure your script settings and click Generate.
+                      Tell us what you want to say and we'll script it for you.
                     </p>
                   </div>
                 )}
@@ -1250,7 +1250,7 @@ export default function ContentEnginePage() {
               </CardHeader>
               <CardContent>
                 {isGuidePending ? (
-                  <StandardLoadingSpinner variant="ai" message="Generating your neighborhood guide..." />
+                  <StandardLoadingSpinner variant="ai" message="Writing your neighborhood guide..." />
                 ) : guideContent ? (
                   <div className="space-y-4">
                     <Textarea
@@ -1267,10 +1267,10 @@ export default function ContentEnginePage() {
                       <MapPin className="w-8 h-8 text-primary" />
                     </div>
                     <p className="text-muted-foreground text-lg">
-                      Your generated guide will appear here.
+                      Your neighborhood guide will appear here.
                     </p>
                     <p className="text-sm text-muted-foreground mt-2">
-                      Add your personal, on-the-ground insights to provide unique value.
+                      We'll create the guide, then you can add your local insights.
                     </p>
                   </div>
                 )}
@@ -1377,7 +1377,7 @@ export default function ContentEnginePage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {isSocialPending ? (
-                    <StandardLoadingSpinner variant="ai" message="Generating your social media posts..." />
+                    <StandardLoadingSpinner variant="ai" message="Writing your social posts..." />
                   ) : socialPostContent ? (
                     <>
                       <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-700/30">

@@ -73,7 +73,7 @@ function GeneratePlanButton({ disabled }: { disabled?: boolean }) {
   return (
     <StandardFormActions
       primaryAction={{
-        label: 'Generate My Marketing Plan',
+        label: 'Create My Strategy',
         type: 'submit',
         variant: 'ai',
         loading: pending,
@@ -239,7 +239,7 @@ export default function MarketingPlanPage() {
         <CardHeader>
           <CardTitle className="font-headline text-3xl">Ready to Grow Your Brand?</CardTitle>
           <CardDescription>
-            Click the button below to have our AI analyze your Brand Audit and Competitive Analysis data. It will create a tailored 3-step plan to address your biggest marketing opportunities.
+            Get a personalized game plan based on your unique market position. We'll analyze your brand audit and competitors to create a 3-step strategy that addresses your biggest opportunities.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -319,9 +319,9 @@ export default function MarketingPlanPage() {
           <StandardEmptyState
             icon={<AISparkleIcon animated={true} className="h-16 w-16 text-primary" />}
             title="Your Marketing Success Starts Here"
-            description="Let AI analyze your brand presence and competitive landscape to create a personalized, actionable marketing plan. Get strategic recommendations tailored to your unique position in the market."
+            description="Get a personalized strategy that's built around your strengths and opportunities. We'll analyze your brand and competitors to create an action plan that actually works for your market."
             action={{
-              label: isDataReady ? "Generate My Marketing Plan" : "Complete Prerequisites First",
+              label: isDataReady ? "Create My Strategy" : "Complete Prerequisites First",
               onClick: () => {
                 if (isDataReady) {
                   const form = document.querySelector('form') as HTMLFormElement;
@@ -343,10 +343,10 @@ export default function MarketingPlanPage() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-warning" />
-                  Prerequisites Required
+                  Just a Few Steps First
                 </CardTitle>
                 <CardDescription>
-                  To generate your personalized marketing plan, we need some data about your brand and competitors.
+                  Before we can create your strategy, we need to know a bit about your brand and who you're up against.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -361,7 +361,7 @@ export default function MarketingPlanPage() {
                     <div className="flex-grow">
                       <h4 className="font-medium text-sm">Complete Your Brand Audit</h4>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Run a brand audit to analyze your online presence, NAP consistency, and review sentiment.
+                        Check how your business appears online and where you can improve.
                       </p>
                       {!brandAuditData && (
                         <Link href="/brand/audit">
@@ -385,7 +385,7 @@ export default function MarketingPlanPage() {
                     <div className="flex-grow">
                       <h4 className="font-medium text-sm">Add Your Competitors</h4>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Add at least one competitor to understand your competitive landscape and identify opportunities.
+                        Tell us who you're competing against so we can find ways to stand out.
                       </p>
                       {(!competitorsData || competitorsData.length === 0) && (
                         <Link href="/competitive-analysis">

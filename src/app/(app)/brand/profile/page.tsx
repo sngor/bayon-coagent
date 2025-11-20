@@ -133,7 +133,7 @@ function ProfessionalDetailsSection({ profile, onInputChange }: { profile: Parti
             <StandardFormField
                 label="Certifications"
                 id="certifications"
-                hint="Separate multiple certifications with commas"
+                hint="Add your certifications (e.g., CRS, ABR, GRI)"
             >
                 <Input
                     id="certifications"
@@ -205,14 +205,14 @@ function ContactSection({ profile, onInputChange }: { profile: Partial<Profile>,
                 label="Primary Business Address"
                 id="address"
                 required
-                hint="Used for NAP consistency and local SEO"
+                hint="This helps clients find you and improves your local search ranking"
             >
                 <Input id="address" name="address" value={profile.address || ''} onChange={onInputChange} placeholder="123 Main St, Seattle, WA 98101" />
             </StandardFormField>
             <StandardFormField
                 label="Zillow Email"
                 id="zillowEmail"
-                hint="For importing Zillow reviews"
+                hint="We'll use this to import your Zillow reviews"
             >
                 <Input id="zillowEmail" name="zillowEmail" type="email" value={profile.zillowEmail || ''} onChange={onInputChange} placeholder="your-email@zillow-premier-agent.com" />
             </StandardFormField>
@@ -238,7 +238,7 @@ function SocialLinksSection({ profile, onInputChange }: { profile: Partial<Profi
                     <Input id="facebook" name="facebook" type="url" value={profile.facebook || ''} onChange={onInputChange} placeholder="https://facebook.com/..." />
                 </StandardFormField>
             </div>
-            <p className="text-xs text-muted-foreground">Social profiles improve your E-E-A-T score and schema markup</p>
+            <p className="text-xs text-muted-foreground">Adding social profiles helps Google verify your expertise and authority</p>
         </div>
     );
 }
@@ -266,7 +266,7 @@ function ProfileForm({ profile, onInputChange, onSave, isSaving, isLoading, bioF
                 <CardHeader>
                     <CardTitle className="font-headline">Profile Information</CardTitle>
                     <CardDescription>
-                        Build your E-E-A-T profile and generate schema markup for better SEO
+                        Build the professional profile that gets you found and trusted online
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">

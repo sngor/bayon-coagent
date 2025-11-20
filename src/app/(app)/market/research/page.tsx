@@ -51,7 +51,7 @@ function SubmitButton({ disabled }: { disabled?: boolean }) {
   return (
     <StandardFormActions
       primaryAction={{
-        label: 'Start Research',
+        label: 'Research This Topic',
         type: 'submit',
         variant: 'ai',
         loading: pending,
@@ -233,7 +233,7 @@ export default function ResearchAgentPage() {
     >
       <StandardCard
         title={<span className="font-headline">New Research Task</span>}
-        description="Enter a topic, and the AI agent will perform iterative web searches to compile a comprehensive report with citations."
+        description="Ask any question about your market and get a research-backed answer in minutes."
       >
         <form
           action={(formData) => {
@@ -252,13 +252,13 @@ export default function ResearchAgentPage() {
             <Textarea
               id="topic"
               name="topic"
-              placeholder="e.g., 'The impact of rising interest rates on the commercial real estate market in New York City'"
+              placeholder="e.g., How are rising interest rates affecting commercial real estate in NYC?"
               rows={3}
             />
           </StandardFormField>
           <SubmitButton disabled={isUserLoading} />
           {state.message && state.message !== 'success' && (
-            <p className="text-destructive mt-4">{state.message}</p>
+            <p className="text-sm text-destructive mt-4">{state.message}</p>
           )}
         </form>
       </StandardCard>
@@ -336,8 +336,8 @@ export default function ResearchAgentPage() {
         {!isLoadingReports && (!savedReports || savedReports.length === 0) && (
           <StandardEmptyState
             icon={<Library className="h-16 w-16 text-muted-foreground" />}
-            title="Your Knowledge Base is Empty"
-            description="You haven't saved any research reports yet. Use the form above to create your first one."
+            title="No Research Reports Yet"
+            description="Ask your first question and get insights backed by real data."
           />
         )}
       </div>

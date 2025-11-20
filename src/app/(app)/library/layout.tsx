@@ -19,7 +19,7 @@ export default function LibraryLayout({
     return (
         <HubLayout
             title="Library"
-            description="Your marketing assets, organized and ready"
+            description="Everything you've created, ready when you need it"
             icon={Library}
             tabs={tabs}
             tabsVariant="pills"

@@ -57,7 +57,7 @@ function SignInForm({ onSwitch, onShowVerify }: { onSwitch: () => void; onShowVe
             <div className="grid gap-3 text-center">
                 <h1 className="text-display-medium text-gradient-primary">Welcome Back</h1>
                 <p className="text-heading-3 text-muted-foreground">
-                    Sign in to continue your marketing journey
+                    Sign in to grow your business
                 </p>
             </div>
             <form action={signInFormAction} className="space-y-5">
@@ -226,9 +226,9 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
         return (
             <div className="grid gap-6 animate-fade-in">
                 <div className="grid gap-3 text-center">
-                    <h1 className="text-display-medium text-gradient-primary">Verify Your Email</h1>
+                    <h1 className="text-display-medium text-gradient-primary">Check Your Email</h1>
                     <p className="text-heading-3 text-muted-foreground">
-                        We sent a verification code to <span className="font-semibold text-foreground">{userEmail}</span>
+                        We sent a code to <span className="font-semibold text-foreground">{userEmail}</span>
                     </p>
                 </div>
                 <form onSubmit={handleVerification} className="space-y-5">

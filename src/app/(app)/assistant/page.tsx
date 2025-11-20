@@ -92,7 +92,7 @@ export default function AssistantPage() {
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <Info className="h-5 w-5 text-primary" />
-                                    <span className="text-sm font-medium">Set up your agent profile to get personalized responses.</span>
+                                    <span className="text-sm font-medium">Set up your profile to get responses tailored to your market.</span>
                                 </div>
                                 <Button
                                     variant="outline"
@@ -135,12 +135,12 @@ export default function AssistantPage() {
                                 <CardHeader>
                                     <CardTitle>Agent Profile</CardTitle>
                                     <CardDescription>
-                                        Create your profile to personalize AI responses
+                                        Set up your profile so the AI knows your market and expertise
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     <Button asChild>
-                                        <Link href="/brand/profile">Go to Brand to Setup Profile</Link>
+                                        <Link href="/brand/profile">Set Up Profile</Link>
                                     </Button>
                                 </CardContent>
                             </Card>

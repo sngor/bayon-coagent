@@ -14,7 +14,7 @@ export default function BrandLayout({ children }: { children: React.ReactNode })
     return (
         <HubLayout
             title="Brand"
-            description="Build authority and stand out from competitors"
+            description="Own your market position and outshine the competition"
             icon={Target}
             tabs={tabs}
             tabsVariant="pills"

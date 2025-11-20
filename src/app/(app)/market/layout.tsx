@@ -14,7 +14,7 @@ export default function MarketLayout({ children }: { children: React.ReactNode }
     return (
         <HubLayout
             title="Market"
-            description="Data-driven insights for smarter decisions"
+            description="Know your market better than anyone else"
             icon={TrendingUp}
             tabs={tabs}
             tabsVariant="pills"

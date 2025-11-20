@@ -198,7 +198,7 @@ export default function DashboardPage() {
                                 Your Next Steps
                             </span>
                         }
-                        description="Your AI-generated marketing plan is ready."
+                        description="Here's what to focus on next to grow your business."
                         actions={latestPlanData && latestPlanData.length > 0 ? (
                             <Button variant="outline" size="sm" asChild className="w-full sm:w-auto">
                                 <Link href="/brand/strategy">View Full Plan</Link>
@@ -227,10 +227,10 @@ export default function DashboardPage() {
                         ) : (
                             <StandardEmptyState
                                 icon={<AISparkleIcon animated={true} className="h-8 w-8 text-primary" />}
-                                title="No Marketing Plan Yet"
-                                description="Let AI create a personalized marketing strategy tailored to your business goals and market position."
+                                title="No Strategy Yet"
+                                description="Get a personalized game plan built around your strengths and opportunities."
                                 action={{
-                                    label: "Generate Your Plan",
+                                    label: "Create Your Strategy",
                                     onClick: () => window.location.href = '/brand/strategy',
                                     variant: "ai"
                                 }}
@@ -247,7 +247,7 @@ export default function DashboardPage() {
                                 Reputation Snapshot
                             </span>
                         }
-                        description="Your latest client feedback from across the web."
+                        description="See what clients are saying about you online."
                         variant="elevated"
                         className="animate-fade-in-up animate-delay-300"
                     >
@@ -358,9 +358,9 @@ export default function DashboardPage() {
                                             <StandardEmptyState
                                                 icon={<MessageSquare className="h-8 w-8 text-primary" />}
                                                 title="No Reviews Yet"
-                                                description="Start building your online reputation by collecting client testimonials and reviews from various platforms."
+                                                description="Import your reviews from Zillow and other platforms to track your reputation."
                                                 action={{
-                                                    label: "Run Brand Audit",
+                                                    label: "Import Reviews",
                                                     onClick: () => window.location.href = '/brand/audit',
                                                     variant: "default"
                                                 }}
@@ -452,7 +452,7 @@ export default function DashboardPage() {
                                 <span className="truncate">Real Estate News</span>
                             </span>
                         }
-                        description="The latest market headlines."
+                        description="Stay on top of what's happening in real estate."
                         actions={
                             <form action={newsFormAction} className="flex-shrink-0">
                                 <input type="hidden" name="location" value={agentProfile?.address || ''} />

@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     default: 'Bayon Coagent - AI-Powered Success Platform for Real Estate Agents',
     template: '%s | Bayon Coagent',
   },
-  description: 'The integrated success platform for real estate agents. AI-powered content creation, market research, and brand management tools.',
+  description: 'The AI-powered platform that helps real estate agents create content, research markets, and build their brand—all in one place.',
   manifest: '/manifest.json',
   keywords: ['real estate', 'AI', 'marketing', 'content creation', 'market research', 'brand management'],
   authors: [{ name: 'Bayon Coagent' }],
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Bayon Coagent - AI-Powered Success Platform for Real Estate Agents',
-    description: 'The integrated success platform for real estate agents. AI-powered content creation, market research, and brand management tools.',
+    description: 'The AI-powered platform that helps real estate agents create content, research markets, and build their brand—all in one place.',
     url: '/',
     siteName: 'Bayon Coagent',
     locale: 'en_US',
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Bayon Coagent - AI-Powered Success Platform for Real Estate Agents',
-    description: 'The integrated success platform for real estate agents. AI-powered content creation, market research, and brand management tools.',
+    description: 'The AI-powered platform that helps real estate agents create content, research markets, and build their brand—all in one place.',
   },
   robots: {
     index: true,
