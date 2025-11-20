@@ -433,3 +433,39 @@ export function getCognitoClient(): CognitoAuthClient {
 export function resetCognitoClient(): void {
   cognitoClient = null;
 }
+
+/**
+ * Get the current authenticated user
+ * 
+ * This function attempts to get the current user from the session stored in localStorage.
+ * Note: This only works in client-side contexts. Server actions should pass userId explicitly.
+ * 
+ * @param userId - Optional user ID to return directly (for server-side use)
+ * @returns The current user or null if not authenticated
+ */
+export async function getCurrentUser(userId?: string): Promise<CognitoUser | null> {
+  // If userId is provided (server-side), return a minimal user object
+  if (userId) {
+    return {
+      id: userId,
+      email: '', // Email not available in server context
+      emailVerified: true,
+      attributes: {},
+    };
+  }
+
+  // Client-side: get from session
+  try {
+    const client = getCognitoClient();
+    const session = await client.getSession();
+    
+    if (!session) {
+      return null;
+    }
+    
+    return await client.getCurrentUser(session.accessToken);
+  } catch (error) {
+    console.error('Failed to get current user:', error);
+    return null;
+  }
+}

@@ -54,7 +54,8 @@ import {
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getOAuthTokens, type OAuthTokenData } from '@/aws/dynamodb';
+import { type OAuthTokenData } from '@/aws/dynamodb';
+import { getOAuthTokensAction } from '@/app/oauth-actions';
 import { useUser } from '@/aws/auth';
 import { useItem, useQuery } from '@/aws/dynamodb/hooks';
 import type { Profile, Review, BrandAudit as BrandAuditType, ReviewAnalysis } from '@/lib/types';
@@ -317,7 +318,7 @@ export default function BrandAuditPage() {
             if (!user) return;
 
             try {
-                const tokens = await getOAuthTokens(user.id, 'GOOGLE_BUSINESS');
+                const tokens = await getOAuthTokensAction(user.id, 'GOOGLE_BUSINESS');
                 setGbpData(tokens);
             } catch (error) {
                 console.error('Failed to load OAuth tokens:', error);
@@ -891,7 +892,7 @@ export default function BrandAuditPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="flex flex-wrap gap-2">
-                            <form action={zillowFormAction}>
+                            <form action={zillowFormAction} data-zillow-form>
                                 <input type="hidden" name="agentEmail" value={agentProfileData?.zillowEmail || ''} />
                                 <FetchReviewsButton disabled={isZillowDisabled} />
                             </form>
@@ -1042,7 +1043,21 @@ export default function BrandAuditPage() {
                                     </Card>
                                 ))
                             ) : (
-                                !isLoadingReviews && <p className="text-muted-foreground">No reviews found.</p>
+                                !isLoadingReviews && (
+                                    <StandardEmptyState
+                                        icon={<MessageSquareQuote className="h-12 w-12 text-muted-foreground" />}
+                                        title="No Reviews Yet"
+                                        description="Your imported reviews will appear here. Connect your Google Business Profile or import reviews from Zillow to get started."
+                                        action={{
+                                            label: "Import from Zillow",
+                                            onClick: () => {
+                                                const form = document.querySelector('form[data-zillow-form]') as HTMLFormElement;
+                                                if (form) form.scrollIntoView({ behavior: 'smooth' });
+                                            },
+                                            variant: 'outline'
+                                        }}
+                                    />
+                                )
                             )}
                             <AlertDialogContent>
                                 <AlertDialogHeader>

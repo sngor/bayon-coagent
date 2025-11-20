@@ -97,6 +97,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
             // Fetch user information
             const currentUser = await cognitoClient.getCurrentUser(newSession.accessToken);
             setUser(currentUser);
+
+            // Track login session
+            try {
+                const { trackLoginSession } = await import('@/app/login-session-actions');
+                await trackLoginSession(currentUser.id);
+            } catch (trackError) {
+                console.error('Failed to track login session:', trackError);
+                // Don't throw - tracking shouldn't block login
+            }
         } catch (err) {
             const error = err instanceof Error ? err : new Error('Failed to sign in');
             setError(error);

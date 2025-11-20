@@ -30,8 +30,7 @@ import { BrainCircuit, Library, Calendar, Search } from 'lucide-react';
 import { type RunResearchAgentOutput } from '@/aws/bedrock/flows';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
-import { getRepository } from '@/aws/dynamodb';
-import { getResearchReportKeys } from '@/aws/dynamodb/keys';
+import { saveResearchReportAction } from '@/app/actions';
 import type { ResearchReport } from '@/lib/types';
 import Link from 'next/link';
 
@@ -144,25 +143,17 @@ export default function ResearchAgentPage() {
       const saveReport = async () => {
         setIsSaving(true);
         try {
-          const repository = getRepository();
-          const reportId = Date.now().toString();
-          const keys = getResearchReportKeys(user.id, reportId);
-          const dataToSave = {
-            id: reportId,
-            report: state.data?.report || '',
-            citations: state.data?.citations || [],
-            topic: lastTopic || "Untitled Report",
-            createdAt: new Date().toISOString(),
-          };
-          await repository.put({
-            ...keys,
-            EntityType: 'ResearchReport',
-            Data: dataToSave,
-            CreatedAt: Date.now(),
-            UpdatedAt: Date.now()
-          });
-          toast({ title: 'Report Saved!', description: 'Your new research report has been saved to your Knowledge Base.' });
-          router.push(`/market/research/${reportId}`);
+          const result = await saveResearchReportAction(
+            lastTopic || "Untitled Report",
+            state.data?.report || ''
+          );
+
+          if (result.message === 'Report saved successfully') {
+            toast({ title: 'Report Saved!', description: 'Your new research report has been saved to your Knowledge Base.' });
+            router.push(`/market/research/${result.data?.id}`);
+          } else {
+            throw new Error(result.errors?.[0] || 'Save failed');
+          }
         } catch (error) {
           console.error('Failed to save report:', error);
           toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save report.' });

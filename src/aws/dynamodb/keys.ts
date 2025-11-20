@@ -282,3 +282,17 @@ export function getWorkflowExecutionKeys(
     SK: `WORKFLOW#${workflowId}`,
   };
 }
+
+/**
+ * Generates keys for LoginSession
+ * Pattern: PK: USER#<userId>, SK: SESSION#<timestamp>#<sessionId>
+ */
+export function getLoginSessionKeys(
+  userId: string,
+  sessionId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `SESSION#${sessionId}`,
+  };
+}

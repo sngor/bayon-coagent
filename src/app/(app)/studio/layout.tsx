@@ -2,8 +2,6 @@
 
 import { HubLayout } from '@/components/hub';
 import { Wand2, FileText, Home } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
 
 const tabs = [
     { id: 'write', label: 'Write', href: '/studio/write', icon: FileText },
@@ -19,12 +17,6 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
             icon={Wand2}
             tabs={tabs}
             tabsVariant="pills"
-            actions={
-                <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    New Content
-                </Button>
-            }
         >
             {children}
         </HubLayout>

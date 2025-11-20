@@ -21,9 +21,8 @@ import { JsonLdDisplay } from '@/components/json-ld-display';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
 import { useItem } from '@/aws/dynamodb/hooks';
-import { getAgentProfileKeys, getSavedContentKeys } from '@/aws/dynamodb/keys';
-import { getRepository } from '@/aws/dynamodb/repository';
-import { generateBioAction } from '@/app/actions';
+import { getAgentProfileKeys } from '@/aws/dynamodb/keys';
+import { generateBioAction, updateProfilePhotoUrlAction, saveContentAction } from '@/app/actions';
 import { Save, User, Building2, Award, Phone, Globe, Share2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -48,21 +47,12 @@ function SaveButton({ content, type }: { content: string, type: string }) {
         }
         startTransition(async () => {
             try {
-                const repository = getRepository();
-                const contentId = Date.now().toString();
-                const keys = getSavedContentKeys(user.id, contentId);
-                await repository.put({
-                    ...keys,
-                    EntityType: 'SavedContent',
-                    Data: {
-                        content,
-                        type,
-                        createdAt: new Date().toISOString()
-                    },
-                    CreatedAt: Date.now(),
-                    UpdatedAt: Date.now()
-                });
-                toast({ title: 'Content Saved!', description: 'Your content has been saved to your content library.' });
+                const result = await saveContentAction(content, type);
+                if (result.message === 'Content saved successfully') {
+                    toast({ title: 'Content Saved!', description: 'Your content has been saved to your content library.' });
+                } else {
+                    throw new Error(result.errors?.[0] || 'Save failed');
+                }
             } catch (error) {
                 console.error('Failed to save content:', error);
                 toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save content.' });
@@ -362,14 +352,16 @@ export default function ProfilePage() {
 
         if (user) {
             try {
-                const repository = getRepository();
-                const keys = getAgentProfileKeys(user.id, 'main');
-                await repository.update(keys.PK, keys.SK, { photoURL: url });
+                const result = await updateProfilePhotoUrlAction(url);
 
-                toast({
-                    title: 'Profile Photo Updated!',
-                    description: 'Your profile photo has been uploaded to S3.',
-                });
+                if (result.message === 'Profile photo updated successfully') {
+                    toast({
+                        title: 'Profile Photo Updated!',
+                        description: 'Your profile photo has been uploaded to S3.',
+                    });
+                } else {
+                    throw new Error(result.errors?.[0] || 'Update failed');
+                }
             } catch (error) {
                 console.error('Failed to update profile photo:', error);
                 toast({

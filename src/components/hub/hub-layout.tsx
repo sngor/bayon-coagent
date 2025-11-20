@@ -37,7 +37,7 @@ export function HubLayout({
 
             {/* Hub Tabs - Static, doesn't re-render on tab changes */}
             {tabs.length > 0 && (
-                <div className="sticky top-20 z-10 -mx-4 md:-mx-8 lg:-mx-10 px-4 md:px-8 lg:px-10 py-3 bg-background/95 backdrop-blur-sm">
+                <div className="sticky top-20 z-10 -mx-4 md:-mx-8 lg:-mx-10 px-4 md:px-8 lg:px-10 py-3 bg-background/80 dark:bg-background/40 backdrop-blur-xl">
                     <HubTabs tabs={tabs} activeTab="" variant={tabsVariant} />
                 </div>
             )}

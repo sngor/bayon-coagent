@@ -28,7 +28,8 @@ export type EntityType =
   | 'Citation'
   | 'Conversation'
   | 'WorkflowExecution'
-  | 'VisionAnalysis';
+  | 'VisionAnalysis'
+  | 'LoginSession';
 
 /**
  * Base DynamoDB item structure

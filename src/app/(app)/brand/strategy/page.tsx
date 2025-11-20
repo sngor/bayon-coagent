@@ -49,10 +49,8 @@ import { StandardLoadingSpinner, StandardEmptyState } from '@/components/standar
 import { AIOperationProgress, useAIOperation } from '@/components/ui/ai-operation-progress';
 import { useUser } from '@/aws/auth';
 import { useItem, useQuery } from '@/aws/dynamodb/hooks';
-import { getRepository } from '@/aws/dynamodb';
-import { getMarketingPlanKeys } from '@/aws/dynamodb/keys';
 import type { BrandAudit, Competitor, MarketingPlan as MarketingPlanType } from '@/lib/types';
-import { generateMarketingPlanAction } from '@/app/actions';
+import { generateMarketingPlanAction, saveMarketingPlanAction } from '@/app/actions';
 import { showSuccessToast, showErrorToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -168,16 +166,10 @@ export default function MarketingPlanPage() {
       if (user?.id) {
         const savePlan = async () => {
           try {
-            const repository = getRepository();
-            const planId = Date.now().toString();
-            const keys = getMarketingPlanKeys(user.id, planId);
-            await repository.put({
-              ...keys,
-              EntityType: 'MarketingPlan',
-              Data: state.data,
-              CreatedAt: Date.now(),
-              UpdatedAt: Date.now()
-            });
+            await saveMarketingPlanAction(
+              JSON.stringify(state.data),
+              'Marketing Plan'
+            );
           } catch (error) {
             console.error('Failed to save marketing plan:', error);
           }

@@ -15,9 +15,8 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle, TrendingUp, Handshake, Award, BookOpen, Clock, Target } from 'lucide-react';
 import { useUser } from '@/aws/auth';
 import { useQuery } from '@/aws/dynamodb/hooks';
-import { getRepository } from '@/aws/dynamodb';
-import { getTrainingProgressKeys } from '@/aws/dynamodb/keys';
 import type { TrainingProgress } from '@/lib/types';
+import { saveTrainingProgressAction } from '@/app/actions';
 import { marketingModules, closingModules } from '@/lib/training-data';
 import { Quiz } from '@/components/quiz';
 
@@ -55,19 +54,7 @@ export default function TrainingLessonsPage() {
     const handleQuizComplete = async (moduleId: string) => {
         if (!user) return;
         try {
-            const repository = getRepository();
-            const keys = getTrainingProgressKeys(user.id, moduleId);
-            await repository.put({
-                ...keys,
-                EntityType: 'TrainingProgress',
-                Data: {
-                    id: moduleId,
-                    completed: true,
-                    completedAt: new Date().toISOString()
-                },
-                CreatedAt: Date.now(),
-                UpdatedAt: Date.now()
-            });
+            await saveTrainingProgressAction(moduleId, true);
         } catch (error) {
             console.error('Failed to save training progress:', error);
         }

@@ -2370,3 +2370,101 @@ export async function saveTrainingProgressAction(
     };
   }
 }
+
+/**
+ * Get recent activity for the current user
+ */
+export async function getRecentActivityAction(userId?: string): Promise<{
+  message: string;
+  data: any[] | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser(userId);
+    
+    if (!user || !user.id) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to view activity'],
+      };
+    }
+
+    const repository = getRepository();
+    const pk = `USER#${user.id}`;
+    
+    // Fetch different types of activity
+    const [contentResult, reportsResult, plansResult, editsResult] = await Promise.all([
+      repository.queryItems(pk, 'CONTENT#', { limit: 10, scanIndexForward: false }),
+      repository.queryItems(pk, 'REPORT#', { limit: 10, scanIndexForward: false }),
+      repository.queryItems(pk, 'PLAN#', { limit: 10, scanIndexForward: false }),
+      repository.queryItems(pk, 'EDIT#', { limit: 10, scanIndexForward: false }),
+    ]);
+
+    // Combine and format activities
+    const activities: any[] = [];
+
+    // Add content items
+    contentResult.items.forEach((item) => {
+      activities.push({
+        id: item.SK,
+        type: 'content',
+        title: item.Data.title || 'Untitled Content',
+        contentType: item.Data.type || 'content',
+        timestamp: item.CreatedAt || Date.now(),
+        data: item.Data,
+      });
+    });
+
+    // Add research reports
+    reportsResult.items.forEach((item) => {
+      activities.push({
+        id: item.SK,
+        type: 'report',
+        title: item.Data.topic || 'Research Report',
+        timestamp: item.CreatedAt || Date.now(),
+        data: item.Data,
+      });
+    });
+
+    // Add marketing plans
+    plansResult.items.forEach((item) => {
+      activities.push({
+        id: item.SK,
+        type: 'plan',
+        title: 'Marketing Plan Generated',
+        timestamp: item.CreatedAt || Date.now(),
+        data: item.Data,
+      });
+    });
+
+    // Add image edits
+    editsResult.items.forEach((item) => {
+      activities.push({
+        id: item.SK,
+        type: 'edit',
+        title: `Image ${item.Data.editType || 'Edit'}`,
+        editType: item.Data.editType,
+        timestamp: item.CreatedAt || Date.now(),
+        data: item.Data,
+      });
+    });
+
+    // Sort by timestamp (most recent first)
+    activities.sort((a, b) => b.timestamp - a.timestamp);
+
+    // Return top 10 most recent
+    return {
+      message: 'Recent activity retrieved successfully',
+      data: activities.slice(0, 10),
+    };
+  } catch (error: any) {
+    console.error('Get recent activity error:', error);
+    return {
+      message: 'Failed to retrieve recent activity',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}

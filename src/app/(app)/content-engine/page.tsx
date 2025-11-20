@@ -31,6 +31,7 @@ import {
   generateVideoScriptAction,
   generateBlogPostAction,
   regenerateImageAction,
+  saveContentAction,
 } from '@/app/actions';
 
 // Buyer personas for listing optimization
@@ -87,8 +88,6 @@ import {
 } from '@/components/ui/accordion';
 import { useUser } from '@/aws/auth';
 import { useQuery } from '@/aws/dynamodb/hooks';
-import { getRepository } from '@/aws/dynamodb';
-import { getSavedContentKeys } from '@/aws/dynamodb/keys';
 import type { Project } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { StandardErrorDisplay } from '@/components/standard/error-display';
@@ -237,29 +236,24 @@ function SaveDialog({ dialogInfo, setDialogInfo, projects }: { dialogInfo: SaveD
 
     startTransition(async () => {
       try {
-        const repository = getRepository();
-        const contentId = Date.now().toString();
-        const keys = getSavedContentKeys(user.id, contentId);
-        await repository.put({
-          ...keys,
-          EntityType: 'SavedContent',
-          Data: {
-            name: name || dialogInfo.type,
-            content: dialogInfo.content,
-            type: dialogInfo.type,
-            projectId: projectId || null,
-            createdAt: new Date().toISOString(),
-          },
-          CreatedAt: Date.now(),
-          UpdatedAt: Date.now()
-        });
-        toast({
-          title: 'Content Saved!',
-          description: `Your content has been saved to your Projects.`,
-        });
-        setDialogInfo({ isOpen: false, content: '', type: '' });
-        setName('');
-        setProjectId(null);
+        const result = await saveContentAction(
+          dialogInfo.content,
+          dialogInfo.type,
+          name || dialogInfo.type,
+          projectId || null
+        );
+
+        if (result.message === 'Content saved successfully') {
+          toast({
+            title: 'Content Saved!',
+            description: `Your content has been saved to your Projects.`,
+          });
+          setDialogInfo({ isOpen: false, content: '', type: '' });
+          setName('');
+          setProjectId(null);
+        } else {
+          throw new Error(result.errors?.[0] || 'Save failed');
+        }
       } catch (error) {
         console.error('Failed to save content:', error);
         toast({

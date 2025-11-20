@@ -47,6 +47,7 @@ export {
   getOAuthTokenKeys,
   getImageMetadataKeys,
   getEditRecordKeys,
+  getLoginSessionKeys,
   getUserItemPrefix,
   extractUserIdFromPK,
   extractEntityIdFromSK,

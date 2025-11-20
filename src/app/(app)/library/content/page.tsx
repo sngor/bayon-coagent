@@ -167,7 +167,7 @@ function RenameContentDialog({ item, isOpen, setIsOpen }: { item: SavedContent |
 
 export default function LibraryPage() {
     const router = useRouter();
-    const { user } = useUser();
+    const { user, isUserLoading } = useUser();
     const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<SavedContent | null>(null);
     const [itemToRename, setItemToRename] = useState<SavedContent | null>(null);
@@ -271,7 +271,7 @@ export default function LibraryPage() {
         }
     }
 
-    const isLoading = isLoadingContent || isLoadingProjects;
+    const isLoading = isUserLoading || isLoadingContent || isLoadingProjects;
 
     const projectList = useMemo(() => {
         if (!projects) return [];

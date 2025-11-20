@@ -61,7 +61,8 @@ import {
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getOAuthTokens, type OAuthTokenData } from '@/aws/dynamodb';
+import { type OAuthTokenData } from '@/aws/dynamodb';
+import { getOAuthTokensAction } from '@/app/oauth-actions';
 import { useUser } from '@/aws/auth';
 import { useItem, useQuery } from '@/aws/dynamodb/hooks';
 import type { Profile, Review, BrandAudit as BrandAuditType, ReviewAnalysis } from '@/lib/types';
@@ -300,7 +301,7 @@ export default function BrandAuditPage() {
             if (!user) return;
 
             try {
-                const tokens = await getOAuthTokens(user.id, 'GOOGLE_BUSINESS');
+                const tokens = await getOAuthTokensAction(user.id, 'GOOGLE_BUSINESS');
                 setGbpData(tokens);
             } catch (error) {
                 console.error('Failed to load OAuth tokens:', error);

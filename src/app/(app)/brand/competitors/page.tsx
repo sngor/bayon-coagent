@@ -44,10 +44,8 @@ import { Star, PlusCircle, Search } from 'lucide-react';
 import type { Competitor, KeywordRanking, Profile, Review } from '@/lib/types';
 import { useUser } from '@/aws/auth';
 import { useItem, useQuery } from '@/aws/dynamodb/hooks';
-import { getRepository } from '@/aws/dynamodb';
-import { getCompetitorKeys } from '@/aws/dynamodb/keys';
 import { CompetitorForm } from '@/components/competitor-form';
-import { findCompetitorsAction, getKeywordRankingsAction } from '@/app/actions';
+import { findCompetitorsAction, getKeywordRankingsAction, saveCompetitorAction } from '@/app/actions';
 import { toast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
@@ -200,20 +198,20 @@ export default function CompetitiveAnalysisPage() {
   const handleAddSuggestion = async (suggestion: CompetitorSuggestion) => {
     if (!user) return;
     try {
-      const repository = getRepository();
-      const competitorId = Date.now().toString();
-      const keys = getCompetitorKeys(user.id, competitorId);
-      await repository.put({
-        ...keys,
-        EntityType: 'Competitor',
-        Data: suggestion,
-        CreatedAt: Date.now(),
-        UpdatedAt: Date.now()
-      });
-      toast({
-        title: "Competitor Added",
-        description: `${suggestion.name} is now being tracked.`
-      });
+      const result = await saveCompetitorAction(
+        suggestion.name,
+        suggestion.website,
+        suggestion.description
+      );
+
+      if (result.message === 'Competitor saved successfully') {
+        toast({
+          title: "Competitor Added",
+          description: `${suggestion.name} is now being tracked.`
+        });
+      } else {
+        throw new Error(result.errors?.[0] || 'Save failed');
+      }
     } catch (error) {
       console.error('Failed to add competitor:', error);
       toast({
