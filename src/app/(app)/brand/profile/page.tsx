@@ -41,13 +41,13 @@ function SaveButton({ content, type }: { content: string, type: string }) {
     const [isPending, startTransition] = useTransition();
 
     const handleSave = async () => {
-        if (!user || !content) {
+        if (!user?.id || !content) {
             toast({ variant: 'destructive', title: 'Could not save', description: 'Content or user is missing.' });
             return;
         }
         startTransition(async () => {
             try {
-                const result = await saveContentAction(content, type);
+                const result = await saveContentAction(user.id, content, type);
                 if (result.message === 'Content saved successfully') {
                     toast({ title: 'Content Saved!', description: 'Your content has been saved to your content library.' });
                 } else {
@@ -108,7 +108,7 @@ function BasicInfoSection({ profile, onInputChange }: { profile: Partial<Profile
                     <Input id="name" name="name" value={profile.name || ''} onChange={onInputChange} placeholder="John Smith" />
                 </StandardFormField>
                 <StandardFormField label="Agency Name" id="agencyName" required>
-                    <Input id="agencyName" name="agencyName" value={profile.agencyName || ''} onChange={onInputChange} placeholder="Smith Realty Group" />
+                    <Input id="agencyName" name="agencyName" type="text" value={profile.agencyName || ''} onChange={onInputChange} placeholder="Smith Realty Group" />
                 </StandardFormField>
             </div>
         </div>
@@ -350,9 +350,9 @@ export default function ProfilePage() {
     const handleImageUpdate = async (url: string) => {
         setProfile((prev) => ({ ...prev, photoURL: url }));
 
-        if (user) {
+        if (user?.id) {
             try {
-                const result = await updateProfilePhotoUrlAction(url);
+                const result = await updateProfilePhotoUrlAction(user.id, url);
 
                 if (result.message === 'Profile photo updated successfully') {
                     toast({
@@ -374,11 +374,32 @@ export default function ProfilePage() {
     };
 
     const handleSave = async () => {
-        if (!user) {
+        if (!user?.id) {
             toast({
                 variant: "destructive",
                 title: "Error",
                 description: "Not logged in.",
+            });
+            return;
+        }
+
+        // Validate required fields
+        const requiredFields = {
+            name: 'Full Name',
+            agencyName: 'Agency Name',
+            phone: 'Phone Number',
+            address: 'Business Address',
+        };
+
+        const missingFields = Object.entries(requiredFields)
+            .filter(([key]) => !profile[key as keyof Profile])
+            .map(([, label]) => label);
+
+        if (missingFields.length > 0) {
+            toast({
+                variant: "destructive",
+                title: "Missing Required Fields",
+                description: `Please fill in: ${missingFields.join(', ')}`,
             });
             return;
         }
@@ -388,7 +409,9 @@ export default function ProfilePage() {
         try {
             const dataToSave = {
                 ...profile,
-                certifications: typeof profile.certifications === 'string' ? profile.certifications.split(',').map(s => s.trim()) : (profile.certifications || []),
+                certifications: typeof profile.certifications === 'string'
+                    ? profile.certifications.split(',').map(s => s.trim()).filter(Boolean)
+                    : (profile.certifications || []),
                 yearsOfExperience: Number(profile.yearsOfExperience) || 0,
             };
 

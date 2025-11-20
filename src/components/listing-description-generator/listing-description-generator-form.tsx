@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Card,
@@ -35,13 +36,26 @@ const buyerPersonas = [
   { value: 'Downsizer', label: 'Downsizer' },
 ];
 
-export function ListingDescriptionGeneratorForm() {
+interface ListingDescriptionGeneratorFormProps {
+  isOptimizeMode?: boolean;
+}
+
+export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: ListingDescriptionGeneratorFormProps) {
   const [propertyDetails, setPropertyDetails] = useState('');
   const [buyerPersona, setBuyerPersona] = useState('First-Time Homebuyer');
   const [generation, setGeneration] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Additional fields for Generate New mode
+  const [propertyType, setPropertyType] = useState('Single-Family Home');
+  const [bedrooms, setBedrooms] = useState('');
+  const [bathrooms, setBathrooms] = useState('');
+  const [squareFeet, setSquareFeet] = useState('');
+  const [location, setLocation] = useState('');
+  const [keyFeatures, setKeyFeatures] = useState('');
+  const [writingStyle, setWritingStyle] = useState('Balanced');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,86 +100,235 @@ export function ListingDescriptionGeneratorForm() {
 
   return (
     <>
-      {/* Info Banner */}
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-purple-600/5">
-        <CardContent className="py-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold mb-2">AI-Powered Listing Descriptions</h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                Generate compelling, persona-targeted listing descriptions that resonate with your ideal buyers.
-              </p>
-              <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-success" />
-                  <span>Persona-Optimized</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-success" />
-                  <span>SEO-Friendly</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-success" />
-                  <span>Instant Generation</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Left Column: Input Form */}
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline">Property Details</CardTitle>
+            <CardTitle className="font-headline">
+              {isOptimizeMode ? 'Listing Optimizer' : 'Property Details'}
+            </CardTitle>
             <CardDescription>
-              Enter your property details and select your target buyer persona
+              {isOptimizeMode
+                ? 'Rewrite an existing listing description for a specific buyer persona'
+                : 'Enter your property details and select your target buyer persona'}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <StandardFormField
-                label="Property Details"
-                id="propertyDetails"
-                hint="Include key features, location, and unique selling points"
-              >
-                <Textarea
-                  id="propertyDetails"
-                  value={propertyDetails}
-                  onChange={(e) => setPropertyDetails(e.target.value)}
-                  placeholder="e.g., Charming 3-bedroom, 2-bathroom single-family home in a quiet, tree-lined neighborhood. Features a recently updated kitchen with granite countertops..."
-                  rows={10}
-                  required
-                />
-              </StandardFormField>
+              {isOptimizeMode ? (
+                <>
+                  <StandardFormField
+                    label="Original Description"
+                    id="propertyDetails"
+                    hint="Paste your existing listing description"
+                  >
+                    <Textarea
+                      id="propertyDetails"
+                      value={propertyDetails}
+                      onChange={(e) => setPropertyDetails(e.target.value)}
+                      placeholder="Paste your listing description here..."
+                      rows={8}
+                      required
+                    />
+                  </StandardFormField>
 
-              <StandardFormField
-                label="Target Buyer Persona"
-                id="buyerPersona"
-                hint="Select the persona that best matches your ideal buyer"
-              >
-                <Select value={buyerPersona} onValueChange={setBuyerPersona}>
-                  <SelectTrigger id="buyerPersona">
-                    <SelectValue placeholder="Select a persona" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {buyerPersonas.map((persona) => (
-                      <SelectItem key={persona.value} value={persona.value}>
-                        {persona.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </StandardFormField>
+                  <StandardFormField
+                    label="Target Buyer Persona"
+                    id="buyerPersona"
+                    hint="Select the persona that best matches your ideal buyer"
+                  >
+                    <Select value={buyerPersona} onValueChange={setBuyerPersona}>
+                      <SelectTrigger id="buyerPersona">
+                        <SelectValue placeholder="Select a persona" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {buyerPersonas.map((persona) => (
+                          <SelectItem key={persona.value} value={persona.value}>
+                            {persona.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </StandardFormField>
+
+                  <StandardFormField
+                    label="Key Selling Points (Optional)"
+                    id="sellingPoints"
+                    hint="Highlight specific features you want emphasized"
+                  >
+                    <Textarea
+                      id="sellingPoints"
+                      placeholder="e.g., Recently renovated, Smart home features, Pool"
+                      rows={3}
+                    />
+                  </StandardFormField>
+
+                  <StandardFormField
+                    label="Emotional Appeal"
+                    id="emotionalAppeal"
+                    hint="Choose the writing style for your listing"
+                  >
+                    <Select defaultValue="Balanced">
+                      <SelectTrigger id="emotionalAppeal">
+                        <SelectValue placeholder="Select appeal style" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Factual">Factual & Straightforward</SelectItem>
+                        <SelectItem value="Balanced">Balanced</SelectItem>
+                        <SelectItem value="Emotional">Emotional & Aspirational</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </StandardFormField>
+                </>
+              ) : (
+                <>
+                  <StandardFormField
+                    label="Property Type"
+                    id="propertyType"
+                  >
+                    <Select value={propertyType} onValueChange={setPropertyType}>
+                      <SelectTrigger id="propertyType">
+                        <SelectValue placeholder="Select property type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Single-Family Home">Single-Family Home</SelectItem>
+                        <SelectItem value="Condo">Condo</SelectItem>
+                        <SelectItem value="Townhouse">Townhouse</SelectItem>
+                        <SelectItem value="Multi-Family">Multi-Family</SelectItem>
+                        <SelectItem value="Land">Land</SelectItem>
+                        <SelectItem value="Commercial">Commercial</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </StandardFormField>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <StandardFormField
+                      label="Bedrooms"
+                      id="bedrooms"
+                    >
+                      <Select value={bedrooms} onValueChange={setBedrooms}>
+                        <SelectTrigger id="bedrooms">
+                          <SelectValue placeholder="Beds" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Studio">Studio</SelectItem>
+                          <SelectItem value="1">1</SelectItem>
+                          <SelectItem value="2">2</SelectItem>
+                          <SelectItem value="3">3</SelectItem>
+                          <SelectItem value="4">4</SelectItem>
+                          <SelectItem value="5">5</SelectItem>
+                          <SelectItem value="6+">6+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </StandardFormField>
+
+                    <StandardFormField
+                      label="Bathrooms"
+                      id="bathrooms"
+                    >
+                      <Select value={bathrooms} onValueChange={setBathrooms}>
+                        <SelectTrigger id="bathrooms">
+                          <SelectValue placeholder="Baths" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1</SelectItem>
+                          <SelectItem value="1.5">1.5</SelectItem>
+                          <SelectItem value="2">2</SelectItem>
+                          <SelectItem value="2.5">2.5</SelectItem>
+                          <SelectItem value="3">3</SelectItem>
+                          <SelectItem value="3.5">3.5</SelectItem>
+                          <SelectItem value="4+">4+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </StandardFormField>
+
+                    <StandardFormField
+                      label="Sq Ft"
+                      id="squareFeet"
+                    >
+                      <Input
+                        type="number"
+                        id="squareFeet"
+                        value={squareFeet}
+                        onChange={(e) => setSquareFeet(e.target.value)}
+                        placeholder="e.g., 2000"
+                      />
+                    </StandardFormField>
+                  </div>
+
+                  <StandardFormField
+                    label="Location"
+                    id="location"
+                    hint="Neighborhood, city, or area"
+                  >
+                    <Input
+                      type="text"
+                      id="location"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder="e.g., Capitol Hill, Seattle"
+                      required
+                    />
+                  </StandardFormField>
+
+                  <StandardFormField
+                    label="Key Features"
+                    id="keyFeatures"
+                    hint="Highlight standout features and amenities"
+                  >
+                    <Textarea
+                      id="keyFeatures"
+                      value={keyFeatures}
+                      onChange={(e) => setKeyFeatures(e.target.value)}
+                      placeholder="e.g., Updated kitchen, hardwood floors, large backyard, walk-in closets, smart home features"
+                      rows={4}
+                      required
+                    />
+                  </StandardFormField>
+
+                  <StandardFormField
+                    label="Target Buyer Persona"
+                    id="buyerPersona"
+                    hint="Select the persona that best matches your ideal buyer"
+                  >
+                    <Select value={buyerPersona} onValueChange={setBuyerPersona}>
+                      <SelectTrigger id="buyerPersona">
+                        <SelectValue placeholder="Select a persona" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {buyerPersonas.map((persona) => (
+                          <SelectItem key={persona.value} value={persona.value}>
+                            {persona.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </StandardFormField>
+
+                  <StandardFormField
+                    label="Writing Style"
+                    id="writingStyle"
+                    hint="Choose the tone for your listing"
+                  >
+                    <Select value={writingStyle} onValueChange={setWritingStyle}>
+                      <SelectTrigger id="writingStyle">
+                        <SelectValue placeholder="Select style" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Factual">Factual & Straightforward</SelectItem>
+                        <SelectItem value="Balanced">Balanced</SelectItem>
+                        <SelectItem value="Emotional">Emotional & Aspirational</SelectItem>
+                        <SelectItem value="Luxury">Luxury & Sophisticated</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </StandardFormField>
+                </>
+              )}
 
               <StandardFormActions
                 primaryAction={{
-                  label: 'Generate Description',
+                  label: isOptimizeMode ? 'Optimize Listing' : 'Generate Description',
                   type: 'submit',
                   loading: isLoading,
                   variant: 'ai',

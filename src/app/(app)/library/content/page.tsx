@@ -20,7 +20,6 @@ import {
     CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { useUser } from '@/aws/auth';
-import { useQuery } from '@/aws/dynamodb/hooks';
 import type { SavedContent, Project } from '@/lib/types';
 import {
     createProjectAction,
@@ -172,20 +171,28 @@ export default function LibraryPage() {
     const [itemToDelete, setItemToDelete] = useState<SavedContent | null>(null);
     const [itemToRename, setItemToRename] = useState<SavedContent | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [savedContent, setSavedContent] = useState<SavedContent[] | null>(null);
+    const [projects, setProjects] = useState<Project[] | null>(null);
+    const [isLoadingContent, setIsLoadingContent] = useState(true);
+    const [isLoadingProjects, setIsLoadingProjects] = useState(true);
 
-    // Memoize DynamoDB keys
-    const savedContentPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
-    const savedContentSKPrefix = useMemo(() => 'CONTENT#', []);
+    // Fetch content and projects
+    useEffect(() => {
+        if (!user) {
+            setSavedContent([]);
+            setProjects([]);
+            setIsLoadingContent(false);
+            setIsLoadingProjects(false);
+            return;
+        }
 
-    const projectsPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
-    const projectsSKPrefix = useMemo(() => 'PROJECT#', []);
-
-    const { data: savedContent, isLoading: isLoadingContent } = useQuery<SavedContent>(savedContentPK, savedContentSKPrefix, {
-        scanIndexForward: false, // descending order
-    });
-    const { data: projects, isLoading: isLoadingProjects } = useQuery<Project>(projectsPK, projectsSKPrefix, {
-        scanIndexForward: false, // descending order
-    });
+        // For now, set empty arrays to show empty state
+        // TODO: Implement proper data fetching via Server Actions
+        setSavedContent([]);
+        setProjects([]);
+        setIsLoadingContent(false);
+        setIsLoadingProjects(false);
+    }, [user]);
 
     const contentByProject = useMemo(() => {
         if (!savedContent) return {};

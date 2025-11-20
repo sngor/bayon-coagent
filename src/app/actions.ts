@@ -80,35 +80,35 @@ import {
   type GenerateMarketingPlanOutput,
 } from '@/aws/bedrock/flows/generate-marketing-plan';
 import {
-    getZillowReviews,
-    type GetZillowReviewsInput,
-    type GetZillowReviewsOutput,
+  getZillowReviews,
+  type GetZillowReviewsInput,
+  type GetZillowReviewsOutput,
 } from '@/aws/bedrock/flows/get-zillow-reviews';
 import {
-    analyzeReviewSentiment,
-    type AnalyzeReviewSentimentInput,
-    type AnalyzeReviewSentimentOutput,
+  analyzeReviewSentiment,
+  type AnalyzeReviewSentimentInput,
+  type AnalyzeReviewSentimentOutput,
 } from '@/aws/bedrock/flows/analyze-review-sentiment';
 import {
-    analyzeMultipleReviews,
-    type AnalyzeMultipleReviewsInput,
-    type AnalyzeMultipleReviewsOutput,
+  analyzeMultipleReviews,
+  type AnalyzeMultipleReviewsInput,
+  type AnalyzeMultipleReviewsOutput,
 } from '@/aws/bedrock/flows/analyze-multiple-reviews';
 import {
-    getRealEstateNews,
-    type GetRealEstateNewsInput,
-    type GetRealEstateNewsOutput
+  getRealEstateNews,
+  type GetRealEstateNewsInput,
+  type GetRealEstateNewsOutput
 } from '@/aws/bedrock/flows/get-real-estate-news';
 import {
-    generateTrainingPlan,
-    type TrainingPlanInput,
-    type TrainingPlanOutput
+  generateTrainingPlan,
+  type TrainingPlanInput,
+  type TrainingPlanOutput
 } from '@/aws/bedrock/flows/training-plan-flow';
 import {
-    generateRolePlayResponse,
-    type RolePlayInput,
-    type RolePlayOutput,
-    type RolePlayMessage
+  generateRolePlayResponse,
+  type RolePlayInput,
+  type RolePlayOutput,
+  type RolePlayMessage
 } from '@/aws/bedrock/flows/role-play-flow';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
@@ -146,7 +146,7 @@ const guideSchema = z.object({
 const handleAWSError = (error: any, defaultMessage: string): string => {
   if (error instanceof Error) {
     const lowerCaseMessage = error.message.toLowerCase();
-    
+
     // Bedrock-specific errors
     if (lowerCaseMessage.includes('throttl') || lowerCaseMessage.includes('rate')) {
       return 'The AI service is currently busy. Please try again in a moment.';
@@ -166,36 +166,36 @@ const handleAWSError = (error: any, defaultMessage: string): string => {
     if (lowerCaseMessage.includes('real estate')) {
       return 'The topic provided is not related to real estate. Please provide a real estate topic.';
     }
-    
+
     // DynamoDB errors
     if (lowerCaseMessage.includes('dynamodb') || lowerCaseMessage.includes('provisioned throughput')) {
       return 'Database service is temporarily unavailable. Please try again.';
     }
-    
+
     // S3 errors
     if (lowerCaseMessage.includes('s3') || lowerCaseMessage.includes('bucket')) {
       return 'File storage service is temporarily unavailable. Please try again.';
     }
-    
+
     // Cognito errors
     if (lowerCaseMessage.includes('cognito') || lowerCaseMessage.includes('authentication')) {
       return 'Authentication service error. Please try signing in again.';
     }
-    
+
     // Network errors
     if (lowerCaseMessage.includes('network') || lowerCaseMessage.includes('econnrefused')) {
       return 'Network connection error. Please check your internet connection and try again.';
     }
-    
+
     // Return the original error message if it's user-friendly
     if (error.message && error.message.length < 200 && !error.message.includes('Error:')) {
       return error.message;
     }
   }
-  
+
   // Log the full error for debugging
   console.error('AWS Service Error:', error);
-  
+
   return defaultMessage;
 }
 
@@ -590,38 +590,38 @@ const researchAgentSchema = z.object({
 });
 
 export async function runResearchAgentAction(prevState: any, formData: FormData): Promise<{
-    message: string;
-    data: (RunResearchAgentOutput & { reportId?: string }) | null;
-    errors: any;
+  message: string;
+  data: (RunResearchAgentOutput & { reportId?: string }) | null;
+  errors: any;
 }> {
-    const validatedFields = researchAgentSchema.safeParse({
-        topic: formData.get('topic'),
-    });
+  const validatedFields = researchAgentSchema.safeParse({
+    topic: formData.get('topic'),
+  });
 
-    if (!validatedFields.success) {
-        const fieldErrors = validatedFields.error.flatten().fieldErrors;
-        return {
-            message: fieldErrors.topic?.[0] || "Validation failed.",
-            errors: fieldErrors,
-            data: null,
-        };
-    }
+  if (!validatedFields.success) {
+    const fieldErrors = validatedFields.error.flatten().fieldErrors;
+    return {
+      message: fieldErrors.topic?.[0] || "Validation failed.",
+      errors: fieldErrors,
+      data: null,
+    };
+  }
 
-    try {
-        const result = await runResearchAgent({ topic: validatedFields.data.topic });
-        return {
-            message: 'success',
-            data: result,
-            errors: {},
-        };
-    } catch (error) {
-        const errorMessage = handleAWSError(error, 'An unexpected error occurred during research.');
-        return {
-            message: `Research failed: ${errorMessage}`,
-            errors: {},
-            data: null,
-        };
-    }
+  try {
+    const result = await runResearchAgent({ topic: validatedFields.data.topic });
+    return {
+      message: 'success',
+      data: result,
+      errors: {},
+    };
+  } catch (error) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred during research.');
+    return {
+      message: `Research failed: ${errorMessage}`,
+      errors: {},
+      data: null,
+    };
+  }
 }
 
 const marketUpdateSchema = z.object({
@@ -866,13 +866,13 @@ export async function updatePasswordAction(prevState: any, formData: FormData) {
       errors: validatedFields.error.flatten().fieldErrors,
     };
   }
-  
+
   // TODO: Implement AWS Cognito password update
   // const { currentPassword, newPassword } = validatedFields.data;
-  
-  return { 
-    message: 'Password update not yet implemented with AWS Cognito.', 
-    errors: {} 
+
+  return {
+    message: 'Password update not yet implemented with AWS Cognito.',
+    errors: {}
   };
 }
 
@@ -900,13 +900,13 @@ export async function updateProfilePhotoAction(
 
   try {
     const repository = getRepository();
-    
+
     // TODO: Update AWS Cognito user attributes if needed
-    
+
     // Update the agent-specific profile document
     const agentKeys = getAgentProfileKeys(userId, 'main');
     await repository.update(agentKeys.PK, agentKeys.SK, { photoURL });
-    
+
     // Also update the root user profile document
     const userKeys = getUserProfileKeys(userId);
     await repository.update(userKeys.PK, userKeys.SK, { photoURL });
@@ -970,9 +970,9 @@ export async function uploadFileToS3Action(
     return { success: true, url };
   } catch (error: any) {
     console.error('S3 upload error:', error);
-    return { 
-      success: false, 
-      error: error.message || 'Failed to upload file to S3' 
+    return {
+      success: false,
+      error: error.message || 'Failed to upload file to S3'
     };
   }
 }
@@ -995,9 +995,9 @@ export async function getPresignedUrlAction(
     return { success: true, url };
   } catch (error: any) {
     console.error('Presigned URL error:', error);
-    return { 
-      success: false, 
-      error: error.message || 'Failed to generate presigned URL' 
+    return {
+      success: false,
+      error: error.message || 'Failed to generate presigned URL'
     };
   }
 }
@@ -1019,9 +1019,9 @@ export async function deleteFileFromS3Action(
     return { success: true };
   } catch (error: any) {
     console.error('S3 delete error:', error);
-    return { 
-      success: false, 
-      error: error.message || 'Failed to delete file from S3' 
+    return {
+      success: false,
+      error: error.message || 'Failed to delete file from S3'
     };
   }
 }
@@ -1157,141 +1157,141 @@ const zillowReviewsSchema = z.object({
 });
 
 export async function getZillowReviewsAction(prevState: any, formData: FormData) {
-    const validatedFields = zillowReviewsSchema.safeParse({
-        agentEmail: formData.get('agentEmail'),
-    });
+  const validatedFields = zillowReviewsSchema.safeParse({
+    agentEmail: formData.get('agentEmail'),
+  });
 
-    if (!validatedFields.success) {
-        return {
-            message: 'Agent email is missing or invalid.',
-            data: null,
-            errors: validatedFields.error.flatten().fieldErrors,
-        };
-    }
+  if (!validatedFields.success) {
+    return {
+      message: 'Agent email is missing or invalid.',
+      data: null,
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
 
-    try {
-        const result = await getZillowReviews(validatedFields.data as GetZillowReviewsInput);
-        return {
-            message: 'success',
-            data: result,
-            errors: {},
-        };
-    } catch (error: any) {
-        return {
-            message: error.message || 'An unexpected error occurred while fetching Zillow reviews.',
-            data: null,
-            errors: {},
-        };
-    }
+  try {
+    const result = await getZillowReviews(validatedFields.data as GetZillowReviewsInput);
+    return {
+      message: 'success',
+      data: result,
+      errors: {},
+    };
+  } catch (error: any) {
+    return {
+      message: error.message || 'An unexpected error occurred while fetching Zillow reviews.',
+      data: null,
+      errors: {},
+    };
+  }
 }
 
 const sentimentSchema = z.object({
-    comment: z.string().min(10, 'The review is too short to analyze.'),
+  comment: z.string().min(10, 'The review is too short to analyze.'),
 });
 
 export async function analyzeReviewSentimentAction(prevState: any, formData: FormData) {
-    const validatedFields = sentimentSchema.safeParse({
-        comment: formData.get('comment'),
-    });
+  const validatedFields = sentimentSchema.safeParse({
+    comment: formData.get('comment'),
+  });
 
-    if (!validatedFields.success) {
-        return {
-            message: 'Validation failed.',
-            data: null,
-            errors: validatedFields.error.flatten().fieldErrors,
-        };
-    }
+  if (!validatedFields.success) {
+    return {
+      message: 'Validation failed.',
+      data: null,
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
 
-    try {
-        const result = await analyzeReviewSentiment(validatedFields.data as AnalyzeReviewSentimentInput);
-        return {
-            message: 'success',
-            data: result,
-            errors: {},
-        };
-    } catch (error: any) {
-        const errorMessage = handleAWSError(error, 'An unexpected error occurred during analysis.');
-        return {
-            message: errorMessage,
-            data: null,
-            errors: {},
-        };
-    }
+  try {
+    const result = await analyzeReviewSentiment(validatedFields.data as AnalyzeReviewSentimentInput);
+    return {
+      message: 'success',
+      data: result,
+      errors: {},
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred during analysis.');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: {},
+    };
+  }
 }
 
 
 const multipleReviewsSchema = z.object({
-    userId: z.string().min(1, 'User ID is required.'),
-    comments: z.preprocess((val) => {
-        if (typeof val === 'string') {
-            try {
-                return JSON.parse(val);
-            } catch (e) {
-                return [];
-            }
-        }
-        return val;
-    }, z.array(z.string()).min(1, 'At least one review is required for analysis.')),
+  userId: z.string().min(1, 'User ID is required.'),
+  comments: z.preprocess((val) => {
+    if (typeof val === 'string') {
+      try {
+        return JSON.parse(val);
+      } catch (e) {
+        return [];
+      }
+    }
+    return val;
+  }, z.array(z.string()).min(1, 'At least one review is required for analysis.')),
 });
 
 export async function analyzeMultipleReviewsAction(prevState: any, formData: FormData): Promise<{
-    message: string;
-    data: (AnalyzeMultipleReviewsOutput & { analyzedAt: string; }) | null;
-    errors: Record<string, string[]>;
+  message: string;
+  data: (AnalyzeMultipleReviewsOutput & { analyzedAt: string; }) | null;
+  errors: Record<string, string[]>;
 }> {
-    const validatedFields = multipleReviewsSchema.safeParse({
-        comments: formData.get('comments'),
-        userId: formData.get('userId'),
-    });
-    
-    if (!validatedFields.success) {
-        return {
-            message: 'Validation failed.',
-            data: null,
-            errors: validatedFields.error.flatten().fieldErrors as Record<string, string[]>,
-        };
+  const validatedFields = multipleReviewsSchema.safeParse({
+    comments: formData.get('comments'),
+    userId: formData.get('userId'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      message: 'Validation failed.',
+      data: null,
+      errors: validatedFields.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  const { userId, comments } = validatedFields.data;
+
+  try {
+    const result = await analyzeMultipleReviews({ comments });
+
+    const analysisId = 'main';
+    const dataToSave = {
+      ...result,
+      id: analysisId,
+      analyzedAt: new Date().toISOString(),
     }
 
-    const { userId, comments } = validatedFields.data;
+    const repository = getRepository();
+    const keys = getReviewAnalysisKeys(userId, analysisId);
 
-    try {
-        const result = await analyzeMultipleReviews({ comments });
-        
-        const analysisId = 'main';
-        const dataToSave = {
-            ...result,
-            id: analysisId,
-            analyzedAt: new Date().toISOString(),
-        }
-
-        const repository = getRepository();
-        const keys = getReviewAnalysisKeys(userId, analysisId);
-        
-        // Check if item exists to decide between create and update
-        const existing = await repository.get(keys.PK, keys.SK);
-        if (existing) {
-            await repository.update(keys.PK, keys.SK, dataToSave);
-        } else {
-            await repository.create(keys.PK, keys.SK, 'ReviewAnalysis', dataToSave);
-        }
-
-        return {
-            message: 'success',
-            data: dataToSave,
-            errors: {},
-        };
-    } catch (error: any) {
-        const errorMessage = handleAWSError(error, 'An unexpected error occurred during bulk analysis.');
-        return {
-            message: errorMessage,
-            data: null,
-            errors: {},
-        };
+    // Check if item exists to decide between create and update
+    const existing = await repository.get(keys.PK, keys.SK);
+    if (existing) {
+      await repository.update(keys.PK, keys.SK, dataToSave);
+    } else {
+      await repository.create(keys.PK, keys.SK, 'ReviewAnalysis', dataToSave);
     }
+
+    return {
+      message: 'success',
+      data: dataToSave,
+      errors: {},
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred during bulk analysis.');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: {},
+    };
+  }
 }
 
 const newsSchema = z.object({
-    location: z.string().optional(),
+  location: z.string().optional(),
 });
 
 export async function getRealEstateNewsAction(prevState: any, formData: FormData) {
@@ -1299,7 +1299,7 @@ export async function getRealEstateNewsAction(prevState: any, formData: FormData
     location: formData.get('location'),
   });
 
-   if (!validatedFields.success) {
+  if (!validatedFields.success) {
     return {
       message: 'Validation failed',
       errors: validatedFields.error.flatten().fieldErrors,
@@ -1333,7 +1333,7 @@ export async function trackContentCreationAction(
   try {
     const { getContentSuggestionsEngine } = await import('@/lib/ai-content-suggestions');
     const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    
+
     const user = await getCurrentUser();
     if (!user) {
       return { success: false, error: 'User not authenticated' };
@@ -1437,7 +1437,7 @@ export async function generateTrainingPlanAction(challenge: string): Promise<{
 }> {
   try {
     const result = await generateTrainingPlan({ challenge });
-    
+
     return {
       message: 'Training plan generated successfully',
       data: result,
@@ -1467,7 +1467,7 @@ export async function saveTrainingPlanAction(
     // Get current user from Cognito
     const { getCurrentUser } = await import('@/aws/auth/cognito-client');
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return {
         message: 'Authentication required',
@@ -1478,7 +1478,7 @@ export async function saveTrainingPlanAction(
 
     const repository = getRepository();
     const reportId = `training-plan-${Date.now()}`;
-    
+
     await repository.put({
       PK: `USER#${user.id}`,
       SK: `REPORT#${reportId}`,
@@ -1521,7 +1521,7 @@ export async function startRolePlayAction(
     // Get current user from Cognito
     const { getCurrentUser } = await import('@/aws/auth/cognito-client');
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return {
         message: 'Authentication required',
@@ -1532,7 +1532,7 @@ export async function startRolePlayAction(
 
     const repository = getRepository();
     const sessionId = `roleplay-${Date.now()}-${uuidv4().substring(0, 8)}`;
-    
+
     // Create initial session record
     await repository.put({
       PK: `USER#${user.id}`,
@@ -1588,7 +1588,7 @@ export async function sendRolePlayMessageAction(
     // Get current user from Cognito
     const { getCurrentUser } = await import('@/aws/auth/cognito-client');
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return {
         message: 'Authentication required',
@@ -1615,7 +1615,7 @@ export async function sendRolePlayMessageAction(
     // Update session with new messages
     const repository = getRepository();
     const timestamp = new Date().toISOString();
-    
+
     const updatedMessages = [
       ...conversationHistory,
       { role: 'user' as const, content: userMessage, timestamp },
@@ -1676,7 +1676,7 @@ export async function endRolePlayAction(
     // Get current user from Cognito
     const { getCurrentUser } = await import('@/aws/auth/cognito-client');
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return {
         message: 'Authentication required',
@@ -1706,7 +1706,7 @@ export async function endRolePlayAction(
     // Save final session with feedback
     const repository = getRepository();
     const timestamp = new Date().toISOString();
-    
+
     await repository.put({
       PK: `USER#${user.id}`,
       SK: `ROLEPLAY#${sessionId}`,
@@ -1749,7 +1749,7 @@ export async function getRolePlaySessionsAction(): Promise<{
     // Get current user from Cognito
     const { getCurrentUser } = await import('@/aws/auth/cognito-client');
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return {
         message: 'Authentication required',
@@ -1802,7 +1802,7 @@ export async function getPersonalizedDashboardAction(): Promise<{
     // Get current user from Cognito
     const { getCurrentUser } = await import('@/aws/auth/cognito-client');
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return {
         message: 'Authentication required',
@@ -1853,7 +1853,7 @@ export async function createProjectAction(
 
     const { getCurrentUser } = await import('@/aws/auth/cognito-client');
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return {
         message: 'Authentication required',
@@ -1865,7 +1865,7 @@ export async function createProjectAction(
     const repository = getRepository();
     const projectId = Date.now().toString();
     const keys = getProjectKeys(user.id, projectId);
-    
+
     await repository.put({
       ...keys,
       EntityType: 'Project',
@@ -1905,7 +1905,7 @@ export async function moveContentToProjectAction(
   try {
     const { getCurrentUser } = await import('@/aws/auth/cognito-client');
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return {
         message: 'Authentication required',
@@ -1945,7 +1945,7 @@ export async function deleteContentAction(
   try {
     const { getCurrentUser } = await import('@/aws/auth/cognito-client');
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return {
         message: 'Authentication required',
@@ -1994,7 +1994,7 @@ export async function renameContentAction(
 
     const { getCurrentUser } = await import('@/aws/auth/cognito-client');
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return {
         message: 'Authentication required',
@@ -2034,7 +2034,7 @@ export async function deleteResearchReportAction(
   try {
     const { getCurrentUser } = await import('@/aws/auth/cognito-client');
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return {
         message: 'Authentication required',
@@ -2065,6 +2065,7 @@ export async function deleteResearchReportAction(
  * Save content to projects
  */
 export async function saveContentAction(
+  userId: string,
   content: string,
   type: string,
   name?: string,
@@ -2075,10 +2076,7 @@ export async function saveContentAction(
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
-    
-    if (!user) {
+    if (!userId) {
       return {
         message: 'Authentication required',
         data: null,
@@ -2088,8 +2086,8 @@ export async function saveContentAction(
 
     const repository = getRepository();
     const contentId = Date.now().toString();
-    const keys = getSavedContentKeys(user.id, contentId);
-    
+    const keys = getSavedContentKeys(userId, contentId);
+
     await repository.put({
       ...keys,
       EntityType: 'SavedContent',
@@ -2132,7 +2130,7 @@ export async function saveResearchReportAction(
   try {
     const { getCurrentUser } = await import('@/aws/auth/cognito-client');
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return {
         message: 'Authentication required',
@@ -2144,7 +2142,7 @@ export async function saveResearchReportAction(
     const repository = getRepository();
     const reportId = Date.now().toString();
     const keys = getResearchReportKeys(user.id, reportId);
-    
+
     await repository.put({
       ...keys,
       EntityType: 'ResearchReport',
@@ -2186,7 +2184,7 @@ export async function saveCompetitorAction(
   try {
     const { getCurrentUser } = await import('@/aws/auth/cognito-client');
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return {
         message: 'Authentication required',
@@ -2198,7 +2196,7 @@ export async function saveCompetitorAction(
     const repository = getRepository();
     const competitorId = Date.now().toString();
     const keys = getCompetitorKeys(user.id, competitorId);
-    
+
     await repository.put({
       ...keys,
       EntityType: 'Competitor',
@@ -2240,7 +2238,7 @@ export async function saveMarketingPlanAction(
   try {
     const { getCurrentUser } = await import('@/aws/auth/cognito-client');
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return {
         message: 'Authentication required',
@@ -2252,7 +2250,7 @@ export async function saveMarketingPlanAction(
     const repository = getRepository();
     const planId = Date.now().toString();
     const keys = getMarketingPlanKeys(user.id, planId);
-    
+
     await repository.put({
       ...keys,
       EntityType: 'MarketingPlan',
@@ -2283,6 +2281,7 @@ export async function saveMarketingPlanAction(
  * Update profile photo URL
  */
 export async function updateProfilePhotoUrlAction(
+  userId: string,
   photoURL: string
 ): Promise<{
   message: string;
@@ -2290,10 +2289,7 @@ export async function updateProfilePhotoUrlAction(
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
-    
-    if (!user) {
+    if (!userId) {
       return {
         message: 'Authentication required',
         data: null,
@@ -2302,7 +2298,7 @@ export async function updateProfilePhotoUrlAction(
     }
 
     const repository = getRepository();
-    const keys = getAgentProfileKeys(user.id, 'main');
+    const keys = getAgentProfileKeys(userId, 'main');
     await repository.update(keys.PK, keys.SK, { photoURL });
 
     return {
@@ -2333,7 +2329,7 @@ export async function saveTrainingProgressAction(
   try {
     const { getCurrentUser } = await import('@/aws/auth/cognito-client');
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return {
         message: 'Authentication required',
@@ -2344,7 +2340,7 @@ export async function saveTrainingProgressAction(
 
     const repository = getRepository();
     const keys = getTrainingProgressKeys(user.id, moduleId);
-    
+
     await repository.put({
       ...keys,
       EntityType: 'TrainingProgress',
@@ -2382,7 +2378,7 @@ export async function getRecentActivityAction(userId?: string): Promise<{
   try {
     const { getCurrentUser } = await import('@/aws/auth/cognito-client');
     const user = await getCurrentUser(userId);
-    
+
     if (!user || !user.id) {
       return {
         message: 'Authentication required',
@@ -2393,7 +2389,7 @@ export async function getRecentActivityAction(userId?: string): Promise<{
 
     const repository = getRepository();
     const pk = `USER#${user.id}`;
-    
+
     // Fetch different types of activity
     const [contentResult, reportsResult, plansResult, editsResult] = await Promise.all([
       repository.queryItems(pk, 'CONTENT#', { limit: 10, scanIndexForward: false }),

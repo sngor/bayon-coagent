@@ -5,7 +5,7 @@ import { Wand2, FileText, Home } from 'lucide-react';
 
 const tabs = [
     { id: 'write', label: 'Write', href: '/studio/write', icon: FileText },
-    { id: 'describe', label: 'Describe', href: '/studio/describe', icon: Home },
+    { id: 'describe', label: 'Listing', href: '/studio/describe', icon: Home },
     { id: 'reimagine', label: 'Reimagine', href: '/studio/reimagine', icon: Wand2 },
 ];
 

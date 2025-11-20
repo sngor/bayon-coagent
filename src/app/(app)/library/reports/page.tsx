@@ -1,12 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { StandardSkeleton } from '@/components/standard/skeleton';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { IntelligentEmptyState } from '@/components/ui/intelligent-empty-state';
 import { useUser } from '@/aws/auth';
-import { useQuery } from '@/aws/dynamodb/hooks';
 import type { ResearchReport } from '@/lib/types';
 import { FileSearch, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,13 +15,22 @@ import Link from 'next/link';
 export default function LibraryReportsPage() {
     const router = useRouter();
     const { user } = useUser();
+    const [reports, setReports] = useState<ResearchReport[] | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const reportsPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
-    const reportsSKPrefix = useMemo(() => 'REPORT#', []);
+    // Fetch reports
+    useEffect(() => {
+        if (!user) {
+            setReports([]);
+            setIsLoading(false);
+            return;
+        }
 
-    const { data: reports, isLoading } = useQuery<ResearchReport>(reportsPK, reportsSKPrefix, {
-        scanIndexForward: false,
-    });
+        // For now, set empty array to show empty state
+        // TODO: Implement proper data fetching via Server Actions
+        setReports([]);
+        setIsLoading(false);
+    }, [user]);
 
     const formatDate = (dateValue: any): string => {
         if (!dateValue) return 'Unknown date';

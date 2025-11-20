@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState, useEffect, useTransition, useActionState } from 'react';
-import { StandardPageLayout } from '@/components/standard';
+import { StandardPageLayout, StandardEmptyState } from '@/components/standard';
 import { StandardFormActions } from '@/components/standard/form-actions';
 import { StandardLoadingSpinner } from '@/components/standard/loading-spinner';
 import {

@@ -28,24 +28,17 @@ import {
   User,
   PanelLeft,
   LogOut,
-  ShieldCheck,
   GraduationCap,
   Settings,
-  Folder,
   Library,
   Target,
-  FileText,
-  TrendingUp,
-  HeartPulse,
-  ChevronDown,
   Wand2,
-  HelpCircle,
   MessageSquare,
+  Bell,
+  HelpCircle,
 } from 'lucide-react';
 import {
   HouseIcon,
-  ContentIcon,
-  UsersIcon,
   AISparkleIcon,
 } from '@/components/ui/real-estate-icons';
 import Link from 'next/link';
@@ -66,6 +59,7 @@ const navItems = [
   { href: '/brand', icon: Target, label: 'Brand' },
   { href: '/market', icon: AISparkleIcon, label: 'Market', customIcon: true },
   { href: '/library', icon: Library, label: 'Library' },
+  { href: '/training', icon: GraduationCap, label: 'Training' },
 ];
 
 function AppLoadingScreen() {
@@ -267,24 +261,58 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              {/* Notifications Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-full hover:bg-accent relative"
+                asChild
+              >
+                <Link href="/notifications">
+                  <Bell className="h-5 w-5" />
+                  {/* Notification Badge - uncomment when you have unread notifications */}
+                  {/* <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-background" /> */}
+                  <span className="sr-only">Notifications</span>
+                </Link>
+              </Button>
+
+              {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 h-9 px-2">
-                    <Avatar className="h-7 w-7">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-3 h-10 px-2 pr-3 rounded-full hover:bg-accent transition-colors"
+                  >
+                    <Avatar className="h-8 w-8 ring-2 ring-background shadow-sm">
                       <AvatarImage src={profile?.photoURL} alt={userName} />
-                      <AvatarFallback className="text-xs font-semibold">
+                      <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-primary/20 to-primary/10 text-primary">
                         {getInitials(userName)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="hidden sm:inline text-sm font-medium max-w-[150px] truncate">{userName}</span>
+                    <div className="hidden sm:flex flex-col items-start min-w-0">
+                      <span className="text-sm font-medium leading-none truncate max-w-[120px]">
+                        {userName}
+                      </span>
+                      <span className="text-xs text-muted-foreground leading-none mt-1">
+                        Agent
+                      </span>
+                    </div>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-64">
                   <DropdownMenuLabel>
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{userName}</p>
-                      <p className="text-xs leading-none text-muted-foreground truncate">{user?.email}</p>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={profile?.photoURL} alt={userName} />
+                        <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-primary/20 to-primary/10 text-primary">
+                          {getInitials(userName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col space-y-1 min-w-0 flex-1">
+                        <p className="text-sm font-semibold leading-none truncate">{userName}</p>
+                        <p className="text-xs leading-none text-muted-foreground truncate">{user?.email}</p>
+                      </div>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -303,9 +331,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <DropdownMenuItem asChild>
                     <Link href="/support" className="cursor-pointer">
                       <HelpCircle className="mr-2 h-4 w-4" />
-                      <span>Support & FAQ</span>
+                      <span>Support</span>
                     </Link>
                   </DropdownMenuItem>
+
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive focus:text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />

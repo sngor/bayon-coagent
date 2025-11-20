@@ -35,6 +35,7 @@ yarn-error.log*
 .idea/
 *.swp
 *.swo
+.kiro/
 
 # CDK Infrastructure
 infrastructure/node_modules/

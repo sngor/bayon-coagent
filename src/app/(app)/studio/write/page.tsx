@@ -55,7 +55,7 @@ import {
   Loader2,
   Copy,
   Linkedin,
-  Twitter,
+  X,
   Facebook,
   Sparkles,
   Save,
@@ -67,6 +67,7 @@ import {
   MessageSquare,
   Home,
   Check,
+  Building2,
 } from 'lucide-react';
 import { marked } from 'marked';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -623,50 +624,12 @@ export default function ContentEnginePage() {
       icon: MessageSquare,
       color: 'from-indigo-500 to-blue-500',
     },
-    {
-      id: 'listing',
-      title: 'Listing Optimizer',
-      description: 'Optimize listings for target personas',
-      icon: Home,
-      color: 'from-amber-500 to-yellow-500',
-    },
   ];
 
   return (
     <StandardPageLayout
       spacing="default"
     >
-
-      {/* Info Banner */}
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-purple-600/5">
-        <CardContent className="py-6">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold mb-2">AI-Powered Content Generation</h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                Generate professional marketing content in seconds. Select a content type below and fill in the details to get started.
-              </p>
-              <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-success" />
-                  <span>AI-Powered</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-success" />
-                  <span>Multi-Platform Ready</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-success" />
-                  <span>Save & Organize</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Content Type Selector */}
       <Card>
@@ -706,7 +669,6 @@ export default function ContentEnginePage() {
             <TabsTrigger value="video-script">Video Scripts</TabsTrigger>
             <TabsTrigger value="guide">Neighborhood Guides</TabsTrigger>
             <TabsTrigger value="social">Social Media</TabsTrigger>
-            <TabsTrigger value="listing">Listing Optimizer</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="market-update" className="mt-6">
@@ -731,6 +693,7 @@ export default function ContentEnginePage() {
                       id="location"
                       name="location"
                       placeholder="e.g., Seattle, WA"
+                      required
                     />
                   </StandardFormField>
                   <StandardFormField
@@ -741,19 +704,46 @@ export default function ContentEnginePage() {
                     <Input
                       id="timePeriod"
                       name="timePeriod"
-                      placeholder="e.g., October 2025"
+                      type="month"
+                      defaultValue={new Date().toISOString().slice(0, 7)}
+                      required
                     />
+                  </StandardFormField>
+                  <StandardFormField
+                    label="Property Type"
+                    id="propertyType"
+                    error={marketUpdateState.errors?.propertyType?.[0]}
+                  >
+                    <Select name="propertyType" defaultValue="All Properties">
+                      <SelectTrigger id="propertyType">
+                        <SelectValue placeholder="Select property type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="All Properties">All Properties</SelectItem>
+                        <SelectItem value="Single-Family Homes">Single-Family Homes</SelectItem>
+                        <SelectItem value="Condos">Condos</SelectItem>
+                        <SelectItem value="Townhomes">Townhomes</SelectItem>
+                        <SelectItem value="Luxury Homes">Luxury Homes</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </StandardFormField>
                   <StandardFormField
                     label="Target Audience"
                     id="audience"
                     error={marketUpdateState.errors?.audience?.[0]}
                   >
-                    <Input
-                      id="audience"
-                      name="audience"
-                      placeholder="e.g., First-time buyers"
-                    />
+                    <Select name="audience" defaultValue="General Buyers">
+                      <SelectTrigger id="audience">
+                        <SelectValue placeholder="Select audience" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="General Buyers">General Buyers</SelectItem>
+                        <SelectItem value="First-Time Buyers">First-Time Buyers</SelectItem>
+                        <SelectItem value="Investors">Investors</SelectItem>
+                        <SelectItem value="Luxury Buyers">Luxury Buyers</SelectItem>
+                        <SelectItem value="Sellers">Sellers</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </StandardFormField>
                   <StandardFormActions
                     primaryAction={{
@@ -849,10 +839,46 @@ export default function ContentEnginePage() {
                       id="blogTopic"
                       name="topic"
                       placeholder="e.g., The top 5 neighborhoods in Seattle for young professionals"
-                      rows={5}
+                      rows={4}
                       value={blogTopic}
                       onChange={e => setBlogTopic(e.target.value)}
+                      required
                     />
+                  </StandardFormField>
+                  <StandardFormField
+                    label="Target Audience"
+                    id="blogAudience"
+                  >
+                    <Input
+                      id="blogAudience"
+                      name="audience"
+                      placeholder="e.g., First-time homebuyers, Millennials"
+                    />
+                  </StandardFormField>
+                  <StandardFormField
+                    label="SEO Keywords (Optional)"
+                    id="keywords"
+                  >
+                    <Input
+                      id="keywords"
+                      name="keywords"
+                      placeholder="e.g., Seattle real estate, best neighborhoods"
+                    />
+                  </StandardFormField>
+                  <StandardFormField
+                    label="Desired Length"
+                    id="wordCount"
+                  >
+                    <Select name="wordCount" defaultValue="medium">
+                      <SelectTrigger id="wordCount">
+                        <SelectValue placeholder="Select length" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="short">Short (500-800 words)</SelectItem>
+                        <SelectItem value="medium">Medium (1000-1500 words)</SelectItem>
+                        <SelectItem value="long">Long (2000+ words)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </StandardFormField>
                   <StandardFormActions
                     primaryAction={{
@@ -971,7 +997,24 @@ export default function ContentEnginePage() {
                       name="topic"
                       placeholder="e.g., What is an assumable mortgage?"
                       rows={3}
+                      required
                     />
+                  </StandardFormField>
+                  <StandardFormField
+                    label="Video Length"
+                    id="videoLength"
+                  >
+                    <Select name="videoLength" defaultValue="60">
+                      <SelectTrigger id="videoLength">
+                        <SelectValue placeholder="Select length" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="30">30 seconds (Short)</SelectItem>
+                        <SelectItem value="60">60 seconds (Standard)</SelectItem>
+                        <SelectItem value="90">90 seconds (Extended)</SelectItem>
+                        <SelectItem value="120">2 minutes (Long-form)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </StandardFormField>
                   <StandardFormField
                     label="Tone of Voice"
@@ -984,13 +1027,10 @@ export default function ContentEnginePage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Engaging">Engaging</SelectItem>
-                        <SelectItem value="Professional">
-                          Professional
-                        </SelectItem>
+                        <SelectItem value="Professional">Professional</SelectItem>
                         <SelectItem value="Humorous">Humorous</SelectItem>
-                        <SelectItem value="Inspirational">
-                          Inspirational
-                        </SelectItem>
+                        <SelectItem value="Inspirational">Inspirational</SelectItem>
+                        <SelectItem value="Educational">Educational</SelectItem>
                       </SelectContent>
                     </Select>
                   </StandardFormField>
@@ -1003,6 +1043,17 @@ export default function ContentEnginePage() {
                       id="videoAudience"
                       name="audience"
                       placeholder="e.g., First-time buyers"
+                      required
+                    />
+                  </StandardFormField>
+                  <StandardFormField
+                    label="Call-to-Action (Optional)"
+                    id="callToAction"
+                  >
+                    <Input
+                      id="callToAction"
+                      name="callToAction"
+                      placeholder="e.g., Visit my website, Schedule a consultation"
                     />
                   </StandardFormField>
                   <StandardFormActions
@@ -1100,19 +1151,49 @@ export default function ContentEnginePage() {
                       name="targetMarket"
                       placeholder="e.g., 'Seattle, WA'"
                       defaultValue="Seattle, WA"
+                      required
                     />
                   </StandardFormField>
                   <StandardFormField
-                    label="Pillar Topic"
+                    label="Neighborhood/Area"
                     id="pillarTopic"
                     error={guideState.errors?.pillarTopic?.[0]}
                   >
                     <Input
                       id="pillarTopic"
                       name="pillarTopic"
-                      placeholder="e.g., 'The Ultimate Guide to Living in Seattle'"
+                      placeholder="e.g., 'Capitol Hill'"
                       defaultValue="The Ultimate Guide to Living in the Capitol Hill Neighborhood"
+                      required
                     />
+                  </StandardFormField>
+                  <StandardFormField
+                    label="Key Highlights (Optional)"
+                    id="highlights"
+                  >
+                    <Textarea
+                      id="highlights"
+                      name="highlights"
+                      placeholder="e.g., Great schools, walkable downtown, vibrant nightlife"
+                      rows={3}
+                    />
+                  </StandardFormField>
+                  <StandardFormField
+                    label="Target Buyer Type"
+                    id="buyerType"
+                  >
+                    <Select name="buyerType" defaultValue="General">
+                      <SelectTrigger id="buyerType">
+                        <SelectValue placeholder="Select buyer type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="General">General Buyers</SelectItem>
+                        <SelectItem value="Young Professionals">Young Professionals</SelectItem>
+                        <SelectItem value="Families">Families</SelectItem>
+                        <SelectItem value="Retirees">Retirees</SelectItem>
+                        <SelectItem value="Investors">Investors</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </StandardFormField>
                   <StandardFormField
                     label="IDX Feed URL (Optional)"
@@ -1218,9 +1299,20 @@ export default function ContentEnginePage() {
                       id="topic"
                       name="topic"
                       placeholder="e.g., 'The benefits of using a real estate agent for first-time homebuyers'"
-                      rows={5}
+                      rows={4}
                       value={socialPostContent?.topic || ''}
                       onChange={e => setSocialPostContent(prev => ({ ...prev, topic: e.target.value } as SocialPostContentWithTopic))}
+                      required
+                    />
+                  </StandardFormField>
+                  <StandardFormField
+                    label="Target Audience"
+                    id="socialAudience"
+                  >
+                    <Input
+                      id="socialAudience"
+                      name="audience"
+                      placeholder="e.g., First-time buyers, Millennials"
                     />
                   </StandardFormField>
                   <StandardFormField
@@ -1233,16 +1325,37 @@ export default function ContentEnginePage() {
                         <SelectValue placeholder="Select a tone" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Professional">
-                          Professional
-                        </SelectItem>
+                        <SelectItem value="Professional">Professional</SelectItem>
                         <SelectItem value="Casual">Casual</SelectItem>
-                        <SelectItem value="Enthusiastic">
-                          Enthusiastic
-                        </SelectItem>
+                        <SelectItem value="Enthusiastic">Enthusiastic</SelectItem>
                         <SelectItem value="Humorous">Humorous</SelectItem>
+                        <SelectItem value="Inspirational">Inspirational</SelectItem>
                       </SelectContent>
                     </Select>
+                  </StandardFormField>
+                  <StandardFormField
+                    label="Include Hashtags"
+                    id="includeHashtags"
+                  >
+                    <Select name="includeHashtags" defaultValue="yes">
+                      <SelectTrigger id="includeHashtags">
+                        <SelectValue placeholder="Include hashtags?" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="yes">Yes, include hashtags</SelectItem>
+                        <SelectItem value="no">No hashtags</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </StandardFormField>
+                  <StandardFormField
+                    label="Call-to-Action (Optional)"
+                    id="socialCTA"
+                  >
+                    <Input
+                      id="socialCTA"
+                      name="callToAction"
+                      placeholder="e.g., Contact me today, Visit my website"
+                    />
                   </StandardFormField>
                   <StandardFormActions
                     primaryAction={{
@@ -1362,8 +1475,8 @@ export default function ContentEnginePage() {
                       <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-sky-500/30">
                         <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-sky-500/5 to-transparent">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-sky-500 flex items-center justify-center">
-                              <Twitter className="w-5 h-5 text-white" />
+                            <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center">
+                              <X className="w-5 h-5 text-white" />
                             </div>
                             <h3 className="font-bold text-lg">X (Twitter)</h3>
                           </div>
@@ -1405,6 +1518,52 @@ export default function ContentEnginePage() {
                           />
                         </CardContent>
                       </Card>
+                      <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-red-500/30">
+                        <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-red-500/5 to-transparent">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-red-500 flex items-center justify-center">
+                              <Building2 className="w-5 h-5 text-white" />
+                            </div>
+                            <h3 className="font-bold text-lg">Google Business Profile</h3>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.googleBusiness || '', 'Social Post (Google Business Profile)')}>
+                              <Save className="mr-2 h-4 w-4" />
+                              Save
+                            </Button>
+                            <Button
+                              variant={copiedStates['googleBusiness'] ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() =>
+                                copyToClipboard(
+                                  socialPostContent.googleBusiness || '',
+                                  'googleBusiness'
+                                )
+                              }
+                            >
+                              {copiedStates['googleBusiness'] ? (
+                                <>
+                                  <Check className="w-4 h-4 mr-2" />
+                                  Copied!
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-4 h-4 mr-2" />
+                                  Copy
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-6">
+                          <Textarea
+                            value={socialPostContent.googleBusiness}
+                            onChange={(e) => setSocialPostContent(prev => ({ ...prev!, googleBusiness: e.target.value }))}
+                            rows={6}
+                            className="w-full h-full font-mono text-sm resize-none"
+                          />
+                        </CardContent>
+                      </Card>
                     </>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -1415,202 +1574,11 @@ export default function ContentEnginePage() {
                         Your generated social media posts will appear here.
                       </p>
                       <p className="text-sm text-muted-foreground mt-2">
-                        Posts will be optimized for LinkedIn, Facebook, and X (Twitter).
+                        Posts will be optimized for LinkedIn, Facebook, X (Twitter), and Google Business Profile.
                       </p>
                     </div>
                   )}
                   <ErrorDisplay message={socialState.message !== 'success' ? socialState.message : null} />
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
-        <TabsContent value="listing" className="mt-6">
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="lg:col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="font-headline">
-                    Listing Optimizer
-                  </CardTitle>
-                  <CardDescription>
-                    Rewrite a listing description for a specific buyer persona.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form action={listingFormAction}>
-                    <div className="space-y-4">
-                      <StandardFormField
-                        label="Original Description"
-                        id="propertyDescription"
-                        error={listingState.errors?.propertyDescription?.[0]}
-                      >
-                        <Textarea
-                          id="propertyDescription"
-                          name="propertyDescription"
-                          rows={8}
-                          defaultValue={
-                            'Charming 3-bedroom, 2-bathroom single-family home in a quiet, tree-lined neighborhood. Features a recently updated kitchen with granite countertops, stainless steel appliances, and a large island. The open-concept living area has hardwood floors and a wood-burning fireplace. A spacious, fenced-in backyard with a deck is perfect for entertaining. The master suite includes a walk-in closet and an en-suite bathroom with a double vanity. Located in a top-rated school district, close to parks and shopping centers.'
-                          }
-                        />
-                      </StandardFormField>
-                      <StandardFormField
-                        label="Target Buyer Persona"
-                        id="buyerPersona"
-                        error={listingState.errors?.buyerPersona?.[0]}
-                      >
-                        <Select
-                          name="buyerPersona"
-                          defaultValue="First-Time Homebuyer"
-                        >
-                          <SelectTrigger id="buyerPersona" className="w-full">
-                            <SelectValue placeholder="Select a persona" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {buyerPersonas.map(persona => (
-                              <SelectItem
-                                key={persona.value}
-                                value={persona.value}
-                              >
-                                {persona.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </StandardFormField>
-                      <StandardFormActions
-                        primaryAction={{
-                          label: 'Optimize Listing',
-                          type: 'submit',
-                          loading: isListingOptimizing,
-                          variant: 'ai',
-                        }}
-                      />
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="lg:col-span-1 space-y-8">
-              <Card>
-                <CardHeader className="flex flex-row justify-between items-center">
-                  <div>
-                    <CardTitle className="font-headline">
-                      Rewritten Description
-                    </CardTitle>
-                    <CardDescription>
-                      The description rewritten for your target persona.
-                    </CardDescription>
-                  </div>
-                  {rewrittenDescription && (
-                    <div className="flex gap-2">
-                      <Button
-                        variant={copiedStates['listing-description'] ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => copyToClipboard(rewrittenDescription, 'listing-description')}
-                      >
-                        {copiedStates['listing-description'] ? (
-                          <>
-                            <Check className="mr-2 h-4 w-4" />
-                            Copied!
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="mr-2 h-4 w-4" />
-                            Copy
-                          </>
-                        )}
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => openSaveDialog(rewrittenDescription, 'Listing Description')}>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save
-                      </Button>
-                    </div>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  {isListingOptimizing ? (
-                    <StandardLoadingSpinner variant="ai" message="Optimizing your listing..." />
-                  ) : rewrittenDescription ? (
-                    <Textarea
-                      rows={8}
-                      readOnly
-                      className="bg-secondary/50 resize-none"
-                      value={rewrittenDescription}
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-8 text-center">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                        <Home className="w-6 h-6 text-primary" />
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Your AI-generated description will appear here.
-                      </p>
-                    </div>
-                  )}
-                  <ErrorDisplay message={listingState.message !== 'success' ? listingState.message : null} />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row justify-between items-center">
-                  <div>
-                    <CardTitle className="font-headline">
-                      Generated FAQ
-                    </CardTitle>
-                    <CardDescription>
-                      Common questions based on the description.
-                    </CardDescription>
-                  </div>
-                  {listingFaqs.length > 0 && (
-                    <div className="flex gap-2">
-                      <Button
-                        variant={copiedStates['listing-faq'] ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => copyToClipboard(listingFaqs.map(faq => `Q: ${faq.q}\nA: ${faq.a}`).join('\n\n'), 'listing-faq')}
-                      >
-                        {copiedStates['listing-faq'] ? (
-                          <>
-                            <Check className="mr-2 h-4 w-4" />
-                            Copied!
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="mr-2 h-4 w-4" />
-                            Copy
-                          </>
-                        )}
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => openSaveDialog(listingFaqs.map(faq => `Q: ${faq.q}\nA: ${faq.a}`).join('\n\n'), 'Listing FAQ')}>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save
-                      </Button>
-                    </div>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  {isListingPending ? (
-                    <StandardLoadingSpinner variant="ai" message="Generating FAQ..." />
-                  ) : listingFaqs.length > 0 ? (
-                    <Accordion type="single" collapsible className="w-full">
-                      {listingFaqs.map((faq, index) => (
-                        <AccordionItem value={`item-${index}`} key={index}>
-                          <AccordionTrigger className="text-left">{faq.q}</AccordionTrigger>
-                          <AccordionContent className="text-muted-foreground">{faq.a}</AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-8 text-center">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                        <MessageSquare className="w-6 h-6 text-primary" />
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        The generated FAQ will appear here.
-                      </p>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </div>
