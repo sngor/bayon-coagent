@@ -93,8 +93,8 @@ export default function RootLayout({
         />
 
         {/* Favicon and app icons */}
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="apple-touch-icon" href="/icon-192x192.png" />
+        <link rel="icon" href="/icon-192x192.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/icon-192x192.svg" />
       </head>
       <body className="font-body antialiased" suppressHydrationWarning>
         <ThemeProvider

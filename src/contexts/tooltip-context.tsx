@@ -53,6 +53,12 @@ export function TooltipProvider({ children }: TooltipProviderProps) {
                 return;
             }
 
+            // Skip loading in browser - tooltips will work without persistence
+            if (typeof window !== 'undefined') {
+                setIsLoading(false);
+                return;
+            }
+
             try {
                 const repository = getRepository();
                 const preferences = await repository.get<{ seenTooltips: string[] }>(

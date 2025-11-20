@@ -13,6 +13,14 @@ import {
     CarouselNext,
     CarouselPrevious,
 } from '@/components/ui/carousel';
+import {
+    GlassCard,
+    GlassCardHeader,
+    GlassCardTitle,
+    GlassCardDescription,
+    GlassCardContent,
+} from '@/components/ui/glass-card';
+import { SubtleGradientMesh } from '@/components/ui/gradient-mesh';
 import { Button } from '@/components/ui/button';
 import { Star, Award, User, Briefcase, Calendar, TrendingUp, ArrowRight, Newspaper, RefreshCcw, Loader2, MessageSquare } from 'lucide-react';
 import {
@@ -23,12 +31,12 @@ import { useUser } from '@/aws/auth';
 import { ProfileCompletionBanner } from '@/components/profile-completion-banner';
 import { SuggestedNextSteps } from '@/components/suggested-next-steps';
 import { getSuggestedNextActions } from '@/hooks/use-profile-completion';
-import { useItem, useQuery } from '@/aws/dynamodb/hooks';
 import type { Review, Profile, MarketingPlan, MarketingTask, BrandAudit, Competitor as CompetitorType } from '@/lib/types';
 import { getRealEstateNewsAction } from '@/app/actions';
 import { type GetRealEstateNewsOutput } from '@/aws/bedrock/flows/get-real-estate-news';
 import { toast } from '@/hooks/use-toast';
 import { MetricCard } from '@/components/ui/metric-card';
+import { getDashboardData } from './actions';
 
 type NewsState = {
     message: string;
@@ -56,42 +64,64 @@ function RefreshNewsButton() {
 
 export default function DashboardPage() {
     const { user } = useUser();
+    const [isPending, startTransition] = useTransition();
     const [newsState, newsFormAction] = useActionState(getRealEstateNewsAction, initialNewsState);
     const [latestNews, setLatestNews] = useState<GetRealEstateNewsOutput | null>(null);
     const [initialLoad, setInitialLoad] = useState(true);
-    const [isPending, startTransition] = useTransition();
 
-    // Memoize keys for DynamoDB queries
-    const agentProfilePK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
-    const agentProfileSK = useMemo(() => 'AGENT#main', []);
+    // Dashboard data state
+    const [dashboardData, setDashboardData] = useState<{
+        agentProfile: Profile | null;
+        allReviews: Review[];
+        recentReviews: Review[];
+        latestPlan: MarketingPlan | null;
+        brandAudit: BrandAudit | null;
+        competitors: CompetitorType[];
+    } | null>(null);
+    const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
+    const [dashboardError, setDashboardError] = useState<string | null>(null);
 
-    const brandAuditPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
-    const brandAuditSK = useMemo(() => 'AUDIT#main', []);
+    // Fetch dashboard data
+    useEffect(() => {
+        if (!user) return;
 
-    const competitorsPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
-    const competitorsSKPrefix = useMemo(() => 'COMPETITOR#', []);
+        const fetchData = async () => {
+            setIsLoadingDashboard(true);
+            const result = await getDashboardData(user.id);
 
-    const plansPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
-    const plansSKPrefix = useMemo(() => 'PLAN#', []);
+            if (result.success && result.data) {
+                setDashboardData({
+                    agentProfile: result.data.agentProfile,
+                    allReviews: result.data.allReviews,
+                    recentReviews: result.data.recentReviews,
+                    latestPlan: result.data.latestPlan,
+                    brandAudit: result.data.brandAudit,
+                    competitors: result.data.competitors,
+                });
+            } else {
+                setDashboardError(result.error || 'Failed to load dashboard');
+            }
+            setIsLoadingDashboard(false);
+        };
 
-    // Note: Reviews are stored with PK: REVIEW#<agentId>, so we need the user's agentId
-    // For now, we'll use the user.id as the agentId
-    const reviewsPK = useMemo(() => user ? `REVIEW#${user.id}` : null, [user]);
-    const reviewsSKPrefix = useMemo(() => 'REVIEW#', []);
+        fetchData();
+    }, [user]);
 
-    // Fetch data using DynamoDB hooks
-    const { data: agentProfile, isLoading: isLoadingProfile } = useItem<Profile>(agentProfilePK, agentProfileSK);
-    const { data: allReviews, isLoading: isLoadingAllReviews } = useQuery<Review>(reviewsPK, reviewsSKPrefix);
-    const { data: recentReviews, isLoading: isLoadingRecentReviews } = useQuery<Review>(reviewsPK, reviewsSKPrefix, {
-        limit: 3,
-        scanIndexForward: false, // descending order
-    });
-    const { data: latestPlanData, isLoading: isPlanLoading } = useQuery<MarketingPlan>(plansPK, plansSKPrefix, {
-        limit: 1,
-        scanIndexForward: false, // descending order
-    });
-    const { data: brandAuditData, isLoading: isAuditLoading } = useItem<BrandAudit>(brandAuditPK, brandAuditSK);
-    const { data: competitorsData, isLoading: areCompetitorsLoading } = useQuery<CompetitorType>(competitorsPK, competitorsSKPrefix);
+    // Extract data from state
+    const agentProfile = dashboardData?.agentProfile || null;
+    const allReviews = dashboardData?.allReviews || [];
+    const recentReviews = dashboardData?.recentReviews || [];
+    const latestPlanData = dashboardData?.latestPlan ? [dashboardData.latestPlan] : [];
+    const brandAuditData = dashboardData?.brandAudit || null;
+    const competitorsData = dashboardData?.competitors || [];
+
+    // Loading states
+    const isLoadingProfile = isLoadingDashboard;
+    const isLoadingAllReviews = isLoadingDashboard;
+    const isLoadingRecentReviews = isLoadingDashboard;
+    const isPlanLoading = isLoadingDashboard;
+    const isAuditLoading = isLoadingDashboard;
+    const areCompetitorsLoading = isLoadingDashboard;
 
     // Effect for the initial news fetch
     useEffect(() => {
@@ -121,24 +151,20 @@ export default function DashboardPage() {
     }, [newsState, initialLoad]);
 
     const { averageRating, totalReviews, recentReviewsCount } = useMemo(() => {
-        if (!allReviews || allReviews.length === 0 || !user) return { averageRating: '0.0', totalReviews: 0, recentReviewsCount: 0 };
+        if (!allReviews || allReviews.length === 0) return { averageRating: '0.0', totalReviews: 0, recentReviewsCount: 0 };
 
-        // Since we're querying with REVIEW#<userId>, all reviews are already filtered to this user
-        const myReviews = allReviews;
-        if (myReviews.length === 0) return { averageRating: '0.0', totalReviews: 0, recentReviewsCount: 0 };
-
-        const total = myReviews.reduce((acc, review) => acc + review.rating, 0);
+        const total = allReviews.reduce((acc, review) => acc + review.rating, 0);
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        const recent = myReviews.filter(review => new Date(review.date) > thirtyDaysAgo).length;
+        const recent = allReviews.filter(review => new Date(review.date) > thirtyDaysAgo).length;
 
         return {
-            averageRating: (total / myReviews.length).toFixed(1),
-            totalReviews: myReviews.length,
+            averageRating: (total / allReviews.length).toFixed(1),
+            totalReviews: allReviews.length,
             recentReviewsCount: recent,
         };
-    }, [allReviews, user]);
+    }, [allReviews]);
 
     const isLoadingStats = isLoadingAllReviews;
     const isLoadingCarousel = isLoadingRecentReviews;
@@ -159,6 +185,21 @@ export default function DashboardPage() {
             description={isLoadingProfile ? "Welcome back..." : `Welcome back, ${agentProfile?.name || 'Agent'}. Here's a snapshot of your authority.`}
             spacing="default"
         >
+            {/* Welcome Glass Card */}
+            {agentProfile && (
+                <GlassCard blur="xl" tint="light" className="mb-6 animate-fade-in-up">
+                    <GlassCardHeader>
+                        <GlassCardTitle className="text-2xl font-headline flex items-center gap-2">
+                            <AISparkleIcon animated={true} className="h-6 w-6 text-primary" />
+                            Welcome back, {agentProfile.name}
+                        </GlassCardTitle>
+                        <GlassCardDescription className="text-base">
+                            Your real estate success dashboard - track your authority, manage your brand, and grow your business.
+                        </GlassCardDescription>
+                    </GlassCardHeader>
+                </GlassCard>
+            )}
+
             {/* Profile Completion Banner */}
             {agentProfile && (
                 <div className="animate-fade-in-up animate-delay-100">

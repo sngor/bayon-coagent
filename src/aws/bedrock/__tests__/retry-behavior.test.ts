@@ -20,11 +20,6 @@ import * as analyzeMultipleReviews from '../flows/analyze-multiple-reviews';
 import * as generateMarketingPlan from '../flows/generate-marketing-plan';
 import * as getKeywordRankings from '../flows/get-keyword-rankings';
 import { BedrockClient } from '../client';
-import { BedrockClient } from '../client';
-import { BedrockClient } from '../client';
-import { BedrockClient } from '../client';
-import { BedrockClient } from '../client';
-import { BedrockClient } from '../client';
 
 describe('Model Configuration Property Tests', () => {
   describe('Property 1: Model selection matches feature complexity', () => {
@@ -244,8 +239,8 @@ describe('Model Configuration Property Tests', () => {
       expect(MODEL_CONFIGS.SIMPLE.modelId).toBe(BEDROCK_MODELS.HAIKU);
     });
   });
-});
 
+  describe('Error Classification and Retry Logic', () => {
     /**
      * Property-based test: All retryable error types should be identified correctly
      * Requirements 4.2, 5.2

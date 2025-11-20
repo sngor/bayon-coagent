@@ -11,6 +11,13 @@ import { StandardPageLayout } from '@/components/standard';
 import { ChatInterface, AgentProfilePreview } from '@/components/bayon-assistant';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    GlassCard,
+    GlassCardHeader,
+    GlassCardTitle,
+    GlassCardDescription,
+    GlassCardContent,
+} from '@/components/ui/glass-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { getAgentProfile } from '@/app/profile-actions';
@@ -90,22 +97,26 @@ export default function AssistantPage() {
             spacing="default"
         >
             <div className="space-y-6">
-                {/* Profile Setup Alert */}
+                {/* Profile Setup Alert with Glass Effect */}
                 {!profile && (
-                    <Alert>
-                        <Info className="h-4 w-4" />
-                        <AlertDescription className="flex items-center justify-between">
-                            <span>Set up your agent profile to get personalized responses.</span>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setActiveTab('profile')}
-                            >
-                                <Settings className="h-4 w-4 mr-2" />
-                                Setup Profile
-                            </Button>
-                        </AlertDescription>
-                    </Alert>
+                    <GlassCard blur="lg" tint="light">
+                        <GlassCardContent className="py-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Info className="h-5 w-5 text-primary" />
+                                    <span className="text-sm font-medium">Set up your agent profile to get personalized responses.</span>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setActiveTab('profile')}
+                                >
+                                    <Settings className="h-4 w-4 mr-2" />
+                                    Setup Profile
+                                </Button>
+                            </div>
+                        </GlassCardContent>
+                    </GlassCard>
                 )}
 
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'chat' | 'profile')} className="w-full">

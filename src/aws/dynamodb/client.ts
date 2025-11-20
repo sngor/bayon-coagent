@@ -16,6 +16,14 @@ let documentClient: DynamoDBDocumentClient | null = null;
  * Creates and configures a DynamoDB client
  */
 function createDynamoDBClient(): DynamoDBClient {
+  // Browser-side check: DynamoDB should not be accessed from the browser
+  if (typeof window !== 'undefined') {
+    throw new Error(
+      'DynamoDB client cannot be used in the browser. ' +
+      'DynamoDB operations must be performed server-side using Server Actions or API routes.'
+    );
+  }
+
   const config = getConfig();
   const credentials = getAWSCredentials();
 
@@ -26,13 +34,6 @@ function createDynamoDBClient(): DynamoDBClient {
   // Add credentials if available
   if (credentials.accessKeyId && credentials.secretAccessKey) {
     clientConfig.credentials = credentials;
-  } else if (typeof window === 'undefined') {
-    // Server-side: credentials should come from environment or IAM role
-    // No explicit credentials needed
-  } else {
-    // Browser-side: Skip DynamoDB operations for now
-    // TODO: Implement Cognito Identity Pool credential exchange
-    console.warn('DynamoDB credentials not configured for browser. Data operations will be skipped.');
   }
 
   // Add custom endpoint for local development

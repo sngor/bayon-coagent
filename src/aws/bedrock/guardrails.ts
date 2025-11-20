@@ -28,15 +28,15 @@ export interface GuardrailsResult {
 }
 
 /**
- * PII patterns for detection
+ * PII pattern generators (to avoid global flag state issues)
  */
-const PII_PATTERNS = {
+const getPIIPatterns = () => ({
   SSN: /\b\d{3}-\d{2}-\d{4}\b|\b\d{9}\b/g,
   CREDIT_CARD: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g,
   PHONE: /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g,
   EMAIL: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
   // Note: We're more lenient with addresses as they're often needed in real estate context
-};
+});
 
 /**
  * Real estate domain keywords
@@ -247,17 +247,18 @@ export class GuardrailsService {
    */
   detectPII(text: string): string[] {
     const detected: string[] = [];
+    const patterns = getPIIPatterns();
 
-    if (PII_PATTERNS.SSN.test(text)) {
+    if (patterns.SSN.test(text)) {
       detected.push('SSN');
     }
-    if (PII_PATTERNS.CREDIT_CARD.test(text)) {
+    if (patterns.CREDIT_CARD.test(text)) {
       detected.push('CREDIT_CARD');
     }
-    if (PII_PATTERNS.PHONE.test(text)) {
+    if (patterns.PHONE.test(text)) {
       detected.push('PHONE');
     }
-    if (PII_PATTERNS.EMAIL.test(text)) {
+    if (patterns.EMAIL.test(text)) {
       detected.push('EMAIL');
     }
 
@@ -277,38 +278,45 @@ export class GuardrailsService {
   } {
     let sanitized = text;
     const detected: string[] = [];
+    const patterns = getPIIPatterns();
 
     // Sanitize SSN
-    if (PII_PATTERNS.SSN.test(sanitized)) {
-      sanitized = sanitized.replace(PII_PATTERNS.SSN, '[SSN REDACTED]');
+    if (patterns.SSN.test(sanitized)) {
+      const ssnPattern = getPIIPatterns().SSN; // Get fresh pattern for replace
+      sanitized = sanitized.replace(ssnPattern, '[SSN REDACTED]');
       detected.push('SSN');
     }
 
     // Sanitize credit card
-    if (PII_PATTERNS.CREDIT_CARD.test(sanitized)) {
-      sanitized = sanitized.replace(PII_PATTERNS.CREDIT_CARD, '[CREDIT CARD REDACTED]');
+    if (patterns.CREDIT_CARD.test(sanitized)) {
+      const ccPattern = getPIIPatterns().CREDIT_CARD; // Get fresh pattern for replace
+      sanitized = sanitized.replace(ccPattern, '[CREDIT CARD REDACTED]');
       detected.push('CREDIT_CARD');
     }
 
     // Sanitize phone (but be lenient as phone numbers are common in real estate)
     // Only redact if it looks like a personal phone number in context
-    const phoneMatches = sanitized.match(PII_PATTERNS.PHONE);
+    const phonePattern = getPIIPatterns().PHONE;
+    const phoneMatches = sanitized.match(phonePattern);
     if (phoneMatches && phoneMatches.length > 0) {
       // Check context - if it's clearly a personal phone, redact it
       const hasPersonalContext = /my phone|my number|call me at|reach me at/i.test(sanitized);
       if (hasPersonalContext) {
-        sanitized = sanitized.replace(PII_PATTERNS.PHONE, '[PHONE REDACTED]');
+        const phoneReplacePattern = getPIIPatterns().PHONE; // Get fresh pattern for replace
+        sanitized = sanitized.replace(phoneReplacePattern, '[PHONE REDACTED]');
         detected.push('PHONE');
       }
     }
 
     // Sanitize email (but be lenient as emails are common in real estate)
-    const emailMatches = sanitized.match(PII_PATTERNS.EMAIL);
+    const emailPattern = getPIIPatterns().EMAIL;
+    const emailMatches = sanitized.match(emailPattern);
     if (emailMatches && emailMatches.length > 0) {
       // Check context - if it's clearly a personal email, redact it
       const hasPersonalContext = /my email|email me at|contact me at/i.test(sanitized);
       if (hasPersonalContext) {
-        sanitized = sanitized.replace(PII_PATTERNS.EMAIL, '[EMAIL REDACTED]');
+        const emailReplacePattern = getPIIPatterns().EMAIL; // Get fresh pattern for replace
+        sanitized = sanitized.replace(emailReplacePattern, '[EMAIL REDACTED]');
         detected.push('EMAIL');
       }
     }

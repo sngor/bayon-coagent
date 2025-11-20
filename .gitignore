@@ -28,8 +28,10 @@ yarn-error.log*
 .DS_Store
 *.pem
 
+# TypeScript build info
+*.tsbuildinfo
+
 # IDE
-.vscode/
 .idea/
 *.swp
 *.swo

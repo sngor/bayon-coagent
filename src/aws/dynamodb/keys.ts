@@ -231,7 +231,7 @@ export function getEditRecordKeys(
 }
 
 /**
- * Generates keys for AgentProfile (Kiro AI Assistant)
+ * Generates keys for AgentProfile (Bayon AI Assistant)
  * Pattern: PK: USER#<userId>, SK: PROFILE#AGENT
  */
 export function getAgentProfileKeysV2(userId: string): DynamoDBKey {
@@ -242,7 +242,7 @@ export function getAgentProfileKeysV2(userId: string): DynamoDBKey {
 }
 
 /**
- * Generates keys for Citation (Kiro AI Assistant)
+ * Generates keys for Citation (Bayon AI Assistant)
  * Pattern: PK: USER#<userId>, SK: CITATION#<citationId>
  */
 export function getCitationKeys(
@@ -256,7 +256,7 @@ export function getCitationKeys(
 }
 
 /**
- * Generates keys for Conversation (Kiro AI Assistant)
+ * Generates keys for Conversation (Bayon AI Assistant)
  * Pattern: PK: USER#<userId>, SK: CONVERSATION#<conversationId>
  */
 export function getConversationKeys(
@@ -270,7 +270,7 @@ export function getConversationKeys(
 }
 
 /**
- * Generates keys for WorkflowExecution (Kiro AI Assistant)
+ * Generates keys for WorkflowExecution (Bayon AI Assistant)
  * Pattern: PK: USER#<userId>, SK: WORKFLOW#<workflowId>
  */
 export function getWorkflowExecutionKeys(

@@ -13,6 +13,13 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
+  GlassCard,
+  GlassCardHeader,
+  GlassCardTitle,
+  GlassCardDescription,
+  GlassCardContent,
+} from '@/components/ui/glass-card';
+import {
   EnhancedCard,
   EnhancedCardContent,
   EnhancedCardDescription,
@@ -39,6 +46,7 @@ import {
 } from '@/components/ui/real-estate-icons';
 import { AILoader, StepLoader } from '@/components/ui/loading-states';
 import { StandardLoadingSpinner, StandardEmptyState } from '@/components/standard';
+import { AIOperationProgress, useAIOperation } from '@/components/ui/ai-operation-progress';
 import { useUser } from '@/aws/auth';
 import { useItem, useQuery } from '@/aws/dynamodb/hooks';
 import { getRepository } from '@/aws/dynamodb';
@@ -95,6 +103,9 @@ export default function MarketingPlanPage() {
 
   const [state, formAction] = useActionState(generateMarketingPlanAction, initialPlanState);
 
+  // AI Operation Progress tracking
+  const marketingPlanOperation = useAIOperation();
+
   // Generation steps for progress indicator
   const generationSteps = [
     'Analyzing your brand audit data...',
@@ -125,10 +136,19 @@ export default function MarketingPlanPage() {
   // Simulate step progression during generation
   useEffect(() => {
     if (isGenerating) {
+      // Start AI operation tracking
+      marketingPlanOperation.start('generate-marketing-plan', {
+        totalSteps: generationSteps.length,
+        estimatedDuration: generationSteps.length * 2000,
+      });
+
       const stepInterval = setInterval(() => {
         setGenerationStep((prev) => {
           if (prev < generationSteps.length - 1) {
-            return prev + 1;
+            const nextStep = prev + 1;
+            // Update operation progress
+            marketingPlanOperation.updateStep(nextStep, generationSteps[nextStep]);
+            return nextStep;
           }
           return prev;
         });
@@ -137,8 +157,11 @@ export default function MarketingPlanPage() {
       return () => clearInterval(stepInterval);
     } else {
       setGenerationStep(0);
+      if (marketingPlanOperation.isRunning) {
+        marketingPlanOperation.complete();
+      }
     }
-  }, [isGenerating, generationSteps.length]);
+  }, [isGenerating, generationSteps.length, marketingPlanOperation]);
 
   useEffect(() => {
     if (state.message === 'success' && state.data) {
@@ -393,21 +416,13 @@ export default function MarketingPlanPage() {
       )}
 
       {/* Step-by-step progress indicator during generation */}
-      {isGenerating && !displayPlan && !generationError && (
-        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-purple-600/5">
-          <CardHeader>
-            <CardTitle className="font-headline flex items-center gap-2">
-              <AISparkleIcon animated={true} className="h-5 w-5 text-primary" />
-              Creating Your Marketing Plan
-            </CardTitle>
-            <CardDescription>
-              Our AI is analyzing your data to create a personalized strategy...
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <StepLoader steps={generationSteps} currentStep={generationStep} />
-          </CardContent>
-        </Card>
+      {isGenerating && !displayPlan && !generationError && marketingPlanOperation.tracker && (
+        <AIOperationProgress
+          operationName="generate-marketing-plan"
+          tracker={marketingPlanOperation.tracker}
+          title="Creating Your Marketing Plan"
+          description="Our AI is analyzing your data to create a personalized strategy..."
+        />
       )}
 
       {/* Celebratory animation on successful generation */}

@@ -210,19 +210,19 @@ export function ProfileCompletionBanner({
 
                     {/* Actions */}
                     <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                        <Button asChild className="flex-1">
-                            <Link href="/profile">
+                        <Link href="/profile" className="flex-1">
+                            <Button className="w-full">
                                 Complete Profile
                                 <ArrowRight className="ml-2 h-4 w-4" />
-                            </Link>
-                        </Button>
+                            </Button>
+                        </Link>
                         {nextAction && completionData.hasRequiredFields && (
-                            <Button asChild variant="outline" className="flex-1">
-                                <Link href={nextAction.href}>
+                            <Link href={nextAction.href} className="flex-1">
+                                <Button variant="outline" className="w-full">
                                     <nextAction.icon className="mr-2 h-4 w-4" />
                                     {nextAction.label}
-                                </Link>
-                            </Button>
+                                </Button>
+                            </Link>
                         )}
                     </div>
 

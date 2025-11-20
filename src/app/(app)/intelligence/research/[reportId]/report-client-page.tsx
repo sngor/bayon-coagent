@@ -1,14 +1,13 @@
 
 'use client';
 
-import { useMemo } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useUser } from '@/aws/auth/use-user';
+import { useItem } from '@/aws/dynamodb/hooks/use-item';
 import type { ResearchReport } from '@/lib/types';
 import { marked } from 'marked';
-import { Calendar, ExternalLink, ArrowLeft } from 'lucide-react';
+import { ExternalLink, ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -25,7 +24,7 @@ function ReportSkeleton() {
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-5/6" />
-                     <Skeleton className="h-4 w-full mt-4" />
+                    <Skeleton className="h-4 w-full mt-4" />
                     <Skeleton className="h-4 w-2/3" />
                 </CardContent>
             </Card>
@@ -35,24 +34,21 @@ function ReportSkeleton() {
 
 export default function ReportClientPage({ reportId }: { reportId: string }) {
     const { user } = useUser();
-    const firestore = useFirestore();
-
-    const reportDocRef = useMemoFirebase(() => {
-        if (!user || !firestore || !reportId) return null;
-        return doc(firestore, `users/${user.uid}/researchReports`, reportId);
-    }, [user, firestore, reportId]);
-
-    const { data: report, isLoading } = useDoc<ResearchReport>(reportDocRef);
+    const { data: report, isLoading } = useItem<ResearchReport>({
+        userId: user?.userId,
+        sk: `REPORT#${reportId}`,
+        enabled: !!user && !!reportId,
+    });
 
     return (
         <div className="space-y-8 fade-in">
-             <Button variant="outline" asChild>
+            <Button variant="outline" asChild>
                 <Link href="/research-agent">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Research Agent
                 </Link>
             </Button>
-            
+
             {isLoading && <ReportSkeleton />}
 
             {report && (
@@ -88,7 +84,7 @@ export default function ReportClientPage({ reportId }: { reportId: string }) {
             )}
 
             {!isLoading && !report && (
-                 <PageHeader
+                <PageHeader
                     title="Report Not Found"
                     description="The requested research report could not be found."
                 />

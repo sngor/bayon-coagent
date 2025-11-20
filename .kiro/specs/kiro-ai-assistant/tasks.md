@@ -1,36 +1,36 @@
 # Implementation Plan
 
-- [ ] 1. Set up core infrastructure and schemas
+- [x] 1. Set up core infrastructure and schemas
 
   - Create Zod schemas for all data models (AgentProfile, Citation, WorkflowTask, etc.)
   - Set up DynamoDB key patterns for agent profiles, citations, and conversation logs
   - Create TypeScript interfaces for all system components
   - _Requirements: 8.1, 9.1, 9.2, 9.3, 10.1_
 
-- [ ] 2. Implement Guardrails and Safety Layer
+- [x] 2. Implement Guardrails and Safety Layer
 
-  - [ ] 2.1 Create GuardrailsService class with domain validation
+  - [x] 2.1 Create GuardrailsService class with domain validation
 
     - Implement real estate domain classification logic
     - Add keyword matching and pattern detection for domain validation
     - Create configuration for allowed domains and blocked topics
     - _Requirements: 1.1_
 
-  - [ ] 2.2 Implement PII detection and sanitization
+  - [x] 2.2 Implement PII detection and sanitization
 
     - Add regex patterns for SSN, credit cards, phone numbers, addresses
     - Create sanitization logic to mask or remove detected PII
     - Implement PII detection scanning for all user inputs
     - _Requirements: 1.3_
 
-  - [ ] 2.3 Add financial guarantee and legal advice detection
+  - [x] 2.3 Add financial guarantee and legal advice detection
 
     - Create pattern matching for guarantee language
     - Add detection for legal advice requests
     - Implement appropriate decline messages with professional referrals
     - _Requirements: 1.2_
 
-  - [ ] 2.4 Implement unethical/illegal activity detection
+  - [x] 2.4 Implement unethical/illegal activity detection
 
     - Add pattern matching for unethical queries
     - Create decline logic without providing guidance

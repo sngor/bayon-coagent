@@ -14,8 +14,7 @@
  * Requirements: 7.1, 10.1, 10.4, 5.4, 5.5
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useFormState } from 'react-dom';
+import React, { useState, useRef, useEffect, useCallback, useActionState } from 'react';
 import { VirtualList } from '@/components/ui/virtual-list';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -100,7 +99,7 @@ export function ChatInterface({
     const [messages, setMessages] = useState<Message[]>(initialMessages);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [state, formAction] = useFormState(handleChatQuery, initialState);
+    const [state, formAction] = useActionState(handleChatQuery, initialState);
     const formRef = useRef<HTMLFormElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);

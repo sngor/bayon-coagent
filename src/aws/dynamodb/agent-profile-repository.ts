@@ -1,7 +1,7 @@
 /**
  * Agent Profile Repository
  * 
- * Manages agent profile storage and retrieval for the Kiro AI Assistant.
+ * Manages agent profile storage and retrieval for the Bayon AI Assistant.
  * Provides CRUD operations with validation and caching for optimal performance.
  */
 
@@ -11,7 +11,7 @@ import { DynamoDBError } from './errors';
 
 /**
  * Agent Profile data structure
- * Stores personalization information for the Kiro AI Assistant
+ * Stores personalization information for the Bayon AI Assistant
  */
 export interface AgentProfile {
   userId: string;

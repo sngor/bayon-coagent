@@ -1,14 +1,14 @@
 
 'use client';
 
-import React, { useMemo, useRef } from 'react';
+import React, { useRef } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useUser } from '@/aws/auth/use-user';
+import { useItem } from '@/aws/dynamodb/hooks/use-item';
 import type { ResearchReport } from '@/lib/types';
 import { marked } from 'marked';
-import { Calendar, ExternalLink, ArrowLeft, Download, Copy, Loader2 } from 'lucide-react';
+import { ExternalLink, ArrowLeft, Download, Copy, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -38,17 +38,14 @@ function ReportSkeleton() {
 
 export default function ReportClientPage({ reportId }: { reportId: string }) {
     const { user } = useUser();
-    const firestore = useFirestore();
     const reportContentRef = useRef<HTMLDivElement>(null);
     const [isDownloading, setIsDownloading] = React.useState(false);
 
-
-    const reportDocRef = useMemoFirebase(() => {
-        if (!user || !firestore || !reportId) return null;
-        return doc(firestore, `users/${user.uid}/researchReports`, reportId);
-    }, [user, firestore, reportId]);
-
-    const { data: report, isLoading } = useDoc<ResearchReport>(reportDocRef);
+    const { data: report, isLoading } = useItem<ResearchReport>({
+        userId: user?.userId,
+        sk: `REPORT#${reportId}`,
+        enabled: !!user && !!reportId,
+    });
 
     const handleDownload = async () => {
         if (!reportContentRef.current || !report) return;

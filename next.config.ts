@@ -10,10 +10,7 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   
-  // Increase body size limit for file uploads (10MB)
-  serverActions: {
-    bodySizeLimit: '10mb',
-  },
+
   
   // Expose environment variables to the browser
   env: {
@@ -27,14 +24,7 @@ const nextConfig: NextConfig = {
     USE_LOCAL_AWS: process.env.USE_LOCAL_AWS,
   },
   
-  // Webpack configuration for module aliases
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      'firebase/firestore': require.resolve('./src/firebase/firestore.ts'),
-    };
-    return config;
-  },
+
   
   // Performance optimizations
   compiler: {
@@ -117,14 +107,8 @@ const nextConfig: NextConfig = {
     ],
   },
   
-  // Optimize production builds
-  swcMinify: true,
-  
   // Enable compression
   compress: true,
-  
-  // Optimize fonts
-  optimizeFonts: true,
 };
 
 export default nextConfig;

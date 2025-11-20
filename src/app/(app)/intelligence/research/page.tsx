@@ -10,6 +10,7 @@ import { StandardFormActions } from '@/components/standard/form-actions';
 import { StandardFormField } from '@/components/standard/form-field';
 import { StandardCard } from '@/components/standard/card';
 import { StandardSkeleton } from '@/components/standard/skeleton';
+import { AIOperationProgress, useAIOperation } from '@/components/ui/ai-operation-progress';
 import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
 import { NoResultsEmptyState } from '@/components/ui/empty-states';
@@ -78,6 +79,9 @@ export default function ResearchAgentPage() {
   const [savedReports, setSavedReports] = useState<ResearchReport[]>([]);
   const [isLoadingReports, setIsLoadingReports] = useState(true);
 
+  // AI Operation Progress tracking
+  const researchOperation = useAIOperation();
+
   // Fetch reports from API
   useEffect(() => {
     async function fetchReports() {
@@ -118,6 +122,22 @@ export default function ResearchAgentPage() {
   // Store the topic from the form
   const [lastTopic, setLastTopic] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Track operation progress
+  useEffect(() => {
+    if (isPending) {
+      researchOperation.start('run-research-agent', {
+        totalSteps: 4,
+        estimatedDuration: 20000,
+      });
+      researchOperation.updateStep(0, 'Analyzing your research topic...');
+      setTimeout(() => researchOperation.updateStep(1, 'Searching for relevant information...'), 5000);
+      setTimeout(() => researchOperation.updateStep(2, 'Synthesizing findings...'), 10000);
+      setTimeout(() => researchOperation.updateStep(3, 'Generating comprehensive report...'), 15000);
+    } else if (researchOperation.isRunning) {
+      researchOperation.complete();
+    }
+  }, [isPending, researchOperation]);
 
   useEffect(() => {
     if (state.message === 'success' && state.data && user?.id && !isSaving) {
@@ -253,6 +273,16 @@ export default function ResearchAgentPage() {
           )}
         </form>
       </StandardCard>
+
+      {/* AI Operation Progress */}
+      {isPending && researchOperation.tracker && (
+        <AIOperationProgress
+          operationName="run-research-agent"
+          tracker={researchOperation.tracker}
+          title="Researching Your Topic"
+          description="Our AI agent is conducting comprehensive research..."
+        />
+      )}
 
       <div className="space-y-6 pt-8">
         <div className="flex justify-between items-center">
