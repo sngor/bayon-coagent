@@ -14,6 +14,8 @@ import { useTheme } from 'next-themes';
 import { LoginHistory } from '@/components/login-history';
 import { UsageTracking, UsageStats } from '@/components/ui/usage-tracking';
 import type { UsageLimit } from '@/components/ui/usage-tracking';
+import { SocialMediaConnections } from '@/components/social-media-connections';
+import { MLSConnection } from '@/components/mls-connection';
 
 function formatTimestamp(timestamp: number): string {
     const now = Date.now();
@@ -435,6 +437,10 @@ export default function SettingsPage() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    <MLSConnection />
+
+                    <SocialMediaConnections />
                 </TabsContent>
 
                 <TabsContent value="security" className="space-y-6">

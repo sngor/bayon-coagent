@@ -381,7 +381,7 @@ export class DynamoDBRepository {
         const result = await withBatchRetry<DynamoDBKey, BatchResult<T>>(
           async (keysToGet) => {
             const client = getDocumentClient();
-            
+
             const command = new BatchGetCommand({
               RequestItems: {
                 [this.tableName]: {
@@ -465,7 +465,7 @@ export class DynamoDBRepository {
         await withBatchRetry<WriteRequest, { unprocessedItems?: WriteRequest[] }>(
           async (requests) => {
             const client = getDocumentClient();
-            
+
             const command = new BatchWriteCommand({
               RequestItems: {
                 [this.tableName]: requests,
@@ -666,6 +666,553 @@ export class DynamoDBRepository {
 
     const updates: any = { status, ...additionalUpdates };
     await this.update(keys.PK, keys.SK, updates);
+  }
+
+  // ==================== MLS & Social Integration Methods ====================
+
+  /**
+   * Creates a new listing
+   * @param userId User ID
+   * @param listingId Listing ID
+   * @param listingData Listing data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createListing<T>(
+    userId: string,
+    listingId: string,
+    listingData: T & { mlsProvider?: string; mlsNumber?: string; status?: string }
+  ): Promise<DynamoDBItem<T>> {
+    const { getListingKeys } = await import('./keys');
+    const keys = getListingKeys(
+      userId,
+      listingId,
+      listingData.mlsProvider,
+      listingData.mlsNumber,
+      listingData.status
+    );
+
+    return this.create(keys.PK, keys.SK, 'Listing', listingData, {
+      GSI1PK: keys.GSI1PK,
+      GSI1SK: keys.GSI1SK,
+    });
+  }
+
+  /**
+   * Gets a listing by ID
+   * @param userId User ID
+   * @param listingId Listing ID
+   * @returns Listing data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getListing<T>(userId: string, listingId: string): Promise<T | null> {
+    const { getListingKeys } = await import('./keys');
+    const keys = getListingKeys(userId, listingId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates a listing
+   * @param userId User ID
+   * @param listingId Listing ID
+   * @param updates Partial listing data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateListing<T>(
+    userId: string,
+    listingId: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getListingKeys } = await import('./keys');
+    const keys = getListingKeys(userId, listingId);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Deletes a listing
+   * @param userId User ID
+   * @param listingId Listing ID
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteListing(userId: string, listingId: string): Promise<void> {
+    const { getListingKeys } = await import('./keys');
+    const keys = getListingKeys(userId, listingId);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all listings for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with listings
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryListings<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'LISTING#';
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  /**
+   * Queries listings by MLS number using GSI
+   * @param mlsProvider MLS provider
+   * @param mlsNumber MLS number
+   * @param options Query options
+   * @returns Query result with listings
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryListingsByMLSNumber<T>(
+    mlsProvider: string,
+    mlsNumber: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    try {
+      return await withRetry(async () => {
+        const client = getDocumentClient();
+
+        const command = new QueryCommand({
+          TableName: this.tableName,
+          IndexName: 'GSI1',
+          KeyConditionExpression: 'GSI1PK = :gsi1pk',
+          ExpressionAttributeValues: {
+            ':gsi1pk': `MLS#${mlsProvider}#${mlsNumber}`,
+            ...options.expressionAttributeValues,
+          },
+          ExpressionAttributeNames: options.expressionAttributeNames,
+          FilterExpression: options.filterExpression,
+          Limit: options.limit,
+          ExclusiveStartKey: options.exclusiveStartKey,
+          ScanIndexForward: options.scanIndexForward ?? true,
+        });
+
+        const response = await client.send(command);
+
+        const items = (response.Items || []) as DynamoDBItem<T>[];
+        const data = items.map((item) => item.Data);
+
+        return {
+          items: data,
+          lastEvaluatedKey: response.LastEvaluatedKey as DynamoDBKey | undefined,
+          count: response.Count || 0,
+        };
+      }, this.retryOptions);
+    } catch (error: any) {
+      throw wrapDynamoDBError(error);
+    }
+  }
+
+  /**
+   * Queries listings by status using GSI
+   * @param mlsProvider MLS provider
+   * @param mlsNumber MLS number
+   * @param status Listing status
+   * @param options Query options
+   * @returns Query result with listings
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryListingsByStatus<T>(
+    mlsProvider: string,
+    mlsNumber: string,
+    status: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    try {
+      return await withRetry(async () => {
+        const client = getDocumentClient();
+
+        const command = new QueryCommand({
+          TableName: this.tableName,
+          IndexName: 'GSI1',
+          KeyConditionExpression: 'GSI1PK = :gsi1pk AND GSI1SK = :gsi1sk',
+          ExpressionAttributeValues: {
+            ':gsi1pk': `MLS#${mlsProvider}#${mlsNumber}`,
+            ':gsi1sk': `STATUS#${status}`,
+            ...options.expressionAttributeValues,
+          },
+          ExpressionAttributeNames: options.expressionAttributeNames,
+          FilterExpression: options.filterExpression,
+          Limit: options.limit,
+          ExclusiveStartKey: options.exclusiveStartKey,
+          ScanIndexForward: options.scanIndexForward ?? true,
+        });
+
+        const response = await client.send(command);
+
+        const items = (response.Items || []) as DynamoDBItem<T>[];
+        const data = items.map((item) => item.Data);
+
+        return {
+          items: data,
+          lastEvaluatedKey: response.LastEvaluatedKey as DynamoDBKey | undefined,
+          count: response.Count || 0,
+        };
+      }, this.retryOptions);
+    } catch (error: any) {
+      throw wrapDynamoDBError(error);
+    }
+  }
+
+  /**
+   * Creates an MLS connection
+   * @param userId User ID
+   * @param connectionId Connection ID
+   * @param connectionData MLS connection data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createMLSConnection<T>(
+    userId: string,
+    connectionId: string,
+    connectionData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getMLSConnectionKeys } = await import('./keys');
+    const keys = getMLSConnectionKeys(userId, connectionId);
+    return this.create(keys.PK, keys.SK, 'MLSConnection', connectionData);
+  }
+
+  /**
+   * Gets an MLS connection by ID
+   * @param userId User ID
+   * @param connectionId Connection ID
+   * @returns MLS connection data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getMLSConnection<T>(
+    userId: string,
+    connectionId: string
+  ): Promise<T | null> {
+    const { getMLSConnectionKeys } = await import('./keys');
+    const keys = getMLSConnectionKeys(userId, connectionId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates an MLS connection
+   * @param userId User ID
+   * @param connectionId Connection ID
+   * @param updates Partial connection data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateMLSConnection<T>(
+    userId: string,
+    connectionId: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getMLSConnectionKeys } = await import('./keys');
+    const keys = getMLSConnectionKeys(userId, connectionId);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Deletes an MLS connection
+   * @param userId User ID
+   * @param connectionId Connection ID
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteMLSConnection(userId: string, connectionId: string): Promise<void> {
+    const { getMLSConnectionKeys } = await import('./keys');
+    const keys = getMLSConnectionKeys(userId, connectionId);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all MLS connections for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with MLS connections
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryMLSConnections<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'MLS_CONNECTION#';
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  /**
+   * Creates a social media connection
+   * @param userId User ID
+   * @param platform Platform name
+   * @param connectionData Social connection data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createSocialConnection<T>(
+    userId: string,
+    platform: string,
+    connectionData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getSocialConnectionKeys } = await import('./keys');
+    const keys = getSocialConnectionKeys(userId, platform);
+    return this.create(keys.PK, keys.SK, 'SocialConnection', connectionData);
+  }
+
+  /**
+   * Gets a social media connection by platform
+   * @param userId User ID
+   * @param platform Platform name
+   * @returns Social connection data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getSocialConnection<T>(
+    userId: string,
+    platform: string
+  ): Promise<T | null> {
+    const { getSocialConnectionKeys } = await import('./keys');
+    const keys = getSocialConnectionKeys(userId, platform);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates a social media connection
+   * @param userId User ID
+   * @param platform Platform name
+   * @param updates Partial connection data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateSocialConnection<T>(
+    userId: string,
+    platform: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getSocialConnectionKeys } = await import('./keys');
+    const keys = getSocialConnectionKeys(userId, platform);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Deletes a social media connection
+   * @param userId User ID
+   * @param platform Platform name
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteSocialConnection(userId: string, platform: string): Promise<void> {
+    const { getSocialConnectionKeys } = await import('./keys');
+    const keys = getSocialConnectionKeys(userId, platform);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all social media connections for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with social connections
+   * @throws DynamoDBError if the operation fails
+   */
+  async querySocialConnections<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'SOCIAL#';
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  /**
+   * Creates a social media post
+   * @param userId User ID
+   * @param postId Post ID
+   * @param postData Social post data
+   * @param listingId Optional listing ID for GSI
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createSocialPost<T>(
+    userId: string,
+    postId: string,
+    postData: T,
+    listingId?: string
+  ): Promise<DynamoDBItem<T>> {
+    const { getSocialPostKeys } = await import('./keys');
+    const keys = getSocialPostKeys(userId, postId, listingId);
+    return this.create(keys.PK, keys.SK, 'SocialPost', postData, {
+      GSI1PK: keys.GSI1PK,
+      GSI1SK: keys.GSI1SK,
+    });
+  }
+
+  /**
+   * Gets a social media post by ID
+   * @param userId User ID
+   * @param postId Post ID
+   * @returns Social post data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getSocialPost<T>(userId: string, postId: string): Promise<T | null> {
+    const { getSocialPostKeys } = await import('./keys');
+    const keys = getSocialPostKeys(userId, postId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates a social media post
+   * @param userId User ID
+   * @param postId Post ID
+   * @param updates Partial post data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateSocialPost<T>(
+    userId: string,
+    postId: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getSocialPostKeys } = await import('./keys');
+    const keys = getSocialPostKeys(userId, postId);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Deletes a social media post
+   * @param userId User ID
+   * @param postId Post ID
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteSocialPost(userId: string, postId: string): Promise<void> {
+    const { getSocialPostKeys } = await import('./keys');
+    const keys = getSocialPostKeys(userId, postId);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all social media posts for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with social posts
+   * @throws DynamoDBError if the operation fails
+   */
+  async querySocialPosts<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'POST#';
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  /**
+   * Queries social media posts by listing ID using GSI
+   * @param listingId Listing ID
+   * @param options Query options
+   * @returns Query result with social posts
+   * @throws DynamoDBError if the operation fails
+   */
+  async querySocialPostsByListing<T>(
+    listingId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    try {
+      return await withRetry(async () => {
+        const client = getDocumentClient();
+
+        const command = new QueryCommand({
+          TableName: this.tableName,
+          IndexName: 'GSI1',
+          KeyConditionExpression: 'GSI1PK = :gsi1pk',
+          ExpressionAttributeValues: {
+            ':gsi1pk': `LISTING#${listingId}`,
+            ...options.expressionAttributeValues,
+          },
+          ExpressionAttributeNames: options.expressionAttributeNames,
+          FilterExpression: options.filterExpression,
+          Limit: options.limit,
+          ExclusiveStartKey: options.exclusiveStartKey,
+          ScanIndexForward: options.scanIndexForward ?? true,
+        });
+
+        const response = await client.send(command);
+
+        const items = (response.Items || []) as DynamoDBItem<T>[];
+        const data = items.map((item) => item.Data);
+
+        return {
+          items: data,
+          lastEvaluatedKey: response.LastEvaluatedKey as DynamoDBKey | undefined,
+          count: response.Count || 0,
+        };
+      }, this.retryOptions);
+    } catch (error: any) {
+      throw wrapDynamoDBError(error);
+    }
+  }
+
+  /**
+   * Creates or updates performance metrics
+   * @param userId User ID
+   * @param listingId Listing ID
+   * @param date Date in YYYY-MM-DD format
+   * @param metricsData Performance metrics data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async savePerformanceMetrics<T>(
+    userId: string,
+    listingId: string,
+    date: string,
+    metricsData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getPerformanceMetricsKeys } = await import('./keys');
+    const keys = getPerformanceMetricsKeys(userId, listingId, date);
+    return this.create(keys.PK, keys.SK, 'PerformanceMetrics', metricsData);
+  }
+
+  /**
+   * Gets performance metrics for a specific date
+   * @param userId User ID
+   * @param listingId Listing ID
+   * @param date Date in YYYY-MM-DD format
+   * @returns Performance metrics data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getPerformanceMetrics<T>(
+    userId: string,
+    listingId: string,
+    date: string
+  ): Promise<T | null> {
+    const { getPerformanceMetricsKeys } = await import('./keys');
+    const keys = getPerformanceMetricsKeys(userId, listingId, date);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates performance metrics
+   * @param userId User ID
+   * @param listingId Listing ID
+   * @param date Date in YYYY-MM-DD format
+   * @param updates Partial metrics data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updatePerformanceMetrics<T>(
+    userId: string,
+    listingId: string,
+    date: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getPerformanceMetricsKeys } = await import('./keys');
+    const keys = getPerformanceMetricsKeys(userId, listingId, date);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Queries performance metrics for a listing across dates
+   * @param userId User ID
+   * @param listingId Listing ID
+   * @param options Query options
+   * @returns Query result with performance metrics
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryPerformanceMetrics<T>(
+    userId: string,
+    listingId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = `METRICS#${listingId}#`;
+    return this.query<T>(pk, skPrefix, options);
   }
 }
 

@@ -59,6 +59,18 @@ export { generateHeaderImage, type GenerateHeaderImageInput, type GenerateHeader
 // Listing Description
 export { generateListingDescription, type GenerateListingDescriptionInput, type GenerateListingDescriptionOutput } from './listing-description-generator';
 
+// MLS Listing Description Flow (with vision support)
+export {
+    generateFromPhotos,
+    generateFromData,
+    createListingDescriptionFlow,
+    type GenerateFromPhotosInput,
+    type GenerateFromDataInput,
+    type ListingDescriptionOutput,
+    type ListingDescriptionFlow,
+    type PhotoData
+} from './listing-description-flow';
+
 // Reimagine Image Toolkit
 export { analyzeImage, type AnalyzeImageInput, type AnalyzeImageOutput } from './reimagine-analyze';
 export { virtualStaging, type VirtualStagingInput, type VirtualStagingOutput } from './reimagine-staging';

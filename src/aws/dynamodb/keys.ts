@@ -296,3 +296,104 @@ export function getLoginSessionKeys(
     SK: `SESSION#${sessionId}`,
   };
 }
+
+/**
+ * Generates keys for Listing
+ * Pattern: PK: USER#<userId>, SK: LISTING#<listingId>
+ * GSI1: PK: MLS#<mlsProvider>#<mlsNumber>, SK: STATUS#<status>
+ */
+export function getListingKeys(
+  userId: string,
+  listingId: string,
+  mlsProvider?: string,
+  mlsNumber?: string,
+  status?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `LISTING#${listingId}`,
+  };
+
+  // Add GSI keys for MLS number and status lookups
+  if (mlsProvider && mlsNumber) {
+    keys.GSI1PK = `MLS#${mlsProvider}#${mlsNumber}`;
+  }
+  if (status) {
+    keys.GSI1SK = `STATUS#${status}`;
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for MLSConnection
+ * Pattern: PK: USER#<userId>, SK: MLS_CONNECTION#<connectionId>
+ */
+export function getMLSConnectionKeys(
+  userId: string,
+  connectionId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `MLS_CONNECTION#${connectionId}`,
+  };
+}
+
+/**
+ * Generates keys for SocialConnection (OAuth)
+ * Pattern: PK: USER#<userId>, SK: SOCIAL#<platform>
+ */
+export function getSocialConnectionKeys(
+  userId: string,
+  platform: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `SOCIAL#${platform.toUpperCase()}`,
+  };
+}
+
+/**
+ * Generates keys for SocialPost
+ * Pattern: PK: USER#<userId>, SK: POST#<postId>
+ * GSI1: PK: LISTING#<listingId>, SK: POST#<postId>
+ */
+export function getSocialPostKeys(
+  userId: string,
+  postId: string,
+  listingId?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `POST#${postId}`,
+  };
+
+  // Add GSI keys for listing lookups
+  if (listingId) {
+    keys.GSI1PK = `LISTING#${listingId}`;
+    keys.GSI1SK = `POST#${postId}`;
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for PerformanceMetrics
+ * Pattern: PK: USER#<userId>, SK: METRICS#<listingId>#<date>
+ */
+export function getPerformanceMetricsKeys(
+  userId: string,
+  listingId: string,
+  date: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `METRICS#${listingId}#${date}`,
+  };
+}

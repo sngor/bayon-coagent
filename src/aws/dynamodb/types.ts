@@ -29,7 +29,12 @@ export type EntityType =
   | 'Conversation'
   | 'WorkflowExecution'
   | 'VisionAnalysis'
-  | 'LoginSession';
+  | 'LoginSession'
+  | 'Listing'
+  | 'MLSConnection'
+  | 'SocialConnection'
+  | 'SocialPost'
+  | 'PerformanceMetrics';
 
 /**
  * Base DynamoDB item structure
