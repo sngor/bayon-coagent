@@ -3,7 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { StandardPageLayout } from '@/components/standard';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsList as TabsList, AnimatedTabsTrigger as TabsTrigger } from '@/components/ui/animated-tabs';
 import { TrendingUp, HeartPulse } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
@@ -32,14 +32,14 @@ export default function IntelligenceMarketInsightsPage() {
             spacing="default"
         >
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full max-w-md grid-cols-2">
-                    <TabsTrigger value="investment" className="flex items-center gap-2">
+                <TabsList>
+                    <TabsTrigger value="investment">
                         <TrendingUp className="h-4 w-4" />
-                        Investment Opportunities
+                        <span className="whitespace-nowrap">Investment Opportunities</span>
                     </TabsTrigger>
-                    <TabsTrigger value="life-events" className="flex items-center gap-2">
+                    <TabsTrigger value="life-events">
                         <HeartPulse className="h-4 w-4" />
-                        Life Event Predictor
+                        <span className="whitespace-nowrap">Life Event Predictor</span>
                     </TabsTrigger>
                 </TabsList>
 

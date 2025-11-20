@@ -20,14 +20,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { reAnalyzeImageAction } from '@/app/reimagine-actions';
-import { type EditSuggestion } from '@/ai/schemas/reimagine-schemas';
+import { type EditSuggestion, type EditType, type EditParams } from '@/ai/schemas/reimagine-schemas';
 import { cn } from '@/lib/utils';
 import { HelpTooltip, HelpText } from './help-tooltip';
 import { StandardErrorDisplay } from '@/components/standard';
+import {
+    VirtualStagingForm,
+    DayToDuskForm,
+    EnhanceForm,
+    ItemRemovalForm,
+    VirtualRenovationForm,
+} from './edit-forms';
 
 interface ImageUploaderProps {
     userId: string;
-    onUploadComplete: (imageId: string, suggestions: EditSuggestion[]) => void;
+    onUploadComplete: (imageId: string, suggestions: EditSuggestion[], editType: EditType, params: EditParams) => void;
     onUploadError: (error: string) => void;
 }
 
@@ -46,8 +53,43 @@ export function ImageUploader({
     const [uploadedImageId, setUploadedImageId] = useState<string | null>(null);
     const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(new Set());
     const [isReanalyzing, setIsReanalyzing] = useState(false);
+    const [selectedEditType, setSelectedEditType] = useState<EditType | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Edit type options
+    const editTypes = [
+        {
+            id: 'virtual-staging' as EditType,
+            title: 'Virtual Staging',
+            description: 'Add furniture and decor',
+            icon: '🛋️',
+        },
+        {
+            id: 'day-to-dusk' as EditType,
+            title: 'Day to Dusk',
+            description: 'Golden hour transformation',
+            icon: '🌅',
+        },
+        {
+            id: 'enhance' as EditType,
+            title: 'Enhance',
+            description: 'Improve quality & lighting',
+            icon: '✨',
+        },
+        {
+            id: 'item-removal' as EditType,
+            title: 'Item Removal',
+            description: 'Remove unwanted objects',
+            icon: '🗑️',
+        },
+        {
+            id: 'virtual-renovation' as EditType,
+            title: 'Virtual Renovation',
+            description: 'Visualize renovations',
+            icon: '🏗️',
+        },
+    ];
 
     // File validation
     const validateFile = useCallback((file: File): { valid: boolean; error?: string } => {
@@ -139,9 +181,6 @@ export function ImageUploader({
                 setUploadedImageId(result.imageId);
                 setSuggestions(result.suggestions || []);
 
-                // Notify parent component
-                onUploadComplete(result.imageId, result.suggestions || []);
-
                 // Show analysis error if present but upload succeeded
                 if (result.error) {
                     setError(result.error);
@@ -217,6 +256,7 @@ export function ImageUploader({
         setUploadedImageId(null);
         setUploadProgress(0);
         setDismissedSuggestions(new Set());
+        setSelectedEditType(null);
 
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
@@ -232,34 +272,19 @@ export function ImageUploader({
         });
     }, []);
 
-    // Handle re-analysis (Requirement 13.10)
-    const handleReanalyze = useCallback(async () => {
-        if (!uploadedImageId) return;
+    // Handle edit form submission
+    const handleEditSubmit = useCallback(
+        (params: EditParams) => {
+            if (!uploadedImageId || !selectedEditType) return;
+            onUploadComplete(uploadedImageId, suggestions, selectedEditType, params);
+        },
+        [uploadedImageId, selectedEditType, suggestions, onUploadComplete]
+    );
 
-        setIsReanalyzing(true);
-        setError(null);
-
-        try {
-            const result = await reAnalyzeImageAction(userId, uploadedImageId);
-
-            if (result.success && result.suggestions) {
-                // Clear dismissed suggestions and show new ones
-                setDismissedSuggestions(new Set());
-                setSuggestions(result.suggestions);
-
-                // Notify parent component with new suggestions
-                onUploadComplete(uploadedImageId, result.suggestions);
-            } else {
-                setError(result.error || 'Failed to re-analyze image. Please try again.');
-            }
-        } catch (err) {
-            console.error('Re-analysis error:', err);
-            const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
-            setError(errorMessage);
-        } finally {
-            setIsReanalyzing(false);
-        }
-    }, [uploadedImageId, userId, onUploadComplete]);
+    // Handle edit form cancel
+    const handleEditCancel = useCallback(() => {
+        setSelectedEditType(null);
+    }, []);
 
     // Get priority badge color
     const getPriorityColor = (priority: string) => {
@@ -285,23 +310,7 @@ export function ImageUploader({
 
     return (
         <Card className="w-full">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Upload className="h-5 w-5" />
-                    Upload Property Image
-                    <HelpTooltip
-                        content="Upload high-quality property photos (1920x1080 or higher recommended). Our AI will analyze your image and suggest the best edits to enhance your listing."
-                        side="right"
-                    />
-                </CardTitle>
-                <CardDescription>
-                    Upload a property photo to get started. Supports JPEG, PNG, and WebP up to 10MB.
-                </CardDescription>
-                <HelpText className="mt-2">
-                    💡 <strong>Tip:</strong> For best results, use well-lit photos taken from eye level. Turn on all lights for interior shots.
-                </HelpText>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-6 space-y-4">
                 {/* Hidden file input */}
                 <input
                     ref={fileInputRef}
@@ -407,81 +416,92 @@ export function ImageUploader({
                             </Button>
                         )}
 
-                        {/* AI Suggestions (Requirement 13.3, 13.10) */}
-                        {uploadedImageId && suggestions.length > 0 && (
+                        {/* Edit Type Selection - shown after upload */}
+                        {uploadedImageId && !selectedEditType && (
+                            <div className="space-y-3 pt-4 border-t">
+                                <div className="flex items-center gap-2">
+                                    <Sparkles className="h-5 w-5 text-primary" />
+                                    <h3 className="font-semibold">Choose Edit Type</h3>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                    Select the transformation you want to apply:
+                                </p>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {editTypes.map((type) => (
+                                        <Button
+                                            key={type.id}
+                                            variant="outline"
+                                            className="h-auto p-4 justify-start hover:border-primary hover:bg-accent"
+                                            onClick={() => setSelectedEditType(type.id)}
+                                        >
+                                            <div className="flex items-center gap-3 w-full">
+                                                <span className="text-2xl">{type.icon}</span>
+                                                <div className="text-left flex-1">
+                                                    <div className="font-semibold">{type.title}</div>
+                                                    <div className="text-xs text-muted-foreground">{type.description}</div>
+                                                </div>
+                                            </div>
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Edit Form - shown after edit type selection */}
+                        {uploadedImageId && selectedEditType && (
                             <div className="space-y-3 pt-4 border-t">
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Sparkles className="h-5 w-5 text-primary" />
-                                        <h3 className="font-semibold">AI Suggestions</h3>
-                                        <HelpTooltip
-                                            content="Our AI analyzed your image and identified opportunities for improvement. Click any suggestion to automatically pre-fill the edit form with recommended settings."
-                                            side="right"
-                                        />
-                                    </div>
+                                    <h3 className="font-semibold">
+                                        {editTypes.find((t) => t.id === selectedEditType)?.title}
+                                    </h3>
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={handleReanalyze}
-                                        disabled={isReanalyzing}
+                                        onClick={handleEditCancel}
                                     >
-                                        <RefreshCw className={cn('h-4 w-4 mr-2', isReanalyzing && 'animate-spin')} />
-                                        Re-analyze
+                                        Change Edit Type
                                     </Button>
                                 </div>
-                                <p className="text-sm text-muted-foreground">
-                                    Based on your image, we recommend these edits:
-                                </p>
-                                <div className="space-y-2">
-                                    {suggestions
-                                        .filter((suggestion) => !dismissedSuggestions.has(suggestion.editType))
-                                        .map((suggestion, index) => (
-                                            <Card key={index} className="p-4">
-                                                <div className="flex items-start justify-between gap-3">
-                                                    <div className="flex-1 space-y-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-medium">
-                                                                {formatEditType(suggestion.editType)}
-                                                            </span>
-                                                            <Badge className={getPriorityColor(suggestion.priority)}>
-                                                                {suggestion.priority}
-                                                            </Badge>
-                                                        </div>
-                                                        <p className="text-sm text-muted-foreground">
-                                                            {suggestion.reason}
-                                                        </p>
-                                                        {suggestion.confidence && (
-                                                            <p className="text-xs text-muted-foreground">
-                                                                Confidence: {(suggestion.confidence * 100).toFixed(0)}%
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 shrink-0"
-                                                        onClick={() => handleDismissSuggestion(suggestion.editType)}
-                                                        title="Dismiss suggestion"
-                                                    >
-                                                        <XCircle className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            </Card>
-                                        ))}
-                                </div>
-                                {/* Show message if all suggestions are dismissed */}
-                                {suggestions.every((s) => dismissedSuggestions.has(s.editType)) && (
-                                    <div className="text-center py-4">
-                                        <p className="text-sm text-muted-foreground">
-                                            All suggestions dismissed. Click "Re-analyze" to generate new suggestions.
-                                        </p>
-                                    </div>
+                                {selectedEditType === 'virtual-staging' && (
+                                    <VirtualStagingForm
+                                        onSubmit={handleEditSubmit}
+                                        onCancel={handleEditCancel}
+                                        isProcessing={false}
+                                    />
+                                )}
+                                {selectedEditType === 'day-to-dusk' && (
+                                    <DayToDuskForm
+                                        onSubmit={handleEditSubmit}
+                                        onCancel={handleEditCancel}
+                                        isProcessing={false}
+                                    />
+                                )}
+                                {selectedEditType === 'enhance' && (
+                                    <EnhanceForm
+                                        onSubmit={handleEditSubmit}
+                                        onCancel={handleEditCancel}
+                                        isProcessing={false}
+                                    />
+                                )}
+                                {selectedEditType === 'item-removal' && (
+                                    <ItemRemovalForm
+                                        onSubmit={handleEditSubmit}
+                                        onCancel={handleEditCancel}
+                                        isProcessing={false}
+                                    />
+                                )}
+                                {selectedEditType === 'virtual-renovation' && (
+                                    <VirtualRenovationForm
+                                        onSubmit={handleEditSubmit}
+                                        onCancel={handleEditCancel}
+                                        isProcessing={false}
+                                    />
                                 )}
                             </div>
                         )}
 
                         {/* Upload another button */}
-                        {uploadedImageId && (
+                        {uploadedImageId && !selectedEditType && (
                             <Button
                                 variant="outline"
                                 onClick={handleClear}

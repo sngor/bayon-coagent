@@ -1,11 +1,13 @@
 'use client';
 
 import { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+import { AnimatedProgress } from '@/components/ui/animated-progress';
 import { CheckCircle2, Circle, ArrowRight, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fadeInUp, staggerContainer, staggerItem } from '@/lib/animations';
 import type { Profile } from '@/lib/types';
 import Link from 'next/link';
 
@@ -144,101 +146,112 @@ export function ProfileCompletionBanner({
     const nextAction = getNextStepAction();
 
     return (
-        <Card
-            className={cn(
-                'border-primary/20 bg-gradient-to-br from-primary/5 to-purple-600/5',
-                className
-            )}
+        <motion.div
+            variants={fadeInUp}
+            initial="hidden"
+            animate="visible"
         >
-            <CardContent className="pt-6">
-                <div className="space-y-4">
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-4">
-                        <div className="space-y-1">
-                            <h3 className="text-lg font-semibold font-headline">
-                                Complete Your Profile
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                                {getNextStepMessage()}
-                            </p>
-                        </div>
-                        <div className="text-right">
-                            <div className="text-2xl font-bold text-primary">
-                                {completionData.percentage}%
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                                {completionData.completed} of {completionData.total}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <Progress value={completionData.percentage} className="h-2" />
-
-                    {/* Missing Fields */}
-                    {completionData.missingFields.length > 0 && (
-                        <div className="space-y-2">
-                            <p className="text-sm font-medium">Missing Information:</p>
-                            <div className="grid gap-2 sm:grid-cols-2">
-                                {completionData.missingFields.slice(0, 4).map((field) => (
-                                    <div
-                                        key={field.key}
-                                        className="flex items-start gap-2 rounded-lg bg-background/50 p-3"
-                                    >
-                                        <Circle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                        <div className="space-y-0.5 min-w-0">
-                                            <p className="text-sm font-medium">
-                                                {field.label}
-                                                {field.required && (
-                                                    <span className="text-destructive ml-1">*</span>
-                                                )}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">
-                                                {field.benefit}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            {completionData.missingFields.length > 4 && (
-                                <p className="text-xs text-muted-foreground">
-                                    +{completionData.missingFields.length - 4} more fields
+            <Card
+                className={cn(
+                    'border-primary/20 bg-gradient-to-br from-primary/5 to-purple-600/5',
+                    className
+                )}
+            >
+                <CardContent className="pt-6">
+                    <div className="space-y-4">
+                        {/* Header */}
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="space-y-1">
+                                <h3 className="text-lg font-semibold font-headline">
+                                    Complete Your Profile
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                    {getNextStepMessage()}
                                 </p>
-                            )}
+                            </div>
+                            <motion.div
+                                className="text-right"
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                            >
+                                <div className="text-2xl font-bold text-primary">
+                                    {completionData.percentage}%
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                    {completionData.completed} of {completionData.total}
+                                </div>
+                            </motion.div>
                         </div>
-                    )}
 
-                    {/* Actions */}
-                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                        <Link href="/profile" className="flex-1">
-                            <Button className="w-full">
-                                Complete Profile
-                                <ArrowRight className="ml-2 h-4 w-4" />
-                            </Button>
-                        </Link>
-                        {nextAction && completionData.hasRequiredFields && (
-                            <Link href={nextAction.href} className="flex-1">
-                                <Button variant="outline" className="w-full">
-                                    <nextAction.icon className="mr-2 h-4 w-4" />
-                                    {nextAction.label}
+                        {/* Progress Bar */}
+                        <AnimatedProgress value={completionData.percentage} className="h-2" />
+
+                        {/* Missing Fields */}
+                        {completionData.missingFields.length > 0 && (
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium">Missing Information:</p>
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                    {completionData.missingFields.slice(0, 4).map((field) => (
+                                        <div
+                                            key={field.key}
+                                            className="flex items-start gap-2 rounded-lg bg-background/50 p-3"
+                                        >
+                                            <Circle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                                            <div className="space-y-0.5 min-w-0">
+                                                <p className="text-sm font-medium">
+                                                    {field.label}
+                                                    {field.required && (
+                                                        <span className="text-destructive ml-1">*</span>
+                                                    )}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {field.benefit}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                {completionData.missingFields.length > 4 && (
+                                    <p className="text-xs text-muted-foreground">
+                                        +{completionData.missingFields.length - 4} more fields
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Actions */}
+                        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                            <Link href="/profile" className="flex-1">
+                                <Button className="w-full">
+                                    Complete Profile
+                                    <ArrowRight className="ml-2 h-4 w-4" />
                                 </Button>
                             </Link>
+                            {nextAction && completionData.hasRequiredFields && (
+                                <Link href={nextAction.href} className="flex-1">
+                                    <Button variant="outline" className="w-full">
+                                        <nextAction.icon className="mr-2 h-4 w-4" />
+                                        {nextAction.label}
+                                    </Button>
+                                </Link>
+                            )}
+                        </div>
+
+                        {/* Benefits */}
+                        {!completionData.hasRequiredFields && (
+                            <div className="rounded-lg bg-primary/5 p-3 border border-primary/10">
+                                <p className="text-xs text-muted-foreground">
+                                    <strong className="text-foreground">Why complete your profile?</strong>{' '}
+                                    A complete profile enables AI-powered features like marketing plan
+                                    generation, brand audits, and personalized content creation.
+                                </p>
+                            </div>
                         )}
                     </div>
-
-                    {/* Benefits */}
-                    {!completionData.hasRequiredFields && (
-                        <div className="rounded-lg bg-primary/5 p-3 border border-primary/10">
-                            <p className="text-xs text-muted-foreground">
-                                <strong className="text-foreground">Why complete your profile?</strong>{' '}
-                                A complete profile enables AI-powered features like marketing plan
-                                generation, brand audits, and personalized content creation.
-                            </p>
-                        </div>
-                    )}
-                </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+        </motion.div>
     );
 }
 

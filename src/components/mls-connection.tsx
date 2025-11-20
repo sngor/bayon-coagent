@@ -36,7 +36,8 @@ import {
     Clock,
     Home,
     Loader2,
-    RefreshCw,
+import { LoadingDots } from '@/components/ui/loading-dots';
+RefreshCw,
     XCircle,
 } from 'lucide-react';
 import { useUser } from '@/aws/auth';
@@ -48,6 +49,7 @@ const MLS_PROVIDERS = [
     { value: 'flexmls', label: 'FlexMLS', description: 'FBS/FlexMLS' },
     { value: 'crmls', label: 'CRMLS', description: 'California Regional MLS' },
     { value: 'bright', label: 'BrightMLS', description: 'Bright MLS' },
+    { value: 'mlsgrid', label: 'MLS Grid', description: 'MLS Grid Network' },
 ] as const;
 
 interface MLSConnectionProps {
@@ -262,7 +264,10 @@ export function MLSConnection({ onConnectionChange }: MLSConnectionProps) {
         return (
             <Card>
                 <CardContent className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <LoadingDots />
+                        <span>Loading connection...</span>
+                    </div>
                 </CardContent>
             </Card>
         );
@@ -316,7 +321,7 @@ export function MLSConnection({ onConnectionChange }: MLSConnectionProps) {
                                     >
                                         {isSyncing ? (
                                             <>
-                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                <LoadingDots size="sm" className="mr-2" />
                                                 Syncing...
                                             </>
                                         ) : (
@@ -334,7 +339,7 @@ export function MLSConnection({ onConnectionChange }: MLSConnectionProps) {
                                     >
                                         {isDisconnecting ? (
                                             <>
-                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                <LoadingDots size="sm" className="mr-2" />
                                                 Disconnecting...
                                             </>
                                         ) : (
@@ -557,7 +562,7 @@ export function MLSConnection({ onConnectionChange }: MLSConnectionProps) {
                         <Button onClick={handleConnect} disabled={isConnecting}>
                             {isConnecting ? (
                                 <>
-                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    <LoadingDots size="sm" className="mr-2" />
                                     Connecting...
                                 </>
                             ) : (

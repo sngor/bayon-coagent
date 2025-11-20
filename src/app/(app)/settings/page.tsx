@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsList as TabsList, AnimatedTabsTrigger as TabsTrigger } from '@/components/ui/animated-tabs';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -261,26 +261,26 @@ export default function SettingsPage() {
     return (
         <div className="animate-fade-in-up space-y-6">
             <Tabs defaultValue="account" className="space-y-6">
-                <TabsList>
-                    <TabsTrigger value="account" className="flex items-center gap-2">
+                <TabsList className="overflow-x-auto">
+                    <TabsTrigger value="account">
                         <User className="h-4 w-4" />
-                        Account
+                        <span className="hidden sm:inline whitespace-nowrap">Account</span>
                     </TabsTrigger>
-                    <TabsTrigger value="preferences" className="flex items-center gap-2">
+                    <TabsTrigger value="preferences">
                         <Palette className="h-4 w-4" />
-                        Preferences
+                        <span className="hidden sm:inline whitespace-nowrap">Preferences</span>
                     </TabsTrigger>
-                    <TabsTrigger value="integrations" className="flex items-center gap-2">
+                    <TabsTrigger value="integrations">
                         <LinkIcon className="h-4 w-4" />
-                        Integrations
+                        <span className="hidden sm:inline whitespace-nowrap">Integrations</span>
                     </TabsTrigger>
-                    <TabsTrigger value="security" className="flex items-center gap-2">
+                    <TabsTrigger value="security">
                         <Shield className="h-4 w-4" />
-                        Security
+                        <span className="hidden sm:inline whitespace-nowrap">Security</span>
                     </TabsTrigger>
-                    <TabsTrigger value="usage" className="flex items-center gap-2">
+                    <TabsTrigger value="usage">
                         <BarChart3 className="h-4 w-4" />
-                        Usage
+                        <span className="hidden sm:inline whitespace-nowrap">Usage</span>
                     </TabsTrigger>
                 </TabsList>
 

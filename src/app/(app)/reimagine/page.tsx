@@ -22,6 +22,7 @@ import { useUser } from '@/aws/auth/use-user';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ImageUploader } from '@/components/reimagine/image-uploader';
 import { EditPreview } from '@/components/reimagine/edit-preview';
 import { EditHistoryList } from '@/components/reimagine/edit-history-list';
@@ -46,14 +47,11 @@ import type {
 } from '@/ai/schemas/reimagine-schemas';
 import { cn } from '@/lib/utils';
 
-// Workflow states
+// Workflow states - simplified to 3 states
 type WorkflowState =
-    | 'select-edit-type' // Initial state: select what edit to perform
-    | 'upload'           // Edit type selected: upload image
-    | 'configure-edit'   // Image uploaded: configure parameters
+    | 'upload'           // Upload image and select edit type
     | 'processing'       // Edit processing
-    | 'preview'          // Edit complete: preview result
-    | 'history';         // View edit history
+    | 'preview';         // Edit complete: preview result
 
 interface CurrentImage {
     imageId: string;
@@ -82,7 +80,7 @@ export default function ReimagineToolkitPage() {
     const { user, isUserLoading } = useUser();
 
     // Workflow state
-    const [workflowState, setWorkflowState] = useState<WorkflowState>('select-edit-type');
+    const [workflowState, setWorkflowState] = useState<WorkflowState>('upload');
     const [currentImage, setCurrentImage] = useState<CurrentImage | null>(null);
     const [activeEdit, setActiveEdit] = useState<ActiveEdit | null>(null);
     const [previewData, setPreviewData] = useState<PreviewData | null>(null);
@@ -91,7 +89,6 @@ export default function ReimagineToolkitPage() {
     // Processing state
     const [processingStatus, setProcessingStatus] = useState<ProcessingStatus>('idle');
     const [processingError, setProcessingError] = useState<string | null>(null);
-    const [processingProgress, setProcessingProgress] = useState(0);
 
     // History refresh trigger
     const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
@@ -162,19 +159,51 @@ export default function ReimagineToolkitPage() {
         },
     ];
 
-    // Handle edit type selection (new first step)
-    const handleEditTypeSelect = useCallback((editType: EditType) => {
-        setActiveEdit({ editType });
-        setWorkflowState('upload');
-    }, []);
-
-    // Handle upload complete
+    // Handle upload complete - now directly processes the edit
     const handleUploadComplete = useCallback(
-        (imageId: string, suggestions: EditSuggestion[]) => {
+        async (imageId: string, suggestions: EditSuggestion[], editType: EditType, params: EditParams) => {
             setCurrentImage({ imageId, suggestions });
-            setWorkflowState('configure-edit');
+
+            try {
+                setWorkflowState('processing');
+                setProcessingStatus('processing');
+                setProcessingError(null);
+
+                // Process the edit immediately
+                const result = await processEditAction(
+                    userId,
+                    imageId,
+                    editType,
+                    params,
+                    chainEditData?.parentEditId
+                );
+
+                if (result.success && result.editId && result.resultUrl) {
+                    // Get original image URL
+                    const originalImageResult = await getOriginalImageAction(userId, result.editId);
+                    const originalUrl = originalImageResult.success ? originalImageResult.originalUrl || '' : '';
+
+                    setPreviewData({
+                        editId: result.editId,
+                        originalUrl,
+                        editedUrl: result.resultUrl,
+                        editType: editType,
+                    });
+
+                    setProcessingStatus('completed');
+                    setWorkflowState('preview');
+                } else {
+                    throw new Error(result.error || 'Failed to process edit');
+                }
+            } catch (error) {
+                console.error('Edit processing error:', error);
+                const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+                setProcessingStatus('failed');
+                setProcessingError(errorMessage);
+                setWorkflowState('upload'); // Go back to upload on error
+            }
         },
-        []
+        [userId, chainEditData]
     );
 
     // Handle upload error
@@ -186,73 +215,7 @@ export default function ReimagineToolkitPage() {
 
 
 
-    // Handle edit form submission
-    const handleEditSubmit = useCallback(
-        async (params: EditParams) => {
-            if (!currentImage || !activeEdit) return;
 
-            try {
-                setWorkflowState('processing');
-                setProcessingStatus('processing');
-                setProcessingError(null);
-                setProcessingProgress(0);
-
-                // Simulate progress updates
-                const progressInterval = setInterval(() => {
-                    setProcessingProgress((prev) => {
-                        if (prev >= 90) {
-                            clearInterval(progressInterval);
-                            return 90;
-                        }
-                        return prev + 10;
-                    });
-                }, 1000);
-
-                // Process the edit (with optional parent edit ID for chaining)
-                const result = await processEditAction(
-                    userId,
-                    currentImage.imageId,
-                    activeEdit.editType,
-                    params,
-                    chainEditData?.parentEditId // Pass parent edit ID if this is a chained edit
-                );
-
-                clearInterval(progressInterval);
-                setProcessingProgress(100);
-
-                if (result.success && result.editId && result.resultUrl) {
-                    // Get original image URL from the getOriginalImageAction
-                    const originalImageResult = await getOriginalImageAction(userId, result.editId);
-                    const originalUrl = originalImageResult.success ? originalImageResult.originalUrl || '' : '';
-
-                    setPreviewData({
-                        editId: result.editId,
-                        originalUrl,
-                        editedUrl: result.resultUrl,
-                        editType: activeEdit.editType,
-                    });
-
-                    setProcessingStatus('completed');
-                    setWorkflowState('preview');
-                } else {
-                    throw new Error(result.error || 'Failed to process edit');
-                }
-            } catch (error) {
-                console.error('Edit processing error:', error);
-                const errorMessage =
-                    error instanceof Error ? error.message : 'An unexpected error occurred';
-                setProcessingStatus('failed');
-                setProcessingError(errorMessage);
-            }
-        },
-        [currentImage, activeEdit, userId, chainEditData]
-    );
-
-    // Handle edit form cancel
-    const handleEditCancel = useCallback(() => {
-        setActiveEdit(null);
-        setWorkflowState('select-edit');
-    }, []);
 
     // Handle preview accept
     const handlePreviewAccept = useCallback(async () => {
@@ -270,7 +233,7 @@ export default function ReimagineToolkitPage() {
                 setActiveEdit(null);
                 setPreviewData(null);
                 setChainEditData(null);
-                setWorkflowState('select-edit-type');
+                setWorkflowState('upload');
             } else {
                 throw new Error(result.error || 'Failed to accept edit');
             }
@@ -280,10 +243,11 @@ export default function ReimagineToolkitPage() {
         }
     }, [previewData, userId]);
 
-    // Handle preview regenerate
+    // Handle preview regenerate - go back to upload
     const handlePreviewRegenerate = useCallback(() => {
         setPreviewData(null);
-        setWorkflowState('configure-edit');
+        setCurrentImage(null);
+        setWorkflowState('upload');
     }, []);
 
     // Handle preview cancel
@@ -291,7 +255,8 @@ export default function ReimagineToolkitPage() {
         setPreviewData(null);
         setActiveEdit(null);
         setChainEditData(null);
-        setWorkflowState('select-edit');
+        setCurrentImage(null);
+        setWorkflowState('upload');
     }, []);
 
     // Handle edit result (chained edit) - Requirement 9.1
@@ -305,273 +270,84 @@ export default function ReimagineToolkitPage() {
         // Set current image for the chained edit
         setCurrentImage({
             imageId: item.imageId,
-            suggestions: [], // No suggestions for chained edits
+            suggestions: [],
         });
 
-        // Move to edit type selection for chained edit
-        setWorkflowState('select-edit-type');
+        // Move back to upload for chained edit
+        setWorkflowState('upload');
     }, []);
 
     // Handle back navigation
     const handleBack = useCallback(() => {
-        switch (workflowState) {
-            case 'upload':
-                setActiveEdit(null);
-                setCurrentImage(null);
-                setWorkflowState('select-edit-type');
-                break;
-            case 'configure-edit':
-                setCurrentImage(null);
-                setWorkflowState('upload');
-                break;
-            case 'preview':
-                setPreviewData(null);
-                setWorkflowState('configure-edit');
-                break;
-            default:
-                break;
+        if (workflowState === 'preview') {
+            setPreviewData(null);
+            setCurrentImage(null);
+            setWorkflowState('upload');
         }
     }, [workflowState]);
 
-    // Render edit form based on active edit type
-    const renderEditForm = () => {
-        if (!activeEdit) return null;
 
-        const baseProps = {
-            onSubmit: handleEditSubmit,
-            onCancel: handleEditCancel,
-            isProcessing: processingStatus === 'processing',
-        };
-
-        switch (activeEdit.editType) {
-            case 'virtual-staging':
-                return (
-                    <VirtualStagingForm
-                        {...baseProps}
-                        defaultValues={activeEdit.suggestedParams as any}
-                    />
-                );
-            case 'day-to-dusk':
-                return (
-                    <DayToDuskForm
-                        {...baseProps}
-                        defaultValues={activeEdit.suggestedParams as any}
-                    />
-                );
-            case 'enhance':
-                return (
-                    <EnhanceForm
-                        {...baseProps}
-                        defaultValues={activeEdit.suggestedParams as any}
-                    />
-                );
-            case 'item-removal':
-                return (
-                    <ItemRemovalForm
-                        {...baseProps}
-                        defaultValues={activeEdit.suggestedParams as any}
-                    />
-                );
-            case 'virtual-renovation':
-                return (
-                    <VirtualRenovationForm
-                        {...baseProps}
-                        defaultValues={activeEdit.suggestedParams as any}
-                    />
-                );
-            default:
-                return null;
-        }
-    };
 
     return (
         <div className="container mx-auto py-8 px-4 max-w-7xl">
-            {/* Page Header */}
-            <div className="mb-8">
-                <div className="flex items-center gap-3 mb-2">
-                    <div className="rounded-lg bg-primary/10 p-2">
-                        <Sparkles className="h-6 w-6 text-primary" />
-                    </div>
-                    <h1 className="text-3xl font-bold">Reimagine Image Toolkit</h1>
-                </div>
-                <p className="text-muted-foreground">
-                    Transform your property photos with AI-powered editing tools
-                </p>
-            </div>
-
             {/* Main Content Area */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column: Main Workflow */}
                 <div className="lg:col-span-2 space-y-6">
                     {/* Back Button */}
-                    <AnimatePresence>
-                        {workflowState !== 'select-edit-type' && workflowState !== 'processing' && (
-                            <motion.div
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                            >
-                                <Button
-                                    variant="ghost"
-                                    onClick={handleBack}
-                                    className="mb-4"
-                                >
-                                    <ArrowLeft className="h-4 w-4 mr-2" />
-                                    Back
-                                </Button>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                    {workflowState === 'preview' && (
+                        <Button
+                            variant="ghost"
+                            onClick={handleBack}
+                            className="mb-4"
+                        >
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            Back
+                        </Button>
+                    )}
 
-                    {/* Edit Type Selection State */}
-                    <AnimatePresence mode="wait">
-                        {workflowState === 'select-edit-type' && (
-                            <motion.div
-                                key="select-edit-type"
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                            >
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Choose Your Edit Type</CardTitle>
-                                        <CardDescription>
-                                            Select the type of transformation you want to apply to your property photo
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {editTypes.map((type) => (
-                                                <Card
-                                                    key={type.id}
-                                                    className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] border-2 hover:border-primary"
-                                                    onClick={() => handleEditTypeSelect(type.id)}
-                                                >
-                                                    <CardContent className="p-6">
-                                                        <div className="flex items-start gap-4">
-                                                            <div className={cn(
-                                                                "w-12 h-12 rounded-lg bg-gradient-to-br flex items-center justify-center text-2xl flex-shrink-0",
-                                                                type.color
-                                                            )}>
-                                                                {type.icon}
-                                                            </div>
-                                                            <div className="flex-1">
-                                                                <h3 className="font-semibold text-lg mb-1">
-                                                                    {type.title}
-                                                                </h3>
-                                                                <p className="text-sm text-muted-foreground">
-                                                                    {type.description}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </CardContent>
-                                                </Card>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </motion.div>
-                        )}
+                    {/* Upload State - Combined with edit type selection */}
+                    {workflowState === 'upload' && (
+                        <ImageUploader
+                            userId={userId}
+                            onUploadComplete={handleUploadComplete}
+                            onUploadError={handleUploadError}
+                        />
+                    )}
 
-                        {/* Upload State */}
-                        {workflowState === 'upload' && activeEdit && (
-                            <motion.div
-                                key="upload"
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                className="space-y-4"
-                            >
-                                {/* Show selected edit type */}
-                                <Card className="border-primary bg-primary/5">
-                                    <CardContent className="p-4">
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <Sparkles className="h-4 w-4 text-primary" />
-                                            <span className="font-medium">
-                                                Selected: {activeEdit.editType
-                                                    .split('-')
-                                                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                                                    .join(' ')}
-                                            </span>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                                <ImageUploader
-                                    userId={userId}
-                                    onUploadComplete={handleUploadComplete}
-                                    onUploadError={handleUploadError}
-                                />
-                            </motion.div>
-                        )}
-
-                        {/* Configure Edit State */}
-                        {workflowState === 'configure-edit' && activeEdit && (
-                            <motion.div
-                                key="configure-edit"
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                className="space-y-4"
-                            >
-                                <div>
-                                    <h2 className="text-2xl font-bold mb-2">
-                                        Configure{' '}
-                                        {activeEdit.editType
-                                            .split('-')
-                                            .map(
-                                                (word) =>
-                                                    word.charAt(0).toUpperCase() + word.slice(1)
-                                            )
-                                            .join(' ')}
-                                    </h2>
-                                    <p className="text-muted-foreground">
-                                        Adjust the parameters for your edit
-                                    </p>
+                    {/* Processing State */}
+                    {workflowState === 'processing' && (
+                        <Card>
+                            <CardContent className="p-8">
+                                <div className="flex flex-col items-center justify-center space-y-4">
+                                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                                    <div className="text-center">
+                                        <h3 className="font-semibold text-lg mb-1">Processing your image...</h3>
+                                        <p className="text-sm text-muted-foreground">
+                                            This usually takes 30-60 seconds
+                                        </p>
+                                    </div>
+                                    {processingError && (
+                                        <Alert variant="destructive" className="mt-4">
+                                            <AlertDescription>{processingError}</AlertDescription>
+                                        </Alert>
+                                    )}
                                 </div>
-                                {renderEditForm()}
-                            </motion.div>
-                        )}
+                            </CardContent>
+                        </Card>
+                    )}
 
-                        {/* Processing State */}
-                        {workflowState === 'processing' && (
-                            <motion.div
-                                key="processing"
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                            >
-                                <ProcessingProgress
-                                    status={processingStatus}
-                                    progress={processingProgress}
-                                    error={processingError || undefined}
-                                    onRetry={() => {
-                                        setWorkflowState('configure-edit');
-                                        setProcessingStatus('idle');
-                                        setProcessingError(null);
-                                    }}
-                                />
-                            </motion.div>
-                        )}
-
-                        {/* Preview State */}
-                        {workflowState === 'preview' && previewData && (
-                            <motion.div
-                                key="preview"
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                            >
-                                <EditPreview
-                                    originalUrl={previewData.originalUrl}
-                                    editedUrl={previewData.editedUrl}
-                                    editType={previewData.editType}
-                                    onAccept={handlePreviewAccept}
-                                    onRegenerate={handlePreviewRegenerate}
-                                    onCancel={handlePreviewCancel}
-                                />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                    {/* Preview State */}
+                    {workflowState === 'preview' && previewData && (
+                        <EditPreview
+                            originalUrl={previewData.originalUrl}
+                            editedUrl={previewData.editedUrl}
+                            editType={previewData.editType}
+                            onAccept={handlePreviewAccept}
+                            onRegenerate={handlePreviewRegenerate}
+                            onCancel={handlePreviewCancel}
+                        />
+                    )}
                 </div>
 
                 {/* Right Column: Rate Limits & Edit History (Requirement 11.5) */}

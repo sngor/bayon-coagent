@@ -5,7 +5,8 @@ import { StandardCard } from '@/components/standard/card';
 import { StandardFormField } from '@/components/standard/form-field';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Sparkles, Save, Download } from 'lucide-react';
+import { Sparkles, Save, Download } from 'lucide-react';
+import { LoadingDots } from '@/components/ui/loading-dots';
 import { generateTrainingPlanAction, saveTrainingPlanAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 
@@ -180,7 +181,7 @@ export function AITrainingPlan({ className }: AITrainingPlanProps = {}) {
                 >
                     {isGenerating ? (
                         <>
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            <LoadingDots className="mr-2" />
                             Generating Your Plan...
                         </>
                     ) : (
@@ -202,7 +203,7 @@ export function AITrainingPlan({ className }: AITrainingPlanProps = {}) {
                             >
                                 {isSaving ? (
                                     <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        <LoadingDots size="sm" className="mr-2" />
                                         Saving...
                                     </>
                                 ) : (

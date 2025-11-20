@@ -50,7 +50,7 @@ import { TooltipProvider } from '@/contexts/tooltip-context';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useItem } from '@/aws/dynamodb/hooks';
 import { getAgentProfileKeys } from '@/aws/dynamodb/keys';
-import { StandardLoadingSpinner } from '@/components/standard';
+import { SessionLoading } from '@/components/session-loading';
 
 const navItems = [
   { href: '/dashboard', icon: HouseIcon, label: 'Dashboard', customIcon: true },
@@ -63,14 +63,7 @@ const navItems = [
 ];
 
 function AppLoadingScreen() {
-  return (
-    <div className="flex h-screen items-center justify-center bg-background">
-      <StandardLoadingSpinner
-        size="lg"
-        message="Initializing your dashboard..."
-      />
-    </div>
-  )
+  return <SessionLoading />;
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -225,8 +218,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter>
-            <div className="px-3 py-2 text-xs text-muted-foreground space-y-1">
-              <div className="flex gap-3 justify-center group-data-[collapsible=icon]:hidden">
+            <div className="px-3 py-2 text-xs text-muted-foreground space-y-1 group-data-[state=collapsed]/sidebar-wrapper:hidden">
+              <div className="flex gap-3 justify-center">
                 <Link href="/privacy" className="hover:text-foreground transition-colors">
                   Privacy
                 </Link>

@@ -48,7 +48,7 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default' }: HubT
             container: 'border-b border-border'
         },
         pills: {
-            tab: 'rounded-full hover:bg-muted data-[active=true]:bg-primary data-[active=true]:text-primary-foreground',
+            tab: 'rounded-full hover:bg-accent hover:text-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground',
             container: ''
         },
         underline: {
@@ -71,7 +71,7 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default' }: HubT
                             key={tab.id}
                             type="button"
                             role="tab"
-                            aria-selected={isActive}
+                            aria-selected={isActive ? 'true' : 'false'}
                             aria-controls={`tabpanel-${tab.id}`}
                             id={`tab-${tab.id}`}
                             tabIndex={isActive ? 0 : -1}

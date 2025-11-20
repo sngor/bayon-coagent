@@ -25,7 +25,7 @@ import { getAgentProfileKeys } from '@/aws/dynamodb/keys';
 import { generateBioAction, updateProfilePhotoUrlAction, saveContentAction } from '@/app/actions';
 import { Save, User, Building2, Award, Phone, Globe, Share2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsList as TabsList, AnimatedTabsTrigger as TabsTrigger } from '@/components/ui/animated-tabs';
 import { ProfileImageUpload } from '@/components/profile-image-upload';
 import { ProfileCompletionChecklist } from '@/components/profile-completion-banner';
 import { StandardLoadingSpinner } from '@/components/standard';
@@ -480,8 +480,12 @@ export default function ProfilePage() {
         >
             <Tabs defaultValue="profile">
                 <TabsList>
-                    <TabsTrigger value="profile">Your Profile</TabsTrigger>
-                    <TabsTrigger value="schema">Schema</TabsTrigger>
+                    <TabsTrigger value="profile">
+                        <span className="whitespace-nowrap">Your Profile</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="schema">
+                        <span className="whitespace-nowrap">Schema</span>
+                    </TabsTrigger>
                 </TabsList>
                 <TabsContent value="profile" className="mt-6">
                     <div className="grid gap-6 lg:grid-cols-3">

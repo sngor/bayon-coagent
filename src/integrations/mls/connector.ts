@@ -125,6 +125,7 @@ interface RESOClientConfig {
     baseUrl: string;
     clientId: string;
     clientSecret: string;
+    accessToken?: string; // Optional: for direct token authentication
 }
 
 /**
@@ -146,6 +147,13 @@ const PROVIDER_CONFIGS: Record<string, Omit<RESOClientConfig, "provider">> = {
         baseUrl: process.env.BRIGHT_API_URL || "https://api.brightmls.com/RESO/OData",
         clientId: process.env.BRIGHT_CLIENT_ID || "",
         clientSecret: process.env.BRIGHT_CLIENT_SECRET || "",
+    },
+    mlsgrid: {
+        baseUrl: process.env.MLSGRID_API_URL || "https://api.mlsgrid.com/v2",
+        clientId: process.env.MLSGRID_CLIENT_ID || "",
+        clientSecret: process.env.MLSGRID_CLIENT_SECRET || "",
+        // Support for direct access token (demo/testing)
+        accessToken: process.env.MLSGRID_ACCESS_TOKEN,
     },
 };
 
@@ -190,6 +198,26 @@ export class RESOWebAPIConnector implements MLSConnector {
         }
 
         try {
+            // Check if provider has a direct access token (for demo/testing)
+            if (this.config.accessToken && credentials.provider === 'mlsgrid') {
+                // Use direct access token for MLS Grid demo
+                const agentInfo = await this.fetchAgentInfo(this.config.accessToken);
+
+                const connection: MLSConnection = {
+                    id: this.generateConnectionId(credentials.username || 'demo', credentials.provider),
+                    userId: "", // Will be set by the calling service
+                    provider: credentials.provider,
+                    agentId: agentInfo.MemberKey || 'demo-agent',
+                    brokerageId: agentInfo.OfficeMlsId || 'demo-brokerage',
+                    accessToken: this.config.accessToken,
+                    refreshToken: '',
+                    expiresAt: Date.now() + (365 * 24 * 60 * 60 * 1000), // 1 year for demo token
+                    createdAt: Date.now(),
+                };
+
+                return connection;
+            }
+
             // Step 1: Obtain OAuth token
             const authResponse = await this.requestOAuthToken(credentials);
 
@@ -242,19 +270,30 @@ export class RESOWebAPIConnector implements MLSConnector {
             }
 
             // Build RESO OData query for active listings
+            let filterQuery: string;
+
+            if (connection.provider === 'mlsgrid') {
+                // MLS Grid requires OriginatingSystemName and MlgCanView
+                // For demo, we'll fetch from all systems, but in production you'd specify one
+                filterQuery = `MlgCanView eq true and StandardStatus eq 'Active'`;
+            } else {
+                filterQuery = `ListAgentKey eq '${agentId}' and StandardStatus eq 'Active'`;
+            }
+
             const query = new URLSearchParams({
-                $filter: `ListAgentKey eq '${agentId}' and StandardStatus eq 'Active'`,
+                $filter: filterQuery,
                 $select: this.getListingFields().join(","),
                 $expand: "Media",
-                $top: "1000", // Fetch up to 1000 listings
+                $top: "500", // MLS Grid best practice: use pagination
             });
 
             const url = `${this.config.baseUrl}/Property?${query.toString()}`;
             const response = await this.makeAuthenticatedRequest(url, connection.accessToken);
 
             if (!response.ok) {
+                const errorText = await response.text();
                 throw new MLSNetworkError(
-                    `Failed to fetch listings: ${response.statusText}`,
+                    `Failed to fetch listings: ${response.statusText}. ${errorText}`,
                     response.status
                 );
             }
@@ -502,12 +541,19 @@ export class RESOWebAPIConnector implements MLSConnector {
         url: string,
         accessToken: string
     ): Promise<Response> {
+        const headers: Record<string, string> = {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/json",
+        };
+
+        // MLS Grid requires gzip compression
+        if (this.config.provider === 'mlsgrid') {
+            headers['Accept-Encoding'] = 'gzip,deflate';
+        }
+
         return fetch(url, {
             method: "GET",
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-                Accept: "application/json",
-            },
+            headers,
         });
     }
 

@@ -41,6 +41,15 @@ export const metadata: Metadata = {
     telephone: false,
   },
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/icon', type: 'image/png', sizes: '32x32' },
+    ],
+    apple: [
+      { url: '/apple-icon', sizes: '180x180', type: 'image/png' },
+    ],
+  },
   openGraph: {
     title: 'Bayon Coagent - AI-Powered Success Platform for Real Estate Agents',
     description: 'The integrated success platform for real estate agents. AI-powered content creation, market research, and brand management tools.',

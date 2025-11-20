@@ -18,7 +18,7 @@ import {
     GlassCardDescription,
     GlassCardContent,
 } from '@/components/ui/glass-card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsList as TabsList, AnimatedTabsTrigger as TabsTrigger } from '@/components/ui/animated-tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { getAgentProfile } from '@/app/profile-actions';
 import { useUser } from '@/aws/auth';
@@ -108,14 +108,14 @@ export default function AssistantPage() {
                 )}
 
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'chat' | 'profile')} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList>
                         <TabsTrigger value="chat">
-                            <MessageSquare className="h-4 w-4 mr-2" />
-                            Chat
+                            <MessageSquare className="h-4 w-4" />
+                            <span className="whitespace-nowrap">Chat</span>
                         </TabsTrigger>
                         <TabsTrigger value="profile">
-                            <Settings className="h-4 w-4 mr-2" />
-                            Profile
+                            <Settings className="h-4 w-4" />
+                            <span className="whitespace-nowrap">Profile</span>
                         </TabsTrigger>
                     </TabsList>
 
