@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import type { Profile } from '@/lib/types';
 import Link from 'next/link';
 
-interface ProfileField {
+export interface ProfileField {
     key: keyof Profile;
     label: string;
     benefit: string;
@@ -73,7 +73,7 @@ const PROFILE_FIELDS: ProfileField[] = [
     },
 ];
 
-interface ProfileCompletionBannerProps {
+export interface ProfileCompletionBannerProps {
     profile: Partial<Profile>;
     className?: string;
 }
@@ -242,7 +242,7 @@ export function ProfileCompletionBanner({
     );
 }
 
-interface ProfileCompletionChecklistProps {
+export interface ProfileCompletionChecklistProps {
     profile: Partial<Profile>;
     className?: string;
 }

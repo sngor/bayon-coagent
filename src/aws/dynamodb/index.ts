@@ -34,6 +34,7 @@ export type {
 export {
   getUserProfileKeys,
   getAgentProfileKeys,
+  getAgentProfileKeysV2,
   getReviewKeys,
   getBrandAuditKeys,
   getCompetitorKeys,
@@ -44,6 +45,8 @@ export {
   getMarketingPlanKeys,
   getReviewAnalysisKeys,
   getOAuthTokenKeys,
+  getImageMetadataKeys,
+  getEditRecordKeys,
   getUserItemPrefix,
   extractUserIdFromPK,
   extractEntityIdFromSK,
@@ -92,3 +95,15 @@ export {
   getCache,
   resetCache,
 } from './hooks';
+
+// Agent Profile Repository (Kiro AI Assistant)
+export {
+  AgentProfileRepository,
+  getAgentProfileRepository,
+  resetAgentProfileRepository,
+  type AgentProfile,
+  type CreateAgentProfileInput,
+  type UpdateAgentProfileInput,
+  type ValidationError as AgentProfileValidationError,
+  type PerformanceMetrics,
+} from './agent-profile-repository';

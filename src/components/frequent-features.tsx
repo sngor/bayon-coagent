@@ -12,7 +12,7 @@ import { useFrequentFeatures } from '@/hooks/use-usage-tracking';
 import { Clock, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface FrequentFeaturesProps {
+export interface FrequentFeaturesProps {
     className?: string;
     limit?: number;
     showTitle?: boolean;

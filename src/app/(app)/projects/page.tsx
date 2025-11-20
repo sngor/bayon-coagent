@@ -2,8 +2,11 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { PageHeader } from '@/components/page-header';
+import { useRouter } from 'next/navigation';
+import { StandardPageLayout } from '@/components/standard';
+import { StandardSkeleton } from '@/components/standard/skeleton';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { StandardEmptyState } from '@/components/standard/empty-state';
 import {
     Accordion,
     AccordionContent,
@@ -20,7 +23,6 @@ import { useQuery } from '@/aws/dynamodb/hooks';
 import { getRepository } from '@/aws/dynamodb';
 import { getProjectKeys, getSavedContentKeys } from '@/aws/dynamodb/keys';
 import type { SavedContent, Project } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Library, Copy, Folder, FolderPlus, MoreVertical, Trash2, Pencil, ChevronsUpDown } from 'lucide-react';
 import { marked } from 'marked';
 import { Button } from '@/components/ui/button';
@@ -54,15 +56,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 
 
-function SavedContentSkeleton() {
-    return (
-        <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-24 w-full" />
-            ))}
-        </div>
-    )
-}
+
 
 function CreateProjectDialog({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen: (open: boolean) => void }) {
     const { user } = useUser();
@@ -169,6 +163,7 @@ function RenameContentDialog({ item, isOpen, setIsOpen }: { item: SavedContent |
 
 
 export default function ProjectsPage() {
+    const router = useRouter();
     const { user } = useUser();
     const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<SavedContent | null>(null);
@@ -267,19 +262,19 @@ export default function ProjectsPage() {
 
 
     return (
-        <div className="animate-fade-in-up space-y-8">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <PageHeader
-                    title="Projects"
-                    description="Your library of AI-generated content, organized by project."
-                />
+        <StandardPageLayout
+            title="Projects"
+            description="Your library of AI-generated content, organized by project."
+            spacing="default"
+            actions={
                 <Button onClick={() => setIsCreateProjectOpen(true)}>
                     <FolderPlus className="mr-2 h-4 w-4" />
                     Create Project
                 </Button>
-            </div>
+            }
+        >
 
-            {isLoading && <SavedContentSkeleton />}
+            {isLoading && <StandardSkeleton variant="list" count={3} />}
 
             {!isLoading && savedContent && savedContent.length > 0 && (
                 <AlertDialog>
@@ -388,23 +383,19 @@ export default function ProjectsPage() {
             )}
 
             {!isLoading && (!savedContent || savedContent.length === 0) && (
-                <Card className="flex flex-col items-center justify-center text-center py-20 animate-fade-in-up">
-                    <Library className="h-16 w-16 mb-4 text-muted-foreground" />
-                    <CardTitle className="font-headline text-2xl">Your Projects are Empty</CardTitle>
-                    <CardDescription className="mt-2">
-                        You haven't saved any content yet.
-                    </CardDescription>
-                    <CardContent className="mt-6">
-                        <Link href="/content-engine">
-                            <Button>
-                                Go to the Co-Marketing Studio
-                            </Button>
-                        </Link>
-                    </CardContent>
-                </Card>
+                <StandardEmptyState
+                    icon={<Library className="h-16 w-16 text-muted-foreground" />}
+                    title="Your Projects are Empty"
+                    description="You haven't saved any content yet. Start creating content in the Co-Marketing Studio."
+                    action={{
+                        label: "Go to the Co-Marketing Studio",
+                        onClick: () => router.push('/content-engine'),
+                        variant: 'default'
+                    }}
+                />
             )}
             <CreateProjectDialog isOpen={isCreateProjectOpen} setIsOpen={setIsCreateProjectOpen} />
             <RenameContentDialog item={itemToRename} isOpen={!!itemToRename} setIsOpen={() => setItemToRename(null)} />
-        </div>
+        </StandardPageLayout>
     );
 }

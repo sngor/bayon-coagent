@@ -5,6 +5,7 @@
  * techniques work correctly to ensure UI responds within 100ms.
  */
 
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import {
   debounce,
   throttle,

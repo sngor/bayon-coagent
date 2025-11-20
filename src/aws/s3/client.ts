@@ -253,6 +253,33 @@ export async function getPresignedUrl(
 }
 
 /**
+ * Generates a presigned URL for downloading a file with proper headers
+ * This ensures the browser treats the URL as a download rather than viewing inline
+ * 
+ * @param key - The S3 object key (path)
+ * @param filename - The filename to use for the download
+ * @param expiresIn - URL expiration time in seconds (default: 3600 = 1 hour)
+ * @returns The presigned download URL
+ */
+export async function getPresignedDownloadUrl(
+  key: string,
+  filename: string,
+  expiresIn: number = 3600
+): Promise<string> {
+  const config = getConfig();
+  const client = getS3Client();
+
+  const command = new GetObjectCommand({
+    Bucket: config.s3.bucketName,
+    Key: key,
+    ResponseContentDisposition: `attachment; filename="${filename}"`,
+  });
+
+  const url = await getSignedUrl(client, command, { expiresIn });
+  return url;
+}
+
+/**
  * Generates a presigned URL for uploading a file
  * Allows clients to upload directly to S3 without going through the server
  * 

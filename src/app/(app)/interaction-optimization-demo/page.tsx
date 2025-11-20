@@ -6,6 +6,7 @@ import { SearchInput } from '@/components/ui/search-input';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { OptimisticUIDemo } from '@/components/optimistic-ui-demo';
+import { StandardEmptyState } from '@/components/standard/empty-state';
 import {
     useDebounce,
     useThrottle,
@@ -14,6 +15,7 @@ import {
     measureInteractionTime,
 } from '@/lib/interaction-optimization';
 import { Badge } from '@/components/ui/badge';
+import { Search } from 'lucide-react';
 
 /**
  * Interaction Optimization Demo Page
@@ -130,9 +132,12 @@ export default function InteractionOptimizationDemo() {
                     </div>
 
                     {filteredItems.length === 0 && (
-                        <div className="text-center py-8 text-muted-foreground">
-                            No results found for "{debouncedSearch}"
-                        </div>
+                        <StandardEmptyState
+                            icon={<Search className="h-12 w-12 text-muted-foreground" />}
+                            title="No results found"
+                            description={`No results found for "${debouncedSearch}". Try adjusting your search terms.`}
+                            variant="compact"
+                        />
                     )}
                 </CardContent>
             </Card>

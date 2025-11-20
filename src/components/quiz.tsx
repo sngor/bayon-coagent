@@ -9,18 +9,18 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Check, X, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type QuizQuestion = {
+export interface QuizQuestion {
   question: string;
   options: string[];
   correctAnswer: string;
-};
+}
 
-type QuizProps = {
+export interface QuizProps {
   moduleId: string;
   questions: QuizQuestion[];
   onComplete: () => void;
   isCompleted: boolean;
-};
+}
 
 export function Quiz({ moduleId, questions, onComplete, isCompleted }: QuizProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -38,7 +38,7 @@ export function Quiz({ moduleId, questions, onComplete, isCompleted }: QuizProps
       onComplete();
     }
   };
-  
+
   if (isCompleted) {
     return (
       <div className="mt-6 p-4 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-lg flex items-center gap-3">
@@ -53,53 +53,53 @@ export function Quiz({ moduleId, questions, onComplete, isCompleted }: QuizProps
 
   return (
     <Card className="mt-8 border-dashed border-primary/50">
-        <CardHeader>
-            <CardTitle className="font-headline text-xl">Knowledge Check</CardTitle>
-            <CardDescription>Test your understanding of the concepts in this lesson.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <CardHeader>
+        <CardTitle className="font-headline text-xl">Knowledge Check</CardTitle>
+        <CardDescription>Test your understanding of the concepts in this lesson.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
         {questions.map((q, index) => (
-            <div key={index}>
+          <div key={index}>
             <p className="font-medium mb-2">{index + 1}. {q.question}</p>
             <RadioGroup
-                value={selectedAnswers[index]}
-                onValueChange={(value) => handleAnswerSelect(index, value)}
-                disabled={submitted}
+              value={selectedAnswers[index]}
+              onValueChange={(value) => handleAnswerSelect(index, value)}
+              disabled={submitted}
             >
-                {q.options.map((option, i) => {
-                    const isSelected = selectedAnswers[index] === option;
-                    const isCorrect = q.correctAnswer === option;
-                    return (
-                        <div key={i} className={cn(
-                            "flex items-center space-x-3 rounded-md border p-3 transition-colors",
-                            submitted && isCorrect && "bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800",
-                            submitted && isSelected && !isCorrect && "bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-800"
-                        )}>
-                            <RadioGroupItem value={option} id={`${moduleId}-q${index}-o${i}`} />
-                            <Label htmlFor={`${moduleId}-q${index}-o${i}`} className="flex-1 cursor-pointer">{option}</Label>
-                            {submitted && isCorrect && <Check className="h-5 w-5 text-green-600" />}
-                            {submitted && isSelected && !isCorrect && <X className="h-5 w-5 text-red-600" />}
-                        </div>
-                    );
-                })}
+              {q.options.map((option, i) => {
+                const isSelected = selectedAnswers[index] === option;
+                const isCorrect = q.correctAnswer === option;
+                return (
+                  <div key={i} className={cn(
+                    "flex items-center space-x-3 rounded-md border p-3 transition-colors",
+                    submitted && isCorrect && "bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800",
+                    submitted && isSelected && !isCorrect && "bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-800"
+                  )}>
+                    <RadioGroupItem value={option} id={`${moduleId}-q${index}-o${i}`} />
+                    <Label htmlFor={`${moduleId}-q${index}-o${i}`} className="flex-1 cursor-pointer">{option}</Label>
+                    {submitted && isCorrect && <Check className="h-5 w-5 text-green-600" />}
+                    {submitted && isSelected && !isCorrect && <X className="h-5 w-5 text-red-600" />}
+                  </div>
+                );
+              })}
             </RadioGroup>
-            </div>
+          </div>
         ))}
-        </CardContent>
-        {!submitted && (
-            <CardFooter>
-                 <Button onClick={handleSubmit} disabled={Object.keys(selectedAnswers).length < questions.length}>
-                    Submit Answers
-                </Button>
-            </CardFooter>
-        )}
-        {submitted && !isCompleted && (
-             <CardFooter className="flex-col items-start gap-2 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-t">
-                <p className="font-semibold">Review your answers.</p>
-                <p className="text-sm text-muted-foreground">Some answers were incorrect. Please review the lesson and try again.</p>
-                <Button variant="outline" size="sm" onClick={() => setSubmitted(false)} className="mt-2">Try Again</Button>
-            </CardFooter>
-        )}
+      </CardContent>
+      {!submitted && (
+        <CardFooter>
+          <Button onClick={handleSubmit} disabled={Object.keys(selectedAnswers).length < questions.length}>
+            Submit Answers
+          </Button>
+        </CardFooter>
+      )}
+      {submitted && !isCompleted && (
+        <CardFooter className="flex-col items-start gap-2 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-t">
+          <p className="font-semibold">Review your answers.</p>
+          <p className="text-sm text-muted-foreground">Some answers were incorrect. Please review the lesson and try again.</p>
+          <Button variant="outline" size="sm" onClick={() => setSubmitted(false)} className="mt-2">Try Again</Button>
+        </CardFooter>
+      )}
     </Card>
   );
 }

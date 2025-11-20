@@ -9,6 +9,7 @@ export interface PerformanceMetrics {
   largestContentfulPaint: number;
   timeToInteractive: number;
   totalBlockingTime: number;
+  cumulativeLayoutShift: number;
 }
 
 /**
@@ -31,9 +32,77 @@ export function measurePagePerformance(): PerformanceMetrics | null {
     largestContentfulPaint: lcp ? lcp.startTime : 0,
     timeToInteractive: navigation ? navigation.domInteractive - navigation.fetchStart : 0,
     totalBlockingTime: 0, // Would need more complex calculation
+    cumulativeLayoutShift: 0, // Will be measured separately
   };
 
   return metrics;
+}
+
+/**
+ * Measure Cumulative Layout Shift (CLS)
+ * CLS measures visual stability - lower is better
+ * Good: < 0.1, Needs Improvement: 0.1-0.25, Poor: > 0.25
+ */
+export function measureCLS(): Promise<number> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !('PerformanceObserver' in window)) {
+      resolve(0);
+      return;
+    }
+
+    let clsValue = 0;
+    let sessionValue = 0;
+    let sessionEntries: PerformanceEntry[] = [];
+
+    const observer = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        // Only count layout shifts without recent user input
+        if ((entry as any).hadRecentInput) {
+          continue;
+        }
+
+        const firstSessionEntry = sessionEntries[0];
+        const lastSessionEntry = sessionEntries[sessionEntries.length - 1];
+
+        // If the entry occurred less than 1 second after the previous entry and
+        // less than 5 seconds after the first entry in the session, include the
+        // entry in the current session. Otherwise, start a new session.
+        if (
+          sessionValue &&
+          entry.startTime - lastSessionEntry.startTime < 1000 &&
+          entry.startTime - firstSessionEntry.startTime < 5000
+        ) {
+          sessionValue += (entry as any).value;
+          sessionEntries.push(entry);
+        } else {
+          sessionValue = (entry as any).value;
+          sessionEntries = [entry];
+        }
+
+        // If the current session value is larger than the current CLS value,
+        // update CLS and the entries contributing to it.
+        if (sessionValue > clsValue) {
+          clsValue = sessionValue;
+        }
+      }
+    });
+
+    observer.observe({ type: 'layout-shift', buffered: true });
+
+    // Resolve after a short delay to capture initial layout shifts
+    setTimeout(() => {
+      observer.disconnect();
+      resolve(clsValue);
+    }, 3000);
+  });
+}
+
+/**
+ * Check if CLS meets the "Good" threshold (< 0.1)
+ */
+export function checkCLSTarget(cls: number): boolean {
+  const GOOD_CLS_THRESHOLD = 0.1;
+  return cls < GOOD_CLS_THRESHOLD;
 }
 
 /**
@@ -54,17 +123,21 @@ export function logPerformanceMetrics(): void {
 
   // Wait for page to fully load
   window.addEventListener('load', () => {
-    setTimeout(() => {
+    setTimeout(async () => {
       const metrics = measurePagePerformance();
       if (metrics) {
         const meetsTarget = checkPerformanceTarget(metrics);
+        const cls = await measureCLS();
+        const meetsCLSTarget = checkCLSTarget(cls);
         
         console.group('📊 Performance Metrics');
         console.log(`Page Load Time: ${metrics.pageLoadTime.toFixed(2)}ms`);
         console.log(`First Contentful Paint: ${metrics.firstContentfulPaint.toFixed(2)}ms`);
         console.log(`Largest Contentful Paint: ${metrics.largestContentfulPaint.toFixed(2)}ms`);
         console.log(`Time to Interactive: ${metrics.timeToInteractive.toFixed(2)}ms`);
-        console.log(`Target Met (< 2s): ${meetsTarget ? '✅' : '❌'}`);
+        console.log(`Cumulative Layout Shift: ${cls.toFixed(4)}`);
+        console.log(`Load Time Target Met (< 2s): ${meetsTarget ? '✅' : '❌'}`);
+        console.log(`CLS Target Met (< 0.1): ${meetsCLSTarget ? '✅' : '❌'}`);
         console.groupEnd();
       }
     }, 0);

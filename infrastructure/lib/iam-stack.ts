@@ -103,7 +103,9 @@ export class IAMStack extends cdk.Stack {
       resources: [
         `arn:aws:bedrock:${this.region}::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0`,
         `arn:aws:bedrock:${this.region}::foundation-model/anthropic.claude-*`,
+        `arn:aws:bedrock:${this.region}::foundation-model/amazon.titan-image-generator-v1`,
         `arn:aws:bedrock:${this.region}::foundation-model/amazon.titan-*`,
+        `arn:aws:bedrock:${this.region}::foundation-model/stability.stable-diffusion-xl-v1`,
       ],
     }));
 

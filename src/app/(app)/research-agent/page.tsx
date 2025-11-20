@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
 import { NoResultsEmptyState } from '@/components/ui/empty-states';
+import { StandardEmptyState } from '@/components/standard/empty-state';
 import { filterBySearch, highlightMatches } from '@/lib/search-utils';
 import {
   Card,
@@ -20,12 +21,10 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { runResearchAgentAction } from '@/app/actions';
-import { Loader2, BrainCircuit, ExternalLink, Download, Share2, Library, Calendar, FileText, Share, Search } from 'lucide-react';
-import { marked } from 'marked';
+import { Loader2, BrainCircuit, Library, Calendar, Search } from 'lucide-react';
 import { type RunResearchAgentOutput } from '@/aws/bedrock/flows';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
-import { useQuery } from '@/aws/dynamodb/hooks';
 import { getRepository } from '@/aws/dynamodb';
 import { getResearchReportKeys } from '@/aws/dynamodb/keys';
 import type { ResearchReport } from '@/lib/types';
@@ -91,15 +90,37 @@ export default function ResearchAgentPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const { user, isUserLoading } = useUser();
+  const [savedReports, setSavedReports] = useState<ResearchReport[]>([]);
+  const [isLoadingReports, setIsLoadingReports] = useState(true);
 
-  // Memoize DynamoDB keys
-  const reportsPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
-  const reportsSKPrefix = useMemo(() => 'REPORT#', []);
+  // Fetch reports from API
+  useEffect(() => {
+    async function fetchReports() {
+      if (!user) {
+        setIsLoadingReports(false);
+        return;
+      }
 
-  const { data: savedReports, isLoading: isLoadingReports } = useQuery<ResearchReport>(reportsPK, reportsSKPrefix, {
-    limit: 3,
-    scanIndexForward: false, // descending order
-  });
+      try {
+        const response = await fetch(`/api/research-reports?userId=${user.id}&limit=3`);
+        const data = await response.json();
+
+        if (data.success) {
+          setSavedReports(data.reports);
+        } else {
+          console.error('Failed to fetch reports:', data.error);
+          setSavedReports([]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch reports:', error);
+        setSavedReports([]);
+      } finally {
+        setIsLoadingReports(false);
+      }
+    }
+
+    fetchReports();
+  }, [user]);
 
   // Filter reports based on search query
   const filteredReports = useMemo(() => {
@@ -109,16 +130,23 @@ export default function ResearchAgentPage() {
     ]);
   }, [savedReports, searchQuery]);
 
+  // Store the topic from the form
+  const [lastTopic, setLastTopic] = useState<string>('');
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
-    if (state.message === 'success' && state.data && user?.id) {
+    if (state.message === 'success' && state.data && user?.id && !isSaving) {
       const saveReport = async () => {
+        setIsSaving(true);
         try {
           const repository = getRepository();
           const reportId = Date.now().toString();
           const keys = getResearchReportKeys(user.id, reportId);
           const dataToSave = {
-            ...state.data,
-            topic: (state.errors as any)?.topic || "Untitled Report",
+            id: reportId,
+            report: state.data.report,
+            citations: state.data.citations,
+            topic: lastTopic || "Untitled Report",
             createdAt: new Date().toISOString(),
           };
           await repository.put({
@@ -133,6 +161,7 @@ export default function ResearchAgentPage() {
         } catch (error) {
           console.error('Failed to save report:', error);
           toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save report.' });
+          setIsSaving(false);
         }
       };
       saveReport();
@@ -143,7 +172,7 @@ export default function ResearchAgentPage() {
         description: state.message,
       })
     }
-  }, [state, user?.id, router]);
+  }, [state, user?.id, router, lastTopic, isSaving]);
 
 
   const displayData = state.data;
@@ -217,7 +246,14 @@ export default function ResearchAgentPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={formAction} className="space-y-4">
+          <form
+            action={(formData) => {
+              const topic = formData.get('topic') as string;
+              setLastTopic(topic);
+              formAction(formData);
+            }}
+            className="space-y-4"
+          >
             <div className="space-y-2">
               <Label htmlFor="topic">Research Topic</Label>
               <Textarea
@@ -299,13 +335,11 @@ export default function ResearchAgentPage() {
         )}
 
         {!isLoadingReports && (!savedReports || savedReports.length === 0) && (
-          <div className="flex flex-col items-center justify-center text-center py-20 border rounded-lg">
-            <Library className="h-16 w-16 mb-4 text-muted-foreground" />
-            <h3 className="font-headline text-2xl">Your Knowledge Base is Empty</h3>
-            <p className="mt-2 text-muted-foreground">
-              You haven't saved any research reports yet. Use the form above to create your first one.
-            </p>
-          </div>
+          <StandardEmptyState
+            icon={<Library className="h-16 w-16 text-muted-foreground" />}
+            title="Your Knowledge Base is Empty"
+            description="You haven't saved any research reports yet. Use the form above to create your first one."
+          />
         )}
       </div>
 

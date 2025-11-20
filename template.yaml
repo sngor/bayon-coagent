@@ -276,6 +276,18 @@ Resources:
             Transitions:
               - TransitionInDays: 90
                 StorageClass: STANDARD_IA
+          - Id: ArchiveOldReimagineEdits
+            Status: !If [IsProduction, Enabled, Disabled]
+            Prefix: reimagine/edits/
+            Transitions:
+              - TransitionInDays: 90
+                StorageClass: STANDARD_IA
+              - TransitionInDays: 180
+                StorageClass: GLACIER
+          - Id: DeleteReimaginePreviewEdits
+            Status: Enabled
+            Prefix: reimagine/preview/
+            ExpirationInDays: 7
       CorsConfiguration:
         CorsRules:
           - AllowedOrigins:
@@ -296,6 +308,8 @@ Resources:
               - x-amz-server-side-encryption
               - x-amz-request-id
               - x-amz-id-2
+              - Content-Type
+              - Content-Length
             MaxAge: 3000
       Tags:
         - Key: Environment
@@ -413,7 +427,9 @@ Resources:
                 Resource:
                   - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0
                   - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/anthropic.claude-*
+                  - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.titan-image-generator-v1
                   - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.titan-*
+                  - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/stability.stable-diffusion-xl-v1
 
   # ==========================================
   # CloudWatch Monitoring

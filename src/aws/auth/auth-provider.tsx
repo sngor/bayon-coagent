@@ -66,6 +66,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
                     // Session might be invalid, clear it
                     setSession(null);
                     setUser(null);
+                    // Don't set error state for invalid tokens - just silently clear
                 }
             } else {
                 setSession(null);
@@ -73,7 +74,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             }
         } catch (err) {
             console.error('Failed to load session:', err);
-            setError(err instanceof Error ? err : new Error('Failed to load session'));
+            // Don't set error state for session loading failures
+            // This prevents error messages on initial load with invalid tokens
             setSession(null);
             setUser(null);
         } finally {

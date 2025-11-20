@@ -99,6 +99,11 @@ import {
     type GetRealEstateNewsInput,
     type GetRealEstateNewsOutput
 } from '@/aws/bedrock/flows/get-real-estate-news';
+import {
+    generateTrainingPlan,
+    type TrainingPlanInput,
+    type TrainingPlanOutput
+} from '@/aws/bedrock/flows/training-plan-flow';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { getRepository } from '@/aws/dynamodb/repository';
@@ -1330,5 +1335,163 @@ export async function trackContentCreationAction(
   } catch (error) {
     console.error('Failed to track content creation:', error);
     return { success: false, error: 'Failed to track content creation' };
+  }
+}
+
+/**
+ * Save or update agent profile
+ */
+const saveProfileSchema = z.object({
+  userId: z.string().min(1, 'User ID is required'),
+  profile: z.object({
+    name: z.string().optional(),
+    email: z.string().optional(),
+    phone: z.string().optional(),
+    photoURL: z.string().optional(),
+    brokerageName: z.string().optional(),
+    licenseNumber: z.string().optional(),
+    specialties: z.array(z.string()).optional(),
+    serviceAreas: z.array(z.string()).optional(),
+    yearsOfExperience: z.number().optional(),
+    certifications: z.array(z.string()).optional(),
+    bio: z.string().optional(),
+    websiteURL: z.string().optional(),
+    facebookURL: z.string().optional(),
+    instagramURL: z.string().optional(),
+    linkedinURL: z.string().optional(),
+    twitterURL: z.string().optional(),
+    youtubeURL: z.string().optional(),
+  }),
+});
+
+export async function saveProfileAction(
+  prevState: any,
+  formData: FormData
+): Promise<{ message: string; data?: any; errors: any }> {
+  try {
+    const rawData = {
+      userId: formData.get('userId'),
+      profile: JSON.parse(formData.get('profile') as string),
+    };
+
+    const validatedFields = saveProfileSchema.safeParse(rawData);
+
+    if (!validatedFields.success) {
+      return {
+        message: 'Validation failed',
+        errors: validatedFields.error.flatten().fieldErrors,
+      };
+    }
+
+    const { userId, profile } = validatedFields.data;
+    const repository = getRepository();
+    const keys = getAgentProfileKeys(userId, 'main');
+
+    // Check if profile exists
+    const existingProfile = await repository.get(keys.PK, keys.SK);
+
+    if (existingProfile) {
+      await repository.update(keys.PK, keys.SK, profile);
+    } else {
+      await repository.put({
+        ...keys,
+        EntityType: 'RealEstateAgentProfile',
+        Data: profile,
+        CreatedAt: Date.now(),
+        UpdatedAt: Date.now(),
+      });
+    }
+
+    return {
+      message: 'success',
+      data: profile,
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Save profile error:', error);
+    return {
+      message: error.message || 'Failed to save profile',
+      errors: {},
+    };
+  }
+}
+
+/**
+ * Generate AI-powered training plan
+ */
+export async function generateTrainingPlanAction(challenge: string): Promise<{
+  message: string;
+  data: TrainingPlanOutput | null;
+  errors?: string[];
+}> {
+  try {
+    const result = await generateTrainingPlan({ challenge });
+    
+    return {
+      message: 'Training plan generated successfully',
+      data: result,
+    };
+  } catch (error: any) {
+    console.error('Training plan generation error:', error);
+    return {
+      message: 'Failed to generate training plan',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Save training plan to knowledge base
+ */
+export async function saveTrainingPlanAction(
+  challenge: string,
+  plan: string
+): Promise<{
+  message: string;
+  data: { id: string } | null;
+  errors?: string[];
+}> {
+  try {
+    // Get current user from Cognito
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to save training plans'],
+      };
+    }
+
+    const repository = getRepository();
+    const reportId = `training-plan-${Date.now()}`;
+    
+    await repository.put({
+      PK: `USER#${user.id}`,
+      SK: `REPORT#${reportId}`,
+      EntityType: 'ResearchReport',
+      Data: {
+        id: reportId,
+        topic: challenge.substring(0, 100),
+        report: plan,
+        type: 'training-plan',
+      },
+      CreatedAt: Date.now(),
+      UpdatedAt: Date.now(),
+    });
+
+    return {
+      message: 'Training plan saved successfully',
+      data: { id: reportId },
+    };
+  } catch (error: any) {
+    console.error('Save training plan error:', error);
+    return {
+      message: 'Failed to save training plan',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
   }
 }

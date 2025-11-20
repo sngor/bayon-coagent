@@ -201,3 +201,84 @@ export function extractEntityIdFromSK(sk: string): string | null {
   const match = sk.match(/^[A-Z]+#(.+)$/);
   return match ? match[1] : null;
 }
+
+/**
+ * Generates keys for ImageMetadata
+ * Pattern: PK: USER#<userId>, SK: IMAGE#<imageId>
+ */
+export function getImageMetadataKeys(
+  userId: string,
+  imageId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `IMAGE#${imageId}`,
+  };
+}
+
+/**
+ * Generates keys for EditRecord
+ * Pattern: PK: USER#<userId>, SK: EDIT#<editId>
+ */
+export function getEditRecordKeys(
+  userId: string,
+  editId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `EDIT#${editId}`,
+  };
+}
+
+/**
+ * Generates keys for AgentProfile (Kiro AI Assistant)
+ * Pattern: PK: USER#<userId>, SK: PROFILE#AGENT
+ */
+export function getAgentProfileKeysV2(userId: string): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: 'PROFILE#AGENT',
+  };
+}
+
+/**
+ * Generates keys for Citation (Kiro AI Assistant)
+ * Pattern: PK: USER#<userId>, SK: CITATION#<citationId>
+ */
+export function getCitationKeys(
+  userId: string,
+  citationId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `CITATION#${citationId}`,
+  };
+}
+
+/**
+ * Generates keys for Conversation (Kiro AI Assistant)
+ * Pattern: PK: USER#<userId>, SK: CONVERSATION#<conversationId>
+ */
+export function getConversationKeys(
+  userId: string,
+  conversationId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `CONVERSATION#${conversationId}`,
+  };
+}
+
+/**
+ * Generates keys for WorkflowExecution (Kiro AI Assistant)
+ * Pattern: PK: USER#<userId>, SK: WORKFLOW#<workflowId>
+ */
+export function getWorkflowExecutionKeys(
+  userId: string,
+  workflowId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `WORKFLOW#${workflowId}`,
+  };
+}

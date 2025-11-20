@@ -283,6 +283,13 @@ export class CognitoAuthClient {
         return null;
       }
 
+      // Validate session data structure
+      if (!sessionData.accessToken || !sessionData.refreshToken || !sessionData.expiresAt) {
+        console.warn('Invalid session data structure, clearing session');
+        this.clearSession();
+        return null;
+      }
+
       // Check if token is expired or about to expire (within 5 minutes)
       const now = Date.now();
       const expirationBuffer = 5 * 60 * 1000; // 5 minutes
@@ -294,15 +301,33 @@ export class CognitoAuthClient {
           this.storeSession(newSession);
           return newSession;
         } catch (error) {
+          console.warn('Token refresh failed, clearing session:', error);
           // Refresh failed, clear session
           this.clearSession();
           return null;
         }
       }
 
-      return sessionData;
+      // Validate the token is still valid by attempting to get user
+      try {
+        await this.getCurrentUser(sessionData.accessToken);
+        return sessionData;
+      } catch (error) {
+        console.warn('Access token validation failed, attempting refresh:', error);
+        // Token is invalid, try to refresh
+        try {
+          const newSession = await this.refreshSession(sessionData.refreshToken);
+          this.storeSession(newSession);
+          return newSession;
+        } catch (refreshError) {
+          console.warn('Token refresh failed after validation error, clearing session:', refreshError);
+          this.clearSession();
+          return null;
+        }
+      }
     } catch (error) {
       console.error('Failed to get session:', error);
+      this.clearSession();
       return null;
     }
   }

@@ -42,16 +42,18 @@ const formSchema = z.object({
   domainAuthority: z.coerce.number().int().min(0).max(100),
 });
 
-type CompetitorFormProps = {
+export type CompetitorFormData = z.infer<typeof formSchema>;
+
+export interface CompetitorFormProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   competitor: Competitor | null;
-};
+}
 
-type EnrichState = {
+export interface EnrichState {
   message: string;
-  data: z.infer<typeof formSchema> | null;
-  errors: any;
+  data: CompetitorFormData | null;
+  errors: Record<string, string[]> | null;
 }
 
 const initialEnrichState: EnrichState = {

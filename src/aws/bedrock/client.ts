@@ -91,6 +91,24 @@ export interface InvokeStreamOptions {
 }
 
 /**
+ * Image data for vision analysis
+ */
+export interface ImageContent {
+  /** Base64 encoded image data */
+  data: string;
+  /** Image format (jpeg, png, webp, gif) */
+  format: 'jpeg' | 'png' | 'webp' | 'gif';
+}
+
+/**
+ * Options for invokeWithVision method
+ */
+export interface InvokeWithVisionOptions extends InvokeOptions {
+  /** Image content for vision analysis */
+  image: ImageContent;
+}
+
+/**
  * Bedrock client for AI operations
  */
 export class BedrockClient {
@@ -153,6 +171,41 @@ export class BedrockClient {
       'No text content found in Converse response',
       content
     );
+  }
+
+  /**
+   * Attempts to parse JSON from text response, handling various formats
+   */
+  private parseJSONResponse(textResponse: string): unknown {
+    // First, try direct JSON parse
+    try {
+      const parsed = JSON.parse(textResponse);
+      return parsed;
+    } catch (firstError) {
+      // If that fails, try to extract JSON from markdown code blocks
+      const codeBlockMatch = textResponse.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+      if (codeBlockMatch) {
+        try {
+          return JSON.parse(codeBlockMatch[1]);
+        } catch {
+          // Continue to next attempt
+        }
+      }
+
+      // Try to find JSON object in the text
+      const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          return JSON.parse(jsonMatch[0]);
+        } catch {
+          // Continue to next attempt
+        }
+      }
+
+      // If all parsing attempts fail, wrap in result object
+      console.error('Failed to parse JSON response:', textResponse.substring(0, 200));
+      return { result: textResponse };
+    }
   }
 
   /**
@@ -282,14 +335,8 @@ export class BedrockClient {
           response.output.message?.content
         );
 
-        // Try to parse as JSON for structured output
-        let parsedOutput: unknown;
-        try {
-          parsedOutput = JSON.parse(textResponse);
-        } catch {
-          // If not JSON, wrap in object
-          parsedOutput = { result: textResponse };
-        }
+        // Parse JSON response with fallback handling
+        const parsedOutput = this.parseJSONResponse(textResponse);
 
         // Validate against schema
         const validationResult = outputSchema.safeParse(parsedOutput);
@@ -446,14 +493,8 @@ export class BedrockClient {
           response.output.message?.content
         );
 
-        // Try to parse as JSON for structured output
-        let parsedOutput: unknown;
-        try {
-          parsedOutput = JSON.parse(textResponse);
-        } catch {
-          // If not JSON, wrap in object
-          parsedOutput = { result: textResponse };
-        }
+        // Parse JSON response with fallback handling
+        const parsedOutput = this.parseJSONResponse(textResponse);
 
         // Validate against schema
         const validationResult = outputSchema.safeParse(parsedOutput);
@@ -551,6 +592,132 @@ export class BedrockClient {
         error
       );
     }
+  }
+
+  /**
+   * Invokes a Bedrock model with vision capabilities (multimodal)
+   * Supports image analysis with Claude's vision capabilities
+   * 
+   * @param systemPrompt - System prompt for the model
+   * @param userPrompt - User prompt/question about the image
+   * @param image - Image content (base64 encoded data and format)
+   * @param outputSchema - Zod schema for validating the response
+   * @param options - Optional configuration for the request
+   * @returns Validated response matching the output schema
+   */
+  async invokeWithVision<TOutput>(
+    systemPrompt: string,
+    userPrompt: string,
+    image: ImageContent,
+    outputSchema: z.ZodSchema<TOutput>,
+    options: InvokeOptions = {}
+  ): Promise<TOutput> {
+    const retryConfig = {
+      ...DEFAULT_RETRY_CONFIG,
+      ...options.retryConfig,
+    };
+
+    // Create execution logger if metadata provided
+    let executionLogger: ExecutionLogger | undefined;
+    if (options.flowName && options.executionMetadata) {
+      executionLogger = createExecutionLogger(
+        options.flowName,
+        this.modelId,
+        options.executionMetadata
+      );
+    }
+
+    return this.withRetry(async () => {
+      try {
+        // Decode base64 image data to binary
+        const imageBytes = Buffer.from(image.data, 'base64');
+
+        // Construct Converse API request with image content
+        const input: ConverseCommandInput = {
+          modelId: this.modelId,
+          system: [{ text: systemPrompt }],
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  image: {
+                    format: image.format,
+                    source: {
+                      bytes: imageBytes,
+                    },
+                  },
+                },
+                {
+                  text: userPrompt,
+                },
+              ],
+            },
+          ],
+          inferenceConfig: {
+            temperature: options.temperature ?? 0.7,
+            maxTokens: options.maxTokens || 4096,
+            topP: options.topP ?? 1,
+          },
+        };
+
+        const command = new ConverseCommand(input);
+        const response = await this.client.send(command);
+
+        if (!response.output) {
+          throw new BedrockError('Empty response from Bedrock');
+        }
+
+        // Extract text from response
+        const textResponse = this.extractTextFromResponse(
+          response.output.message?.content
+        );
+
+        // Parse JSON response with fallback handling
+        const parsedOutput = this.parseJSONResponse(textResponse);
+
+        // Validate against schema
+        const validationResult = outputSchema.safeParse(parsedOutput);
+        
+        if (!validationResult.success) {
+          throw new BedrockParseError(
+            'Response does not match expected schema',
+            parsedOutput,
+            validationResult.error
+          );
+        }
+
+        // Log successful execution with token usage
+        if (executionLogger) {
+          const tokenUsage = extractTokenUsage(response);
+          executionLogger.logSuccess(tokenUsage);
+        }
+
+        return validationResult.data;
+      } catch (error) {
+        // Log error if logger exists
+        if (executionLogger) {
+          const err = error as any;
+          executionLogger.logError(
+            error instanceof Error ? error : new Error(String(error)),
+            err.code || err.name,
+            err.statusCode || err.$metadata?.httpStatusCode
+          );
+        }
+
+        if (error instanceof BedrockError || error instanceof BedrockParseError) {
+          throw error;
+        }
+
+        const err = error as any;
+        throw new BedrockError(
+          err.message || 'Failed to invoke Bedrock model with vision',
+          err.code || err.name,
+          err.statusCode || err.$metadata?.httpStatusCode,
+          error
+        );
+      }
+    }, retryConfig, executionLogger);
   }
 }
 

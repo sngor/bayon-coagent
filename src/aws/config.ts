@@ -30,15 +30,15 @@ export interface BedrockConfig {
 }
 
 /**
- * Valid Bedrock model IDs
+ * Valid Bedrock model IDs (inference profiles)
+ * AWS now requires inference profiles for all Claude models
  */
 export const VALID_BEDROCK_MODELS = [
-  'anthropic.claude-3-haiku-20240307-v1:0',
-  'anthropic.claude-3-sonnet-20240229-v1:0',
-  'anthropic.claude-3-5-sonnet-20240620-v1:0',
-  'anthropic.claude-3-5-sonnet-20241022-v2:0',
+  'us.anthropic.claude-3-haiku-20240307-v1:0',
+  'us.anthropic.claude-3-sonnet-20240229-v1:0',
+  'us.anthropic.claude-3-5-sonnet-20240620-v1:0',
   'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
-  'anthropic.claude-3-opus-20240229-v1:0',
+  'us.anthropic.claude-3-opus-20240229-v1:0',
 ] as const;
 
 export type ValidBedrockModel = typeof VALID_BEDROCK_MODELS[number];

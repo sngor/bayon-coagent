@@ -18,12 +18,12 @@ import {
     type ErrorPattern,
 } from "@/lib/error-handling";
 
-interface ErrorBoundaryProps {
+export interface ErrorBoundaryProps {
     children: React.ReactNode;
     fallback?: React.ComponentType<{ error: Error; reset: () => void }>;
 }
 
-interface ErrorBoundaryState {
+export interface ErrorBoundaryState {
     hasError: boolean;
     error: Error | null;
     errorInfo: React.ErrorInfo | null;
@@ -103,7 +103,7 @@ export class ErrorBoundary extends React.Component<
 // Default Error Fallback Component
 // ============================================================================
 
-interface DefaultErrorFallbackProps {
+export interface DefaultErrorFallbackProps {
     error: Error;
     pattern: ErrorPattern | null;
     reset: () => void;
@@ -133,18 +133,18 @@ function DefaultErrorFallback({
                     <div className="flex items-center gap-3">
                         <div
                             className={`p-3 rounded-full ${severity === "critical"
-                                    ? "bg-red-100 dark:bg-red-900/20"
-                                    : severity === "high"
-                                        ? "bg-orange-100 dark:bg-orange-900/20"
-                                        : "bg-yellow-100 dark:bg-yellow-900/20"
+                                ? "bg-red-100 dark:bg-red-900/20"
+                                : severity === "high"
+                                    ? "bg-orange-100 dark:bg-orange-900/20"
+                                    : "bg-yellow-100 dark:bg-yellow-900/20"
                                 }`}
                         >
                             <AlertTriangle
                                 className={`w-6 h-6 ${severity === "critical"
-                                        ? "text-red-600 dark:text-red-400"
-                                        : severity === "high"
-                                            ? "text-orange-600 dark:text-orange-400"
-                                            : "text-yellow-600 dark:text-yellow-400"
+                                    ? "text-red-600 dark:text-red-400"
+                                    : severity === "high"
+                                        ? "text-orange-600 dark:text-orange-400"
+                                        : "text-yellow-600 dark:text-yellow-400"
                                     }`}
                             />
                         </div>

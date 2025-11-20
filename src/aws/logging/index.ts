@@ -68,3 +68,16 @@ export {
   generateAlarmTemplate,
   generateAllAlarmsTemplate,
 } from './alerts';
+
+export {
+  EditType,
+  OperationType,
+  OperationMetrics,
+  BedrockMetrics,
+  StorageMetrics,
+  getMetricsClient,
+  resetMetricsClient,
+  trackOperation,
+  trackBedrockInvocation,
+  trackStorageOperation,
+} from './reimagine-metrics';

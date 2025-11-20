@@ -59,6 +59,14 @@ export { generateHeaderImage, type GenerateHeaderImageInput, type GenerateHeader
 // Listing Description
 export { generateListingDescription, type GenerateListingDescriptionInput, type GenerateListingDescriptionOutput } from './listing-description-generator';
 
+// Reimagine Image Toolkit
+export { analyzeImage, type AnalyzeImageInput, type AnalyzeImageOutput } from './reimagine-analyze';
+export { virtualStaging, type VirtualStagingInput, type VirtualStagingOutput } from './reimagine-staging';
+export { dayToDusk, type DayToDuskInput, type DayToDuskOutput } from './reimagine-day-to-dusk';
+export { enhanceImage, type EnhanceInput, type EnhanceOutput } from './reimagine-enhance';
+export { removeItems, type ItemRemovalInput, type ItemRemovalOutput } from './reimagine-remove';
+export { virtualRenovation, type VirtualRenovationInput, type VirtualRenovationOutput } from './reimagine-renovate';
+
 /**
  * Note: The following flows from the original Genkit implementation require additional
  * dependencies or database integrations that are beyond the scope of this migration:

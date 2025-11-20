@@ -492,6 +492,181 @@ export class DynamoDBRepository {
       throw wrapDynamoDBError(error);
     }
   }
+
+  /**
+   * Saves image metadata for Reimagine toolkit
+   * @param userId User ID
+   * @param imageId Image ID
+   * @param metadata Image metadata
+   * @throws DynamoDBError if the operation fails
+   */
+  async saveImageMetadata(
+    userId: string,
+    imageId: string,
+    metadata: {
+      originalKey: string;
+      fileName: string;
+      fileSize: number;
+      contentType: string;
+      width: number;
+      height: number;
+      uploadedAt: string;
+      suggestions?: any[];
+    }
+  ): Promise<void> {
+    const { getImageMetadataKeys } = await import('./keys');
+    const keys = getImageMetadataKeys(userId, imageId);
+
+    const item = {
+      ...keys,
+      EntityType: 'ImageMetadata' as const,
+      Data: {
+        imageId,
+        userId,
+        ...metadata,
+      },
+      CreatedAt: Date.now(),
+      UpdatedAt: Date.now(),
+    };
+
+    await this.put(item);
+  }
+
+  /**
+   * Gets image metadata by ID
+   * @param userId User ID
+   * @param imageId Image ID
+   * @returns Image metadata or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getImageMetadata(
+    userId: string,
+    imageId: string
+  ): Promise<any | null> {
+    const { getImageMetadataKeys } = await import('./keys');
+    const keys = getImageMetadataKeys(userId, imageId);
+    return this.get(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates image suggestions for Reimagine toolkit
+   * @param userId User ID
+   * @param imageId Image ID
+   * @param suggestions New suggestions array
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateImageSuggestions(
+    userId: string,
+    imageId: string,
+    suggestions: any[]
+  ): Promise<void> {
+    const { getImageMetadataKeys } = await import('./keys');
+    const keys = getImageMetadataKeys(userId, imageId);
+    await this.update(keys.PK, keys.SK, { suggestions });
+  }
+
+  /**
+   * Saves an edit record for Reimagine toolkit
+   * @param userId User ID
+   * @param editId Edit ID
+   * @param record Edit record data
+   * @throws DynamoDBError if the operation fails
+   */
+  async saveEditRecord(
+    userId: string,
+    editId: string,
+    record: {
+      imageId: string;
+      editType: string;
+      params: any;
+      sourceKey: string;
+      resultKey: string;
+      status: 'pending' | 'processing' | 'completed' | 'failed' | 'preview';
+      createdAt: string;
+      completedAt?: string;
+      error?: string;
+      modelId?: string;
+      processingTime?: number;
+      parentEditId?: string;
+    }
+  ): Promise<void> {
+    const { getEditRecordKeys } = await import('./keys');
+    const keys = getEditRecordKeys(userId, editId);
+
+    const item = {
+      ...keys,
+      EntityType: 'EditRecord' as const,
+      Data: {
+        editId,
+        userId,
+        ...record,
+      },
+      CreatedAt: Date.now(),
+      UpdatedAt: Date.now(),
+    };
+
+    await this.put(item);
+  }
+
+  /**
+   * Gets edit history for a user with pagination
+   * @param userId User ID
+   * @param limit Maximum number of items to return (default: 50)
+   * @param exclusiveStartKey Pagination token
+   * @returns Query result with edit records
+   * @throws DynamoDBError if the operation fails
+   */
+  async getEditHistory(
+    userId: string,
+    limit: number = 50,
+    exclusiveStartKey?: DynamoDBKey
+  ): Promise<QueryResult<any>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'EDIT#';
+
+    return this.query(pk, skPrefix, {
+      limit,
+      exclusiveStartKey,
+      scanIndexForward: false, // Most recent first
+    });
+  }
+
+  /**
+   * Deletes an edit record
+   * @param userId User ID
+   * @param editId Edit ID
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteEdit(userId: string, editId: string): Promise<void> {
+    const { getEditRecordKeys } = await import('./keys');
+    const keys = getEditRecordKeys(userId, editId);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates an edit record status
+   * @param userId User ID
+   * @param editId Edit ID
+   * @param status New status
+   * @param additionalUpdates Additional fields to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateEditStatus(
+    userId: string,
+    editId: string,
+    status: 'pending' | 'processing' | 'completed' | 'failed' | 'preview',
+    additionalUpdates?: {
+      completedAt?: string;
+      error?: string;
+      processingTime?: number;
+    }
+  ): Promise<void> {
+    const { getEditRecordKeys } = await import('./keys');
+    const keys = getEditRecordKeys(userId, editId);
+
+    const updates: any = { status, ...additionalUpdates };
+    await this.update(keys.PK, keys.SK, updates);
+  }
 }
 
 // Export a singleton instance

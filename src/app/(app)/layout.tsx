@@ -16,20 +16,31 @@ import {
   SidebarToggle,
 } from '@/components/ui/sidebar';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import {
   User,
   PanelLeft,
   LogOut,
   ShieldCheck,
-  Plug,
   GraduationCap,
   Settings,
-  Loader2,
   Folder,
   Library,
   Target,
   FileText,
   TrendingUp,
   HeartPulse,
+  ChevronDown,
+  Wand2,
+  HelpCircle,
+  MessageSquare,
 } from 'lucide-react';
 import {
   HouseIcon,
@@ -43,30 +54,28 @@ import { useEffect, useState } from 'react';
 import { useUser, useAuthMethods } from '@/aws/auth/use-user';
 import { PageTransition } from '@/components/page-transition';
 import { TooltipProvider } from '@/contexts/tooltip-context';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useItem } from '@/aws/dynamodb/hooks';
+import { getAgentProfileKeys } from '@/aws/dynamodb/keys';
+import { StandardLoadingSpinner } from '@/components/standard';
 
 const navItems = [
   { href: '/dashboard', icon: HouseIcon, label: 'Dashboard', customIcon: true },
-  { href: '/marketing-plan', icon: Target, label: 'Marketing Plan' },
-  { href: '/brand-audit', icon: ShieldCheck, label: 'Brand Audit' },
-  { href: '/competitive-analysis', icon: UsersIcon, label: 'Competitive Analysis', customIcon: true },
-  { href: '/content-engine', icon: ContentIcon, label: 'Content Engine', customIcon: true },
-  { href: '/research-agent', icon: AISparkleIcon, label: 'Research Agent', customIcon: true },
+  { href: '/assistant', icon: MessageSquare, label: 'AI Assistant' },
+  { href: '/studio', icon: Wand2, label: 'Studio' },
+  { href: '/intelligence', icon: AISparkleIcon, label: 'Intelligence', customIcon: true },
+  { href: '/brand-center', icon: Target, label: 'Brand Center' },
   { href: '/projects', icon: Folder, label: 'Projects' },
-  { href: '/knowledge-base', icon: Library, label: 'Knowledge Base' },
-  { href: '/training-hub', icon: GraduationCap, label: 'Training Hub' },
-  { href: '/integrations', icon: Plug, label: 'Integrations' },
-  { href: '/listing-description-generator', icon: FileText, label: 'Listing Description Generator' },
-  { href: '/investment-opportunity-identification', icon: TrendingUp, label: 'Investment Opportunity' },
-  { href: '/life-event-predictor', icon: HeartPulse, label: 'Life Event Predictor' },
+  { href: '/training', icon: GraduationCap, label: 'Training' },
 ];
 
 function AppLoadingScreen() {
   return (
     <div className="flex h-screen items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">Initializing your dashboard...</p>
-      </div>
+      <StandardLoadingSpinner
+        size="lg"
+        message="Initializing your dashboard..."
+      />
     </div>
   )
 }
@@ -76,10 +85,96 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isMounted, setIsMounted] = useState(false);
   const { user, isUserLoading } = useUser();
   const { signOut } = useAuthMethods();
+  const [showStickyTitle, setShowStickyTitle] = useState(false);
+  const [pageTitle, setPageTitle] = useState<string>('');
+
+  // Fetch user profile data
+  const profileKeys = user ? getAgentProfileKeys(user.id, 'main') : null;
+  const { data: profileData } = useItem(profileKeys?.PK, profileKeys?.SK);
+  const profile = profileData?.Data;
+
+  // Get user display name and initials
+  const userName = profile?.name || 'User';
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Extract page title and handle scroll detection
+  useEffect(() => {
+    const updateTitle = () => {
+      const mainElement = document.querySelector('main');
+      if (mainElement) {
+        const h1 = mainElement.querySelector('h1');
+        if (h1) {
+          const title = h1.textContent || '';
+          setPageTitle(title);
+        } else {
+          setPageTitle('');
+        }
+      }
+    };
+
+    const checkScroll = () => {
+      const mainElement = document.querySelector('main');
+      if (!mainElement) {
+        console.log('❌ No main element found');
+        return;
+      }
+
+      const h1 = mainElement.querySelector('h1');
+      if (!h1) {
+        console.log('❌ No h1 found');
+        setShowStickyTitle(false);
+        return;
+      }
+
+      const rect = h1.getBoundingClientRect();
+      const shouldShow = rect.bottom < 100;
+      console.log('📊 Scroll check:', {
+        bottom: rect.bottom,
+        shouldShow,
+        currentlyShowing: showStickyTitle,
+        title: h1.textContent?.substring(0, 30)
+      });
+      setShowStickyTitle(shouldShow);
+    };
+
+    // Update title when pathname changes
+    const timeoutId = setTimeout(() => {
+      updateTitle();
+      checkScroll();
+    }, 300);
+
+    // Listen for scroll events on the main element (SidebarInset)
+    const mainElement = document.querySelector('main');
+    if (mainElement) {
+      mainElement.addEventListener('scroll', checkScroll, { passive: true });
+
+      // Also observe DOM changes to catch dynamically rendered titles
+      const observer = new MutationObserver(() => {
+        updateTitle();
+        setTimeout(checkScroll, 50);
+      });
+      observer.observe(mainElement, { childList: true, subtree: true });
+
+      return () => {
+        clearTimeout(timeoutId);
+        mainElement.removeEventListener('scroll', checkScroll);
+        observer.disconnect();
+      };
+    }
+
+    return () => clearTimeout(timeoutId);
+  }, [pathname]);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -104,7 +199,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <SidebarProvider>
         <Sidebar collapsible="icon">
           <SidebarHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <Logo />
             </div>
           </SidebarHeader>
@@ -130,51 +225,85 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               ))}
             </SidebarMenu>
           </SidebarContent>
-          <SidebarToggle tooltip="Collapse" />
-          <SidebarFooter>
-            <div className="p-2">
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname.startsWith('/profile')} tooltip="Profile">
-                    <Link href="/profile">
-                      <User />
-                      <span>Profile</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname.startsWith('/settings')} tooltip="Settings">
-                    <Link href="/settings">
-                      <Settings />
-                      <span>Settings</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton onClick={handleSignOut} tooltip="Sign Out">
-                    <LogOut />
-                    <span>Sign Out</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </div>
-          </SidebarFooter>
+          <SidebarFooter />
         </Sidebar>
         <SidebarInset>
-          <header className="sticky top-0 z-10 flex h-14 items-center justify-end md:justify-end px-4 border-b bg-background/80 backdrop-blur-sm">
-            {isMounted && (
-              <div className="md:hidden">
-                <SidebarTrigger>
-                  <PanelLeft />
-                </SidebarTrigger>
-              </div>
-            )}
+          <header className="sticky top-0 z-10 flex h-20 items-center justify-between px-4 mx-3 mt-3 mb-0 bg-background/95 backdrop-blur-sm rounded-t-xl">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {isMounted && (
+                <>
+                  <div className="md:hidden">
+                    <SidebarTrigger>
+                      <PanelLeft />
+                    </SidebarTrigger>
+                  </div>
+                  <div className="hidden md:block">
+                    <SidebarToggle tooltip="Toggle Sidebar" />
+                  </div>
+                </>
+              )}
+              {/* Sticky Page Title */}
+              {showStickyTitle && pageTitle && (
+                <div className="ml-2 transition-all duration-300 ease-in-out animate-in fade-in slide-in-from-left-2">
+                  <h2 className="text-lg font-semibold font-headline truncate whitespace-nowrap">
+                    {pageTitle}
+                  </h2>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 h-9 px-2">
+                    <Avatar className="h-7 w-7">
+                      <AvatarImage src={profile?.photoURL} alt={userName} />
+                      <AvatarFallback className="text-xs font-semibold">
+                        {getInitials(userName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden sm:inline text-sm font-medium max-w-[150px] truncate">{userName}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{userName}</p>
+                      <p className="text-xs leading-none text-muted-foreground truncate">{user?.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" className="cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/support" className="cursor-pointer">
+                      <HelpCircle className="mr-2 h-4 w-4" />
+                      <span>Support & FAQ</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive focus:text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign Out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </header>
           <main className="p-4 md:p-8 lg:p-10">
             <PageTransition>{children}</PageTransition>
           </main>
         </SidebarInset>
       </SidebarProvider>
-    </TooltipProvider>
+    </TooltipProvider >
   );
 }

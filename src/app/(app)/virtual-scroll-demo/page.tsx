@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { StandardEmptyState } from '@/components/standard/empty-state';
 import { Search, List, Grid, Zap } from 'lucide-react';
 
 // Generate sample data
@@ -175,9 +176,12 @@ export default function VirtualScrollDemo() {
                                     enabled={true}
                                 />
                             ) : (
-                                <div className="text-center py-12 text-muted-foreground">
-                                    No items found matching your search.
-                                </div>
+                                <StandardEmptyState
+                                    icon={<Search className="h-12 w-12 text-muted-foreground" />}
+                                    title="No items found"
+                                    description="No items found matching your search. Try adjusting your search terms."
+                                    variant="compact"
+                                />
                             )}
                         </CardContent>
                     </Card>
@@ -217,9 +221,12 @@ export default function VirtualScrollDemo() {
                                         <div key={item.id}>{renderItem(item, index)}</div>
                                     ))
                                 ) : (
-                                    <div className="text-center py-12 text-muted-foreground">
-                                        No items found matching your search.
-                                    </div>
+                                    <StandardEmptyState
+                                        icon={<Search className="h-12 w-12 text-muted-foreground" />}
+                                        title="No items found"
+                                        description="No items found matching your search. Try adjusting your search terms."
+                                        variant="compact"
+                                    />
                                 )}
                             </div>
 

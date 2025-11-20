@@ -5,15 +5,7 @@ import Image from 'next/image';
 import { useMemo, useActionState, useEffect, useState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
-import { PageHeader } from '@/components/page-header';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    CardDescription,
-    CardFooter,
-} from '@/components/ui/card';
+import { StandardPageLayout, StandardCard, StandardSkeleton, StandardEmptyState } from '@/components/standard';
 import {
     Carousel,
     CarouselContent,
@@ -21,31 +13,21 @@ import {
     CarouselNext,
     CarouselPrevious,
 } from '@/components/ui/carousel';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/empty-states';
 import { Star, Award, User, Briefcase, Calendar, TrendingUp, ArrowRight, Newspaper, RefreshCcw, Loader2, MessageSquare } from 'lucide-react';
 import {
-    HouseIcon,
-    ChartIcon,
     ContentIcon,
     AISparkleIcon,
-    SuccessIcon,
-    EmptyStateHouseIcon,
-    EmptyStateContentIcon,
 } from '@/components/ui/real-estate-icons';
 import { useUser } from '@/aws/auth';
 import { ProfileCompletionBanner } from '@/components/profile-completion-banner';
 import { SuggestedNextSteps } from '@/components/suggested-next-steps';
 import { getSuggestedNextActions } from '@/hooks/use-profile-completion';
 import { useItem, useQuery } from '@/aws/dynamodb/hooks';
-import type { Review, Profile, MarketingPlan, BrandAudit, Competitor as CompetitorType } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
+import type { Review, Profile, MarketingPlan, MarketingTask, BrandAudit, Competitor as CompetitorType } from '@/lib/types';
 import { getRealEstateNewsAction } from '@/app/actions';
 import { type GetRealEstateNewsOutput } from '@/aws/bedrock/flows/get-real-estate-news';
 import { toast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
-import { AnimatedNumber, AnimatedDecimal } from '@/components/ui/animated-number';
 import { MetricCard } from '@/components/ui/metric-card';
 
 type NewsState = {
@@ -172,18 +154,11 @@ export default function DashboardPage() {
     }, [agentProfile, latestPlanData, brandAuditData, competitorsData]);
 
     return (
-        <div className="space-y-6 md:space-y-8">
-            <div className="animate-fade-in-up">
-                <div className="space-y-4">
-                    <h1 className="text-display-large text-gradient-primary">
-                        Dashboard
-                    </h1>
-                    <p className="text-heading-3 text-muted-foreground">
-                        {isLoadingProfile ? "Welcome back..." : `Welcome back, ${agentProfile?.name || 'Agent'}. Here's a snapshot of your authority.`}
-                    </p>
-                </div>
-            </div>
-
+        <StandardPageLayout
+            title="Dashboard"
+            description={isLoadingProfile ? "Welcome back..." : `Welcome back, ${agentProfile?.name || 'Agent'}. Here's a snapshot of your authority.`}
+            spacing="default"
+        >
             {/* Profile Completion Banner */}
             {agentProfile && (
                 <div className="animate-fade-in-up animate-delay-100">
@@ -191,246 +166,210 @@ export default function DashboardPage() {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 tablet:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8 orientation-transition">
-                <div className="tablet:col-span-2 lg:col-span-2 space-y-4 md:space-y-6 lg:space-y-8">
+            <div className="grid grid-cols-1 tablet:grid-cols-3 lg:grid-cols-3 gap-6 orientation-transition">
+                <div className="tablet:col-span-2 lg:col-span-2 space-y-6">
 
-                    <Card className="animate-fade-in-up animate-delay-200 shadow-md hover:shadow-lg transition-all duration-300">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-heading-2 flex items-center gap-2">
+                    <StandardCard
+                        title={
+                            <span className="flex items-center gap-2">
                                 <ContentIcon animated={true} className="text-primary h-5 w-5 md:h-6 md:w-6" />
                                 Your Next Steps
-                            </CardTitle>
-                            <CardDescription className="text-base md:text-lg">
-                                Your AI-generated marketing plan is ready.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {isPlanLoading || areCompetitorsLoading || isAuditLoading ? (
-                                <div className="space-y-3 md:space-y-4">
-                                    <Skeleton className="h-20 md:h-24 w-full rounded-lg" />
-                                    <Skeleton className="h-20 md:h-24 w-full rounded-lg" />
-                                </div>
-                            ) : latestPlanData && latestPlanData.length > 0 ? (
-                                <div className="space-y-3 md:space-y-4">
-                                    {latestPlanData[0].plan.slice(0, 2).map((task, index) => (
-                                        <div
-                                            key={index}
-                                            className="flex items-start gap-3 md:gap-4 rounded-lg border p-3 md:p-4 bg-gradient-to-r from-primary/5 to-transparent hover:from-primary/10 transition-all duration-300 hover:shadow-md"
-                                        >
-                                            <div className="flex-shrink-0 font-bold text-primary text-xl md:text-2xl font-headline mt-0.5">{index + 1}</div>
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="font-semibold text-sm md:text-base leading-tight">{task.task}</h4>
-                                                <p className="text-xs md:text-sm text-muted-foreground mt-1 line-clamp-2">{task.rationale}</p>
-                                            </div>
+                            </span>
+                        }
+                        description="Your AI-generated marketing plan is ready."
+                        actions={latestPlanData && latestPlanData.length > 0 ? (
+                            <Button variant="outline" size="sm" asChild className="w-full sm:w-auto">
+                                <Link href="/marketing-plan">View Full Plan</Link>
+                            </Button>
+                        ) : undefined}
+                        variant="elevated"
+                        className="animate-fade-in-up animate-delay-200"
+                    >
+                        {isPlanLoading || areCompetitorsLoading || isAuditLoading ? (
+                            <StandardSkeleton variant="list" count={2} />
+                        ) : latestPlanData && latestPlanData.length > 0 ? (
+                            <div className="space-y-6">
+                                {latestPlanData[0].steps.slice(0, 2).map((task: MarketingTask, index: number) => (
+                                    <div
+                                        key={index}
+                                        className="flex items-start gap-4 rounded-lg border p-4 bg-gradient-to-r from-primary/5 to-transparent hover:from-primary/10 transition-all duration-300 hover:shadow-md"
+                                    >
+                                        <div className="flex-shrink-0 font-bold text-primary text-xl md:text-2xl font-headline mt-0.5">{index + 1}</div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-semibold text-sm md:text-base leading-tight">{task.task}</h4>
+                                            <p className="text-xs md:text-sm text-muted-foreground mt-1 line-clamp-2">{task.rationale}</p>
                                         </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <EmptyState
-                                    icon={<AISparkleIcon animated={true} className="h-8 w-8 text-primary" />}
-                                    title="No Marketing Plan Yet"
-                                    description="Let AI create a personalized marketing strategy tailored to your business goals and market position."
-                                    action={{
-                                        label: "Generate Your Plan",
-                                        onClick: () => window.location.href = '/marketing-plan',
-                                        variant: "ai"
-                                    }}
-                                    className="py-8 border-0 bg-gradient-to-br from-primary/5 to-purple-600/5"
-                                />
-                            )}
-                        </CardContent>
-                        {latestPlanData && latestPlanData.length > 0 && (
-                            <CardFooter className="pt-3">
-                                <Button variant="outline" size="sm" asChild className="w-full sm:w-auto">
-                                    <Link href="/marketing-plan">View Full Plan</Link>
-                                </Button>
-                            </CardFooter>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <StandardEmptyState
+                                icon={<AISparkleIcon animated={true} className="h-8 w-8 text-primary" />}
+                                title="No Marketing Plan Yet"
+                                description="Let AI create a personalized marketing strategy tailored to your business goals and market position."
+                                action={{
+                                    label: "Generate Your Plan",
+                                    onClick: () => window.location.href = '/marketing-plan',
+                                    variant: "ai"
+                                }}
+                                variant="compact"
+                                className="bg-gradient-to-br from-primary/5 to-purple-600/5"
+                            />
                         )}
-                    </Card>
+                    </StandardCard>
 
-                    <Card className="animate-fade-in-up animate-delay-300 shadow-md hover:shadow-lg transition-all duration-300">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-heading-2 flex items-center gap-2">
+                    <StandardCard
+                        title={
+                            <span className="flex items-center gap-2">
                                 <Star className="text-primary h-5 w-5 md:h-6 md:w-6" />
                                 Reputation Snapshot
-                            </CardTitle>
-                            <CardDescription className="text-base md:text-lg">
-                                Your latest client feedback from across the web.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-3 tablet:gap-4 mb-4 md:mb-6 orientation-transition">
+                            </span>
+                        }
+                        description="Your latest client feedback from across the web."
+                        variant="elevated"
+                        className="animate-fade-in-up animate-delay-300"
+                    >
+                        {isLoadingStats ? (
+                            <StandardSkeleton variant="metric" count={3} className="mb-4 md:mb-6" />
+                        ) : (
+                            <div className="grid gap-6 grid-cols-3 mb-6 orientation-transition">
                                 {/* Average Rating Card */}
-                                {isLoadingStats ? (
-                                    <div className="flex flex-col items-center justify-center rounded-xl border-2 p-4 md:p-6 bg-gradient-to-br from-primary/5 via-primary/3 to-transparent">
-                                        <Skeleton className="h-10 md:h-12 w-20 md:w-24 mb-3 rounded-lg" />
-                                        <div className="flex items-center gap-1 mb-2">
-                                            {[...Array(5)].map((_, i) => (
-                                                <Skeleton key={i} className="h-4 w-4 md:h-5 md:w-5 rounded-sm" />
-                                            ))}
-                                        </div>
-                                        <Skeleton className="h-4 w-24 md:w-28 rounded" />
-                                    </div>
-                                ) : (
-                                    <MetricCard
-                                        value={parseFloat(averageRating as string)}
-                                        label="Average Rating"
-                                        decimals={1}
-                                        icon={<Star className="h-5 w-5 md:h-6 md:w-6" />}
-                                        trendData={[4.2, 4.3, 4.4, 4.5, 4.6, 4.7, parseFloat(averageRating as string)]}
-                                        changePercent={5.2}
-                                        showSparkline={true}
-                                        showTrend={true}
-                                        variant="primary"
-                                    />
-                                )}
+                                <MetricCard
+                                    value={parseFloat(averageRating as string)}
+                                    label="Average Rating"
+                                    decimals={1}
+                                    icon={<Star className="h-5 w-5 md:h-6 md:w-6" />}
+                                    trendData={[4.2, 4.3, 4.4, 4.5, 4.6, 4.7, parseFloat(averageRating as string)]}
+                                    changePercent={5.2}
+                                    showSparkline={true}
+                                    showTrend={true}
+                                    variant="primary"
+                                />
 
                                 {/* Total Reviews Card */}
-                                {isLoadingStats ? (
-                                    <div className="flex flex-col items-center justify-center rounded-xl border-2 p-4 md:p-6 bg-gradient-to-br from-primary/5 via-primary/3 to-transparent">
-                                        <Skeleton className="h-10 md:h-12 w-16 md:w-20 mb-3 rounded-lg" />
-                                        <Skeleton className="h-4 w-20 md:w-24 rounded" />
-                                    </div>
-                                ) : (
-                                    <MetricCard
-                                        value={totalReviews}
-                                        label="Total Reviews"
-                                        icon={<Award className="h-5 w-5 md:h-6 md:w-6" />}
-                                        trendData={[
-                                            Math.max(0, totalReviews - 15),
-                                            Math.max(0, totalReviews - 12),
-                                            Math.max(0, totalReviews - 9),
-                                            Math.max(0, totalReviews - 6),
-                                            Math.max(0, totalReviews - 3),
-                                            totalReviews,
-                                        ]}
-                                        changePercent={8.5}
-                                        showSparkline={true}
-                                        showTrend={true}
-                                        variant="primary"
-                                    />
-                                )}
+                                <MetricCard
+                                    value={totalReviews}
+                                    label="Total Reviews"
+                                    icon={<Award className="h-5 w-5 md:h-6 md:w-6" />}
+                                    trendData={[
+                                        Math.max(0, totalReviews - 15),
+                                        Math.max(0, totalReviews - 12),
+                                        Math.max(0, totalReviews - 9),
+                                        Math.max(0, totalReviews - 6),
+                                        Math.max(0, totalReviews - 3),
+                                        totalReviews,
+                                    ]}
+                                    changePercent={8.5}
+                                    showSparkline={true}
+                                    showTrend={true}
+                                    variant="primary"
+                                />
 
                                 {/* Recent Reviews Card */}
-                                {isLoadingStats ? (
-                                    <div className="flex flex-col items-center justify-center rounded-xl border-2 p-4 md:p-6 bg-gradient-to-br from-success/5 via-success/3 to-transparent">
-                                        <Skeleton className="h-10 md:h-12 w-20 md:w-24 mb-3 rounded-lg" />
-                                        <Skeleton className="h-4 w-24 md:w-28 rounded" />
-                                    </div>
-                                ) : (
-                                    <MetricCard
-                                        value={recentReviewsCount}
-                                        label="New (30 days)"
-                                        prefix="+"
-                                        icon={<TrendingUp className="h-5 w-5 md:h-6 md:w-6" />}
-                                        trendData={[
-                                            Math.max(0, recentReviewsCount - 5),
-                                            Math.max(0, recentReviewsCount - 4),
-                                            Math.max(0, recentReviewsCount - 3),
-                                            Math.max(0, recentReviewsCount - 2),
-                                            Math.max(0, recentReviewsCount - 1),
-                                            recentReviewsCount,
-                                        ]}
-                                        changePercent={15.3}
-                                        showSparkline={true}
-                                        showTrend={true}
-                                        variant="success"
-                                    />
-                                )}
+                                <MetricCard
+                                    value={recentReviewsCount}
+                                    label="New (30 days)"
+                                    prefix="+"
+                                    icon={<TrendingUp className="h-5 w-5 md:h-6 md:w-6" />}
+                                    trendData={[
+                                        Math.max(0, recentReviewsCount - 5),
+                                        Math.max(0, recentReviewsCount - 4),
+                                        Math.max(0, recentReviewsCount - 3),
+                                        Math.max(0, recentReviewsCount - 2),
+                                        Math.max(0, recentReviewsCount - 1),
+                                        recentReviewsCount,
+                                    ]}
+                                    changePercent={15.3}
+                                    showSparkline={true}
+                                    showTrend={true}
+                                    variant="success"
+                                />
                             </div>
-                            <h3 className="text-xs md:text-sm font-medium text-muted-foreground mb-2 md:mb-3">Latest Testimonials</h3>
-                            <Carousel
-                                opts={{
-                                    align: 'start',
-                                }}
-                                className="w-full"
-                            >
-                                <CarouselContent>
-                                    {isLoadingCarousel ? (
-                                        [...Array(2)].map((_, i) => (
-                                            <CarouselItem key={`skeleton-${i}`} className="md:basis-full lg:basis-1/2">
-                                                <div className="p-1 h-full">
-                                                    <Card className="h-full flex flex-col justify-between p-3 md:p-4 bg-secondary/30">
-                                                        <Skeleton className="h-5 md:h-6 w-20 md:w-24 rounded-full" />
-                                                        <Skeleton className="h-3 md:h-4 w-full mt-2" />
-                                                        <Skeleton className="h-3 md:h-4 w-3/4 mt-1" />
-                                                    </Card>
-                                                </div>
-                                            </CarouselItem>
-                                        ))
-                                    ) : recentReviews && recentReviews.length > 0 ? (
-                                        recentReviews.map((review) => (
-                                            <CarouselItem key={review.id} className="md:basis-full lg:basis-1/2">
-                                                <div className="p-1 h-full">
-                                                    <Link href="/brand-audit">
-                                                        <Card className="h-full flex flex-col bg-secondary/30 hover:bg-secondary/50 hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
-                                                            <CardHeader className="flex-row items-start gap-3 md:gap-4 space-y-0 pb-2">
-                                                                {review.avatarUrl && <Image
-                                                                    src={review.avatarUrl}
-                                                                    alt={review.author.name}
-                                                                    width={32}
-                                                                    height={32}
-                                                                    className="rounded-full md:w-10 md:h-10"
-                                                                    data-ai-hint="happy person"
-                                                                />}
-                                                                <div className="flex-1 min-w-0">
-                                                                    <p className="font-semibold text-xs md:text-sm truncate">{review.author.name || 'Anonymous'}</p>
-                                                                    <p className="text-xs text-muted-foreground">{review.source}</p>
-                                                                </div>
-                                                            </CardHeader>
-                                                            <CardContent className="flex-grow pt-2">
-                                                                <p className="text-xs md:text-sm text-muted-foreground italic line-clamp-3">
-                                                                    "{review.comment}"
-                                                                </p>
-                                                            </CardContent>
-                                                        </Card>
-                                                    </Link>
-                                                </div>
-                                            </CarouselItem>
-                                        ))
-                                    ) : (
-                                        <CarouselItem>
+                        )}
+                        <h3 className="text-xs md:text-sm font-medium text-muted-foreground mb-2 md:mb-3">Latest Testimonials</h3>
+                        <Carousel
+                            opts={{
+                                align: 'start',
+                            }}
+                            className="w-full"
+                        >
+                            <CarouselContent>
+                                {isLoadingCarousel ? (
+                                    <CarouselItem className="md:basis-full">
+                                        <div className="p-1 h-full">
+                                            <StandardSkeleton variant="list" count={2} />
+                                        </div>
+                                    </CarouselItem>
+                                ) : recentReviews && recentReviews.length > 0 ? (
+                                    recentReviews.map((review) => (
+                                        <CarouselItem key={review.id} className="md:basis-full lg:basis-1/2">
                                             <div className="p-1 h-full">
-                                                <EmptyState
-                                                    icon={<MessageSquare className="h-8 w-8 text-primary" />}
-                                                    title="No Reviews Yet"
-                                                    description="Start building your online reputation by collecting client testimonials and reviews from various platforms."
-                                                    action={{
-                                                        label: "Run Brand Audit",
-                                                        onClick: () => window.location.href = '/brand-audit',
-                                                        variant: "default"
-                                                    }}
-                                                    className="py-6 border-0 bg-secondary/30"
-                                                />
+                                                <Link href="/brand-audit">
+                                                    <div className="h-full flex flex-col p-4 md:p-6 bg-secondary/30 hover:bg-secondary/50 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] rounded-lg border">
+                                                        <div className="flex items-start gap-4 pb-3">
+                                                            {review.avatarUrl && <Image
+                                                                src={review.avatarUrl}
+                                                                alt={review.author.name}
+                                                                width={32}
+                                                                height={32}
+                                                                className="rounded-full md:w-10 md:h-10"
+                                                                data-ai-hint="happy person"
+                                                            />}
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-semibold text-xs md:text-sm truncate">{review.author.name || 'Anonymous'}</p>
+                                                                <p className="text-xs text-muted-foreground">{review.source}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex-grow">
+                                                            <p className="text-xs md:text-sm text-muted-foreground italic line-clamp-3">
+                                                                "{review.comment}"
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </Link>
                                             </div>
                                         </CarouselItem>
-                                    )}
-                                </CarouselContent>
-                                <CarouselPrevious className="hidden sm:flex -left-4" />
-                                <CarouselNext className="hidden sm:flex -right-4" />
-                            </Carousel>
-                        </CardContent>
-                    </Card>
+                                    ))
+                                ) : (
+                                    <CarouselItem>
+                                        <div className="p-1 h-full">
+                                            <StandardEmptyState
+                                                icon={<MessageSquare className="h-8 w-8 text-primary" />}
+                                                title="No Reviews Yet"
+                                                description="Start building your online reputation by collecting client testimonials and reviews from various platforms."
+                                                action={{
+                                                    label: "Run Brand Audit",
+                                                    onClick: () => window.location.href = '/brand-audit',
+                                                    variant: "default"
+                                                }}
+                                                variant="compact"
+                                                className="bg-secondary/30"
+                                            />
+                                        </div>
+                                    </CarouselItem>
+                                )}
+                            </CarouselContent>
+                            <CarouselPrevious className="hidden sm:flex -left-4" />
+                            <CarouselNext className="hidden sm:flex -right-4" />
+                        </Carousel>
+                    </StandardCard>
 
                 </div>
 
-                <div className="tablet:col-span-1 lg:col-span-1 space-y-4 md:space-y-6 lg:space-y-8">
-                    <Card className="animate-fade-in-up animate-delay-100 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden">
+                <div className="tablet:col-span-1 lg:col-span-1 space-y-6">
+                    <StandardCard
+                        variant="elevated"
+                        className="animate-fade-in-up animate-delay-100 overflow-hidden"
+                        contentClassName="p-0"
+                    >
                         {isLoadingProfile ? (
-                            <div className="flex flex-col items-center p-4 md:p-6 space-y-3 md:space-y-4">
-                                <Skeleton className="w-20 h-20 md:w-24 md:h-24 rounded-full" />
-                                <Skeleton className="h-6 md:h-7 w-36 md:w-48 rounded-lg" />
-                                <Skeleton className="h-4 md:h-5 w-28 md:w-36 rounded" />
-                                <div className="w-full space-y-3 pt-4">
-                                    <Skeleton className="h-10 w-full rounded-lg" />
-                                    <Skeleton className="h-10 w-full rounded-lg" />
-                                    <Skeleton className="h-10 w-full rounded-lg" />
-                                </div>
+                            <div className="p-6">
+                                <StandardSkeleton variant="content" count={4} />
                             </div>
                         ) : (
                             <>
-                                <CardHeader className="items-center text-center pb-3 bg-gradient-to-b from-primary/5 to-transparent">
-                                    <div className="relative group">
+                                <div className="items-center text-center pb-3 bg-gradient-to-b from-primary/5 to-transparent p-6">
+                                    <div className="relative group inline-block">
                                         <Image
                                             src={agentProfile?.photoURL || 'https://picsum.photos/seed/1/96/96'}
                                             alt={agentProfile?.name || 'Agent Profile'}
@@ -440,15 +379,15 @@ export default function DashboardPage() {
                                         />
                                         <div className="absolute inset-0 rounded-full bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                     </div>
-                                    <CardTitle className="text-heading-2 mt-4">
+                                    <h3 className="text-heading-2 mt-4">
                                         {agentProfile?.name}
-                                    </CardTitle>
-                                    <CardDescription className="text-base font-medium">
+                                    </h3>
+                                    <p className="text-base font-medium text-muted-foreground mt-2">
                                         {agentProfile?.agencyName}
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="text-xs md:text-sm space-y-2 md:space-y-3 pt-4">
-                                    <div className="group flex items-center gap-3 p-3 rounded-lg hover:bg-primary/5 hover:border-primary/20 border border-transparent transition-all duration-200 cursor-default">
+                                    </p>
+                                </div>
+                                <div className="text-xs md:text-sm space-y-2 p-6 pt-4">
+                                    <div className="group flex items-center gap-4 p-3 rounded-lg hover:bg-primary/5 hover:border-primary/20 border border-transparent transition-all duration-200 cursor-default">
                                         <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-200">
                                             <User className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                                         </div>
@@ -456,7 +395,7 @@ export default function DashboardPage() {
                                             {agentProfile?.licenseNumber}
                                         </span>
                                     </div>
-                                    <div className="group flex items-center gap-3 p-3 rounded-lg hover:bg-primary/5 hover:border-primary/20 border border-transparent transition-all duration-200 cursor-default">
+                                    <div className="group flex items-center gap-4 p-3 rounded-lg hover:bg-primary/5 hover:border-primary/20 border border-transparent transition-all duration-200 cursor-default">
                                         <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-200">
                                             <Briefcase className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                                         </div>
@@ -464,7 +403,7 @@ export default function DashboardPage() {
                                             {agentProfile?.certifications?.[0] || 'Real Estate'}
                                         </span>
                                     </div>
-                                    <div className="group flex items-center gap-3 p-3 rounded-lg hover:bg-primary/5 hover:border-primary/20 border border-transparent transition-all duration-200 cursor-default">
+                                    <div className="group flex items-center gap-4 p-3 rounded-lg hover:bg-primary/5 hover:border-primary/20 border border-transparent transition-all duration-200 cursor-default">
                                         <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-200">
                                             <Calendar className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                                         </div>
@@ -472,10 +411,10 @@ export default function DashboardPage() {
                                             {agentProfile?.yearsOfExperience} years experience
                                         </span>
                                     </div>
-                                </CardContent>
+                                </div>
                             </>
                         )}
-                    </Card>
+                    </StandardCard>
 
                     {/* Suggested Next Steps */}
                     {!isLoadingProfile && suggestedSteps.length > 0 && (
@@ -484,67 +423,59 @@ export default function DashboardPage() {
                         </div>
                     )}
 
-                    <Card className="animate-fade-in-up animate-delay-400 shadow-md hover:shadow-lg transition-all duration-300">
-                        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3">
-                            <div className="flex-1 min-w-0">
-                                <CardTitle className="text-heading-3 flex items-center gap-2">
-                                    <Newspaper className="text-primary h-5 w-5 flex-shrink-0" />
-                                    <span className="truncate">Real Estate News</span>
-                                </CardTitle>
-                                <CardDescription className="text-xs md:text-sm">The latest market headlines.</CardDescription>
-                            </div>
+                    <StandardCard
+                        title={
+                            <span className="flex items-center gap-2">
+                                <Newspaper className="text-primary h-5 w-5 flex-shrink-0" />
+                                <span className="truncate">Real Estate News</span>
+                            </span>
+                        }
+                        description="The latest market headlines."
+                        actions={
                             <form action={newsFormAction} className="flex-shrink-0">
                                 <input type="hidden" name="location" value={agentProfile?.address || ''} />
                                 <RefreshNewsButton />
                             </form>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-3 md:space-y-4">
-                                {(isPending && !latestNews?.articles) || isLoadingProfile ? (
-                                    [...Array(3)].map((_, i) => (
-                                        <div key={i} className="space-y-2 rounded-lg border-2 p-3 md:p-4 bg-gradient-to-r from-muted/50 to-transparent">
-                                            <Skeleton className="h-5 md:h-6 w-3/4 rounded-lg" />
-                                            <Skeleton className="h-4 w-full rounded" />
-                                            <Skeleton className="h-4 w-5/6 rounded" />
-                                            <div className="flex items-center justify-between pt-1">
-                                                <Skeleton className="h-3 w-24 rounded" />
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : latestNews?.articles && latestNews.articles.length > 0 ? (
-                                    latestNews.articles.map((article: { title: string; url: string; source: string; summary: string }, index: number) => (
-                                        <a
-                                            key={index}
-                                            href={article.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="group block rounded-lg border-2 border-transparent p-3 md:p-4 transition-all duration-300 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent hover:shadow-lg hover:border-primary/20 hover:scale-[1.01]"
-                                        >
-                                            <h4 className="font-semibold text-sm md:text-base group-hover:text-primary transition-colors line-clamp-2 leading-snug">
-                                                {article.title}
-                                            </h4>
-                                            <p className="text-xs md:text-sm text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
-                                                {article.summary}
+                        }
+                        variant="elevated"
+                        className="animate-fade-in-up animate-delay-400"
+                    >
+                        <div className="space-y-6">
+                            {(isPending && !latestNews?.articles) || isLoadingProfile ? (
+                                <StandardSkeleton variant="list" count={3} />
+                            ) : latestNews?.articles && latestNews.articles.length > 0 ? (
+                                latestNews.articles.map((article, index) => (
+                                    <a
+                                        key={index}
+                                        href={article.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="group block rounded-lg border-2 border-transparent p-3 md:p-4 transition-all duration-300 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent hover:shadow-lg hover:border-primary/20 hover:scale-[1.01]"
+                                    >
+                                        <h4 className="font-semibold text-sm md:text-base group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                                            {article.title}
+                                        </h4>
+                                        <p className="text-xs md:text-sm text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
+                                            {article.description}
+                                        </p>
+                                        <div className="flex items-center justify-between mt-3">
+                                            <p className="text-xs font-medium text-muted-foreground/80">
+                                                {article.source}
                                             </p>
-                                            <div className="flex items-center justify-between mt-3">
-                                                <p className="text-xs font-medium text-muted-foreground/80">
-                                                    {article.source}
-                                                </p>
-                                                <ArrowRight className="h-3 w-3 text-primary opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300" />
-                                            </div>
-                                        </a>
-                                    ))
-                                ) : (
-                                    <div className="text-center py-6 md:py-8 bg-secondary/30 rounded-lg border-2 border-dashed border-muted">
-                                        <Newspaper className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-                                        <p className="text-sm text-muted-foreground">No news to display.</p>
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
+                                            <ArrowRight className="h-3 w-3 text-primary opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300" />
+                                        </div>
+                                    </a>
+                                ))
+                            ) : (
+                                <div className="text-center py-6 md:py-8 bg-secondary/30 rounded-lg border-2 border-dashed border-muted">
+                                    <Newspaper className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+                                    <p className="text-sm text-muted-foreground">No news to display.</p>
+                                </div>
+                            )}
+                        </div>
+                    </StandardCard>
                 </div>
             </div>
-        </div>
+        </StandardPageLayout >
     );
 }

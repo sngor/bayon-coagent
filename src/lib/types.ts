@@ -101,6 +101,7 @@ export type KeywordRanking = {
   rank: number;
   agentName: string;
   agencyName: string;
+  keyword?: string; // Added by the action for display purposes
 }
 
 export type ResearchReport = {

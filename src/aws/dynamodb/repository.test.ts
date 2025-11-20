@@ -523,4 +523,197 @@ describe('DynamoDB Repository', () => {
       expect(customRepo).toBeDefined();
     });
   });
+
+  describe('Reimagine operations', () => {
+    describe('saveImageMetadata', () => {
+      it('should save image metadata successfully', async () => {
+        mockSend.mockResolvedValueOnce({});
+
+        const metadata = {
+          originalKey: 's3://bucket/user123/image456.jpg',
+          fileName: 'property.jpg',
+          fileSize: 2048000,
+          contentType: 'image/jpeg',
+          width: 1920,
+          height: 1080,
+          uploadedAt: new Date().toISOString(),
+          suggestions: [
+            {
+              editType: 'virtual-staging',
+              priority: 'high',
+              reason: 'Empty room detected',
+              confidence: 0.95,
+            },
+          ],
+        };
+
+        await repository.saveImageMetadata('user123', 'image456', metadata);
+
+        expect(mockSend).toHaveBeenCalledTimes(1);
+        const call = mockSend.mock.calls[0][0];
+        expect(call.input.Item.PK).toBe('USER#user123');
+        expect(call.input.Item.SK).toBe('IMAGE#image456');
+        expect(call.input.Item.EntityType).toBe('ImageMetadata');
+        expect(call.input.Item.Data.imageId).toBe('image456');
+        expect(call.input.Item.Data.userId).toBe('user123');
+        expect(call.input.Item.Data.originalKey).toBe(metadata.originalKey);
+      });
+    });
+
+    describe('getImageMetadata', () => {
+      it('should retrieve image metadata successfully', async () => {
+        const metadata = {
+          imageId: 'image456',
+          userId: 'user123',
+          originalKey: 's3://bucket/user123/image456.jpg',
+          fileName: 'property.jpg',
+          fileSize: 2048000,
+          contentType: 'image/jpeg',
+          width: 1920,
+          height: 1080,
+          uploadedAt: new Date().toISOString(),
+        };
+
+        const mockItem: DynamoDBItem<typeof metadata> = {
+          PK: 'USER#user123',
+          SK: 'IMAGE#image456',
+          EntityType: 'ImageMetadata',
+          Data: metadata,
+          CreatedAt: Date.now(),
+          UpdatedAt: Date.now(),
+        };
+
+        mockSend.mockResolvedValueOnce({ Item: mockItem });
+
+        const result = await repository.getImageMetadata('user123', 'image456');
+
+        expect(result).toEqual(metadata);
+        expect(mockSend).toHaveBeenCalledTimes(1);
+      });
+
+      it('should return null when image metadata not found', async () => {
+        mockSend.mockResolvedValueOnce({ Item: undefined });
+
+        const result = await repository.getImageMetadata('user123', 'image456');
+
+        expect(result).toBeNull();
+      });
+    });
+
+    describe('saveEditRecord', () => {
+      it('should save edit record successfully', async () => {
+        mockSend.mockResolvedValueOnce({});
+
+        const record = {
+          imageId: 'image456',
+          editType: 'virtual-staging',
+          params: { roomType: 'living-room', style: 'modern' },
+          sourceKey: 's3://bucket/user123/image456.jpg',
+          resultKey: 's3://bucket/user123/edit789.jpg',
+          status: 'completed' as const,
+          createdAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          modelId: 'amazon.titan-image-generator-v1',
+          processingTime: 5000,
+        };
+
+        await repository.saveEditRecord('user123', 'edit789', record);
+
+        expect(mockSend).toHaveBeenCalledTimes(1);
+        const call = mockSend.mock.calls[0][0];
+        expect(call.input.Item.PK).toBe('USER#user123');
+        expect(call.input.Item.SK).toBe('EDIT#edit789');
+        expect(call.input.Item.EntityType).toBe('EditRecord');
+        expect(call.input.Item.Data.editId).toBe('edit789');
+        expect(call.input.Item.Data.userId).toBe('user123');
+        expect(call.input.Item.Data.editType).toBe('virtual-staging');
+      });
+    });
+
+    describe('getEditHistory', () => {
+      it('should retrieve edit history with pagination', async () => {
+        const mockItems: DynamoDBItem<any>[] = [
+          {
+            PK: 'USER#user123',
+            SK: 'EDIT#edit3',
+            EntityType: 'EditRecord',
+            Data: {
+              editId: 'edit3',
+              userId: 'user123',
+              imageId: 'image456',
+              editType: 'enhance',
+              status: 'completed',
+              createdAt: '2024-01-03T00:00:00Z',
+            },
+            CreatedAt: Date.now(),
+            UpdatedAt: Date.now(),
+          },
+          {
+            PK: 'USER#user123',
+            SK: 'EDIT#edit2',
+            EntityType: 'EditRecord',
+            Data: {
+              editId: 'edit2',
+              userId: 'user123',
+              imageId: 'image456',
+              editType: 'day-to-dusk',
+              status: 'completed',
+              createdAt: '2024-01-02T00:00:00Z',
+            },
+            CreatedAt: Date.now(),
+            UpdatedAt: Date.now(),
+          },
+        ];
+
+        mockSend.mockResolvedValueOnce({
+          Items: mockItems,
+          Count: 2,
+        });
+
+        const result = await repository.getEditHistory('user123', 10);
+
+        expect(result.items).toHaveLength(2);
+        expect(result.count).toBe(2);
+        expect(result.items[0].editId).toBe('edit3');
+        expect(mockSend).toHaveBeenCalledTimes(1);
+        
+        const call = mockSend.mock.calls[0][0];
+        expect(call.input.KeyConditionExpression).toContain('PK = :pk');
+        expect(call.input.KeyConditionExpression).toContain('begins_with(SK, :skPrefix)');
+        expect(call.input.ExpressionAttributeValues[':pk']).toBe('USER#user123');
+        expect(call.input.ExpressionAttributeValues[':skPrefix']).toBe('EDIT#');
+        expect(call.input.ScanIndexForward).toBe(false); // Most recent first
+      });
+    });
+
+    describe('deleteEdit', () => {
+      it('should delete edit record successfully', async () => {
+        mockSend.mockResolvedValueOnce({});
+
+        await repository.deleteEdit('user123', 'edit789');
+
+        expect(mockSend).toHaveBeenCalledTimes(1);
+        const call = mockSend.mock.calls[0][0];
+        expect(call.input.Key.PK).toBe('USER#user123');
+        expect(call.input.Key.SK).toBe('EDIT#edit789');
+      });
+    });
+
+    describe('updateEditStatus', () => {
+      it('should update edit status successfully', async () => {
+        mockSend.mockResolvedValueOnce({});
+
+        await repository.updateEditStatus('user123', 'edit789', 'completed', {
+          completedAt: new Date().toISOString(),
+          processingTime: 5000,
+        });
+
+        expect(mockSend).toHaveBeenCalledTimes(1);
+        const call = mockSend.mock.calls[0][0];
+        expect(call.input.Key.PK).toBe('USER#user123');
+        expect(call.input.Key.SK).toBe('EDIT#edit789');
+        expect(call.input.UpdateExpression).toContain('SET');
+      });
+    });
+  });
 });

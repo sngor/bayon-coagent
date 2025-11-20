@@ -38,7 +38,7 @@ import {
   ContentIcon,
 } from '@/components/ui/real-estate-icons';
 import { AILoader, StepLoader } from '@/components/ui/loading-states';
-import { EmptyState } from '@/components/ui/empty-states';
+import { StandardEmptyState } from '@/components/standard';
 import { useUser } from '@/aws/auth';
 import { useItem, useQuery } from '@/aws/dynamodb/hooks';
 import { getRepository } from '@/aws/dynamodb';
@@ -287,13 +287,13 @@ export default function MarketingPlanPage() {
                   <div className="flex-grow">
                     <h3 className="font-semibold text-lg">{item.task}</h3>
                     <p className="text-sm text-muted-foreground mt-1 mb-3">{item.rationale}</p>
-                    <Button asChild size="sm" className="transition-all hover:scale-105">
-                      <Link href={item.toolLink}>
+                    <Link href={item.toolLink}>
+                      <Button size="sm" className="transition-all hover:scale-105">
                         {toolIcons[item.tool] || <Target className="mr-2 h-4 w-4" />}
                         Use {item.tool}
                         <ArrowRight className="ml-2 h-4 w-4" />
-                      </Link>
-                    </Button>
+                      </Button>
+                    </Link>
                   </div>
                 </li>
               ))}
@@ -304,9 +304,8 @@ export default function MarketingPlanPage() {
 
       {!isPlanLoading && !displayPlan && !isGenerating && (
         <div className="space-y-6">
-          <EmptyState
-            variant="prominent"
-            icon={<AISparkleIcon animated={true} className="h-8 w-8 text-primary" />}
+          <StandardEmptyState
+            icon={<AISparkleIcon animated={true} className="h-16 w-16 text-primary" />}
             title="Your Marketing Success Starts Here"
             description="Let AI analyze your brand presence and competitive landscape to create a personalized, actionable marketing plan. Get strategic recommendations tailored to your unique position in the market."
             action={{
@@ -353,13 +352,13 @@ export default function MarketingPlanPage() {
                         Run a brand audit to analyze your online presence, NAP consistency, and review sentiment.
                       </p>
                       {!brandAuditData && (
-                        <Button asChild variant="outline" size="sm" className="mt-2">
-                          <Link href="/brand-audit">
+                        <Link href="/brand-audit">
+                          <Button variant="outline" size="sm" className="mt-2">
                             <ShieldCheck className="mr-2 h-4 w-4" />
                             Go to Brand Audit
                             <ArrowRight className="ml-2 h-4 w-4" />
-                          </Link>
-                        </Button>
+                          </Button>
+                        </Link>
                       )}
                     </div>
                   </div>
@@ -377,13 +376,13 @@ export default function MarketingPlanPage() {
                         Add at least one competitor to understand your competitive landscape and identify opportunities.
                       </p>
                       {(!competitorsData || competitorsData.length === 0) && (
-                        <Button asChild variant="outline" size="sm" className="mt-2">
-                          <Link href="/competitive-analysis">
+                        <Link href="/competitive-analysis">
+                          <Button variant="outline" size="sm" className="mt-2">
                             <Users className="mr-2 h-4 w-4" />
                             Go to Competitive Analysis
                             <ArrowRight className="ml-2 h-4 w-4" />
-                          </Link>
-                        </Button>
+                          </Button>
+                        </Link>
                       )}
                     </div>
                   </div>
@@ -457,18 +456,18 @@ export default function MarketingPlanPage() {
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Try Again
               </Button>
-              <Button asChild variant="outline" className="flex-1">
-                <Link href="/brand-audit">
+              <Link href="/brand-audit" className="flex-1">
+                <Button variant="outline" className="w-full">
                   <ShieldCheck className="mr-2 h-4 w-4" />
                   Check Brand Audit
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="flex-1">
-                <Link href="/competitive-analysis">
+                </Button>
+              </Link>
+              <Link href="/competitive-analysis" className="flex-1">
+                <Button variant="outline" className="w-full">
                   <Users className="mr-2 h-4 w-4" />
                   Check Competitors
-                </Link>
-              </Button>
+                </Button>
+              </Link>
             </div>
             <div className="pt-2 border-t">
               <p className="text-xs text-muted-foreground">

@@ -2,8 +2,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { StandardEmptyState } from '@/components/standard/empty-state';
 import { useUser } from '@/aws/auth';
 import { useQuery } from '@/aws/dynamodb/hooks';
 import { getRepository } from '@/aws/dynamodb';
@@ -49,6 +51,7 @@ function ReportListSkeleton() {
 }
 
 export default function KnowledgeBasePage() {
+    const router = useRouter();
     const { user } = useUser();
     const [reportToDelete, setReportToDelete] = useState<ResearchReport | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -249,20 +252,16 @@ export default function KnowledgeBasePage() {
             )}
 
             {!isLoading && (!reports || reports.length === 0) && (
-                <Card className="flex flex-col items-center justify-center text-center py-20">
-                    <Library className="h-16 w-16 mb-4 text-muted-foreground" />
-                    <CardTitle className="font-headline text-2xl">Your Knowledge Base is Empty</CardTitle>
-                    <CardDescription className="mt-2">
-                        You haven't saved any research reports yet.
-                    </CardDescription>
-                    <CardContent className="mt-6">
-                        <Link href="/research-agent">
-                            <Button>
-                                Go to the AI Research Agent
-                            </Button>
-                        </Link>
-                    </CardContent>
-                </Card>
+                <StandardEmptyState
+                    icon={<Library className="h-16 w-16 text-muted-foreground" />}
+                    title="Your Knowledge Base is Empty"
+                    description="You haven't saved any research reports yet. Start by creating your first research report."
+                    action={{
+                        label: "Go to the AI Research Agent",
+                        onClick: () => router.push('/research-agent'),
+                        variant: 'default'
+                    }}
+                />
             )}
         </div>
     );

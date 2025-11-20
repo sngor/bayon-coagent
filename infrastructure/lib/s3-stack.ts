@@ -44,6 +44,27 @@ export class S3Stack extends cdk.Stack {
             },
           ],
         },
+        {
+          id: 'ArchiveOldReimagineEdits',
+          enabled: isProd,
+          prefix: 'reimagine/edits/',
+          transitions: [
+            {
+              storageClass: s3.StorageClass.INFREQUENT_ACCESS,
+              transitionAfter: cdk.Duration.days(90),
+            },
+            {
+              storageClass: s3.StorageClass.GLACIER,
+              transitionAfter: cdk.Duration.days(180),
+            },
+          ],
+        },
+        {
+          id: 'DeleteReimaginePreviewEdits',
+          enabled: true,
+          prefix: 'reimagine/preview/',
+          expiration: cdk.Duration.days(7),
+        },
       ],
       cors: [
         {
@@ -63,6 +84,8 @@ export class S3Stack extends cdk.Stack {
             'x-amz-server-side-encryption',
             'x-amz-request-id',
             'x-amz-id-2',
+            'Content-Type',
+            'Content-Length',
           ],
           maxAge: 3000,
         },

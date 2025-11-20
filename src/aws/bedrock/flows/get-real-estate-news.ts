@@ -53,10 +53,15 @@ const getRealEstateNewsFlow = defineFlow(
       title: article.title,
       url: article.url,
       source: article.source.name,
-      summary: article.description,
+      description: article.description || '',
+      publishedAt: article.publishedAt || new Date().toISOString(),
+      imageUrl: article.urlToImage,
     }));
 
-    return { articles };
+    return { 
+      articles,
+      totalResults: data.totalResults || articles.length 
+    };
   }
 );
 

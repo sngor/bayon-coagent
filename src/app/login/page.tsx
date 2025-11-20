@@ -587,9 +587,9 @@ export default function LoginPage() {
 
     if (!user) {
         return (
-            <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
+            <div className="w-full min-h-screen lg:flex">
                 {/* Left side - Form */}
-                <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-background">
+                <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-background lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-1/2 lg:overflow-y-auto">
                     <div className="w-full max-w-md space-y-8">
                         <div className="flex justify-center mb-8 animate-fade-in">
                             <Logo className="justify-center" />
@@ -607,7 +607,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* Right side - Hero */}
-                <div className="hidden lg:flex relative overflow-hidden">
+                <div className="hidden lg:flex relative overflow-y-auto lg:ml-auto lg:w-1/2">
                     {/* Gradient Mesh Background */}
                     <HeroGradientMesh>
                         {/* Content */}

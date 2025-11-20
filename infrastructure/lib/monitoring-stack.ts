@@ -154,6 +154,26 @@ export class MonitoringStack extends cdk.Stack {
       period: cdk.Duration.minutes(5),
     });
 
+    const bedrockTitanInvocationMetric = new cloudwatch.Metric({
+      namespace: 'AWS/Bedrock',
+      metricName: 'Invocations',
+      dimensionsMap: {
+        ModelId: 'amazon.titan-image-generator-v1',
+      },
+      statistic: 'Sum',
+      period: cdk.Duration.minutes(5),
+    });
+
+    const bedrockSDXLInvocationMetric = new cloudwatch.Metric({
+      namespace: 'AWS/Bedrock',
+      metricName: 'Invocations',
+      dimensionsMap: {
+        ModelId: 'stability.stable-diffusion-xl-v1',
+      },
+      statistic: 'Sum',
+      period: cdk.Duration.minutes(5),
+    });
+
     const bedrockThrottleMetric = new cloudwatch.Metric({
       namespace: 'AWS/Bedrock',
       metricName: 'ModelInvocationThrottles',
@@ -257,11 +277,42 @@ export class MonitoringStack extends cdk.Stack {
       })
     );
 
+    // === Reimagine Metrics ===
+    const reimagineUploadMetric = new cloudwatch.Metric({
+      namespace: 'BayonCoAgent/Reimagine',
+      metricName: 'ImageUploads',
+      dimensionsMap: {
+        Environment: environment,
+      },
+      statistic: 'Sum',
+      period: cdk.Duration.minutes(5),
+    });
+
+    const reimagineEditMetric = new cloudwatch.Metric({
+      namespace: 'BayonCoAgent/Reimagine',
+      metricName: 'EditOperations',
+      dimensionsMap: {
+        Environment: environment,
+      },
+      statistic: 'Sum',
+      period: cdk.Duration.minutes(5),
+    });
+
+    const reimagineProcessingTimeMetric = new cloudwatch.Metric({
+      namespace: 'BayonCoAgent/Reimagine',
+      metricName: 'EditProcessingTime',
+      dimensionsMap: {
+        Environment: environment,
+      },
+      statistic: 'Average',
+      period: cdk.Duration.minutes(5),
+    });
+
     // Bedrock Section
     this.dashboard.addWidgets(
       new cloudwatch.GraphWidget({
-        title: 'Bedrock - Invocations',
-        left: [bedrockInvocationMetric],
+        title: 'Bedrock - Invocations by Model',
+        left: [bedrockInvocationMetric, bedrockTitanInvocationMetric, bedrockSDXLInvocationMetric],
         width: 8,
         height: 6,
       }),
@@ -274,6 +325,28 @@ export class MonitoringStack extends cdk.Stack {
       new cloudwatch.GraphWidget({
         title: 'Bedrock - Latency',
         left: [bedrockLatencyMetric],
+        width: 8,
+        height: 6,
+      })
+    );
+
+    // Reimagine Section
+    this.dashboard.addWidgets(
+      new cloudwatch.GraphWidget({
+        title: 'Reimagine - Upload Activity',
+        left: [reimagineUploadMetric],
+        width: 8,
+        height: 6,
+      }),
+      new cloudwatch.GraphWidget({
+        title: 'Reimagine - Edit Operations',
+        left: [reimagineEditMetric],
+        width: 8,
+        height: 6,
+      }),
+      new cloudwatch.GraphWidget({
+        title: 'Reimagine - Processing Time',
+        left: [reimagineProcessingTimeMetric],
         width: 8,
         height: 6,
       })

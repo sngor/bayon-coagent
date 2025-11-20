@@ -10,6 +10,7 @@
 export type EntityType =
   | 'UserProfile'
   | 'RealEstateAgentProfile'
+  | 'AgentProfile'
   | 'Review'
   | 'BrandAudit'
   | 'Competitor'
@@ -20,7 +21,14 @@ export type EntityType =
   | 'MarketingPlan'
   | 'ReviewAnalysis'
   | 'OAuthToken'
-  | 'PersonalizationProfile';
+  | 'PersonalizationProfile'
+  | 'ImageMetadata'
+  | 'EditRecord'
+  | 'RateLimit'
+  | 'Citation'
+  | 'Conversation'
+  | 'WorkflowExecution'
+  | 'VisionAnalysis';
 
 /**
  * Base DynamoDB item structure

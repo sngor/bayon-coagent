@@ -10,6 +10,7 @@ export {
   uploadFile,
   downloadFile,
   getPresignedUrl,
+  getPresignedDownloadUrl,
   getPresignedUploadUrl,
   deleteFile,
   listFiles,

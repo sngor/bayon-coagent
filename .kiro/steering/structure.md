@@ -14,8 +14,14 @@
 
 ### `/src/app` - Next.js App Router
 
-- **`/src/app/(app)`**: Authenticated routes (dashboard, profile, tools)
-  - Each feature has its own directory with `page.tsx`
+- **`/src/app/(app)`**: Authenticated routes organized by hubs
+  - **Hub Structure**: Each hub has a layout with tabs
+    - `/studio`: Content creation hub (Write, Describe, Reimagine)
+    - `/intelligence`: Research & analysis hub (Research, Competitors, Market Insights)
+    - `/brand-center`: Brand identity hub (Profile, Audit, Strategy)
+    - `/dashboard`: Overview and metrics
+    - `/projects`: Work organization
+    - `/training`: Educational content
   - Use Server Components by default
   - Client components marked with `'use client'`
 - **`/src/app/api`**: API routes (OAuth callbacks, webhooks)
@@ -53,6 +59,11 @@ All AWS service code is isolated here with clean abstractions:
   - Reusable, accessible UI primitives
   - Styled with Tailwind CSS
   - Do not modify these directly; extend or compose them
+- **`/src/components/hub`**: Hub layout components
+  - HubLayout: Consistent layout wrapper for all hubs
+  - HubTabs: Tab navigation within hubs
+  - HubBreadcrumbs: Navigation breadcrumbs
+  - HubHeader: Hub header with title, description, and actions
 - **`/src/components`**: Application-specific components
   - Feature-specific forms and displays
   - Layout components
@@ -84,6 +95,7 @@ All AWS service code is isolated here with clean abstractions:
 ### `/src/contexts` - React Contexts
 
 - `tooltip-context.tsx`: Contextual tooltip state management
+- `hub-context.tsx`: Hub and tab state management for navigation
 
 ## Infrastructure (`/infrastructure`)
 
@@ -99,6 +111,49 @@ AWS CDK TypeScript project for infrastructure as code:
 - `init-localstack.sh`: Initialize LocalStack resources
 - `deploy-amplify.sh`: Automated Amplify deployment
 - `verify-setup.js`: Local development verification
+
+## Hub Architecture
+
+### Hub-Based Navigation
+
+The application uses a hub-based architecture to organize features:
+
+```
+/[hub-name]
+  ├── layout.tsx          # Hub-specific layout with tabs
+  ├── page.tsx            # Hub landing/overview page (usually redirects)
+  └── /[section]          # Individual sections
+      ├── page.tsx        # Section page
+      └── /[feature]      # Nested features
+          └── page.tsx
+```
+
+### Hub Components
+
+All hubs use consistent components from `/src/components/hub`:
+
+- **HubLayout**: Wraps hub content with header and tabs
+- **HubTabs**: Horizontal tab navigation with keyboard support
+- **HubBreadcrumbs**: Shows navigation path
+- **HubHeader**: Displays hub title, description, icon, and actions
+
+### URL Redirects
+
+Old URLs automatically redirect to new hub structure via middleware:
+
+- `/content-engine` → `/studio/write`
+- `/research-agent` → `/intelligence/research`
+- `/profile` → `/brand-center/profile`
+- See `/src/lib/redirects.ts` for complete mapping
+
+### Navigation Hierarchy
+
+```
+Level 1: Main Navigation (Sidebar) - 6 items
+  └─ Level 2: Hub Tabs (Horizontal) - 2-3 tabs per hub
+      └─ Level 3: Section Content (Page-specific)
+          └─ Level 4: Feature Details (Modal/Drawer)
+```
 
 ## Key Patterns
 
@@ -153,10 +208,12 @@ PK: USER#<userId>          SK: OAUTH#<provider>
 ## File Naming Conventions
 
 - **Components**: `kebab-case.tsx` (e.g., `page-header.tsx`)
+- **Hub Components**: `hub-*.tsx` (e.g., `hub-layout.tsx`)
 - **Hooks**: `use-*.tsx` (e.g., `use-mobile.tsx`)
 - **Types**: `types.ts` or `*.types.ts`
 - **Tests**: `*.test.ts` or `__tests__/*.tsx`
 - **Server Actions**: `actions.ts` or `*-actions.ts`
+- **Hub Layouts**: `layout.tsx` in hub directories
 
 ## Import Aliases
 

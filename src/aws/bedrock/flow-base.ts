@@ -23,15 +23,16 @@ export interface AIFlow<TInput, TOutput> {
 /**
  * Bedrock model identifiers
  * 
- * Note: Sonnet 3.5 v2 requires inference profile ARN for cross-region inference.
- * Using us.anthropic.claude-3-5-sonnet-20241022-v2:0 for cross-region support.
+ * IMPORTANT: AWS Bedrock now requires inference profiles for all Claude models.
+ * Use cross-region inference profiles (us.* prefix) which work in any region.
+ * Direct model IDs (without us. prefix) will fail with ValidationException.
  */
 export const BEDROCK_MODELS = {
-  HAIKU: 'anthropic.claude-3-haiku-20240307-v1:0',
-  SONNET_3: 'anthropic.claude-3-sonnet-20240229-v1:0',
-  SONNET_3_5_V1: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+  HAIKU: 'us.anthropic.claude-3-haiku-20240307-v1:0',
+  SONNET_3: 'us.anthropic.claude-3-sonnet-20240229-v1:0',
+  SONNET_3_5_V1: 'us.anthropic.claude-3-5-sonnet-20240620-v1:0',
   SONNET_3_5_V2: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
-  OPUS: 'anthropic.claude-3-opus-20240229-v1:0',
+  OPUS: 'us.anthropic.claude-3-opus-20240229-v1:0',
 } as const;
 
 /**
@@ -177,25 +178,38 @@ export function definePrompt<TInput extends Record<string, any>, TOutput>(
       topP: effectiveTopP,
     };
     
-    // Construct full prompt
-    const systemPrompt = config.systemPrompt || '';
-    const fullPrompt = systemPrompt 
-      ? `${systemPrompt}\n\nHuman: ${userPrompt}\n\nAssistant: I'll provide the response in valid JSON format matching the required schema.`
-      : `Human: ${userPrompt}\n\nAssistant: I'll provide the response in valid JSON format matching the required schema.`;
+    // Construct user prompt with JSON instruction
+    // Note: Using Converse API, so no need for "Human:" / "Assistant:" prefixes
+    const jsonInstruction = '\n\nIMPORTANT: Respond with ONLY valid JSON matching the required schema. Do not include any markdown formatting, code blocks, or explanatory text.';
+    const fullUserPrompt = userPrompt + jsonInstruction;
     
     try {
       // Invoke Bedrock with effective options and execution logging
-      const response = await client.invoke(
-        fullPrompt,
-        config.outputSchema,
-        {
-          temperature: effectiveTemperature,
-          maxTokens: effectiveMaxTokens,
-          topP: effectiveTopP,
-          flowName: config.name,
-          executionMetadata,
-        }
-      );
+      // Use invokeWithPrompts if we have a system prompt, otherwise use invoke
+      const response = config.systemPrompt
+        ? await client.invokeWithPrompts(
+            config.systemPrompt,
+            fullUserPrompt,
+            config.outputSchema,
+            {
+              temperature: effectiveTemperature,
+              maxTokens: effectiveMaxTokens,
+              topP: effectiveTopP,
+              flowName: config.name,
+              executionMetadata,
+            }
+          )
+        : await client.invoke(
+            fullUserPrompt,
+            config.outputSchema,
+            {
+              temperature: effectiveTemperature,
+              maxTokens: effectiveMaxTokens,
+              topP: effectiveTopP,
+              flowName: config.name,
+              executionMetadata,
+            }
+          );
       
       return response;
     } catch (error) {

@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   
+  // Increase body size limit for file uploads (10MB)
+  serverActions: {
+    bodySizeLimit: '10mb',
+  },
+  
   // Expose environment variables to the browser
   env: {
     AWS_REGION: process.env.AWS_REGION,
@@ -62,6 +67,12 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'placehold.co',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
         port: '',
         pathname: '/**',
       },

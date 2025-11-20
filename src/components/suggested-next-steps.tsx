@@ -13,14 +13,14 @@ import {
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
-interface NextStep {
+export interface NextStep {
     title: string;
     description: string;
     href: string;
     priority: 'high' | 'medium' | 'low';
 }
 
-interface SuggestedNextStepsProps {
+export interface SuggestedNextStepsProps {
     steps: NextStep[];
     className?: string;
 }

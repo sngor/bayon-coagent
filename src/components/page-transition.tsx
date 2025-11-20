@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 
-interface PageTransitionProps {
+export interface PageTransitionProps {
     children: React.ReactNode;
 }
 
