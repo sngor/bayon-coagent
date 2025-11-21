@@ -1,5 +1,5 @@
 
-import type {Config} from 'tailwindcss';
+import type { Config } from 'tailwindcss';
 
 export default {
   darkMode: ['class'],
@@ -11,9 +11,9 @@ export default {
   theme: {
     extend: {
       screens: {
-        'tablet': {'min': '768px', 'max': '1024px'},
-        'tablet-portrait': {'min': '768px', 'max': '1024px', 'raw': '(orientation: portrait)'},
-        'tablet-landscape': {'min': '768px', 'max': '1024px', 'raw': '(orientation: landscape)'},
+        'tablet': { 'min': '768px', 'max': '1024px' },
+        'tablet-portrait': { 'min': '768px', 'max': '1024px', 'raw': '(orientation: portrait)' },
+        'tablet-landscape': { 'min': '768px', 'max': '1024px', 'raw': '(orientation: landscape)' },
       },
       fontFamily: {
         body: ['var(--font-pt-sans)', '"PT Sans"', 'sans-serif'],
@@ -124,6 +124,9 @@ export default {
         'fade-in-up': 'fade-in-up 0.5s ease-in-out',
         'shake': 'shake 0.5s ease-in-out',
         'shimmer': 'shimmer 2s linear infinite',
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
       },
     },
   },

@@ -288,8 +288,6 @@ export default function ReimagineToolkitPage() {
 
     return (
         <StandardPageLayout
-            title="Reimagine Image Toolkit"
-            description="Transform your property photos with AI-powered editing tools"
             spacing="default"
             maxWidth="wide"
         >

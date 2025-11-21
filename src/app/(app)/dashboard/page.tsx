@@ -179,8 +179,30 @@ export default function DashboardPage() {
         );
     }, [agentProfile, latestPlanData, brandAuditData, competitorsData]);
 
+    // Get time-based greeting
+    const getTimeOfDayGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return 'Good morning';
+        if (hour < 18) return 'Good afternoon';
+        return 'Good evening';
+    };
+
+    const firstName = agentProfile?.name ? agentProfile.name.split(' ')[0] : null;
+
     return (
         <div className="space-y-6">
+            {/* Welcome Greeting */}
+            {firstName && (
+                <div className="animate-fade-in-up">
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+                        {getTimeOfDayGreeting()}, {firstName}
+                    </h1>
+                    <p className="text-muted-foreground mt-1">
+                        Here's your business overview and what to focus on today.
+                    </p>
+                </div>
+            )}
+
             {/* Profile Completion Banner */}
             {agentProfile && (
                 <div className="animate-fade-in-up animate-delay-100">

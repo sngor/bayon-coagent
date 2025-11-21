@@ -1,9 +1,9 @@
 'use client';
 
 import { HubHeaderProps } from './types';
-import { cn } from '@/lib/utils';
+import { memo } from 'react';
 
-export function HubHeader({ title, description, icon: Icon, actions }: HubHeaderProps) {
+function HubHeaderComponent({ title, description, icon: Icon, actions }: HubHeaderProps) {
     return (
         <header className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-4 min-w-0 flex-1">
@@ -29,3 +29,6 @@ export function HubHeader({ title, description, icon: Icon, actions }: HubHeader
         </header>
     );
 }
+
+// Export memoized version to prevent unnecessary re-renders
+export const HubHeader = memo(HubHeaderComponent);

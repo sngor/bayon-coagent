@@ -76,11 +76,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   // Fetch user profile data
   const profileKeys = user ? getAgentProfileKeys(user.id, 'main') : null;
-  const { data: profileData } = useItem(profileKeys?.PK, profileKeys?.SK);
+  const { data: profileData, refetch: refetchProfile } = useItem(profileKeys?.PK, profileKeys?.SK);
   const profile = profileData?.Data;
 
   // Get user display name and initials
   const userName = profile?.name || 'User';
+  const firstName = profile?.name ? profile.name.split(' ')[0] : 'User';
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -285,7 +286,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </Avatar>
                     <div className="hidden sm:flex flex-col items-start min-w-0">
                       <span className="text-sm font-medium leading-none truncate max-w-[120px]">
-                        {userName}
+                        {firstName}
                       </span>
                       <span className="text-xs text-muted-foreground leading-none mt-1">
                         Agent

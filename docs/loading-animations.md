@@ -8,7 +8,7 @@ This guide covers the enhanced loading animations available in the application.
 
 **Location:** `src/components/session-loading.tsx`
 
-Full-screen loading animation shown during session initialization with animated gradient mesh blur background.
+Enhanced full-screen loading animation shown during session initialization with dynamic gradient mesh background, progress indication, and engaging micro-interactions.
 
 ```tsx
 import { SessionLoading } from "@/components/session-loading";
@@ -17,6 +17,13 @@ import { SessionLoading } from "@/components/session-loading";
 ```
 
 **Features:**
+
+- Dynamic gradient mesh background with 5 animated orbs
+- Circular progress indicator with percentage display
+- Rotating loading steps with smooth transitions
+- Floating particle effects
+- Enhanced logo animation with glow effect
+- Responsive design optimized for all screen sizes
 
 - Animated gradient mesh blur background (5 moving blobs)
 - Logo with fade-in animation

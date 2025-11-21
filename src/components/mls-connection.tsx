@@ -36,10 +36,10 @@ import {
     Clock,
     Home,
     Loader2,
-import { LoadingDots } from '@/components/ui/loading-dots';
-RefreshCw,
+    RefreshCw,
     XCircle,
 } from 'lucide-react';
+import { LoadingDots } from '@/components/ui/loading-dots';
 import { useUser } from '@/aws/auth';
 import { useToast } from '@/hooks/use-toast';
 import type { MLSConnection } from '@/integrations/mls/types';

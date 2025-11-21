@@ -355,6 +355,11 @@ export default function ProfilePage() {
                 const result = await updateProfilePhotoUrlAction(user.id, url);
 
                 if (result.message === 'Profile photo updated successfully') {
+                    // Invalidate cache to force refresh of profile data throughout the app
+                    const { getCache } = await import('@/aws/dynamodb/hooks/cache');
+                    const cache = getCache();
+                    cache.invalidatePartition(`USER#${user.id}`);
+
                     toast({
                         title: 'Profile Photo Updated!',
                         description: 'Your profile photo has been uploaded to S3.',
@@ -423,6 +428,11 @@ export default function ProfilePage() {
             const result = await saveProfileAction({}, formData);
 
             if (result.message === 'success') {
+                // Invalidate cache to force refresh of profile data throughout the app
+                const { getCache } = await import('@/aws/dynamodb/hooks/cache');
+                const cache = getCache();
+                cache.invalidatePartition(`USER#${user.id}`);
+
                 toast({
                     title: 'Profile Saved!',
                     description: 'Your information has been updated successfully.',
