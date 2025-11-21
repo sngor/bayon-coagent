@@ -36,6 +36,12 @@ export { generateMarketingPlan, type GenerateMarketingPlanInput, type GenerateMa
 // Research Agent
 export { runResearchAgent, type RunResearchAgentInput, type RunResearchAgentOutput } from './run-research-agent';
 
+// Property Valuation
+export { runPropertyValuation, type PropertyValuationInput, type PropertyValuationOutput } from './property-valuation';
+
+// Renovation ROI
+export { runRenovationROIAnalysis, type RenovationROIInput, type RenovationROIOutput } from './renovation-roi';
+
 // Review Analysis
 export { analyzeMultipleReviews, type AnalyzeMultipleReviewsInput, type AnalyzeMultipleReviewsOutput } from './analyze-multiple-reviews';
 export { analyzeReviewSentiment, type AnalyzeReviewSentimentInput, type AnalyzeReviewSentimentOutput } from './analyze-review-sentiment';

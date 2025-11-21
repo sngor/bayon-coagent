@@ -231,115 +231,117 @@ export default function ResearchAgentPage() {
     <StandardPageLayout
       spacing="default"
     >
-      <StandardCard
-        title={<span className="font-headline">New Research Task</span>}
-        description="Ask any question about your market and get a research-backed answer in minutes."
-      >
-        <form
-          action={(formData) => {
-            const topic = formData.get('topic') as string;
-            setLastTopic(topic);
-            formAction(formData);
-          }}
-          className="space-y-4"
+      <div className="space-y-8">
+        <StandardCard
+          title={<span className="font-headline">New Research Task</span>}
+          description="Ask any question about your market and get a research-backed answer in minutes."
         >
-          <StandardFormField
-            label="Research Topic"
-            id="topic"
-            error={state.errors?.topic?.[0]}
-            hint="Enter a topic for the AI agent to research. It will perform iterative web searches and compile a comprehensive report."
+          <form
+            action={(formData) => {
+              const topic = formData.get('topic') as string;
+              setLastTopic(topic);
+              formAction(formData);
+            }}
+            className="space-y-4"
           >
-            <Textarea
+            <StandardFormField
+              label="Research Topic"
               id="topic"
-              name="topic"
-              placeholder="e.g., How are rising interest rates affecting commercial real estate in NYC?"
-              rows={3}
-            />
-          </StandardFormField>
-          <SubmitButton disabled={isUserLoading} />
-          {state.message && state.message !== 'success' && (
-            <p className="text-sm text-destructive mt-4">{state.message}</p>
+              error={state.errors?.topic?.[0]}
+              hint="Enter a topic for the AI agent to research. It will perform iterative web searches and compile a comprehensive report."
+            >
+              <Textarea
+                id="topic"
+                name="topic"
+                placeholder="e.g., How are rising interest rates affecting commercial real estate in NYC?"
+                rows={3}
+              />
+            </StandardFormField>
+            <SubmitButton disabled={isUserLoading} />
+            {state.message && state.message !== 'success' && (
+              <p className="text-sm text-destructive mt-4">{state.message}</p>
+            )}
+          </form>
+        </StandardCard>
+
+        {/* AI Operation Progress */}
+        {isPending && researchOperation.tracker && (
+          <AIOperationProgress
+            operationName="run-research-agent"
+            tracker={researchOperation.tracker}
+            title="Researching Your Topic"
+            description="Our AI agent is conducting comprehensive research..."
+          />
+        )}
+
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="font-headline text-2xl font-bold">Recent Reports</h2>
+            <Link href="/library/reports">
+              <Button variant="ghost">View All</Button>
+            </Link>
+          </div>
+
+          {/* Search Input */}
+          {!isLoadingReports && savedReports && savedReports.length > 0 && (
+            <div className="max-w-md">
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                onClear={() => setSearchQuery('')}
+                placeholder="Search recent reports..."
+                aria-label="Search recent reports"
+              />
+            </div>
           )}
-        </form>
-      </StandardCard>
 
-      {/* AI Operation Progress */}
-      {isPending && researchOperation.tracker && (
-        <AIOperationProgress
-          operationName="run-research-agent"
-          tracker={researchOperation.tracker}
-          title="Researching Your Topic"
-          description="Our AI agent is conducting comprehensive research..."
-        />
-      )}
+          {isLoadingReports && <StandardSkeleton variant="card" count={3} />}
 
-      <div className="space-y-6 pt-8">
-        <div className="flex justify-between items-center">
-          <h2 className="font-headline text-2xl font-bold">Recent Reports</h2>
-          <Link href="/library/reports">
-            <Button variant="ghost">View All</Button>
-          </Link>
-        </div>
-
-        {/* Search Input */}
-        {!isLoadingReports && savedReports && savedReports.length > 0 && (
-          <div className="max-w-md">
-            <SearchInput
-              value={searchQuery}
-              onChange={setSearchQuery}
-              onClear={() => setSearchQuery('')}
-              placeholder="Search recent reports..."
-              aria-label="Search recent reports"
+          {/* No search results */}
+          {!isLoadingReports && savedReports && savedReports.length > 0 && searchQuery && filteredReports.length === 0 && (
+            <NoResultsEmptyState
+              searchTerm={searchQuery}
+              onClearSearch={() => setSearchQuery('')}
+              icon={<Search className="w-8 h-8 text-muted-foreground" />}
             />
-          </div>
-        )}
+          )}
 
-        {isLoadingReports && <StandardSkeleton variant="card" count={3} />}
+          {!isLoadingReports && filteredReports && filteredReports.length > 0 && (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {filteredReports.map(report => (
+                <Link key={report.id} href={`/market/research/${report.id}`} passHref>
+                  <Card className="h-full flex flex-col card-interactive">
+                    <CardHeader>
+                      <CardTitle
+                        className="font-headline text-xl line-clamp-2"
+                        dangerouslySetInnerHTML={{
+                          __html: searchQuery
+                            ? highlightMatches(report.topic || '', searchQuery)
+                            : report.topic || ''
+                        }}
+                      />
+                    </CardHeader>
+                    <CardContent className="flex-grow" />
+                    <CardFooter>
+                      <div className="text-sm text-muted-foreground flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        <span>{new Date(report.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </CardFooter>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
 
-        {/* No search results */}
-        {!isLoadingReports && savedReports && savedReports.length > 0 && searchQuery && filteredReports.length === 0 && (
-          <NoResultsEmptyState
-            searchTerm={searchQuery}
-            onClearSearch={() => setSearchQuery('')}
-            icon={<Search className="w-8 h-8 text-muted-foreground" />}
-          />
-        )}
-
-        {!isLoadingReports && filteredReports && filteredReports.length > 0 && (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredReports.map(report => (
-              <Link key={report.id} href={`/market/research/${report.id}`} passHref>
-                <Card className="h-full flex flex-col card-interactive">
-                  <CardHeader>
-                    <CardTitle
-                      className="font-headline text-xl line-clamp-2"
-                      dangerouslySetInnerHTML={{
-                        __html: searchQuery
-                          ? highlightMatches(report.topic || '', searchQuery)
-                          : report.topic || ''
-                      }}
-                    />
-                  </CardHeader>
-                  <CardContent className="flex-grow" />
-                  <CardFooter>
-                    <div className="text-sm text-muted-foreground flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>{new Date(report.createdAt).toLocaleDateString()}</span>
-                    </div>
-                  </CardFooter>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {!isLoadingReports && (!savedReports || savedReports.length === 0) && (
-          <StandardEmptyState
-            icon={<Library className="h-16 w-16 text-muted-foreground" />}
-            title="No Research Reports Yet"
-            description="Ask your first question and get insights backed by real data."
-          />
-        )}
+          {!isLoadingReports && (!savedReports || savedReports.length === 0) && (
+            <StandardEmptyState
+              icon={<Library className="h-16 w-16 text-muted-foreground" />}
+              title="No Research Reports Yet"
+              description="Ask your first question and get insights backed by real data."
+            />
+          )}
+        </div>
       </div>
 
     </StandardPageLayout>

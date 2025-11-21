@@ -10,7 +10,7 @@ export default function AssistantLayout({
 }) {
     return (
         <HubLayout
-            title="AI Assistant"
+            title="AI Chat"
             description="Get instant answers, research insights, and personalized content recommendations"
             icon={Bot}
             tabs={[]}

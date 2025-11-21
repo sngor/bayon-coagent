@@ -39,11 +39,11 @@ const getPIIPatterns = () => ({
 });
 
 /**
- * Real estate domain keywords
+ * Real estate domain keywords - Expanded for better coverage
  */
 const REAL_ESTATE_KEYWORDS = [
   'property', 'real estate', 'house', 'home', 'listing', 'market', 'buyer', 'seller',
-  'agent', 'broker', 'mls', 'mortgage', 'appraisal', 'inspection', 'closing',
+  'agent', 'broker', 'mls', 'mortgage', 'appraisal', 'inspection', 'closing', 'close',
   'neighborhood', 'location', 'price', 'value', 'investment', 'rental', 'lease',
   'commercial', 'residential', 'land', 'lot', 'square feet', 'bedroom', 'bathroom',
   'kitchen', 'garage', 'yard', 'hoa', 'zoning', 'title', 'deed', 'equity',
@@ -51,6 +51,10 @@ const REAL_ESTATE_KEYWORDS = [
   'contingency', 'escrow', 'commission', 'client', 'lead', 'prospect',
   'marketing', 'advertising', 'social media', 'website', 'seo', 'content',
   'luxury', 'first-time buyer', 'foreclosure', 'short sale', 'flip',
+  'deal', 'transaction', 'negotiate', 'negotiation', 'rates', 'interest',
+  'financing', 'loan', 'credit', 'down payment', 'preapproval', 'refinance',
+  'realtor', 'realty', 'properties', 'homes', 'houses', 'condos', 'townhomes',
+  'apartments', 'rent', 'buy', 'sell', 'purchase', 'sale', 'sold'
 ];
 
 /**
@@ -177,7 +181,21 @@ export class GuardrailsService {
    * @returns True if real estate related
    */
   isRealEstateDomain(prompt: string): boolean {
-    const lowerPrompt = prompt.toLowerCase();
+    const lowerPrompt = prompt.toLowerCase().trim();
+
+    // Allow basic conversational interactions - greetings, pleasantries, etc.
+    const conversationalTerms = [
+      'hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening',
+      'thanks', 'thank you', 'please', 'help', 'can you', 'could you',
+      'what', 'how', 'when', 'where', 'why', 'who', 'tell me', 'explain',
+      'advice', 'tips', 'suggestions', 'recommend', 'best', 'better',
+      'question', 'ask', 'wondering', 'curious', 'interested'
+    ];
+
+    // If it's a basic conversational term, allow it
+    if (conversationalTerms.some(term => lowerPrompt.includes(term))) {
+      return true;
+    }
 
     // Check for real estate keywords
     const hasRealEstateKeyword = REAL_ESTATE_KEYWORDS.some(keyword =>
@@ -190,19 +208,44 @@ export class GuardrailsService {
 
     // Check for common real estate phrases
     const realEstatePhrases = [
-      'buy a home',
-      'sell my house',
-      'market analysis',
-      'property value',
-      'home price',
-      'listing description',
-      'open house',
-      'real estate market',
-      'housing market',
-      'property search',
+      'buy a home', 'sell my house', 'market analysis', 'property value',
+      'home price', 'listing description', 'open house', 'real estate market',
+      'housing market', 'property search', 'close a deal', 'closing deal',
+      'mortgage rate', 'interest rate', 'home loan', 'property deal',
+      'real estate deal', 'buying process', 'selling process',
+      'market condition', 'market trend', 'property market',
+      'housing trend', 'real estate trend'
     ];
 
-    return realEstatePhrases.some(phrase => lowerPrompt.includes(phrase));
+    if (realEstatePhrases.some(phrase => lowerPrompt.includes(phrase))) {
+      return true;
+    }
+
+    // Business/professional context
+    const businessContextWords = ['client', 'customer', 'deal', 'business', 'professional', 'work', 'career'];
+    const hasBusinessContext = businessContextWords.some(word => lowerPrompt.includes(word));
+
+    // Very short queries - be very lenient (assume real estate context)
+    if (lowerPrompt.length < 15) {
+      return true; // Allow almost all short queries including "hi"
+    }
+
+    // Medium length queries - check for business context
+    if (lowerPrompt.length < 30 && hasBusinessContext) {
+      return true;
+    }
+
+    // Only block if it's clearly and explicitly non-real estate
+    const explicitlyNonRealEstate = [
+      'medical diagnosis', 'legal advice', 'court case', 'lawsuit',
+      'cooking recipe', 'movie review', 'sports score', 'weather forecast',
+      'programming code', 'software bug', 'video game', 'music lyrics'
+    ];
+
+    const isExplicitlyNonRealEstate = explicitlyNonRealEstate.some(phrase => lowerPrompt.includes(phrase));
+
+    // If it's not explicitly non-real estate, allow it (benefit of the doubt)
+    return !isExplicitlyNonRealEstate;
   }
 
   /**

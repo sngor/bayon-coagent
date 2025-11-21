@@ -330,13 +330,10 @@ export class MarketNotificationsService {
   ): Promise<MarketNotification[]> {
     const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
 
-    const result = await this.repository.query({
-      KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
-      ExpressionAttributeValues: {
-        ':pk': `USER#${userId}`,
-        ':sk': 'NOTIFICATION#',
-      },
-    });
+    const result = await this.repository.query(
+      `USER#${userId}`,
+      'NOTIFICATION#'
+    );
 
     const notifications = result.items
       .map((item) => item.Data as MarketNotification)
@@ -506,15 +503,14 @@ Return your response as JSON matching this structure:
       category?: NotificationCategory;
     } = {}
   ): Promise<MarketNotification[]> {
-    const result = await this.repository.query({
-      KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
-      ExpressionAttributeValues: {
-        ':pk': `USER#${userId}`,
-        ':sk': 'NOTIFICATION#',
-      },
-      ScanIndexForward: false, // Most recent first
-      Limit: options.limit,
-    });
+    const result = await this.repository.query(
+      `USER#${userId}`,
+      'NOTIFICATION#',
+      {
+        scanIndexForward: false, // Most recent first
+        limit: options.limit,
+      }
+    );
 
     let notifications = result.items.map(
       (item) => item.Data as MarketNotification

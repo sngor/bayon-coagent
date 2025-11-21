@@ -50,7 +50,10 @@ export function LifeEventPredictorForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Client Data</CardTitle>
+        <CardTitle className="font-playfair">Client Data</CardTitle>
+        <p className="text-sm text-muted-foreground mt-2">
+          Analyze client data to predict their likelihood of moving.
+        </p>
       </CardHeader>
       <CardContent>
         <Form {...form}>

@@ -50,7 +50,10 @@ export function InvestmentOpportunityIdentificationForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Market and Client Details</CardTitle>
+        <CardTitle className="font-playfair">Market and Client Details</CardTitle>
+        <p className="text-sm text-muted-foreground mt-2">
+          Identify potential investment properties for your clients.
+        </p>
       </CardHeader>
       <CardContent>
         <Form {...form}>

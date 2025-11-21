@@ -3,7 +3,9 @@
 import { HubLayout } from '@/components/hub/hub-layout';
 import { LayoutDashboard } from 'lucide-react';
 import { useUser } from '@/aws/auth';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
+import { getDashboardData } from './actions';
+import type { Profile } from '@/lib/types';
 
 function getGreeting(): string {
     const hour = new Date().getHours();
@@ -23,15 +25,30 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const { user } = useUser();
+    const [agentProfile, setAgentProfile] = useState<Profile | null>(null);
+
+    // Fetch agent profile for the greeting
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchProfile = async () => {
+            const result = await getDashboardData(user.id);
+            if (result.success && result.data?.agentProfile) {
+                setAgentProfile(result.data.agentProfile);
+            }
+        };
+
+        fetchProfile();
+    }, [user]);
 
     const title = useMemo(() => {
-        if (!user?.name) return 'Dashboard';
-
-        const firstName = user.name.split(' ')[0];
         const greeting = getGreeting();
 
+        if (!agentProfile?.name) return greeting;
+
+        const firstName = agentProfile.name.split(' ')[0];
         return `${greeting}, ${firstName}`;
-    }, [user?.name]);
+    }, [agentProfile?.name]);
 
     return (
         <HubLayout

@@ -234,88 +234,89 @@ export default function MarketingPlanPage() {
     <StandardPageLayout
       spacing="default"
     >
-
-      <Card className="text-center">
-        <CardHeader>
-          <CardTitle className="font-headline text-3xl">Ready to Grow Your Brand?</CardTitle>
-          <CardDescription>
-            Get a personalized game plan based on your unique market position. We'll analyze your brand audit and competitors to create a 3-step strategy that addresses your biggest opportunities.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form action={handleFormSubmit}>
-            <input type="hidden" name="userId" value={user?.id || ''} />
-            <input type="hidden" name="brandAudit" value={JSON.stringify(brandAuditData || { results: [] })} />
-            <input type="hidden" name="competitors" value={JSON.stringify(competitorsData || [])} />
-            <GeneratePlanButton disabled={!isDataReady} />
-            {!isDataReady && (
-              <p className="text-sm text-muted-foreground mt-2">
-                Waiting for Brand Audit and Competitor data to load...
-              </p>
-            )}
-          </form>
-        </CardContent>
-      </Card>
-
-      {isPlanLoading && !displayPlan && (
-        <Card>
+      <div className="space-y-8">
+        <Card className="text-center">
           <CardHeader>
-            <CardTitle className="font-headline">Your Action Plan</CardTitle>
-            <CardDescription>Here are your personalized next steps.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex items-center justify-center h-48">
-            <StandardLoadingSpinner
-              size="lg"
-              message="Loading your latest plan..."
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {displayPlan && showPlan && (
-        <Card className="animate-fade-in-up">
-          <CardHeader>
-            <CardTitle className="font-headline">Your Action Plan</CardTitle>
+            <CardTitle className="font-headline text-3xl">Ready to Grow Your Brand?</CardTitle>
             <CardDescription>
-              Here are your personalized next steps, generated on {new Date(displayPlan.createdAt).toLocaleDateString()}.
+              Get a personalized game plan based on your unique market position. We'll analyze your brand audit and competitors to create a 3-step strategy that addresses your biggest opportunities.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-6">
-              {(displayPlan as any).steps?.map((item: any, index: number) => (
-                <li
-                  key={index}
-                  className={cn(
-                    "flex items-start gap-4 p-4 rounded-lg border bg-secondary/30 transition-all duration-300 hover:shadow-md hover:border-primary/20",
-                    "animate-fade-in-up",
-                    index === 0 && "animate-delay-100",
-                    index === 1 && "animate-delay-200",
-                    index === 2 && "animate-delay-300"
-                  )}
-                >
-                  <div className="flex-shrink-0 font-bold text-primary text-3xl font-headline">
-                    {index + 1}
-                  </div>
-                  <div className="flex-grow">
-                    <h3 className="font-semibold text-lg">{item.task}</h3>
-                    <p className="text-sm text-muted-foreground mt-1 mb-3">{item.rationale}</p>
-                    <Link href={item.toolLink}>
-                      <Button size="sm" className="transition-all hover:scale-105">
-                        {toolIcons[item.tool] || <Target className="mr-2 h-4 w-4" />}
-                        Use {item.tool}
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </Button>
-                    </Link>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <form action={handleFormSubmit}>
+              <input type="hidden" name="userId" value={user?.id || ''} />
+              <input type="hidden" name="brandAudit" value={JSON.stringify(brandAuditData || { results: [] })} />
+              <input type="hidden" name="competitors" value={JSON.stringify(competitorsData || [])} />
+              <GeneratePlanButton disabled={!isDataReady} />
+              {!isDataReady && (
+                <p className="text-sm text-muted-foreground mt-2">
+                  Waiting for Brand Audit and Competitor data to load...
+                </p>
+              )}
+            </form>
           </CardContent>
         </Card>
-      )}
+
+        {isPlanLoading && !displayPlan && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-headline">Your Action Plan</CardTitle>
+              <CardDescription>Here are your personalized next steps.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center h-48">
+              <StandardLoadingSpinner
+                size="lg"
+                message="Loading your latest plan..."
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {displayPlan && showPlan && (
+          <Card className="animate-fade-in-up">
+            <CardHeader>
+              <CardTitle className="font-headline">Your Action Plan</CardTitle>
+              <CardDescription>
+                Here are your personalized next steps, generated on {new Date(displayPlan.createdAt).toLocaleDateString()}.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-4">
+                {(displayPlan as any).steps?.map((item: any, index: number) => (
+                  <li
+                    key={index}
+                    className={cn(
+                      "flex items-start gap-4 p-4 rounded-lg border bg-secondary/30 transition-all duration-300 hover:shadow-md hover:border-primary/20",
+                      "animate-fade-in-up",
+                      index === 0 && "animate-delay-100",
+                      index === 1 && "animate-delay-200",
+                      index === 2 && "animate-delay-300"
+                    )}
+                  >
+                    <div className="flex-shrink-0 font-bold text-primary text-3xl font-headline">
+                      {index + 1}
+                    </div>
+                    <div className="flex-grow">
+                      <h3 className="font-semibold text-lg">{item.task}</h3>
+                      <p className="text-sm text-muted-foreground mt-1 mb-3">{item.rationale}</p>
+                      <Link href={item.toolLink}>
+                        <Button size="sm" className="transition-all hover:scale-105">
+                          {toolIcons[item.tool] || <Target className="mr-2 h-4 w-4" />}
+                          Use {item.tool}
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {!isPlanLoading && !displayPlan && !isGenerating && (
-        <div className="space-y-6">
+        <div className="space-y-8">
           <StandardEmptyState
             icon={<AISparkleIcon animated={true} className="h-16 w-16 text-primary" />}
             title="Your Marketing Success Starts Here"

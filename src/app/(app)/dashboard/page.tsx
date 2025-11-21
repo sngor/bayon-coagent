@@ -191,17 +191,7 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-6">
-            {/* Welcome Greeting */}
-            {firstName && (
-                <div className="animate-fade-in-up">
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-                        {getTimeOfDayGreeting()}, {firstName}
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                        Here's your business overview and what to focus on today.
-                    </p>
-                </div>
-            )}
+
 
             {/* Profile Completion Banner */}
             {agentProfile && (

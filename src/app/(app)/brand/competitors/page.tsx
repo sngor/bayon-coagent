@@ -250,259 +250,259 @@ export default function CompetitiveAnalysisPage() {
     <StandardPageLayout
       spacing="default"
     >
-
-      <StandardCard
-        title={<span className="font-headline">AI Competitor Discovery</span>}
-        description="Use AI to automatically discover top competitors in your market based on your profile."
-      >
-        <form action={findFormAction} className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <StandardFormField
-              label="Your Agent Name"
-              id="name"
-              hint="Your name from your profile"
-            >
-              <Input id="name" name="name" placeholder="e.g., John Smith" value={agentProfileData?.name || ''} readOnly className="bg-secondary" />
-            </StandardFormField>
-            <StandardFormField
-              label="Your Agency Name"
-              id="agencyName"
-              hint="Your agency from your profile"
-            >
-              <Input id="agencyName" name="agencyName" placeholder="e.g., Seattle Homes Realty" value={agentProfileData?.agencyName || ''} readOnly className="bg-secondary" />
-            </StandardFormField>
-          </div>
-          <input type="hidden" name="address" value={agentProfileData?.address || ''} />
-          <FindButton disabled={isFindDisabled}>Auto-Find Competitors</FindButton>
-        </form>
-        {findState.data && findState.data.length > 0 && (
-          <div className="mt-6">
-            <Separator />
-            <h3 className="text-lg font-medium font-headline my-4">AI Suggestions</h3>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {findState.data.map((suggestion, index) => (
-                <Card key={index} className="card-interactive">
-                  <CardHeader>
-                    <CardTitle className="text-base">{suggestion.name}</CardTitle>
-                    <CardDescription>{suggestion.agency}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-sm"><strong>Reviews:</strong> {suggestion.reviewCount}</p>
-                    <p className="text-sm"><strong>Avg. Rating:</strong> {suggestion.avgRating.toFixed(1)}</p>
-                    <p className="text-sm"><strong>Followers:</strong> {(suggestion.socialFollowers / 1000).toFixed(1)}k</p>
-                    <p className="text-sm"><strong>Domain Authority:</strong> {suggestion.domainAuthority}</p>
-                    <Button size="sm" variant="outline" onClick={() => handleAddSuggestion(suggestion)} className="mt-2">
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Add to Tracker
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-        {findState.message && findState.message !== 'success' && (
-          <StandardErrorDisplay
-            title="Discovery Failed"
-            message={findState.message}
-            variant="error"
-            className="mt-4"
-          />
-        )}
-      </StandardCard>
-
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-3">
-          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="font-headline">
-                Market Snapshot: At a Glance
-              </CardTitle>
-              <CardDescription>
-                Direct comparison of key performance indicators. Click a competitor to edit.
-              </CardDescription>
-            </div>
-            <Button onClick={handleAddNew} className="w-full sm:w-auto flex-shrink-0">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add Competitor
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveTableWrapper mobileLayout="scroll" showScrollIndicator={true}>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="min-w-[150px]">Agent</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">Reviews</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">Avg. Rating</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">Social Followers</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">Domain Authority</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoadingTable ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8">
-                        <StandardLoadingSpinner size="md" message="Loading competitors..." />
-                      </TableCell>
-                    </TableRow>
-                  ) : allCompetitors.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8">
-                        <StandardEmptyState
-                          icon={<Search className="h-16 w-16 text-muted-foreground" />}
-                          title="No Competitors Yet"
-                          description="Add competitors manually or use AI discovery to find top agents in your market."
-                          action={{
-                            label: "Add Competitor",
-                            onClick: handleAddNew,
-                            variant: "default"
-                          }}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    allCompetitors.map((competitor) => (
-                      <TableRow
-                        key={competitor.id}
-                        onClick={() => !competitor.isYou && handleEdit(competitor)}
-                        className={cn(
-                          competitor.isYou ? 'bg-secondary/70' : 'cursor-pointer hover:bg-secondary transition-colors'
-                        )}
-                      >
-                        <TableCell>
-                          <div className="font-medium whitespace-nowrap">{competitor.name}</div>
-                          <div className="text-sm text-muted-foreground whitespace-nowrap">
-                            {competitor.agency}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center font-semibold">
-                          {competitor.reviewCount}
-                        </TableCell>
-                        <TableCell className="text-center font-semibold">
-                          <div className="flex items-center justify-center gap-1">
-                            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                            {competitor.avgRating.toFixed(1)}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center font-semibold">
-                          {(competitor.socialFollowers / 1000).toFixed(1)}k
-                        </TableCell>
-                        <TableCell className="text-center font-semibold">
-                          {competitor.domainAuthority}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </ResponsiveTableWrapper>
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="font-headline">Review Volume</CardTitle>
-            <CardDescription>
-              Total number of reviews across major platforms.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="max-h-[300px]">
-              <BarChart
-                accessibilityLayer
-                data={chartData}
-                layout="vertical"
-                margin={{ left: 10, right: 30 }}
-              >
-                <CartesianGrid horizontal={false} />
-                <YAxis
-                  dataKey="name"
-                  type="category"
-                  tickLine={false}
-                  tickMargin={10}
-                  axisLine={false}
-                  className="text-xs"
-                />
-                <XAxis dataKey="reviewCount" type="number" hide />
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent hideLabel />}
-                />
-                <Bar
-                  dataKey="reviewCount"
-                  radius={5}
-                  background={{ fill: 'hsl(var(--border))', radius: 5 }}
-                >
-                  <LabelList
-                    position="right"
-                    offset={10}
-                    className="fill-foreground"
-                    fontSize={12}
-                  />
-                </Bar>
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="font-headline">Local Keyword Rankings</CardTitle>
-            <CardDescription>
-              Discover the top 5 agents for a specific local search term.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-4" action={rankingFormAction}>
+      <div className="space-y-8">
+        <StandardCard
+          title={<span className="font-headline">AI Competitor Discovery</span>}
+          description="Use AI to automatically discover top competitors in your market based on your profile."
+        >
+          <form action={findFormAction} className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
               <StandardFormField
-                label="Keyword to Analyze"
-                id="keyword"
-                error={(rankingState.errors as any)?.keyword?.[0]}
-                hint="Enter a local search term to analyze"
+                label="Your Agent Name"
+                id="name"
+                hint="Your name from your profile"
               >
-                <Input id="keyword" name="keyword" placeholder="e.g., best real estate agent Seattle" />
+                <Input id="name" name="name" placeholder="e.g., John Smith" value={agentProfileData?.name || ''} readOnly className="bg-secondary" />
               </StandardFormField>
-              <input type="hidden" name="location" value={agentProfileData?.address || ''} />
-              <TrackRankingsButton disabled={isRankingDisabled} />
-              {rankingState.message && rankingState.message !== 'success' && (
-                <StandardErrorDisplay
-                  title="Ranking Analysis Failed"
-                  message={rankingState.message}
-                  variant="error"
-                  className="mt-2"
-                />
-              )}
-            </form>
-
-            {rankingState.data && rankingState.data.length > 0 && (
-              <div className="mt-6">
-                <h3 className="font-medium mb-2">Top 5 Results for "{rankingState.data[0].keyword || 'your keyword'}"</h3>
-                <ResponsiveTableWrapper mobileLayout="scroll" showScrollIndicator={true}>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-center whitespace-nowrap">Rank</TableHead>
-                        <TableHead className="min-w-[120px]">Agent</TableHead>
-                        <TableHead className="min-w-[120px]">Agency</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {rankingState.data.map((ranking) => (
-                        <TableRow key={ranking.rank}>
-                          <TableCell className="text-center font-bold">#{ranking.rank}</TableCell>
-                          <TableCell className="font-medium whitespace-nowrap">{ranking.agentName}</TableCell>
-                          <TableCell className="text-muted-foreground whitespace-nowrap">{ranking.agencyName}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ResponsiveTableWrapper>
+              <StandardFormField
+                label="Your Agency Name"
+                id="agencyName"
+                hint="Your agency from your profile"
+              >
+                <Input id="agencyName" name="agencyName" placeholder="e.g., Seattle Homes Realty" value={agentProfileData?.agencyName || ''} readOnly className="bg-secondary" />
+              </StandardFormField>
+            </div>
+            <input type="hidden" name="address" value={agentProfileData?.address || ''} />
+            <FindButton disabled={isFindDisabled}>Auto-Find Competitors</FindButton>
+          </form>
+          {findState.data && findState.data.length > 0 && (
+            <div className="mt-6">
+              <Separator />
+              <h3 className="text-lg font-medium font-headline my-4">AI Suggestions</h3>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {findState.data.map((suggestion, index) => (
+                  <Card key={index} className="card-interactive">
+                    <CardHeader>
+                      <CardTitle className="text-base">{suggestion.name}</CardTitle>
+                      <CardDescription>{suggestion.agency}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <p className="text-sm"><strong>Reviews:</strong> {suggestion.reviewCount}</p>
+                      <p className="text-sm"><strong>Avg. Rating:</strong> {suggestion.avgRating.toFixed(1)}</p>
+                      <p className="text-sm"><strong>Followers:</strong> {(suggestion.socialFollowers / 1000).toFixed(1)}k</p>
+                      <p className="text-sm"><strong>Domain Authority:</strong> {suggestion.domainAuthority}</p>
+                      <Button size="sm" variant="outline" onClick={() => handleAddSuggestion(suggestion)} className="mt-2">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add to Tracker
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          )}
+          {findState.message && findState.message !== 'success' && (
+            <StandardErrorDisplay
+              title="Discovery Failed"
+              message={findState.message}
+              variant="error"
+              className="mt-4"
+            />
+          )}
+        </StandardCard>
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Card className="lg:col-span-3">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="font-headline">
+                  Market Snapshot: At a Glance
+                </CardTitle>
+                <CardDescription>
+                  Direct comparison of key performance indicators. Click a competitor to edit.
+                </CardDescription>
+              </div>
+              <Button onClick={handleAddNew} className="w-full sm:w-auto flex-shrink-0">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Competitor
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveTableWrapper mobileLayout="scroll" showScrollIndicator={true}>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[150px]">Agent</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">Reviews</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">Avg. Rating</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">Social Followers</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">Domain Authority</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoadingTable ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8">
+                          <StandardLoadingSpinner size="md" message="Loading competitors..." />
+                        </TableCell>
+                      </TableRow>
+                    ) : allCompetitors.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8">
+                          <StandardEmptyState
+                            icon={<Search className="h-16 w-16 text-muted-foreground" />}
+                            title="No Competitors Yet"
+                            description="Add competitors manually or use AI discovery to find top agents in your market."
+                            action={{
+                              label: "Add Competitor",
+                              onClick: handleAddNew,
+                              variant: "default"
+                            }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      allCompetitors.map((competitor) => (
+                        <TableRow
+                          key={competitor.id}
+                          onClick={() => !competitor.isYou && handleEdit(competitor)}
+                          className={cn(
+                            competitor.isYou ? 'bg-secondary/70' : 'cursor-pointer hover:bg-secondary transition-colors'
+                          )}
+                        >
+                          <TableCell>
+                            <div className="font-medium whitespace-nowrap">{competitor.name}</div>
+                            <div className="text-sm text-muted-foreground whitespace-nowrap">
+                              {competitor.agency}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center font-semibold">
+                            {competitor.reviewCount}
+                          </TableCell>
+                          <TableCell className="text-center font-semibold">
+                            <div className="flex items-center justify-center gap-1">
+                              <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                              {competitor.avgRating.toFixed(1)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center font-semibold">
+                            {(competitor.socialFollowers / 1000).toFixed(1)}k
+                          </TableCell>
+                          <TableCell className="text-center font-semibold">
+                            {competitor.domainAuthority}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </ResponsiveTableWrapper>
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="font-headline">Review Volume</CardTitle>
+              <CardDescription>
+                Total number of reviews across major platforms.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="max-h-[300px]">
+                <BarChart
+                  accessibilityLayer
+                  data={chartData}
+                  layout="vertical"
+                  margin={{ left: 10, right: 30 }}
+                >
+                  <CartesianGrid horizontal={false} />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    tickLine={false}
+                    tickMargin={10}
+                    axisLine={false}
+                    className="text-xs"
+                  />
+                  <XAxis dataKey="reviewCount" type="number" hide />
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                  />
+                  <Bar
+                    dataKey="reviewCount"
+                    radius={5}
+                    background={{ fill: 'hsl(var(--border))', radius: 5 }}
+                  >
+                    <LabelList
+                      position="right"
+                      offset={10}
+                      className="fill-foreground"
+                      fontSize={12}
+                    />
+                  </Bar>
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle className="font-headline">Local Keyword Rankings</CardTitle>
+              <CardDescription>
+                Discover the top 5 agents for a specific local search term.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form className="space-y-4" action={rankingFormAction}>
+                <StandardFormField
+                  label="Keyword to Analyze"
+                  id="keyword"
+                  error={(rankingState.errors as any)?.keyword?.[0]}
+                  hint="Enter a local search term to analyze"
+                >
+                  <Input id="keyword" name="keyword" placeholder="e.g., best real estate agent Seattle" />
+                </StandardFormField>
+                <input type="hidden" name="location" value={agentProfileData?.address || ''} />
+                <TrackRankingsButton disabled={isRankingDisabled} />
+                {rankingState.message && rankingState.message !== 'success' && (
+                  <StandardErrorDisplay
+                    title="Ranking Analysis Failed"
+                    message={rankingState.message}
+                    variant="error"
+                    className="mt-2"
+                  />
+                )}
+              </form>
+
+              {rankingState.data && rankingState.data.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="font-medium mb-2">Top 5 Results for "{rankingState.data[0].keyword || 'your keyword'}"</h3>
+                  <ResponsiveTableWrapper mobileLayout="scroll" showScrollIndicator={true}>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-center whitespace-nowrap">Rank</TableHead>
+                          <TableHead className="min-w-[120px]">Agent</TableHead>
+                          <TableHead className="min-w-[120px]">Agency</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {rankingState.data.map((ranking) => (
+                          <TableRow key={ranking.rank}>
+                            <TableCell className="text-center font-bold">#{ranking.rank}</TableCell>
+                            <TableCell className="font-medium whitespace-nowrap">{ranking.agentName}</TableCell>
+                            <TableCell className="text-muted-foreground whitespace-nowrap">{ranking.agencyName}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ResponsiveTableWrapper>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
       <CompetitorForm
         isOpen={isFormOpen}

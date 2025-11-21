@@ -52,10 +52,12 @@ export function HubLayout({
                 actions={actions}
             />
 
-            {/* Static Hub Tabs - Never re-renders within the same hub */}
+            {/* Static Hub Tabs - Visually connected to topbar */}
             {tabs.length > 0 && (
-                <div className="sticky top-20 z-10 -mx-4 md:-mx-8 lg:-mx-10 px-4 md:px-8 lg:px-10 py-3 bg-background/80 dark:bg-background/40 backdrop-blur-xl border-b border-border/40 -mt-6">
-                    <StaticHubTabs tabs={tabs} activeTab="" variant={tabsVariant} />
+                <div className="sticky top-20 z-50 -mx-4 md:-mx-8 lg:-mx-10 px-4 md:px-8 lg:px-10 pt-0 pb-3 bg-background/80 dark:bg-background/40 backdrop-blur-xl -mt-6">
+                    <div className="border-t border-border/20 pt-3">
+                        <StaticHubTabs tabs={tabs} activeTab="" variant={tabsVariant} />
+                    </div>
                 </div>
             )}
 

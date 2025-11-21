@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Camera, Loader2 } from 'lucide-react';
@@ -52,6 +52,11 @@ export function ProfileImageUpload({
 }: ProfileImageUploadProps) {
     const [imageUrl, setImageUrl] = useState(currentImageUrl);
     const [isHovered, setIsHovered] = useState(false);
+
+    // Update local imageUrl when currentImageUrl prop changes
+    useEffect(() => {
+        setImageUrl(currentImageUrl);
+    }, [currentImageUrl]);
 
     const { upload, isUploading, error } = useS3Upload({
         maxSizeMB: 5,

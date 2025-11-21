@@ -10,6 +10,7 @@ import type { ResearchReport } from '@/lib/types';
 import { FileSearch, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { getUserReportsAction } from '@/app/actions';
 import Link from 'next/link';
 
 export default function LibraryReportsPage() {
@@ -26,10 +27,25 @@ export default function LibraryReportsPage() {
             return;
         }
 
-        // For now, set empty array to show empty state
-        // TODO: Implement proper data fetching via Server Actions
-        setReports([]);
-        setIsLoading(false);
+        const fetchReports = async () => {
+            try {
+                const result = await getUserReportsAction(user.id);
+
+                if (result.errors) {
+                    console.error('Failed to fetch reports:', result.errors);
+                    setReports([]);
+                } else {
+                    setReports(result.data || []);
+                }
+            } catch (error) {
+                console.error('Failed to fetch reports:', error);
+                setReports([]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchReports();
     }, [user]);
 
     const formatDate = (dateValue: any): string => {
@@ -55,15 +71,27 @@ export default function LibraryReportsPage() {
                                             {report.topic}
                                         </CardTitle>
                                         <CardDescription className="flex items-center gap-2 mt-2">
-                                            <Badge variant="outline">Research Report</Badge>
+                                            <Badge variant="outline">
+                                                {report.type === 'training-plan' ? 'Training Plan' : 'Research Report'}
+                                            </Badge>
                                             <span>Created {formatDate(report.createdAt)}</span>
                                         </CardDescription>
                                     </div>
-                                    <Button variant="outline" size="sm" asChild>
-                                        <Link href={`/market/research/${report.id}`}>
-                                            <ExternalLink className="h-4 w-4 mr-2" />
-                                            View
-                                        </Link>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            if (report.type === 'training-plan') {
+                                                // For training plans, show in a modal or navigate to training section
+                                                router.push(`/training/plan/${report.id}`);
+                                            } else {
+                                                // For research reports, navigate to market research
+                                                router.push(`/market/research/${report.id}`);
+                                            }
+                                        }}
+                                    >
+                                        <ExternalLink className="h-4 w-4 mr-2" />
+                                        View
                                     </Button>
                                 </div>
                             </CardHeader>
@@ -82,12 +110,17 @@ export default function LibraryReportsPage() {
             {!isLoading && (!reports || reports.length === 0) && (
                 <IntelligentEmptyState
                     icon={FileSearch}
-                    title="No Research Reports Yet"
-                    description="Your saved research reports will appear here. Start by running a deep-dive research in the Market hub."
+                    title="No Reports Yet"
+                    description="Your saved research reports and training plans will appear here. Create content in the Market hub or generate training plans."
                     actions={[
                         {
                             label: "Go to Research",
                             onClick: () => router.push('/market/research'),
+                            icon: FileSearch,
+                        },
+                        {
+                            label: "Generate Training Plan",
+                            onClick: () => router.push('/training/ai-plan'),
                             icon: FileSearch,
                         },
                     ]}

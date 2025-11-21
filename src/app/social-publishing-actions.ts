@@ -389,7 +389,7 @@ export async function getUserListings(): Promise<{
 
         // Extract listingId from SK and add to listing data
         const listings = result.items.map((item: any) => {
-            const listingId = item.SK.replace('LISTING#', '');
+            const listingId = item.SK ? item.SK.replace('LISTING#', '') : 'unknown';
             return {
                 ...item.Data,
                 listingId,

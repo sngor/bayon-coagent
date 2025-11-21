@@ -81,7 +81,6 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default' }: HubT
                             key={tab.id}
                             type="button"
                             role="tab"
-                            aria-selected={isActive ? 'true' : 'false'}
                             aria-controls={`tabpanel-${tab.id}`}
                             id={`tab-${tab.id}`}
                             tabIndex={isActive ? 0 : -1}

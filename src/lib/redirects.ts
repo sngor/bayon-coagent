@@ -13,12 +13,19 @@ export const REDIRECT_MAP: Record<string, string> = {
   '/intelligence': '/market',
   '/intelligence/research': '/market/research',
   '/intelligence/competitors': '/brand/competitors',
-  '/intelligence/market-insights': '/market/trends',
+  '/intelligence/market-insights': '/market/insights',
   '/research-agent': '/market/research',
   '/knowledge-base': '/library/reports',
   '/competitive-analysis': '/brand/competitors',
-  '/investment-opportunity-identification': '/market/opportunities',
-  '/life-event-predictor': '/market/trends',
+  '/investment-opportunity-identification': '/market/insights',
+  '/life-event-predictor': '/market/insights',
+
+  // Market consolidation redirects
+  '/market/opportunities': '/market/insights',
+  '/market/trends': '/market/insights',
+  '/market/analytics': '/market/insights',
+  '/market/renovation-roi': '/market/tools',
+  '/market/valuation': '/market/tools',
 
   // Brand Hub (formerly Brand Center)
   '/brand-center': '/brand',

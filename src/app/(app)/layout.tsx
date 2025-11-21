@@ -95,77 +95,111 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setIsMounted(true);
   }, []);
 
-  // Extract page title and handle scroll detection - optimized with RAF
+  // Extract page title and handle scroll detection - using IntersectionObserver for reliability
   useEffect(() => {
-    let rafId: number | null = null;
     let timeoutId: NodeJS.Timeout;
+    let intersectionObserver: IntersectionObserver | null = null;
+    let mutationObserver: MutationObserver | null = null;
+    let retryCount = 0;
+    const maxRetries = 15;
 
-    const updateTitle = () => {
+    const findAndSetupTitle = () => {
       const mainElement = document.querySelector('main');
-      if (mainElement) {
-        const h1 = mainElement.querySelector('h1');
-        if (h1) {
-          const title = h1.textContent || '';
-          setPageTitle(title);
+      if (!mainElement) {
+        if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(findAndSetupTitle, 100 * retryCount);
+        }
+        return;
+      }
+
+      // Look for h1 in multiple possible locations
+      const h1 = mainElement.querySelector('h1') ||
+        document.querySelector('[data-page-title]') ||
+        mainElement.querySelector('[role="heading"][aria-level="1"]');
+
+      if (!h1) {
+        if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(findAndSetupTitle, 100 * retryCount);
         } else {
           setPageTitle('');
-        }
-      }
-    };
-
-    const checkScroll = () => {
-      if (rafId) return; // Throttle with RAF
-
-      rafId = requestAnimationFrame(() => {
-        const mainElement = document.querySelector('main');
-        if (!mainElement) {
-          rafId = null;
-          return;
-        }
-
-        const h1 = mainElement.querySelector('h1');
-        if (!h1) {
           setShowStickyTitle(false);
-          rafId = null;
-          return;
         }
+        return;
+      }
 
-        const rect = h1.getBoundingClientRect();
-        const shouldShow = rect.bottom < 100;
-        setShowStickyTitle(shouldShow);
-        rafId = null;
-      });
+      // Extract title
+      const title = h1.textContent || h1.getAttribute('data-page-title') || '';
+      setPageTitle(title);
+      retryCount = 0;
+
+      // Clean up existing observer
+      if (intersectionObserver) {
+        intersectionObserver.disconnect();
+      }
+
+      // Set up IntersectionObserver for more reliable scroll detection
+      intersectionObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            // Show sticky title when h1 is not intersecting (scrolled out of view)
+            setShowStickyTitle(!entry.isIntersecting);
+          });
+        },
+        {
+          root: mainElement,
+          rootMargin: '-80px 0px 0px 0px', // Trigger when h1 is 80px from top
+          threshold: 0
+        }
+      );
+
+      intersectionObserver.observe(h1);
     };
 
-    // Update title when pathname changes
-    timeoutId = setTimeout(() => {
-      updateTitle();
-      checkScroll();
-    }, 100); // Reduced from 300ms
+    // Initial setup with delay for page transitions
+    timeoutId = setTimeout(findAndSetupTitle, 150);
 
-    // Listen for scroll events on the main element (SidebarInset)
+    // Set up MutationObserver to detect when new content is added
     const mainElement = document.querySelector('main');
     if (mainElement) {
-      mainElement.addEventListener('scroll', checkScroll, { passive: true });
+      mutationObserver = new MutationObserver((mutations) => {
+        let shouldRetry = false;
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'childList') {
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeType === Node.ELEMENT_NODE) {
+                const element = node as Element;
+                if (element.tagName === 'H1' || element.querySelector('h1') || element.hasAttribute('data-page-title')) {
+                  shouldRetry = true;
+                }
+              }
+            });
+          }
+        });
 
-      // Also observe DOM changes to catch dynamically rendered titles
-      const observer = new MutationObserver(() => {
-        updateTitle();
-        checkScroll();
+        if (shouldRetry) {
+          retryCount = 0; // Reset retry count
+          setTimeout(findAndSetupTitle, 100);
+        }
       });
-      observer.observe(mainElement, { childList: true, subtree: true });
 
-      return () => {
-        clearTimeout(timeoutId);
-        if (rafId) cancelAnimationFrame(rafId);
-        mainElement.removeEventListener('scroll', checkScroll);
-        observer.disconnect();
-      };
+      mutationObserver.observe(mainElement, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['data-page-title']
+      });
     }
 
     return () => {
       clearTimeout(timeoutId);
-      if (rafId) cancelAnimationFrame(rafId);
+      if (intersectionObserver) {
+        intersectionObserver.disconnect();
+      }
+      if (mutationObserver) {
+        mutationObserver.disconnect();
+      }
     };
   }, [pathname]);
 
@@ -247,13 +281,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </>
               )}
               {/* Sticky Page Title */}
-              {showStickyTitle && pageTitle && (
-                <div className="ml-2 transition-all duration-300 ease-in-out animate-in fade-in slide-in-from-left-2">
-                  <h2 className="text-lg font-semibold font-headline truncate whitespace-nowrap">
-                    {pageTitle}
-                  </h2>
-                </div>
-              )}
+              <div className={`ml-2 transition-all duration-300 ease-in-out ${showStickyTitle && pageTitle
+                ? 'opacity-100 translate-x-0'
+                : 'opacity-0 -translate-x-2 pointer-events-none'
+                }`}>
+                <h2 className="text-lg font-semibold font-headline truncate whitespace-nowrap">
+                  {pageTitle}
+                </h2>
+              </div>
             </div>
             <div className="flex items-center gap-3">
               {/* Notifications Button */}
@@ -330,7 +365,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   </DropdownMenuItem>
 
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive focus:text-destructive">
+                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Sign Out</span>
                   </DropdownMenuItem>

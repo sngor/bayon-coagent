@@ -1,5 +1,4 @@
-/* Import Inter variable font with weights 400-900 */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap");
+/* Fonts are loaded via Next.js font optimization in layout.tsx */
 
 @tailwind base;
 @tailwind components;
@@ -40,8 +39,8 @@ body {
     --radius: 0.5rem;
 
     /* Typography tokens */
-    --font-display: "Inter", system-ui, -apple-system, sans-serif;
-    --font-body: "Inter", system-ui, -apple-system, sans-serif;
+    --font-display: var(--font-playfair), "Playfair Display", serif;
+    --font-body: var(--font-pt-sans), "PT Sans", sans-serif;
 
     /* Success palette */
     --success: 142 71% 45%;

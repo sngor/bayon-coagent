@@ -9,6 +9,7 @@ import { Sparkles, Save, Download } from 'lucide-react';
 import { LoadingDots } from '@/components/ui/loading-dots';
 import { generateTrainingPlanAction, saveTrainingPlanAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@/aws/auth';
 
 export interface AITrainingPlanProps {
     className?: string;
@@ -20,6 +21,7 @@ export function AITrainingPlan({ className }: AITrainingPlanProps = {}) {
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
+    const { user } = useUser();
 
     const handleGenerate = async () => {
         if (!challenge.trim()) {
@@ -74,9 +76,18 @@ export function AITrainingPlan({ className }: AITrainingPlanProps = {}) {
     const handleSave = async () => {
         if (!plan || !challenge) return;
 
+        if (!user) {
+            toast({
+                title: 'Authentication Required',
+                description: 'You must be logged in to save training plans.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
         setIsSaving(true);
         try {
-            const result = await saveTrainingPlanAction(challenge, plan);
+            const result = await saveTrainingPlanAction(challenge, plan, user.id);
 
             if (result.errors) {
                 toast({

@@ -1,1100 +1,976 @@
+// Training data for real estate agent education modules
 
 export const marketingModules = [
   {
-    id: 'local-seo',
-    title: 'Lesson 1: Mastering Local SEO for Agents',
+    id: 'listing-presentation-mastery',
+    title: 'Lesson 1: Listing Presentation Mastery',
     category: 'marketing',
     content: `
-      <p>Local Search Engine Optimization (SEO) is the process of optimizing your online presence to attract more business from relevant local searches. According to BrightLocal's 2023 Local Consumer Review Survey, <strong>98% of consumers used the internet to find information about local businesses</strong>, with 87% reading online reviews. For real estate agents, local SEO is the single most important marketing activity to generate leads in your specific service area.</p>
+      <p>The listing presentation is your opportunity to demonstrate expertise and win the seller's trust. According to NAR's Profile of Home Sellers, <strong>89% of sellers use a real estate agent</strong>, and the agent they choose is often determined by the quality of the listing presentation.</p>
       
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Core Components of Local SEO</h3>
-      
-      <h4 class="font-semibold mt-4 mb-2">1. Google Business Profile (GBP)</h4>
-      <p>This is the foundation of your local SEO. A complete and active GBP listing is critical for appearing in Google Maps and the "Local Pack" search results (the top 3 local results shown with a map).</p>
-      <p class="mt-2"><strong>Key Statistics:</strong></p>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li>Businesses with complete GBP listings are <strong>2.7x more likely</strong> to be considered reputable by consumers (Google, 2022)</li>
-        <li>The Local Pack receives <strong>44% of clicks</strong> for local searches (Moz Local Search Ranking Factors, 2021)</li>
-        <li>Listings with photos receive <strong>42% more requests for directions</strong> and 35% more click-throughs to websites (Google)</li>
-      </ul>
-      <p class="mt-2"><strong>Action Items:</strong> Add high-quality photos of yourself, your office, and recent listings. Post weekly updates about market trends or new listings. Respond to all reviews within 24 hours.</p>
-
-      <h4 class="font-semibold mt-4 mb-2">2. NAP Consistency</h4>
-      <p>Your business <strong>N</strong>ame, <strong>A</strong>ddress, and <strong>P</strong>hone number must be identical across every online platform—Google, Zillow, Realtor.com, Facebook, your website, and all directories. Even small variations (like "St." vs "Street") confuse search engines and dilute your local SEO authority.</p>
-      <p class="mt-2"><strong>Research Finding:</strong> According to Moz's Local Search Ranking Factors study, NAP consistency accounts for approximately <strong>15% of local pack ranking factors</strong>. Inconsistent citations can drop your rankings by multiple positions.</p>
-      <p class="mt-2"><strong>Action Items:</strong> Use the <a href="/brand-audit" class="text-primary hover:underline font-semibold">Brand Audit tool</a> to scan for inconsistencies. Create a master document with your exact NAP format and use it everywhere.</p>
-
-      <h4 class="font-semibold mt-4 mb-2">3. Client Reviews</h4>
-      <p>A steady stream of positive reviews is a powerful signal to Google that your business is active, trusted, and provides value. Reviews are the #1 factor consumers use to judge local businesses.</p>
-      <p class="mt-2"><strong>Key Statistics:</strong></p>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li><strong>87% of consumers</strong> read online reviews for local businesses (BrightLocal, 2023)</li>
-        <li>Businesses with <strong>4+ star ratings</strong> receive 3x more clicks than those with lower ratings</li>
-        <li>Review recency matters: <strong>73% of consumers</strong> only pay attention to reviews written in the last month (ReviewTrackers, 2023)</li>
-        <li>Review quantity matters: Businesses with <strong>40+ reviews</strong> see significantly higher conversion rates</li>
-      </ul>
-      <p class="mt-2"><strong>Action Items:</strong> Create a systematic review request process. Send a follow-up email 2-3 days after closing with a direct link to your Google review page. Aim for 2-3 new reviews per month minimum.</p>
-
-      <h4 class="font-semibold mt-4 mb-2">4. Hyper-Local Content</h4>
-      <p>Creating content about specific neighborhoods, school districts, and local amenities signals to Google that you're a local expert. This is called "topical authority."</p>
-      <p class="mt-2"><strong>Content Strategy:</strong></p>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li>Create comprehensive neighborhood guides (1,500+ words) for each area you serve</li>
-        <li>Include local keywords naturally: "[Neighborhood] homes for sale," "best schools in [City]," "moving to [Area]"</li>
-        <li>Add local schema markup to help Google understand your content</li>
-        <li>Update content quarterly to maintain freshness signals</li>
-      </ul>
-      <p class="mt-2"><strong>Research Finding:</strong> According to HubSpot's 2023 State of Marketing Report, companies that blog receive <strong>55% more website visitors</strong> and generate <strong>67% more leads</strong> than those that don't.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The Local SEO Ranking Formula</h3>
-      <p>According to Whitespark's 2023 Local Search Ranking Factors survey of 43 SEO experts, the top ranking factors are:</p>
-      <ol class="list-decimal list-inside space-y-2 ml-4">
-        <li><strong>Google Business Profile signals (36%):</strong> Completeness, categories, keywords, reviews</li>
-        <li><strong>On-page signals (29%):</strong> NAP consistency, local keywords, mobile optimization</li>
-        <li><strong>Link signals (16%):</strong> Quality backlinks from local websites</li>
-        <li><strong>Review signals (11%):</strong> Quantity, velocity, diversity, ratings</li>
-        <li><strong>Behavioral signals (8%):</strong> Click-through rate, mobile clicks to call</li>
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Essential Components of a Winning Listing Presentation</h3>
+      <ol class="list-decimal list-inside space-y-3 ml-4">
+        <li><strong>Market Analysis:</strong> Comprehensive CMA with 6-12 comparable sales, active listings, and expired/withdrawn properties</li>
+        <li><strong>Marketing Plan:</strong> Detailed strategy including professional photography, online marketing, open houses, and agent networking</li>
+        <li><strong>Pricing Strategy:</strong> Data-driven pricing recommendation with market positioning rationale</li>
+        <li><strong>Timeline & Process:</strong> Clear explanation of listing process, typical timeline, and seller responsibilities</li>
+        <li><strong>Agent Credentials:</strong> Your experience, designations, recent sales, and client testimonials</li>
+        <li><strong>Commission Structure:</strong> Transparent explanation of services provided and commission breakdown</li>
       </ol>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Presentation Best Practices</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Prepare thoroughly:</strong> Research the property, neighborhood, and sellers' situation beforehand</li>
+        <li><strong>Use visual aids:</strong> Professional presentation materials, market charts, and property photos</li>
+        <li><strong>Listen actively:</strong> Understand the sellers' motivations, timeline, and concerns</li>
+        <li><strong>Address objections:</strong> Be prepared to discuss common concerns about pricing, marketing time, and commission</li>
+        <li><strong>Close confidently:</strong> Ask for the listing and be prepared to sign agreements on the spot</li>
+      </ul>
 
       <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
       <ul class="list-disc list-inside space-y-2 text-sm">
-        <li>Claim and fully complete your Google Business Profile with photos, posts, and complete information. <a href="/settings" class="text-primary hover:underline font-semibold">Connect it now</a>.</li>
-        <li>Use the <a href="/brand-audit" class="text-primary hover:underline font-semibold">Brand Audit tool</a> to find and fix NAP inconsistencies across all platforms.</li>
-        <li>Implement a systematic review generation process—aim for 2-3 new reviews monthly.</li>
-        <li>Create hyper-local content using the <a href="/content-engine" class="text-primary hover:underline font-semibold">Co-Marketing Studio</a> for each neighborhood you serve.</li>
-        <li>Track your local rankings monthly for key terms like "[City] real estate agent" and "[Neighborhood] homes for sale".</li>
-      </ul>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Sources & Further Reading</h3>
-      <ul class="list-disc list-inside space-y-1 text-xs text-muted-foreground">
-        <li><a href="https://www.brightlocal.com/research/local-consumer-review-survey/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">BrightLocal Local Consumer Review Survey (2023)</a></li>
-        <li><a href="https://moz.com/local-search-ranking-factors" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Moz Local Search Ranking Factors Study (2021)</a></li>
-        <li><a href="https://whitespark.ca/local-search-ranking-factors/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Whitespark Local Search Ranking Factors Survey (2023)</a></li>
-        <li><a href="https://support.google.com/business/answer/7091" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Google Business Profile Best Practices</a></li>
-        <li><a href="https://www.hubspot.com/state-of-marketing" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">HubSpot State of Marketing Report (2023)</a></li>
-        <li><a href="https://www.reviewtrackers.com/reports/online-reviews-survey/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">ReviewTrackers Online Reviews Survey (2023)</a></li>
+        <li>Develop a standardized presentation format that can be customized for each property</li>
+        <li>Create a professional presentation binder or digital presentation</li>
+        <li>Practice your presentation until it flows naturally</li>
+        <li>Prepare responses to common objections about price, commission, and marketing strategy</li>
+        <li>Follow up within 24 hours with additional information and next steps</li>
       </ul>
     `,
     quiz: [
-        {
-            question: "What does 'NAP' stand for in the context of local SEO?",
-            options: ["Name, Area, Profile", "Name, Address, Phone", "New Agent Program", "National Association Profile"],
-            correctAnswer: "Name, Address, Phone"
-        },
-        {
-            question: "What is the most important platform for a real estate agent's local SEO?",
-            options: ["Facebook", "Zillow", "Google Business Profile", "LinkedIn"],
-            correctAnswer: "Google Business Profile"
-        }
+      {
+        question: "According to NAR, what percentage of sellers use a real estate agent?",
+        options: ["76%", "82%", "89%", "94%"],
+        correctAnswer: "89%"
+      },
+      {
+        question: "How many comparable sales should typically be included in a CMA?",
+        options: ["3-5", "6-12", "10-15", "15-20"],
+        correctAnswer: "6-12"
+      }
     ]
   },
   {
-    id: 'social-media',
-    title: 'Lesson 2: Building an Authoritative Social Media Brand',
+    id: 'buyer-representation-fundamentals',
+    title: 'Lesson 2: Buyer Representation Fundamentals',
     category: 'marketing',
     content: `
-      <p>Social media for real estate is about building community and demonstrating expertise, not just broadcasting listings. The goal is to become the go-to resource for real estate information in your area.</p>
+      <p>Effective buyer representation requires understanding client needs, market conditions, and the purchase process. According to NAR's Home Buyers and Sellers Generational Trends, <strong>87% of buyers purchase through a real estate agent</strong>, making buyer representation a critical skill.</p>
       
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Platform-Specific Strategies</h3>
-      <ul class="list-disc list-inside space-y-3">
-        <li>
-          <strong>Facebook:</strong> Focus on community. Share client success stories (with permission), highlight local businesses, and post about community events. This builds trust and shows you're invested in the area.
-        </li>
-        <li>
-          <strong>Instagram:</strong> This is your visual portfolio. Use high-quality photos and videos (Reels) for property tours, behind-the-scenes looks at your day, and quick-tip graphics about the market.
-        </li>
-        <li>
-          <strong>LinkedIn:</strong> Position yourself as the market expert. Share insightful analysis from the <a href="/content-engine?tab=market-update" class="text-primary hover:underline font-semibold">Market Update Generator</a>, connect with lenders and builders, and write articles on industry trends.
-        </li>
+      <h3 class="font-semibold mt-6 mb-2 text-lg">The Buyer Consultation Process</h3>
+      <ol class="list-decimal list-inside space-y-3 ml-4">
+        <li><strong>Needs Assessment:</strong> Determine budget, preferred locations, must-have features, and timeline</li>
+        <li><strong>Financial Pre-qualification:</strong> Ensure buyers are pre-approved and understand their purchasing power</li>
+        <li><strong>Market Education:</strong> Explain current market conditions, pricing trends, and competition levels</li>
+        <li><strong>Search Parameters:</strong> Set realistic expectations based on budget and market conditions</li>
+        <li><strong>Showing Strategy:</strong> Plan efficient showing routes and prepare buyers for decision-making</li>
+      </ol>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Buyer Agency Agreements</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Exclusive Right to Represent:</strong> Most common form providing exclusive representation</li>
+        <li><strong>Duration and Terms:</strong> Typically 3-6 months with clear termination conditions</li>
+        <li><strong>Compensation Structure:</strong> Commission rates and payment responsibilities</li>
+        <li><strong>Duties and Obligations:</strong> Fiduciary responsibilities and service expectations</li>
+        <li><strong>Property Types:</strong> Specify residential, commercial, or investment properties</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Managing Buyer Expectations</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Market Reality:</strong> Help buyers understand what their budget can realistically purchase</li>
+        <li><strong>Competition:</strong> Prepare buyers for multiple offer situations and bidding strategies</li>
+        <li><strong>Timeline:</strong> Set realistic expectations for search duration and closing timeline</li>
+        <li><strong>Compromise:</strong> Help prioritize must-haves versus nice-to-haves</li>
       </ul>
 
       <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
       <ul class="list-disc list-inside space-y-2 text-sm">
-        <li>Don't try to be on every platform. Master one or two where your target clients are active.</li>
-        <li>Follow the 80/20 rule: 80% of your content should be valuable and informative, 20% can be promotional (like listings).</li>
-        <li>Use the <a href="/content-engine?tab=social" class="text-primary hover:underline font-semibold">Social Media Post Generator</a> to create platform-specific content from a single idea.</li>
+        <li>Always use written buyer representation agreements</li>
+        <li>Conduct thorough needs assessments before showing properties</li>
+        <li>Educate buyers about market conditions and realistic expectations</li>
+        <li>Maintain regular communication throughout the search process</li>
+        <li>Prepare buyers for competitive situations and quick decision-making</li>
       </ul>
     `,
-     quiz: [
-        {
-            question: "What is the 80/20 rule in social media content?",
-            options: ["80% listings, 20% value", "80% personal, 20% business", "80% value/information, 20% promotion", "80% video, 20% images"],
-            correctAnswer: "80% value/information, 20% promotion"
-        },
-        {
-            question: "Which platform is best for positioning yourself as a B2B market expert?",
-            options: ["Instagram", "LinkedIn", "Facebook", "TikTok"],
-            correctAnswer: "LinkedIn"
-        }
+    quiz: [
+      {
+        question: "According to NAR, what percentage of buyers purchase through a real estate agent?",
+        options: ["78%", "82%", "87%", "91%"],
+        correctAnswer: "87%"
+      },
+      {
+        question: "What is the typical duration for a buyer representation agreement?",
+        options: ["1-2 months", "3-6 months", "6-12 months", "12+ months"],
+        correctAnswer: "3-6 months"
+      }
     ]
   },
   {
-    id: 'content-marketing',
-    title: 'Lesson 3: High-Impact Content Marketing',
+    id: 'property-marketing-strategies',
+    title: 'Lesson 3: Property Marketing Strategies',
     category: 'marketing',
     content: `
-      <p>Content marketing is the art of creating valuable content that attracts, engages, and retains a clearly defined audience — and, ultimately, drives profitable customer action. For agents, it establishes you as a trustworthy authority.</p>
+      <p>Effective property marketing is essential for attracting qualified buyers and achieving optimal sale prices. According to NAR's Profile of Home Sellers, <strong>properties with professional photography sell 32% faster</strong> than those without.</p>
       
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The Pillar Page Strategy</h3>
-       <p>Instead of scattered blog posts, focus on creating "Pillar Pages" — comprehensive guides on a broad topic. Then, create smaller pieces of content (blog posts, social posts, videos) that link back to that main page. This is excellent for SEO.</p>
-      <ul class="list-disc list-inside space-y-3 mt-2">
-        <li><strong>Pillar Page Example:</strong> "The Ultimate Guide to Moving to Austin, TX". This can be created with the <a href="/content-engine?tab=guide" class="text-primary hover:underline font-semibold">Neighborhood Guide generator</a>.</li>
-        <li><strong>Supporting Content:</strong> Blog posts like "Top 5 Family-Friendly Neighborhoods in Austin" or videos on "Understanding Austin's Property Taxes".</li>
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Professional Photography and Staging</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Professional Photography:</strong> High-quality images are essential - 92% of buyers search online first</li>
+        <li><strong>Virtual Tours:</strong> 360-degree tours and video walkthroughs increase engagement by 40%</li>
+        <li><strong>Drone Photography:</strong> Aerial shots showcase property boundaries and neighborhood context</li>
+        <li><strong>Home Staging:</strong> Staged homes sell 73% faster and for 5-15% more than unstaged homes</li>
+        <li><strong>Twilight Photography:</strong> Evening shots create emotional appeal and highlight exterior lighting</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Online Marketing Channels</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>MLS Syndication:</strong> Ensure listing appears on major real estate websites (Zillow, Realtor.com, etc.)</li>
+        <li><strong>Social Media Marketing:</strong> Facebook, Instagram, and LinkedIn targeted advertising</li>
+        <li><strong>Agent Website:</strong> Feature listings prominently with SEO optimization</li>
+        <li><strong>Email Marketing:</strong> Send to agent network and past client database</li>
+        <li><strong>Video Marketing:</strong> Property tour videos and neighborhood highlights</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Traditional Marketing Methods</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Open Houses:</strong> Still effective for generating buyer interest and agent leads</li>
+        <li><strong>Broker Tours:</strong> Agent-only showings to generate referrals from other agents</li>
+        <li><strong>Print Advertising:</strong> Local newspapers and real estate magazines for luxury properties</li>
+        <li><strong>Signage:</strong> Professional yard signs with rider signs for features and open houses</li>
+        <li><strong>Direct Mail:</strong> Targeted mailings to specific neighborhoods or demographics</li>
       </ul>
 
       <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
       <ul class="list-disc list-inside space-y-2 text-sm">
-        <li>Think "topics" not just "keywords". What broad areas of expertise can you own?</li>
-        <li>Answer the questions your clients are already asking.</li>
-        <li>Use the <a href="/content-engine" class="text-primary hover:underline font-semibold">Co-Marketing Studio</a> to generate pillar pages, blog posts, and video scripts efficiently.</li>
-        <li>Save your best research in the <a href="/research-agent" class="text-primary hover:underline font-semibold">Knowledge Base</a> to reference for future content.</li>
+        <li>Invest in professional photography for every listing - it's non-negotiable</li>
+        <li>Create a comprehensive marketing plan for each property</li>
+        <li>Use multiple marketing channels to maximize exposure</li>
+        <li>Track which marketing methods generate the most qualified leads</li>
+        <li>Adjust marketing strategy based on market feedback and showing activity</li>
       </ul>
     `,
-     quiz: [
-        {
-            question: "What is a 'Pillar Page' in content marketing?",
-            options: ["Your website's home page", "A page with agent testimonials", "A long, comprehensive guide on a single topic", "A short blog post with lots of keywords"],
-            correctAnswer: "A long, comprehensive guide on a single topic"
-        }
+    quiz: [
+      {
+        question: "According to NAR, how much faster do properties with professional photography sell?",
+        options: ["18%", "25%", "32%", "41%"],
+        correctAnswer: "32%"
+      },
+      {
+        question: "What percentage of buyers search online first?",
+        options: ["85%", "88%", "92%", "96%"],
+        correctAnswer: "92%"
+      }
     ]
   },
   {
-    id: 'reviews',
-    title: 'Lesson 4: Building Authority with Client Reviews',
+    id: 'lead-generation-conversion',
+    title: 'Lesson 4: Lead Generation and Conversion',
     category: 'marketing',
     content: `
-      <p>Online reviews are the modern-day word-of-mouth. A proactive review management strategy builds social proof, which is a powerful psychological trigger that makes potential clients trust you before they even contact you.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">An Effective Review Strategy</h3>
-      <ul class="list-disc list-inside space-y-3">
-        <li><strong>Automate the "Ask":</strong> At the successful close of a transaction, have a system (even a simple email template) to ask your happy client for a review. Provide a direct link to your Google Business Profile review form.</li>
-        <li><strong>Respond to All Reviews:</strong> Thank every positive reviewer personally. For negative reviews, respond professionally, acknowledge their concern (without admitting fault), and offer to resolve the issue offline. This shows you are responsive and care.</li>
-        <li><strong>Leverage Reviews for Schema:</strong> The <a href="/brand-audit" class="text-primary hover:underline font-semibold">Brand Audit</a> page automatically generates 'Review' schema markup for every review it finds. Adding this structured data to your website can help Google show star ratings directly in search results for your name.</li>
-      </ul>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
-      <ul class="list-disc list-inside space-y-2 text-sm">
-        <li>The best time to ask for a review is right after a successful closing.</li>
-        <li>Responding to all reviews shows you're engaged and professional.</li>
-        <li>Use the schema generated in the <a href="/brand-audit" class="text-primary hover:underline font-semibold">Brand Audit</a> to enhance your website's SEO.</li>
-      </ul>
-    `,
-     quiz: [
-        {
-            question: "When is the best time to ask a client for a review?",
-            options: ["During the initial consultation", "Right after a successful closing", "Six months after closing", "Never, it's unprofessional"],
-            correctAnswer: "Right after a successful closing"
-        },
-        {
-            question: "How should you handle a negative online review?",
-            options: ["Ignore it", "Delete it immediately", "Respond professionally and offer to take the conversation offline", "Argue with the reviewer publicly"],
-            correctAnswer: "Respond professionally and offer to take the conversation offline"
-        }
-    ]
-  },
-  {
-    id: 'ai-workflow',
-    title: 'Lesson 5: Supercharging Your Workflow with AI',
-    category: 'marketing',
-    content: `
-      <p>Artificial Intelligence (AI) is your new marketing assistant. It's designed to automate repetitive tasks, break through writer's block, and serve as a starting point for high-quality, personalized content.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The "AI as a First Draft" Mentality</h3>
-      <p>The most effective way to use AI is to treat its output as a well-researched first draft. It provides the structure, key points, and initial copy, which you can then infuse with your unique voice, local expertise, and personal anecdotes. This combination of AI efficiency and human touch is unbeatable.</p>
+      <p>Consistent lead generation is the lifeblood of a successful real estate business. According to NAR, <strong>top-producing agents generate 4-6 new leads per week</strong> and convert 15-20% of leads into clients.</p>
       
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Practical AI Workflows</h3>
-      <ul class="list-disc list-inside space-y-3">
-        <li>
-          <strong>The Listing Optimizer:</strong> Have a new listing? Don't start from scratch. Use the <a href="/content-engine?tab=listing" class="text-primary hover:underline font-semibold">Listing Optimizer</a> to generate a compelling, persona-driven description and an FAQ section in seconds. Then, spend a few minutes editing it to match your style.
-        </li>
-        <li>
-          <strong>The One-to-Many Content Machine:</strong> Start with a single idea (e.g., "The benefits of assumable mortgages"). Use the <a href="/content-engine" class="text-primary hover:underline font-semibold">Co-Marketing Studio</a> to turn that idea into a blog post, a social media campaign, and a video script. You create a week's worth of content in minutes.
-        </li>
-        <li>
-          <strong>The Research Assistant:</strong> Need to become an expert on a new subdivision or a complex zoning law? Delegate the initial research to the <a href="/research-agent" class="text-primary hover:underline font-semibold">AI Research Agent</a>. It will give you a comprehensive report with sources, saving you hours of searching.
-        </li>
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Lead Generation Sources</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Sphere of Influence:</strong> Past clients, friends, family - highest conversion rate at 25-30%</li>
+        <li><strong>Referrals:</strong> From past clients and other professionals - 20-25% conversion rate</li>
+        <li><strong>Online Leads:</strong> Website inquiries, social media, Zillow - 2-5% conversion rate</li>
+        <li><strong>Open Houses:</strong> Both listing and buyer leads - 5-10% conversion rate</li>
+        <li><strong>Geographic Farming:</strong> Targeted neighborhood marketing - 8-12% conversion rate</li>
+        <li><strong>For Sale By Owner (FSBO):</strong> Expired listings and FSBOs - 10-15% conversion rate</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Lead Conversion Process</h3>
+      <ol class="list-decimal list-inside space-y-2 ml-4">
+        <li><strong>Immediate Response:</strong> Contact leads within 5 minutes for 9x higher conversion</li>
+        <li><strong>Qualification:</strong> Determine timeline, motivation, and financial capacity</li>
+        <li><strong>Value Demonstration:</strong> Provide market insights and professional expertise</li>
+        <li><strong>Relationship Building:</strong> Focus on trust and rapport before pushing for meetings</li>
+        <li><strong>Follow-up System:</strong> Consistent contact until ready to buy/sell or definitively not interested</li>
+      </ol>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">CRM and Lead Management</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Lead Tracking:</strong> Record all interactions, preferences, and timeline information</li>
+        <li><strong>Automated Follow-up:</strong> Email drip campaigns and scheduled phone calls</li>
+        <li><strong>Lead Scoring:</strong> Prioritize leads based on readiness and qualification</li>
+        <li><strong>Pipeline Management:</strong> Track leads through stages from initial contact to closing</li>
+        <li><strong>ROI Analysis:</strong> Measure cost per lead and conversion rates by source</li>
       </ul>
 
       <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
       <ul class="list-disc list-inside space-y-2 text-sm">
-        <li>Let AI handle the initial 80% of content creation, so you can focus on the final 20% of personalization.</li>
-        <li>Always review and edit AI-generated content to ensure it's accurate and reflects your brand.</li>
-        <li>Use AI to consistently produce content across multiple channels, which is key to building online authority.</li>
+        <li>Develop multiple lead generation sources to reduce dependency on any single channel</li>
+        <li>Respond to leads immediately - speed is critical for conversion</li>
+        <li>Implement a systematic follow-up process using CRM technology</li>
+        <li>Focus on building relationships rather than pushing for immediate sales</li>
+        <li>Track and analyze lead sources to optimize marketing spend</li>
       </ul>
     `,
-     quiz: [
-        {
-            question: "What is the most effective way to use AI-generated content?",
-            options: ["Copy and paste it directly without changes", "As a final, polished piece of content", "As a well-researched first draft to be edited and personalized", "Only for brainstorming ideas"],
-            correctAnswer: "As a well-researched first draft to be edited and personalized"
-        }
+    quiz: [
+      {
+        question: "What is the typical conversion rate for sphere of influence leads?",
+        options: ["10-15%", "15-20%", "20-25%", "25-30%"],
+        correctAnswer: "25-30%"
+      },
+      {
+        question: "How much higher is conversion when leads are contacted within 5 minutes?",
+        options: ["3x", "5x", "7x", "9x"],
+        correctAnswer: "9x"
+      }
     ]
   },
   {
-    id: 'competitive-analysis',
-    title: 'Lesson 6: Actionable Insights from Competitive Analysis',
+    id: 'prospecting-cold-calling',
+    title: 'Lesson 5: Prospecting and Cold Calling Techniques',
     category: 'marketing',
     content: `
-      <p>You don't operate in a vacuum. Understanding your competitors' strengths and weaknesses is fundamental to carving out your unique space in the market and winning more clients.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Why Competitive Analysis Matters</h3>
-      <ul class="list-disc list-inside space-y-3">
-        <li>
-          <strong>Identify Opportunities:</strong> If your top competitor has very few social media followers, it's a huge opportunity for you to dominate social channels. If they rank #1 for a keyword, you know what to target.
-        </li>
-        <li>
-          <strong>Benchmark Your Performance:</strong> Are you lagging behind in review volume? Is your website's domain authority lower? Benchmarking helps you set realistic goals for your marketing efforts.
-        </li>
-        <li>
-          <strong>Understand Your Market:</strong> Knowing who the top players are helps you understand the dominant marketing strategies in your area and how you can differentiate yourself.
-        </li>
+      <p>Prospecting remains one of the most effective ways to generate business in real estate. According to industry studies, <strong>agents who prospect consistently earn 42% more than those who don't</strong>, and cold calling still converts at 2-3% when done professionally.</p>
+      
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Prospecting Target Markets</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>For Sale By Owner (FSBO):</strong> Homeowners attempting to sell without an agent</li>
+        <li><strong>Expired Listings:</strong> Properties that failed to sell during listing period</li>
+        <li><strong>Withdrawn Listings:</strong> Properties removed from market before selling</li>
+        <li><strong>Geographic Farming:</strong> Specific neighborhoods or subdivisions</li>
+        <li><strong>Just Listed/Just Sold:</strong> Neighbors of recent real estate activity</li>
+        <li><strong>Absentee Owners:</strong> Investment property owners who may want to sell</li>
       </ul>
 
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Using the Tools</h3>
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Cold Calling Best Practices</h3>
+      <ol class="list-decimal list-inside space-y-2 ml-4">
+        <li><strong>Research First:</strong> Know property details, market conditions, and owner situation</li>
+        <li><strong>Script Preparation:</strong> Have talking points but sound conversational, not robotic</li>
+        <li><strong>Value Proposition:</strong> Lead with what you can do for them, not what you want</li>
+        <li><strong>Handle Objections:</strong> Be prepared for common responses and have professional replies</li>
+        <li><strong>Follow-up System:</strong> Track contacts and schedule systematic follow-ups</li>
+      </ol>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">FSBO Approach Strategy</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Offer Assistance:</strong> "I noticed your home for sale. How's it going so far?"</li>
+        <li><strong>Provide Market Data:</strong> Share comparable sales and current market conditions</li>
+        <li><strong>Buyer Representation:</strong> Offer to bring qualified buyers to their property</li>
+        <li><strong>Professional Services:</strong> Explain marketing, negotiation, and transaction management value</li>
+        <li><strong>Build Relationship:</strong> Focus on helping, not immediately getting the listing</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
       <ul class="list-disc list-inside space-y-2 text-sm">
-        <li>Use the <a href="/competitive-analysis" class="text-primary hover:underline font-semibold">AI Competitor Discovery tool</a> to automatically find top agents in your area. Add them to your tracker.</li>
-        <li>Regularly use the <a href="/competitive-analysis" class="text-primary hover:underline font-semibold">Local Keyword Rankings tool</a>. Track your position for terms like "best real estate agent in [Your City]" or "homes for sale in [Your Neighborhood]".</li>
-        <li>Pay attention to the metrics in the Market Snapshot. A competitor with high "Domain Authority" has a powerful website, meaning you should focus on creating better blog content. A competitor with high "Review Volume" has great social proof, so you should focus on your review generation strategy.</li>
+        <li>Set daily prospecting goals and track your activity metrics</li>
+        <li>Develop scripts for different scenarios but practice until they sound natural</li>
+        <li>Focus on providing value and building relationships, not just getting listings</li>
+        <li>Use CRM to track all contacts and schedule systematic follow-ups</li>
+        <li>Combine prospecting with other lead generation methods for best results</li>
       </ul>
     `,
-     quiz: [
-        {
-            question: "What does a high 'Domain Authority' score for a competitor suggest?",
-            options: ["They are very active on social media", "They have a strong, SEO-friendly website", "They have many positive reviews", "They are a new agent"],
-            correctAnswer: "They have a strong, SEO-friendly website"
-        },
-        {
-            question: "What is the primary benefit of tracking local keyword rankings?",
-            options: ["To see how many followers you have", "To understand your visibility on Google for important search terms", "To count how many listings you have", "To check your email"],
-            correctAnswer: "To understand your visibility on Google for important search terms"
-        }
+    quiz: [
+      {
+        question: "How much more do agents who prospect consistently earn?",
+        options: ["25%", "32%", "42%", "58%"],
+        correctAnswer: "42%"
+      },
+      {
+        question: "What is the typical conversion rate for professional cold calling?",
+        options: ["1-2%", "2-3%", "3-4%", "4-5%"],
+        correctAnswer: "2-3%"
+      }
     ]
   },
+  {
+    id: 'referral-networking-systems',
+    title: 'Lesson 6: Referral and Networking Systems',
+    category: 'marketing',
+    content: `
+      <p>Referrals are the highest-quality leads in real estate. According to NAR, <strong>referrals account for 39% of all real estate business</strong>, and referred clients are 4x more likely to close than other lead sources.</p>
+      
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Building Your Referral Network</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Past Clients:</strong> Your most valuable referral source - stay in regular contact</li>
+        <li><strong>Professional Network:</strong> Lenders, inspectors, contractors, attorneys, CPAs</li>
+        <li><strong>Other Agents:</strong> Out-of-area agents who can refer relocating clients</li>
+        <li><strong>Personal Network:</strong> Friends, family, neighbors, and social connections</li>
+        <li><strong>Business Professionals:</strong> Insurance agents, financial advisors, business owners</li>
+        <li><strong>Community Leaders:</strong> Coaches, teachers, religious leaders, club members</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Referral Generation Strategies</h3>
+      <ol class="list-decimal list-inside space-y-2 ml-4">
+        <li><strong>Ask Directly:</strong> "Who do you know who might be thinking of buying or selling?"</li>
+        <li><strong>Provide Value First:</strong> Share market insights, home maintenance tips, local information</li>
+        <li><strong>Stay Top-of-Mind:</strong> Regular communication through newsletters, social media, events</li>
+        <li><strong>Reciprocate:</strong> Refer business to your network partners when appropriate</li>
+        <li><strong>Thank and Reward:</strong> Acknowledge referrals promptly and appropriately</li>
+      </ol>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Professional Networking</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Join Organizations:</strong> Chamber of Commerce, Rotary, BNI, industry associations</li>
+        <li><strong>Attend Events:</strong> Networking mixers, community events, professional conferences</li>
+        <li><strong>Host Events:</strong> Client appreciation parties, educational seminars, market updates</li>
+        <li><strong>Strategic Partnerships:</strong> Formal referral agreements with complementary businesses</li>
+        <li><strong>Online Networking:</strong> LinkedIn connections, Facebook groups, industry forums</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Client Retention for Referrals</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Post-Closing Follow-up:</strong> Continue relationship after transaction completion</li>
+        <li><strong>Annual Check-ins:</strong> Home value updates, market reports, personal touches</li>
+        <li><strong>Special Occasions:</strong> Home anniversaries, birthdays, holidays</li>
+        <li><strong>Valuable Content:</strong> Home maintenance tips, market updates, local events</li>
+        <li><strong>Personal Touch:</strong> Remember family details, interests, and preferences</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
+      <ul class="list-disc list-inside space-y-2 text-sm">
+        <li>Create a systematic approach to staying in touch with past clients</li>
+        <li>Build genuine relationships with professional service providers</li>
+        <li>Always ask for referrals at appropriate times during and after transactions</li>
+        <li>Provide value to your network before asking for referrals</li>
+        <li>Track referral sources and thank referrers promptly and appropriately</li>
+      </ul>
+    `,
+    quiz: [
+      {
+        question: "According to NAR, what percentage of real estate business comes from referrals?",
+        options: ["25%", "32%", "39%", "45%"],
+        correctAnswer: "39%"
+      },
+      {
+        question: "How much more likely are referred clients to close compared to other leads?",
+        options: ["2x", "3x", "4x", "5x"],
+        correctAnswer: "4x"
+      }
+    ]
+  }
 ];
 
 export const closingModules = [
   {
-    id: 'client-communication',
-    title: 'Lesson 1: Effective Client Communication',
+    id: 'contract-writing-negotiation',
+    title: 'Lesson 1: Contract Writing and Negotiation',
     category: 'closing',
     content: `
-      <p>Communication is the foundation of every successful real estate transaction. According to the National Association of Realtors' 2023 Profile of Home Buyers and Sellers, <strong>communication quality is the #1 factor</strong> clients use to evaluate their agent's performance. Master these techniques to build trust, understand needs, and create clients for life.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The Art of Active Listening</h3>
-      <p>Active listening is more than hearing words—it's about understanding the complete message, including emotions, concerns, and unspoken needs.</p>
+      <p>Contract writing and negotiation are core competencies for real estate professionals. According to industry data, <strong>skilled negotiators help their clients save an average of $5,000-$15,000 per transaction</strong> through effective contract terms and negotiation strategies.</p>
       
-      <h4 class="font-semibold mt-4 mb-2">The Three Levels of Listening</h4>
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Essential Contract Elements</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Purchase Price and Terms:</strong> Clear pricing structure and payment terms</li>
+        <li><strong>Contingencies:</strong> Inspection, financing, appraisal, and sale of buyer's home</li>
+        <li><strong>Timeline:</strong> Specific dates for inspections, financing, and closing</li>
+        <li><strong>Property Condition:</strong> "As-is" versus repair negotiations</li>
+        <li><strong>Inclusions/Exclusions:</strong> What stays and what goes with the property</li>
+        <li><strong>Earnest Money:</strong> Amount and handling of good faith deposit</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Negotiation Strategies</h3>
       <ol class="list-decimal list-inside space-y-2 ml-4">
-        <li><strong>Internal Listening:</strong> Hearing words while thinking about your response (least effective)</li>
-        <li><strong>Focused Listening:</strong> Paying full attention to the speaker's words</li>
-        <li><strong>Global Listening:</strong> Noticing tone, body language, energy, and what's NOT being said (most effective)</li>
-      </ol>
-      
-      <p class="mt-3"><strong>The Reflection Technique:</strong> Repeat back what you've heard in your own words. Example: "So if I'm understanding correctly, a large backyard is a top priority because you want space for your kids to play safely. Is that right?" This confirms understanding and shows you're truly engaged.</p>
-      
-      <p class="mt-2"><strong>Research Finding:</strong> According to a study published in the International Journal of Listening (2018), professionals who practice active listening are rated <strong>40% more trustworthy</strong> by clients and close deals <strong>25% faster</strong>.</p>
-      
-      <p class="mt-2"><strong>Practical Exercise:</strong> In your next client meeting, practice the 70/30 rule—let the client talk 70% of the time, you talk 30%. Take notes on their emotional cues, not just facts.</p>
-      
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: Stephen Covey's '7 Habits of Highly Effective People' - Habit 5: Seek First to Understand, Then to Be Understood.</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Building Rapport Instantly</h3>
-      <p>People do business with those they know, like, and trust. Building rapport transforms you from a service provider into a trusted advisor.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">The Rapport-Building Framework</h4>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li><strong>Find Common Ground:</strong> Look for shared interests beyond real estate—pets, hobbies, local restaurants, kids' schools. "I noticed your dog in the photo—what breed? I have a golden retriever too!"</li>
-        <li><strong>Mirror Their Communication Style:</strong> If they're formal, be professional. If they're casual, relax your tone. Match their pace—fast talkers want efficiency, slow talkers want thoroughness.</li>
-        <li><strong>Use Their Name:</strong> People love hearing their own name. Use it naturally 2-3 times per conversation.</li>
-        <li><strong>Show Genuine Interest:</strong> Ask about their story: "What brings you to [City]?" or "Tell me about your family." Then actually listen.</li>
-      </ul>
-      
-      <p class="mt-2"><strong>Key Statistic:</strong> According to Harvard Business Review research, <strong>emotional connection drives 52% of customer loyalty</strong>—more than brand perception or ease of doing business combined.</p>
-      
-      <p class="mt-2"><strong>The 5-Minute Rule:</strong> Spend the first 5 minutes of every meeting on non-business conversation. This small investment pays massive dividends in trust and rapport.</p>
-      
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: Dale Carnegie's 'How to Win Friends and Influence People' - Principle: Become genuinely interested in other people.</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Setting Clear Expectations</h3>
-      <p>Unclear expectations are the #1 cause of client dissatisfaction. A successful relationship starts with a clear roadmap.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">The Initial Consultation Checklist</h4>
-      <p>Cover these topics in your first meeting:</p>
-      <ol class="list-decimal list-inside space-y-2 ml-4">
-        <li><strong>Communication Preferences:</strong> "How do you prefer I reach you—text, email, or phone? What times work best?"</li>
-        <li><strong>Response Time Expectations:</strong> "I typically respond within 2 hours during business hours. For urgent matters, text me directly."</li>
-        <li><strong>Timeline & Milestones:</strong> Create a visual timeline showing key dates: pre-approval, house hunting, offer, inspection, closing.</li>
-        <li><strong>Roles & Responsibilities:</strong> "Here's what I'll handle, and here's what I need from you."</li>
-        <li><strong>Biggest Fears:</strong> "What concerns you most about this process?" Address these proactively.</li>
-        <li><strong>Success Criteria:</strong> "What would make this a 10/10 experience for you?"</li>
-      </ol>
-      
-      <p class="mt-2"><strong>Research Finding:</strong> According to a study by the Real Estate Business Institute, agents who conduct structured initial consultations have <strong>34% higher client satisfaction scores</strong> and receive <strong>2.5x more referrals</strong>.</p>
-      
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: Michael E. Gerber's 'The E-Myth Revisited' - Systems create consistency and manage expectations.</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Translating 'Realtor-Speak'</h3>
-      <p>Industry jargon creates confusion and anxiety. Your job is to be a translator, not a dictionary.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">Common Terms to Explain Simply</h4>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li><strong>Escrow:</strong> "Think of it as a neutral third party that holds everyone's money and documents until all conditions are met. It protects both you and the seller."</li>
-        <li><strong>Contingency:</strong> "This is your safety net. It's a condition that must be met, or you can back out without penalty. Like an inspection contingency—if the inspector finds major issues, you're not stuck."</li>
-        <li><strong>Appraisal Gap:</strong> "If the bank's appraiser says the house is worth less than your offer, that's the gap. You'd need to either negotiate the price down, pay the difference in cash, or walk away."</li>
-        <li><strong>Pre-approval vs. Pre-qualification:</strong> "Pre-qualification is an estimate. Pre-approval means a lender has verified your finances and committed to lending you money. Sellers take pre-approval seriously."</li>
-      </ul>
-      
-      <p class="mt-2"><strong>The "Explain Like I'm 5" Rule:</strong> If you can't explain a concept to a 5th grader, you don't understand it well enough. Simplify everything.</p>
-      
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: National Association of Realtors (NAR) Code of Ethics - Article 2: Avoid exaggeration, misrepresentation, or concealment of pertinent facts.</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The Power of the Follow-Up</h3>
-      <p>The fortune is in the follow-up. Consistent, value-driven follow-up separates top producers from average agents.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">The Follow-Up Framework</h4>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li><strong>Immediate (Within 1 hour):</strong> After a showing, send a text: "Thanks for viewing [Address] today! What did you think? Any questions?"</li>
-        <li><strong>Same Day:</strong> Send a detailed email summarizing what you discussed, next steps, and any action items for both parties.</li>
-        <li><strong>24-48 Hours:</strong> Share additional information they requested—comps, school ratings, neighborhood data.</li>
-        <li><strong>Weekly:</strong> For active clients, send a market update or new listings that match their criteria.</li>
-        <li><strong>Post-Close:</strong> Follow up at 30 days, 90 days, and annually. "How's the new home? Any questions about the neighborhood?"</li>
-      </ul>
-      
-      <p class="mt-2"><strong>Key Statistics:</strong></p>
-      <ul class="list-disc list-inside space-y-1 ml-4">
-        <li><strong>80% of sales</strong> require 5+ follow-ups, yet 44% of salespeople give up after one follow-up (Marketing Donut, 2022)</li>
-        <li>Agents who follow up within <strong>5 minutes</strong> of an inquiry are <strong>9x more likely</strong> to convert that lead (InsideSales.com)</li>
-        <li><strong>68% of clients</strong> leave because they perceive indifference from their service provider (Rockefeller Corporation Study)</li>
-      </ul>
-      
-      <p class="mt-2"><strong>Pro Tip:</strong> Use a CRM to automate follow-up reminders. Never rely on memory alone.</p>
-      
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: Jeb Blount's 'Fanatical Prospecting' - The fortune is in the follow-up.</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
-      <ul class="list-disc list-inside space-y-2 text-sm">
-        <li>Practice the 70/30 rule: Let clients talk 70% of the time. Use reflection to confirm understanding.</li>
-        <li>Spend the first 5 minutes of every meeting building rapport through personal connection.</li>
-        <li>Conduct a structured initial consultation covering communication preferences, timeline, and expectations.</li>
-        <li>Create a "jargon translation guide" for common real estate terms you use frequently.</li>
-        <li>Implement a systematic follow-up process using a CRM—respond within 5 minutes to new inquiries.</li>
-        <li>Ask for feedback: "On a scale of 1-10, how would you rate our communication so far? What could I improve?"</li>
-      </ul>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Sources & Further Reading</h3>
-      <ul class="list-disc list-inside space-y-1 text-xs text-muted-foreground">
-        <li><a href="https://www.amazon.com/Habits-Highly-Effective-People-Powerful/dp/1982137274" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Stephen R. Covey - '7 Habits of Highly Effective People' (1989)</a></li>
-        <li><a href="https://www.amazon.com/How-Win-Friends-Influence-People/dp/0671027034" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Dale Carnegie - 'How to Win Friends and Influence People' (1936)</a></li>
-        <li><a href="https://www.amazon.com/Myth-Revisited-Small-Businesses-About/dp/0887307280" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Michael E. Gerber - 'The E-Myth Revisited' (1995)</a></li>
-        <li><a href="https://www.amazon.com/Fanatical-Prospecting-Ultimate-Opening-Filling/dp/1119144752" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Jeb Blount - 'Fanatical Prospecting' (2015)</a></li>
-        <li><a href="https://www.nar.realtor/research-and-statistics/research-reports/home-buyer-and-seller-generational-trends" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">National Association of Realtors - Profile of Home Buyers and Sellers (2023)</a></li>
-        <li><a href="https://hbr.org/2015/11/the-new-science-of-customer-emotions" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Harvard Business Review - 'The New Science of Customer Emotions' (2015)</a></li>
-        <li><a href="https://www.tandfonline.com/journals/hijl20" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">International Journal of Listening - Active Listening Research</a></li>
-        <li><a href="https://www.insidesales.com/resources/lead-response-management-study/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">InsideSales.com - Lead Response Management Study</a></li>
-      </ul>
-    `,
-    quiz: [
-      {
-        question: "What is the primary benefit of active listening?",
-        options: ["To talk more", "To build trust and understand real needs", "To close deals faster", "To avoid phone calls"],
-        correctAnswer: "To build trust and understand real needs"
-      },
-      {
-        question: "When should you set clear expectations with a client?",
-        options: ["After the first showing", "At closing", "During the initial consultation", "Never"],
-        correctAnswer: "During the initial consultation"
-      }
-    ]
-  },
-  {
-    id: 'closing-techniques',
-    title: 'Lesson 2: Mastering the Close',
-    category: 'closing',
-    content: `
-      <p>Tactics to confidently guide clients to a successful close.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The 'Assumptive Close'</h3>
-      <p>Throughout the process, use language that assumes a successful outcome. Instead of asking 'If you make an offer...', try 'When we make the offer, what's your preferred closing date?'. This positive framing builds momentum and confidence, guiding the client naturally towards the decision.</p>
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: A classic sales technique adapted for modern real estate.</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Handling Objections with 'Feel, Felt, Found'</h3>
-      <p>When a client raises an objection (e.g., 'The price seems high'), empathize first. 'I understand how you feel. Other clients have felt the same way initially. However, what they found was that given the recent sales in this neighborhood, the price is very competitive.'</p>
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: A widely taught method for empathetic objection handling.</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Creating Urgency (Ethically)</h3>
-      <p>Instead of pressure, use market realities to create urgency. Say, 'Properties in this area with these features have been selling within 10 days on average. If you're serious, we should act promptly.' This is honest, informative, and motivates a decision without being pushy.</p>
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: Guidance from 'Never Split the Difference' by Chris Voss on using facts to frame urgency.</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The 'Summary Close'</h3>
-      <p>For indecisive clients, summarize the positives you've confirmed they like. 'So, just to recap, this home has the updated kitchen you wanted, it's in the right school district, and the backyard is perfect for the dogs. Based on that, are you ready to move forward?' This helps them logically affirm their own decision.</p>
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: A fundamental technique from 'The Psychology of Selling' by Brian Tracy.</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The 'Ben Franklin' Close</h3>
-      <p>When a client is on the fence, draw a line down a piece of paper. On one side, list the 'Pros' (reasons to buy the house), and on the other, the 'Cons'. Guide them as they fill it out. More often than not, the process of visually listing the benefits makes the right decision obvious for them. It's a logical way to overcome emotional hesitation.</p>
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: A classic decision-making technique attributed to Benjamin Franklin.</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
-      <ul class="list-disc list-inside space-y-2 text-sm">
-        <li>Use assumptive language to build momentum toward a positive outcome.</li>
-        <li>Handle objections with empathy using the 'Feel, Felt, Found' framework.</li>
-        <li>Create ethical urgency by sharing honest market data and trends.</li>
-        <li>Use the summary close to help indecisive clients see the full picture.</li>
-        <li>Try the Ben Franklin close for visual, logical decision-making.</li>
-      </ul>
-    `,
-    quiz: [
-      {
-        question: "What is the 'Assumptive Close' technique?",
-        options: ["Assuming the client will say no", "Using language that assumes a successful outcome", "Guessing the client's budget", "Closing without asking questions"],
-        correctAnswer: "Using language that assumes a successful outcome"
-      },
-      {
-        question: "What does the 'Feel, Felt, Found' method help with?",
-        options: ["Finding properties", "Handling objections empathetically", "Calculating commissions", "Scheduling showings"],
-        correctAnswer: "Handling objections empathetically"
-      },
-      {
-        question: "How should you create urgency ethically?",
-        options: ["Lie about other offers", "Use market data and honest facts", "Pressure the client aggressively", "Hide information"],
-        correctAnswer: "Use market data and honest facts"
-      }
-    ]
-  },
-  {
-    id: 'lead-qualification',
-    title: 'Lesson 3: Lead Qualification & Conversion',
-    category: 'closing',
-    content: `
-      <p>Not all leads are created equal. Master the art of identifying serious buyers and sellers, and converting them into committed clients.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The BANT Framework</h3>
-      <p>Qualify leads using four key criteria:</p>
-      <ul class="list-disc list-inside space-y-2 mt-2">
-        <li><strong>Budget:</strong> Can they afford what they're looking for? Ask: "Have you been pre-approved for a mortgage?"</li>
-        <li><strong>Authority:</strong> Are they the decision-maker? Ask: "Will anyone else be involved in this decision?"</li>
-        <li><strong>Need:</strong> Do they have a genuine need? Ask: "What's motivating your move right now?"</li>
-        <li><strong>Timeline:</strong> When do they need to act? Ask: "What's your ideal timeline for moving?"</li>
-      </ul>
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: A classic B2B sales framework adapted for real estate.</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The 'Pain Point' Discovery</h3>
-      <p>People don't buy houses; they buy solutions to problems. Uncover their pain points with open-ended questions: "What's not working about your current living situation?" or "What would make your life easier?" When you understand their pain, you can position properties as the perfect solution.</p>
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: Solution-based selling methodology.</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The 'Red Flag' Test</h3>
-      <p>Learn to spot time-wasters early. Red flags include: vague timelines ("just looking"), no pre-approval, unrealistic expectations, or unwillingness to commit to a consultation. It's okay to politely disengage from unqualified leads to focus on serious clients.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Converting Online Leads</h3>
-      <p>Speed matters. Respond to online inquiries within 5 minutes if possible. Use a script: "Hi [Name], I saw you were interested in [Property]. I'd love to tell you more about it. Are you available for a quick call right now?" Fast response + immediate value = higher conversion.</p>
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: InsideSales.com research on lead response times.</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
-      <ul class="list-disc list-inside space-y-2 text-sm">
-        <li>Use BANT to quickly assess if a lead is worth pursuing.</li>
-        <li>Ask open-ended questions to uncover pain points and motivations.</li>
-        <li>Respond to online leads within 5 minutes for maximum conversion.</li>
-        <li>Don't be afraid to disengage from unqualified leads to protect your time.</li>
-      </ul>
-    `,
-    quiz: [
-      {
-        question: "What does BANT stand for?",
-        options: ["Budget, Authority, Need, Timeline", "Buy, Assess, Negotiate, Transfer", "Business, Agent, Network, Trust", "Buyer, Area, Neighborhood, Terms"],
-        correctAnswer: "Budget, Authority, Need, Timeline"
-      },
-      {
-        question: "What is the ideal response time for online leads?",
-        options: ["Within 24 hours", "Within 1 hour", "Within 5 minutes", "Same day"],
-        correctAnswer: "Within 5 minutes"
-      }
-    ]
-  },
-  {
-    id: 'negotiation-mastery',
-    title: 'Lesson 4: Negotiation Mastery',
-    category: 'closing',
-    content: `
-      <p>Negotiation is where deals are won or lost. According to research by the Program on Negotiation at Harvard Law School, <strong>skilled negotiators achieve outcomes 42% better</strong> than average negotiators. Master these evidence-based techniques to advocate for your clients while keeping deals together.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The Anchoring Effect</h3>
-      <p>The anchoring effect is a cognitive bias where people rely too heavily on the first piece of information offered (the "anchor") when making decisions. In real estate negotiations, whoever sets the anchor controls the negotiation range.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">How Anchoring Works</h4>
-      <p><strong>Research Finding:</strong> A study published in the Journal of Personality and Social Psychology found that even when people know about anchoring bias, it still influences their decisions by an average of <strong>31%</strong>.</p>
-      
-      <p class="mt-2"><strong>For Buyers:</strong></p>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li>Start with a lower offer that's still defensible with comparable sales data</li>
-        <li>Typical range: 5-10% below asking price in balanced markets, 10-15% in buyer's markets</li>
-        <li>Always provide justification: "Based on these three comparable sales, we believe $X is fair market value"</li>
-        <li>Example: If a home is listed at $500K, an anchor of $465K (7% below) sets the negotiation range between $465K-$500K</li>
-      </ul>
-      
-      <p class="mt-2"><strong>For Sellers:</strong></p>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li>Price 3-5% above true market value to leave negotiation room</li>
-        <li>The listing price becomes the anchor—buyers will negotiate down from there</li>
-        <li>Overpricing by more than 10% backfires: homes sit longer and sell for less (Zillow Research, 2022)</li>
-      </ul>
-      
-      <p class="mt-2"><strong>Counter-Anchoring:</strong> If the other party anchors first with an unreasonable number, don't counter immediately. Instead, reset expectations: "That's outside the range supported by market data. Let me show you the comparable sales..." Then set your own anchor.</p>
-      
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: Tversky & Kahneman (1974) - 'Judgment under Uncertainty: Heuristics and Biases'</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The Win-Win Mindset (Integrative Negotiation)</h3>
-      <p>The best negotiations create value for both parties rather than just dividing a fixed pie. This is called "integrative" or "win-win" negotiation.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">The Value Creation Framework</h4>
-      <p><strong>Research Finding:</strong> According to a study in the Academy of Management Journal, negotiators who focus on creating value achieve <strong>18% better outcomes</strong> for both parties compared to those who focus only on claiming value.</p>
-      
-      <p class="mt-2"><strong>Creative Concessions That Cost Little But Mean Much:</strong></p>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li><strong>Flexible Closing Date:</strong> Seller needs 60 days to move? Buyer gets a lower price for the flexibility.</li>
-        <li><strong>Include Appliances/Furniture:</strong> Costs seller nothing if they're buying new anyway, saves buyer thousands.</li>
-        <li><strong>Home Warranty ($500-800):</strong> Provides buyer peace of mind, minimal cost to seller.</li>
-        <li><strong>Rent-Back Agreement:</strong> Seller stays 30 days post-closing, paying rent. Buyer gets the house, seller gets moving time.</li>
-        <li><strong>Repair Credits:</strong> Instead of seller making repairs, give buyer a credit at closing to do it themselves.</li>
-      </ul>
-      
-      <p class="mt-2"><strong>The Trade-Off Technique:</strong> "If I can get the seller to agree to [X], would you be willing to [Y]?" This creates movement without either party feeling they "lost."</p>
-      
-      <p class="mt-2"><strong>Example Scenario:</strong> Buyer wants $10K off a $400K home. Instead of a flat "no," propose: "The seller can't reduce the price, but they'll include the $8K hot tub, pay for a 1-year home warranty ($800), and give you a $2K closing cost credit. That's $10,800 in value." Buyer gets what they wanted, seller doesn't reduce the sale price.</p>
-      
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: Roger Fisher & William Ury - 'Getting to Yes: Negotiating Agreement Without Giving In' (1981)</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The Power of Strategic Silence</h3>
-      <p>Silence is one of the most powerful negotiation tools, yet most people are uncomfortable with it.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">Why Silence Works</h4>
-      <p><strong>Research Finding:</strong> A study in the Journal of Applied Psychology found that negotiators who used strategic silence achieved <strong>23% better outcomes</strong> than those who immediately responded. The discomfort of silence often causes the other party to make concessions or reveal information.</p>
-      
-      <p class="mt-2"><strong>How to Use Silence:</strong></p>
-      <ol class="list-decimal list-inside space-y-2 ml-4">
-        <li><strong>After Making an Offer:</strong> Present your offer, then stop talking. Let them respond first. Count to 10 in your head if needed.</li>
-        <li><strong>After They Counter:</strong> Don't immediately counter back. Pause for 5-10 seconds. This signals you're seriously considering it (even if you're not).</li>
-        <li><strong>When They Make a Demand:</strong> Silence shows you're not eager to agree. It creates doubt: "Maybe I asked for too much?"</li>
-      </ol>
-      
-      <p class="mt-2"><strong>The "Flinch" + Silence Combo:</strong> When they state their price, show a subtle negative reaction (raised eyebrows, slight head shake), then stay silent. This non-verbal communication often triggers them to negotiate against themselves: "Well, I might be able to do $X instead..."</p>
-      
-      <p class="mt-2"><strong>Warning:</strong> Don't overuse silence or it becomes manipulative. Use it strategically at key moments.</p>
-      
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: Chris Voss - 'Never Split the Difference: Negotiating As If Your Life Depended On It' (2016)</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Managing Multiple Offer Situations</h3>
-      <p>Multiple offers require different strategies for buyers and sellers.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">For Sellers (Listing Agent)</h4>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li><strong>Set a Deadline:</strong> "All offers due by Tuesday at 5 PM. We'll review and respond by Wednesday noon."</li>
-        <li><strong>Request "Highest and Best":</strong> After initial offers, ask all parties to submit their best offer. This often increases offers by 2-5%.</li>
-        <li><strong>Evaluate Beyond Price:</strong> Consider contingencies, financing strength, closing timeline, and escalation clauses.</li>
-        <li><strong>Create Competition:</strong> Let buyers know there are multiple offers (without disclosing details). Competition drives prices up.</li>
-      </ul>
-      
-      <p class="mt-2"><strong>Key Statistic:</strong> According to Redfin's 2023 data, homes with multiple offers sell for an average of <strong>3.1% above asking price</strong>, compared to 1.2% below asking for homes with single offers.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">For Buyers (Buyer's Agent)</h4>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li><strong>Escalation Clause:</strong> "We offer $400K, but will escalate up to $425K in $5K increments above any competing offer." This shows you're serious without overpaying.</li>
-        <li><strong>Personal Letter:</strong> A heartfelt letter from buyers to sellers can be the tiebreaker. Share your story and why you love the home.</li>
-        <li><strong>Proof of Funds:</strong> Include bank statements or pre-approval letters to show you're a serious, qualified buyer.</li>
-        <li><strong>Flexible Terms:</strong> Offer to match the seller's preferred closing date, waive minor contingencies (with client approval), or offer a rent-back.</li>
-        <li><strong>Larger Earnest Money:</strong> Putting down 2-3% instead of 1% shows commitment.</li>
-      </ul>
-      
-      <p class="mt-2"><strong>Warning:</strong> Never waive inspection contingencies unless your client fully understands the risk. Some issues can cost tens of thousands to fix.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Knowing When to Walk Away (BATNA)</h3>
-      <p>BATNA stands for "Best Alternative To a Negotiated Agreement"—your walk-away point.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">The BATNA Framework</h4>
-      <p><strong>Research Finding:</strong> Negotiators who know their BATNA before negotiations achieve <strong>37% better outcomes</strong> than those who don't (Harvard Business Review, 2019).</p>
-      
-      <p class="mt-2"><strong>Before Every Negotiation, Ask Your Client:</strong></p>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li>"What's the maximum you're willing to pay?" (Buyers)</li>
-        <li>"What's the minimum you'll accept?" (Sellers)</li>
-        <li>"What will you do if this deal doesn't work out?" (Their alternative)</li>
-        <li>"What are your must-haves vs. nice-to-haves?"</li>
-      </ul>
-      
-      <p class="mt-2"><strong>The Walk-Away Power:</strong> When you're willing to walk away, you negotiate from strength. Desperation shows, and the other party will exploit it. Sometimes the best deal is the one you don't make.</p>
-      
-      <p class="mt-2"><strong>Example:</strong> Buyer's max is $450K. Seller won't go below $465K. Walk away. There will be another house. Chasing a bad deal leads to buyer's remorse and unhappy clients.</p>
-      
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: Roger Fisher & William Ury - 'Getting to Yes' - The concept of BATNA</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
-      <ul class="list-disc list-inside space-y-2 text-sm">
-        <li>Use anchoring strategically: Set the first number when possible, backed by comparable sales data.</li>
-        <li>Look for creative win-win solutions: flexible dates, included items, repair credits, rent-backs.</li>
-        <li>Practice strategic silence: After making offers, count to 10 before speaking again.</li>
-        <li>In multiple offer situations, help buyers stand out with escalation clauses, personal letters, and strong terms.</li>
-        <li>Always establish your client's BATNA (walk-away point) before negotiations begin.</li>
-        <li>Remember: The goal isn't to "win" the negotiation, it's to get your client the best possible outcome.</li>
-      </ul>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Sources & Further Reading</h3>
-      <ul class="list-disc list-inside space-y-1 text-xs text-muted-foreground">
-        <li><a href="https://www.science.org/doi/10.1126/science.185.4157.1124" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Tversky & Kahneman - 'Judgment under Uncertainty: Heuristics and Biases' (1974)</a></li>
-        <li><a href="https://www.amazon.com/Getting-Yes-Negotiating-Agreement-Without/dp/0143118757" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Roger Fisher & William Ury - 'Getting to Yes' (1981)</a></li>
-        <li><a href="https://www.amazon.com/Never-Split-Difference-Negotiating-Depended/dp/0062407805" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Chris Voss - 'Never Split the Difference' (2016)</a></li>
-        <li><a href="https://www.pon.harvard.edu/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Harvard Law School - Program on Negotiation</a></li>
-        <li><a href="https://psycnet.apa.org/journals/psp/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Journal of Personality and Social Psychology</a></li>
-        <li><a href="https://journals.aom.org/journal/amj" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Academy of Management Journal</a></li>
-        <li><a href="https://hbr.org/2001/04/six-habits-of-merely-effective-negotiators" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Harvard Business Review - 'Six Habits of Merely Effective Negotiators'</a></li>
-        <li><a href="https://www.redfin.com/news/data-center/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Redfin - Real Estate Market Data</a></li>
-        <li><a href="https://www.zillow.com/research/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Zillow Research</a></li>
-      </ul>
-    `,
-    quiz: [
-      {
-        question: "What is the 'Anchor' strategy in negotiation?",
-        options: ["Refusing to budge on price", "Setting the first number to influence the range", "Waiting for the other party to make an offer", "Splitting the difference"],
-        correctAnswer: "Setting the first number to influence the range"
-      },
-      {
-        question: "What should you do after making an offer?",
-        options: ["Immediately justify it", "Stay silent and wait for a response", "Make another offer", "Apologize for the low offer"],
-        correctAnswer: "Stay silent and wait for a response"
-      }
-    ]
-  },
-  {
-    id: 'buyer-psychology',
-    title: 'Lesson 5: Understanding Buyer Psychology',
-    category: 'closing',
-    content: `
-      <p>Real estate is an emotional purchase. Understanding the psychology behind buying decisions helps you guide clients to the right choice.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The 'Emotional vs. Logical' Balance</h3>
-      <p>Buyers make decisions emotionally and justify them logically. Show them homes that trigger emotional responses ("Can you imagine hosting Thanksgiving here?"), then provide logical justification (comps, appreciation potential, school ratings) to validate their feelings.</p>
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: Consumer psychology research.</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The 'Scarcity' Principle</h3>
-      <p>People want what they can't have. When a property has genuine scarcity factors (multiple offers, unique features, hot neighborhood), highlight them. But never fabricate urgency—it destroys trust. Use phrases like "Properties in this price range typically receive offers within X days."</p>
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: Robert Cialdini's 'Influence: The Psychology of Persuasion'.</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The 'Loss Aversion' Effect</h3>
-      <p>People fear losing more than they desire gaining. Frame decisions around what they'll lose by not acting: "If we don't make an offer today, someone else likely will, and you'll lose this home." This is more powerful than "You'll gain a great home."</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The 'First Impression' Window</h3>
-      <p>Buyers decide if they like a home within the first 7 seconds of entering. Coach sellers on curb appeal and entryway staging. For buyers, manage expectations before showings so they're not disappointed by first impressions.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Overcoming 'Analysis Paralysis'</h3>
-      <p>Too many options lead to indecision. Limit showings to 3-5 properties per session. After viewings, help them narrow down by asking: "Which home felt most like 'home' to you?" Trust their gut reaction—it's usually right.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
-      <ul class="list-disc list-inside space-y-2 text-sm">
-        <li>Appeal to emotions first, then provide logical justification.</li>
-        <li>Use genuine scarcity to create urgency, never fabricate it.</li>
-        <li>Frame decisions around loss aversion: what they'll miss out on.</li>
-        <li>Limit showings to 3-5 properties to avoid analysis paralysis.</li>
-      </ul>
-    `,
-    quiz: [
-      {
-        question: "How long does it take for buyers to form a first impression of a home?",
-        options: ["30 seconds", "7 seconds", "5 minutes", "After the full tour"],
-        correctAnswer: "7 seconds"
-      },
-      {
-        question: "What is 'loss aversion' in buyer psychology?",
-        options: ["Fear of losing money", "People fear losing more than they desire gaining", "Avoiding risky investments", "Preferring cheaper options"],
-        correctAnswer: "People fear losing more than they desire gaining"
-      }
-    ]
-  },
-  {
-    id: 'objection-handling',
-    title: 'Lesson 6: Advanced Objection Handling',
-    category: 'closing',
-    content: `
-      <p>Objections aren't rejections—they're requests for more information. Master these responses to keep deals moving forward.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Common Objection: "The Price is Too High"</h3>
-      <p><strong>Response:</strong> "I understand. Let me show you the comparable sales in the area. Based on recent transactions, this home is actually priced competitively. What price range were you thinking?" Then show data, not opinions.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Common Objection: "We Want to Think About It"</h3>
-      <p><strong>Response:</strong> "Absolutely, this is a big decision. To help you think it through, what specific concerns do you have?" This uncovers the real objection. Address it directly, then ask: "If we can resolve that, would you be ready to move forward?"</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Common Objection: "We're Working with Another Agent"</h3>
-      <p><strong>Response:</strong> "That's great—it's important to work with someone you trust. I'm curious, what would make you consider switching agents?" Listen carefully. If they're unhappy, position yourself as the solution without badmouthing the other agent.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Common Objection: "We're Just Looking"</h3>
-      <p><strong>Response:</strong> "Perfect! Most of my best clients started as 'just looking.' What would need to happen for you to go from looking to buying?" This qualifies their timeline and motivation without being pushy.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The 'Boomerang' Technique</h3>
-      <p>Turn objections into reasons to buy. If they say "The yard is too small," respond: "That's actually a benefit—less maintenance means more time to enjoy your weekends. Plus, smaller lots in this neighborhood typically appreciate faster." Reframe the objection as an advantage.</p>
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: Classic sales technique adapted for real estate.</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
-      <ul class="list-disc list-inside space-y-2 text-sm">
-        <li>View objections as requests for more information, not rejections.</li>
-        <li>Use data and comps to overcome price objections.</li>
-        <li>Uncover the real concern behind "we want to think about it."</li>
-        <li>Practice the boomerang technique to reframe objections as benefits.</li>
-      </ul>
-    `,
-    quiz: [
-      {
-        question: "What should you do when a client says 'We want to think about it'?",
-        options: ["Accept it and move on", "Pressure them to decide now", "Ask what specific concerns they have", "Offer a discount"],
-        correctAnswer: "Ask what specific concerns they have"
-      },
-      {
-        question: "What is the 'Boomerang' technique?",
-        options: ["Returning to previous offers", "Turning objections into reasons to buy", "Going back and forth on price", "Revisiting old listings"],
-        correctAnswer: "Turning objections into reasons to buy"
-      }
-    ]
-  }
-];
-
-
-// Additional Marketing Modules
-export const additionalMarketingModules = [
-  {
-    id: 'email-marketing',
-    title: 'Lesson 7: Email Marketing That Converts',
-    category: 'marketing',
-    content: `
-      <p>Email remains one of the highest ROI marketing channels. According to the Data & Marketing Association, email marketing has an average ROI of <strong>$42 for every $1 spent</strong>. Master email to nurture leads and stay top-of-mind.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Building Your Email List</h3>
-      <p><strong>Key Statistic:</strong> Real estate agents with email lists of 1,000+ contacts generate <strong>3x more transactions</strong> than those without (NAR, 2023).</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">List Building Strategies</h4>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li><strong>Website Pop-ups:</strong> Offer a free "Home Buyer's Guide" or "Neighborhood Market Report" in exchange for email</li>
-        <li><strong>Open House Sign-ins:</strong> Use a tablet for digital sign-ins that automatically add to your CRM</li>
-        <li><strong>Social Media Lead Magnets:</strong> Promote downloadable resources on Facebook/Instagram</li>
-        <li><strong>Past Clients:</strong> Your best source—they already trust you</li>
-      </ul>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The Email Nurture Sequence</h3>
-      <p>Most leads aren't ready to buy immediately. A nurture sequence keeps you top-of-mind until they are.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">The 6-Email Welcome Series</h4>
-      <ol class="list-decimal list-inside space-y-2 ml-4">
-        <li><strong>Day 1:</strong> Welcome + Your Story (build connection)</li>
-        <li><strong>Day 3:</strong> How You Help Clients (establish value)</li>
-        <li><strong>Day 5:</strong> Market Insights (demonstrate expertise)</li>
-        <li><strong>Day 7:</strong> Client Success Story (social proof)</li>
-        <li><strong>Day 10:</strong> Neighborhood Spotlight (local knowledge)</li>
-        <li><strong>Day 14:</strong> Call to Action (schedule consultation)</li>
+        <li><strong>Prepare Thoroughly:</strong> Know market conditions, comparable sales, and client priorities</li>
+        <li><strong>Understand Motivations:</strong> Learn what's most important to each party</li>
+        <li><strong>Create Win-Win Solutions:</strong> Look beyond price to terms, timing, and conditions</li>
+        <li><strong>Use Escalation Clauses:</strong> Automatic price increases up to a maximum in competitive markets</li>
+        <li><strong>Leverage Non-Price Terms:</strong> Closing date, possession, repairs, and contingencies</li>
       </ol>
 
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Email Best Practices</h3>
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Common Negotiation Points</h3>
       <ul class="list-disc list-inside space-y-2 ml-4">
-        <li><strong>Subject Lines:</strong> Keep under 50 characters. Use curiosity, urgency, or personalization. "John, 3 new homes in Westlake just listed"</li>
-        <li><strong>Preview Text:</strong> The first line matters—make it compelling</li>
-        <li><strong>Mobile Optimization:</strong> 60% of emails are opened on mobile (Litmus, 2023)</li>
-        <li><strong>Send Time:</strong> Tuesday-Thursday, 10 AM or 2 PM typically perform best</li>
-        <li><strong>Frequency:</strong> Weekly for active buyers/sellers, monthly for general list</li>
+        <li><strong>Price Adjustments:</strong> Based on appraisal, inspection findings, or market changes</li>
+        <li><strong>Repair Negotiations:</strong> Who pays for what repairs and improvements</li>
+        <li><strong>Closing Costs:</strong> Seller concessions and buyer assistance</li>
+        <li><strong>Possession Date:</strong> When buyer takes occupancy</li>
+        <li><strong>Contingency Periods:</strong> Length of time for inspections and financing</li>
       </ul>
 
       <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
       <ul class="list-disc list-inside space-y-2 text-sm">
-        <li>Build your email list to 1,000+ contacts for maximum impact</li>
-        <li>Create a 6-email welcome sequence for new subscribers</li>
-        <li>Send valuable content weekly to active leads, monthly to your general list</li>
-        <li>Always include a clear call-to-action in every email</li>
-      </ul>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Sources & Further Reading</h3>
-      <ul class="list-disc list-inside space-y-1 text-xs text-muted-foreground">
-        <li><a href="https://dma.org.uk/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Data & Marketing Association - Email ROI Statistics</a></li>
-        <li><a href="https://www.litmus.com/blog/email-client-market-share" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Litmus - Email Client Market Share (2023)</a></li>
-        <li><a href="https://www.nar.realtor/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">National Association of Realtors - Marketing Statistics</a></li>
+        <li>Always use state-approved contract forms and understand all clauses</li>
+        <li>Prepare multiple negotiation scenarios before making or receiving offers</li>
+        <li>Focus on your client's priorities while understanding the other party's needs</li>
+        <li>Document all agreements and changes in writing immediately</li>
+        <li>Know when to walk away if terms don't meet your client's minimum requirements</li>
       </ul>
     `,
     quiz: [
       {
-        question: "What is the average ROI of email marketing?",
-        options: ["$10 for every $1 spent", "$25 for every $1 spent", "$42 for every $1 spent", "$100 for every $1 spent"],
-        correctAnswer: "$42 for every $1 spent"
+        question: "How much can skilled negotiators help their clients save per transaction?",
+        options: ["$2,000-$8,000", "$5,000-$15,000", "$10,000-$20,000", "$15,000-$25,000"],
+        correctAnswer: "$5,000-$15,000"
       },
       {
-        question: "How often should you email active buyers/sellers?",
-        options: ["Daily", "Weekly", "Monthly", "Quarterly"],
-        correctAnswer: "Weekly"
+        question: "What should you focus on first in negotiations?",
+        options: ["Price only", "Client's priorities", "Closing date", "Repair issues"],
+        correctAnswer: "Client's priorities"
       }
     ]
   },
   {
-    id: 'video-marketing',
-    title: 'Lesson 8: Video Marketing Mastery',
-    category: 'marketing',
+    id: 'inspection-appraisal-management',
+    title: 'Lesson 2: Inspection and Appraisal Management',
+    category: 'closing',
     content: `
-      <p>Video is the most engaging content format. According to Wyzowl's 2023 State of Video Marketing report, <strong>91% of businesses use video as a marketing tool</strong>, and viewers retain 95% of a message when watching a video vs. 10% when reading text.</p>
+      <p>Property inspections and appraisals are critical milestones that can make or break a transaction. According to industry data, <strong>15% of contracts are terminated due to inspection issues</strong> and <strong>4% fail due to low appraisals</strong>.</p>
+      
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Home Inspection Process</h3>
+      <ol class="list-decimal list-inside space-y-2 ml-4">
+        <li><strong>Inspector Selection:</strong> Recommend qualified, licensed inspectors with good reputations</li>
+        <li><strong>Scheduling:</strong> Coordinate inspection within contract timeframe (typically 7-10 days)</li>
+        <li><strong>Attendance:</strong> Encourage buyers to attend and ask questions</li>
+        <li><strong>Report Review:</strong> Help clients understand findings and prioritize issues</li>
+        <li><strong>Negotiation Strategy:</strong> Determine which items to request repairs for</li>
+      </ol>
 
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Why Video Works for Real Estate</h3>
-      <p><strong>Key Statistics:</strong></p>
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Common Inspection Issues</h3>
       <ul class="list-disc list-inside space-y-2 ml-4">
-        <li>Listings with video receive <strong>403% more inquiries</strong> than those without (Virtuance, 2022)</li>
-        <li>73% of homeowners are more likely to list with an agent who uses video (NAR)</li>
-        <li>Video posts on social media generate <strong>1200% more shares</strong> than text and images combined</li>
+        <li><strong>Major Systems:</strong> HVAC, electrical, plumbing problems requiring professional repair</li>
+        <li><strong>Structural Issues:</strong> Foundation, roof, or framing concerns</li>
+        <li><strong>Safety Hazards:</strong> Lead paint, asbestos, mold, or other health risks</li>
+        <li><strong>Maintenance Items:</strong> Minor repairs that are normal wear and tear</li>
+        <li><strong>Code Violations:</strong> Items not up to current building codes</li>
       </ul>
 
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Types of Videos to Create</h3>
-      
-      <h4 class="font-semibold mt-4 mb-2">1. Property Tours (Virtual Showings)</h4>
-      <p>Walk through the property highlighting key features. Keep it 2-3 minutes. Use your phone—quality matters less than authenticity.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">2. Neighborhood Tours</h4>
-      <p>Drive or walk through neighborhoods showing schools, parks, restaurants. This positions you as the local expert.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">3. Market Updates</h4>
-      <p>Monthly 60-second videos on market trends, interest rates, inventory levels. Use the <a href="/content-engine?tab=market-update" class="text-primary hover:underline font-semibold">Market Update Generator</a> for talking points.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">4. Client Testimonials</h4>
-      <p>Record happy clients (with permission) sharing their experience. These are pure gold for social proof.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">5. Educational Content</h4>
-      <p>"First-time buyer tips," "How to prepare your home for sale," "Understanding closing costs." Answer common questions.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Video Production Tips</h3>
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Appraisal Management</h3>
       <ul class="list-disc list-inside space-y-2 ml-4">
-        <li><strong>Equipment:</strong> Your smartphone is enough. Add a $20 tripod and a $30 lapel mic for better quality</li>
-        <li><strong>Lighting:</strong> Natural light is best. Face a window, not away from it</li>
-        <li><strong>Background:</strong> Keep it clean and professional. Blur if needed</li>
-        <li><strong>Length:</strong> 60-90 seconds for social media, 2-3 minutes for property tours, 5-10 minutes for educational content</li>
-        <li><strong>Hook:</strong> First 3 seconds are critical. Start with a question or bold statement</li>
-        <li><strong>Captions:</strong> 85% of Facebook videos are watched without sound. Always add captions</li>
-      </ul>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Distribution Strategy</h3>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li><strong>YouTube:</strong> Upload all videos here first. It's the 2nd largest search engine</li>
-        <li><strong>Facebook:</strong> Native uploads perform better than YouTube links</li>
-        <li><strong>Instagram:</strong> Reels (under 90 seconds) get massive reach</li>
-        <li><strong>LinkedIn:</strong> Professional content performs well here</li>
-        <li><strong>Email:</strong> Embed video thumbnails linking to YouTube</li>
-        <li><strong>Website:</strong> Add videos to listing pages and your about page</li>
+        <li><strong>Preparation:</strong> Provide appraiser with comparable sales and property improvements</li>
+        <li><strong>Access:</strong> Ensure easy access and highlight property's best features</li>
+        <li><strong>Low Appraisal Response:</strong> Request reconsideration with additional comps if warranted</li>
+        <li><strong>Negotiation Options:</strong> Price reduction, buyer additional cash, or seller concessions</li>
+        <li><strong>Timeline Management:</strong> Ensure appraisal is completed within contract deadlines</li>
       </ul>
 
       <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
       <ul class="list-disc list-inside space-y-2 text-sm">
-        <li>Start with property tours and market updates—easiest to create</li>
-        <li>Post at least one video per week for consistent growth</li>
-        <li>Always add captions for accessibility and silent viewing</li>
-        <li>Repurpose one video across multiple platforms</li>
-      </ul>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Sources & Further Reading</h3>
-      <ul class="list-disc list-inside space-y-1 text-xs text-muted-foreground">
-        <li><a href="https://www.wyzowl.com/video-marketing-statistics/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Wyzowl - State of Video Marketing (2023)</a></li>
-        <li><a href="https://www.virtuance.com/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Virtuance - Real Estate Video Statistics (2022)</a></li>
-        <li><a href="https://www.nar.realtor/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">National Association of Realtors - Video Marketing Research</a></li>
+        <li>Educate clients about the inspection process and what to expect</li>
+        <li>Help prioritize inspection findings - not everything needs to be repaired</li>
+        <li>Prepare for appraisals by providing relevant market data</li>
+        <li>Have backup plans ready for common inspection and appraisal issues</li>
+        <li>Maintain professional relationships with quality inspectors and appraisers</li>
       </ul>
     `,
     quiz: [
       {
-        question: "How much more inquiries do listings with video receive?",
-        options: ["50% more", "100% more", "200% more", "403% more"],
-        correctAnswer: "403% more"
+        question: "What percentage of contracts are terminated due to inspection issues?",
+        options: ["8%", "12%", "15%", "20%"],
+        correctAnswer: "15%"
       },
       {
-        question: "What percentage of Facebook videos are watched without sound?",
-        options: ["25%", "50%", "75%", "85%"],
+        question: "What percentage of contracts fail due to low appraisals?",
+        options: ["2%", "4%", "6%", "8%"],
+        correctAnswer: "4%"
+      }
+    ]
+  },
+  {
+    id: 'financing-mortgage-process',
+    title: 'Lesson 3: Financing and Mortgage Process',
+    category: 'closing',
+    content: `
+      <p>Understanding the financing process is crucial for successful transactions. According to the Mortgage Bankers Association, <strong>financing issues cause 5% of purchase contracts to fail</strong>, making mortgage knowledge essential for agents.</p>
+      
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Loan Types and Programs</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Conventional Loans:</strong> 3-20% down, PMI if less than 20% down, best rates for good credit</li>
+        <li><strong>FHA Loans:</strong> 3.5% down minimum, mortgage insurance required, more flexible credit requirements</li>
+        <li><strong>VA Loans:</strong> No down payment for qualified veterans, no PMI, competitive rates</li>
+        <li><strong>USDA Loans:</strong> No down payment for rural properties, income restrictions apply</li>
+        <li><strong>Jumbo Loans:</strong> Above conforming loan limits, typically require 10-20% down</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Pre-approval vs Pre-qualification</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Pre-qualification:</strong> Informal estimate based on stated income and assets</li>
+        <li><strong>Pre-approval:</strong> Formal application with income/asset verification and credit check</li>
+        <li><strong>Underwritten Pre-approval:</strong> Full underwriting review, strongest buyer position</li>
+        <li><strong>Cash Equivalent:</strong> Proof of funds for cash-like closing timeline</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Mortgage Timeline Management</h3>
+      <ol class="list-decimal list-inside space-y-2 ml-4">
+        <li><strong>Application (Day 1-3):</strong> Complete loan application with all required documents</li>
+        <li><strong>Processing (Day 4-20):</strong> Lender verifies income, assets, and employment</li>
+        <li><strong>Underwriting (Day 21-30):</strong> Final loan approval and conditions</li>
+        <li><strong>Clear to Close (Day 28-35):</strong> All conditions met, ready for closing</li>
+        <li><strong>Closing (Day 30-45):</strong> Final walkthrough and document signing</li>
+      </ol>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Common Financing Issues</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Income Documentation:</strong> Self-employed borrowers, commission income, job changes</li>
+        <li><strong>Credit Issues:</strong> Late payments, high debt-to-income ratios, credit inquiries</li>
+        <li><strong>Asset Verification:</strong> Gift funds, large deposits, retirement account access</li>
+        <li><strong>Property Issues:</strong> Appraisal problems, property condition, condo approval</li>
+        <li><strong>Rate Lock Expiration:</strong> Delays causing rate lock to expire</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
+      <ul class="list-disc list-inside space-y-2 text-sm">
+        <li>Build relationships with multiple qualified lenders for client referrals</li>
+        <li>Understand basic loan programs to help match clients with appropriate financing</li>
+        <li>Encourage buyers to get pre-approved before house hunting</li>
+        <li>Stay in regular contact with lenders throughout the transaction</li>
+        <li>Have backup lender options ready in case of financing issues</li>
+      </ul>
+    `,
+    quiz: [
+      {
+        question: "What percentage of purchase contracts fail due to financing issues?",
+        options: ["3%", "5%", "7%", "9%"],
+        correctAnswer: "5%"
+      },
+      {
+        question: "What is the minimum down payment for FHA loans?",
+        options: ["3%", "3.5%", "5%", "10%"],
+        correctAnswer: "3.5%"
+      }
+    ]
+  },
+  {
+    id: 'closing-coordination',
+    title: 'Lesson 4: Closing Coordination and Settlement',
+    category: 'closing',
+    content: `
+      <p>The closing process requires careful coordination of multiple parties and documents. According to industry data, <strong>proper closing coordination prevents 85% of last-minute transaction failures</strong> and ensures smooth settlement for all parties.</p>
+      
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Pre-Closing Checklist (1 Week Before)</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Final Loan Approval:</strong> Confirm clear-to-close from lender</li>
+        <li><strong>Title Work:</strong> Review title commitment and resolve any issues</li>
+        <li><strong>Insurance:</strong> Verify homeowner's insurance is in place</li>
+        <li><strong>Utilities:</strong> Coordinate transfer of utilities to buyer</li>
+        <li><strong>Final Walkthrough:</strong> Schedule 24-48 hours before closing</li>
+        <li><strong>Closing Disclosure:</strong> Review with buyer 3 days before closing</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Closing Day Responsibilities</h3>
+      <ol class="list-decimal list-inside space-y-2 ml-4">
+        <li><strong>Document Review:</strong> Verify all closing documents are accurate</li>
+        <li><strong>Final Numbers:</strong> Confirm closing costs match estimates</li>
+        <li><strong>Key Transfer:</strong> Coordinate key handover and garage door openers</li>
+        <li><strong>Possession:</strong> Ensure property is vacant and clean (if required)</li>
+        <li><strong>Recording:</strong> Confirm deed and mortgage will be recorded properly</li>
+      </ol>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Common Closing Issues</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Funding Delays:</strong> Lender wire transfer or document issues</li>
+        <li><strong>Title Problems:</strong> Liens, judgments, or ownership disputes</li>
+        <li><strong>Final Walkthrough Issues:</strong> Property condition or missing items</li>
+        <li><strong>Document Errors:</strong> Names, amounts, or legal descriptions incorrect</li>
+        <li><strong>Insurance Problems:</strong> Coverage gaps or carrier issues</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Post-Closing Follow-up</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Immediate:</strong> Congratulate clients and confirm satisfaction</li>
+        <li><strong>24-48 Hours:</strong> Check in to ensure smooth transition</li>
+        <li><strong>30 Days:</strong> Follow up on any warranty or utility issues</li>
+        <li><strong>Annual:</strong> Provide home value updates and market reports</li>
+        <li><strong>Referral Request:</strong> Ask for referrals and online reviews</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
+      <ul class="list-disc list-inside space-y-2 text-sm">
+        <li>Create detailed closing checklists and timelines for every transaction</li>
+        <li>Communicate proactively with all parties leading up to closing</li>
+        <li>Build relationships with reliable title companies and closing attorneys</li>
+        <li>Always attend closings to advocate for your clients</li>
+        <li>Follow up after closing to ensure client satisfaction and generate referrals</li>
+      </ul>
+    `,
+    quiz: [
+      {
+        question: "What percentage of last-minute transaction failures can be prevented with proper closing coordination?",
+        options: ["75%", "80%", "85%", "90%"],
         correctAnswer: "85%"
-      }
-    ]
-  }
-];
-
-// Additional Closing Modules
-export const additionalClosingModules = [
-  {
-    id: 'time-management',
-    title: 'Lesson 7: Time Management for Top Producers',
-    category: 'closing',
-    content: `
-      <p>Time is your most valuable asset. According to NAR, top-producing agents (earning $100K+) work an average of <strong>40 hours per week</strong>, while average agents work 50+ hours. The difference? Time management and prioritization.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The 80/20 Rule (Pareto Principle)</h3>
-      <p><strong>80% of your results come from 20% of your activities.</strong> Identify your high-value activities and ruthlessly eliminate or delegate the rest.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">High-Value Activities (Focus Here)</h4>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li><strong>Lead Generation:</strong> Prospecting, networking, referral cultivation</li>
-        <li><strong>Client Meetings:</strong> Consultations, showings, negotiations</li>
-        <li><strong>Listing Appointments:</strong> Highest ROI activity for most agents</li>
-        <li><strong>Relationship Building:</strong> Past client touchpoints, sphere of influence</li>
-      </ul>
-
-      <h4 class="font-semibold mt-4 mb-2">Low-Value Activities (Delegate or Eliminate)</h4>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li>Administrative tasks (hire a VA for $15-25/hour)</li>
-        <li>Social media posting (batch create or outsource)</li>
-        <li>Transaction coordination (hire a TC for $300-500/deal)</li>
-        <li>Photography (hire a pro for $150-300)</li>
-      </ul>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Time Blocking Strategy</h3>
-      <p>Top producers don't manage time—they manage energy and attention through time blocking.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">Sample Weekly Schedule</h4>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li><strong>Monday 9-11 AM:</strong> Lead generation calls (prospecting)</li>
-        <li><strong>Monday 1-5 PM:</strong> Client showings</li>
-        <li><strong>Tuesday 9-12 PM:</strong> Listing appointments</li>
-        <li><strong>Tuesday 1-3 PM:</strong> Admin/paperwork</li>
-        <li><strong>Wednesday 9-11 AM:</strong> Content creation (batch 1 week of posts)</li>
-        <li><strong>Thursday-Friday:</strong> Client meetings, showings, open houses</li>
-        <li><strong>Saturday:</strong> Open houses (if needed)</li>
-        <li><strong>Sunday:</strong> OFF (non-negotiable)</li>
-      </ul>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The "One Thing" Philosophy</h3>
-      <p>Every morning, ask: <strong>"What's the ONE thing I can do today that will make everything else easier or unnecessary?"</strong> Do that first.</p>
-      <p class="text-sm text-muted-foreground mt-2"><em>Source: Gary Keller's 'The ONE Thing'</em></p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Saying "No" Strategically</h3>
-      <p>Every "yes" to something unimportant is a "no" to something important. Protect your time fiercely.</p>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li><strong>Unqualified leads:</strong> Politely refer them to another agent</li>
-        <li><strong>Low-commission deals:</strong> Only if they fit your strategy</li>
-        <li><strong>Networking events:</strong> Choose 2-3 high-value events per month, skip the rest</li>
-        <li><strong>Favors:</strong> Help when you can, but not at the expense of your business</li>
-      </ul>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
-      <ul class="list-disc list-inside space-y-2 text-sm">
-        <li>Identify your top 20% activities and schedule them first</li>
-        <li>Implement time blocking—treat blocks as non-negotiable appointments</li>
-        <li>Delegate or eliminate low-value tasks (hire a VA or TC)</li>
-        <li>Ask "What's my ONE thing?" every morning</li>
-        <li>Protect your time by saying "no" to non-essential activities</li>
-      </ul>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Sources & Further Reading</h3>
-      <ul class="list-disc list-inside space-y-1 text-xs text-muted-foreground">
-        <li><a href="https://www.amazon.com/ONE-Thing-Surprisingly-Extraordinary-Results/dp/1885167776" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Gary Keller - 'The ONE Thing' (2013)</a></li>
-        <li><a href="https://www.nar.realtor/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">National Association of Realtors - Agent Productivity Studies</a></li>
-        <li><a href="https://www.amazon.com/80-20-Principle-Secret-Achieving/dp/0385491743" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Richard Koch - 'The 80/20 Principle' (1998)</a></li>
-      </ul>
-    `,
-    quiz: [
-      {
-        question: "According to the 80/20 rule, what percentage of your results come from what percentage of activities?",
-        options: ["50% from 50%", "80% from 20%", "90% from 10%", "70% from 30%"],
-        correctAnswer: "80% from 20%"
       },
       {
-        question: "What should you ask yourself every morning?",
-        options: ["How many calls can I make?", "What's my ONE thing?", "What meetings do I have?", "How much money will I make?"],
-        correctAnswer: "What's my ONE thing?"
+        question: "When should the final walkthrough be scheduled?",
+        options: ["1 week before", "3 days before", "24-48 hours before", "Day of closing"],
+        correctAnswer: "24-48 hours before"
       }
     ]
   },
   {
-    id: 'referral-generation',
-    title: 'Lesson 8: Building a Referral Machine',
+    id: 'problem-solving-crisis-management',
+    title: 'Lesson 5: Problem Solving and Crisis Management',
     category: 'closing',
     content: `
-      <p>Referrals are the lifeblood of a sustainable real estate business. According to NAR, <strong>82% of buyers and sellers would use their agent again or refer them</strong>, yet only 12% of agents ask for referrals. This is the biggest missed opportunity in real estate.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Why Referrals Matter</h3>
-      <p><strong>Key Statistics:</strong></p>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li>Referred clients have a <strong>37% higher retention rate</strong> (Wharton School of Business)</li>
-        <li>Referrals close at <strong>70% vs. 13%</strong> for cold leads (Nielsen)</li>
-        <li>Top producers get <strong>50-70% of business from referrals</strong> (NAR)</li>
-        <li>Acquiring a new customer costs <strong>5x more</strong> than retaining an existing one</li>
-      </ul>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The Referral-Worthy Experience</h3>
-      <p>People don't refer average experiences. They refer exceptional ones. Create "wow" moments.</p>
+      <p>Real estate transactions rarely go perfectly smooth. According to industry surveys, <strong>78% of transactions encounter at least one significant issue</strong> that requires professional problem-solving skills to resolve successfully.</p>
       
-      <h4 class="font-semibold mt-4 mb-2">Wow Moment Ideas</h4>
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Common Transaction Problems</h3>
       <ul class="list-disc list-inside space-y-2 ml-4">
-        <li><strong>Closing Gift:</strong> Personalized (not generic). Think: custom doormat with their address, local restaurant gift card, home maintenance kit</li>
-        <li><strong>Moving Day Help:</strong> Show up with pizza and drinks for the movers</li>
-        <li><strong>First Night Basket:</strong> Toilet paper, paper towels, snacks, wine—essentials for the first night</li>
-        <li><strong>Home Anniversary:</strong> Send a card and small gift on their 1-year home anniversary</li>
-        <li><strong>Proactive Communication:</strong> Update them before they ask. "Just wanted to let you know the inspection is scheduled for Tuesday at 10 AM."</li>
+        <li><strong>Financing Issues:</strong> Loan denial, rate changes, underwriting conditions</li>
+        <li><strong>Appraisal Problems:</strong> Low appraisal, property condition issues, comparable disputes</li>
+        <li><strong>Inspection Disputes:</strong> Major repair requests, seller refusal, safety concerns</li>
+        <li><strong>Title Issues:</strong> Liens, easements, boundary disputes, ownership questions</li>
+        <li><strong>Timing Conflicts:</strong> Delayed closings, possession issues, rate lock expirations</li>
+        <li><strong>Communication Breakdowns:</strong> Unresponsive parties, misunderstandings, conflicts</li>
       </ul>
 
-      <h3 class="font-semibold mt-6 mb-2 text-lg">How to Ask for Referrals</h3>
-      <p>Most agents are afraid to ask. Here's how to do it naturally and effectively.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">The Perfect Timing</h4>
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Problem-Solving Framework</h3>
+      <ol class="list-decimal list-inside space-y-2 ml-4">
+        <li><strong>Assess the Situation:</strong> Gather all facts and understand the real problem</li>
+        <li><strong>Communicate Immediately:</strong> Inform all parties about the issue and timeline</li>
+        <li><strong>Explore Options:</strong> Brainstorm multiple solutions with pros and cons</li>
+        <li><strong>Negotiate Solutions:</strong> Work with all parties to find acceptable compromises</li>
+        <li><strong>Document Everything:</strong> Put all agreements and changes in writing</li>
+        <li><strong>Follow Through:</strong> Ensure solutions are implemented properly</li>
+      </ol>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Crisis Management Strategies</h3>
       <ul class="list-disc list-inside space-y-2 ml-4">
-        <li><strong>At Closing:</strong> "I'm so happy we found you the perfect home! I grow my business through referrals. If you know anyone thinking about buying or selling, I'd love an introduction."</li>
-        <li><strong>30 Days Post-Close:</strong> "How's the new home? Settled in? By the way, I have capacity for 2-3 new clients this quarter. Who do you know that might be thinking about real estate?"</li>
-        <li><strong>Home Anniversary:</strong> Include in your card: "It's been a year! If you know anyone looking to make a move, I'd love to help them too."</li>
+        <li><strong>Stay Calm:</strong> Maintain professional composure under pressure</li>
+        <li><strong>Manage Expectations:</strong> Keep clients informed with realistic timelines</li>
+        <li><strong>Have Backup Plans:</strong> Always prepare alternative solutions</li>
+        <li><strong>Use Your Network:</strong> Leverage relationships with lenders, inspectors, contractors</li>
+        <li><strong>Know When to Escalate:</strong> Involve brokers, attorneys, or other professionals when needed</li>
       </ul>
 
-      <h4 class="font-semibold mt-4 mb-2">The Specific Ask</h4>
-      <p>Don't ask "Do you know anyone?" Ask "Who do you know?"</p>
-      <p class="mt-2"><strong>Better:</strong> "Who do you know that's outgrowing their current home?" or "Who do you know that's relocating to the area?"</p>
-      <p class="mt-2">Specific questions trigger specific memories.</p>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The Referral Reward System</h3>
-      <p>Incentivize referrals (where legal—check your state laws).</p>
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Preventing Common Problems</h3>
       <ul class="list-disc list-inside space-y-2 ml-4">
-        <li><strong>$100 Gift Card:</strong> For every referral that results in a consultation</li>
-        <li><strong>$500 Closing Gift:</strong> For every referral that closes</li>
-        <li><strong>VIP Treatment:</strong> Referrers get priority scheduling and exclusive market updates</li>
-        <li><strong>Annual Appreciation Event:</strong> Host a client appreciation party for your top referrers</li>
-      </ul>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">The Stay-in-Touch System</h3>
-      <p>Out of sight = out of mind. Stay top-of-mind with past clients.</p>
-      
-      <h4 class="font-semibold mt-4 mb-2">The 33-Touch System</h4>
-      <p>Touch your database 33 times per year through various channels:</p>
-      <ul class="list-disc list-inside space-y-2 ml-4">
-        <li><strong>Monthly:</strong> Email newsletter with market updates (12 touches)</li>
-        <li><strong>Quarterly:</strong> Handwritten note or postcard (4 touches)</li>
-        <li><strong>Quarterly:</strong> Phone call to check in (4 touches)</li>
-        <li><strong>Annually:</strong> Birthday card (1 touch)</li>
-        <li><strong>Annually:</strong> Home anniversary card (1 touch)</li>
-        <li><strong>Annually:</strong> Holiday card (1 touch)</li>
-        <li><strong>Annually:</strong> Client appreciation event (1 touch)</li>
-        <li><strong>Ad Hoc:</strong> Share relevant articles, congratulate on life events (9 touches)</li>
+        <li><strong>Thorough Pre-qualification:</strong> Verify buyer financing capacity early</li>
+        <li><strong>Realistic Pricing:</strong> Use accurate CMAs to avoid appraisal issues</li>
+        <li><strong>Clear Communication:</strong> Set expectations and maintain regular contact</li>
+        <li><strong>Professional Network:</strong> Work with reliable, responsive service providers</li>
+        <li><strong>Contingency Planning:</strong> Discuss potential issues and solutions upfront</li>
       </ul>
 
       <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
       <ul class="list-disc list-inside space-y-2 text-sm">
-        <li>Create "wow" moments that make clients want to refer you</li>
-        <li>Ask for referrals at closing, 30 days post-close, and on home anniversaries</li>
-        <li>Use specific questions: "Who do you know that's outgrowing their home?"</li>
-        <li>Implement a 33-touch system to stay top-of-mind with past clients</li>
-        <li>Consider a referral reward system (check local laws)</li>
-      </ul>
-
-      <h3 class="font-semibold mt-6 mb-2 text-lg">Sources & Further Reading</h3>
-      <ul class="list-disc list-inside space-y-1 text-xs text-muted-foreground">
-        <li><a href="https://www.nar.realtor/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">National Association of Realtors - Referral Statistics</a></li>
-        <li><a href="https://www.wharton.upenn.edu/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Wharton School of Business - Customer Referral Research</a></li>
-        <li><a href="https://www.nielsen.com/insights/" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Nielsen - Trust in Advertising Study</a></li>
+        <li>Develop a systematic approach to problem-solving and crisis management</li>
+        <li>Build a network of reliable professionals who can help resolve issues quickly</li>
+        <li>Communicate proactively with all parties when problems arise</li>
+        <li>Always have backup plans and alternative solutions ready</li>
+        <li>Learn from each problem to prevent similar issues in future transactions</li>
       </ul>
     `,
     quiz: [
       {
-        question: "What percentage of buyers and sellers would use their agent again or refer them?",
-        options: ["50%", "65%", "75%", "82%"],
-        correctAnswer: "82%"
+        question: "What percentage of transactions encounter at least one significant issue?",
+        options: ["65%", "72%", "78%", "85%"],
+        correctAnswer: "78%"
       },
       {
-        question: "How many times should you 'touch' your database per year?",
-        options: ["12 times", "24 times", "33 times", "52 times"],
-        correctAnswer: "33 times"
+        question: "What should you do first when a transaction problem arises?",
+        options: ["Call your broker", "Assess the situation", "Blame the other party", "Cancel the contract"],
+        correctAnswer: "Assess the situation"
+      }
+    ]
+  },
+  {
+    id: 'post-closing-client-care',
+    title: 'Lesson 6: Post-Closing Client Care and Relationship Management',
+    category: 'closing',
+    content: `
+      <p>The transaction closing is not the end of the client relationship—it's the beginning of a long-term partnership. According to NAR research, <strong>past clients and referrals generate 41% of business for typical agents and 89% for top producers</strong>.</p>
+      
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Immediate Post-Closing (First 30 Days)</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Closing Day:</strong> Congratulate clients and provide closing gift</li>
+        <li><strong>24-48 Hours:</strong> Follow up to ensure smooth transition and address any issues</li>
+        <li><strong>1 Week:</strong> Check in on utilities, services, and neighborhood adjustment</li>
+        <li><strong>30 Days:</strong> Send home maintenance checklist and local service provider list</li>
+        <li><strong>Review Request:</strong> Ask for online reviews and testimonials</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Long-Term Relationship Building</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Quarterly Newsletters:</strong> Market updates, home maintenance tips, local events</li>
+        <li><strong>Annual Home Value Reports:</strong> Automated property value updates</li>
+        <li><strong>Special Occasions:</strong> Home anniversaries, birthdays, holidays</li>
+        <li><strong>Client Events:</strong> Annual appreciation parties, educational seminars</li>
+        <li><strong>Personal Touch:</strong> Remember family details, interests, and life changes</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Referral Generation System</h3>
+      <ol class="list-decimal list-inside space-y-2 ml-4">
+        <li><strong>Provide Exceptional Service:</strong> Exceed expectations throughout the transaction</li>
+        <li><strong>Ask at the Right Time:</strong> When clients are most satisfied and grateful</li>
+        <li><strong>Make it Easy:</strong> Provide referral cards and clear instructions</li>
+        <li><strong>Stay Top-of-Mind:</strong> Regular communication keeps you memorable</li>
+        <li><strong>Thank and Reward:</strong> Acknowledge referrals promptly and appropriately</li>
+      </ol>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Client Database Management</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Contact Information:</strong> Keep current addresses, phone numbers, emails</li>
+        <li><strong>Personal Details:</strong> Family members, birthdays, interests, preferences</li>
+        <li><strong>Transaction History:</strong> Properties bought/sold, dates, satisfaction levels</li>
+        <li><strong>Communication Log:</strong> Track all interactions and follow-up needs</li>
+        <li><strong>Referral Tracking:</strong> Monitor referrals given and received</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Value-Added Services</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Home Maintenance Reminders:</strong> Seasonal checklists and tips</li>
+        <li><strong>Contractor Referrals:</strong> Vetted service provider recommendations</li>
+        <li><strong>Market Insights:</strong> Neighborhood trends and investment opportunities</li>
+        <li><strong>Life Event Support:</strong> Help with moves, downsizing, or upsizing</li>
+        <li><strong>Investment Advice:</strong> Real estate investment opportunities and guidance</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
+      <ul class="list-disc list-inside space-y-2 text-sm">
+        <li>Develop a systematic post-closing follow-up schedule and stick to it</li>
+        <li>Use CRM technology to automate communications and track relationships</li>
+        <li>Provide ongoing value through market insights and helpful resources</li>
+        <li>Ask for referrals consistently but appropriately throughout the relationship</li>
+        <li>Invest in client appreciation events and personal touches that build loyalty</li>
+      </ul>
+    `,
+    quiz: [
+      {
+        question: "What percentage of business do past clients and referrals generate for top producers?",
+        options: ["65%", "75%", "89%", "95%"],
+        correctAnswer: "89%"
+      },
+      {
+        question: "When is the best time to ask for referrals?",
+        options: ["At closing", "When clients are most satisfied", "During the transaction", "Only at events"],
+        correctAnswer: "When clients are most satisfied"
       }
     ]
   }
 ];
 
-// Role-Play Scenarios
+export const professionalExcellenceModules = [
+  {
+    id: 'fair-housing-compliance',
+    title: 'Lesson 1: Fair Housing Laws & Compliance',
+    category: 'professional',
+    content: `
+      <p>Fair housing laws are fundamental to ethical real estate practice. Violations can result in significant fines, license suspension, and legal liability. Understanding and following these laws isn't just legally required—it's the right thing to do to ensure equal housing opportunities for all.</p>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Federal Fair Housing Act Overview</h3>
+      <p>The Fair Housing Act prohibits discrimination in housing based on seven protected classes:</p>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Race</strong></li>
+        <li><strong>Color</strong></li>
+        <li><strong>National Origin</strong></li>
+        <li><strong>Religion</strong></li>
+        <li><strong>Sex (including sexual harassment)</strong></li>
+        <li><strong>Familial Status (families with children under 18)</strong></li>
+        <li><strong>Disability</strong></li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
+      <ul class="list-disc list-inside space-y-2 text-sm">
+        <li>Treat all clients equally regardless of protected class membership</li>
+        <li>Let clients lead conversations about neighborhood preferences</li>
+        <li>Provide factual information, avoid subjective opinions about areas</li>
+        <li>Use diverse imagery and inclusive language in all marketing</li>
+        <li>Stay updated on state and local fair housing laws in your area</li>
+        <li>Document all client interactions and maintain detailed records</li>
+      </ul>
+    `,
+    quiz: [
+      {
+        question: "How many protected classes are covered under the Federal Fair Housing Act?",
+        options: ["5", "7", "9", "12"],
+        correctAnswer: "7"
+      },
+      {
+        question: "Which of these statements is appropriate when showing properties?",
+        options: ["'This neighborhood has great schools'", "'You'd fit in well here'", "'What features are important to you in a neighborhood?'", "'This area is very safe'"],
+        correctAnswer: "'What features are important to you in a neighborhood?'"
+      }
+    ]
+  },
+  {
+    id: 'market-trends-analysis',
+    title: 'Lesson 2: Reading Market Trends & Data',
+    category: 'professional',
+    content: `
+      <p>Understanding market trends is crucial for positioning yourself as the local expert. <strong>87% of buyers and sellers want agents who can provide market insights</strong> beyond just showing properties.</p>
+      
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Market Indicators</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Days on Market (DOM):</strong> Average time properties stay listed</li>
+        <li><strong>Price per Square Foot:</strong> Standardized pricing comparison</li>
+        <li><strong>Inventory Levels:</strong> Supply and demand balance</li>
+        <li><strong>Absorption Rate:</strong> How quickly homes sell in current market</li>
+        <li><strong>Price Trends:</strong> Direction and velocity of price changes</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
+      <ul class="list-disc list-inside space-y-2 text-sm">
+        <li>Track key market indicators monthly for your area</li>
+        <li>Create visual reports to share insights with clients</li>
+        <li>Compare local trends to regional and national data</li>
+        <li>Use market data to support pricing recommendations</li>
+        <li>Stay informed about economic factors affecting real estate</li>
+      </ul>
+    `,
+    quiz: [
+      {
+        question: "What percentage of buyers and sellers want agents who can provide market insights?",
+        options: ["67%", "75%", "82%", "87%"],
+        correctAnswer: "87%"
+      },
+      {
+        question: "What does DOM stand for in real estate market analysis?",
+        options: ["Days on Market", "Demand over Market", "Data on Market", "Direct on Market"],
+        correctAnswer: "Days on Market"
+      }
+    ]
+  },
+  {
+    id: 'agency-disclosure',
+    title: 'Lesson 3: Agency Relationships & Disclosure',
+    category: 'professional',
+    content: `
+      <p>Understanding agency relationships is crucial for legal compliance and client trust. <strong>Failure to properly disclose agency relationships is one of the top causes of legal disputes</strong> in real estate.</p>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Types of Agency Relationships</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Seller's Agent:</strong> Represents seller's interests exclusively</li>
+        <li><strong>Buyer's Agent:</strong> Represents buyer's interests exclusively</li>
+        <li><strong>Dual Agent:</strong> Represents both parties (where legally permitted)</li>
+        <li><strong>Transaction Broker:</strong> Facilitates transaction without representing either party</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
+      <ul class="list-disc list-inside space-y-2 text-sm">
+        <li>Disclose agency relationships at first substantive contact</li>
+        <li>Use written disclosure forms required by your state</li>
+        <li>Explain fiduciary duties clearly to clients</li>
+        <li>Avoid conflicts of interest</li>
+        <li>Document all disclosures and acknowledgments</li>
+      </ul>
+    `,
+    quiz: [
+      {
+        question: "When should agency relationships be disclosed?",
+        options: ["At contract signing", "At first substantive contact", "At closing", "When asked by client"],
+        correctAnswer: "At first substantive contact"
+      },
+      {
+        question: "What type of agent represents both buyer and seller?",
+        options: ["Seller's Agent", "Buyer's Agent", "Dual Agent", "Transaction Broker"],
+        correctAnswer: "Dual Agent"
+      }
+    ]
+  },
+  {
+    id: 'comparative-market-analysis',
+    title: 'Lesson 4: Comparative Market Analysis (CMA)',
+    category: 'professional',
+    content: `
+      <p>A well-prepared CMA is your most powerful tool for winning listings and helping buyers make competitive offers. <strong>Accurate pricing based on solid CMA data sells homes 38% faster</strong>.</p>
+      
+      <h3 class="font-semibold mt-6 mb-2 text-lg">CMA Components</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Sold Comparables:</strong> Similar properties sold in last 3-6 months</li>
+        <li><strong>Active Listings:</strong> Current competition in the market</li>
+        <li><strong>Pending Sales:</strong> Properties under contract</li>
+        <li><strong>Expired Listings:</strong> Properties that failed to sell</li>
+        <li><strong>Price Adjustments:</strong> For differences in features, condition, location</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
+      <ul class="list-disc list-inside space-y-2 text-sm">
+        <li>Use properties within 1 mile and 20% size variance when possible</li>
+        <li>Adjust for significant differences in features and condition</li>
+        <li>Present data visually with maps and charts</li>
+        <li>Explain your methodology to clients</li>
+        <li>Update CMAs regularly as market conditions change</li>
+      </ul>
+    `,
+    quiz: [
+      {
+        question: "How much faster do accurately priced homes sell?",
+        options: ["25%", "32%", "38%", "45%"],
+        correctAnswer: "38%"
+      },
+      {
+        question: "What time frame should you use for sold comparables?",
+        options: ["1-2 months", "3-6 months", "6-12 months", "12+ months"],
+        correctAnswer: "3-6 months"
+      }
+    ]
+  },
+  {
+    id: 'contract-law',
+    title: 'Lesson 5: Contract Law Essentials',
+    category: 'professional',
+    content: `
+      <p>Real estate contracts are legally binding documents. <strong>Contract disputes account for 60% of real estate litigation</strong>. Understanding contract basics protects both you and your clients.</p>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Essential Contract Elements</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Offer and Acceptance:</strong> Clear terms agreed upon by all parties</li>
+        <li><strong>Consideration:</strong> Something of value exchanged</li>
+        <li><strong>Legal Purpose:</strong> Contract must be for lawful activity</li>
+        <li><strong>Competent Parties:</strong> All parties must have legal capacity</li>
+        <li><strong>Written Form:</strong> Real estate contracts must be in writing</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
+      <ul class="list-disc list-inside space-y-2 text-sm">
+        <li>Use state-approved contract forms</li>
+        <li>Fill out all required fields completely</li>
+        <li>Explain contract terms to clients in plain language</li>
+        <li>Never practice law - refer legal questions to attorneys</li>
+        <li>Keep copies of all signed documents</li>
+      </ul>
+    `,
+    quiz: [
+      {
+        question: "What percentage of real estate litigation involves contract disputes?",
+        options: ["40%", "50%", "60%", "70%"],
+        correctAnswer: "60%"
+      },
+      {
+        question: "Which is NOT an essential element of a valid contract?",
+        options: ["Offer and Acceptance", "Consideration", "Notarization", "Competent Parties"],
+        correctAnswer: "Notarization"
+      }
+    ]
+  },
+  {
+    id: 'investment-analysis',
+    title: 'Lesson 6: Investment Property Analysis',
+    category: 'professional',
+    content: `
+      <p>Investment property analysis requires different skills than residential sales. <strong>Real estate investors control 20% of home purchases</strong>, making this a valuable specialization.</p>
+      
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Investment Metrics</h3>
+      <ul class="list-disc list-inside space-y-2 ml-4">
+        <li><strong>Cap Rate:</strong> Net operating income ÷ property value</li>
+        <li><strong>Cash-on-Cash Return:</strong> Annual cash flow ÷ cash invested</li>
+        <li><strong>Gross Rent Multiplier:</strong> Purchase price ÷ annual rent</li>
+        <li><strong>1% Rule:</strong> Monthly rent should equal 1% of purchase price</li>
+        <li><strong>DSCR:</strong> Debt service coverage ratio</li>
+      </ul>
+
+      <h3 class="font-semibold mt-6 mb-2 text-lg">Key Takeaways & Actions</h3>
+      <ul class="list-disc list-inside space-y-2 text-sm">
+        <li>Learn to calculate and explain investment metrics</li>
+        <li>Understand local rental market conditions</li>
+        <li>Build relationships with property managers</li>
+        <li>Know financing options for investors</li>
+        <li>Create investment property analysis templates</li>
+      </ul>
+    `,
+    quiz: [
+      {
+        question: "What percentage of home purchases are made by real estate investors?",
+        options: ["15%", "20%", "25%", "30%"],
+        correctAnswer: "20%"
+      },
+      {
+        question: "What does the 1% rule state?",
+        options: ["1% annual appreciation", "1% of income for housing", "Monthly rent = 1% of purchase price", "1% commission reduction"],
+        correctAnswer: "Monthly rent = 1% of purchase price"
+      }
+    ]
+  }
+];
+
+// Role-play scenarios for practice sessions
 export interface RolePlayScenario {
   id: string;
   title: string;
-  category: 'buyer' | 'seller' | 'objection';
   description: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  learningObjectives: string[];
+  relatedModules: string[];
   persona: {
     name: string;
     background: string;
@@ -1103,403 +979,192 @@ export interface RolePlayScenario {
     concerns: string[];
     communicationStyle: string;
   };
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  learningObjectives: string[];
-  relatedModules: string[];
 }
 
 export const rolePlayScenarios: RolePlayScenario[] = [
-  // Buyer Scenarios
   {
-    id: 'first-time-buyer',
-    title: 'First-Time Homebuyer',
-    category: 'buyer',
-    description: 'A nervous first-time buyer with many questions about the home buying process',
+    id: 'first-time-buyer-consultation',
+    title: 'First-Time Buyer Consultation',
+    description: 'Help a nervous first-time buyer understand the home buying process and build confidence.',
+    difficulty: 'Beginner',
+    learningObjectives: [
+      'Explain the buying process clearly',
+      'Address first-time buyer concerns',
+      'Build trust and rapport',
+      'Set realistic expectations'
+    ],
+    relatedModules: ['client-communication', 'objection-handling'],
     persona: {
       name: 'Sarah Chen',
-      background: '28-year-old software engineer, renting for 5 years, saved $50K for down payment',
-      personality: 'Analytical, detail-oriented, anxious about making the right decision',
+      background: 'A 28-year-old marketing professional looking to buy her first home. She has been saving for years but feels overwhelmed by the process.',
+      personality: 'Cautious, detail-oriented, asks lots of questions, wants to understand everything before making decisions.',
       goals: [
-        'Understand the entire home buying process',
-        'Find a starter home under $400K',
-        'Avoid making costly mistakes',
-        'Get pre-approved for a mortgage'
+        'Find a safe, affordable home in a good neighborhood',
+        'Understand all costs involved',
+        'Make sure she\'s making a smart financial decision'
       ],
       concerns: [
-        'Worried about hidden costs and fees',
-        'Unsure about what to look for in a home inspection',
-        'Concerned about being taken advantage of',
-        'Anxious about the commitment of homeownership'
+        'Making a mistake with such a big purchase',
+        'Hidden costs she doesn\'t know about',
+        'Whether she can really afford homeownership',
+        'The complexity of the buying process'
       ],
-      communicationStyle: 'Asks many questions, needs reassurance, appreciates detailed explanations'
-    },
-    difficulty: 'beginner',
-    learningObjectives: [
-      'Build trust with anxious clients',
-      'Explain complex processes in simple terms',
-      'Provide reassurance without being dismissive',
-      'Set clear expectations for the buying journey'
-    ],
-    relatedModules: ['client-communication', 'closing-techniques']
+      communicationStyle: 'Asks detailed questions, needs reassurance, appreciates step-by-step explanations'
+    }
   },
   {
-    id: 'investor-client',
-    title: 'Investment Property Buyer',
-    category: 'buyer',
-    description: 'An analytical investor focused on ROI and market data',
+    id: 'luxury-seller-pricing',
+    title: 'Luxury Home Seller - Pricing Discussion',
+    description: 'Convince a luxury homeowner to price their property realistically based on market data.',
+    difficulty: 'Advanced',
+    learningObjectives: [
+      'Present market data convincingly',
+      'Handle pricing objections professionally',
+      'Maintain relationship while being direct',
+      'Use comparable sales effectively'
+    ],
+    relatedModules: ['comparative-market-analysis', 'negotiation-strategies'],
     persona: {
-      name: 'Marcus Johnson',
-      background: '45-year-old business owner, owns 3 rental properties, looking to expand portfolio',
-      personality: 'Data-driven, skeptical, focused on numbers and returns',
+      name: 'Robert Wellington',
+      background: 'A successful business owner who bought his luxury home 10 years ago for $2.8M. He believes it\'s worth $4.5M but market data suggests $3.6M.',
+      personality: 'Confident, successful, used to getting his way, values expertise but can be stubborn about his opinions.',
       goals: [
-        'Find properties with 8%+ cap rate',
-        'Identify up-and-coming neighborhoods',
-        'Minimize vacancy risk',
-        'Build long-term wealth through real estate'
+        'Get the highest possible price for his home',
+        'Sell within 6 months to relocate for business',
+        'Work with an agent who understands luxury market'
       ],
       concerns: [
-        'Market timing and potential downturn',
-        'Property management challenges',
-        'Renovation costs eating into profits',
-        'Tenant quality and turnover'
+        'Leaving money on the table',
+        'Working with an agent who doesn\'t understand his market',
+        'Taking too long to sell and missing his business opportunity'
       ],
-      communicationStyle: 'Direct, numbers-focused, challenges assumptions, wants data to back up claims'
-    },
-    difficulty: 'advanced',
-    learningObjectives: [
-      'Speak the language of real estate investing',
-      'Provide market analysis and comparable data',
-      'Handle skepticism with confidence',
-      'Position yourself as an investment advisor, not just an agent'
-    ],
-    relatedModules: ['competitive-analysis', 'negotiation-mastery']
+      communicationStyle: 'Direct, business-like, expects data-driven recommendations, challenges assumptions'
+    }
   },
   {
-    id: 'luxury-buyer',
-    title: 'Luxury Home Buyer',
-    category: 'buyer',
-    description: 'A high-expectations client looking for premium service and exclusive properties',
+    id: 'investor-multi-property',
+    title: 'Real Estate Investor - Multi-Property Purchase',
+    description: 'Work with an experienced investor looking to purchase multiple rental properties.',
+    difficulty: 'Advanced',
+    learningObjectives: [
+      'Understand investment criteria and metrics',
+      'Discuss cash flow and ROI calculations',
+      'Handle multiple property negotiations',
+      'Build long-term investor relationships'
+    ],
+    relatedModules: ['investment-analysis', 'negotiation-strategies'],
     persona: {
-      name: 'Victoria Ashford',
-      background: 'C-suite executive, relocating from New York, budget $2M+',
-      personality: 'Sophisticated, demanding, expects white-glove service',
+      name: 'Maria Rodriguez',
+      background: 'An experienced real estate investor with 12 rental properties. She\'s looking to add 3-4 more properties to her portfolio this year.',
+      personality: 'Analytical, numbers-focused, efficient, values time and expertise, direct communicator.',
       goals: [
-        'Find a prestigious property that reflects status',
-        'Access off-market listings',
-        'Ensure privacy and discretion',
-        'Quick, efficient process despite high standards'
+        'Find properties with 8%+ cash-on-cash return',
+        'Purchase 3-4 properties in the next 6 months',
+        'Work with an agent who understands investment criteria'
       ],
       concerns: [
-        'Wasting time on properties that don\'t meet standards',
-        'Working with an agent who doesn\'t understand luxury market',
-        'Privacy and confidentiality',
-        'Property value retention in luxury segment'
+        'Wasting time on properties that don\'t meet her criteria',
+        'Market conditions affecting rental yields',
+        'Finding an agent who can move quickly on good deals'
       ],
-      communicationStyle: 'Expects proactive communication, values expertise, low tolerance for mistakes'
-    },
-    difficulty: 'advanced',
-    learningObjectives: [
-      'Demonstrate luxury market expertise',
-      'Provide concierge-level service',
-      'Handle high expectations with grace',
-      'Network and access exclusive listings'
-    ],
-    relatedModules: ['client-communication', 'negotiation-mastery']
+      communicationStyle: 'Gets straight to business, wants numbers and facts, appreciates efficiency and expertise'
+    }
   },
   {
-    id: 'relocating-family',
-    title: 'Relocating Family',
-    category: 'buyer',
-    description: 'An out-of-state family unfamiliar with the area, needing guidance on neighborhoods',
+    id: 'downsizing-seniors',
+    title: 'Senior Couple - Downsizing Consultation',
+    description: 'Help a senior couple navigate the emotional and practical aspects of downsizing.',
+    difficulty: 'Intermediate',
+    learningObjectives: [
+      'Handle emotional aspects of selling family home',
+      'Discuss timing and logistics of downsizing',
+      'Address senior-specific concerns',
+      'Provide compassionate guidance'
+    ],
+    relatedModules: ['client-communication', 'transaction-management'],
     persona: {
-      name: 'The Martinez Family',
-      background: 'Parents with 2 kids (ages 7 and 10), relocating for job, need to move in 60 days',
-      personality: 'Overwhelmed, relying heavily on agent for local knowledge',
+      name: 'Frank and Betty Morrison',
+      background: 'Married 45 years, lived in their 4-bedroom home for 30 years. Their children have moved away and they want something smaller and easier to maintain.',
+      personality: 'Sentimental about their home, practical about their needs, want to make sure they\'re making the right decision.',
       goals: [
-        'Find family-friendly neighborhood with good schools',
-        'Understand commute times and traffic patterns',
-        'Learn about local amenities and community',
-        'Close quickly due to job start date'
+        'Find a smaller, low-maintenance home',
+        'Stay in the same general area near friends',
+        'Get fair value for their current home'
       ],
       concerns: [
-        'Making the wrong neighborhood choice',
-        'Schools quality and availability',
-        'Safety and community fit',
-        'Buying sight-unseen or with limited visits'
+        'Leaving behind so many memories',
+        'Whether they\'ll be happy in a smaller space',
+        'The stress and work involved in moving',
+        'Market timing and getting a good price'
       ],
-      communicationStyle: 'Needs hand-holding, appreciates local insights, values responsiveness'
-    },
-    difficulty: 'intermediate',
-    learningObjectives: [
-      'Demonstrate deep local market knowledge',
-      'Provide comprehensive neighborhood guidance',
-      'Manage remote buying process',
-      'Build trust quickly with out-of-town clients'
-    ],
-    relatedModules: ['client-communication', 'local-seo']
-  },
-
-  // Seller Scenarios
-  {
-    id: 'overpriced-seller',
-    title: 'Seller with Unrealistic Price Expectations',
-    category: 'seller',
-    description: 'A seller who believes their home is worth significantly more than market value',
-    persona: {
-      name: 'Robert Thompson',
-      background: 'Owned home for 15 years, made extensive renovations, emotionally attached',
-      personality: 'Defensive, takes pricing feedback personally, overestimates home value',
-      goals: [
-        'Get maximum price for the home',
-        'Recoup all renovation costs',
-        'Sell within 3 months',
-        'Prove the home is worth more than comps suggest'
-      ],
-      concerns: [
-        'Being told the home is worth less than expected',
-        'Losing money on renovations',
-        'Agents just want a quick sale',
-        'Market timing and missing the peak'
-      ],
-      communicationStyle: 'Argumentative when challenged, needs data and empathy, emotional about the home'
-    },
-    difficulty: 'advanced',
-    learningObjectives: [
-      'Deliver difficult pricing news with empathy',
-      'Use market data to reset expectations',
-      'Handle emotional attachment professionally',
-      'Build trust while being honest about market realities'
-    ],
-    relatedModules: ['negotiation-mastery', 'client-communication']
+      communicationStyle: 'Thoughtful, asks about process and timeline, appreciates patience and understanding'
+    }
   },
   {
-    id: 'urgent-seller',
-    title: 'Seller with Urgent Timeline',
-    category: 'seller',
-    description: 'A seller who needs to close quickly due to job relocation or financial pressure',
+    id: 'competitive-market-buyer',
+    title: 'Buyer in Competitive Market',
+    description: 'Guide a buyer through making competitive offers in a hot market.',
+    difficulty: 'Intermediate',
+    learningObjectives: [
+      'Explain competitive market strategies',
+      'Help buyer understand escalation clauses',
+      'Manage expectations about multiple offers',
+      'Keep buyer motivated despite rejections'
+    ],
+    relatedModules: ['negotiation-strategies', 'market-trends-analysis'],
     persona: {
-      name: 'Jennifer Lee',
-      background: 'Job transfer to another state, needs to close in 30 days, some financial stress',
-      personality: 'Stressed, impatient, willing to compromise on price for speed',
+      name: 'David Kim',
+      background: 'A software engineer who has been looking for 4 months and lost 3 offers. He\'s getting frustrated and considering giving up or expanding his budget significantly.',
+      personality: 'Analytical, getting impatient, starting to doubt the process, wants to understand strategy.',
       goals: [
-        'Sell within 30 days',
-        'Get enough to cover mortgage and moving costs',
-        'Minimize hassle and showings',
-        'Avoid deal falling through'
+        'Finally get an accepted offer',
+        'Stay within his budget if possible',
+        'Understand what he needs to do to compete'
       ],
       concerns: [
-        'Not selling in time',
-        'Carrying two mortgages',
-        'Buyers backing out',
-        'Inspection issues delaying closing'
+        'Overpaying in a competitive market',
+        'Never finding a home he can afford',
+        'Whether he should wait for market to cool down',
+        'Making emotional decisions due to frustration'
       ],
-      communicationStyle: 'Direct, wants solutions not problems, appreciates proactive updates'
-    },
-    difficulty: 'intermediate',
-    learningObjectives: [
-      'Create urgency-based marketing strategy',
-      'Manage client stress and expectations',
-      'Navigate compressed timelines',
-      'Balance speed with getting best price'
-    ],
-    relatedModules: ['closing-techniques', 'time-management']
+      communicationStyle: 'Wants data and strategy, getting more emotional due to frustration, needs encouragement'
+    }
   },
   {
-    id: 'emotional-seller',
-    title: 'Emotional Seller',
-    category: 'seller',
-    description: 'A long-time homeowner emotionally attached to their property',
+    id: 'divorce-sale',
+    title: 'Divorce Sale - Sensitive Situation',
+    description: 'Navigate the complexities of selling a home during a divorce proceeding.',
+    difficulty: 'Advanced',
+    learningObjectives: [
+      'Handle emotionally charged situations professionally',
+      'Work with multiple decision makers',
+      'Understand legal constraints in divorce sales',
+      'Maintain neutrality while providing service'
+    ],
+    relatedModules: ['client-communication', 'transaction-management'],
     persona: {
-      name: 'Dorothy Williams',
-      background: '72 years old, raised family in home for 40 years, downsizing after spouse passed',
-      personality: 'Sentimental, slow to make decisions, needs emotional support',
+      name: 'Jennifer Walsh',
+      background: 'Going through a difficult divorce and needs to sell the family home as part of the settlement. Her ex-husband is being difficult about the process.',
+      personality: 'Stressed, emotional, wants to get through this quickly, frustrated with the situation.',
       goals: [
-        'Honor the memories in the home',
-        'Find the "right" buyer who will love it',
-        'Downsize to something manageable',
-        'Not feel rushed through the process'
+        'Sell the house quickly to finalize divorce',
+        'Get fair market value',
+        'Minimize stress and conflict during the process'
       ],
       concerns: [
-        'Letting go of family memories',
-        'Strangers walking through the home',
-        'Making the wrong decision',
-        'Being taken advantage of due to age'
+        'Her ex-husband interfering with the sale',
+        'Legal complications affecting the transaction',
+        'Emotional difficulty of selling family home',
+        'Timeline pressure from divorce proceedings'
       ],
-      communicationStyle: 'Shares stories, needs patience, values personal connection over efficiency'
-    },
-    difficulty: 'intermediate',
-    learningObjectives: [
-      'Provide emotional support during difficult transitions',
-      'Balance empathy with professional guidance',
-      'Handle sensitive situations with grace',
-      'Build deep trust with vulnerable clients'
-    ],
-    relatedModules: ['client-communication', 'buyer-psychology']
-  },
-  {
-    id: 'fsbo-conversion',
-    title: 'For Sale By Owner (FSBO) Conversion',
-    category: 'seller',
-    description: 'A homeowner trying to sell on their own, skeptical of agent value',
-    persona: {
-      name: 'David Park',
-      background: 'DIY enthusiast, listed FSBO for 2 months with no offers, wants to save commission',
-      personality: 'Independent, skeptical of agents, cost-conscious',
-      goals: [
-        'Sell without paying full commission',
-        'Maintain control of the process',
-        'Get market value for the home',
-        'Avoid being "sold" by an agent'
-      ],
-      concerns: [
-        'Paying 5-6% commission',
-        'Agents just want a quick sale',
-        'Losing control of negotiations',
-        'Being pressured into decisions'
-      ],
-      communicationStyle: 'Skeptical, asks about value proposition, needs proof of ROI'
-    },
-    difficulty: 'advanced',
-    learningObjectives: [
-      'Articulate agent value proposition clearly',
-      'Handle commission objections confidently',
-      'Convert skeptics through education',
-      'Demonstrate market expertise and results'
-    ],
-    relatedModules: ['objection-handling', 'negotiation-mastery']
-  },
-
-  // Objection Handling Scenarios
-  {
-    id: 'commission-negotiation',
-    title: 'Commission Rate Negotiation',
-    category: 'objection',
-    description: 'A client questioning your commission rate and asking for a discount',
-    persona: {
-      name: 'Brian Foster',
-      background: 'Savvy negotiator, interviewed 3 agents, shopping for best commission rate',
-      personality: 'Business-minded, sees real estate as a commodity, focused on costs',
-      goals: [
-        'Get professional service at lowest cost',
-        'Negotiate commission down to 4% or less',
-        'Maximize net proceeds from sale',
-        'Maintain leverage in the relationship'
-      ],
-      concerns: [
-        'Overpaying for services',
-        'Commission eating into profits',
-        'Whether full-service is worth the cost',
-        'Discount brokers offering lower rates'
-      ],
-      communicationStyle: 'Direct, compares you to competitors, uses other quotes as leverage'
-    },
-    difficulty: 'advanced',
-    learningObjectives: [
-      'Defend your commission with confidence',
-      'Articulate value beyond just listing on MLS',
-      'Handle price objections without discounting',
-      'Position yourself as an investment, not an expense'
-    ],
-    relatedModules: ['objection-handling', 'negotiation-mastery']
-  },
-  {
-    id: 'multiple-offers-stress',
-    title: 'Buyer Lost in Multiple Offers',
-    category: 'objection',
-    description: 'A frustrated buyer who has lost multiple bidding wars',
-    persona: {
-      name: 'Amanda Rodriguez',
-      background: 'Lost 4 offers in competitive market, feeling defeated and questioning strategy',
-      personality: 'Frustrated, losing confidence, considering giving up',
-      goals: [
-        'Finally win a home',
-        'Understand why they keep losing',
-        'Adjust strategy to be more competitive',
-        'Not overpay out of desperation'
-      ],
-      concerns: [
-        'Never finding a home',
-        'Wasting time on losing offers',
-        'Overpaying in desperation',
-        'Whether their agent is doing enough'
-      ],
-      communicationStyle: 'Emotional, questioning your advice, needs strategy adjustment and hope'
-    },
-    difficulty: 'intermediate',
-    learningObjectives: [
-      'Manage client frustration in competitive markets',
-      'Adjust strategy for multiple offer situations',
-      'Provide hope while being realistic',
-      'Strengthen competitive positioning'
-    ],
-    relatedModules: ['buyer-psychology', 'negotiation-mastery']
-  },
-  {
-    id: 'inspection-issues',
-    title: 'Navigating Inspection Negotiations',
-    category: 'objection',
-    description: 'A buyer or seller dealing with unexpected inspection findings',
-    persona: {
-      name: 'Tom and Lisa Bennett',
-      background: 'Buyers, inspection revealed $15K in repairs, considering walking away',
-      personality: 'Anxious, feeling deceived, questioning the entire purchase',
-      goals: [
-        'Get seller to cover repair costs',
-        'Understand severity of issues',
-        'Decide whether to proceed or walk away',
-        'Protect their investment'
-      ],
-      concerns: [
-        'Buying a money pit',
-        'Hidden issues beyond inspection',
-        'Seller refusing to negotiate',
-        'Making an emotional decision'
-      ],
-      communicationStyle: 'Worried, needs guidance on what\'s normal vs. red flags, wants your recommendation'
-    },
-    difficulty: 'intermediate',
-    learningObjectives: [
-      'Navigate inspection negotiations calmly',
-      'Distinguish between major issues and minor repairs',
-      'Negotiate repair credits or price reductions',
-      'Keep deals together when issues arise'
-    ],
-    relatedModules: ['negotiation-mastery', 'closing-techniques']
-  },
-  {
-    id: 'cold-feet',
-    title: 'Buyer with Cold Feet',
-    category: 'objection',
-    description: 'A buyer having second thoughts right before closing',
-    persona: {
-      name: 'Kevin Zhang',
-      background: 'Under contract, closing in 2 weeks, suddenly questioning everything',
-      personality: 'Anxious, overthinking, looking for reasons to back out',
-      goals: [
-        'Feel confident about the decision',
-        'Understand if doubts are normal',
-        'Avoid making a huge mistake',
-        'Get reassurance or permission to walk away'
-      ],
-      concerns: [
-        'Overpaying for the property',
-        'Better homes coming on market',
-        'Job security and mortgage payments',
-        'Commitment and being "stuck"'
-      ],
-      communicationStyle: 'Second-guessing everything, needs validation, asking "what if" questions'
-    },
-    difficulty: 'advanced',
-    learningObjectives: [
-      'Recognize and address buyer\'s remorse',
-      'Provide reassurance without being pushy',
-      'Help clients work through normal anxiety',
-      'Know when to let a client walk away'
-    ],
-    relatedModules: ['buyer-psychology', 'client-communication']
+      communicationStyle: 'Sometimes emotional, appreciates professionalism and discretion, needs reassurance about process'
+    }
   }
 ];
 
 // Combine all modules
-marketingModules.push(...additionalMarketingModules);
-closingModules.push(...additionalClosingModules);
+export const allModules = [
+  ...marketingModules,
+  ...closingModules,
+  ...professionalExcellenceModules
+];

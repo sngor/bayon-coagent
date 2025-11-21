@@ -50,6 +50,16 @@ import {
   type RunResearchAgentOutput,
 } from '@/aws/bedrock/flows/run-research-agent';
 import {
+  runPropertyValuation,
+  type PropertyValuationInput,
+  type PropertyValuationOutput,
+} from '@/aws/bedrock/flows/property-valuation';
+import {
+  runRenovationROIAnalysis,
+  type RenovationROIInput,
+  type RenovationROIOutput,
+} from '@/aws/bedrock/flows/renovation-roi';
+import {
   generateMarketUpdate,
   type GenerateMarketUpdateInput,
   type GenerateMarketUpdateOutput,
@@ -589,6 +599,20 @@ const researchAgentSchema = z.object({
   topic: z.string().min(10, 'Please provide a more specific topic for better research results.'),
 });
 
+const propertyValuationSchema = z.object({
+  propertyDescription: z.string().min(20, 'Please provide a more detailed property description or address.'),
+});
+
+const renovationROISchema = z.object({
+  currentValue: z.coerce.number().min(1000, 'Current value must be at least $1,000.'),
+  renovationCost: z.coerce.number().min(100, 'Renovation cost must be at least $100.'),
+  renovationType: z.string().min(1, 'Please select a renovation type.'),
+  location: z.string().optional(),
+  propertyType: z.string().min(1, 'Please select a property type.'),
+  marketCondition: z.string().min(1, 'Please select market condition.'),
+  additionalDetails: z.string().optional(),
+});
+
 export async function runResearchAgentAction(prevState: any, formData: FormData): Promise<{
   message: string;
   data: (RunResearchAgentOutput & { reportId?: string }) | null;
@@ -618,6 +642,83 @@ export async function runResearchAgentAction(prevState: any, formData: FormData)
     const errorMessage = handleAWSError(error, 'An unexpected error occurred during research.');
     return {
       message: `Research failed: ${errorMessage}`,
+      errors: {},
+      data: null,
+    };
+  }
+}
+
+export async function runPropertyValuationAction(prevState: any, formData: FormData): Promise<{
+  message: string;
+  data: PropertyValuationOutput | null;
+  errors: any;
+}> {
+  const validatedFields = propertyValuationSchema.safeParse({
+    propertyDescription: formData.get('propertyDescription'),
+  });
+
+  if (!validatedFields.success) {
+    const fieldErrors = validatedFields.error.flatten().fieldErrors;
+    return {
+      message: fieldErrors.propertyDescription?.[0] || "Validation failed.",
+      errors: fieldErrors,
+      data: null,
+    };
+  }
+
+  try {
+    const result = await runPropertyValuation({ propertyDescription: validatedFields.data.propertyDescription });
+    return {
+      message: 'success',
+      data: result,
+      errors: {},
+    };
+  } catch (error) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred during property valuation.');
+    return {
+      message: `Property valuation failed: ${errorMessage}`,
+      errors: {},
+      data: null,
+    };
+  }
+}
+
+export async function runRenovationROIAction(prevState: any, formData: FormData): Promise<{
+  message: string;
+  data: RenovationROIOutput | null;
+  errors: any;
+}> {
+  const validatedFields = renovationROISchema.safeParse({
+    currentValue: formData.get('currentValue'),
+    renovationCost: formData.get('renovationCost'),
+    renovationType: formData.get('renovationType'),
+    location: formData.get('location'),
+    propertyType: formData.get('propertyType'),
+    marketCondition: formData.get('marketCondition'),
+    additionalDetails: formData.get('additionalDetails'),
+  });
+
+  if (!validatedFields.success) {
+    const fieldErrors = validatedFields.error.flatten().fieldErrors;
+    const firstError = Object.values(fieldErrors)[0]?.[0] || "Validation failed.";
+    return {
+      message: firstError,
+      errors: fieldErrors,
+      data: null,
+    };
+  }
+
+  try {
+    const result = await runRenovationROIAnalysis(validatedFields.data);
+    return {
+      message: 'success',
+      data: result,
+      errors: {},
+    };
+  } catch (error) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred during renovation ROI analysis.');
+    return {
+      message: `Renovation ROI analysis failed: ${errorMessage}`,
       errors: {},
       data: null,
     };
@@ -1395,20 +1496,21 @@ export async function saveProfileAction(
     const repository = getRepository();
     const keys = getAgentProfileKeys(userId, 'main');
 
-    // Check if profile exists
+    // Check if profile exists to preserve CreatedAt
     const existingProfile = await repository.get(keys.PK, keys.SK);
 
-    if (existingProfile) {
-      await repository.update(keys.PK, keys.SK, profile);
-    } else {
-      await repository.put({
-        ...keys,
-        EntityType: 'RealEstateAgentProfile',
-        Data: profile,
-        CreatedAt: Date.now(),
-        UpdatedAt: Date.now(),
-      });
-    }
+    // Always use put to replace the entire profile data
+    // This ensures we don't have issues with partial updates
+    const profileData = {
+      PK: keys.PK,
+      SK: keys.SK,
+      EntityType: 'RealEstateAgentProfile' as const,
+      Data: profile,
+      CreatedAt: existingProfile?.CreatedAt || Date.now(),
+      UpdatedAt: Date.now(),
+    };
+
+    await repository.put(profileData);
 
     return {
       message: 'success',
@@ -1419,6 +1521,37 @@ export async function saveProfileAction(
     console.error('Save profile error:', error);
     return {
       message: error.message || 'Failed to save profile',
+      errors: {},
+    };
+  }
+}
+
+/**
+ * Get profile data for a user
+ */
+export async function getProfileAction(userId: string): Promise<{ message: string; data?: any; errors: any }> {
+  try {
+    const repository = getRepository();
+    const keys = getAgentProfileKeys(userId, 'main');
+    const result = await repository.get(keys.PK, keys.SK);
+
+    if (result) {
+      return {
+        message: 'success',
+        data: result,
+        errors: {},
+      };
+    } else {
+      return {
+        message: 'Profile not found',
+        data: null,
+        errors: {},
+      };
+    }
+  } catch (error: any) {
+    console.error('Get profile error:', error);
+    return {
+      message: error.message || 'Failed to get profile',
       errors: {},
     };
   }
@@ -1450,11 +1583,126 @@ export async function generateTrainingPlanAction(challenge: string): Promise<{
 }
 
 /**
+ * Get all reports for a user (research reports and training plans)
+ */
+export async function getUserReportsAction(
+  userId?: string
+): Promise<{
+  message: string;
+  data: any[] | null;
+  errors?: string[];
+}> {
+  try {
+    // Get current user from Cognito
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser(userId);
+
+    if (!user || !user.id) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to view reports'],
+      };
+    }
+
+    const repository = getRepository();
+    const result = await repository.query(
+      `USER#${user.id}`,
+      'REPORT#'
+    );
+
+    const reports = result.items.map((item: any) => ({
+      id: item.Data?.id || (item.SK ? item.SK.replace('REPORT#', '') : 'unknown'),
+      topic: item.Data?.topic || 'Untitled Report',
+      report: item.Data?.report || '',
+      summary: item.Data?.summary || '',
+      type: item.Data?.type || 'research',
+      createdAt: item.CreatedAt || Date.now(),
+    }));
+
+    return {
+      message: 'Reports fetched successfully',
+      data: reports,
+    };
+  } catch (error: any) {
+    console.error('Get reports error:', error);
+    return {
+      message: 'Failed to fetch reports',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Get a specific report by ID
+ */
+export async function getReportByIdAction(
+  reportId: string,
+  userId?: string
+): Promise<{
+  message: string;
+  data: any | null;
+  errors?: string[];
+}> {
+  try {
+    // Get current user from Cognito
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser(userId);
+
+    if (!user || !user.id) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to view reports'],
+      };
+    }
+
+    const repository = getRepository();
+    const item = await repository.get(
+      `USER#${user.id}`,
+      `REPORT#${reportId}`
+    );
+
+    if (!item || !(item as any).Data) {
+      return {
+        message: 'Report not found',
+        data: null,
+        errors: ['Report not found'],
+      };
+    }
+
+    const data = (item as any).Data;
+    const report = {
+      id: data.id,
+      topic: data.topic,
+      report: data.report,
+      summary: data.summary || '',
+      type: data.type || 'research',
+      createdAt: (item as any).CreatedAt || Date.now(),
+    };
+
+    return {
+      message: 'Report fetched successfully',
+      data: report,
+    };
+  } catch (error: any) {
+    console.error('Get report error:', error);
+    return {
+      message: 'Failed to fetch report',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
  * Save training plan to knowledge base
  */
 export async function saveTrainingPlanAction(
   challenge: string,
-  plan: string
+  plan: string,
+  userId?: string
 ): Promise<{
   message: string;
   data: { id: string } | null;
@@ -1463,9 +1711,9 @@ export async function saveTrainingPlanAction(
   try {
     // Get current user from Cognito
     const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(userId);
 
-    if (!user) {
+    if (!user || !user.id) {
       return {
         message: 'Authentication required',
         data: null,
@@ -1756,13 +2004,10 @@ export async function getRolePlaySessionsAction(): Promise<{
     }
 
     const repository = getRepository();
-    const sessions = await repository.query({
-      KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
-      ExpressionAttributeValues: {
-        ':pk': `USER#${user.id}`,
-        ':sk': 'ROLEPLAY#',
-      },
-    });
+    const sessions = await repository.query(
+      `USER#${user.id}`,
+      'ROLEPLAY#'
+    );
 
     // Sort by most recent first
     const sortedSessions = sessions.items
@@ -2296,7 +2541,36 @@ export async function updateProfilePhotoUrlAction(
 
     const repository = getRepository();
     const keys = getAgentProfileKeys(userId, 'main');
-    await repository.update(keys.PK, keys.SK, { photoURL });
+
+    // Get existing profile data
+    const existingProfile = await repository.get(keys.PK, keys.SK);
+
+    if (existingProfile) {
+      // Update the photoURL in the existing profile data
+      const updatedProfileData = {
+        PK: keys.PK,
+        SK: keys.SK,
+        EntityType: 'RealEstateAgentProfile' as const,
+        Data: {
+          ...existingProfile.Data,
+          photoURL
+        },
+        CreatedAt: existingProfile.CreatedAt,
+        UpdatedAt: Date.now(),
+      };
+
+      await repository.put(updatedProfileData);
+    } else {
+      // Create new profile with just the photo URL
+      await repository.put({
+        PK: keys.PK,
+        SK: keys.SK,
+        EntityType: 'RealEstateAgentProfile' as const,
+        Data: { photoURL },
+        CreatedAt: Date.now(),
+        UpdatedAt: Date.now(),
+      });
+    }
 
     return {
       message: 'Profile photo updated successfully',

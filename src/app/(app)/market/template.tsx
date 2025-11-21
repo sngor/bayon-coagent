@@ -1,13 +1,13 @@
 'use client';
 
 import { HubLayout } from '@/components/hub';
-import { TrendingUp, Search, Target, BarChart3 } from 'lucide-react';
+import { TrendingUp, Search, Lightbulb, Calculator, Wrench } from 'lucide-react';
 
 const tabs = [
     { id: 'research', label: 'Research', href: '/market/research', icon: Search },
-    { id: 'opportunities', label: 'Opportunities', href: '/market/opportunities', icon: Target },
-    { id: 'trends', label: 'Trends', href: '/market/trends', icon: TrendingUp },
-    { id: 'analytics', label: 'Analytics', href: '/market/analytics', icon: BarChart3 },
+    { id: 'insights', label: 'Insights', href: '/market/insights', icon: Lightbulb },
+    { id: 'calculator', label: 'Calculator', href: '/market/calculator', icon: Calculator },
+    { id: 'tools', label: 'Analysis', href: '/market/tools', icon: Wrench },
 ];
 
 export default function MarketTemplate({ children }: { children: React.ReactNode }) {

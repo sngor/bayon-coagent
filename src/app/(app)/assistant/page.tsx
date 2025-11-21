@@ -11,6 +11,23 @@ import { StandardPageLayout } from '@/components/standard';
 import { ChatInterface, AgentProfilePreview } from '@/components/bayon-assistant';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
     GlassCard,
     GlassCardHeader,
@@ -22,7 +39,7 @@ import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsL
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { getAgentProfile } from '@/app/profile-actions';
 import { useUser } from '@/aws/auth';
-import { MessageSquare, Info, Loader2, Settings } from 'lucide-react';
+import { MessageSquare, Info, Loader2, Settings, History, Plus, RotateCcw, Trash2, Edit2, Check, X, MoreVertical } from 'lucide-react';
 import type { AgentProfile } from '@/aws/dynamodb/agent-profile-repository';
 import Link from 'next/link';
 
@@ -30,7 +47,21 @@ export default function AssistantPage() {
     const { user } = useUser();
     const [profile, setProfile] = useState<AgentProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'chat' | 'profile'>('chat');
+    const [activeTab, setActiveTab] = useState<'chat' | 'history'>('chat');
+    const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+    const [chatMessages, setChatMessages] = useState<any[]>([]);
+    const [chatKey, setChatKey] = useState<number>(0); // Force re-render of ChatInterface
+    const [chatHistory, setChatHistory] = useState<Array<{
+        id: string;
+        title: string;
+        lastMessage: string;
+        timestamp: string;
+        messageCount: number;
+        messages: any[];
+    }>>([]);
+    const [editingChatId, setEditingChatId] = useState<string | null>(null);
+    const [editingTitle, setEditingTitle] = useState<string>('');
+    const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
 
     // Load existing profile on mount
     useEffect(() => {
@@ -55,8 +86,181 @@ export default function AssistantPage() {
         loadProfile();
     }, [user]);
 
+    // Load chat history from localStorage on mount
+    useEffect(() => {
+        if (user?.id) {
+            const savedHistory = localStorage.getItem(`chat-history-${user.id}`);
+            if (savedHistory) {
+                try {
+                    const parsedHistory = JSON.parse(savedHistory);
+                    setChatHistory(parsedHistory);
+                } catch (error) {
+                    console.error('Failed to load chat history:', error);
+                }
+            }
+        }
+    }, [user?.id]);
+
+    // Save chat history to localStorage whenever it changes
+    useEffect(() => {
+        if (user?.id && chatHistory.length > 0) {
+            localStorage.setItem(`chat-history-${user.id}`, JSON.stringify(chatHistory));
+        }
+    }, [chatHistory, user?.id]);
+
+    // Initialize with a new chat on first load
+    useEffect(() => {
+        if (!currentChatId && !isLoading) {
+            const initialChatId = `chat-${Date.now()}`;
+            setCurrentChatId(initialChatId);
+        }
+    }, [currentChatId, isLoading]);
+
     const handleProfileUpdate = (updatedProfile: AgentProfile) => {
         setProfile(updatedProfile);
+    };
+
+    const handleNewChat = () => {
+        // Save current chat to history if it exists and has messages
+        if (currentChatId && chatMessages.length > 0) {
+            const lastMessage = chatMessages[chatMessages.length - 1];
+            const newHistoryItem = {
+                id: currentChatId,
+                title: `Chat ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
+                lastMessage: lastMessage?.content || "No messages",
+                timestamp: new Date().toISOString(),
+                messageCount: chatMessages.length,
+                messages: [...chatMessages]
+            };
+            setChatHistory(prev => [newHistoryItem, ...prev]);
+        }
+
+        // Start new chat
+        const newChatId = `chat-${Date.now()}`;
+        setCurrentChatId(newChatId);
+        setChatMessages([]);
+        setChatKey(prev => prev + 1); // Force ChatInterface to re-render
+        setActiveTab('chat');
+    };
+
+    const handleEndChat = () => {
+        if (currentChatId && chatMessages.length > 0) {
+            // Save current chat to history
+            const lastMessage = chatMessages[chatMessages.length - 1];
+            const newHistoryItem = {
+                id: currentChatId,
+                title: `Chat ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
+                lastMessage: lastMessage?.content || "Chat ended",
+                timestamp: new Date().toISOString(),
+                messageCount: chatMessages.length,
+                messages: [...chatMessages]
+            };
+            setChatHistory(prev => [newHistoryItem, ...prev]);
+        }
+        setCurrentChatId(null);
+        setChatMessages([]);
+        setChatKey(prev => prev + 1); // Force ChatInterface to re-render
+    };
+
+    const handleLoadChat = (chatId: string) => {
+        // Save current chat first if it exists and has messages
+        if (currentChatId && chatMessages.length > 0 && currentChatId !== chatId) {
+            const lastMessage = chatMessages[chatMessages.length - 1];
+            const newHistoryItem = {
+                id: currentChatId,
+                title: `Chat ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
+                lastMessage: lastMessage?.content || "No messages",
+                timestamp: new Date().toISOString(),
+                messageCount: chatMessages.length,
+                messages: [...chatMessages]
+            };
+            setChatHistory(prev => [newHistoryItem, ...prev]);
+        }
+
+        // Load the selected chat
+        const selectedChat = chatHistory.find(chat => chat.id === chatId);
+        if (selectedChat) {
+            setCurrentChatId(chatId);
+            setChatMessages(selectedChat.messages || []);
+            setChatKey(prev => prev + 1); // Force ChatInterface to re-render
+        }
+        setActiveTab('chat');
+    };
+
+    const handleMessageSent = (message: any) => {
+        setChatMessages(prev => {
+            const newMessages = [...prev, message];
+
+            // Auto-update current chat in history if it exists
+            if (currentChatId) {
+                setChatHistory(prevHistory => {
+                    const existingChatIndex = prevHistory.findIndex(chat => chat.id === currentChatId);
+                    if (existingChatIndex >= 0) {
+                        const updatedHistory = [...prevHistory];
+                        updatedHistory[existingChatIndex] = {
+                            ...updatedHistory[existingChatIndex],
+                            lastMessage: message.content,
+                            timestamp: new Date().toISOString(),
+                            messageCount: newMessages.length,
+                            messages: newMessages
+                        };
+                        return updatedHistory;
+                    }
+                    return prevHistory;
+                });
+            }
+
+            return newMessages;
+        });
+
+        // Auto-generate chat ID if this is the first message
+        if (!currentChatId) {
+            const newChatId = `chat-${Date.now()}`;
+            setCurrentChatId(newChatId);
+        }
+    };
+
+    const handleDeleteChat = (chatId: string) => {
+        setChatHistory(prev => prev.filter(chat => chat.id !== chatId));
+        setDeletingChatId(null);
+
+        // If we're deleting the current chat, reset to new chat
+        if (currentChatId === chatId) {
+            setCurrentChatId(null);
+            setChatMessages([]);
+            setChatKey(prev => prev + 1);
+        }
+    };
+
+    const handleStartRename = (chatId: string, currentTitle: string) => {
+        setEditingChatId(chatId);
+        setEditingTitle(currentTitle);
+    };
+
+    const handleSaveRename = () => {
+        if (editingChatId && editingTitle.trim()) {
+            setChatHistory(prev =>
+                prev.map(chat =>
+                    chat.id === editingChatId
+                        ? { ...chat, title: editingTitle.trim() }
+                        : chat
+                )
+            );
+        }
+        setEditingChatId(null);
+        setEditingTitle('');
+    };
+
+    const handleCancelRename = () => {
+        setEditingChatId(null);
+        setEditingTitle('');
+    };
+
+    const handleClearAllHistory = () => {
+        setChatHistory([]);
+        if (user?.id) {
+            localStorage.removeItem(`chat-history-${user.id}`);
+        }
     };
 
     if (!user) {
@@ -84,70 +288,238 @@ export default function AssistantPage() {
 
     return (
         <div className="space-y-6">
-            <div className="space-y-6">
-                {/* Profile Setup Alert with Glass Effect */}
-                {!profile && (
-                    <GlassCard blur="lg" tint="light">
-                        <GlassCardContent className="py-4">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
+            {/* Profile Setup Alert */}
+            {!profile && (
+                <GlassCard blur="lg" tint="light" className="border-l-4 border-l-primary">
+                    <GlassCardContent className="py-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                                     <Info className="h-5 w-5 text-primary" />
-                                    <span className="text-sm font-medium">Set up your profile to get responses tailored to your market.</span>
                                 </div>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setActiveTab('profile')}
-                                >
+                                <div>
+                                    <p className="text-sm font-medium">Personalize your experience</p>
+                                    <p className="text-xs text-muted-foreground">Set up your profile to get responses tailored to your market</p>
+                                </div>
+                            </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                asChild
+                                className="hover:bg-primary hover:text-primary-foreground transition-colors"
+                            >
+                                <Link href="/brand/profile">
                                     <Settings className="h-4 w-4 mr-2" />
                                     <span>Setup Profile</span>
-                                </Button>
-                            </div>
-                        </GlassCardContent>
-                    </GlassCard>
-                )}
+                                </Link>
+                            </Button>
+                        </div>
+                    </GlassCardContent>
+                </GlassCard>
+            )}
 
-                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'chat' | 'profile')} className="w-full">
+            {/* Chat Controls */}
+            <div className="flex items-center justify-between">
+                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'chat' | 'history')}>
                     <TabsList>
-                        <TabsTrigger value="chat">
+                        <TabsTrigger value="chat" className="flex items-center gap-2">
                             <MessageSquare className="h-4 w-4" />
-                            <span className="whitespace-nowrap">Chat</span>
+                            <span>Chat</span>
                         </TabsTrigger>
-                        <TabsTrigger value="profile">
-                            <Settings className="h-4 w-4" />
-                            <span className="whitespace-nowrap">Profile</span>
+                        <TabsTrigger value="history" className="flex items-center gap-2">
+                            <History className="h-4 w-4" />
+                            <span>History</span>
                         </TabsTrigger>
                     </TabsList>
-
-                    <TabsContent value="chat" className="mt-6">
-                        <ChatInterface profile={profile} />
-                    </TabsContent>
-
-                    <TabsContent value="profile" className="mt-6">
-                        {profile ? (
-                            <AgentProfilePreview
-                                profile={profile}
-                                onUpdate={handleProfileUpdate}
-                                showEditButton={true}
-                            />
-                        ) : (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Agent Profile</CardTitle>
-                                    <CardDescription>
-                                        Set up your profile so the AI knows your market and expertise
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <Button asChild>
-                                        <Link href="/brand/profile">Set Up Profile</Link>
-                                    </Button>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </TabsContent>
                 </Tabs>
+
+                {activeTab === 'chat' && (
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleNewChat}
+                            className="flex items-center gap-2"
+                        >
+                            <Plus className="h-4 w-4" />
+                            <span>New Chat</span>
+                        </Button>
+                        {currentChatId && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleEndChat}
+                                className="flex items-center gap-2"
+                            >
+                                <RotateCcw className="h-4 w-4" />
+                                <span>End Chat</span>
+                            </Button>
+                        )}
+                    </div>
+                )}
             </div>
+
+            {/* Tab Content */}
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'chat' | 'history')}>
+                <TabsContent value="chat" className="mt-8">
+                    <Card className="h-[600px] overflow-hidden">
+                        <ChatInterface
+                            key={chatKey} // Force re-render when chat changes
+                            profile={profile}
+                            conversationId={currentChatId || undefined}
+                            initialMessages={chatMessages}
+                            onMessageSent={handleMessageSent}
+                            className="h-full"
+                        />
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="history" className="mt-8">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle>Chat History</CardTitle>
+                                    <CardDescription>
+                                        View and continue your previous conversations
+                                    </CardDescription>
+                                </div>
+                                {chatHistory.length > 0 && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setDeletingChatId('all')}
+                                        className="text-destructive hover:text-destructive"
+                                    >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Clear All
+                                    </Button>
+                                )}
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            {chatHistory.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                    <p className="text-muted-foreground">No chat history yet</p>
+                                    <p className="text-sm text-muted-foreground mt-2">
+                                        Start a conversation to see your chat history here
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {chatHistory.map((chat) => (
+                                        <div
+                                            key={chat.id}
+                                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                                        >
+                                            <div className="flex-1 min-w-0">
+                                                {editingChatId === chat.id ? (
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <Input
+                                                            value={editingTitle}
+                                                            onChange={(e) => setEditingTitle(e.target.value)}
+                                                            className="h-8"
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') handleSaveRename();
+                                                                if (e.key === 'Escape') handleCancelRename();
+                                                            }}
+                                                            autoFocus
+                                                        />
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={handleSaveRename}
+                                                            className="h-8 w-8 p-0"
+                                                        >
+                                                            <Check className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={handleCancelRename}
+                                                            className="h-8 w-8 p-0"
+                                                        >
+                                                            <X className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <h3 className="font-medium truncate">{chat.title}</h3>
+                                                )}
+                                                <p className="text-sm text-muted-foreground truncate">
+                                                    {chat.lastMessage}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    {new Date(chat.timestamp).toLocaleDateString()} • {chat.messageCount} messages
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-2 ml-4">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleLoadChat(chat.id)}
+                                                >
+                                                    Continue
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleStartRename(chat.id, chat.title)}
+                                                    className="h-8 w-8 p-0"
+                                                    title="Rename chat"
+                                                >
+                                                    <Edit2 className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => setDeletingChatId(chat.id)}
+                                                    className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                    title="Delete chat"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Delete Confirmation Dialog */}
+                    <AlertDialog open={!!deletingChatId} onOpenChange={() => setDeletingChatId(null)}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                    {deletingChatId === 'all' ? 'Clear All Chat History' : 'Delete Chat'}
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    {deletingChatId === 'all'
+                                        ? 'This will permanently delete all your chat history. This action cannot be undone.'
+                                        : 'This will permanently delete this chat conversation. This action cannot be undone.'
+                                    }
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                    onClick={() => {
+                                        if (deletingChatId === 'all') {
+                                            handleClearAllHistory();
+                                        } else if (deletingChatId) {
+                                            handleDeleteChat(deletingChatId);
+                                        }
+                                    }}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                    Delete
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }

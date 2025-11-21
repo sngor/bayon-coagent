@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useActionState, useTransition, useMemo } from 'react';
+import { useState, useEffect, useActionState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
 import { StandardPageLayout, StandardFormField } from '@/components/standard';
 import { StandardFormActions } from '@/components/standard/form-actions';
@@ -20,15 +20,14 @@ import type { Profile } from '@/lib/types';
 import { JsonLdDisplay } from '@/components/json-ld-display';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
-import { useItem } from '@/aws/dynamodb/hooks';
-import { getAgentProfileKeys } from '@/aws/dynamodb/keys';
 import { generateBioAction, updateProfilePhotoUrlAction, saveContentAction } from '@/app/actions';
-import { Save, User, Building2, Award, Phone, Globe, Share2 } from 'lucide-react';
+import { Save, User, Building2, Award, Phone, Share2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsList as TabsList, AnimatedTabsTrigger as TabsTrigger } from '@/components/ui/animated-tabs';
 import { ProfileImageUpload } from '@/components/profile-image-upload';
 import { ProfileCompletionChecklist } from '@/components/profile-completion-banner';
 import { StandardLoadingSpinner } from '@/components/standard';
+import { STICKY_POSITIONS } from '@/lib/utils';
 
 const initialBioState = {
     message: '',
@@ -98,7 +97,7 @@ function GenerateBioButton({ disabled }: { disabled?: boolean }) {
 // Section Components for better organization
 function BasicInfoSection({ profile, onInputChange }: { profile: Partial<Profile>, onInputChange: any }) {
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                 <User className="h-4 w-4" />
                 <span>BASIC INFORMATION</span>
@@ -117,7 +116,7 @@ function BasicInfoSection({ profile, onInputChange }: { profile: Partial<Profile
 
 function ProfessionalDetailsSection({ profile, onInputChange }: { profile: Partial<Profile>, onInputChange: any }) {
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                 <Award className="h-4 w-4" />
                 <span>PROFESSIONAL CREDENTIALS</span>
@@ -151,7 +150,7 @@ function BioSection({ profile, onInputChange, bioFormAction }: { profile: Partia
     const isGenerateDisabled = !profile.name || !profile.agencyName || !profile.yearsOfExperience;
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                     <Building2 className="h-4 w-4" />
@@ -188,7 +187,7 @@ function BioSection({ profile, onInputChange, bioFormAction }: { profile: Partia
 
 function ContactSection({ profile, onInputChange }: { profile: Partial<Profile>, onInputChange: any }) {
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                 <Phone className="h-4 w-4" />
                 <span>CONTACT INFORMATION</span>
@@ -222,7 +221,7 @@ function ContactSection({ profile, onInputChange }: { profile: Partial<Profile>,
 
 function SocialLinksSection({ profile, onInputChange }: { profile: Partial<Profile>, onInputChange: any }) {
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                 <Share2 className="h-4 w-4" />
                 <span>SOCIAL MEDIA</span>
@@ -245,10 +244,10 @@ function SocialLinksSection({ profile, onInputChange }: { profile: Partial<Profi
 
 function ProfileForm({ profile, onInputChange, onSave, isSaving, isLoading, bioFormAction, userId, onImageUpdate }: { profile: Partial<Profile>, onInputChange: any, onSave: any, isSaving: boolean, isLoading: boolean, bioFormAction: any, userId: string, onImageUpdate: (url: string) => void }) {
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* Profile Photo Card */}
             <Card>
-                <CardContent className="pt-6">
+                <CardContent className="p-8">
                     <div className="flex justify-center">
                         <ProfileImageUpload
                             userId={userId}
@@ -263,24 +262,32 @@ function ProfileForm({ profile, onInputChange, onSave, isSaving, isLoading, bioF
 
             {/* Main Profile Information Card */}
             <Card>
-                <CardHeader>
+                <CardHeader className="pb-6">
                     <CardTitle className="font-headline">Profile Information</CardTitle>
                     <CardDescription>
                         Build the professional profile that gets you found and trusted online
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-8">
+                <CardContent className="space-y-8 pt-0">
                     <BasicInfoSection profile={profile} onInputChange={onInputChange} />
-                    <Separator />
+                    <div className="py-2">
+                        <Separator />
+                    </div>
                     <ProfessionalDetailsSection profile={profile} onInputChange={onInputChange} />
-                    <Separator />
+                    <div className="py-2">
+                        <Separator />
+                    </div>
                     <BioSection profile={profile} onInputChange={onInputChange} bioFormAction={bioFormAction} />
-                    <Separator />
+                    <div className="py-2">
+                        <Separator />
+                    </div>
                     <ContactSection profile={profile} onInputChange={onInputChange} />
-                    <Separator />
+                    <div className="py-2">
+                        <Separator />
+                    </div>
                     <SocialLinksSection profile={profile} onInputChange={onInputChange} />
                 </CardContent>
-                <CardFooter className="flex justify-between items-center">
+                <CardFooter className="flex justify-between items-center pt-6">
                     <p className="text-sm text-muted-foreground">
                         <span className="text-destructive">*</span> Required fields
                     </p>
@@ -310,17 +317,33 @@ export default function ProfilePage() {
 
     const [bioState, bioFormAction] = useActionState(generateBioAction, initialBioState);
 
-    // Memoize DynamoDB keys
-    const agentProfilePK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
-    const agentProfileSK = useMemo(() => 'AGENT#main', []);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const { data: agentProfileData, isLoading } = useItem<Profile>(agentProfilePK, agentProfileSK);
-
+    // Load profile data using server action instead of useItem hook
     useEffect(() => {
-        if (agentProfileData) {
-            setProfile(agentProfileData);
-        }
-    }, [agentProfileData]);
+        const loadProfile = async () => {
+            if (!user?.id) {
+                setIsLoading(false);
+                return;
+            }
+
+            try {
+                setIsLoading(true);
+                const { getProfileAction } = await import('@/app/actions');
+                const result = await getProfileAction(user.id);
+
+                if (result.message === 'success' && result.data) {
+                    setProfile(result.data);
+                }
+            } catch (error) {
+                console.error('Failed to load profile:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadProfile();
+    }, [user?.id]);
 
     // Effect for server-side generation results
     useEffect(() => {
@@ -355,10 +378,16 @@ export default function ProfilePage() {
                 const result = await updateProfilePhotoUrlAction(user.id, url);
 
                 if (result.message === 'Profile photo updated successfully') {
-                    // Invalidate cache to force refresh of profile data throughout the app
-                    const { getCache } = await import('@/aws/dynamodb/hooks/cache');
-                    const cache = getCache();
-                    cache.invalidatePartition(`USER#${user.id}`);
+                    // Refetch the profile data to reflect the changes
+                    try {
+                        const { getProfileAction } = await import('@/app/actions');
+                        const updatedResult = await getProfileAction(user.id);
+                        if (updatedResult.message === 'success' && updatedResult.data) {
+                            setProfile(updatedResult.data);
+                        }
+                    } catch (refetchError) {
+                        console.error('Failed to refetch profile after photo update:', refetchError);
+                    }
 
                     toast({
                         title: 'Profile Photo Updated!',
@@ -420,6 +449,8 @@ export default function ProfilePage() {
                 yearsOfExperience: Number(profile.yearsOfExperience) || 0,
             };
 
+            console.log('Saving profile data:', dataToSave);
+
             const formData = new FormData();
             formData.append('userId', user.id);
             formData.append('profile', JSON.stringify(dataToSave));
@@ -427,11 +458,19 @@ export default function ProfilePage() {
             const { saveProfileAction } = await import('@/app/actions');
             const result = await saveProfileAction({}, formData);
 
+            console.log('Save result:', result);
+
             if (result.message === 'success') {
-                // Invalidate cache to force refresh of profile data throughout the app
-                const { getCache } = await import('@/aws/dynamodb/hooks/cache');
-                const cache = getCache();
-                cache.invalidatePartition(`USER#${user.id}`);
+                // Refetch the profile data to reflect the changes
+                try {
+                    const { getProfileAction } = await import('@/app/actions');
+                    const updatedResult = await getProfileAction(user.id);
+                    if (updatedResult.message === 'success' && updatedResult.data) {
+                        setProfile(updatedResult.data);
+                    }
+                } catch (refetchError) {
+                    console.error('Failed to refetch profile:', refetchError);
+                }
 
                 toast({
                     title: 'Profile Saved!',
@@ -485,9 +524,7 @@ export default function ProfilePage() {
 
 
     return (
-        <StandardPageLayout
-            spacing="default"
-        >
+        <div className="space-y-6">
             <Tabs defaultValue="profile">
                 <TabsList>
                     <TabsTrigger value="profile">
@@ -497,8 +534,8 @@ export default function ProfilePage() {
                         <span className="whitespace-nowrap">Schema</span>
                     </TabsTrigger>
                 </TabsList>
-                <TabsContent value="profile" className="mt-6">
-                    <div className="grid gap-6 lg:grid-cols-3">
+                <TabsContent value="profile" className="mt-8">
+                    <div className="grid gap-8 lg:grid-cols-3">
                         <div className="lg:col-span-2">
                             <ProfileForm
                                 profile={profile}
@@ -512,33 +549,33 @@ export default function ProfilePage() {
                             />
                         </div>
                         <div className="lg:col-span-1">
-                            <div className="sticky top-6">
+                            <div className={`sticky ${STICKY_POSITIONS.BELOW_HUB_TABS}`}>
                                 <ProfileCompletionChecklist profile={profile} />
                             </div>
                         </div>
                     </div>
                 </TabsContent>
-                <TabsContent value="schema" className="mt-6">
+                <TabsContent value="schema" className="mt-8">
                     <div className="grid gap-8 md:grid-cols-2">
                         <Card>
-                            <CardHeader>
+                            <CardHeader className="pb-6">
                                 <CardTitle className="font-headline">RealEstateAgent Schema</CardTitle>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="pt-0">
                                 <JsonLdDisplay schema={generateAgentSchema(profile)} />
                             </CardContent>
                         </Card>
                         <Card>
-                            <CardHeader>
+                            <CardHeader className="pb-6">
                                 <CardTitle className="font-headline">RealEstateAgency Schema</CardTitle>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="pt-0">
                                 <JsonLdDisplay schema={generateAgencySchema(profile)} />
                             </CardContent>
                         </Card>
                     </div>
                 </TabsContent>
             </Tabs>
-        </StandardPageLayout>
+        </div>
     );
 }
