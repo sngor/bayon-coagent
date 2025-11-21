@@ -397,3 +397,171 @@ export function getPerformanceMetricsKeys(
     SK: `METRICS#${listingId}#${date}`,
   };
 }
+
+// ==================== Market Intelligence Alerts Keys ====================
+
+/**
+ * Generates keys for Alert
+ * Pattern: PK: USER#<userId>, SK: ALERT#<timestamp>#<alertId>
+ * GSI1: PK: ALERT#<userId>#<type>, SK: <timestamp>
+ */
+export function getAlertKeys(
+  userId: string,
+  alertId: string,
+  timestamp: string,
+  alertType?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `ALERT#${timestamp}#${alertId}`,
+  };
+
+  // Add GSI keys for querying alerts by type
+  if (alertType) {
+    keys.GSI1PK = `ALERT#${userId}#${alertType}`;
+    keys.GSI1SK = timestamp;
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for AlertSettings
+ * Pattern: PK: USER#<userId>, SK: SETTINGS#ALERTS
+ */
+export function getAlertSettingsKeys(userId: string): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: 'SETTINGS#ALERTS',
+  };
+}
+
+/**
+ * Generates keys for NeighborhoodProfile
+ * Pattern: PK: USER#<userId>, SK: NEIGHBORHOOD#<profileId>
+ */
+export function getNeighborhoodProfileKeys(
+  userId: string,
+  profileId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `NEIGHBORHOOD#${profileId}`,
+  };
+}
+
+/**
+ * Generates keys for LifeEvent
+ * Pattern: PK: USER#<userId>, SK: LIFE_EVENT#<eventId>
+ */
+export function getLifeEventKeys(
+  userId: string,
+  eventId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `LIFE_EVENT#${eventId}`,
+  };
+}
+
+/**
+ * Generates keys for Prospect
+ * Pattern: PK: USER#<userId>, SK: PROSPECT#<prospectId>
+ */
+export function getProspectKeys(
+  userId: string,
+  prospectId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `PROSPECT#${prospectId}`,
+  };
+}
+
+/**
+ * Generates keys for TrackedCompetitor
+ * Pattern: PK: USER#<userId>, SK: TRACKED_COMPETITOR#<competitorId>
+ */
+export function getTrackedCompetitorKeys(
+  userId: string,
+  competitorId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `TRACKED_COMPETITOR#${competitorId}`,
+  };
+}
+
+/**
+ * Generates keys for ListingEvent
+ * Pattern: PK: USER#<userId>, SK: LISTING_EVENT#<eventId>
+ */
+export function getListingEventKeys(
+  userId: string,
+  eventId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `LISTING_EVENT#${eventId}`,
+  };
+}
+
+/**
+ * Generates keys for TrendIndicators
+ * Pattern: PK: USER#<userId>, SK: TREND#<neighborhood>#<period>
+ */
+export function getTrendIndicatorsKeys(
+  userId: string,
+  neighborhood: string,
+  period: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `TREND#${neighborhood}#${period}`,
+  };
+}
+
+/**
+ * Generates keys for TargetArea
+ * Pattern: PK: USER#<userId>, SK: TARGET_AREA#<areaId>
+ */
+export function getTargetAreaKeys(
+  userId: string,
+  areaId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `TARGET_AREA#${areaId}`,
+  };
+}
+
+/**
+ * Generates keys for PriceHistory
+ * Pattern: PK: USER#<userId>, SK: PRICE_HISTORY#<mlsNumber>
+ */
+export function getPriceHistoryKeys(
+  userId: string,
+  mlsNumber: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `PRICE_HISTORY#${mlsNumber}`,
+  };
+}
+
+/**
+ * Generates keys for ListingSnapshot
+ * Pattern: PK: USER#<userId>, SK: LISTING_SNAPSHOT#<mlsNumber>
+ */
+export function getListingSnapshotKeys(
+  userId: string,
+  mlsNumber: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `LISTING_SNAPSHOT#${mlsNumber}`,
+  };
+}

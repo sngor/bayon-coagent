@@ -36,6 +36,7 @@ import {
   MessageSquare,
   Bell,
   HelpCircle,
+  Calculator,
 } from 'lucide-react';
 import {
   HouseIcon,
@@ -58,6 +59,7 @@ const navItems = [
   { href: '/studio', icon: Wand2, label: 'Studio' },
   { href: '/brand', icon: Target, label: 'Brand' },
   { href: '/market', icon: AISparkleIcon, label: 'Market', customIcon: true },
+  { href: '/tools', icon: Calculator, label: 'Tools' },
   { href: '/library', icon: Library, label: 'Library' },
   { href: '/training', icon: GraduationCap, label: 'Training' },
 ];

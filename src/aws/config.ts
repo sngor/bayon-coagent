@@ -29,6 +29,13 @@ export interface BedrockConfig {
   endpoint?: string;
 }
 
+export interface SESConfig {
+  region: string;
+  fromEmail: string;
+  replyToEmail?: string;
+  endpoint?: string;
+}
+
 /**
  * Valid Bedrock model IDs (inference profiles)
  * AWS now requires inference profiles for all Claude models
@@ -50,6 +57,7 @@ export interface AWSConfig {
   dynamodb: DynamoDBConfig;
   s3: S3Config;
   bedrock: BedrockConfig;
+  ses: SESConfig;
 }
 
 /**
@@ -69,11 +77,11 @@ function getEnvironment(): Environment {
   if (isLocalEnvironment()) {
     return 'local';
   }
-  
+
   if (process.env.NODE_ENV === 'production') {
     return 'production';
   }
-  
+
   return 'development';
 }
 
@@ -111,6 +119,13 @@ export function getAWSConfig(): AWSConfig {
         'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
       region: process.env.BEDROCK_REGION || region,
       endpoint: undefined, // Bedrock typically doesn't have local emulation
+    },
+
+    ses: {
+      region: process.env.SES_REGION || region,
+      fromEmail: process.env.SES_FROM_EMAIL || 'noreply@bayoncoagent.com',
+      replyToEmail: process.env.SES_REPLY_TO_EMAIL,
+      endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
   };
 }

@@ -432,6 +432,194 @@ Resources:
                   - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/stability.stable-diffusion-xl-v1
 
   # ==========================================
+  # Alert Processing Lambda Functions
+  # ==========================================
+
+  # Life Event Analysis Lambda (Daily)
+  LifeEventProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-life-event-processor-${Environment}
+      CodeUri: src/lambda/
+      Handler: life-event-processor.handler
+      Runtime: nodejs18.x
+      Timeout: 900 # 15 minutes
+      MemorySize: 2048
+      Role: !GetAtt ApplicationRole.Arn
+      Events:
+        DailySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 6 * * ? *) # Daily at 6 AM UTC
+            Description: Daily life event analysis
+            Enabled: true
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: LifeEventProcessor
+
+  # Competitor Monitoring Lambda (Every 4 hours)
+  CompetitorMonitorProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-competitor-monitor-${Environment}
+      CodeUri: src/lambda/
+      Handler: competitor-monitor-processor.handler
+      Runtime: nodejs18.x
+      Timeout: 900 # 15 minutes
+      MemorySize: 2048
+      Role: !GetAtt ApplicationRole.Arn
+      Events:
+        FourHourlySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 */4 * * ? *) # Every 4 hours
+            Description: Competitor monitoring every 4 hours
+            Enabled: true
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: CompetitorMonitor
+
+  # Neighborhood Trend Detection Lambda (Daily)
+  TrendDetectorProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-trend-detector-${Environment}
+      CodeUri: src/lambda/
+      Handler: trend-detector-processor.handler
+      Runtime: nodejs18.x
+      Timeout: 900 # 15 minutes
+      MemorySize: 2048
+      Role: !GetAtt ApplicationRole.Arn
+      Events:
+        DailySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 7 * * ? *) # Daily at 7 AM UTC (1 hour after life events)
+            Description: Daily neighborhood trend analysis
+            Enabled: true
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: TrendDetector
+
+  # Price Reduction Monitoring Lambda (Every 4 hours)
+  PriceReductionProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-price-reduction-monitor-${Environment}
+      CodeUri: src/lambda/
+      Handler: price-reduction-processor.handler
+      Runtime: nodejs18.x
+      Timeout: 900 # 15 minutes
+      MemorySize: 2048
+      Role: !GetAtt ApplicationRole.Arn
+      Events:
+        FourHourlySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(30 */4 * * ? *) # Every 4 hours, offset by 30 minutes from competitor monitoring
+            Description: Price reduction monitoring every 4 hours
+            Enabled: true
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: PriceReductionMonitor
+
+  # Notification Processing Lambda (Every 15 minutes for queue processing, scheduled for digests)
+  NotificationProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-notification-processor-${Environment}
+      CodeUri: src/lambda/
+      Handler: notification-processor.handler
+      Timeout: 300
+      MemorySize: 512
+      Environment:
+        Variables:
+          SES_FROM_EMAIL: !Sub noreply@bayoncoagent.com
+          SES_REGION: !Ref AWS::Region
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoDBTable
+        - SESCrudPolicy:
+            IdentityName: "*"
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendBulkTemplatedEmail
+                - ses:CreateTemplate
+                - ses:UpdateTemplate
+                - ses:GetTemplate
+                - ses:ListTemplates
+              Resource: "*"
+      Events:
+        # Process notification queue every 15 minutes
+        QueueProcessingSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: rate(15 minutes)
+            Input: !Sub |
+              {
+                "source": "aws.events",
+                "detail-type": "Scheduled Event",
+                "detail": {
+                  "type": "process-queue"
+                }
+              }
+        # Daily digest at 9 AM UTC (adjust as needed)
+        DailyDigestSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 9 * * ? *)
+            Input: !Sub |
+              {
+                "source": "aws.events",
+                "detail-type": "Scheduled Event",
+                "detail": {
+                  "type": "daily-digest"
+                }
+              }
+        # Weekly digest on Mondays at 9 AM UTC
+        WeeklyDigestSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 9 ? * MON *)
+            Input: !Sub |
+              {
+                "source": "aws.events",
+                "detail-type": "Scheduled Event",
+                "detail": {
+                  "type": "weekly-digest"
+                }
+              }
+      DeadLetterQueue:
+        Type: SQS
+        TargetArn: !GetAtt NotificationProcessorDLQ.Arn
+
+  # Dead Letter Queue for notification processor
+  NotificationProcessorDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub bayon-coagent-notification-processor-dlq-${Environment}
+      MessageRetentionPeriod: 1209600 # 14 days
+
+  # ==========================================
   # CloudWatch Monitoring
   # ==========================================
   AlarmTopic:
@@ -504,6 +692,107 @@ Resources:
         - !Ref AlarmTopic
       TreatMissingData: notBreaching
 
+  # Lambda Function Alarms
+  LifeEventProcessorErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-life-event-processor-errors
+      AlarmDescription: Alert when life event processor has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref LifeEventProcessorFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  CompetitorMonitorErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-competitor-monitor-errors
+      AlarmDescription: Alert when competitor monitor has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref CompetitorMonitorProcessorFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  TrendDetectorErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-trend-detector-errors
+      AlarmDescription: Alert when trend detector has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref TrendDetectorProcessorFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  PriceReductionProcessorErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-price-reduction-processor-errors
+      AlarmDescription: Alert when price reduction processor has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref PriceReductionProcessorFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  NotificationProcessorErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-notification-processor-errors
+      AlarmDescription: Alert when notification processor has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref NotificationProcessorFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
   # ==========================================
   # CloudWatch Dashboard
   # ==========================================
@@ -571,6 +860,81 @@ Resources:
                 "title": "Bedrock Activity",
                 "yAxis": {"left": {"min": 0}}
               }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${LifeEventProcessorFunction}", {"stat": "Sum"}],
+                  [".", "Errors", ".", ".", {"stat": "Sum"}],
+                  [".", "Duration", ".", ".", {"stat": "Average"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Life Event Processor",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${CompetitorMonitorProcessorFunction}", {"stat": "Sum"}],
+                  [".", "Errors", ".", ".", {"stat": "Sum"}],
+                  [".", "Duration", ".", ".", {"stat": "Average"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Competitor Monitor",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${TrendDetectorProcessorFunction}", {"stat": "Sum"}],
+                  [".", "Errors", ".", ".", {"stat": "Sum"}],
+                  [".", "Duration", ".", ".", {"stat": "Average"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Trend Detector",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${PriceReductionProcessorFunction}", {"stat": "Sum"}],
+                  [".", "Errors", ".", ".", {"stat": "Sum"}],
+                  [".", "Duration", ".", ".", {"stat": "Average"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Price Reduction Monitor",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${NotificationProcessorFunction}", {"stat": "Sum"}],
+                  [".", "Errors", ".", ".", {"stat": "Sum"}],
+                  [".", "Duration", ".", ".", {"stat": "Average"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Notification Processor",
+                "yAxis": {"left": {"min": 0}}
+              }
             }
           ]
         }
@@ -633,3 +997,34 @@ Outputs:
     Value: !Ref AWS::Region
     Export:
       Name: !Sub ${Environment}-Region
+
+  # Lambda Function Outputs
+  LifeEventProcessorFunctionArn:
+    Description: Life Event Processor Lambda Function ARN
+    Value: !GetAtt LifeEventProcessorFunction.Arn
+    Export:
+      Name: !Sub ${Environment}-LifeEventProcessorFunctionArn
+
+  CompetitorMonitorProcessorFunctionArn:
+    Description: Competitor Monitor Processor Lambda Function ARN
+    Value: !GetAtt CompetitorMonitorProcessorFunction.Arn
+    Export:
+      Name: !Sub ${Environment}-CompetitorMonitorProcessorFunctionArn
+
+  TrendDetectorProcessorFunctionArn:
+    Description: Trend Detector Processor Lambda Function ARN
+    Value: !GetAtt TrendDetectorProcessorFunction.Arn
+    Export:
+      Name: !Sub ${Environment}-TrendDetectorProcessorFunctionArn
+
+  PriceReductionProcessorFunctionArn:
+    Description: Price Reduction Processor Lambda Function ARN
+    Value: !GetAtt PriceReductionProcessorFunction.Arn
+    Export:
+      Name: !Sub ${Environment}-PriceReductionProcessorFunctionArn
+
+  NotificationProcessorFunctionArn:
+    Description: Notification Processor Lambda Function ARN
+    Value: !GetAtt NotificationProcessorFunction.Arn
+    Export:
+      Name: !Sub ${Environment}-NotificationProcessorFunctionArn

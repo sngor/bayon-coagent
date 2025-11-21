@@ -90,15 +90,9 @@ export default function ResearchAgentPage() {
       }
 
       try {
-        const response = await fetch(`/api/research-reports?userId=${user.id}&limit=3`);
-        const data = await response.json();
-
-        if (data.success) {
-          setSavedReports(data.reports);
-        } else {
-          console.error('Failed to fetch reports:', data.error);
-          setSavedReports([]);
-        }
+        // TODO: Implement research-reports API route
+        // For now, just set empty reports to prevent hanging
+        setSavedReports([]);
       } catch (error) {
         console.error('Failed to fetch reports:', error);
         setSavedReports([]);

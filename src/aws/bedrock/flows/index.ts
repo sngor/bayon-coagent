@@ -42,6 +42,9 @@ export { runPropertyValuation, type PropertyValuationInput, type PropertyValuati
 // Renovation ROI
 export { runRenovationROIAnalysis, type RenovationROIInput, type RenovationROIOutput } from './renovation-roi';
 
+// Neighborhood Profile
+export { runNeighborhoodProfileSynthesis, type NeighborhoodProfileInput, type NeighborhoodProfileOutput } from './neighborhood-profile-flow';
+
 // Review Analysis
 export { analyzeMultipleReviews, type AnalyzeMultipleReviewsInput, type AnalyzeMultipleReviewsOutput } from './analyze-multiple-reviews';
 export { analyzeReviewSentiment, type AnalyzeReviewSentimentInput, type AnalyzeReviewSentimentOutput } from './analyze-review-sentiment';

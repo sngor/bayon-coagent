@@ -24,6 +24,9 @@ export type { DynamoDBItem, QueryOptions, UpdateOptions } from './dynamodb/types
 // S3
 export { getS3Client } from './s3/client';
 
+// SES
+export { getSESClient } from './ses/client';
+
 // Bedrock
 export { getBedrockClient } from './bedrock/client';
 

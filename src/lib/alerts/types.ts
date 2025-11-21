@@ -220,9 +220,10 @@ export interface Prospect {
 export interface Competitor {
     id: string;
     name: string;
-    agency: string;
+    mlsId?: string;
+    agency?: string;
     licenseNumber?: string;
-    targetAreas: string[];
+    targetAreas?: string[];
     isActive: boolean;
     addedAt: string;
 }

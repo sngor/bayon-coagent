@@ -34,7 +34,18 @@ export type EntityType =
   | 'MLSConnection'
   | 'SocialConnection'
   | 'SocialPost'
-  | 'PerformanceMetrics';
+  | 'PerformanceMetrics'
+  | 'Alert'
+  | 'AlertSettings'
+  | 'NeighborhoodProfile'
+  | 'LifeEvent'
+  | 'Prospect'
+  | 'TrackedCompetitor'
+  | 'ListingEvent'
+  | 'TrendIndicators'
+  | 'TargetArea'
+  | 'PriceHistory'
+  | 'ListingSnapshot';
 
 /**
  * Base DynamoDB item structure

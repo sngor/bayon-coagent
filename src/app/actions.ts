@@ -60,6 +60,11 @@ import {
   type RenovationROIOutput,
 } from '@/aws/bedrock/flows/renovation-roi';
 import {
+  runNeighborhoodProfileSynthesis,
+  type NeighborhoodProfileInput,
+  type NeighborhoodProfileOutput,
+} from '@/aws/bedrock/flows/neighborhood-profile-flow';
+import {
   generateMarketUpdate,
   type GenerateMarketUpdateInput,
   type GenerateMarketUpdateOutput,
@@ -133,7 +138,14 @@ import {
   getResearchReportKeys,
   getCompetitorKeys,
   getTrainingProgressKeys,
+  getNeighborhoodProfileKeys,
+  getProfileKeys,
 } from '@/aws/dynamodb/keys';
+import { getAlertDataAccess } from '@/lib/alerts/data-access';
+import type { AlertSettings, TargetArea, NeighborhoodProfile, AlertsResponse } from '@/lib/alerts/types';
+import type { Profile } from '@/lib/types';
+import { validateTargetArea } from '@/lib/alerts/validation';
+import { aggregateNeighborhoodData } from '@/lib/alerts/neighborhood-profile-data-aggregation';
 import { v4 as uuidv4 } from 'uuid';
 
 const guideSchema = z.object({
@@ -721,6 +733,387 @@ export async function runRenovationROIAction(prevState: any, formData: FormData)
       message: `Renovation ROI analysis failed: ${errorMessage}`,
       errors: {},
       data: null,
+    };
+  }
+}
+
+const neighborhoodProfileSchema = z.object({
+  location: z.string().min(3, 'Please provide a specific location (address, ZIP code, or neighborhood name).'),
+});
+
+export async function generateNeighborhoodProfileAction(
+  prevState: any,
+  formData: FormData
+): Promise<{
+  message: string;
+  data: (NeighborhoodProfile & { reportId?: string }) | null;
+  errors: any;
+}> {
+  const validatedFields = neighborhoodProfileSchema.safeParse({
+    location: formData.get('location'),
+  });
+
+  if (!validatedFields.success) {
+    const fieldErrors = validatedFields.error.flatten().fieldErrors;
+    return {
+      message: fieldErrors.location?.[0] || "Validation failed.",
+      errors: fieldErrors,
+      data: null,
+    };
+  }
+
+  try {
+    // Get current user from Cognito
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user || !user.id) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: { auth: ['You must be logged in to generate neighborhood profiles'] },
+      };
+    }
+
+    const { location } = validatedFields.data;
+
+    // Step 1: Orchestrate data collection from multiple sources
+    const aggregatedData = await aggregateNeighborhoodData(location);
+
+    // Step 2: Call AI synthesis flow
+    const aiInput: NeighborhoodProfileInput = {
+      location,
+      marketData: aggregatedData.marketData,
+      demographics: aggregatedData.demographics,
+      schools: aggregatedData.schools,
+      amenities: aggregatedData.amenities,
+      walkabilityScore: aggregatedData.walkability.score,
+      walkabilityDescription: aggregatedData.walkability.description,
+      walkabilityFactors: aggregatedData.walkability.factors,
+    };
+
+    const aiOutput = await runNeighborhoodProfileSynthesis(aiInput);
+
+    // Step 3: Create complete neighborhood profile
+    const profileId = `neighborhood-${Date.now()}-${uuidv4().substring(0, 8)}`;
+    const profile: NeighborhoodProfile = {
+      id: profileId,
+      userId: user.id,
+      location,
+      generatedAt: new Date().toISOString(),
+      marketData: aggregatedData.marketData,
+      demographics: aggregatedData.demographics,
+      schools: aggregatedData.schools,
+      amenities: aggregatedData.amenities,
+      walkabilityScore: aggregatedData.walkability.score,
+      aiInsights: aiOutput.aiInsights,
+    };
+
+    const repository = getRepository();
+
+    // Step 4: Save profile to DynamoDB
+    const profileKeys = getNeighborhoodProfileKeys(user.id, profileId);
+    await repository.create(profileKeys.PK, profileKeys.SK, 'NeighborhoodProfile', profile);
+
+    // Step 5: Save profile to Library under Reports
+    const reportId = `neighborhood-profile-${Date.now()}`;
+    const reportKeys = getResearchReportKeys(user.id, reportId);
+
+    const reportData = {
+      id: reportId,
+      topic: `Neighborhood Profile: ${location}`,
+      report: `# Neighborhood Profile: ${location}\n\n${aiOutput.aiInsights}\n\n## Market Commentary\n${aiOutput.marketCommentary}\n\n## Demographic Insights\n${aiOutput.demographicInsights}\n\n## Lifestyle Factors\n${aiOutput.lifestyleFactors}\n\n## School Analysis\n${aiOutput.schoolAnalysis}\n\n## Investment Potential\n${aiOutput.investmentPotential}`,
+      summary: aiOutput.keyHighlights?.join(', ') || `Comprehensive neighborhood analysis for ${location}`,
+      type: 'neighborhood-profile',
+      profileId: profileId, // Link to the full profile
+    };
+
+    await repository.create(reportKeys.PK, reportKeys.SK, 'ResearchReport', reportData);
+
+    // Step 6: Return complete profile with report ID
+    const result = {
+      ...profile,
+      reportId,
+    };
+
+    return {
+      message: 'success',
+      data: result,
+      errors: {},
+    };
+  } catch (error) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred during neighborhood profile generation.');
+    return {
+      message: `Neighborhood profile generation failed: ${errorMessage}`,
+      errors: {},
+      data: null,
+    };
+  }
+}
+
+export async function exportNeighborhoodProfileAction(
+  profileId: string,
+  format: 'pdf' | 'html'
+): Promise<{
+  message: string;
+  data: { url: string } | null;
+  errors?: string[];
+}> {
+  try {
+    // Get current user from Cognito
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user || !user.id) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to export neighborhood profiles'],
+      };
+    }
+
+    if (!profileId) {
+      return {
+        message: 'Profile ID is required',
+        data: null,
+        errors: ['Profile ID is required'],
+      };
+    }
+
+    // Get the neighborhood profile
+    const repository = getRepository();
+    const profileKeys = getNeighborhoodProfileKeys(user.id, profileId);
+    const profileResult = await repository.get(profileKeys.PK, profileKeys.SK);
+
+    if (!profileResult || !profileResult.Data) {
+      return {
+        message: 'Neighborhood profile not found',
+        data: null,
+        errors: ['Neighborhood profile not found'],
+      };
+    }
+
+    const profile = profileResult.Data as NeighborhoodProfile;
+
+    // Get user profile for branding information
+    const userProfileKeys = getProfileKeys(user.id);
+    const userProfileResult = await repository.get(userProfileKeys.PK, userProfileKeys.SK);
+    const agentProfile = userProfileResult?.Data as Profile || {};
+
+    // Get AI output from the profile or regenerate if needed
+    const aiOutput = {
+      aiInsights: profile.aiInsights,
+      marketCommentary: '', // These would be stored separately or regenerated
+      demographicInsights: '',
+      lifestyleFactors: '',
+      schoolAnalysis: '',
+      investmentPotential: '',
+      keyHighlights: [],
+      targetBuyers: [],
+      marketTrends: [],
+      recommendations: []
+    };
+
+    let exportUrl: string;
+
+    if (format === 'pdf') {
+      // Generate PDF export
+      const { generatePDF, uploadPDFExport } = await import('@/lib/alerts/neighborhood-profile-export');
+
+      // Note: PDF generation requires client-side execution for html2canvas
+      // For server-side, we'll use a simplified approach or return HTML for now
+      // This is a limitation that would need to be addressed with server-side PDF generation
+      return {
+        message: 'PDF generation requires client-side processing. Please use the HTML export for now.',
+        data: null,
+        errors: ['PDF generation not available in server environment'],
+      };
+
+    } else {
+      // Generate HTML export
+      const { generateHTML, uploadHTMLExport } = await import('@/lib/alerts/neighborhood-profile-export');
+
+      const htmlContent = generateHTML(profile, agentProfile, aiOutput);
+      exportUrl = await uploadHTMLExport(user.id, profileId, htmlContent, profile.location);
+    }
+
+    // Update the profile with export URL
+    const updates: Partial<NeighborhoodProfile> = {
+      exportUrls: {
+        ...profile.exportUrls,
+        [format]: exportUrl,
+      },
+    };
+
+    await repository.update(profileKeys.PK, profileKeys.SK, updates);
+
+    return {
+      message: 'Export generated successfully',
+      data: { url: exportUrl },
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to export neighborhood profile');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+export async function uploadPDFToS3Action(
+  profileId: string,
+  pdfBuffer: Buffer,
+  location: string
+): Promise<{
+  message: string;
+  data: { url: string } | null;
+  errors?: string[];
+}> {
+  try {
+    // Get current user from Cognito
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user || !user.id) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to upload PDF exports'],
+      };
+    }
+
+    // Upload PDF to S3
+    const { uploadPDFExport } = await import('@/lib/alerts/neighborhood-profile-export');
+    const url = await uploadPDFExport(user.id, profileId, pdfBuffer, location);
+
+    // Update the profile with export URL
+    const repository = getRepository();
+    const profileKeys = getNeighborhoodProfileKeys(user.id, profileId);
+    const updates: Partial<NeighborhoodProfile> = {
+      exportUrls: {
+        pdf: url,
+      },
+    };
+
+    await repository.update(profileKeys.PK, profileKeys.SK, updates);
+
+    return {
+      message: 'success',
+      data: { url },
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to upload PDF export');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+export async function regenerateNeighborhoodProfileAction(
+  profileId: string
+): Promise<{
+  message: string;
+  data: NeighborhoodProfile | null;
+  errors?: string[];
+}> {
+  try {
+    // Get current user from Cognito
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user || !user.id) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to regenerate neighborhood profiles'],
+      };
+    }
+
+    if (!profileId) {
+      return {
+        message: 'Profile ID is required',
+        data: null,
+        errors: ['Profile ID is required'],
+      };
+    }
+
+    // Get the existing neighborhood profile
+    const repository = getRepository();
+    const profileKeys = getNeighborhoodProfileKeys(user.id, profileId);
+    const profileResult = await repository.get(profileKeys.PK, profileKeys.SK);
+
+    if (!profileResult || !profileResult.Data) {
+      return {
+        message: 'Neighborhood profile not found',
+        data: null,
+        errors: ['Neighborhood profile not found'],
+      };
+    }
+
+    const existingProfile = profileResult.Data as NeighborhoodProfile;
+
+    // Step 1: Re-aggregate data with updated information
+    const aggregatedData = await aggregateNeighborhoodData(existingProfile.location);
+
+    // Step 2: Call AI synthesis flow with updated data
+    const aiInput: NeighborhoodProfileInput = {
+      location: existingProfile.location,
+      marketData: aggregatedData.marketData,
+      demographics: aggregatedData.demographics,
+      schools: aggregatedData.schools,
+      amenities: aggregatedData.amenities,
+      walkabilityScore: aggregatedData.walkability.score,
+      walkabilityDescription: aggregatedData.walkability.description,
+      walkabilityFactors: aggregatedData.walkability.factors,
+    };
+
+    const aiOutput = await runNeighborhoodProfileSynthesis(aiInput);
+
+    // Step 3: Update the profile with new data
+    const updatedProfile: NeighborhoodProfile = {
+      ...existingProfile,
+      generatedAt: new Date().toISOString(),
+      marketData: aggregatedData.marketData,
+      demographics: aggregatedData.demographics,
+      schools: aggregatedData.schools,
+      amenities: aggregatedData.amenities,
+      walkabilityScore: aggregatedData.walkability.score,
+      aiInsights: aiOutput.aiInsights,
+      // Clear export URLs since they're now outdated
+      exportUrls: undefined,
+    };
+
+    // Step 4: Save updated profile to DynamoDB
+    await repository.update(profileKeys.PK, profileKeys.SK, updatedProfile);
+
+    // Step 5: Update the corresponding report in Library
+    const reportKeys = getResearchReportKeys(user.id, `neighborhood-profile-${profileId}`);
+    const reportUpdates = {
+      report: `# Neighborhood Profile: ${existingProfile.location}\n\n${aiOutput.aiInsights}\n\n## Market Commentary\n${aiOutput.marketCommentary}\n\n## Demographic Insights\n${aiOutput.demographicInsights}\n\n## Lifestyle Factors\n${aiOutput.lifestyleFactors}\n\n## School Analysis\n${aiOutput.schoolAnalysis}\n\n## Investment Potential\n${aiOutput.investmentPotential}`,
+      summary: aiOutput.keyHighlights?.join(', ') || `Updated comprehensive neighborhood analysis for ${existingProfile.location}`,
+      updatedAt: Date.now(),
+    };
+
+    // Try to update the report, but don't fail if it doesn't exist
+    try {
+      await repository.update(reportKeys.PK, reportKeys.SK, reportUpdates);
+    } catch (error) {
+      console.warn('Could not update corresponding report:', error);
+    }
+
+    return {
+      message: 'Neighborhood profile regenerated successfully',
+      data: updatedProfile,
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to regenerate neighborhood profile');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
     };
   }
 }
@@ -2730,6 +3123,1374 @@ export async function getRecentActivityAction(userId?: string): Promise<{
     console.error('Get recent activity error:', error);
     return {
       message: 'Failed to retrieve recent activity',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+// ==================== Alert Settings Actions ====================
+
+/**
+ * Validation schemas for alert settings
+ */
+const alertSettingsSchema = z.object({
+  enabledAlertTypes: z.array(z.enum([
+    'life-event-lead',
+    'competitor-new-listing',
+    'competitor-price-reduction',
+    'competitor-withdrawal',
+    'neighborhood-trend',
+    'price-reduction'
+  ])),
+  frequency: z.enum(['real-time', 'daily', 'weekly']),
+  digestTime: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).optional(),
+  leadScoreThreshold: z.number().min(50).max(90),
+  priceRangeFilters: z.object({
+    min: z.number().positive().optional(),
+    max: z.number().positive().optional(),
+  }).optional(),
+  trackedCompetitors: z.array(z.string()).max(20),
+});
+
+const targetAreaSchema = z.object({
+  type: z.enum(['zip', 'city', 'polygon']),
+  value: z.union([
+    z.string().min(1), // For ZIP codes and city names
+    z.object({
+      coordinates: z.array(z.object({
+        lat: z.number().min(-90).max(90),
+        lng: z.number().min(-180).max(180),
+      })).min(3), // Minimum 3 points for a polygon
+    }),
+  ]),
+  label: z.string().min(1),
+});
+
+
+
+/**
+ * Get alert settings for the current user
+ */
+export async function getAlertSettingsAction(): Promise<{
+  message: string;
+  data: AlertSettings | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to view alert settings'],
+      };
+    }
+
+    const dataAccess = getAlertDataAccess();
+    const settings = await dataAccess.getAlertSettings(user.id);
+
+    return {
+      message: 'Alert settings retrieved successfully',
+      data: settings,
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to retrieve alert settings');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Update alert settings for the current user
+ */
+export async function updateAlertSettingsAction(
+  prevState: any,
+  formData: FormData
+): Promise<{
+  message: string;
+  data: AlertSettings | null;
+  errors?: any;
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: { auth: ['You must be logged in to update alert settings'] },
+      };
+    }
+
+    // Parse form data
+    const enabledAlertTypes = formData.getAll('enabledAlertTypes') as string[];
+    const frequency = formData.get('frequency') as string;
+    const digestTime = formData.get('digestTime') as string;
+    const leadScoreThreshold = parseInt(formData.get('leadScoreThreshold') as string);
+    const priceMin = formData.get('priceMin') ? parseInt(formData.get('priceMin') as string) : undefined;
+    const priceMax = formData.get('priceMax') ? parseInt(formData.get('priceMax') as string) : undefined;
+    const trackedCompetitors = formData.getAll('trackedCompetitors') as string[];
+
+    // Validate the data
+    const validatedFields = alertSettingsSchema.safeParse({
+      enabledAlertTypes,
+      frequency,
+      digestTime: digestTime || undefined,
+      leadScoreThreshold,
+      priceRangeFilters: (priceMin || priceMax) ? { min: priceMin, max: priceMax } : undefined,
+      trackedCompetitors,
+    });
+
+    if (!validatedFields.success) {
+      return {
+        message: 'Validation failed',
+        data: null,
+        errors: validatedFields.error.flatten().fieldErrors,
+      };
+    }
+
+    // Get current settings to preserve target areas
+    const dataAccess = getAlertDataAccess();
+    const currentSettings = await dataAccess.getAlertSettings(user.id);
+
+    // Create updated settings
+    const updatedSettings: AlertSettings = {
+      userId: user.id,
+      enabledAlertTypes: validatedFields.data.enabledAlertTypes,
+      frequency: validatedFields.data.frequency,
+      digestTime: validatedFields.data.digestTime,
+      leadScoreThreshold: validatedFields.data.leadScoreThreshold,
+      priceRangeFilters: validatedFields.data.priceRangeFilters,
+      targetAreas: currentSettings.targetAreas, // Preserve existing target areas
+      trackedCompetitors: validatedFields.data.trackedCompetitors,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Save the updated settings
+    await dataAccess.saveAlertSettings(user.id, updatedSettings);
+
+    return {
+      message: 'Alert settings updated successfully',
+      data: updatedSettings,
+      errors: {},
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to update alert settings');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { general: [error.message || 'Unknown error occurred'] },
+    };
+  }
+}
+
+/**
+ * Add a target area to alert settings
+ */
+export async function addTargetAreaAction(
+  prevState: any,
+  formData: FormData
+): Promise<{
+  message: string;
+  data: TargetArea | null;
+  errors?: any;
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: { auth: ['You must be logged in to add target areas'] },
+      };
+    }
+
+    // Parse form data
+    const type = formData.get('type') as 'zip' | 'city' | 'polygon';
+    const value = formData.get('value') as string;
+    const label = formData.get('label') as string;
+    const coordinates = formData.get('coordinates') as string;
+
+    let parsedValue: string | { coordinates: Array<{ lat: number; lng: number }> };
+
+    if (type === 'polygon' && coordinates) {
+      try {
+        parsedValue = JSON.parse(coordinates);
+      } catch {
+        return {
+          message: 'Invalid polygon coordinates format',
+          data: null,
+          errors: { coordinates: ['Invalid JSON format for polygon coordinates'] },
+        };
+      }
+    } else {
+      parsedValue = value;
+    }
+
+    // Create target area object
+    const targetArea: TargetArea = {
+      id: uuidv4(),
+      type,
+      value: parsedValue,
+      label,
+    };
+
+    // Validate the target area
+    const validation = validateTargetArea(targetArea);
+    if (!validation.valid) {
+      return {
+        message: validation.error || 'Invalid target area',
+        data: null,
+        errors: { validation: [validation.error || 'Invalid target area'] },
+      };
+    }
+
+    // Get current settings
+    const dataAccess = getAlertDataAccess();
+    const currentSettings = await dataAccess.getAlertSettings(user.id);
+
+    // Add the new target area
+    const updatedSettings: AlertSettings = {
+      ...currentSettings,
+      targetAreas: [...currentSettings.targetAreas, targetArea],
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Save the updated settings
+    await dataAccess.saveAlertSettings(user.id, updatedSettings);
+
+    return {
+      message: 'Target area added successfully',
+      data: targetArea,
+      errors: {},
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to add target area');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { general: [error.message || 'Unknown error occurred'] },
+    };
+  }
+}
+
+/**
+ * Remove a target area from alert settings
+ */
+export async function removeTargetAreaAction(
+  areaId: string
+): Promise<{
+  message: string;
+  data: { removedId: string } | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to remove target areas'],
+      };
+    }
+
+    if (!areaId) {
+      return {
+        message: 'Area ID is required',
+        data: null,
+        errors: ['Area ID is required'],
+      };
+    }
+
+    // Get current settings
+    const dataAccess = getAlertDataAccess();
+    const currentSettings = await dataAccess.getAlertSettings(user.id);
+
+    // Remove the target area
+    const updatedTargetAreas = currentSettings.targetAreas.filter(
+      area => area.id !== areaId
+    );
+
+    if (updatedTargetAreas.length === currentSettings.targetAreas.length) {
+      return {
+        message: 'Target area not found',
+        data: null,
+        errors: ['Target area not found'],
+      };
+    }
+
+    // Update settings
+    const updatedSettings: AlertSettings = {
+      ...currentSettings,
+      targetAreas: updatedTargetAreas,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Save the updated settings
+    await dataAccess.saveAlertSettings(user.id, updatedSettings);
+
+    return {
+      message: 'Target area removed successfully',
+      data: { removedId: areaId },
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to remove target area');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+// ==================== Competitor Monitoring Actions ====================
+
+/**
+ * Validation schemas for competitor monitoring
+ */
+const competitorSchema = z.object({
+  name: z.string().min(1, 'Competitor name is required'),
+  agency: z.string().min(1, 'Agency name is required'),
+  licenseNumber: z.string().optional(),
+  targetAreas: z.array(z.string()).min(1, 'At least one target area is required'),
+});
+
+/**
+ * Add a competitor to track
+ */
+export async function addTrackedCompetitorAction(
+  prevState: any,
+  formData: FormData
+): Promise<{
+  message: string;
+  data: Competitor | null;
+  errors?: any;
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: { auth: ['You must be logged in to add competitors'] },
+      };
+    }
+
+    // Parse form data
+    const name = formData.get('name') as string;
+    const agency = formData.get('agency') as string;
+    const licenseNumber = formData.get('licenseNumber') as string;
+    const targetAreas = formData.getAll('targetAreas') as string[];
+
+    // Validate the data
+    const validatedFields = competitorSchema.safeParse({
+      name,
+      agency,
+      licenseNumber: licenseNumber || undefined,
+      targetAreas,
+    });
+
+    if (!validatedFields.success) {
+      return {
+        message: 'Validation failed',
+        data: null,
+        errors: validatedFields.error.flatten().fieldErrors,
+      };
+    }
+
+    // Import competitor data access
+    const { competitorDataAccess } = await import('@/lib/alerts/competitor-data-access');
+
+    // Check competitor capacity
+    const canAdd = await competitorDataAccess.canAddMoreCompetitors(user.id, 20);
+    if (!canAdd) {
+      return {
+        message: 'Maximum competitor limit reached',
+        data: null,
+        errors: { capacity: ['You can track a maximum of 20 competitors'] },
+      };
+    }
+
+    // Create competitor object
+    const competitor = competitorDataAccess.createCompetitor({
+      name: validatedFields.data.name,
+      agency: validatedFields.data.agency,
+      licenseNumber: validatedFields.data.licenseNumber,
+      targetAreas: validatedFields.data.targetAreas,
+    });
+
+    // Save the competitor
+    await competitorDataAccess.saveTrackedCompetitor(user.id, competitor);
+
+    return {
+      message: 'Competitor added successfully',
+      data: competitor,
+      errors: {},
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to add competitor');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { general: [error.message || 'Unknown error occurred'] },
+    };
+  }
+}
+
+/**
+ * Get all tracked competitors for the current user
+ */
+export async function getTrackedCompetitorsAction(): Promise<{
+  message: string;
+  data: Competitor[] | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to view competitors'],
+      };
+    }
+
+    const { competitorDataAccess } = await import('@/lib/alerts/competitor-data-access');
+    const competitors = await competitorDataAccess.getTrackedCompetitors(user.id);
+
+    return {
+      message: 'Competitors retrieved successfully',
+      data: competitors,
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to retrieve competitors');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Update a tracked competitor
+ */
+export async function updateTrackedCompetitorAction(
+  competitorId: string,
+  prevState: any,
+  formData: FormData
+): Promise<{
+  message: string;
+  data: Competitor | null;
+  errors?: any;
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: { auth: ['You must be logged in to update competitors'] },
+      };
+    }
+
+    if (!competitorId) {
+      return {
+        message: 'Competitor ID is required',
+        data: null,
+        errors: { id: ['Competitor ID is required'] },
+      };
+    }
+
+    // Parse form data
+    const name = formData.get('name') as string;
+    const agency = formData.get('agency') as string;
+    const licenseNumber = formData.get('licenseNumber') as string;
+    const targetAreas = formData.getAll('targetAreas') as string[];
+    const isActive = formData.get('isActive') === 'true';
+
+    // Validate the data
+    const validatedFields = competitorSchema.safeParse({
+      name,
+      agency,
+      licenseNumber: licenseNumber || undefined,
+      targetAreas,
+    });
+
+    if (!validatedFields.success) {
+      return {
+        message: 'Validation failed',
+        data: null,
+        errors: validatedFields.error.flatten().fieldErrors,
+      };
+    }
+
+    const { competitorDataAccess } = await import('@/lib/alerts/competitor-data-access');
+
+    // Get existing competitor
+    const existingCompetitor = await competitorDataAccess.getTrackedCompetitor(user.id, competitorId);
+    if (!existingCompetitor) {
+      return {
+        message: 'Competitor not found',
+        data: null,
+        errors: { id: ['Competitor not found'] },
+      };
+    }
+
+    // Update competitor
+    const updates: Partial<Competitor> = {
+      name: validatedFields.data.name,
+      agency: validatedFields.data.agency,
+      licenseNumber: validatedFields.data.licenseNumber,
+      targetAreas: validatedFields.data.targetAreas,
+      isActive,
+    };
+
+    await competitorDataAccess.updateTrackedCompetitor(user.id, competitorId, updates);
+
+    // Return updated competitor
+    const updatedCompetitor = { ...existingCompetitor, ...updates };
+
+    return {
+      message: 'Competitor updated successfully',
+      data: updatedCompetitor,
+      errors: {},
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to update competitor');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { general: [error.message || 'Unknown error occurred'] },
+    };
+  }
+}
+
+/**
+ * Remove a tracked competitor
+ */
+export async function removeTrackedCompetitorAction(
+  competitorId: string
+): Promise<{
+  message: string;
+  data: { removedId: string } | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to remove competitors'],
+      };
+    }
+
+    if (!competitorId) {
+      return {
+        message: 'Competitor ID is required',
+        data: null,
+        errors: ['Competitor ID is required'],
+      };
+    }
+
+    const { competitorDataAccess } = await import('@/lib/alerts/competitor-data-access');
+
+    // Check if competitor exists
+    const existingCompetitor = await competitorDataAccess.getTrackedCompetitor(user.id, competitorId);
+    if (!existingCompetitor) {
+      return {
+        message: 'Competitor not found',
+        data: null,
+        errors: ['Competitor not found'],
+      };
+    }
+
+    // Remove the competitor
+    await competitorDataAccess.removeTrackedCompetitor(user.id, competitorId);
+
+    return {
+      message: 'Competitor removed successfully',
+      data: { removedId: competitorId },
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to remove competitor');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Get competitor alerts for the current user
+ */
+export async function getCompetitorAlertsAction(
+  filters?: {
+    types?: string[];
+    status?: string[];
+    priority?: string[];
+    dateRange?: { start: string; end: string };
+    searchQuery?: string;
+  },
+  options?: {
+    limit?: number;
+    offset?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }
+): Promise<{
+  message: string;
+  data: AlertsResponse | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to view alerts'],
+      };
+    }
+
+    const { competitorDataAccess } = await import('@/lib/alerts/competitor-data-access');
+
+    const alertFilters = {
+      types: filters?.types as any,
+      status: filters?.status as any,
+      priority: filters?.priority as any,
+      dateRange: filters?.dateRange,
+      searchQuery: filters?.searchQuery,
+    };
+
+    const queryOptions = {
+      limit: options?.limit,
+      offset: options?.offset,
+      sortBy: options?.sortBy as any,
+      sortOrder: options?.sortOrder,
+    };
+
+    const response = await competitorDataAccess.getCompetitorAlerts(
+      user.id,
+      alertFilters,
+      queryOptions
+    );
+
+    return {
+      message: 'Competitor alerts retrieved successfully',
+      data: response,
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to retrieve competitor alerts');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Mark a competitor alert as read
+ */
+export async function markCompetitorAlertAsReadAction(
+  alertId: string,
+  timestamp: string
+): Promise<{
+  message: string;
+  data: { alertId: string } | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to mark alerts as read'],
+      };
+    }
+
+    if (!alertId || !timestamp) {
+      return {
+        message: 'Alert ID and timestamp are required',
+        data: null,
+        errors: ['Alert ID and timestamp are required'],
+      };
+    }
+
+    const { competitorDataAccess } = await import('@/lib/alerts/competitor-data-access');
+    await competitorDataAccess.markCompetitorAlertAsRead(user.id, alertId, timestamp);
+
+    return {
+      message: 'Alert marked as read successfully',
+      data: { alertId },
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to mark alert as read');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Dismiss a competitor alert
+ */
+export async function dismissCompetitorAlertAction(
+  alertId: string,
+  timestamp: string
+): Promise<{
+  message: string;
+  data: { alertId: string } | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to dismiss alerts'],
+      };
+    }
+
+    if (!alertId || !timestamp) {
+      return {
+        message: 'Alert ID and timestamp are required',
+        data: null,
+        errors: ['Alert ID and timestamp are required'],
+      };
+    }
+
+    const { competitorDataAccess } = await import('@/lib/alerts/competitor-data-access');
+    await competitorDataAccess.dismissCompetitorAlert(user.id, alertId, timestamp);
+
+    return {
+      message: 'Alert dismissed successfully',
+      data: { alertId },
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to dismiss alert');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Get unread competitor alert count
+ */
+export async function getUnreadCompetitorAlertCountAction(): Promise<{
+  message: string;
+  data: { count: number } | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to view alert count'],
+      };
+    }
+
+    const { competitorDataAccess } = await import('@/lib/alerts/competitor-data-access');
+    const count = await competitorDataAccess.getUnreadCompetitorAlertCount(user.id);
+
+    return {
+      message: 'Unread alert count retrieved successfully',
+      data: { count },
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to retrieve alert count');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Process competitor monitoring (typically called by scheduled functions)
+ */
+export async function processCompetitorMonitoringAction(
+  userId?: string
+): Promise<{
+  message: string;
+  data: { alertsGenerated: number } | null;
+  errors?: string[];
+}> {
+  try {
+    // This would typically be called by a scheduled Lambda function
+    // For now, we'll implement basic processing logic
+
+    if (!userId) {
+      return {
+        message: 'User ID is required for processing',
+        data: null,
+        errors: ['User ID is required'],
+      };
+    }
+
+    const { competitorDataAccess } = await import('@/lib/alerts/competitor-data-access');
+    const { competitorMonitor } = await import('@/lib/alerts/competitor-monitor');
+
+    // Get user's tracked competitors
+    const competitors = await competitorDataAccess.getTrackedCompetitors(userId);
+
+    if (competitors.length === 0) {
+      return {
+        message: 'No competitors to monitor',
+        data: { alertsGenerated: 0 },
+      };
+    }
+
+    // Get user's alert settings to get target areas
+    const dataAccess = getAlertDataAccess();
+    const settings = await dataAccess.getAlertSettings(userId);
+
+    if (!settings || settings.targetAreas.length === 0) {
+      return {
+        message: 'No target areas configured',
+        data: { alertsGenerated: 0 },
+      };
+    }
+
+    // Process competitor monitoring
+    const alerts = await competitorMonitor.trackListingEvents(competitors, settings.targetAreas);
+
+    // Save generated alerts
+    for (const alert of alerts) {
+      alert.userId = userId; // Set the user ID
+      await competitorDataAccess.saveCompetitorAlert(userId, alert);
+    }
+
+    return {
+      message: `Competitor monitoring processed successfully. Generated ${alerts.length} alerts.`,
+      data: { alertsGenerated: alerts.length },
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to process competitor monitoring');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+// ==================== General Alert Management Actions ====================
+
+/**
+ * Get alerts for the current user with filtering support
+ */
+export async function getAlertsAction(
+  filters?: {
+    types?: string[];
+    status?: string[];
+    priority?: string[];
+    dateRange?: { start: string; end: string };
+    searchQuery?: string;
+  },
+  options?: {
+    limit?: number;
+    offset?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }
+): Promise<{
+  message: string;
+  data: AlertsResponse | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to view alerts'],
+      };
+    }
+
+    const dataAccess = getAlertDataAccess();
+
+    const alertFilters = {
+      types: filters?.types as any,
+      status: filters?.status as any,
+      priority: filters?.priority as any,
+      dateRange: filters?.dateRange,
+      searchQuery: filters?.searchQuery,
+    };
+
+    const queryOptions = {
+      limit: options?.limit,
+      offset: options?.offset,
+      sortBy: options?.sortBy as any,
+      sortOrder: options?.sortOrder,
+    };
+
+    const response = await dataAccess.getAlerts(user.id, alertFilters, queryOptions);
+
+    return {
+      message: 'Alerts retrieved successfully',
+      data: response,
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to retrieve alerts');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Mark an alert as read
+ */
+export async function markAlertAsReadAction(
+  alertId: string
+): Promise<{
+  message: string;
+  data: { alertId: string } | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to mark alerts as read'],
+      };
+    }
+
+    if (!alertId) {
+      return {
+        message: 'Alert ID is required',
+        data: null,
+        errors: ['Alert ID is required'],
+      };
+    }
+
+    const dataAccess = getAlertDataAccess();
+    await dataAccess.updateAlertStatus(user.id, alertId, 'read');
+
+    return {
+      message: 'Alert marked as read successfully',
+      data: { alertId },
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to mark alert as read');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Dismiss an alert
+ */
+export async function dismissAlertAction(
+  alertId: string
+): Promise<{
+  message: string;
+  data: { alertId: string } | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to dismiss alerts'],
+      };
+    }
+
+    if (!alertId) {
+      return {
+        message: 'Alert ID is required',
+        data: null,
+        errors: ['Alert ID is required'],
+      };
+    }
+
+    const dataAccess = getAlertDataAccess();
+    await dataAccess.updateAlertStatus(user.id, alertId, 'dismissed');
+
+    return {
+      message: 'Alert dismissed successfully',
+      data: { alertId },
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to dismiss alert');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Get unread alert count for the current user
+ */
+export async function getUnreadAlertCountAction(): Promise<{
+  message: string;
+  data: { count: number } | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to view alert count'],
+      };
+    }
+
+    const dataAccess = getAlertDataAccess();
+    const count = await dataAccess.getUnreadCount(user.id);
+
+    return {
+      message: 'Unread alert count retrieved successfully',
+      data: { count },
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to retrieve alert count');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+// ==================== Helper Functions ====================
+
+
+
+
+
+// ==================== Notification Management Actions ====================
+
+import { notificationService } from '@/lib/alerts/notification-service';
+import { NotificationPreferences } from '@/lib/alerts/notification-types';
+
+/**
+ * Get notification preferences for the current user
+ */
+export async function getNotificationPreferencesAction(): Promise<{
+  message: string;
+  data: NotificationPreferences | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
+    if (!user) {
+      return {
+        message: 'User not authenticated',
+        data: null,
+        errors: ['Authentication required'],
+      };
+    }
+
+    const preferences = await notificationService.getNotificationPreferences(user.id);
+
+    return {
+      message: 'Notification preferences retrieved successfully',
+      data: preferences,
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to retrieve notification preferences');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Update notification preferences for the current user
+ */
+export async function updateNotificationPreferencesAction(
+  prevState: any,
+  formData: FormData
+): Promise<{
+  message: string;
+  data: NotificationPreferences | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
+    if (!user) {
+      return {
+        message: 'User not authenticated',
+        data: null,
+        errors: ['Authentication required'],
+      };
+    }
+
+    // Parse form data
+    const emailNotifications = formData.get('emailNotifications') === 'true';
+    const emailAddress = formData.get('emailAddress')?.toString();
+    const frequency = formData.get('frequency')?.toString() as 'real-time' | 'daily' | 'weekly';
+    const digestTime = formData.get('digestTime')?.toString();
+
+    // Parse enabled alert types
+    const enabledAlertTypes = formData.getAll('enabledAlertTypes').map(type => type.toString()) as any[];
+
+    // Parse quiet hours
+    const quietHoursEnabled = formData.get('quietHoursEnabled') === 'true';
+    const quietHoursStart = formData.get('quietHoursStart')?.toString();
+    const quietHoursEnd = formData.get('quietHoursEnd')?.toString();
+    const timezone = formData.get('timezone')?.toString();
+
+    const preferences: Partial<NotificationPreferences> = {
+      emailNotifications,
+      emailAddress,
+      frequency,
+      digestTime,
+      enabledAlertTypes,
+    };
+
+    if (quietHoursEnabled && quietHoursStart && quietHoursEnd && timezone) {
+      preferences.quietHours = {
+        enabled: true,
+        startTime: quietHoursStart,
+        endTime: quietHoursEnd,
+        timezone,
+      };
+    } else {
+      preferences.quietHours = {
+        enabled: false,
+        startTime: '22:00',
+        endTime: '08:00',
+        timezone: 'America/New_York',
+      };
+    }
+
+    await notificationService.updateNotificationPreferences(user.id, preferences);
+
+    // Get updated preferences
+    const updatedPreferences = await notificationService.getNotificationPreferences(user.id);
+
+    return {
+      message: 'Notification preferences updated successfully',
+      data: updatedPreferences,
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to update notification preferences');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Send a test notification to the current user
+ */
+export async function sendTestNotificationAction(): Promise<{
+  message: string;
+  data: { success: boolean; messageId?: string } | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
+    if (!user) {
+      return {
+        message: 'User not authenticated',
+        data: null,
+        errors: ['Authentication required'],
+      };
+    }
+
+    // Create a test alert
+    const testAlert = {
+      id: `test_${Date.now()}`,
+      userId: user.id,
+      type: 'life-event-lead' as const,
+      priority: 'medium' as const,
+      status: 'unread' as const,
+      createdAt: new Date().toISOString(),
+      data: {
+        prospectLocation: 'Test Location, NY',
+        eventType: 'marriage' as const,
+        eventDate: new Date().toISOString(),
+        leadScore: 85,
+        recommendedAction: 'This is a test notification to verify your email settings.',
+      },
+    };
+
+    const result = await notificationService.sendRealTimeNotification(user.id, testAlert);
+
+    return {
+      message: result.success ? 'Test notification sent successfully' : 'Failed to send test notification',
+      data: result,
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to send test notification');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Send daily digest for the current user
+ */
+export async function sendDailyDigestAction(): Promise<{
+  message: string;
+  data: { success: boolean; emailsSent: number; errors: string[] } | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
+    if (!user) {
+      return {
+        message: 'User not authenticated',
+        data: null,
+        errors: ['Authentication required'],
+      };
+    }
+
+    const result = await notificationService.sendDailyDigest(user.id);
+
+    return {
+      message: result.success ? 'Daily digest sent successfully' : 'Failed to send daily digest',
+      data: result,
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to send daily digest');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Send weekly digest for the current user
+ */
+export async function sendWeeklyDigestAction(): Promise<{
+  message: string;
+  data: { success: boolean; emailsSent: number; errors: string[] } | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
+    if (!user) {
+      return {
+        message: 'User not authenticated',
+        data: null,
+        errors: ['Authentication required'],
+      };
+    }
+
+    const result = await notificationService.sendWeeklyDigest(user.id);
+
+    return {
+      message: result.success ? 'Weekly digest sent successfully' : 'Failed to send weekly digest',
+      data: result,
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to send weekly digest');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Initialize email templates (admin function)
+ */
+export async function initializeEmailTemplatesAction(): Promise<{
+  message: string;
+  data: { success: boolean } | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
+    if (!user) {
+      return {
+        message: 'User not authenticated',
+        data: null,
+        errors: ['Authentication required'],
+      };
+    }
+
+    await notificationService.initializeEmailTemplates();
+
+    return {
+      message: 'Email templates initialized successfully',
+      data: { success: true },
+    };
+  } catch (error: any) {
+    const errorMessage = handleAWSError(error, 'Failed to initialize email templates');
+    return {
+      message: errorMessage,
       data: null,
       errors: [error.message || 'Unknown error occurred'],
     };

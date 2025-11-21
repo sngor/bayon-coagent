@@ -21,11 +21,14 @@ export const REDIRECT_MAP: Record<string, string> = {
   '/life-event-predictor': '/market/insights',
 
   // Market consolidation redirects
-  '/market/opportunities': '/market/insights',
-  '/market/trends': '/market/insights',
-  '/market/analytics': '/market/insights',
-  '/market/renovation-roi': '/market/tools',
-  '/market/valuation': '/market/tools',
+  '/market/trends': '/market/insights?tab=trends',
+  '/market/analytics': '/market/insights?tab=analytics',
+
+  // Tools Hub (moved from Market)
+  '/market/calculator': '/tools/calculator',
+  '/market/tools': '/tools/calculator',
+  '/market/renovation-roi': '/tools/roi',
+  '/market/valuation': '/tools/valuation',
 
   // Brand Hub (formerly Brand Center)
   '/brand-center': '/brand',

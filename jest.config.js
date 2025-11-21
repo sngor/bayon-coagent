@@ -17,7 +17,7 @@ module.exports = {
     ],
     coverageDirectory: 'coverage',
     coverageReporters: ['text', 'lcov', 'html'],
-    setupFilesAfterEnv: [],
+    setupFilesAfterEnv: ['<rootDir>/src/__tests__/mocks/setup.ts'],
     testTimeout: 30000,
     transform: {
         '^.+\\.tsx?$': [

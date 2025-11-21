@@ -1214,6 +1214,805 @@ export class DynamoDBRepository {
     const skPrefix = `METRICS#${listingId}#`;
     return this.query<T>(pk, skPrefix, options);
   }
+
+  // ==================== Market Intelligence Alerts Methods ====================
+
+  /**
+   * Creates a new alert
+   * @param userId User ID
+   * @param alertId Alert ID
+   * @param alertData Alert data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createAlert<T>(
+    userId: string,
+    alertId: string,
+    alertData: T & { type: string; createdAt: string }
+  ): Promise<DynamoDBItem<T>> {
+    const { getAlertKeys } = await import('./keys');
+    const timestamp = new Date(alertData.createdAt).getTime().toString();
+    const keys = getAlertKeys(userId, alertId, timestamp, alertData.type);
+
+    return this.create(keys.PK, keys.SK, 'Alert', alertData, {
+      GSI1PK: keys.GSI1PK,
+      GSI1SK: keys.GSI1SK,
+    });
+  }
+
+  /**
+   * Gets an alert by ID and timestamp
+   * @param userId User ID
+   * @param alertId Alert ID
+   * @param timestamp Alert timestamp
+   * @returns Alert data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getAlert<T>(
+    userId: string,
+    alertId: string,
+    timestamp: string
+  ): Promise<T | null> {
+    const { getAlertKeys } = await import('./keys');
+    const keys = getAlertKeys(userId, alertId, timestamp);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates an alert
+   * @param userId User ID
+   * @param alertId Alert ID
+   * @param timestamp Alert timestamp
+   * @param updates Partial alert data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateAlert<T>(
+    userId: string,
+    alertId: string,
+    timestamp: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getAlertKeys } = await import('./keys');
+    const keys = getAlertKeys(userId, alertId, timestamp);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Deletes an alert
+   * @param userId User ID
+   * @param alertId Alert ID
+   * @param timestamp Alert timestamp
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteAlert(
+    userId: string,
+    alertId: string,
+    timestamp: string
+  ): Promise<void> {
+    const { getAlertKeys } = await import('./keys');
+    const keys = getAlertKeys(userId, alertId, timestamp);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all alerts for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with alerts
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryAlerts<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'ALERT#';
+    return this.query<T>(pk, skPrefix, {
+      ...options,
+      scanIndexForward: false, // Most recent first
+    });
+  }
+
+  /**
+   * Queries alerts by type using GSI
+   * @param userId User ID
+   * @param alertType Alert type
+   * @param options Query options
+   * @returns Query result with alerts
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryAlertsByType<T>(
+    userId: string,
+    alertType: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    try {
+      return await withRetry(async () => {
+        const client = getDocumentClient();
+
+        const command = new QueryCommand({
+          TableName: this.tableName,
+          IndexName: 'GSI1',
+          KeyConditionExpression: 'GSI1PK = :gsi1pk',
+          ExpressionAttributeValues: {
+            ':gsi1pk': `ALERT#${userId}#${alertType}`,
+            ...options.expressionAttributeValues,
+          },
+          ExpressionAttributeNames: options.expressionAttributeNames,
+          FilterExpression: options.filterExpression,
+          Limit: options.limit,
+          ExclusiveStartKey: options.exclusiveStartKey,
+          ScanIndexForward: options.scanIndexForward ?? false, // Most recent first
+        });
+
+        const response = await client.send(command);
+
+        const items = (response.Items || []) as DynamoDBItem<T>[];
+        const data = items.map((item) => item.Data);
+
+        return {
+          items: data,
+          lastEvaluatedKey: response.LastEvaluatedKey as DynamoDBKey | undefined,
+          count: response.Count || 0,
+        };
+      }, this.retryOptions);
+    } catch (error: any) {
+      throw wrapDynamoDBError(error);
+    }
+  }
+
+  /**
+   * Creates or updates alert settings
+   * @param userId User ID
+   * @param settingsData Alert settings data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async saveAlertSettings<T>(
+    userId: string,
+    settingsData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getAlertSettingsKeys } = await import('./keys');
+    const keys = getAlertSettingsKeys(userId);
+    return this.create(keys.PK, keys.SK, 'AlertSettings', settingsData);
+  }
+
+  /**
+   * Gets alert settings for a user
+   * @param userId User ID
+   * @returns Alert settings data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getAlertSettings<T>(userId: string): Promise<T | null> {
+    const { getAlertSettingsKeys } = await import('./keys');
+    const keys = getAlertSettingsKeys(userId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates alert settings
+   * @param userId User ID
+   * @param updates Partial settings data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateAlertSettings<T>(
+    userId: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getAlertSettingsKeys } = await import('./keys');
+    const keys = getAlertSettingsKeys(userId);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Creates a neighborhood profile
+   * @param userId User ID
+   * @param profileId Profile ID
+   * @param profileData Neighborhood profile data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createNeighborhoodProfile<T>(
+    userId: string,
+    profileId: string,
+    profileData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getNeighborhoodProfileKeys } = await import('./keys');
+    const keys = getNeighborhoodProfileKeys(userId, profileId);
+    return this.create(keys.PK, keys.SK, 'NeighborhoodProfile', profileData);
+  }
+
+  /**
+   * Gets a neighborhood profile by ID
+   * @param userId User ID
+   * @param profileId Profile ID
+   * @returns Neighborhood profile data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getNeighborhoodProfile<T>(
+    userId: string,
+    profileId: string
+  ): Promise<T | null> {
+    const { getNeighborhoodProfileKeys } = await import('./keys');
+    const keys = getNeighborhoodProfileKeys(userId, profileId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates a neighborhood profile
+   * @param userId User ID
+   * @param profileId Profile ID
+   * @param updates Partial profile data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateNeighborhoodProfile<T>(
+    userId: string,
+    profileId: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getNeighborhoodProfileKeys } = await import('./keys');
+    const keys = getNeighborhoodProfileKeys(userId, profileId);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Deletes a neighborhood profile
+   * @param userId User ID
+   * @param profileId Profile ID
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteNeighborhoodProfile(
+    userId: string,
+    profileId: string
+  ): Promise<void> {
+    const { getNeighborhoodProfileKeys } = await import('./keys');
+    const keys = getNeighborhoodProfileKeys(userId, profileId);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all neighborhood profiles for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with neighborhood profiles
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryNeighborhoodProfiles<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'NEIGHBORHOOD#';
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  /**
+   * Creates a life event record
+   * @param userId User ID
+   * @param eventId Event ID
+   * @param eventData Life event data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createLifeEvent<T>(
+    userId: string,
+    eventId: string,
+    eventData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getLifeEventKeys } = await import('./keys');
+    const keys = getLifeEventKeys(userId, eventId);
+    return this.create(keys.PK, keys.SK, 'LifeEvent', eventData);
+  }
+
+  /**
+   * Gets a life event by ID
+   * @param userId User ID
+   * @param eventId Event ID
+   * @returns Life event data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getLifeEvent<T>(userId: string, eventId: string): Promise<T | null> {
+    const { getLifeEventKeys } = await import('./keys');
+    const keys = getLifeEventKeys(userId, eventId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all life events for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with life events
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryLifeEvents<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'LIFE_EVENT#';
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  /**
+   * Creates a prospect record
+   * @param userId User ID
+   * @param prospectId Prospect ID
+   * @param prospectData Prospect data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createProspect<T>(
+    userId: string,
+    prospectId: string,
+    prospectData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getProspectKeys } = await import('./keys');
+    const keys = getProspectKeys(userId, prospectId);
+    return this.create(keys.PK, keys.SK, 'Prospect', prospectData);
+  }
+
+  /**
+   * Gets a prospect by ID
+   * @param userId User ID
+   * @param prospectId Prospect ID
+   * @returns Prospect data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getProspect<T>(userId: string, prospectId: string): Promise<T | null> {
+    const { getProspectKeys } = await import('./keys');
+    const keys = getProspectKeys(userId, prospectId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates a prospect
+   * @param userId User ID
+   * @param prospectId Prospect ID
+   * @param updates Partial prospect data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateProspect<T>(
+    userId: string,
+    prospectId: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getProspectKeys } = await import('./keys');
+    const keys = getProspectKeys(userId, prospectId);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Queries all prospects for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with prospects
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryProspects<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'PROSPECT#';
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  /**
+   * Creates a tracked competitor record
+   * @param userId User ID
+   * @param competitorId Competitor ID
+   * @param competitorData Competitor data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createTrackedCompetitor<T>(
+    userId: string,
+    competitorId: string,
+    competitorData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getTrackedCompetitorKeys } = await import('./keys');
+    const keys = getTrackedCompetitorKeys(userId, competitorId);
+    return this.create(keys.PK, keys.SK, 'TrackedCompetitor', competitorData);
+  }
+
+  /**
+   * Gets a tracked competitor by ID
+   * @param userId User ID
+   * @param competitorId Competitor ID
+   * @returns Competitor data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getTrackedCompetitor<T>(
+    userId: string,
+    competitorId: string
+  ): Promise<T | null> {
+    const { getTrackedCompetitorKeys } = await import('./keys');
+    const keys = getTrackedCompetitorKeys(userId, competitorId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates a tracked competitor
+   * @param userId User ID
+   * @param competitorId Competitor ID
+   * @param updates Partial competitor data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateTrackedCompetitor<T>(
+    userId: string,
+    competitorId: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getTrackedCompetitorKeys } = await import('./keys');
+    const keys = getTrackedCompetitorKeys(userId, competitorId);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Deletes a tracked competitor
+   * @param userId User ID
+   * @param competitorId Competitor ID
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteTrackedCompetitor(
+    userId: string,
+    competitorId: string
+  ): Promise<void> {
+    const { getTrackedCompetitorKeys } = await import('./keys');
+    const keys = getTrackedCompetitorKeys(userId, competitorId);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all tracked competitors for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with tracked competitors
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryTrackedCompetitors<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'TRACKED_COMPETITOR#';
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  /**
+   * Creates a listing event record
+   * @param userId User ID
+   * @param eventId Event ID
+   * @param eventData Listing event data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createListingEvent<T>(
+    userId: string,
+    eventId: string,
+    eventData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getListingEventKeys } = await import('./keys');
+    const keys = getListingEventKeys(userId, eventId);
+    return this.create(keys.PK, keys.SK, 'ListingEvent', eventData);
+  }
+
+  /**
+   * Gets a listing event by ID
+   * @param userId User ID
+   * @param eventId Event ID
+   * @returns Listing event data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getListingEvent<T>(userId: string, eventId: string): Promise<T | null> {
+    const { getListingEventKeys } = await import('./keys');
+    const keys = getListingEventKeys(userId, eventId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all listing events for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with listing events
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryListingEvents<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'LISTING_EVENT#';
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  /**
+   * Creates or updates trend indicators
+   * @param userId User ID
+   * @param neighborhood Neighborhood name
+   * @param period Period (YYYY-MM format)
+   * @param trendData Trend indicators data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async saveTrendIndicators<T>(
+    userId: string,
+    neighborhood: string,
+    period: string,
+    trendData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getTrendIndicatorsKeys } = await import('./keys');
+    const keys = getTrendIndicatorsKeys(userId, neighborhood, period);
+    return this.create(keys.PK, keys.SK, 'TrendIndicators', trendData);
+  }
+
+  /**
+   * Gets trend indicators for a specific neighborhood and period
+   * @param userId User ID
+   * @param neighborhood Neighborhood name
+   * @param period Period (YYYY-MM format)
+   * @returns Trend indicators data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getTrendIndicators<T>(
+    userId: string,
+    neighborhood: string,
+    period: string
+  ): Promise<T | null> {
+    const { getTrendIndicatorsKeys } = await import('./keys');
+    const keys = getTrendIndicatorsKeys(userId, neighborhood, period);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries trend indicators for a neighborhood across periods
+   * @param userId User ID
+   * @param neighborhood Neighborhood name
+   * @param options Query options
+   * @returns Query result with trend indicators
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryTrendIndicators<T>(
+    userId: string,
+    neighborhood: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = `TREND#${neighborhood}#`;
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  /**
+   * Creates a target area
+   * @param userId User ID
+   * @param areaId Area ID
+   * @param areaData Target area data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createTargetArea<T>(
+    userId: string,
+    areaId: string,
+    areaData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getTargetAreaKeys } = await import('./keys');
+    const keys = getTargetAreaKeys(userId, areaId);
+    return this.create(keys.PK, keys.SK, 'TargetArea', areaData);
+  }
+
+  /**
+   * Gets a target area by ID
+   * @param userId User ID
+   * @param areaId Area ID
+   * @returns Target area data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getTargetArea<T>(userId: string, areaId: string): Promise<T | null> {
+    const { getTargetAreaKeys } = await import('./keys');
+    const keys = getTargetAreaKeys(userId, areaId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates a target area
+   * @param userId User ID
+   * @param areaId Area ID
+   * @param updates Partial area data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateTargetArea<T>(
+    userId: string,
+    areaId: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getTargetAreaKeys } = await import('./keys');
+    const keys = getTargetAreaKeys(userId, areaId);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Deletes a target area
+   * @param userId User ID
+   * @param areaId Area ID
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteTargetArea(userId: string, areaId: string): Promise<void> {
+    const { getTargetAreaKeys } = await import('./keys');
+    const keys = getTargetAreaKeys(userId, areaId);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all target areas for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with target areas
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryTargetAreas<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'TARGET_AREA#';
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  // ==================== Price History Operations ====================
+
+  /**
+   * Creates or updates price history for a listing
+   * @param userId User ID
+   * @param mlsNumber MLS number
+   * @param priceHistoryData Price history data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createPriceHistory<T>(
+    userId: string,
+    mlsNumber: string,
+    priceHistoryData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getPriceHistoryKeys } = await import('./keys');
+    const keys = getPriceHistoryKeys(userId, mlsNumber);
+    return this.create(keys.PK, keys.SK, 'PriceHistory', priceHistoryData);
+  }
+
+  /**
+   * Gets price history for a listing
+   * @param userId User ID
+   * @param mlsNumber MLS number
+   * @returns Price history data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getPriceHistory<T>(userId: string, mlsNumber: string): Promise<T | null> {
+    const { getPriceHistoryKeys } = await import('./keys');
+    const keys = getPriceHistoryKeys(userId, mlsNumber);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates price history for a listing
+   * @param userId User ID
+   * @param mlsNumber MLS number
+   * @param updates Partial price history data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updatePriceHistory<T>(
+    userId: string,
+    mlsNumber: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getPriceHistoryKeys } = await import('./keys');
+    const keys = getPriceHistoryKeys(userId, mlsNumber);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Deletes price history for a listing
+   * @param userId User ID
+   * @param mlsNumber MLS number
+   * @throws DynamoDBError if the operation fails
+   */
+  async deletePriceHistory(userId: string, mlsNumber: string): Promise<void> {
+    const { getPriceHistoryKeys } = await import('./keys');
+    const keys = getPriceHistoryKeys(userId, mlsNumber);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all price histories for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with price histories
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryPriceHistories<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'PRICE_HISTORY#';
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  // ==================== Listing Snapshot Operations ====================
+
+  /**
+   * Creates or updates a listing snapshot
+   * @param userId User ID
+   * @param mlsNumber MLS number
+   * @param listingData Listing snapshot data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createListingSnapshot<T>(
+    userId: string,
+    mlsNumber: string,
+    listingData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getListingSnapshotKeys } = await import('./keys');
+    const keys = getListingSnapshotKeys(userId, mlsNumber);
+    return this.create(keys.PK, keys.SK, 'ListingSnapshot', listingData);
+  }
+
+  /**
+   * Gets a listing snapshot
+   * @param userId User ID
+   * @param mlsNumber MLS number
+   * @returns Listing snapshot data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getListingSnapshot<T>(userId: string, mlsNumber: string): Promise<T | null> {
+    const { getListingSnapshotKeys } = await import('./keys');
+    const keys = getListingSnapshotKeys(userId, mlsNumber);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates a listing snapshot
+   * @param userId User ID
+   * @param mlsNumber MLS number
+   * @param updates Partial listing data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateListingSnapshot<T>(
+    userId: string,
+    mlsNumber: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getListingSnapshotKeys } = await import('./keys');
+    const keys = getListingSnapshotKeys(userId, mlsNumber);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Deletes a listing snapshot
+   * @param userId User ID
+   * @param mlsNumber MLS number
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteListingSnapshot(userId: string, mlsNumber: string): Promise<void> {
+    const { getListingSnapshotKeys } = await import('./keys');
+    const keys = getListingSnapshotKeys(userId, mlsNumber);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all listing snapshots for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with listing snapshots
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryListingSnapshots<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'LISTING_SNAPSHOT#';
+    return this.query<T>(pk, skPrefix, options);
+  }
 }
 
 // Export a singleton instance
