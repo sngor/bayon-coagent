@@ -95,20 +95,28 @@ export class FeatureToggleManager {
 
     private loadFeatures(): void {
         try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            if (stored) {
-                const storedFeatures = JSON.parse(stored) as FeatureToggle[];
-                // Merge with defaults to handle new features
-                const mergedFeatures = this.mergeWithDefaults(storedFeatures);
-                mergedFeatures.forEach(feature => {
-                    this.features.set(feature.id, feature);
-                });
+            // Check if we're in a browser environment
+            if (typeof window !== 'undefined' && window.localStorage) {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (stored) {
+                    const storedFeatures = JSON.parse(stored) as FeatureToggle[];
+                    // Merge with defaults to handle new features
+                    const mergedFeatures = this.mergeWithDefaults(storedFeatures);
+                    mergedFeatures.forEach(feature => {
+                        this.features.set(feature.id, feature);
+                    });
+                } else {
+                    // First time - use defaults
+                    DEFAULT_FEATURES.forEach(feature => {
+                        this.features.set(feature.id, { ...feature });
+                    });
+                    this.saveFeatures();
+                }
             } else {
-                // First time - use defaults
+                // Server-side or no localStorage - use defaults
                 DEFAULT_FEATURES.forEach(feature => {
                     this.features.set(feature.id, { ...feature });
                 });
-                this.saveFeatures();
             }
         } catch (error) {
             console.error('Failed to load feature toggles:', error);
@@ -137,8 +145,11 @@ export class FeatureToggleManager {
 
     private saveFeatures(): void {
         try {
-            const featuresArray = Array.from(this.features.values());
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(featuresArray));
+            // Only save if we're in a browser environment
+            if (typeof window !== 'undefined' && window.localStorage) {
+                const featuresArray = Array.from(this.features.values());
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(featuresArray));
+            }
         } catch (error) {
             console.error('Failed to save feature toggles:', error);
         }

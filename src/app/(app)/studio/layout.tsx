@@ -1,6 +1,6 @@
 'use client';
 
-import { HubLayout } from '@/components/hub';
+import { HubLayoutWithFavorites } from '@/components/hub/hub-layout-with-favorites';
 import { FeatureGuard } from '@/components/feature-guard';
 import { Wand2, PenTool, Image, Sparkles } from 'lucide-react';
 
@@ -13,7 +13,7 @@ const studioTabs = [
 export default function StudioLayout({ children }: { children: React.ReactNode }) {
     return (
         <FeatureGuard featureId="studio">
-            <HubLayout
+            <HubLayoutWithFavorites
                 title="Content Studio"
                 description="Turn ideas into polished content in minutes with AI-powered writing and creative tools"
                 icon={Wand2}
@@ -21,7 +21,7 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
                 tabsVariant="pills"
             >
                 {children}
-            </HubLayout>
+            </HubLayoutWithFavorites>
         </FeatureGuard>
     );
 }

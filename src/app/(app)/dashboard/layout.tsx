@@ -47,7 +47,7 @@ export default function DashboardLayout({
         if (!agentProfile?.name) return greeting;
 
         const firstName = agentProfile.name.split(' ')[0];
-        return `${greeting}, ${firstName}`;
+        return `${greeting}, ${firstName}!`;
     }, [agentProfile?.name]);
 
     return (

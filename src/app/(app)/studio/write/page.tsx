@@ -259,6 +259,7 @@ function SaveDialog({ dialogInfo, setDialogInfo, projects }: { dialogInfo: SaveD
     startTransition(async () => {
       try {
         const result = await saveContentAction(
+          user.id,
           dialogInfo.content,
           dialogInfo.type,
           name || dialogInfo.type,
@@ -268,12 +269,13 @@ function SaveDialog({ dialogInfo, setDialogInfo, projects }: { dialogInfo: SaveD
         if (result.message === 'Content saved successfully') {
           toast({
             title: 'Content Saved!',
-            description: `Your content has been saved to your Projects.`,
+            description: `Your content has been saved to your Library.`,
           });
           setDialogInfo({ isOpen: false, content: '', type: '' });
           setName('');
           setProjectId(null);
         } else {
+          console.error('Save failed:', result);
           throw new Error(result.errors?.[0] || 'Save failed');
         }
       } catch (error) {

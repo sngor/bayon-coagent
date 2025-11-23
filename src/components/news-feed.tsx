@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useActionState, useTransition } from 'react';
 import { useFormState } from 'react-dom';
 import { getRealEstateNewsAction } from '@/app/actions';
 import { NewsArticleCard } from './news-article-card';
@@ -24,12 +24,13 @@ interface NewsFeedProps {
 }
 
 export function NewsFeed({ location = '' }: NewsFeedProps) {
-    const [state, formAction] = useFormState(getRealEstateNewsAction, {
+    const [state, formAction, isPending] = useActionState(getRealEstateNewsAction, {
         message: '',
         data: null,
         errors: {}
     });
 
+    const [isPendingTransition, startTransition] = useTransition();
     const [articles, setArticles] = useState<NewsArticle[]>([]);
     const [loading, setLoading] = useState(true);
     const [lastLocation, setLastLocation] = useState(location);
@@ -43,14 +44,16 @@ export function NewsFeed({ location = '' }: NewsFeedProps) {
 
             // Debounce the API call to avoid rapid requests
             const timeoutId = setTimeout(() => {
-                const formData = new FormData();
-                formData.append('location', location);
-                formAction(formData);
+                startTransition(() => {
+                    const formData = new FormData();
+                    formData.append('location', location);
+                    formAction(formData);
+                });
             }, 300); // 300ms debounce
 
             return () => clearTimeout(timeoutId);
         }
-    }, [location, lastLocation, loading, articles.length]);
+    }, [location, lastLocation, loading, articles.length, formAction, startTransition]);
 
     // Update articles when state changes
     useEffect(() => {
@@ -64,12 +67,14 @@ export function NewsFeed({ location = '' }: NewsFeedProps) {
 
     const handleRefresh = () => {
         setLoading(true);
-        const formData = new FormData();
-        formData.append('location', location);
-        formAction(formData);
+        startTransition(() => {
+            const formData = new FormData();
+            formData.append('location', location);
+            formAction(formData);
+        });
     };
 
-    if (loading) {
+    if (loading || isPending || isPendingTransition) {
         return <NewsLoadingSkeleton />;
     }
 

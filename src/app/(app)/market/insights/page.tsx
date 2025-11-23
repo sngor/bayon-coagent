@@ -2,6 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import {
+    ContentSection,
+    EmptySection,
+    FeatureBanner
+} from '@/components/ui';
 import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsList as TabsList, AnimatedTabsTrigger as TabsTrigger } from '@/components/ui/animated-tabs';
 import { StandardEmptyState } from '@/components/standard';
 import { LifeEventPredictorForm } from '@/components/life-event-predictor/life-event-predictor-form';
@@ -12,6 +17,7 @@ import { NewsServiceMonitor } from '@/components/news-service-monitor';
 import { TrendingUp, BarChart3, Bell, Newspaper } from 'lucide-react';
 import { useUnreadAlertCount } from '@/hooks/use-unread-alert-count';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { NEWS_CONFIG } from '@/lib/news-config';
 
 export default function MarketInsightsPage() {
@@ -46,6 +52,25 @@ export default function MarketInsightsPage() {
 
     return (
         <div className="space-y-6">
+            {/* Feature Banner with Market Intelligence Tips */}
+            <FeatureBanner
+                title="🎯 Market Intelligence Pro Tips"
+                description="Maximize your market advantage with these data-driven strategies"
+                variant="onboarding"
+                dismissible={true}
+                tips={[
+                    "Use Trends to identify life events and target potential clients proactively",
+                    "Monitor News for market shifts that create opportunities for your listings",
+                    "Set up Alerts for price changes and new listings in your target areas",
+                    "Analytics help you understand seasonal patterns and pricing strategies"
+                ]}
+                actions={
+                    <Button variant="outline" size="sm">
+                        Quick Tour
+                    </Button>
+                }
+            />
+
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList>
                     <TabsTrigger value="trends" className="flex items-center gap-2">
@@ -74,46 +99,69 @@ export default function MarketInsightsPage() {
 
 
                 <TabsContent value="trends" className="mt-6">
-                    <div className="space-y-8">
-                        {/* Neighborhood Trend Alerts will be added here */}
+                    <ContentSection
+                        title="Market Trends & Predictions"
+                        description="Identify potential clients through life event predictions and market trends"
+                        icon={TrendingUp}
+                        variant="default"
+                    >
                         <LifeEventPredictorForm />
-                    </div>
+                    </ContentSection>
                 </TabsContent>
 
                 <TabsContent value="analytics" className="mt-6">
-                    <StandardEmptyState
-                        icon={<BarChart3 className="h-12 w-12 text-primary" />}
+                    <EmptySection
                         title="Market Analytics Coming Soon"
                         description="Track market metrics, neighborhood data, pricing trends, and more. This feature is currently in development."
+                        icon={BarChart3}
+                        variant="card"
                     />
                 </TabsContent>
 
                 <TabsContent value="news" className="mt-6">
                     <div className="space-y-6">
                         {/* News Filters */}
-                        <div className="bg-card rounded-lg border p-6">
-                            <div className="mb-4">
-                                <h3 className="text-lg font-semibold">Real Estate News Feed</h3>
-                                <p className="text-muted-foreground">
-                                    Stay updated with the latest real estate news and market trends
-                                </p>
-                            </div>
+                        <ContentSection
+                            title="Real Estate News Feed"
+                            description="Stay updated with the latest real estate news and market trends"
+                            icon={Newspaper}
+                            variant="card"
+                        >
                             <NewsFilters
                                 onFilterChange={setNewsLocation}
                                 defaultLocation={newsLocation}
                             />
-                        </div>
+                        </ContentSection>
 
                         {/* News Feed */}
-                        <NewsFeed location={newsLocation} />
+                        <ContentSection
+                            title="Latest News"
+                            description="Curated real estate news for your market"
+                            variant="default"
+                        >
+                            <NewsFeed location={newsLocation} />
+                        </ContentSection>
 
                         {/* Development Monitor */}
-                        <NewsServiceMonitor />
+                        <ContentSection
+                            title="Service Monitor"
+                            description="News service status and performance"
+                            variant="card"
+                        >
+                            <NewsServiceMonitor />
+                        </ContentSection>
                     </div>
                 </TabsContent>
 
                 <TabsContent value="alerts" className="mt-6">
-                    <AlertsContent />
+                    <ContentSection
+                        title="Market Alerts"
+                        description="Stay informed about important market changes and opportunities"
+                        icon={Bell}
+                        variant="default"
+                    >
+                        <AlertsContent />
+                    </ContentSection>
                 </TabsContent>
             </Tabs>
         </div>

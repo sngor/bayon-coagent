@@ -89,7 +89,7 @@ export default function AssistantPage() {
 
     // Load chat history from localStorage on mount
     useEffect(() => {
-        if (user?.id) {
+        if (user?.id && typeof window !== 'undefined') {
             const savedHistory = localStorage.getItem(`chat-history-${user.id}`);
             if (savedHistory) {
                 try {
@@ -104,7 +104,7 @@ export default function AssistantPage() {
 
     // Save chat history to localStorage whenever it changes
     useEffect(() => {
-        if (user?.id && chatHistory.length > 0) {
+        if (user?.id && chatHistory.length > 0 && typeof window !== 'undefined') {
             localStorage.setItem(`chat-history-${user.id}`, JSON.stringify(chatHistory));
         }
     }, [chatHistory, user?.id]);

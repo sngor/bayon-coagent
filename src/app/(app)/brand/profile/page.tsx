@@ -3,7 +3,13 @@
 
 import { useState, useEffect, useActionState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
-import { StandardPageLayout, StandardFormField } from '@/components/standard';
+import {
+    ContentSection,
+    FormSection,
+    ActionBar,
+    DataGrid
+} from '@/components/ui';
+import { StandardFormField } from '@/components/standard';
 import { StandardFormActions } from '@/components/standard/form-actions';
 import { Button } from '@/components/ui/button';
 import {
@@ -97,38 +103,30 @@ function GenerateBioButton({ disabled }: { disabled?: boolean }) {
 // Section Components for better organization
 function BasicInfoSection({ profile, onInputChange }: { profile: Partial<Profile>, onInputChange: any }) {
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                <User className="h-4 w-4" />
-                <span>BASIC INFORMATION</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormSection title="Basic Information" icon={User}>
+            <DataGrid columns={2}>
                 <StandardFormField label="Full Name" id="name" required>
                     <Input id="name" name="name" value={profile.name || ''} onChange={onInputChange} placeholder="John Smith" />
                 </StandardFormField>
                 <StandardFormField label="Agency Name" id="agencyName" required>
                     <Input id="agencyName" name="agencyName" type="text" value={profile.agencyName || ''} onChange={onInputChange} placeholder="Smith Realty Group" />
                 </StandardFormField>
-            </div>
-        </div>
+            </DataGrid>
+        </FormSection>
     );
 }
 
 function ProfessionalDetailsSection({ profile, onInputChange }: { profile: Partial<Profile>, onInputChange: any }) {
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                <Award className="h-4 w-4" />
-                <span>PROFESSIONAL CREDENTIALS</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormSection title="Professional Credentials" icon={Award}>
+            <DataGrid columns={2}>
                 <StandardFormField label="License Number" id="licenseNumber">
-                    <Input id="licenseNumber" name="licenseNumber" value={profile.licenseNumber || ''} onChange={onInputChange} placeholder="RE123456" />
+                    <Input id="licenseNumber" name="licenseNumber" type="text" value={profile.licenseNumber || ''} onChange={onInputChange} placeholder="RE123456" />
                 </StandardFormField>
                 <StandardFormField label="Years of Experience" id="yearsOfExperience">
-                    <Input id="yearsOfExperience" name="yearsOfExperience" type="number" value={profile.yearsOfExperience || ''} onChange={onInputChange} placeholder="5" />
+                    <Input id="yearsOfExperience" name="yearsOfExperience" type="number" min="0" max="60" value={profile.yearsOfExperience || ''} onChange={onInputChange} placeholder="5" />
                 </StandardFormField>
-            </div>
+            </DataGrid>
             <StandardFormField
                 label="Certifications"
                 id="certifications"
@@ -142,7 +140,7 @@ function ProfessionalDetailsSection({ profile, onInputChange }: { profile: Parti
                     placeholder="e.g., CRS, ABR, GRI (comma-separated)"
                 />
             </StandardFormField>
-        </div>
+        </FormSection>
     );
 }
 
@@ -150,13 +148,12 @@ function BioSection({ profile, onInputChange, bioFormAction }: { profile: Partia
     const isGenerateDisabled = !profile.name || !profile.agencyName || !profile.yearsOfExperience;
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                    <Building2 className="h-4 w-4" />
-                    <span>PROFESSIONAL BIO</span>
-                </div>
-                <div className="flex items-center gap-2">
+        <ContentSection
+            title="Professional Bio"
+            icon={Building2}
+            variant="default"
+            actions={
+                <ActionBar spacing="compact">
                     <SaveButton content={profile.bio || ''} type="Bio" />
                     <form action={bioFormAction}>
                         <input type="hidden" name="name" value={profile.name || ''} />
@@ -165,8 +162,9 @@ function BioSection({ profile, onInputChange, bioFormAction }: { profile: Partia
                         <input type="hidden" name="agencyName" value={profile.agencyName || ''} />
                         <GenerateBioButton disabled={isGenerateDisabled} />
                     </form>
-                </div>
-            </div>
+                </ActionBar>
+            }
+        >
             <StandardFormField
                 label=""
                 id="bio"
@@ -181,25 +179,21 @@ function BioSection({ profile, onInputChange, bioFormAction }: { profile: Partia
                     placeholder="Tell clients about your experience, expertise, and what makes you unique..."
                 />
             </StandardFormField>
-        </div>
+        </ContentSection>
     );
 }
 
 function ContactSection({ profile, onInputChange }: { profile: Partial<Profile>, onInputChange: any }) {
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                <Phone className="h-4 w-4" />
-                <span>CONTACT INFORMATION</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormSection title="Contact Information" icon={Phone}>
+            <DataGrid columns={2}>
                 <StandardFormField label="Phone Number" id="phone" required>
-                    <Input id="phone" name="phone" type="tel" value={profile.phone || ''} onChange={onInputChange} placeholder="(555) 123-4567" />
+                    <Input id="phone" name="phone" type="tel" value={profile.phone || ''} onChange={onInputChange} placeholder="(555) 123-4567" pattern="[0-9\s\(\)\-\+\.]+" />
                 </StandardFormField>
                 <StandardFormField label="Website URL" id="website">
-                    <Input id="website" name="website" type="url" value={profile.website || ''} onChange={onInputChange} placeholder="https://your-website.com" />
+                    <Input id="website" name="website" type="url" value={profile.website || ''} onChange={onInputChange} placeholder="https://your-website.com" pattern="https?://.+" />
                 </StandardFormField>
-            </div>
+            </DataGrid>
             <StandardFormField
                 label="Primary Business Address"
                 id="address"
@@ -215,18 +209,14 @@ function ContactSection({ profile, onInputChange }: { profile: Partial<Profile>,
             >
                 <Input id="zillowEmail" name="zillowEmail" type="email" value={profile.zillowEmail || ''} onChange={onInputChange} placeholder="your-email@zillow-premier-agent.com" />
             </StandardFormField>
-        </div>
+        </FormSection>
     );
 }
 
 function SocialLinksSection({ profile, onInputChange }: { profile: Partial<Profile>, onInputChange: any }) {
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                <Share2 className="h-4 w-4" />
-                <span>SOCIAL MEDIA</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <FormSection title="Social Media" icon={Share2}>
+            <DataGrid columns={3}>
                 <StandardFormField label="LinkedIn" id="linkedin">
                     <Input id="linkedin" name="linkedin" type="url" value={profile.linkedin || ''} onChange={onInputChange} placeholder="https://linkedin.com/in/..." />
                 </StandardFormField>
@@ -236,9 +226,9 @@ function SocialLinksSection({ profile, onInputChange }: { profile: Partial<Profi
                 <StandardFormField label="Facebook" id="facebook">
                     <Input id="facebook" name="facebook" type="url" value={profile.facebook || ''} onChange={onInputChange} placeholder="https://facebook.com/..." />
                 </StandardFormField>
-            </div>
+            </DataGrid>
             <p className="text-xs text-muted-foreground">Adding social profiles helps Google verify your expertise and authority</p>
-        </div>
+        </FormSection>
     );
 }
 
@@ -377,11 +367,11 @@ export default function ProfilePage() {
                 title: 'Bio Generated!',
                 description: 'Your new professional bio was generated by our cloud AI.',
             });
-        } else if (bioState.message && bioState.message !== 'success') {
+        } else if (bioState.message && bioState.message !== 'success' && bioState.message !== '') {
             toast({
                 variant: 'destructive',
                 title: 'Generation Failed',
-                description: bioState.message,
+                description: bioState.message || 'Could not generate bio. Please try again.',
             })
         }
     }, [bioState]);
@@ -523,26 +513,33 @@ export default function ProfilePage() {
                     </TabsTrigger>
                 </TabsList>
                 <TabsContent value="profile" className="mt-8">
-                    <div className="grid gap-8 lg:grid-cols-3">
-                        <div className="lg:col-span-2">
-                            <ProfileForm
-                                profile={profile}
-                                onInputChange={handleInputChange}
-                                onSave={handleSave}
-                                isSaving={isSaving}
-                                isLoading={isLoading}
-                                bioFormAction={bioFormAction}
-                            />
+                    {isLoading ? (
+                        <div className="flex items-center justify-center py-12">
+                            <StandardLoadingSpinner size="lg" className="mr-3" />
+                            <span className="text-muted-foreground">Loading your profile...</span>
                         </div>
-                        <div className="lg:col-span-1">
-                            <div className={`sticky ${STICKY_POSITIONS.BELOW_HUB_TABS}`}>
-                                <ProfileCompletionChecklist profile={profile} />
+                    ) : (
+                        <DataGrid columns={3}>
+                            <div className="lg:col-span-2">
+                                <ProfileForm
+                                    profile={profile}
+                                    onInputChange={handleInputChange}
+                                    onSave={handleSave}
+                                    isSaving={isSaving}
+                                    isLoading={isLoading}
+                                    bioFormAction={bioFormAction}
+                                />
                             </div>
-                        </div>
-                    </div>
+                            <div className="lg:col-span-1">
+                                <div className={`sticky ${STICKY_POSITIONS.BELOW_HUB_TABS} z-10 self-start`}>
+                                    <ProfileCompletionChecklist profile={profile} />
+                                </div>
+                            </div>
+                        </DataGrid>
+                    )}
                 </TabsContent>
                 <TabsContent value="schema" className="mt-8">
-                    <div className="grid gap-8 md:grid-cols-2">
+                    <DataGrid columns={2}>
                         <Card>
                             <CardHeader className="pb-6">
                                 <CardTitle className="font-headline">RealEstateAgent Schema</CardTitle>
@@ -559,7 +556,7 @@ export default function ProfilePage() {
                                 <JsonLdDisplay schema={generateAgencySchema(profile)} />
                             </CardContent>
                         </Card>
-                    </div>
+                    </DataGrid>
                 </TabsContent>
             </Tabs>
         </div>

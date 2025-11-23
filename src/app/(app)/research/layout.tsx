@@ -1,6 +1,6 @@
 'use client';
 
-import { HubLayout } from '@/components/hub';
+import { HubLayoutWithFavorites } from '@/components/hub/hub-layout-with-favorites';
 import { FeatureGuard } from '@/components/feature-guard';
 import { Search, FileText, BookOpen } from 'lucide-react';
 
@@ -13,7 +13,7 @@ const researchTabs = [
 export default function ResearchLayout({ children }: { children: React.ReactNode }) {
     return (
         <FeatureGuard featureId="research">
-            <HubLayout
+            <HubLayoutWithFavorites
                 title="Research Hub"
                 description="AI-powered research and knowledge management for real estate professionals"
                 icon={Search}
@@ -21,7 +21,7 @@ export default function ResearchLayout({ children }: { children: React.ReactNode
                 tabsVariant="pills"
             >
                 {children}
-            </HubLayout>
+            </HubLayoutWithFavorites>
         </FeatureGuard>
     );
 }

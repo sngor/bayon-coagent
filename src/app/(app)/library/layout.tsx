@@ -1,6 +1,6 @@
 'use client';
 
-import { HubLayout } from '@/components/hub';
+import { HubLayoutWithFavorites } from '@/components/hub/hub-layout-with-favorites';
 import { FeatureGuard } from '@/components/feature-guard';
 import { Library, FileText, BarChart3, Image, Bookmark, Home, Calendar } from 'lucide-react';
 
@@ -20,7 +20,7 @@ export default function LibraryLayout({
 }) {
     return (
         <FeatureGuard featureId="library">
-            <HubLayout
+            <HubLayoutWithFavorites
                 title="Content & Knowledge Library"
                 description="Everything you've created, ready when you need it - content, reports, media, and templates"
                 icon={Library}
@@ -28,7 +28,7 @@ export default function LibraryLayout({
                 tabsVariant="pills"
             >
                 {children}
-            </HubLayout>
+            </HubLayoutWithFavorites>
         </FeatureGuard>
     );
 }

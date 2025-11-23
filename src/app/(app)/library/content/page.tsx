@@ -26,6 +26,8 @@ import {
     moveContentToProjectAction,
     deleteContentAction,
     renameContentAction,
+    getSavedContentAction,
+    getProjectsAction,
 } from '@/app/actions';
 import { Library, Copy, Folder, FolderPlus, MoreVertical, Trash2, Pencil, ChevronsUpDown } from 'lucide-react';
 import { marked } from 'marked';
@@ -62,7 +64,15 @@ import { Badge } from '@/components/ui/badge';
 
 
 
-function CreateProjectDialog({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen: (open: boolean) => void }) {
+function CreateProjectDialog({
+    isOpen,
+    setIsOpen,
+    onProjectCreated
+}: {
+    isOpen: boolean,
+    setIsOpen: (open: boolean) => void,
+    onProjectCreated: () => void
+}) {
     const { user } = useUser();
     const [name, setName] = useState('');
 
@@ -82,6 +92,7 @@ function CreateProjectDialog({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen
                 toast({ title: 'Project Created!', description: `"${name}" has been created.` });
                 setName('');
                 setIsOpen(false);
+                onProjectCreated();
             }
         } catch (error) {
             console.error('Failed to create project:', error);
@@ -111,7 +122,17 @@ function CreateProjectDialog({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen
     )
 }
 
-function RenameContentDialog({ item, isOpen, setIsOpen }: { item: SavedContent | null, isOpen: boolean, setIsOpen: (open: boolean) => void }) {
+function RenameContentDialog({
+    item,
+    isOpen,
+    setIsOpen,
+    onContentRenamed
+}: {
+    item: SavedContent | null,
+    isOpen: boolean,
+    setIsOpen: (open: boolean) => void,
+    onContentRenamed: () => void
+}) {
     const { user } = useUser();
     const [name, setName] = useState(item?.name || '');
 
@@ -134,6 +155,7 @@ function RenameContentDialog({ item, isOpen, setIsOpen }: { item: SavedContent |
             } else {
                 toast({ title: 'Content Renamed!', description: `The item has been renamed to "${name}".` });
                 setIsOpen(false);
+                onContentRenamed();
             }
         } catch (error) {
             console.error('Failed to rename content:', error);
@@ -176,7 +198,7 @@ export default function LibraryPage() {
     const [isLoadingContent, setIsLoadingContent] = useState(true);
     const [isLoadingProjects, setIsLoadingProjects] = useState(true);
 
-    // Fetch content and projects
+    // Fetch content and projects using Server Actions
     useEffect(() => {
         if (!user) {
             setSavedContent([]);
@@ -186,13 +208,66 @@ export default function LibraryPage() {
             return;
         }
 
-        // For now, set empty arrays to show empty state
-        // TODO: Implement proper data fetching via Server Actions
-        setSavedContent([]);
-        setProjects([]);
-        setIsLoadingContent(false);
-        setIsLoadingProjects(false);
+        // Fetch saved content
+        const fetchContent = async () => {
+            setIsLoadingContent(true);
+            try {
+                const result = await getSavedContentAction();
+                if (result.data) {
+                    setSavedContent(result.data);
+                } else {
+                    setSavedContent([]);
+                    if (result.errors) {
+                        console.error('Failed to fetch saved content:', result.errors);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching saved content:', error);
+                setSavedContent([]);
+            } finally {
+                setIsLoadingContent(false);
+            }
+        };
+
+        // Fetch projects
+        const fetchProjects = async () => {
+            setIsLoadingProjects(true);
+            try {
+                const result = await getProjectsAction();
+                if (result.data) {
+                    setProjects(result.data);
+                } else {
+                    setProjects([]);
+                    if (result.errors) {
+                        console.error('Failed to fetch projects:', result.errors);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching projects:', error);
+                setProjects([]);
+            } finally {
+                setIsLoadingProjects(false);
+            }
+        };
+
+        fetchContent();
+        fetchProjects();
     }, [user]);
+
+    // Refresh functions
+    const refreshContent = async () => {
+        const result = await getSavedContentAction();
+        if (result.data) {
+            setSavedContent(result.data);
+        }
+    };
+
+    const refreshProjects = async () => {
+        const result = await getProjectsAction();
+        if (result.data) {
+            setProjects(result.data);
+        }
+    };
 
     const contentByProject = useMemo(() => {
         if (!savedContent) return {};
@@ -254,6 +329,7 @@ export default function LibraryPage() {
                 toast({ variant: 'destructive', title: 'Error', description: result.message });
             } else {
                 toast({ title: 'Content Moved', description: 'The item has been moved to the new project.' });
+                refreshContent();
             }
         } catch (error) {
             console.error('Failed to move content:', error);
@@ -271,6 +347,7 @@ export default function LibraryPage() {
             } else {
                 toast({ title: 'Content Deleted', description: 'The saved item has been removed.' });
                 setItemToDelete(null);
+                refreshContent();
             }
         } catch (error) {
             console.error('Failed to delete content:', error);
@@ -423,8 +500,17 @@ export default function LibraryPage() {
                     variant="card"
                 />
             )}
-            <CreateProjectDialog isOpen={isCreateProjectOpen} setIsOpen={setIsCreateProjectOpen} />
-            <RenameContentDialog item={itemToRename} isOpen={!!itemToRename} setIsOpen={() => setItemToRename(null)} />
+            <CreateProjectDialog
+                isOpen={isCreateProjectOpen}
+                setIsOpen={setIsCreateProjectOpen}
+                onProjectCreated={refreshProjects}
+            />
+            <RenameContentDialog
+                item={itemToRename}
+                isOpen={!!itemToRename}
+                setIsOpen={() => setItemToRename(null)}
+                onContentRenamed={refreshContent}
+            />
         </div>
     );
 }

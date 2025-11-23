@@ -1,6 +1,6 @@
 'use client';
 
-import { HubLayout } from '@/components/hub';
+import { HubLayoutWithFavorites } from '@/components/hub/hub-layout-with-favorites';
 import { FeatureGuard } from '@/components/feature-guard';
 import { Lightbulb, Target, TrendingUp, BarChart3 } from 'lucide-react';
 
@@ -13,7 +13,7 @@ const marketTabs = [
 export default function MarketLayout({ children }: { children: React.ReactNode }) {
     return (
         <FeatureGuard featureId="market">
-            <HubLayout
+            <HubLayoutWithFavorites
                 title="Market Intelligence"
                 description="Track market trends, opportunities, and analytics for your area"
                 icon={BarChart3}
@@ -21,7 +21,7 @@ export default function MarketLayout({ children }: { children: React.ReactNode }
                 tabsVariant="pills"
             >
                 {children}
-            </HubLayout>
+            </HubLayoutWithFavorites>
         </FeatureGuard>
     );
 }

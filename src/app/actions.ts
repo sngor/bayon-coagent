@@ -3075,7 +3075,7 @@ export async function saveContentAction(
   errors?: string[];
 }> {
   try {
-    if (!userId) {
+    if (!userId || typeof userId !== 'string') {
       return {
         message: 'Authentication required',
         data: null,
@@ -3083,32 +3083,157 @@ export async function saveContentAction(
       };
     }
 
+    if (!content || typeof content !== 'string') {
+      return {
+        message: 'Invalid content',
+        data: null,
+        errors: ['Content is required and must be a string'],
+      };
+    }
+
+    // Validate content size - DynamoDB has a 400KB item size limit
+    const contentSizeBytes = Buffer.byteLength(content, 'utf8');
+    const maxContentSize = 350 * 1024; // 350KB to leave room for metadata
+
+    if (contentSizeBytes > maxContentSize) {
+      return {
+        message: 'Content too large to save',
+        data: null,
+        errors: [`Content size (${Math.round(contentSizeBytes / 1024)}KB) exceeds maximum allowed size (${Math.round(maxContentSize / 1024)}KB)`],
+      };
+    }
+
     const repository = getRepository();
     const contentId = Date.now().toString();
     const keys = getSavedContentKeys(userId, contentId);
 
-    await repository.put({
+    // Create a clean data object with size-optimized content
+    const contentName = (name || type).substring(0, 255);
+    const contentData = {
+      id: contentId,
+      content: content.trim(), // Remove unnecessary whitespace
+      type,
+      name: contentName, // For backward compatibility
+      title: contentName, // For type compatibility
+      projectId: projectId || null,
+      createdAt: new Date().toISOString(),
+      contentSize: contentSizeBytes,
+    };
+
+    const itemToSave = {
       ...keys,
-      EntityType: 'SavedContent',
-      Data: {
-        content,
-        type,
-        name: name || type,
-        projectId: projectId || null,
-        createdAt: new Date().toISOString(),
-      },
+      EntityType: 'SavedContent' as const,
+      Data: contentData,
       CreatedAt: Date.now(),
       UpdatedAt: Date.now()
-    });
+    };
+
+    await repository.put(itemToSave);
 
     return {
       message: 'Content saved successfully',
-      data: { id: contentId, content, type, name },
+      data: { id: contentId, content, type, name: contentData.name },
     };
   } catch (error: any) {
     console.error('Save content error:', error);
+
+    // Handle specific DynamoDB errors
+    if (error.message?.includes('hashkey has exceeded') || error.message?.includes('Item size has exceeded')) {
+      return {
+        message: 'Content is too large to save',
+        data: null,
+        errors: ['The content is too large for storage. Please try with shorter content.'],
+      };
+    }
+
     return {
       message: 'Failed to save content',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+
+
+/**
+ * Get all saved content for a user
+ */
+export async function getSavedContentAction(): Promise<{
+  message: string;
+  data: any[] | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user?.id) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to view saved content'],
+      };
+    }
+
+    const repository = getRepository();
+    const pk = `USER#${user.id}`;
+    const skPrefix = 'CONTENT#';
+
+    const result = await repository.query(pk, skPrefix, {
+      scanIndexForward: false, // Most recent first
+    });
+
+    return {
+      message: 'Saved content retrieved successfully',
+      data: result.items || [],
+    };
+  } catch (error: any) {
+    console.error('Get saved content error:', error);
+    return {
+      message: 'Failed to retrieve saved content',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Get all projects for a user
+ */
+export async function getProjectsAction(): Promise<{
+  message: string;
+  data: any[] | null;
+  errors?: string[];
+}> {
+  try {
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user?.id) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to view projects'],
+      };
+    }
+
+    const repository = getRepository();
+    const pk = `USER#${user.id}`;
+    const skPrefix = 'PROJECT#';
+
+    const result = await repository.query(pk, skPrefix, {
+      scanIndexForward: false, // Most recent first
+    });
+
+    return {
+      message: 'Projects retrieved successfully',
+      data: result.items || [],
+    };
+  } catch (error: any) {
+    console.error('Get projects error:', error);
+    return {
+      message: 'Failed to retrieve projects',
       data: null,
       errors: [error.message || 'Unknown error occurred'],
     };

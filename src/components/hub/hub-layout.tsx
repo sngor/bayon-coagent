@@ -1,14 +1,13 @@
 'use client';
 
 import { HubLayoutProps } from './types';
-import { HubHeader } from './hub-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { HubTabs } from './hub-tabs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { useMemo, memo, useRef, useEffect } from 'react';
 
-// Static header and tabs that don't re-render
-const StaticHubHeader = memo(HubHeader);
+// Static tabs that don't re-render
 const StaticHubTabs = memo(HubTabs);
 
 export function HubLayout({
@@ -44,12 +43,13 @@ export function HubLayout({
 
     return (
         <div ref={layoutRef} className="space-y-6">
-            {/* Static Hub Header - Never re-renders within the same hub */}
-            <StaticHubHeader
+            {/* Hub Header using consistent PageHeader component */}
+            <PageHeader
                 title={title}
                 description={description}
                 icon={icon}
                 actions={actions}
+                variant="hub"
             />
 
             {/* Static Hub Tabs - Visually connected to topbar */}

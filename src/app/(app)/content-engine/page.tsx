@@ -237,6 +237,7 @@ function SaveDialog({ dialogInfo, setDialogInfo, projects }: { dialogInfo: SaveD
     startTransition(async () => {
       try {
         const result = await saveContentAction(
+          user.id,
           dialogInfo.content,
           dialogInfo.type,
           name || dialogInfo.type,

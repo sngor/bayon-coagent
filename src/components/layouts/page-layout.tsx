@@ -1,51 +1,60 @@
-import * as React from "react";
-import { cn } from "@/lib/utils";
-import { Breadcrumbs, type BreadcrumbItem } from "@/components/ui/breadcrumbs";
+'use client';
 
-interface PageLayoutProps {
-    title: string;
-    description?: string;
-    action?: React.ReactNode;
-    breadcrumbs?: BreadcrumbItem[];
+import { cn } from '@/lib/utils';
+import { PageHeader, PageHeaderProps } from '@/components/ui/page-header';
+import { motion } from 'framer-motion';
+
+export interface PageLayoutProps {
+    header?: PageHeaderProps;
     children: React.ReactNode;
     className?: string;
+    maxWidth?: 'default' | 'wide' | 'full';
+    spacing?: 'default' | 'compact' | 'spacious';
+    animate?: boolean;
 }
 
-/**
- * Page Layout Component
- * Provides a consistent page structure with title, description, breadcrumbs, and action area
- * Includes fade-in-up animation on mount for a polished user experience
- */
 export function PageLayout({
-    title,
-    description,
-    action,
-    breadcrumbs,
+    header,
     children,
     className,
+    maxWidth = 'default',
+    spacing = 'default',
+    animate = true
 }: PageLayoutProps) {
-    return (
-        <div className={cn("space-y-6 animate-fade-in-up", className)}>
-            {/* Breadcrumbs */}
-            {breadcrumbs && breadcrumbs.length > 0 && (
-                <Breadcrumbs items={breadcrumbs} />
-            )}
+    const maxWidthClasses = {
+        default: 'max-w-7xl mx-auto',
+        wide: 'max-w-[1600px] mx-auto',
+        full: 'max-w-none'
+    };
 
-            {/* Page Header */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="space-y-1 flex-1">
-                    <h1 className="text-3xl font-bold font-headline tracking-tight">
-                        {title}
-                    </h1>
-                    {description && (
-                        <p className="text-muted-foreground text-base">{description}</p>
-                    )}
-                </div>
-                {action && <div className="flex-shrink-0">{action}</div>}
-            </div>
+    const spacingClasses = {
+        compact: 'space-y-4',
+        default: 'space-y-6',
+        spacious: 'space-y-8'
+    };
 
-            {/* Page Content */}
-            <div>{children}</div>
+    const content = (
+        <div className={cn(
+            maxWidthClasses[maxWidth],
+            spacingClasses[spacing],
+            className
+        )}>
+            {header && <PageHeader {...header} />}
+            {children}
         </div>
+    );
+
+    if (!animate) {
+        return content;
+    }
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+        >
+            {content}
+        </motion.div>
     );
 }

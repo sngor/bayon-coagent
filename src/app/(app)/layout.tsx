@@ -41,6 +41,7 @@ import {
   BarChart3,
   Shield,
   ArrowLeft,
+  FileText,
 } from 'lucide-react';
 import {
   HouseIcon,
@@ -222,6 +223,16 @@ function UserDropdownContent({ profile, user, userName, getInitials, handleSignO
         <LogOut className="mr-2 h-4 w-4" />
         <span>Sign Out</span>
       </DropdownMenuItem>
+      <div className="px-2 py-2 border-t">
+        <div className="flex justify-center gap-4 text-xs text-muted-foreground">
+          <Link href="/privacy" className="hover:text-foreground transition-colors">
+            Privacy
+          </Link>
+          <Link href="/terms" className="hover:text-foreground transition-colors">
+            Terms
+          </Link>
+        </div>
+      </div>
     </DropdownMenuContent>
   );
 }
@@ -428,18 +439,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 {/* Feedback Button */}
                 <div className="px-1">
                   <FeedbackButton />
-                </div>
-
-                {/* Privacy and Terms Links */}
-                <div className="px-3 py-2 text-xs text-muted-foreground space-y-1 group-data-[state=collapsed]/sidebar-wrapper:hidden">
-                  <div className="flex gap-3 justify-center">
-                    <Link href="/privacy" className="hover:text-foreground transition-colors">
-                      Privacy
-                    </Link>
-                    <Link href="/terms" className="hover:text-foreground transition-colors">
-                      Terms
-                    </Link>
-                  </div>
                 </div>
               </div>
             </SidebarFooter>

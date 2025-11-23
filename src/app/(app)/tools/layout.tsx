@@ -1,6 +1,6 @@
 'use client';
 
-import { HubLayout } from '@/components/hub';
+import { HubLayoutWithFavorites } from '@/components/hub/hub-layout-with-favorites';
 import { FeatureGuard } from '@/components/feature-guard';
 import { Calculator, Wrench, DollarSign } from 'lucide-react';
 
@@ -13,7 +13,7 @@ const toolsTabs = [
 export default function ToolsLayout({ children }: { children: React.ReactNode }) {
     return (
         <FeatureGuard featureId="tools">
-            <HubLayout
+            <HubLayoutWithFavorites
                 title="Deal Analysis & Tools"
                 description="Analyze deals and crunch numbers like a pro with mortgage calculators and investment analysis tools"
                 icon={Calculator}
@@ -21,7 +21,7 @@ export default function ToolsLayout({ children }: { children: React.ReactNode })
                 tabsVariant="pills"
             >
                 {children}
-            </HubLayout>
+            </HubLayoutWithFavorites>
         </FeatureGuard>
     );
 }

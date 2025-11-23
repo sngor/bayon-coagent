@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AnimatedProgress } from '@/components/ui/animated-progress';
-import { CheckCircle2, Circle, ArrowRight, Sparkles } from 'lucide-react';
+import { CheckCircle2, Circle, ArrowRight, Sparkles, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fadeInUp, staggerContainer, staggerItem } from '@/lib/animations';
 import type { Profile } from '@/lib/types';
@@ -78,11 +78,13 @@ const PROFILE_FIELDS: ProfileField[] = [
 export interface ProfileCompletionBannerProps {
     profile: Partial<Profile>;
     className?: string;
+    onDismiss?: () => void;
 }
 
 export function ProfileCompletionBanner({
     profile,
     className,
+    onDismiss,
 }: ProfileCompletionBannerProps) {
     const completionData = useMemo(() => {
         const completed = PROFILE_FIELDS.filter((field) => {
@@ -177,7 +179,7 @@ export function ProfileCompletionBanner({
                     <div className="space-y-4">
                         {/* Header */}
                         <div className="flex items-start justify-between gap-4">
-                            <div className="space-y-1">
+                            <div className="space-y-1 flex-1">
                                 <h3 className="text-lg font-semibold font-headline">
                                     Complete Your Profile
                                 </h3>
@@ -185,19 +187,32 @@ export function ProfileCompletionBanner({
                                     {getNextStepMessage()}
                                 </p>
                             </div>
-                            <motion.div
-                                className="text-right"
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                            >
-                                <div className="text-2xl font-bold text-primary">
-                                    {completionData.percentage}%
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                    {completionData.completed} of {completionData.total}
-                                </div>
-                            </motion.div>
+                            <div className="flex items-start gap-3">
+                                <motion.div
+                                    className="text-right"
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                                >
+                                    <div className="text-2xl font-bold text-primary">
+                                        {completionData.percentage}%
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {completionData.completed} of {completionData.total}
+                                    </div>
+                                </motion.div>
+                                {onDismiss && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={onDismiss}
+                                        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                                        title="Dismiss banner"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
                         </div>
 
                         {/* Progress Bar */}
