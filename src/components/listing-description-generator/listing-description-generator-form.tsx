@@ -25,6 +25,9 @@ import { StandardLoadingSpinner } from '@/components/standard/loading-spinner';
 import { StandardErrorDisplay } from '@/components/standard/error-display';
 import { toast } from '@/hooks/use-toast';
 import { Sparkles, Home, Copy, Check, Save } from 'lucide-react';
+import { SchedulingModal } from '@/components/scheduling-modal';
+import { TemplateSaveModal } from '@/components/template-save-modal';
+import { ContentCategory, TemplateConfiguration } from '@/lib/content-workflow-types';
 
 // Buyer personas for listing optimization
 const buyerPersonas = [
@@ -47,6 +50,13 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showTemplateSaveModal, setShowTemplateSaveModal] = useState(false);
+  const [templateConfiguration, setTemplateConfiguration] = useState<TemplateConfiguration>({
+    promptParameters: {},
+    contentStructure: { sections: [], format: 'listing' },
+    stylePreferences: { tone: '', length: '', keywords: [] }
+  });
 
   // Additional fields for Generate New mode
   const [propertyType, setPropertyType] = useState('Single-Family Home');
@@ -96,6 +106,45 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
       title: 'Save Feature Coming Soon',
       description: 'Content saving will be available in a future update.',
     });
+  };
+
+  const handleSaveAsTemplate = () => {
+    // Create template configuration from current form state
+    const configuration: TemplateConfiguration = {
+      promptParameters: isOptimizeMode ? {
+        originalDescription: propertyDetails,
+        buyerPersona,
+        sellingPoints: '', // Would be extracted from form
+        emotionalAppeal: 'Balanced'
+      } : {
+        propertyType,
+        bedrooms,
+        bathrooms,
+        squareFeet,
+        location,
+        keyFeatures,
+        buyerPersona,
+        writingStyle
+      },
+      contentStructure: {
+        sections: ['description', 'features', 'location'],
+        format: 'listing'
+      },
+      stylePreferences: {
+        tone: isOptimizeMode ? 'Balanced' : writingStyle,
+        length: 'medium',
+        keywords: [],
+        targetAudience: buyerPersona
+      }
+    };
+
+    setTemplateConfiguration(configuration);
+    setShowTemplateSaveModal(true);
+  };
+
+  const handleSchedule = () => {
+    if (!generation) return;
+    setShowScheduleModal(true);
   };
 
   return (
@@ -333,6 +382,10 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
                   loading: isLoading,
                   variant: 'ai',
                 }}
+                secondaryAction={{
+                  label: 'Save as Template',
+                  onClick: handleSaveAsTemplate
+                }}
               />
             </form>
           </CardContent>
@@ -349,6 +402,15 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
             </div>
             {generation && (
               <div className="flex gap-2">
+                <Button
+                  variant="ai"
+                  size="sm"
+                  onClick={handleSchedule}
+                  className="font-medium"
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Schedule
+                </Button>
                 <Button
                   variant={copied ? 'default' : 'outline'}
                   size="sm"
@@ -405,6 +467,37 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
           </CardContent>
         </Card>
       </div>
+
+      <SchedulingModal
+        isOpen={showScheduleModal}
+        onClose={() => setShowScheduleModal(false)}
+        onScheduled={(scheduledContent) => {
+          toast({
+            title: 'Listing Description Scheduled!',
+            description: 'Your listing description has been scheduled successfully.'
+          });
+        }}
+        contentData={{
+          contentId: `listing_${Date.now()}`,
+          title: `${propertyType} Listing - ${location || 'Property'}`,
+          content: generation,
+          contentType: ContentCategory.LISTING_DESCRIPTION
+        }}
+      />
+      <TemplateSaveModal
+        isOpen={showTemplateSaveModal}
+        onClose={() => setShowTemplateSaveModal(false)}
+        onSaved={(templateId) => {
+          toast({
+            title: 'Template Saved!',
+            description: 'Your listing template has been saved and can be reused for future listings.'
+          });
+        }}
+        contentType={ContentCategory.LISTING_DESCRIPTION}
+        configuration={templateConfiguration}
+        initialName={`${isOptimizeMode ? 'Listing Optimizer' : 'Listing Generator'} - ${buyerPersona}`}
+        previewContent={generation}
+      />
     </>
   );
 }

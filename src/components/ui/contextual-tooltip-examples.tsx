@@ -19,7 +19,7 @@ import { Sparkles, Target, Users } from "lucide-react";
 export function BasicFeatureTooltipExample() {
     return (
         <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Basic Feature Tooltip</h3>
+            <h3 className="font-headline text-lg font-semibold">Basic Feature Tooltip</h3>
             <p className="text-sm text-muted-foreground">
                 This tooltip appears the first time a user sees this button. Once dismissed,
                 it won't show again.
@@ -44,7 +44,7 @@ export function BasicFeatureTooltipExample() {
 export function FeatureTooltipWithHoverExample() {
     return (
         <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Feature Tooltip with Hover</h3>
+            <h3 className="font-headline text-lg font-semibold">Feature Tooltip with Hover</h3>
             <p className="text-sm text-muted-foreground">
                 After dismissal, this tooltip shows on hover so users can reference it again.
             </p>
@@ -68,7 +68,7 @@ export function FeatureTooltipWithHoverExample() {
 export function CardFeatureTooltipExample() {
     return (
         <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Card Feature Tooltip</h3>
+            <h3 className="font-headline text-lg font-semibold">Card Feature Tooltip</h3>
             <p className="text-sm text-muted-foreground">
                 Tooltips can be attached to any element, including cards.
             </p>
@@ -101,7 +101,7 @@ export function CardFeatureTooltipExample() {
 export function HelpHintExample() {
     return (
         <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Help Hint</h3>
+            <h3 className="font-headline text-lg font-semibold">Help Hint</h3>
             <p className="text-sm text-muted-foreground">
                 For features that don't need first-time guidance, use a simple help hint.
             </p>
@@ -122,7 +122,7 @@ export function HelpHintExample() {
 export function WorkflowTooltipsExample() {
     return (
         <div className="space-y-6">
-            <h3 className="text-lg font-semibold">Workflow Tooltips</h3>
+            <h3 className="font-headline text-lg font-semibold">Workflow Tooltips</h3>
             <p className="text-sm text-muted-foreground">
                 Guide users through a multi-step process with sequential tooltips.
             </p>
@@ -166,7 +166,7 @@ export function ContextualTooltipDemo() {
     return (
         <div className="container max-w-4xl py-8 space-y-12">
             <div>
-                <h1 className="text-3xl font-bold mb-2">Contextual Tooltip System</h1>
+                <h1 className="font-headline text-3xl font-bold mb-2">Contextual Tooltip System</h1>
                 <p className="text-muted-foreground">
                     Examples of how to use contextual tooltips for first-time feature guidance.
                 </p>

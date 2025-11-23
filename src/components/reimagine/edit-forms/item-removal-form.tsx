@@ -214,7 +214,7 @@ export function ItemRemovalForm({
                     </div>
 
                     <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-                        <h4 className="text-sm font-medium">Removal Tips</h4>
+                        <h4 className="font-headline text-sm font-medium">Removal Tips</h4>
                         <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                             <li>Mark the entire object you want to remove</li>
                             <li>Describe objects clearly for best results</li>

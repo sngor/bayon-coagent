@@ -107,7 +107,7 @@ export function VisionAnalysisResults({
                         {/* Materials */}
                         {result.visualElements.materials.length > 0 && (
                             <div>
-                                <h4 className="text-sm font-semibold mb-2">Materials</h4>
+                                <h4 className="font-headline text-sm font-semibold mb-2">Materials</h4>
                                 <div className="flex flex-wrap gap-2">
                                     {result.visualElements.materials.map((material, idx) => (
                                         <Badge key={idx} variant="secondary">
@@ -121,7 +121,7 @@ export function VisionAnalysisResults({
                         {/* Colors */}
                         {result.visualElements.colors.length > 0 && (
                             <div>
-                                <h4 className="text-sm font-semibold mb-2">Colors</h4>
+                                <h4 className="font-headline text-sm font-semibold mb-2">Colors</h4>
                                 <div className="flex flex-wrap gap-2">
                                     {result.visualElements.colors.map((color, idx) => (
                                         <Badge key={idx} variant="outline">
@@ -137,19 +137,19 @@ export function VisionAnalysisResults({
                         {/* Lighting, Size, Layout */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
-                                <h4 className="text-sm font-semibold mb-1">Lighting</h4>
+                                <h4 className="font-headline text-sm font-semibold mb-1">Lighting</h4>
                                 <p className="text-sm text-muted-foreground capitalize">
                                     {result.visualElements.lighting}
                                 </p>
                             </div>
                             <div>
-                                <h4 className="text-sm font-semibold mb-1">Size</h4>
+                                <h4 className="font-headline text-sm font-semibold mb-1">Size</h4>
                                 <p className="text-sm text-muted-foreground capitalize">
                                     {result.visualElements.size}
                                 </p>
                             </div>
                             <div>
-                                <h4 className="text-sm font-semibold mb-1">Layout</h4>
+                                <h4 className="font-headline text-sm font-semibold mb-1">Layout</h4>
                                 <p className="text-sm text-muted-foreground">
                                     {result.visualElements.layout}
                                 </p>
@@ -162,7 +162,7 @@ export function VisionAnalysisResults({
                                 <>
                                     <Separator />
                                     <div>
-                                        <h4 className="text-sm font-semibold mb-2">Notable Features</h4>
+                                        <h4 className="font-headline text-sm font-semibold mb-2">Notable Features</h4>
                                         <ul className="space-y-1">
                                             {result.visualElements.notableFeatures.map((feature, idx) => (
                                                 <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
@@ -310,7 +310,7 @@ function RecommendationCard({
                         <PriorityIcon className={cn('w-4 h-4', priority.color)} />
                     </div>
                     <div className="flex-1">
-                        <h4 className="font-semibold text-sm mb-1">
+                        <h4 className="font-headline font-semibold text-sm mb-1">
                             {index + 1}. {recommendation.action}
                         </h4>
                         <div className="flex flex-wrap gap-2">

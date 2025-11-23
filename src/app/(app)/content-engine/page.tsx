@@ -1307,7 +1307,7 @@ export default function ContentEnginePage() {
                             <div className="w-10 h-10 rounded-lg bg-blue-700 flex items-center justify-center">
                               <Linkedin className="w-5 h-5 text-white" />
                             </div>
-                            <h3 className="font-bold text-lg">LinkedIn</h3>
+                            <h3 className="font-headline font-bold text-lg">LinkedIn</h3>
                           </div>
                           <div className="flex items-center gap-2">
                             <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.linkedin || '', 'Social Post (LinkedIn)')}>
@@ -1353,7 +1353,7 @@ export default function ContentEnginePage() {
                             <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
                               <Facebook className="w-5 h-5 text-white" />
                             </div>
-                            <h3 className="font-bold text-lg">Facebook</h3>
+                            <h3 className="font-headline font-bold text-lg">Facebook</h3>
                           </div>
                           <div className="flex items-center gap-2">
                             <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.facebook || '', 'Social Post (Facebook)')}>
@@ -1399,7 +1399,7 @@ export default function ContentEnginePage() {
                             <div className="w-10 h-10 rounded-lg bg-sky-500 flex items-center justify-center">
                               <Twitter className="w-5 h-5 text-white" />
                             </div>
-                            <h3 className="font-bold text-lg">X (Twitter)</h3>
+                            <h3 className="font-headline font-bold text-lg">X (Twitter)</h3>
                           </div>
                           <div className="flex items-center gap-2">
                             <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.twitter || '', 'Social Post (X/Twitter)')}>

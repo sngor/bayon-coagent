@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useEffect, useState } from 'react';
 import { Loader2, Clock, Activity, Search, FileText, Home, Share2, Sparkles, Wand2, Brain, MapPin, TrendingUp, User, Palette, Bell, Link as LinkIcon, Shield, Trash2, CheckCircle2, XCircle, Smartphone, Monitor, Tablet, Globe, LogOut, Lock, Key, ShieldCheck, BarChart3 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
 import { useTheme } from 'next-themes';
 import { LoginHistory } from '@/components/login-history';
@@ -16,6 +17,7 @@ import { UsageTracking, UsageStats } from '@/components/ui/usage-tracking';
 import type { UsageLimit } from '@/components/ui/usage-tracking';
 import { SocialMediaConnections } from '@/components/social-media-connections';
 import { MLSConnection } from '@/components/mls-connection';
+import { FeatureToggles } from '@/components/feature-toggles';
 
 function formatTimestamp(timestamp: number): string {
     const now = Date.now();
@@ -127,8 +129,25 @@ function getActivityConfig(activity: any) {
 export default function SettingsPage() {
     const { user } = useUser();
     const { theme, setTheme } = useTheme();
+    const { toast } = useToast();
     const [recentActivity, setRecentActivity] = useState<any[]>([]);
     const [isLoadingActivity, setIsLoadingActivity] = useState(true);
+
+    // Profile form state
+    const [fullName, setFullName] = useState('');
+    const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+    const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+    // Handle URL tab parameter
+    const [activeTab, setActiveTab] = useState('account');
+
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
+        if (tabParam && ['account', 'preferences', 'integrations', 'security', 'usage', 'features'].includes(tabParam)) {
+            setActiveTab(tabParam);
+        }
+    }, []);
 
     // Security states
     const [mfaEnabled, setMfaEnabled] = useState(false);
@@ -235,6 +254,30 @@ export default function SettingsPage() {
         }
     ]);
 
+    // Load profile data
+    useEffect(() => {
+        async function loadProfile() {
+            if (!user) {
+                setIsLoadingProfile(false);
+                return;
+            }
+
+            try {
+                const { getProfileAction } = await import('@/app/actions');
+                const result = await getProfileAction(user.id);
+                if (result.data?.Data) {
+                    setFullName(result.data.Data.name || '');
+                }
+            } catch (error) {
+                console.error('Failed to load profile:', error);
+            } finally {
+                setIsLoadingProfile(false);
+            }
+        }
+
+        loadProfile();
+    }, [user]);
+
     useEffect(() => {
         async function loadRecentActivity() {
             if (!user) {
@@ -258,9 +301,61 @@ export default function SettingsPage() {
         loadRecentActivity();
     }, [user]);
 
+    // Handle profile save
+    const handleSaveProfile = async () => {
+        if (!user) return;
+
+        setIsSavingProfile(true);
+        try {
+            const { saveProfileAction, getProfileAction } = await import('@/app/actions');
+
+            // First, get the existing profile data
+            const existingProfileResult = await getProfileAction(user.id);
+            const existingProfileData = existingProfileResult.data?.Data || {};
+
+            // Merge the new name with existing profile data
+            const updatedProfile = {
+                ...existingProfileData,
+                name: fullName
+            };
+
+            const formData = new FormData();
+            formData.append('userId', user.id);
+            formData.append('profile', JSON.stringify(updatedProfile));
+
+            const result = await saveProfileAction({}, formData);
+
+            if (result.message === 'success') {
+                toast({
+                    title: 'Profile Updated',
+                    description: 'Your full name has been saved successfully.',
+                });
+
+                // Trigger a page refresh to reload the profile data in the layout
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                console.error('Failed to save profile:', result.message);
+                toast({
+                    title: 'Error',
+                    description: 'Failed to save profile. Please try again.',
+                    variant: 'destructive',
+                });
+            }
+        } catch (error) {
+            console.error('Error saving profile:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to save profile. Please try again.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsSavingProfile(false);
+        }
+    };
+
     return (
         <div className="animate-fade-in-up space-y-6">
-            <Tabs defaultValue="account" className="space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="overflow-x-auto">
                     <TabsTrigger value="account">
                         <User className="h-4 w-4" />
@@ -282,6 +377,10 @@ export default function SettingsPage() {
                         <BarChart3 className="h-4 w-4" />
                         <span className="hidden sm:inline whitespace-nowrap">Usage</span>
                     </TabsTrigger>
+                    <TabsTrigger value="features">
+                        <Wand2 className="h-4 w-4" />
+                        <span className="hidden sm:inline whitespace-nowrap">Features</span>
+                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="account" className="space-y-6">
@@ -297,9 +396,28 @@ export default function SettingsPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="name">Full Name</Label>
-                                <Input id="name" type="text" placeholder="Enter your name" />
+                                <Input
+                                    id="name"
+                                    type="text"
+                                    placeholder="Enter your name"
+                                    value={fullName}
+                                    onChange={(e) => setFullName(e.target.value)}
+                                    disabled={isLoadingProfile}
+                                />
                             </div>
-                            <Button>Save Changes</Button>
+                            <Button
+                                onClick={handleSaveProfile}
+                                disabled={isSavingProfile || isLoadingProfile}
+                            >
+                                {isSavingProfile ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    'Save Changes'
+                                )}
+                            </Button>
                         </CardContent>
                     </Card>
 
@@ -781,6 +899,10 @@ export default function SettingsPage() {
                             </div>
                         </CardContent>
                     </Card>
+                </TabsContent>
+
+                <TabsContent value="features" className="space-y-6">
+                    <FeatureToggles />
                 </TabsContent>
             </Tabs>
         </div>

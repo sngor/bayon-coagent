@@ -42,7 +42,7 @@ export function EditPreviewExample() {
 
     return (
         <div className="space-y-4 p-8">
-            <h1 className="text-2xl font-bold">Edit Preview Example</h1>
+            <h1 className="font-headline text-2xl font-bold">Edit Preview Example</h1>
 
             {!showPreview ? (
                 <Button onClick={() => setShowPreview(true)}>

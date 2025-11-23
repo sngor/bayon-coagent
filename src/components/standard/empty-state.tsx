@@ -39,7 +39,7 @@ export function StandardEmptyState({
             <div className="mb-4 text-muted-foreground" aria-hidden="true">
                 {icon}
             </div>
-            <h3 className="text-heading-2 mb-2">
+            <h3 className="font-headline text-heading-2 mb-2">
                 {title}
             </h3>
             <p className="text-muted-foreground max-w-md mb-6">

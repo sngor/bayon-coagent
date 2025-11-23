@@ -284,7 +284,7 @@ ${state.data.disclaimer}
 
                             {/* Key Factors */}
                             <div className="space-y-3">
-                                <h4 className="font-semibold">Key Valuation Factors</h4>
+                                <h4 className="font-headline font-semibold">Key Valuation Factors</h4>
                                 <div className="grid gap-2">
                                     {state.data.keyFactors.map((factor, index) => (
                                         <div key={index} className="flex items-start gap-2">

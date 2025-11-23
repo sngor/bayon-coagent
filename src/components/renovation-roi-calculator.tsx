@@ -420,7 +420,7 @@ ${state.data.disclaimer}
 
                                 {/* Market Factors */}
                                 <div className="space-y-4">
-                                    <h4 className="font-semibold">Market Factors</h4>
+                                    <h4 className="font-headline font-semibold">Market Factors</h4>
                                     <div className="space-y-3">
                                         <div className="text-sm">
                                             <div className="font-medium text-muted-foreground mb-1">Location Impact</div>
@@ -441,7 +441,7 @@ ${state.data.disclaimer}
 
                                 {/* AI Analysis */}
                                 <div className="space-y-4">
-                                    <h4 className="font-semibold flex items-center gap-2">
+                                    <h4 className="font-headline font-semibold flex items-center gap-2">
                                         <Lightbulb className="h-4 w-4" />
                                         AI Analysis
                                     </h4>
@@ -453,7 +453,7 @@ ${state.data.disclaimer}
                                 {/* Key Factors */}
                                 {state.data.keyFactors.length > 0 && (
                                     <div className="space-y-4">
-                                        <h4 className="font-semibold">Key Factors</h4>
+                                        <h4 className="font-headline font-semibold">Key Factors</h4>
                                         <div className="space-y-2">
                                             {state.data.keyFactors.map((factor, index) => (
                                                 <div key={index} className="flex items-start gap-2 text-sm">
@@ -468,7 +468,7 @@ ${state.data.disclaimer}
                                 {/* Recommendations */}
                                 {state.data.recommendations.length > 0 && (
                                     <div className="space-y-4">
-                                        <h4 className="font-semibold">Recommendations</h4>
+                                        <h4 className="font-headline font-semibold">Recommendations</h4>
                                         <div className="space-y-2">
                                             {state.data.recommendations.map((rec, index) => (
                                                 <Alert key={index}>
@@ -482,7 +482,7 @@ ${state.data.disclaimer}
 
                                 {/* Timeline */}
                                 <div className="space-y-4">
-                                    <h4 className="font-semibold flex items-center gap-2">
+                                    <h4 className="font-headline font-semibold flex items-center gap-2">
                                         <Clock className="h-4 w-4" />
                                         Timeline Considerations
                                     </h4>
@@ -501,7 +501,7 @@ ${state.data.disclaimer}
                                 {/* Risk Factors */}
                                 {state.data.riskFactors.length > 0 && (
                                     <div className="space-y-4">
-                                        <h4 className="font-semibold flex items-center gap-2">
+                                        <h4 className="font-headline font-semibold flex items-center gap-2">
                                             <AlertTriangle className="h-4 w-4" />
                                             Risk Factors
                                         </h4>
@@ -519,7 +519,7 @@ ${state.data.disclaimer}
                                 {/* Comparable Renovations */}
                                 {state.data.comparableRenovations.length > 0 && (
                                     <div className="space-y-4">
-                                        <h4 className="font-semibold">Comparable Renovations</h4>
+                                        <h4 className="font-headline font-semibold">Comparable Renovations</h4>
                                         <div className="space-y-3">
                                             {state.data.comparableRenovations.map((comp, index) => (
                                                 <div key={index} className="p-3 border rounded-lg">

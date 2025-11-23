@@ -322,7 +322,7 @@ export default function ReimagineToolkitPage() {
                                 <div className="flex flex-col items-center justify-center space-y-4">
                                     <Loader2 className="h-12 w-12 animate-spin text-primary" />
                                     <div className="text-center">
-                                        <h3 className="font-semibold text-lg mb-1">Processing your image...</h3>
+                                        <h3 className="font-headline font-semibold text-lg mb-1">Processing your image...</h3>
                                         <p className="text-sm text-muted-foreground">
                                             This usually takes 30-60 seconds
                                         </p>

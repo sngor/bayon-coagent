@@ -222,3 +222,16 @@
 .animate-fade-in {
   animation: fade-in 0.5s ease-out;
 }
+
+/* Typing indicator animations */
+.typing-dot-1 {
+  animation-delay: 0ms;
+}
+
+.typing-dot-2 {
+  animation-delay: 150ms;
+}
+
+.typing-dot-3 {
+  animation-delay: 300ms;
+}

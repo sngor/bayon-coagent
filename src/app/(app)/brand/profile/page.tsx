@@ -20,11 +20,11 @@ import type { Profile } from '@/lib/types';
 import { JsonLdDisplay } from '@/components/json-ld-display';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
-import { generateBioAction, updateProfilePhotoUrlAction, saveContentAction } from '@/app/actions';
+import { generateBioAction, saveContentAction } from '@/app/actions';
 import { Save, User, Building2, Award, Phone, Share2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsList as TabsList, AnimatedTabsTrigger as TabsTrigger } from '@/components/ui/animated-tabs';
-import { ProfileImageUpload } from '@/components/profile-image-upload';
+
 import { ProfileCompletionChecklist } from '@/components/profile-completion-banner';
 import { StandardLoadingSpinner } from '@/components/standard';
 import { STICKY_POSITIONS } from '@/lib/utils';
@@ -242,24 +242,9 @@ function SocialLinksSection({ profile, onInputChange }: { profile: Partial<Profi
     );
 }
 
-function ProfileForm({ profile, onInputChange, onSave, isSaving, isLoading, bioFormAction, userId, onImageUpdate }: { profile: Partial<Profile>, onInputChange: any, onSave: any, isSaving: boolean, isLoading: boolean, bioFormAction: any, userId: string, onImageUpdate: (url: string) => void }) {
+function ProfileForm({ profile, onInputChange, onSave, isSaving, isLoading, bioFormAction }: { profile: Partial<Profile>, onInputChange: any, onSave: any, isSaving: boolean, isLoading: boolean, bioFormAction: any }) {
     return (
         <div className="space-y-8">
-            {/* Profile Photo Card */}
-            <Card>
-                <CardContent className="p-8">
-                    <div className="flex justify-center">
-                        <ProfileImageUpload
-                            userId={userId}
-                            currentImageUrl={profile.photoURL}
-                            userName={profile.name}
-                            onImageUpdate={onImageUpdate}
-                            size="xl"
-                        />
-                    </div>
-                </CardContent>
-            </Card>
-
             {/* Main Profile Information Card */}
             <Card>
                 <CardHeader className="pb-6">
@@ -311,7 +296,7 @@ function ProfileForm({ profile, onInputChange, onSave, isSaving, isLoading, bioF
 }
 
 export default function ProfilePage() {
-    const { user } = useUser();
+    const { user, isUserLoading } = useUser();
     const [profile, setProfile] = useState<Partial<Profile>>({});
     const [isSaving, setIsSaving] = useState(false);
 
@@ -322,6 +307,10 @@ export default function ProfilePage() {
     // Load profile data using server action instead of useItem hook
     useEffect(() => {
         const loadProfile = async () => {
+            if (isUserLoading) {
+                return;
+            }
+
             if (!user?.id) {
                 setIsLoading(false);
                 return;
@@ -332,18 +321,53 @@ export default function ProfilePage() {
                 const { getProfileAction } = await import('@/app/actions');
                 const result = await getProfileAction(user.id);
 
+                console.log('Profile load result:', result);
+
                 if (result.message === 'success' && result.data) {
-                    setProfile(result.data);
+                    // Ensure certifications is properly formatted for the form
+                    const profileData: Partial<Profile> = {
+                        ...result.data,
+                        certifications: Array.isArray(result.data.certifications)
+                            ? result.data.certifications.join(', ')
+                            : result.data.certifications || '',
+                        yearsOfExperience: result.data.yearsOfExperience?.toString() || ''
+                    };
+                    setProfile(profileData);
+                } else {
+                    console.log('No profile data found, using empty profile');
+                    // Initialize with empty profile if no data found
+                    const emptyProfile: Partial<Profile> = {
+                        name: '',
+                        agencyName: '',
+                        phone: '',
+                        address: '',
+                        bio: '',
+                        yearsOfExperience: '',
+                        licenseNumber: '',
+                        website: '',
+                        certifications: '',
+                        linkedin: '',
+                        twitter: '',
+                        facebook: '',
+                        zillowEmail: '',
+                        photoURL: ''
+                    };
+                    setProfile(emptyProfile);
                 }
             } catch (error) {
                 console.error('Failed to load profile:', error);
+                toast({
+                    variant: 'destructive',
+                    title: 'Failed to Load Profile',
+                    description: 'Could not load your profile data. Please try refreshing the page.',
+                });
             } finally {
                 setIsLoading(false);
             }
         };
 
         loadProfile();
-    }, [user?.id]);
+    }, [user?.id, isUserLoading]);
 
     // Effect for server-side generation results
     useEffect(() => {
@@ -370,42 +394,7 @@ export default function ProfilePage() {
         setProfile((prev) => ({ ...prev, [id]: value }));
     };
 
-    const handleImageUpdate = async (url: string) => {
-        setProfile((prev) => ({ ...prev, photoURL: url }));
 
-        if (user?.id) {
-            try {
-                const result = await updateProfilePhotoUrlAction(user.id, url);
-
-                if (result.message === 'Profile photo updated successfully') {
-                    // Refetch the profile data to reflect the changes
-                    try {
-                        const { getProfileAction } = await import('@/app/actions');
-                        const updatedResult = await getProfileAction(user.id);
-                        if (updatedResult.message === 'success' && updatedResult.data) {
-                            setProfile(updatedResult.data);
-                        }
-                    } catch (refetchError) {
-                        console.error('Failed to refetch profile after photo update:', refetchError);
-                    }
-
-                    toast({
-                        title: 'Profile Photo Updated!',
-                        description: 'Your profile photo has been uploaded to S3.',
-                    });
-                } else {
-                    throw new Error(result.errors?.[0] || 'Update failed');
-                }
-            } catch (error) {
-                console.error('Failed to update profile photo:', error);
-                toast({
-                    variant: 'destructive',
-                    title: 'Update Failed',
-                    description: 'Could not update profile photo.',
-                });
-            }
-        }
-    };
 
     const handleSave = async () => {
         if (!user?.id) {
@@ -461,16 +450,15 @@ export default function ProfilePage() {
             console.log('Save result:', result);
 
             if (result.message === 'success') {
-                // Refetch the profile data to reflect the changes
-                try {
-                    const { getProfileAction } = await import('@/app/actions');
-                    const updatedResult = await getProfileAction(user.id);
-                    if (updatedResult.message === 'success' && updatedResult.data) {
-                        setProfile(updatedResult.data);
-                    }
-                } catch (refetchError) {
-                    console.error('Failed to refetch profile:', refetchError);
-                }
+                // Update local state with the saved data (formatted for form display)
+                const updatedProfile: Partial<Profile> = {
+                    ...dataToSave,
+                    certifications: Array.isArray(dataToSave.certifications)
+                        ? dataToSave.certifications.join(', ')
+                        : dataToSave.certifications || '',
+                    yearsOfExperience: dataToSave.yearsOfExperience?.toString() || ''
+                };
+                setProfile(updatedProfile);
 
                 toast({
                     title: 'Profile Saved!',
@@ -544,8 +532,6 @@ export default function ProfilePage() {
                                 isSaving={isSaving}
                                 isLoading={isLoading}
                                 bioFormAction={bioFormAction}
-                                userId={user?.id || ''}
-                                onImageUpdate={handleImageUpdate}
                             />
                         </div>
                         <div className="lg:col-span-1">

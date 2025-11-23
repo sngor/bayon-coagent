@@ -82,7 +82,7 @@ export function LifeEventPredictorForm() {
         </Form>
         {generation && (
           <div className="mt-8">
-            <h3 className="text-lg font-semibold">Generated Life Event Prediction:</h3>
+            <h3 className="font-headline text-lg font-semibold">Generated Life Event Prediction:</h3>
             <p className="mt-2">{generation}</p>
           </div>
         )}

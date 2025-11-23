@@ -48,7 +48,7 @@ export function EditHistoryListExample() {
     return (
         <div className="container mx-auto py-8 space-y-8">
             <div className="space-y-4">
-                <h1 className="text-3xl font-bold">Edit History</h1>
+                <h1 className="font-headline text-3xl font-bold">Edit History</h1>
                 <p className="text-muted-foreground">
                     View, download, and manage your image edits
                 </p>

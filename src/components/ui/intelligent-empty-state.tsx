@@ -35,7 +35,7 @@ export function IntelligentEmptyState({
                     <Icon className="h-8 w-8 text-muted-foreground" />
                 </div>
             )}
-            <h3 className="mb-2 text-lg font-semibold">{title}</h3>
+            <h3 className="font-headline mb-2 text-lg font-semibold">{title}</h3>
             <p className="mb-6 max-w-md text-sm text-muted-foreground">{description}</p>
             {actions.length > 0 && (
                 <div className="flex flex-wrap items-center justify-center gap-2">

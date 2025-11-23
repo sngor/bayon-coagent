@@ -16,10 +16,10 @@ import {
 export function EnhancedCardDemo() {
     return (
         <div className="p-8 space-y-8 max-w-6xl mx-auto">
-            <h1 className="text-3xl font-bold">Enhanced Card Component Demo</h1>
+            <h1 className="font-headline text-3xl font-bold">Enhanced Card Component Demo</h1>
 
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Variants</h2>
+                <h2 className="font-headline text-2xl font-semibold">Variants</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Default Variant */}
                     <EnhancedCard variant="default">
@@ -89,7 +89,7 @@ export function EnhancedCardDemo() {
             </section>
 
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Interactive Cards</h2>
+                <h2 className="font-headline text-2xl font-semibold">Interactive Cards</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <EnhancedCard variant="elevated" interactive>
                         <EnhancedCardHeader>
@@ -118,7 +118,7 @@ export function EnhancedCardDemo() {
             </section>
 
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Loading State</h2>
+                <h2 className="font-headline text-2xl font-semibold">Loading State</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <EnhancedCard loading />
                     <EnhancedCard loading variant="elevated" />
@@ -127,7 +127,7 @@ export function EnhancedCardDemo() {
             </section>
 
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">With Footer</h2>
+                <h2 className="font-headline text-2xl font-semibold">With Footer</h2>
                 <EnhancedCard variant="elevated" className="max-w-md">
                     <EnhancedCardHeader>
                         <EnhancedCardTitle>Card with Footer</EnhancedCardTitle>

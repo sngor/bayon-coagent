@@ -130,6 +130,7 @@ import { z } from 'zod';
 import { getRepository } from '@/aws/dynamodb/repository';
 import {
   getAgentProfileKeys,
+  getProfileKeys,
   getUserProfileKeys,
   getMarketingPlanKeys,
   getReviewAnalysisKeys,
@@ -139,7 +140,6 @@ import {
   getCompetitorKeys,
   getTrainingProgressKeys,
   getNeighborhoodProfileKeys,
-  getProfileKeys,
 } from '@/aws/dynamodb/keys';
 import { getAlertDataAccess } from '@/lib/alerts/data-access';
 import type { AlertSettings, TargetArea, NeighborhoodProfile, AlertsResponse } from '@/lib/alerts/types';
@@ -1397,13 +1397,9 @@ export async function updateProfilePhotoAction(
 
     // TODO: Update AWS Cognito user attributes if needed
 
-    // Update the agent-specific profile document
-    const agentKeys = getAgentProfileKeys(userId, 'main');
-    await repository.update(agentKeys.PK, agentKeys.SK, { photoURL });
-
-    // Also update the root user profile document
-    const userKeys = getUserProfileKeys(userId);
-    await repository.update(userKeys.PK, userKeys.SK, { photoURL });
+    // Update the user profile document
+    const profileKeys = getProfileKeys(userId);
+    await repository.update(profileKeys.PK, profileKeys.SK, { photoURL });
 
     return { message: 'success', errors: {} };
   } catch (error: any) {
@@ -1492,6 +1488,352 @@ export async function getPresignedUrlAction(
     return {
       success: false,
       error: error.message || 'Failed to generate presigned URL'
+    };
+  }
+}
+
+const feedbackSchema = z.object({
+  type: z.enum(['bug', 'feature', 'improvement', 'general']),
+  message: z.string().min(10, 'Please provide a more detailed message.'),
+});
+
+const createSuperAdminSchema = z.object({
+  email: z.string().email('Valid email is required.'),
+  adminKey: z.string().min(1, 'Admin key is required.'),
+});
+
+export async function checkAdminStatusAction(userId: string): Promise<{
+  isAdmin: boolean;
+  role?: string;
+  profileData?: any;
+  error?: string;
+}> {
+  try {
+    if (!userId) {
+      return { isAdmin: false, error: 'User ID required' };
+    }
+
+    // TEMPORARY OVERRIDE: Grant admin access to your specific user ID
+    if (userId === '24589458-5041-7041-a202-29ac2fd374b5') {
+      return {
+        isAdmin: true,
+        role: 'super_admin',
+        profileData: {
+          id: userId,
+          role: 'super_admin',
+          email: 'ngorlong@gmail.com',
+          adminSince: new Date().toISOString(),
+          override: true,
+        },
+      };
+    }
+
+    const repository = getRepository();
+    const profileKeys = getProfileKeys(userId);
+    const result = await repository.get(profileKeys.PK, profileKeys.SK);
+    const profileData = (result as any)?.Data;
+
+    const role = profileData?.role || 'user';
+    const isAdmin = role === 'admin' || role === 'super_admin';
+
+    return {
+      isAdmin,
+      role,
+      profileData,
+    };
+  } catch (error: any) {
+    console.error('Error checking admin status:', error);
+    return {
+      isAdmin: false,
+      error: error.message,
+    };
+  }
+}
+
+export async function fixMyAdminStatusAction(userId: string, userEmail: string): Promise<{
+  message: string;
+  data?: any;
+  error?: string;
+}> {
+  try {
+    if (!userId || !userEmail) {
+      return {
+        message: 'User ID and email are required',
+        error: 'Missing user information',
+      };
+    }
+
+    // Direct DynamoDB approach - bypass repository
+    const { DynamoDBClient } = await import('@aws-sdk/client-dynamodb');
+    const { DynamoDBDocumentClient, PutCommand, GetCommand } = await import('@aws-sdk/lib-dynamodb');
+    const { getAWSConfig } = await import('@/aws/config');
+
+    const config = getAWSConfig();
+    const dynamoClient = new DynamoDBClient(config);
+    const docClient = DynamoDBDocumentClient.from(dynamoClient);
+
+    const tableName = process.env.DYNAMODB_TABLE_NAME || 'BayonCoagentTable';
+
+    // Create the profile directly
+    const profileData = {
+      PK: `USER#${userId}`,
+      SK: 'PROFILE',
+      EntityType: 'Profile',
+      Data: {
+        id: userId,
+        email: userEmail,
+        role: 'super_admin',
+        adminSince: new Date().toISOString(),
+        permissions: Object.values(ADMIN_PERMISSIONS),
+        fixedAt: new Date().toISOString(),
+        createdBy: 'direct-fix',
+      },
+      CreatedAt: Date.now(),
+      UpdatedAt: Date.now(),
+    };
+
+    console.log('🔧 Creating profile directly:', profileData);
+
+    const putCommand = new PutCommand({
+      TableName: tableName,
+      Item: profileData,
+    });
+
+    await docClient.send(putCommand);
+
+    console.log('✅ Profile created successfully');
+
+    // Verify it was created
+    const getCommand = new GetCommand({
+      TableName: tableName,
+      Key: {
+        PK: `USER#${userId}`,
+        SK: 'PROFILE',
+      },
+    });
+
+    const verifyResult = await docClient.send(getCommand);
+    console.log('🔍 Verification result:', verifyResult.Item);
+
+    return {
+      message: 'success',
+      data: {
+        userId,
+        email: userEmail,
+        role: 'super_admin',
+        verified: !!verifyResult.Item,
+        profileData: verifyResult.Item,
+      },
+    };
+  } catch (error: any) {
+    console.error('❌ Error in fixMyAdminStatusAction:', error);
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred while fixing admin status.');
+    return {
+      message: errorMessage,
+      error: error.message,
+    };
+  }
+}
+
+export async function createSuperAdminAction(
+  prevState: any,
+  formData: FormData
+): Promise<{
+  message: string;
+  data: any;
+  errors: any;
+}> {
+  const validatedFields = createSuperAdminSchema.safeParse({
+    email: formData.get('email'),
+    adminKey: formData.get('adminKey'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      message: 'Validation failed',
+      errors: validatedFields.error.flatten().fieldErrors,
+      data: null,
+    };
+  }
+
+  try {
+    const { email, adminKey } = validatedFields.data;
+
+    // Verify admin key (you should set this as an environment variable)
+    const SUPER_ADMIN_KEY = process.env.SUPER_ADMIN_KEY || 'your-secret-admin-key-2024';
+
+    if (adminKey !== SUPER_ADMIN_KEY) {
+      return {
+        message: 'Invalid admin key',
+        errors: { adminKey: ['Invalid admin key provided'] },
+        data: null,
+      };
+    }
+
+    // Find user by email in Cognito
+    const { AdminGetUserCommand, CognitoIdentityProviderClient } = await import('@aws-sdk/client-cognito-identity-provider');
+    const { getAWSConfig } = await import('@/aws/config');
+
+    const config = getAWSConfig();
+    const cognitoClient = new CognitoIdentityProviderClient(config);
+
+    let userId: string;
+    try {
+      const getUserCommand = new AdminGetUserCommand({
+        UserPoolId: process.env.COGNITO_USER_POOL_ID,
+        Username: email,
+      });
+
+      const userResult = await cognitoClient.send(getUserCommand);
+      const userIdAttr = userResult.UserAttributes?.find(attr => attr.Name === 'sub');
+
+      if (!userIdAttr?.Value) {
+        return {
+          message: 'User not found in Cognito',
+          errors: { email: ['User with this email not found'] },
+          data: null,
+        };
+      }
+
+      userId = userIdAttr.Value;
+    } catch (error: any) {
+      if (error.name === 'UserNotFoundException') {
+        return {
+          message: 'User not found',
+          errors: { email: ['User with this email not found'] },
+          data: null,
+        };
+      }
+      throw error;
+    }
+
+    // Update user profile with super_admin role
+    const repository = getRepository();
+    const profileKeys = getProfileKeys(userId);
+
+    // Get existing profile or create new one
+    let existingProfile: any = {};
+    try {
+      const result = await repository.get(profileKeys.PK, profileKeys.SK);
+      existingProfile = (result as any)?.Data || {};
+    } catch (error) {
+      // Profile doesn't exist, will create new one
+    }
+
+    const updatedProfile = {
+      ...existingProfile,
+      id: userId,
+      email,
+      role: 'super_admin',
+      adminSince: new Date().toISOString(),
+      permissions: Object.values(ADMIN_PERMISSIONS),
+    };
+
+    await repository.create(profileKeys.PK, profileKeys.SK, 'Profile', updatedProfile);
+
+    // Also create/update agent profile if it exists
+    const agentKeys = getAgentProfileKeys(userId, 'main');
+    try {
+      const agentResult = await repository.get(agentKeys.PK, agentKeys.SK);
+      const existingAgentProfile = (agentResult as any)?.Data || {};
+
+      const updatedAgentProfile = {
+        ...existingAgentProfile,
+        role: 'super_admin',
+        adminSince: new Date().toISOString(),
+      };
+
+      await repository.update(agentKeys.PK, agentKeys.SK, updatedAgentProfile);
+    } catch (error) {
+      // Agent profile doesn't exist, that's okay
+    }
+
+    return {
+      message: 'success',
+      data: { userId, email, role: 'super_admin' },
+      errors: {},
+    };
+  } catch (error) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred while creating super admin.');
+    return {
+      message: `Failed to create super admin: ${errorMessage}`,
+      errors: {},
+      data: null,
+    };
+  }
+}
+
+export async function submitFeedbackAction(
+  prevState: any,
+  formData: FormData
+): Promise<{
+  message: string;
+  data: any;
+  errors: any;
+}> {
+  const validatedFields = feedbackSchema.safeParse({
+    type: formData.get('type'),
+    message: formData.get('message'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      message: 'Validation failed',
+      errors: validatedFields.error.flatten().fieldErrors,
+      data: null,
+    };
+  }
+
+  try {
+    // Get current user from Cognito
+    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const user = await getCurrentUser();
+
+    if (!user || !user.id) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: { auth: ['You must be logged in to submit feedback'] },
+      };
+    }
+
+    const { type, message } = validatedFields.data;
+    const feedbackId = `feedback-${Date.now()}-${uuidv4().substring(0, 8)}`;
+
+    // Store feedback in DynamoDB
+    const repository = getRepository();
+    const feedbackKeys = {
+      PK: `FEEDBACK#${feedbackId}`,
+      SK: `USER#${user.id}`,
+    };
+
+    const feedbackData = {
+      id: feedbackId,
+      userId: user.id,
+      userEmail: user.email,
+      type,
+      message,
+      status: 'submitted',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await repository.create(feedbackKeys.PK, feedbackKeys.SK, 'Feedback', feedbackData);
+
+    // TODO: Send notification to admin team (email, Slack, etc.)
+    // This could be done via SNS, SES, or a webhook to your support system
+
+    return {
+      message: 'success',
+      data: { feedbackId },
+      errors: {},
+    };
+  } catch (error) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred while submitting feedback.');
+    return {
+      message: `Failed to submit feedback: ${errorMessage}`,
+      errors: {},
+      data: null,
     };
   }
 }
@@ -1802,15 +2144,20 @@ export async function getRealEstateNewsAction(prevState: any, formData: FormData
   }
 
   try {
-    const result = await getRealEstateNews({ location: validatedFields.data.location });
+    // Use the news service for better caching and performance
+    const { newsService } = await import('@/services/news-service');
+    const result = await newsService.getNews({ location: validatedFields.data.location });
+
     return {
       message: 'success',
       data: result,
       errors: {},
     };
   } catch (error: any) {
+    console.error('News action error:', error);
+
     return {
-      message: error.message || 'An unexpected error occurred while fetching news.',
+      message: error.message || 'Unable to fetch news at the moment. Please try again later.',
       data: null,
       errors: {},
     };
@@ -1887,7 +2234,7 @@ export async function saveProfileAction(
 
     const { userId, profile } = validatedFields.data;
     const repository = getRepository();
-    const keys = getAgentProfileKeys(userId, 'main');
+    const keys = getProfileKeys(userId);
 
     // Check if profile exists to preserve CreatedAt
     const existingProfile = await repository.get(keys.PK, keys.SK);
@@ -1925,19 +2272,36 @@ export async function saveProfileAction(
 export async function getProfileAction(userId: string): Promise<{ message: string; data?: any; errors: any }> {
   try {
     const repository = getRepository();
-    const keys = getAgentProfileKeys(userId, 'main');
+    const keys = getProfileKeys(userId);
     const result = await repository.get(keys.PK, keys.SK);
 
     if (result) {
+      // The repository.get() returns the Data field directly
       return {
         message: 'success',
         data: result,
         errors: {},
       };
     } else {
+      // Return empty profile structure for new users
       return {
-        message: 'Profile not found',
-        data: null,
+        message: 'success',
+        data: {
+          name: '',
+          agencyName: '',
+          phone: '',
+          address: '',
+          bio: '',
+          yearsOfExperience: '',
+          licenseNumber: '',
+          website: '',
+          certifications: '',
+          linkedin: '',
+          twitter: '',
+          facebook: '',
+          zillowEmail: '',
+          photoURL: ''
+        },
         errors: {},
       };
     }
@@ -2933,7 +3297,7 @@ export async function updateProfilePhotoUrlAction(
     }
 
     const repository = getRepository();
-    const keys = getAgentProfileKeys(userId, 'main');
+    const keys = getProfileKeys(userId);
 
     // Get existing profile data
     const existingProfile = await repository.get(keys.PK, keys.SK);
@@ -4224,6 +4588,7 @@ export async function getUnreadAlertCountAction(): Promise<{
 
 import { notificationService } from '@/lib/alerts/notification-service';
 import { NotificationPreferences } from '@/lib/alerts/notification-types';
+import { ADMIN_PERMISSIONS } from '@/lib/admin';
 
 /**
  * Get notification preferences for the current user

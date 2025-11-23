@@ -38,7 +38,7 @@ export default function AnimationsDemoPage() {
     return (
         <div className="container mx-auto p-6 space-y-12 max-w-7xl">
             <div className="space-y-2">
-                <h1 className="text-4xl font-bold">Micro-Animations Demo</h1>
+                <h1 className="font-headline text-4xl font-bold">Micro-Animations Demo</h1>
                 <p className="text-muted-foreground">
                     Explore all the delightful micro-animations available in the app
                 </p>
@@ -46,7 +46,7 @@ export default function AnimationsDemoPage() {
 
             {/* Buttons */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Buttons</h2>
+                <h2 className="font-headline text-2xl font-semibold">Buttons</h2>
                 <div className="flex flex-wrap gap-4">
                     <Button>Default Button</Button>
                     <Button variant="ai">AI Button</Button>
@@ -62,7 +62,7 @@ export default function AnimationsDemoPage() {
 
             {/* Cards */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Animated Cards</h2>
+                <h2 className="font-headline text-2xl font-semibold">Animated Cards</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <AnimatedCard variant="lift">
                         <AnimatedCardHeader>
@@ -101,7 +101,7 @@ export default function AnimationsDemoPage() {
 
             {/* Animated Lists */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Staggered Lists</h2>
+                <h2 className="font-headline text-2xl font-semibold">Staggered Lists</h2>
                 <AnimatedList staggerDelay={0.1}>
                     {['First Item', 'Second Item', 'Third Item', 'Fourth Item', 'Fifth Item'].map((item, i) => (
                         <AnimatedListItem key={i}>
@@ -115,7 +115,7 @@ export default function AnimationsDemoPage() {
 
             {/* Icons */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Animated Icons</h2>
+                <h2 className="font-headline text-2xl font-semibold">Animated Icons</h2>
                 <div className="flex gap-8 items-center">
                     <div className="text-center space-y-2">
                         <SpinningIcon>
@@ -146,7 +146,7 @@ export default function AnimationsDemoPage() {
 
             {/* Badges */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Animated Badges</h2>
+                <h2 className="font-headline text-2xl font-semibold">Animated Badges</h2>
                 <div className="flex flex-wrap gap-3">
                     <AnimatedBadge>Default</AnimatedBadge>
                     <AnimatedBadge variant="success">Success</AnimatedBadge>
@@ -159,7 +159,7 @@ export default function AnimationsDemoPage() {
 
             {/* Inputs */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Animated Inputs</h2>
+                <h2 className="font-headline text-2xl font-semibold">Animated Inputs</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
                     <AnimatedInput placeholder="Normal input" />
                     <AnimatedInput placeholder="Success state" success successMessage="Looks good!" />
@@ -170,7 +170,7 @@ export default function AnimationsDemoPage() {
 
             {/* Progress Indicators */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Progress Indicators</h2>
+                <h2 className="font-headline text-2xl font-semibold">Progress Indicators</h2>
                 <div className="space-y-6">
                     <div className="space-y-2">
                         <p className="text-sm font-medium">Linear Progress</p>
@@ -209,7 +209,7 @@ export default function AnimationsDemoPage() {
 
             {/* Success Feedback */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Success Feedback</h2>
+                <h2 className="font-headline text-2xl font-semibold">Success Feedback</h2>
                 <div className="space-y-4">
                     <Button onClick={() => setShowSuccess(true)}>Show Success Feedback</Button>
                     <div className="space-y-2">
@@ -225,7 +225,7 @@ export default function AnimationsDemoPage() {
 
             {/* Skeleton Loaders */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Skeleton Loaders</h2>
+                <h2 className="font-headline text-2xl font-semibold">Skeleton Loaders</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <p className="text-sm font-medium">Card Skeleton</p>
@@ -240,7 +240,7 @@ export default function AnimationsDemoPage() {
 
             {/* Tooltips */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Animated Tooltips</h2>
+                <h2 className="font-headline text-2xl font-semibold">Animated Tooltips</h2>
                 <div className="flex gap-4">
                     <AnimatedTooltip content="This is a tooltip" side="top">
                         <Button variant="outline">Hover me (top)</Button>
@@ -256,7 +256,7 @@ export default function AnimationsDemoPage() {
 
             {/* Notifications */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Notifications</h2>
+                <h2 className="font-headline text-2xl font-semibold">Notifications</h2>
                 <div className="flex flex-wrap gap-2">
                     <Button
                         onClick={() =>

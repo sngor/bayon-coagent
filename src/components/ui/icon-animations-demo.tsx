@@ -41,7 +41,7 @@ export function IconAnimationsDemo() {
         <div className="space-y-8 p-8">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-bold mb-2">Icon Animation Library</h1>
+                <h1 className="font-headline text-3xl font-bold mb-2">Icon Animation Library</h1>
                 <p className="text-muted-foreground">
                     Interactive demonstration of all animation variants with live controls
                 </p>

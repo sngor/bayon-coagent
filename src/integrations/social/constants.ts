@@ -62,6 +62,19 @@ export const PLATFORM_LIMITS: Record<Platform, PlatformLimits> = {
         ],
         maxFileSize: 5 * 1024 * 1024, // 5MB
     },
+    twitter: {
+        maxCharacters: 280,
+        maxImages: 4,
+        maxHashtags: 10,
+        imageDimensions: [
+            {
+                width: 1200,
+                height: 675,
+                aspectRatio: "16:9",
+            },
+        ],
+        maxFileSize: 5 * 1024 * 1024, // 5MB
+    },
 };
 
 export const GENERAL_HASHTAG_RANGE = {
@@ -114,6 +127,12 @@ export const OAUTH_SCOPES: Record<Platform, string[]> = {
         "r_organization_social",
         "w_organization_social",
     ],
+    twitter: [
+        "tweet.read",
+        "tweet.write",
+        "users.read",
+        "offline.access",
+    ],
 };
 
 /**
@@ -123,6 +142,7 @@ export const PLATFORM_API_ENDPOINTS: Record<Platform, string> = {
     facebook: "https://graph.facebook.com/v18.0",
     instagram: "https://graph.facebook.com/v18.0",
     linkedin: "https://api.linkedin.com/v2",
+    twitter: "https://api.twitter.com/2",
 };
 
 /**

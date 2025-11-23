@@ -95,7 +95,7 @@ export function DayToDuskForm({
                     </div>
 
                     <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-                        <h4 className="text-sm font-medium">Tips for Best Results</h4>
+                        <h4 className="font-headline text-sm font-medium">Tips for Best Results</h4>
                         <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                             <li>Works best with daytime exterior photos</li>
                             <li>Ensure the sky is visible in the image</li>

@@ -4,7 +4,7 @@ import { z } from 'zod';
  * Schema for fetching real estate news
  */
 export const GetRealEstateNewsInputSchema = z.object({
-  location: z.string().optional().describe('Optional location to filter news'),
+  location: z.string().optional().describe('Location or search query to filter news (can include market categories)'),
 });
 
 export const GetRealEstateNewsOutputSchema = z.object({

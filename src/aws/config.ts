@@ -36,6 +36,12 @@ export interface SESConfig {
   endpoint?: string;
 }
 
+export interface SNSConfig {
+  region: string;
+  platformApplicationArn?: string;
+  endpoint?: string;
+}
+
 /**
  * Valid Bedrock model IDs (inference profiles)
  * AWS now requires inference profiles for all Claude models
@@ -58,6 +64,7 @@ export interface AWSConfig {
   s3: S3Config;
   bedrock: BedrockConfig;
   ses: SESConfig;
+  sns: SNSConfig;
 }
 
 /**
@@ -125,6 +132,12 @@ export function getAWSConfig(): AWSConfig {
       region: process.env.SES_REGION || region,
       fromEmail: process.env.SES_FROM_EMAIL || 'noreply@bayoncoagent.com',
       replyToEmail: process.env.SES_REPLY_TO_EMAIL,
+      endpoint: isLocal ? 'http://localhost:4566' : undefined,
+    },
+
+    sns: {
+      region: process.env.SNS_REGION || region,
+      platformApplicationArn: process.env.SNS_PLATFORM_APPLICATION_ARN,
       endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
   };

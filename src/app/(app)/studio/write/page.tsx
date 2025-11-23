@@ -5,7 +5,7 @@ import { useActionState, useState, useTransition, useEffect, useMemo } from 'rea
 import { useSearchParams } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
-import { StandardPageLayout } from '@/components/standard';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -94,6 +94,9 @@ import type { Project } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { StandardErrorDisplay } from '@/components/standard/error-display';
+import { SchedulingModal } from '@/components/scheduling-modal';
+import { TemplateSaveModal } from '@/components/template-save-modal';
+import { ContentCategory, TemplateConfiguration } from '@/lib/content-workflow-types';
 
 // #region State & Button Components
 type GuideInitialState = {
@@ -180,6 +183,21 @@ type SaveDialogInfo = {
   isOpen: boolean;
   content: string;
   type: string;
+}
+
+type ScheduleDialogInfo = {
+  isOpen: boolean;
+  content: string;
+  title: string;
+  contentType: ContentCategory;
+}
+
+type TemplateSaveDialogInfo = {
+  isOpen: boolean;
+  contentType: ContentCategory;
+  configuration: TemplateConfiguration;
+  initialName: string;
+  previewContent: string;
 }
 
 function GenerateButton({
@@ -389,6 +407,28 @@ export default function ContentEnginePage() {
   );
   const [blogTopic, setBlogTopic] = useState('');
   const [saveDialogInfo, setSaveDialogInfo] = useState<SaveDialogInfo>({ isOpen: false, content: '', type: '' });
+  const [scheduleDialogInfo, setScheduleDialogInfo] = useState<ScheduleDialogInfo>({
+    isOpen: false,
+    content: '',
+    title: '',
+    contentType: ContentCategory.MARKET_UPDATE
+  });
+  const [templateSaveDialogInfo, setTemplateSaveDialogInfo] = useState<TemplateSaveDialogInfo>({
+    isOpen: false,
+    contentType: ContentCategory.MARKET_UPDATE,
+    configuration: {
+      promptParameters: {},
+      contentStructure: { sections: [], format: '' },
+      stylePreferences: { tone: '', length: '', keywords: [] }
+    },
+    initialName: '',
+    previewContent: ''
+  });
+
+  const [appliedTemplateInfo, setAppliedTemplateInfo] = useState<{
+    templateName: string;
+    contentType: ContentCategory;
+  } | null>(null);
 
   const [listingState, serverListingAction, isListingPending] =
     useActionState(generateDescriptionAction, listingInitialState);
@@ -455,6 +495,103 @@ export default function ContentEnginePage() {
   const openSaveDialog = (content: string, type: string) => {
     if (!content) return;
     setSaveDialogInfo({ isOpen: true, content, type });
+  }
+
+  const openScheduleDialog = (content: string, title: string, contentType: ContentCategory) => {
+    if (!content) return;
+    setScheduleDialogInfo({
+      isOpen: true,
+      content,
+      title: title || contentType.replace('_', ' '),
+      contentType
+    });
+  }
+
+  const openTemplateSaveDialog = (contentType: ContentCategory, formData: FormData, previewContent: string = '') => {
+    // Extract configuration from form data
+    const configuration: TemplateConfiguration = {
+      promptParameters: {},
+      contentStructure: {
+        sections: [],
+        format: contentType === ContentCategory.BLOG_POST ? 'blog' : 'social'
+      },
+      stylePreferences: {
+        tone: '',
+        length: '',
+        keywords: []
+      }
+    };
+
+    // Extract form parameters based on content type
+    if (contentType === ContentCategory.MARKET_UPDATE) {
+      configuration.promptParameters = {
+        location: formData.get('location'),
+        timePeriod: formData.get('timePeriod'),
+        propertyType: formData.get('propertyType'),
+        audience: formData.get('audience')
+      };
+      configuration.stylePreferences.targetAudience = formData.get('audience') as string;
+    } else if (contentType === ContentCategory.BLOG_POST) {
+      configuration.promptParameters = {
+        topic: formData.get('topic'),
+        audience: formData.get('audience'),
+        keywords: formData.get('keywords'),
+        wordCount: formData.get('wordCount')
+      };
+      configuration.stylePreferences.targetAudience = formData.get('audience') as string;
+      configuration.stylePreferences.length = formData.get('wordCount') as string;
+      configuration.stylePreferences.keywords = (formData.get('keywords') as string)?.split(',').map(k => k.trim()) || [];
+    } else if (contentType === ContentCategory.VIDEO_SCRIPT) {
+      configuration.promptParameters = {
+        topic: formData.get('topic'),
+        videoLength: formData.get('videoLength'),
+        tone: formData.get('tone'),
+        audience: formData.get('audience'),
+        callToAction: formData.get('callToAction')
+      };
+      configuration.stylePreferences.tone = formData.get('tone') as string;
+      configuration.stylePreferences.targetAudience = formData.get('audience') as string;
+      configuration.stylePreferences.callToAction = formData.get('callToAction') as string;
+    } else if (contentType === ContentCategory.NEIGHBORHOOD_GUIDE) {
+      configuration.promptParameters = {
+        targetMarket: formData.get('targetMarket'),
+        pillarTopic: formData.get('pillarTopic'),
+        highlights: formData.get('highlights'),
+        buyerType: formData.get('buyerType'),
+        idxFeedUrl: formData.get('idxFeedUrl')
+      };
+      configuration.stylePreferences.targetAudience = formData.get('buyerType') as string;
+    } else if (contentType === ContentCategory.SOCIAL_MEDIA) {
+      configuration.promptParameters = {
+        topic: formData.get('topic'),
+        audience: formData.get('audience'),
+        tone: formData.get('tone'),
+        includeHashtags: formData.get('includeHashtags'),
+        callToAction: formData.get('callToAction')
+      };
+      configuration.stylePreferences.tone = formData.get('tone') as string;
+      configuration.stylePreferences.targetAudience = formData.get('audience') as string;
+      configuration.stylePreferences.callToAction = formData.get('callToAction') as string;
+      configuration.contentStructure.includeHashtags = formData.get('includeHashtags') === 'yes';
+    }
+
+    const contentTypeLabels: Record<ContentCategory, string> = {
+      [ContentCategory.MARKET_UPDATE]: 'Market Update',
+      [ContentCategory.BLOG_POST]: 'Blog Post',
+      [ContentCategory.VIDEO_SCRIPT]: 'Video Script',
+      [ContentCategory.NEIGHBORHOOD_GUIDE]: 'Neighborhood Guide',
+      [ContentCategory.SOCIAL_MEDIA]: 'Social Media Post',
+      [ContentCategory.LISTING_DESCRIPTION]: 'Listing Description',
+      [ContentCategory.EMAIL_NEWSLETTER]: 'Email Newsletter'
+    };
+
+    setTemplateSaveDialogInfo({
+      isOpen: true,
+      contentType,
+      configuration,
+      initialName: `${contentTypeLabels[contentType]} Template`,
+      previewContent
+    });
   }
 
   useEffect(() => {
@@ -548,6 +685,190 @@ export default function ContentEnginePage() {
     }
   }, [socialState]);
 
+  // Handle applied template from sessionStorage
+  useEffect(() => {
+    const appliedTemplateData = sessionStorage.getItem('applied-template');
+    if (appliedTemplateData) {
+      try {
+        const appliedTemplate = JSON.parse(appliedTemplateData);
+        const { templateName, contentType, configuration } = appliedTemplate;
+
+        // Set the active tab based on content type
+        const tabMapping: Record<ContentCategory, string> = {
+          [ContentCategory.MARKET_UPDATE]: 'market-update',
+          [ContentCategory.BLOG_POST]: 'blog-post',
+          [ContentCategory.VIDEO_SCRIPT]: 'video-script',
+          [ContentCategory.NEIGHBORHOOD_GUIDE]: 'guide',
+          [ContentCategory.SOCIAL_MEDIA]: 'social',
+          [ContentCategory.LISTING_DESCRIPTION]: 'listing',
+          [ContentCategory.NEWSLETTER]: 'newsletter',
+          [ContentCategory.EMAIL_TEMPLATE]: 'email'
+        };
+
+        const targetTab = tabMapping[contentType];
+        if (targetTab) {
+          setActiveTab(targetTab);
+        }
+
+        // Pre-populate form fields based on template configuration
+        setTimeout(() => {
+          populateFormFromTemplate(configuration, contentType);
+        }, 100); // Small delay to ensure form is rendered
+
+        // Set applied template info for display
+        setAppliedTemplateInfo({
+          templateName,
+          contentType
+        });
+
+        // Show success message
+        toast({
+          title: 'Template Applied!',
+          description: `"${templateName}" has been applied to your content creation form.`,
+        });
+
+        // Clear the applied template from sessionStorage
+        sessionStorage.removeItem('applied-template');
+      } catch (error) {
+        console.error('Error applying template:', error);
+        sessionStorage.removeItem('applied-template');
+      }
+    }
+  }, []);
+
+  // Function to populate form fields from template configuration
+  const populateFormFromTemplate = (configuration: TemplateConfiguration, contentType: ContentCategory) => {
+    const { promptParameters, stylePreferences } = configuration;
+
+    try {
+      // Market Update form population
+      if (contentType === ContentCategory.MARKET_UPDATE) {
+        const locationInput = document.querySelector('input[name="location"]') as HTMLInputElement;
+        const timePeriodInput = document.querySelector('input[name="timePeriod"]') as HTMLInputElement;
+        const propertyTypeSelect = document.querySelector('select[name="propertyType"]') as HTMLSelectElement;
+        const audienceSelect = document.querySelector('select[name="audience"]') as HTMLSelectElement;
+
+        if (locationInput && promptParameters.location) {
+          locationInput.value = promptParameters.location;
+        }
+        if (timePeriodInput && promptParameters.timePeriod) {
+          timePeriodInput.value = promptParameters.timePeriod;
+        }
+        if (propertyTypeSelect && promptParameters.propertyType) {
+          propertyTypeSelect.value = promptParameters.propertyType;
+        }
+        if (audienceSelect && promptParameters.audience) {
+          audienceSelect.value = promptParameters.audience;
+        }
+      }
+
+      // Blog Post form population
+      else if (contentType === ContentCategory.BLOG_POST) {
+        const topicTextarea = document.querySelector('textarea[name="topic"]') as HTMLTextAreaElement;
+        const audienceSelect = document.querySelector('select[name="audience"]') as HTMLSelectElement;
+        const keywordsInput = document.querySelector('input[name="keywords"]') as HTMLInputElement;
+        const wordCountSelect = document.querySelector('select[name="wordCount"]') as HTMLSelectElement;
+
+        if (topicTextarea && promptParameters.topic) {
+          topicTextarea.value = promptParameters.topic;
+          setBlogTopic(promptParameters.topic);
+        }
+        if (audienceSelect && promptParameters.audience) {
+          audienceSelect.value = promptParameters.audience;
+        }
+        if (keywordsInput && stylePreferences.keywords?.length) {
+          keywordsInput.value = stylePreferences.keywords.join(', ');
+        }
+        if (wordCountSelect && promptParameters.wordCount) {
+          wordCountSelect.value = promptParameters.wordCount;
+        }
+      }
+
+      // Video Script form population
+      else if (contentType === ContentCategory.VIDEO_SCRIPT) {
+        const topicTextarea = document.querySelector('textarea[name="topic"]') as HTMLTextAreaElement;
+        const videoLengthSelect = document.querySelector('select[name="videoLength"]') as HTMLSelectElement;
+        const toneSelect = document.querySelector('select[name="tone"]') as HTMLSelectElement;
+        const audienceSelect = document.querySelector('select[name="audience"]') as HTMLSelectElement;
+        const callToActionInput = document.querySelector('input[name="callToAction"]') as HTMLInputElement;
+
+        if (topicTextarea && promptParameters.topic) {
+          topicTextarea.value = promptParameters.topic;
+        }
+        if (videoLengthSelect && promptParameters.videoLength) {
+          videoLengthSelect.value = promptParameters.videoLength;
+        }
+        if (toneSelect && promptParameters.tone) {
+          toneSelect.value = promptParameters.tone;
+        }
+        if (audienceSelect && promptParameters.audience) {
+          audienceSelect.value = promptParameters.audience;
+        }
+        if (callToActionInput && promptParameters.callToAction) {
+          callToActionInput.value = promptParameters.callToAction;
+        }
+      }
+
+      // Neighborhood Guide form population
+      else if (contentType === ContentCategory.NEIGHBORHOOD_GUIDE) {
+        const targetMarketInput = document.querySelector('input[name="targetMarket"]') as HTMLInputElement;
+        const pillarTopicSelect = document.querySelector('select[name="pillarTopic"]') as HTMLSelectElement;
+        const highlightsTextarea = document.querySelector('textarea[name="highlights"]') as HTMLTextAreaElement;
+        const buyerTypeSelect = document.querySelector('select[name="buyerType"]') as HTMLSelectElement;
+        const idxFeedUrlInput = document.querySelector('input[name="idxFeedUrl"]') as HTMLInputElement;
+
+        if (targetMarketInput && promptParameters.targetMarket) {
+          targetMarketInput.value = promptParameters.targetMarket;
+        }
+        if (pillarTopicSelect && promptParameters.pillarTopic) {
+          pillarTopicSelect.value = promptParameters.pillarTopic;
+        }
+        if (highlightsTextarea && promptParameters.highlights) {
+          highlightsTextarea.value = promptParameters.highlights;
+        }
+        if (buyerTypeSelect && promptParameters.buyerType) {
+          buyerTypeSelect.value = promptParameters.buyerType;
+        }
+        if (idxFeedUrlInput && promptParameters.idxFeedUrl) {
+          idxFeedUrlInput.value = promptParameters.idxFeedUrl;
+        }
+      }
+
+      // Social Media form population
+      else if (contentType === ContentCategory.SOCIAL_MEDIA) {
+        const topicTextarea = document.querySelector('textarea[name="topic"]') as HTMLTextAreaElement;
+        const audienceSelect = document.querySelector('select[name="audience"]') as HTMLSelectElement;
+        const toneSelect = document.querySelector('select[name="tone"]') as HTMLSelectElement;
+        const includeHashtagsSelect = document.querySelector('select[name="includeHashtags"]') as HTMLSelectElement;
+        const callToActionInput = document.querySelector('input[name="callToAction"]') as HTMLInputElement;
+
+        if (topicTextarea && promptParameters.topic) {
+          topicTextarea.value = promptParameters.topic;
+        }
+        if (audienceSelect && promptParameters.audience) {
+          audienceSelect.value = promptParameters.audience;
+        }
+        if (toneSelect && promptParameters.tone) {
+          toneSelect.value = promptParameters.tone;
+        }
+        if (includeHashtagsSelect && promptParameters.includeHashtags) {
+          includeHashtagsSelect.value = promptParameters.includeHashtags;
+        }
+        if (callToActionInput && promptParameters.callToAction) {
+          callToActionInput.value = promptParameters.callToAction;
+        }
+      }
+
+    } catch (error) {
+      console.error('Error populating form from template:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Template Application Error',
+        description: 'Some template values could not be applied to the form.',
+      });
+    }
+  };
+
 
   const handleListingSubmit = async (formData: FormData) => {
     const description = formData.get('propertyDescription') as string;
@@ -627,9 +948,7 @@ export default function ContentEnginePage() {
   ];
 
   return (
-    <StandardPageLayout
-      spacing="default"
-    >
+    <div className="space-y-8">
 
       {/* Content Type Selector */}
       <Card>
@@ -659,6 +978,35 @@ export default function ContentEnginePage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Applied Template Indicator */}
+      {appliedTemplateInfo && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Template Applied</p>
+                  <p className="text-xs text-muted-foreground">
+                    Using "{appliedTemplateInfo.templateName}" template
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setAppliedTemplateInfo(null)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Content Forms */}
       <Tabs value={activeTab || 'market-update'} onValueChange={setActiveTab} className="w-full">
@@ -752,6 +1100,16 @@ export default function ContentEnginePage() {
                       loading: isMarketUpdatePending,
                       variant: 'ai',
                     }}
+                    secondaryAction={{
+                      label: 'Save as Template',
+                      onClick: () => {
+                        const form = document.querySelector('form[action*="marketUpdate"]') as HTMLFormElement;
+                        if (form) {
+                          const formData = new FormData(form);
+                          openTemplateSaveDialog(ContentCategory.MARKET_UPDATE, formData);
+                        }
+                      }
+                    }}
                   />
                 </form>
               </CardContent>
@@ -763,6 +1121,15 @@ export default function ContentEnginePage() {
                 </CardTitle>
                 {marketUpdateContent && (
                   <div className="flex gap-2">
+                    <Button
+                      variant="ai"
+                      size="sm"
+                      onClick={() => openScheduleDialog(marketUpdateContent, 'Market Update', ContentCategory.MARKET_UPDATE)}
+                      className="font-medium"
+                    >
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Schedule
+                    </Button>
                     <Button
                       variant={copiedStates['market-update'] ? 'default' : 'outline'}
                       size="sm"
@@ -887,6 +1254,16 @@ export default function ContentEnginePage() {
                       loading: isBlogPostPending,
                       variant: 'ai',
                     }}
+                    secondaryAction={{
+                      label: 'Save as Template',
+                      onClick: () => {
+                        const form = document.querySelector('form[action*="blogPost"]') as HTMLFormElement;
+                        if (form) {
+                          const formData = new FormData(form);
+                          openTemplateSaveDialog(ContentCategory.BLOG_POST, formData, blogPostContent);
+                        }
+                      }
+                    }}
                   />
                 </form>
               </CardContent>
@@ -898,6 +1275,15 @@ export default function ContentEnginePage() {
                 </CardTitle>
                 {blogPostContent && (
                   <div className="flex gap-2">
+                    <Button
+                      variant="ai"
+                      size="sm"
+                      onClick={() => openScheduleDialog(blogPostContent, blogTopic || 'Blog Post', ContentCategory.BLOG_POST)}
+                      className="font-medium"
+                    >
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Schedule
+                    </Button>
                     <Button
                       variant={copiedStates['blog-post'] ? 'default' : 'outline'}
                       size="sm"
@@ -1063,6 +1449,16 @@ export default function ContentEnginePage() {
                       loading: isVideoScriptPending,
                       variant: 'ai',
                     }}
+                    secondaryAction={{
+                      label: 'Save as Template',
+                      onClick: () => {
+                        const form = document.querySelector('form[action*="videoScript"]') as HTMLFormElement;
+                        if (form) {
+                          const formData = new FormData(form);
+                          openTemplateSaveDialog(ContentCategory.VIDEO_SCRIPT, formData, videoScriptContent);
+                        }
+                      }
+                    }}
                   />
                 </form>
               </CardContent>
@@ -1074,6 +1470,15 @@ export default function ContentEnginePage() {
                 </CardTitle>
                 {videoScriptContent && (
                   <div className="flex gap-2">
+                    <Button
+                      variant="ai"
+                      size="sm"
+                      onClick={() => openScheduleDialog(videoScriptContent, 'Video Script', ContentCategory.VIDEO_SCRIPT)}
+                      className="font-medium"
+                    >
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Schedule
+                    </Button>
                     <Button
                       variant={copiedStates['video-script'] ? 'default' : 'outline'}
                       size="sm"
@@ -1212,6 +1617,16 @@ export default function ContentEnginePage() {
                       loading: isGuidePending,
                       variant: 'ai',
                     }}
+                    secondaryAction={{
+                      label: 'Save as Template',
+                      onClick: () => {
+                        const form = document.querySelector('form[action*="guide"]') as HTMLFormElement;
+                        if (form) {
+                          const formData = new FormData(form);
+                          openTemplateSaveDialog(ContentCategory.NEIGHBORHOOD_GUIDE, formData, guideContent);
+                        }
+                      }
+                    }}
                   />
                 </form>
               </CardContent>
@@ -1224,6 +1639,15 @@ export default function ContentEnginePage() {
                 </CardTitle>
                 {guideContent && (
                   <div className="flex gap-2">
+                    <Button
+                      variant="ai"
+                      size="sm"
+                      onClick={() => openScheduleDialog(guideContent, 'Neighborhood Guide', ContentCategory.NEIGHBORHOOD_GUIDE)}
+                      className="font-medium"
+                    >
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Schedule
+                    </Button>
                     <Button
                       variant={copiedStates['guide'] ? 'default' : 'outline'}
                       size="sm"
@@ -1364,6 +1788,18 @@ export default function ContentEnginePage() {
                       loading: isSocialPending,
                       variant: 'ai',
                     }}
+                    secondaryAction={{
+                      label: 'Save as Template',
+                      onClick: () => {
+                        const form = document.querySelector('form[action*="social"]') as HTMLFormElement;
+                        if (form) {
+                          const formData = new FormData(form);
+                          const previewContent = socialPostContent ?
+                            `LinkedIn: ${socialPostContent.linkedin?.substring(0, 100)}...` : '';
+                          openTemplateSaveDialog(ContentCategory.SOCIAL_MEDIA, formData, previewContent);
+                        }
+                      }
+                    }}
                   />
                 </form>
               </CardContent>
@@ -1386,9 +1822,18 @@ export default function ContentEnginePage() {
                             <div className="w-10 h-10 rounded-lg bg-blue-700 flex items-center justify-center">
                               <Linkedin className="w-5 h-5 text-white" />
                             </div>
-                            <h3 className="font-bold text-lg">LinkedIn</h3>
+                            <h3 className="font-headline font-bold text-lg">LinkedIn</h3>
                           </div>
                           <div className="flex items-center gap-2">
+                            <Button
+                              variant="ai"
+                              size="sm"
+                              onClick={() => openScheduleDialog(socialPostContent.linkedin || '', 'LinkedIn Post', ContentCategory.SOCIAL_MEDIA)}
+                              className="font-medium"
+                            >
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              Schedule
+                            </Button>
                             <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.linkedin || '', 'Social Post (LinkedIn)')}>
                               <Save className="mr-2 h-4 w-4" />
                               Save
@@ -1432,9 +1877,18 @@ export default function ContentEnginePage() {
                             <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
                               <Facebook className="w-5 h-5 text-white" />
                             </div>
-                            <h3 className="font-bold text-lg">Facebook</h3>
+                            <h3 className="font-headline font-bold text-lg">Facebook</h3>
                           </div>
                           <div className="flex items-center gap-2">
+                            <Button
+                              variant="ai"
+                              size="sm"
+                              onClick={() => openScheduleDialog(socialPostContent.facebook || '', 'Facebook Post', ContentCategory.SOCIAL_MEDIA)}
+                              className="font-medium"
+                            >
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              Schedule
+                            </Button>
                             <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.facebook || '', 'Social Post (Facebook)')}>
                               <Save className="mr-2 h-4 w-4" />
                               Save
@@ -1478,9 +1932,18 @@ export default function ContentEnginePage() {
                             <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center">
                               <X className="w-5 h-5 text-white" />
                             </div>
-                            <h3 className="font-bold text-lg">X (Twitter)</h3>
+                            <h3 className="font-headline font-bold text-lg">X (Twitter)</h3>
                           </div>
                           <div className="flex items-center gap-2">
+                            <Button
+                              variant="ai"
+                              size="sm"
+                              onClick={() => openScheduleDialog(socialPostContent.twitter || '', 'X (Twitter) Post', ContentCategory.SOCIAL_MEDIA)}
+                              className="font-medium"
+                            >
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              Schedule
+                            </Button>
                             <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.twitter || '', 'Social Post (X/Twitter)')}>
                               <Save className="mr-2 h-4 w-4" />
                               Save
@@ -1524,9 +1987,18 @@ export default function ContentEnginePage() {
                             <div className="w-10 h-10 rounded-lg bg-red-500 flex items-center justify-center">
                               <Building2 className="w-5 h-5 text-white" />
                             </div>
-                            <h3 className="font-bold text-lg">Google Business Profile</h3>
+                            <h3 className="font-headline font-bold text-lg">Google Business Profile</h3>
                           </div>
                           <div className="flex items-center gap-2">
+                            <Button
+                              variant="ai"
+                              size="sm"
+                              onClick={() => openScheduleDialog(socialPostContent.googleBusiness || '', 'Google Business Post', ContentCategory.SOCIAL_MEDIA)}
+                              className="font-medium"
+                            >
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              Schedule
+                            </Button>
                             <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.googleBusiness || '', 'Social Post (Google Business Profile)')}>
                               <Save className="mr-2 h-4 w-4" />
                               Save
@@ -1586,6 +2058,46 @@ export default function ContentEnginePage() {
         </TabsContent>
       </Tabs>
       <SaveDialog dialogInfo={saveDialogInfo} setDialogInfo={setSaveDialogInfo} projects={projects} />
-    </StandardPageLayout>
+      <SchedulingModal
+        isOpen={scheduleDialogInfo.isOpen}
+        onClose={() => setScheduleDialogInfo({ isOpen: false, content: '', title: '', contentType: ContentCategory.MARKET_UPDATE })}
+        onScheduled={(scheduledContent) => {
+          toast({
+            title: 'Content Scheduled!',
+            description: `Your ${scheduleDialogInfo.title} has been scheduled successfully.`
+          });
+        }}
+        contentData={{
+          contentId: `content_${Date.now()}`, // Generate a unique ID
+          title: scheduleDialogInfo.title,
+          content: scheduleDialogInfo.content,
+          contentType: scheduleDialogInfo.contentType
+        }}
+      />
+      <TemplateSaveModal
+        isOpen={templateSaveDialogInfo.isOpen}
+        onClose={() => setTemplateSaveDialogInfo({
+          isOpen: false,
+          contentType: ContentCategory.MARKET_UPDATE,
+          configuration: {
+            promptParameters: {},
+            contentStructure: { sections: [], format: '' },
+            stylePreferences: { tone: '', length: '', keywords: [] }
+          },
+          initialName: '',
+          previewContent: ''
+        })}
+        onSaved={(templateId) => {
+          toast({
+            title: 'Template Saved!',
+            description: 'Your template has been saved and can be reused for future content creation.'
+          });
+        }}
+        contentType={templateSaveDialogInfo.contentType}
+        configuration={templateSaveDialogInfo.configuration}
+        initialName={templateSaveDialogInfo.initialName}
+        previewContent={templateSaveDialogInfo.previewContent}
+      />
+    </div>
   );
 }

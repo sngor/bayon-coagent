@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Mobile Test Suite - Bayon Coagent</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .test-section {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .test-section:last-child {
+            border-bottom: none;
+        }
+
+        .test-section h2 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 1.2em;
+        }
+
+        .test-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            margin: 8px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #ddd;
+        }
+
+        .test-item.passed {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
+        .test-item.failed {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .test-item.warning {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            min-height: 44px;
+            min-width: 44px;
+        }
+
+        .test-button:hover {
+            background: #0056b3;
+        }
+
+        .test-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ddd;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        .status-indicator.passed {
+            background: #28a745;
+        }
+
+        .status-indicator.failed {
+            background: #dc3545;
+        }
+
+        .status-indicator.warning {
+            background: #ffc107;
+        }
+
+        .device-info {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .gesture-test-area {
+            width: 100%;
+            height: 200px;
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 0;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .gesture-test-area.active {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .notification-demo {
+            padding: 15px;
+            background: #d1ecf1;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .offline-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 12px;
+            background: #dc3545;
+            color: white;
+            border-radius: 6px;
+            font-size: 12px;
+            display: none;
+        }
+
+        .offline-indicator.offline {
+            display: block;
+        }
+
+        .offline-indicator.online {
+            background: #28a745;
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #007bff;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .test-results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .test-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .test-button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="offline-indicator" id="offlineIndicator">Offline</div>
+
+    <div class="container">
+        <div class="header">
+            <h1>Mobile Test Suite</h1>
+            <p>Comprehensive testing for mobile enhancements</p>
+        </div>
+
+        <div class="test-section">
+            <h2>Device Information</h2>
+            <div class="device-info" id="deviceInfo">
+                Loading device information...
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Browser Compatibility</h2>
+            <div class="test-item" id="userAgentTest">
+                <span><span class="status-indicator"></span>User Agent Detection</span>
+                <button class="test-button" onclick="testUserAgent()">Test</button>
+            </div>
+            <div class="test-item" id="touchSupportTest">
+                <span><span class="status-indicator"></span>Touch Support</span>
+                <button class="test-button" onclick="testTouchSupport()">Test</button>
+            </div>
+            <div class="test-item" id="viewportTest">
+                <span><span class="status-indicator"></span>Viewport Configuration</span>
+                <button class="test-button" onclick="testViewport()">Test</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>PWA Features</h2>
+            <div class="test-item" id="serviceWorkerTest">
+                <span><span class="status-indicator"></span>Service Worker</span>
+                <button class="test-button" onclick="testServiceWorker()">Test</button>
+            </div>
+            <div class="test-item" id="manifestTest">
+                <span><span class="status-indicator"></span>Web App Manifest</span>
+                <button class="test-button" onclick="testManifest()">Test</button>
+            </div>
+            <div class="test-item" id="installPromptTest">
+                <span><span class="status-indicator"></span>Install Prompt</span>
+                <button class="test-button" onclick="testInstallPrompt()">Test</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Offline Functionality</h2>
+            <div class="test-item" id="offlineDetectionTest">
+                <span><span class="status-indicator"></span>Offline Detection</span>
+                <button class="test-button" onclick="testOfflineDetection()">Test</button>
+            </div>
+            <div class="test-item" id="cacheTest">
+                <span><span class="status-indicator"></span>Cache Storage</span>
+                <button class="test-button" onclick="testCache()">Test</button>
+            </div>
+            <div class="test-item" id="indexedDBTest">
+                <span><span class="status-indicator"></span>IndexedDB Storage</span>
+                <button class="test-button" onclick="testIndexedDB()">Test</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Push Notifications</h2>
+            <div class="test-item" id="notificationSupportTest">
+                <span><span class="status-indicator"></span>Notification Support</span>
+                <button class="test-button" onclick="testNotificationSupport()">Test</button>
+            </div>
+            <div class="test-item" id="notificationPermissionTest">
+                <span><span class="status-indicator"></span>Permission Request</span>
+                <button class="test-button" onclick="testNotificationPermission()">Test</button>
+            </div>
+            <div class="test-item" id="pushManagerTest">
+                <span><span class="status-indicator"></span>Push Manager</span>
+                <button class="test-button" onclick="testPushManager()">Test</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Touch Gestures</h2>
+            <div class="gesture-test-area" id="gestureTestArea">
+                <p>Touch, swipe, pinch, or long press here</p>
+            </div>
+            <div class="test-item" id="tapTest">
+                <span><span class="status-indicator"></span>Tap Gesture</span>
+                <span id="tapResult">Not tested</span>
+            </div>
+            <div class="test-item" id="swipeTest">
+                <span><span class="status-indicator"></span>Swipe Gesture</span>
+                <span id="swipeResult">Not tested</span>
+            </div>
+            <div class="test-item" id="pinchTest">
+                <span><span class="status-indicator"></span>Pinch Gesture</span>
+                <span id="pinchResult">Not tested</span>
+            </div>
+            <div class="test-item" id="longPressTest">
+                <span><span class="status-indicator"></span>Long Press</span>
+                <span id="longPressResult">Not tested</span>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Performance Tests</h2>
+            <div class="test-item" id="memoryTest">
+                <span><span class="status-indicator"></span>Memory Usage</span>
+                <button class="test-button" onclick="testMemory()">Test</button>
+            </div>
+            <div class="test-item" id="networkTest">
+                <span><span class="status-indicator"></span>Network Information</span>
+                <button class="test-button" onclick="testNetwork()">Test</button>
+            </div>
+            <div class="test-item" id="batteryTest">
+                <span><span class="status-indicator"></span>Battery Status</span>
+                <button class="test-button" onclick="testBattery()">Test</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>Test Results</h2>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="test-results" id="testResults">
+                <p>Run tests to see results...</p>
+            </div>
+            <button class="test-button" onclick="runAllTests()" style="width: 100%; margin-top: 10px;">
+                Run All Tests
+            </button>
+            <button class="test-button" onclick="exportResults()"
+                style="width: 100%; margin-top: 10px; background: #28a745;">
+                Export Results
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Test results storage
+        let testResults = {};
+        let totalTests = 0;
+        let completedTests = 0;
+
+        // Initialize device info
+        function initializeDeviceInfo() {
+            const deviceInfo = document.getElementById('deviceInfo');
+            const info = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                cookieEnabled: navigator.cookieEnabled,
+                onLine: navigator.onLine,
+                screenWidth: screen.width,
+                screenHeight: screen.height,
+                windowWidth: window.innerWidth,
+                windowHeight: window.innerHeight,
+                devicePixelRatio: window.devicePixelRatio,
+                touchSupport: 'ontouchstart' in window,
+                orientation: screen.orientation ? screen.orientation.type : 'unknown'
+            };
+
+            deviceInfo.innerHTML = Object.entries(info)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join('<br>');
+        }
+
+        // Test functions
+        function testUserAgent() {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isAndroid = /Android/.test(navigator.userAgent);
+            const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+            const isChrome = /Chrome/.test(navigator.userAgent);
+
+            let result = 'Unknown browser/platform';
+            let status = 'warning';
+
+            if (isIOS && isSafari) {
+                result = 'iOS Safari detected ✓';
+                status = 'passed';
+            } else if (isAndroid && isChrome) {
+                result = 'Android Chrome detected ✓';
+                status = 'passed';
+            } else if (isIOS) {
+                result = 'iOS detected but not Safari';
+                status = 'warning';
+            } else if (isAndroid) {
+                result = 'Android detected but not Chrome';
+                status = 'warning';
+            }
+
+            updateTestResult('userAgentTest', status, result);
+        }
+
+        function testTouchSupport() {
+            const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            const status = hasTouch ? 'passed' : 'failed';
+            const result = hasTouch ? 'Touch events supported ✓' : 'Touch events not supported ✗';
+            updateTestResult('touchSupportTest', status, result);
+        }
+
+        function testViewport() {
+            const viewport = document.querySelector('meta[name="viewport"]');
+            const hasViewport = viewport !== null;
+            const content = viewport ? viewport.getAttribute('content') : '';
+            const hasWidthDevice = content.includes('width=device-width');
+            const hasInitialScale = content.includes('initial-scale=1');
+
+            let status = 'failed';
+            let result = 'Viewport not configured properly';
+
+            if (hasViewport && hasWidthDevice && hasInitialScale) {
+                status = 'passed';
+                result = 'Viewport configured correctly ✓';
+            } else if (hasViewport) {
+                status = 'warning';
+                result = 'Viewport present but may need adjustment';
+            }
+
+            updateTestResult('viewportTest', status, result);
+        }
+
+        async function testServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.getRegistration();
+                    if (registration) {
+                        updateTestResult('serviceWorkerTest', 'passed', 'Service Worker registered ✓');
+                    } else {
+                        updateTestResult('serviceWorkerTest', 'warning', 'Service Worker not registered');
+                    }
+                } catch (error) {
+                    updateTestResult('serviceWorkerTest', 'failed', 'Service Worker error: ' + error.message);
+                }
+            } else {
+                updateTestResult('serviceWorkerTest', 'failed', 'Service Worker not supported ✗');
+            }
+        }
+
+        async function testManifest() {
+            try {
+                const response = await fetch('/manifest.json');
+                if (response.ok) {
+                    const manifest = await response.json();
+                    const hasName = manifest.name || manifest.short_name;
+                    const hasIcons = manifest.icons && manifest.icons.length > 0;
+                    const hasStartUrl = manifest.start_url;
+
+                    if (hasName && hasIcons && hasStartUrl) {
+                        updateTestResult('manifestTest', 'passed', 'Manifest valid ✓');
+                    } else {
+                        updateTestResult('manifestTest', 'warning', 'Manifest missing required fields');
+                    }
+                } else {
+                    updateTestResult('manifestTest', 'failed', 'Manifest not found ✗');
+                }
+            } catch (error) {
+                updateTestResult('manifestTest', 'failed', 'Manifest error: ' + error.message);
+            }
+        }
+
+        function testInstallPrompt() {
+            let deferredPrompt = null;
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                deferredPrompt = e;
+                updateTestResult('installPromptTest', 'passed', 'Install prompt available ✓');
+            });
+
+            // Check if already installed
+            if (window.matchMedia('(display-mode: standalone)').matches ||
+                (window.navigator as any).standalone === true) {
+                updateTestResult('installPromptTest', 'passed', 'App already installed ✓');
+            } else {
+                setTimeout(() => {
+                    if (!deferredPrompt) {
+                        updateTestResult('installPromptTest', 'warning', 'Install prompt not triggered');
+                    }
+                }, 2000);
+            }
+        }
+
+        function testOfflineDetection() {
+            const isOnline = navigator.onLine;
+            updateTestResult('offlineDetectionTest', 'passed', `Online status: ${isOnline ? 'Online' : 'Offline'} ✓`);
+
+            // Test offline/online events
+            window.addEventListener('offline', () => {
+                document.getElementById('offlineIndicator').className = 'offline-indicator offline';
+            });
+
+            window.addEventListener('online', () => {
+                document.getElementById('offlineIndicator').className = 'offline-indicator online';
+                setTimeout(() => {
+                    document.getElementById('offlineIndicator').style.display = 'none';
+                }, 3000);
+            });
+        }
+
+        async function testCache() {
+            if ('caches' in window) {
+                try {
+                    const cache = await caches.open('test-cache');
+                    await cache.put('/test', new Response('test data'));
+                    const response = await cache.match('/test');
+                    const data = await response.text();
+
+                    if (data === 'test data') {
+                        updateTestResult('cacheTest', 'passed', 'Cache Storage working ✓');
+                    } else {
+                        updateTestResult('cacheTest', 'failed', 'Cache Storage not working properly ✗');
+                    }
+
+                    await cache.delete('/test');
+                } catch (error) {
+                    updateTestResult('cacheTest', 'failed', 'Cache Storage error: ' + error.message);
+                }
+            } else {
+                updateTestResult('cacheTest', 'failed', 'Cache Storage not supported ✗');
+            }
+        }
+
+        function testIndexedDB() {
+            if ('indexedDB' in window) {
+                const request = indexedDB.open('test-db', 1);
+
+                request.onerror = () => {
+                    updateTestResult('indexedDBTest', 'failed', 'IndexedDB error ✗');
+                };
+
+                request.onsuccess = (event) => {
+                    const db = event.target.result;
+                    db.close();
+                    indexedDB.deleteDatabase('test-db');
+                    updateTestResult('indexedDBTest', 'passed', 'IndexedDB working ✓');
+                };
+
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    db.createObjectStore('test-store');
+                };
+            } else {
+                updateTestResult('indexedDBTest', 'failed', 'IndexedDB not supported ✗');
+            }
+        }
+
+        function testNotificationSupport() {
+            if ('Notification' in window) {
+                updateTestResult('notificationSupportTest', 'passed', 'Notifications supported ✓');
+            } else {
+                updateTestResult('notificationSupportTest', 'failed', 'Notifications not supported ✗');
+            }
+        }
+
+        async function testNotificationPermission() {
+            if ('Notification' in window) {
+                try {
+                    const permission = await Notification.requestPermission();
+                    const status = permission === 'granted' ? 'passed' : 'warning';
+                    const result = `Permission: ${permission}`;
+                    updateTestResult('notificationPermissionTest', status, result);
+                } catch (error) {
+                    updateTestResult('notificationPermissionTest', 'failed', 'Permission error: ' + error.message);
+                }
+            } else {
+                updateTestResult('notificationPermissionTest', 'failed', 'Notifications not supported ✗');
+            }
+        }
+
+        async function testPushManager() {
+            if ('serviceWorker' in navigator && 'PushManager' in window) {
+                try {
+                    const registration = await navigator.serviceWorker.ready;
+                    if (registration.pushManager) {
+                        updateTestResult('pushManagerTest', 'passed', 'Push Manager available ✓');
+                    } else {
+                        updateTestResult('pushManagerTest', 'failed', 'Push Manager not available ✗');
+                    }
+                } catch (error) {
+                    updateTestResult('pushManagerTest', 'failed', 'Push Manager error: ' + error.message);
+                }
+            } else {
+                updateTestResult('pushManagerTest', 'failed', 'Push Manager not supported ✗');
+            }
+        }
+
+        function testMemory() {
+            if ('memory' in performance) {
+                const memory = performance.memory;
+                const usedMB = Math.round(memory.usedJSHeapSize / 1024 / 1024);
+                const totalMB = Math.round(memory.totalJSHeapSize / 1024 / 1024);
+                const limitMB = Math.round(memory.jsHeapSizeLimit / 1024 / 1024);
+
+                const result = `Used: ${usedMB}MB, Total: ${totalMB}MB, Limit: ${limitMB}MB`;
+                const status = usedMB < totalMB * 0.8 ? 'passed' : 'warning';
+                updateTestResult('memoryTest', status, result);
+            } else {
+                updateTestResult('memoryTest', 'warning', 'Memory API not available');
+            }
+        }
+
+        function testNetwork() {
+            if ('connection' in navigator) {
+                const connection = navigator.connection;
+                const result = `Type: ${connection.effectiveType}, Downlink: ${connection.downlink}Mbps, RTT: ${connection.rtt}ms`;
+                updateTestResult('networkTest', 'passed', result);
+            } else {
+                updateTestResult('networkTest', 'warning', 'Network Information API not available');
+            }
+        }
+
+        async function testBattery() {
+            if ('getBattery' in navigator) {
+                try {
+                    const battery = await navigator.getBattery();
+                    const level = Math.round(battery.level * 100);
+                    const charging = battery.charging ? 'Charging' : 'Not charging';
+                    const result = `Level: ${level}%, ${charging}`;
+                    updateTestResult('batteryTest', 'passed', result);
+                } catch (error) {
+                    updateTestResult('batteryTest', 'warning', 'Battery API error: ' + error.message);
+                }
+            } else {
+                updateTestResult('batteryTest', 'warning', 'Battery API not available');
+            }
+        }
+
+        // Gesture testing
+        function initializeGestureTests() {
+            const gestureArea = document.getElementById('gestureTestArea');
+            let touchStartTime = 0;
+            let touchStartPos = { x: 0, y: 0 };
+            let touches = [];
+
+            gestureArea.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                touchStartTime = Date.now();
+                touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                touches = Array.from(e.touches);
+                gestureArea.classList.add('active');
+
+                updateTestResult('tapTest', 'passed', 'Tap detected ✓');
+            });
+
+            gestureArea.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+
+                if (e.touches.length === 2) {
+                    updateTestResult('pinchTest', 'passed', 'Pinch gesture detected ✓');
+                }
+            });
+
+            gestureArea.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                const touchEndTime = Date.now();
+                const touchDuration = touchEndTime - touchStartTime;
+                const touchEndPos = { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+
+                gestureArea.classList.remove('active');
+
+                // Long press detection
+                if (touchDuration > 500) {
+                    updateTestResult('longPressTest', 'passed', 'Long press detected ✓');
+                }
+
+                // Swipe detection
+                const deltaX = touchEndPos.x - touchStartPos.x;
+                const deltaY = touchEndPos.y - touchStartPos.y;
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+                if (distance > 50) {
+                    let direction = '';
+                    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                        direction = deltaX > 0 ? 'right' : 'left';
+                    } else {
+                        direction = deltaY > 0 ? 'down' : 'up';
+                    }
+                    updateTestResult('swipeTest', 'passed', `Swipe ${direction} detected ✓`);
+                }
+            });
+        }
+
+        // Utility functions
+        function updateTestResult(testId, status, message) {
+            const testItem = document.getElementById(testId);
+            const statusIndicator = testItem.querySelector('.status-indicator');
+            const resultSpan = testItem.querySelector('span:last-child');
+
+            testItem.className = `test-item ${status}`;
+            statusIndicator.className = `status-indicator ${status}`;
+
+            if (resultSpan && !resultSpan.querySelector('button')) {
+                resultSpan.textContent = message;
+            }
+
+            testResults[testId] = { status, message, timestamp: new Date().toISOString() };
+            updateProgress();
+        }
+
+        function updateProgress() {
+            completedTests = Object.keys(testResults).length;
+            const progress = (completedTests / totalTests) * 100;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+
+            const resultsDiv = document.getElementById('testResults');
+            const passed = Object.values(testResults).filter(r => r.status === 'passed').length;
+            const failed = Object.values(testResults).filter(r => r.status === 'failed').length;
+            const warnings = Object.values(testResults).filter(r => r.status === 'warning').length;
+
+            resultsDiv.innerHTML = `
+                <p><strong>Test Progress:</strong> ${completedTests}/${totalTests} (${Math.round(progress)}%)</p>
+                <p><strong>Passed:</strong> ${passed} | <strong>Failed:</strong> ${failed} | <strong>Warnings:</strong> ${warnings}</p>
+            `;
+        }
+
+        async function runAllTests() {
+            const tests = [
+                testUserAgent,
+                testTouchSupport,
+                testViewport,
+                testServiceWorker,
+                testManifest,
+                testInstallPrompt,
+                testOfflineDetection,
+                testCache,
+                testIndexedDB,
+                testNotificationSupport,
+                testNotificationPermission,
+                testPushManager,
+                testMemory,
+                testNetwork,
+                testBattery
+            ];
+
+            for (const test of tests) {
+                await test();
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+
+        function exportResults() {
+            const deviceInfo = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                screenSize: `${screen.width}x${screen.height}`,
+                windowSize: `${window.innerWidth}x${window.innerHeight}`,
+                devicePixelRatio: window.devicePixelRatio,
+                timestamp: new Date().toISOString()
+            };
+
+            const exportData = {
+                deviceInfo,
+                testResults,
+                summary: {
+                    total: totalTests,
+                    completed: completedTests,
+                    passed: Object.values(testResults).filter(r => r.status === 'passed').length,
+                    failed: Object.values(testResults).filter(r => r.status === 'failed').length,
+                    warnings: Object.values(testResults).filter(r => r.status === 'warning').length
+                }
+            };
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mobile-test-results-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeDeviceInfo();
+            initializeGestureTests();
+
+            // Count total tests
+            totalTests = document.querySelectorAll('.test-item').length;
+            updateProgress();
+
+            // Update online/offline indicator
+            function updateOnlineStatus() {
+                const indicator = document.getElementById('offlineIndicator');
+                if (navigator.onLine) {
+                    indicator.className = 'offline-indicator online';
+                    indicator.textContent = 'Online';
+                    setTimeout(() => {
+                        indicator.style.display = 'none';
+                    }, 3000);
+                } else {
+                    indicator.className = 'offline-indicator offline';
+                    indicator.textContent = 'Offline';
+                    indicator.style.display = 'block';
+                }
+            }
+
+            window.addEventListener('online', updateOnlineStatus);
+            window.addEventListener('offline', updateOnlineStatus);
+            updateOnlineStatus();
+        });
+    </script>
+</body>
+
+</html>

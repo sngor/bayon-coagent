@@ -27,6 +27,9 @@ export { getS3Client } from './s3/client';
 // SES
 export { getSESClient } from './ses/client';
 
+// SNS
+export { getSNSClient, createPlatformEndpoint, sendPushNotification, deletePlatformEndpoint, sendMarketAlert } from './sns/client';
+
 // Bedrock
 export { getBedrockClient } from './bedrock/client';
 

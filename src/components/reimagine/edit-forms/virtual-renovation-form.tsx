@@ -111,7 +111,7 @@ export function VirtualRenovationForm({
                     </div>
 
                     <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-                        <h4 className="text-sm font-medium">Renovation Tips</h4>
+                        <h4 className="font-headline text-sm font-medium">Renovation Tips</h4>
                         <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                             <li>Be specific about materials and finishes</li>
                             <li>Mention colors and textures you want</li>
@@ -121,7 +121,7 @@ export function VirtualRenovationForm({
                     </div>
 
                     <div className="rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 p-4 space-y-2">
-                        <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                        <h4 className="font-headline text-sm font-medium text-blue-900 dark:text-blue-100">
                             Example Descriptions
                         </h4>
                         <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">

@@ -28,7 +28,7 @@ export function CelebrationDemo() {
     return (
         <div className="container mx-auto py-8 space-y-8">
             <div className="space-y-2">
-                <h1 className="text-3xl font-bold">Celebration Animations Demo</h1>
+                <h1 className="font-headline text-3xl font-bold">Celebration Animations Demo</h1>
                 <p className="text-muted-foreground">
                     Test all celebration animations for milestones and achievements
                 </p>

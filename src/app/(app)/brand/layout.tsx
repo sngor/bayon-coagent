@@ -1,3 +1,28 @@
+'use client';
+
+import { HubLayout } from '@/components/hub';
+import { FeatureGuard } from '@/components/feature-guard';
+import { Target, User, Shield, Users, Zap } from 'lucide-react';
+
+const brandTabs = [
+    { id: 'profile', label: 'Profile', href: '/brand/profile', icon: User },
+    { id: 'audit', label: 'Audit', href: '/brand/audit', icon: Shield },
+    { id: 'competitors', label: 'Competitors', href: '/brand/competitors', icon: Users },
+    { id: 'strategy', label: 'Strategy', href: '/brand/strategy', icon: Zap },
+];
+
 export default function BrandLayout({ children }: { children: React.ReactNode }) {
-    return children;
+    return (
+        <FeatureGuard featureId="brand">
+            <HubLayout
+                title="Brand Identity & Strategy"
+                description="Own your market position and outshine the competition with professional branding tools"
+                icon={Target}
+                tabs={brandTabs}
+                tabsVariant="pills"
+            >
+                {children}
+            </HubLayout>
+        </FeatureGuard>
+    );
 }

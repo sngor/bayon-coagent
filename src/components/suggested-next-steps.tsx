@@ -95,7 +95,7 @@ export function SuggestedNextSteps({
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
-                                            <h4 className="font-semibold text-sm group-hover:text-primary transition-colors">
+                                            <h4 className="font-headline font-semibold text-sm group-hover:text-primary transition-colors">
                                                 {step.title}
                                             </h4>
                                             <Badge variant={config.badgeVariant} className="text-xs">

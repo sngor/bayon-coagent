@@ -45,7 +45,21 @@ export type EntityType =
   | 'TrendIndicators'
   | 'TargetArea'
   | 'PriceHistory'
-  | 'ListingSnapshot';
+  | 'ListingSnapshot'
+  | 'MarketStats'
+  | 'PropertyComparison'
+  | 'MeetingPrep'
+  | 'SyncOperation'
+  | 'NotificationPreferences'
+  | 'OpenHouseSession'
+  | 'PushToken'
+  | 'VoiceRecording'
+  | 'ScheduledContent'
+  | 'Analytics'
+  | 'ABTest'
+  | 'Template'
+  | 'ROI'
+  | 'OptimalTimesCache';
 
 /**
  * Base DynamoDB item structure

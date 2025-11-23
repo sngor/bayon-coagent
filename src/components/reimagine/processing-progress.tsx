@@ -150,7 +150,7 @@ export function ProcessingProgress({
                             />
                         </div>
                         <div className="flex-1">
-                            <h3 className="font-semibold text-sm">{config.label}</h3>
+                            <h3 className="font-headline font-semibold text-sm">{config.label}</h3>
                             {isProcessing && (
                                 <p className="text-xs text-muted-foreground">
                                     {estimatedTime

@@ -168,7 +168,7 @@ export default function TabletTestPage() {
                 <CardContent className="space-y-6">
                     {/* 2-column tablet layout */}
                     <div>
-                        <h3 className="text-sm font-semibold mb-3 text-muted-foreground">
+                        <h3 className="font-headline text-sm font-semibold mb-3 text-muted-foreground">
                             Two-Column Tablet Layout
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 orientation-transition">
@@ -190,7 +190,7 @@ export default function TabletTestPage() {
 
                     {/* 3-column tablet landscape layout */}
                     <div>
-                        <h3 className="text-sm font-semibold mb-3 text-muted-foreground">
+                        <h3 className="font-headline text-sm font-semibold mb-3 text-muted-foreground">
                             Three-Column Tablet Landscape Layout
                         </h3>
                         <div className="grid grid-cols-1 tablet-portrait:grid-cols-2 tablet-landscape:grid-cols-3 lg:grid-cols-3 gap-4 orientation-transition">
@@ -229,7 +229,7 @@ export default function TabletTestPage() {
                         {/* Main Content Area - Takes 2 columns on tablet/desktop */}
                         <div className="md:col-span-2 space-y-4">
                             <div className="p-6 rounded-lg border bg-primary/5">
-                                <h3 className="font-semibold text-lg mb-2">Main Content Area</h3>
+                                <h3 className="font-headline font-semibold text-lg mb-2">Main Content Area</h3>
                                 <p className="text-sm text-muted-foreground mb-4">
                                     This area takes full width on mobile, 2/3 width on tablet and desktop
                                 </p>
@@ -252,7 +252,7 @@ export default function TabletTestPage() {
                         {/* Sidebar Area - Takes 1 column */}
                         <div className="md:col-span-1 space-y-4">
                             <div className="p-6 rounded-lg border bg-secondary/30">
-                                <h3 className="font-semibold text-lg mb-2">Sidebar</h3>
+                                <h3 className="font-headline font-semibold text-lg mb-2">Sidebar</h3>
                                 <p className="text-sm text-muted-foreground mb-4">
                                     Full width on mobile, 1/3 width on tablet/desktop
                                 </p>
@@ -325,7 +325,7 @@ export default function TabletTestPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div>
-                        <h4 className="font-semibold mb-2">Desktop Browser Testing:</h4>
+                        <h4 className="font-headline font-semibold mb-2">Desktop Browser Testing:</h4>
                         <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
                             <li>Open Chrome DevTools (F12)</li>
                             <li>Click the device toolbar icon (Ctrl+Shift+M)</li>
@@ -335,7 +335,7 @@ export default function TabletTestPage() {
                         </ol>
                     </div>
                     <div>
-                        <h4 className="font-semibold mb-2">Tablet Device Testing:</h4>
+                        <h4 className="font-headline font-semibold mb-2">Tablet Device Testing:</h4>
                         <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
                             <li>Open this page on your tablet device</li>
                             <li>Verify the viewport detection shows "Tablet"</li>
@@ -345,7 +345,7 @@ export default function TabletTestPage() {
                         </ol>
                     </div>
                     <div>
-                        <h4 className="font-semibold mb-2">What to Verify:</h4>
+                        <h4 className="font-headline font-semibold mb-2">What to Verify:</h4>
                         <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                             <li>Tablet viewport (768px-1024px) is correctly detected</li>
                             <li>Grids show 2 columns in portrait, 3 in landscape</li>

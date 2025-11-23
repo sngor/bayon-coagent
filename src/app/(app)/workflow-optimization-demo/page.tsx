@@ -30,7 +30,7 @@ export default function WorkflowOptimizationDemoPage() {
                     <CardContent>
                         <div className="space-y-4">
                             <div>
-                                <h3 className="font-semibold mb-2">Key Features:</h3>
+                                <h3 className="font-headline font-semibold mb-2">Key Features:</h3>
                                 <ul className="space-y-2 text-sm">
                                     <li>✓ <strong>Pattern Detection:</strong> Identifies common sequences of actions</li>
                                     <li>✓ <strong>Smart Shortcuts:</strong> Suggests quick actions based on workflow patterns</li>

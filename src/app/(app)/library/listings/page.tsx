@@ -24,7 +24,7 @@ export default function ListingsPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">Listings</h1>
+                <h1 className="font-headline text-3xl font-bold tracking-tight">Listings</h1>
                 <p className="text-muted-foreground mt-2">
                     View and manage your imported MLS listings. Publish to social media platforms with one click.
                 </p>

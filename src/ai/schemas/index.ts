@@ -7,6 +7,15 @@
 // Export all schemas and types from bayon-assistant-schemas
 export * from './bayon-assistant-schemas';
 
+// Export photo description schemas
+export * from './photo-description-schemas';
+
+// Export audio transcription schemas
+export * from './audio-transcription-schemas';
+
+// Export voice-to-content schemas
+export * from './voice-to-content-schemas';
+
 // Re-export commonly used schemas for convenience
 export {
   AgentProfileSchema,

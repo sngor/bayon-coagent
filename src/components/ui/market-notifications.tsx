@@ -86,7 +86,7 @@ export function NotificationBell({
             </PopoverTrigger>
             <PopoverContent className="w-96 p-0" align="end">
                 <div className="flex items-center justify-between p-4 border-b">
-                    <h3 className="font-semibold text-lg">Notifications</h3>
+                    <h3 className="font-headline font-semibold text-lg">Notifications</h3>
                     <div className="flex items-center gap-2">
                         {unreadCount > 0 && (
                             <Button
@@ -195,7 +195,7 @@ function NotificationItem({
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2 mb-1">
-                        <h4 className="font-semibold text-sm leading-tight">
+                        <h4 className="font-headline font-semibold text-sm leading-tight">
                             {notification.title}
                         </h4>
                         <div className="flex items-center gap-1 flex-shrink-0">
@@ -390,7 +390,7 @@ export function NotificationList({
             {notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                     <BellOff className="h-16 w-16 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No notifications</h3>
+                    <h3 className="font-headline text-lg font-semibold mb-2">No notifications</h3>
                     <p className="text-sm text-muted-foreground max-w-md">
                         We'll notify you about important market changes, opportunities, and
                         insights relevant to your business.

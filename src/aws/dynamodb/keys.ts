@@ -565,3 +565,251 @@ export function getListingSnapshotKeys(
     SK: `LISTING_SNAPSHOT#${mlsNumber}`,
   };
 }
+
+// ==================== Mobile Enhancements Keys ====================
+
+/**
+ * Generates keys for NotificationPreferences
+ * Pattern: PK: USER#<userId>, SK: NOTIFICATIONPREFS
+ */
+export function getNotificationPreferencesKeys(userId: string): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: 'NOTIFICATIONPREFS',
+  };
+}
+
+/**
+ * Generates keys for PushToken
+ * Pattern: PK: USER#<userId>, SK: PUSH_TOKEN#<deviceId>
+ */
+export function getPushTokenKeys(
+  userId: string,
+  deviceId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `PUSH_TOKEN#${deviceId}`,
+  };
+}
+
+/**
+ * Generates keys for SyncOperation
+ * Pattern: PK: USER#<userId>, SK: SYNC#<operationId>
+ */
+export function getSyncOperationKeys(
+  userId: string,
+  operationId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `SYNC#${operationId}`,
+  };
+}
+
+/**
+ * Generates keys for MarketStats (cached)
+ * Pattern: PK: USER#<userId>, SK: MARKETSTATS#<location>
+ */
+export function getMarketStatsKeys(
+  userId: string,
+  location: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `MARKETSTATS#${location}`,
+  };
+}
+
+/**
+ * Generates keys for OpenHouseSession
+ * Pattern: PK: USER#<userId>, SK: OPENHOUSE#<sessionId>
+ */
+export function getOpenHouseSessionKeys(
+  userId: string,
+  sessionId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `OPENHOUSE#${sessionId}`,
+  };
+}
+
+/**
+ * Generates keys for MeetingPrep
+ * Pattern: PK: USER#<userId>, SK: MEETINGPREP#<prepId>
+ */
+export function getMeetingPrepKeys(
+  userId: string,
+  prepId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `MEETINGPREP#${prepId}`,
+  };
+}
+
+/**
+ * Generates keys for PropertyComparison
+ * Pattern: PK: USER#<userId>, SK: COMPARISON#<comparisonId>
+ */
+export function getPropertyComparisonKeys(
+  userId: string,
+  comparisonId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `COMPARISON#${comparisonId}`,
+  };
+}
+
+// ==================== Content Workflow Features Keys ====================
+
+/**
+ * Generates keys for ScheduledContent
+ * Pattern: PK: USER#<userId>, SK: SCHEDULE#<scheduleId>
+ * GSI1: PK: SCHEDULE#<status>, SK: TIME#<publishTime>
+ */
+export function getScheduledContentKeys(
+  userId: string,
+  scheduleId: string,
+  status?: string,
+  publishTime?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `SCHEDULE#${scheduleId}`,
+  };
+
+  // Add GSI keys for efficient querying by status and time
+  if (status) {
+    keys.GSI1PK = `SCHEDULE#${status}`;
+  }
+  if (publishTime) {
+    keys.GSI1SK = `TIME#${publishTime}`;
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for Analytics
+ * Pattern: PK: USER#<userId>, SK: ANALYTICS#<contentId>#<channel>
+ * GSI1: PK: ANALYTICS#<contentType>, SK: DATE#<publishDate>
+ */
+export function getAnalyticsKeys(
+  userId: string,
+  contentId: string,
+  channel: string,
+  contentType?: string,
+  publishDate?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `ANALYTICS#${contentId}#${channel}`,
+  };
+
+  // Add GSI keys for content type analytics aggregation
+  if (contentType) {
+    keys.GSI1PK = `ANALYTICS#${contentType}`;
+  }
+  if (publishDate) {
+    keys.GSI1SK = `DATE#${publishDate}`;
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for ABTest
+ * Pattern: PK: USER#<userId>, SK: ABTEST#<testId>
+ */
+export function getABTestKeys(
+  userId: string,
+  testId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `ABTEST#${testId}`,
+  };
+}
+
+/**
+ * Generates keys for Template
+ * Pattern: PK: USER#<userId>, SK: TEMPLATE#<templateId>
+ * GSI1: PK: TEMPLATE#<contentType>, SK: NAME#<name>
+ */
+export function getTemplateKeys(
+  userId: string,
+  templateId: string,
+  contentType?: string,
+  name?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `TEMPLATE#${templateId}`,
+  };
+
+  // Add GSI keys for template discovery and search
+  if (contentType) {
+    keys.GSI1PK = `TEMPLATE#${contentType}`;
+  }
+  if (name) {
+    keys.GSI1SK = `NAME#${name}`;
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for shared templates (brokerage access)
+ * Pattern: PK: BROKERAGE#<brokerageId>, SK: TEMPLATE#<templateId>
+ */
+export function getSharedTemplateKeys(
+  brokerageId: string,
+  templateId: string
+): DynamoDBKey {
+  return {
+    PK: `BROKERAGE#${brokerageId}`,
+    SK: `TEMPLATE#${templateId}`,
+  };
+}
+
+/**
+ * Generates keys for ROI events
+ * Pattern: PK: USER#<userId>, SK: ROI#<contentId>#<eventId>
+ */
+export function getROIKeys(
+  userId: string,
+  contentId: string,
+  eventId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `ROI#${contentId}#${eventId}`,
+  };
+}
+
+/**
+ * Generates keys for optimal times cache
+ * Pattern: PK: USER#<userId>, SK: OPTIMAL#<channel>#<contentType>
+ */
+export function getOptimalTimesKeys(
+  userId: string,
+  channel: string,
+  contentType: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `OPTIMAL#${channel}#${contentType}`,
+  };
+}

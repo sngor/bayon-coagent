@@ -90,6 +90,14 @@ export function ProfileCompletionBanner({
             if (Array.isArray(value)) {
                 return value.length > 0;
             }
+            // Handle string values more carefully
+            if (typeof value === 'string') {
+                return value.trim() !== '';
+            }
+            // Handle numbers
+            if (typeof value === 'number') {
+                return value > 0;
+            }
             return value !== undefined && value !== null && value !== '';
         });
 
@@ -99,6 +107,14 @@ export function ProfileCompletionBanner({
             const value = profile[field.key];
             if (Array.isArray(value)) {
                 return value.length === 0;
+            }
+            // Handle string values more carefully
+            if (typeof value === 'string') {
+                return value.trim() === '';
+            }
+            // Handle numbers
+            if (typeof value === 'number') {
+                return value <= 0;
             }
             return value === undefined || value === null || value === '';
         });
@@ -271,6 +287,10 @@ export function ProfileCompletionChecklist({
 
             if (Array.isArray(value)) {
                 isComplete = value.length > 0;
+            } else if (typeof value === 'string') {
+                isComplete = value.trim() !== '';
+            } else if (typeof value === 'number') {
+                isComplete = value > 0;
             } else {
                 isComplete = value !== undefined && value !== null && value !== '';
             }

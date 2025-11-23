@@ -108,7 +108,7 @@ export default function MarketNotificationsDemoPage() {
             >
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3">
+                        <h1 className="font-headline text-4xl font-bold tracking-tight flex items-center gap-3">
                             <Bell className="h-8 w-8" />
                             Market Notifications
                         </h1>
@@ -251,28 +251,28 @@ export default function MarketNotificationsDemoPage() {
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <h4 className="font-semibold">AI-Powered Analysis</h4>
+                                <h4 className="font-headline font-semibold">AI-Powered Analysis</h4>
                                 <p className="text-sm text-muted-foreground">
                                     Our AI continuously monitors market changes and analyzes their
                                     relevance to your business, only notifying you about what matters.
                                 </p>
                             </div>
                             <div className="space-y-2">
-                                <h4 className="font-semibold">Smart Prioritization</h4>
+                                <h4 className="font-headline font-semibold">Smart Prioritization</h4>
                                 <p className="text-sm text-muted-foreground">
                                     Notifications are automatically prioritized based on urgency,
                                     relevance, and potential impact on your business.
                                 </p>
                             </div>
                             <div className="space-y-2">
-                                <h4 className="font-semibold">Actionable Insights</h4>
+                                <h4 className="font-headline font-semibold">Actionable Insights</h4>
                                 <p className="text-sm text-muted-foreground">
                                     Each notification includes AI-generated insights and recommended
                                     actions to help you respond effectively.
                                 </p>
                             </div>
                             <div className="space-y-2">
-                                <h4 className="font-semibold">Customizable Preferences</h4>
+                                <h4 className="font-headline font-semibold">Customizable Preferences</h4>
                                 <p className="text-sm text-muted-foreground">
                                     Control when, how, and what notifications you receive with
                                     granular settings including quiet hours and frequency limits.

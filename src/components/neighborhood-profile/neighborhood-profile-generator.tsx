@@ -252,7 +252,7 @@ export function NeighborhoodProfileGenerator({
                     <CardContent className="space-y-6">
                         {/* AI Insights Preview */}
                         <div>
-                            <h4 className="font-semibold mb-2">AI Insights</h4>
+                            <h4 className="font-headline font-semibold mb-2">AI Insights</h4>
                             <div className="bg-gray-50 rounded-lg p-4">
                                 <p className="text-sm text-gray-700 line-clamp-4">
                                     {generatedProfile.aiInsights}
@@ -264,7 +264,7 @@ export function NeighborhoodProfileGenerator({
 
                         {/* Market Data Summary */}
                         <div>
-                            <h4 className="font-semibold mb-3">Market Summary</h4>
+                            <h4 className="font-headline font-semibold mb-3">Market Summary</h4>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 <div className="bg-blue-50 rounded-lg p-3 text-center">
                                     <p className="text-sm text-blue-600 font-medium">Median Price</p>
@@ -297,7 +297,7 @@ export function NeighborhoodProfileGenerator({
 
                         {/* Demographics Summary */}
                         <div>
-                            <h4 className="font-semibold mb-3">Demographics</h4>
+                            <h4 className="font-headline font-semibold mb-3">Demographics</h4>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 <div className="bg-gray-50 rounded-lg p-3">
                                     <p className="text-sm text-gray-600 font-medium">Population</p>
@@ -325,7 +325,7 @@ export function NeighborhoodProfileGenerator({
                         {/* Schools Preview */}
                         {generatedProfile.schools.length > 0 && (
                             <div>
-                                <h4 className="font-semibold mb-3">Top Schools</h4>
+                                <h4 className="font-headline font-semibold mb-3">Top Schools</h4>
                                 <div className="space-y-2">
                                     {generatedProfile.schools.slice(0, 3).map((school, index) => (
                                         <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -349,7 +349,7 @@ export function NeighborhoodProfileGenerator({
 
                         {/* Amenities Preview */}
                         <div>
-                            <h4 className="font-semibold mb-3">Nearby Amenities</h4>
+                            <h4 className="font-headline font-semibold mb-3">Nearby Amenities</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {generatedProfile.amenities.restaurants.length > 0 && (
                                     <div>

@@ -80,7 +80,7 @@ export default function UserFlowDemoPage() {
                                     )}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
-                                            <h4 className="font-semibold">{step.title}</h4>
+                                            <h4 className="font-headline font-semibold">{step.title}</h4>
                                             {index === onboardingStep && (
                                                 <Badge variant="default" className="text-xs">Current</Badge>
                                             )}
@@ -150,7 +150,7 @@ export default function UserFlowDemoPage() {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
-                                                <h4 className="font-semibold">{step.title}</h4>
+                                                <h4 className="font-headline font-semibold">{step.title}</h4>
                                                 {index === contentCreationStep && (
                                                     <Badge variant="default" className="text-xs">Active</Badge>
                                                 )}

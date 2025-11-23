@@ -93,7 +93,7 @@ async function NeighborhoodProfileContent({ profileId }: { profileId: string }) 
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                    <h1 className="font-headline text-3xl font-bold text-gray-900 flex items-center gap-2">
                         <MapPin className="h-8 w-8 text-blue-600" />
                         {profile.location}
                     </h1>
@@ -252,7 +252,7 @@ async function NeighborhoodProfileContent({ profileId }: { profileId: string }) 
                         </div>
 
                         <div className="space-y-4">
-                            <h4 className="font-semibold text-gray-900">Age Distribution</h4>
+                            <h4 className="font-headline font-semibold text-gray-900">Age Distribution</h4>
                             <div className="space-y-2">
                                 <div className="flex justify-between">
                                     <span className="text-sm text-gray-600">Under 18</span>
@@ -278,7 +278,7 @@ async function NeighborhoodProfileContent({ profileId }: { profileId: string }) 
                         </div>
 
                         <div className="space-y-4">
-                            <h4 className="font-semibold text-gray-900">Household Composition</h4>
+                            <h4 className="font-headline font-semibold text-gray-900">Household Composition</h4>
                             <div className="space-y-2">
                                 <div className="flex justify-between">
                                     <span className="text-sm text-gray-600">Family Households</span>
@@ -309,7 +309,7 @@ async function NeighborhoodProfileContent({ profileId }: { profileId: string }) 
                                 <div key={index} className="border rounded-lg p-4 space-y-2">
                                     <div className="flex items-start justify-between">
                                         <div>
-                                            <h4 className="font-semibold text-gray-900">{school.name}</h4>
+                                            <h4 className="font-headline font-semibold text-gray-900">{school.name}</h4>
                                             <p className="text-sm text-gray-600">
                                                 {school.type.charAt(0).toUpperCase() + school.type.slice(1)} • {school.grades}
                                             </p>
@@ -340,7 +340,7 @@ async function NeighborhoodProfileContent({ profileId }: { profileId: string }) 
                     {/* Walkability Score */}
                     <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                         <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-semibold text-gray-900">Walkability Score</h4>
+                            <h4 className="font-headline font-semibold text-gray-900">Walkability Score</h4>
                             <span className="text-2xl font-bold text-blue-600">{profile.walkabilityScore}/100</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2 relative">
@@ -361,7 +361,7 @@ async function NeighborhoodProfileContent({ profileId }: { profileId: string }) 
                     <div className="mb-6">
                         <div className="flex items-center gap-2 mb-4">
                             <Map className="h-5 w-5" />
-                            <h4 className="font-semibold text-gray-900">Nearby Amenities</h4>
+                            <h4 className="font-headline font-semibold text-gray-900">Nearby Amenities</h4>
                         </div>
 
                         {/* Distance-based visualization */}
@@ -382,7 +382,7 @@ async function NeighborhoodProfileContent({ profileId }: { profileId: string }) 
                                     <div key={category} className="border rounded-lg p-4">
                                         <div className="flex items-center gap-2 mb-3">
                                             <span className="text-lg">{categoryIcon}</span>
-                                            <h5 className="font-medium text-gray-900 capitalize">
+                                            <h5 className="font-headline font-medium text-gray-900 capitalize">
                                                 {category.replace(/([A-Z])/g, ' $1').trim()}
                                             </h5>
                                             <Badge variant="secondary" className="ml-auto">
@@ -429,11 +429,11 @@ async function NeighborhoodProfileContent({ profileId }: { profileId: string }) 
 
                     {/* Complete Amenities Grid */}
                     <div className="border-t pt-6">
-                        <h4 className="font-semibold text-gray-900 mb-4">All Amenities</h4>
+                        <h4 className="font-headline font-semibold text-gray-900 mb-4">All Amenities</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {Object.entries(profile.amenities).map(([category, items]) => (
                                 <div key={category} className="space-y-3">
-                                    <h5 className="font-medium text-gray-900 capitalize">
+                                    <h5 className="font-headline font-medium text-gray-900 capitalize">
                                         {category.replace(/([A-Z])/g, ' $1').trim()}
                                     </h5>
                                     <div className="space-y-2">
@@ -466,7 +466,7 @@ async function NeighborhoodProfileContent({ profileId }: { profileId: string }) 
                             <Calendar className="h-5 w-5 text-blue-600 mt-0.5" />
                         </div>
                         <div>
-                            <h4 className="font-semibold text-blue-900 mb-1">Export & Share</h4>
+                            <h4 className="font-headline font-semibold text-blue-900 mb-1">Export & Share</h4>
                             <p className="text-blue-800 text-sm mb-3">
                                 Export this neighborhood profile as PDF or HTML to share with clients.
                                 The export includes your branding and contact information.

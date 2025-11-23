@@ -9,13 +9,15 @@ export const REDIRECT_MAP: Record<string, string> = {
   '/listing-description-generator': '/studio/describe',
   '/reimagine': '/studio/reimagine',
 
+  // Research Hub
+  '/research-agent': '/research/agent',
+  '/knowledge-base': '/research/knowledge',
+  '/intelligence/research': '/research/agent',
+
   // Market Hub (formerly Intelligence)
   '/intelligence': '/market',
-  '/intelligence/research': '/market/research',
   '/intelligence/competitors': '/brand/competitors',
   '/intelligence/market-insights': '/market/insights',
-  '/research-agent': '/market/research',
-  '/knowledge-base': '/library/reports',
   '/competitive-analysis': '/brand/competitors',
   '/investment-opportunity-identification': '/market/insights',
   '/life-event-predictor': '/market/insights',
@@ -39,8 +41,10 @@ export const REDIRECT_MAP: Record<string, string> = {
   '/brand-audit': '/brand/audit',
   '/marketing-plan': '/brand/strategy',
 
-  // Library (formerly Projects)
+  // Library redirects
   '/projects': '/library/content',
+
+
 
   // Training (removed from main nav)
   '/training-hub': '/training',

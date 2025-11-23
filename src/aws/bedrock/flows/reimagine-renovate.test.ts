@@ -4,8 +4,27 @@
  * Feature: reimagine-image-toolkit
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { virtualRenovation } from './reimagine-renovate';
+
+// Mock the Bedrock client to avoid real API calls
+jest.mock('../client', () => ({
+  invokeBedrock: jest.fn(),
+}));
+
+// Mock the flow-base module
+jest.mock('../flow-base', () => ({
+  defineFlow: jest.fn((config, fn) => ({
+    execute: fn,
+  })),
+  definePrompt: jest.fn(() => jest.fn().mockResolvedValue({
+    renovatedImageData: 'mocked-renovated-image-data',
+    imageFormat: 'png',
+    description: 'Mocked renovation description',
+  })),
+  MODEL_CONFIGS: {},
+  BEDROCK_MODELS: { TITAN_IMAGE: 'amazon.titan-image-generator-v1' },
+}));
 
 describe('Virtual Renovation Flow', () => {
   // Helper to create a simple test image (1x1 pixel PNG)
@@ -29,7 +48,7 @@ describe('Virtual Renovation Flow', () => {
     // Verify structure
     expect(output).toHaveProperty('renovatedImageData');
     expect(output).toHaveProperty('imageFormat');
-    
+
     // Verify output format
     expect(typeof output.renovatedImageData).toBe('string');
     expect(output.renovatedImageData.length).toBeGreaterThan(0);
@@ -51,7 +70,7 @@ describe('Virtual Renovation Flow', () => {
     // Verify structure
     expect(output).toHaveProperty('renovatedImageData');
     expect(output).toHaveProperty('imageFormat');
-    
+
     // Verify output format
     expect(typeof output.renovatedImageData).toBe('string');
     expect(output.renovatedImageData.length).toBeGreaterThan(0);
@@ -73,7 +92,7 @@ describe('Virtual Renovation Flow', () => {
     // Verify structure
     expect(output).toHaveProperty('renovatedImageData');
     expect(output).toHaveProperty('imageFormat');
-    
+
     // Verify output format
     expect(typeof output.renovatedImageData).toBe('string');
     expect(output.renovatedImageData.length).toBeGreaterThan(0);
@@ -95,7 +114,7 @@ describe('Virtual Renovation Flow', () => {
     // Verify structure
     expect(output).toHaveProperty('renovatedImageData');
     expect(output).toHaveProperty('imageFormat');
-    
+
     // Verify output format
     expect(typeof output.renovatedImageData).toBe('string');
     expect(output.renovatedImageData.length).toBeGreaterThan(0);
@@ -104,7 +123,7 @@ describe('Virtual Renovation Flow', () => {
 
   it('should handle various style presets', async () => {
     const styles = ['modern', 'farmhouse', 'industrial', 'coastal'];
-    
+
     for (const style of styles) {
       const input = {
         imageData: createTestImageData(),
@@ -173,7 +192,7 @@ describe('Virtual Renovation Flow', () => {
 
   it('should accept all supported image formats', async () => {
     const formats: Array<'jpeg' | 'png' | 'webp'> = ['jpeg', 'png', 'webp'];
-    
+
     for (const format of formats) {
       const input = {
         imageData: createTestImageData(),
@@ -221,7 +240,7 @@ describe('Virtual Renovation Flow', () => {
     // Verify structure
     expect(output).toHaveProperty('renovatedImageData');
     expect(output).toHaveProperty('imageFormat');
-    
+
     // Verify output format
     expect(typeof output.renovatedImageData).toBe('string');
     expect(output.renovatedImageData.length).toBeGreaterThan(0);

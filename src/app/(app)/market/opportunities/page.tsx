@@ -1,8 +1,8 @@
 
 'use client';
 
-import { InvestmentOpportunityIdentificationForm } from '@/components/investment-opportunity-identification/investment-opportunity-identification-form';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+// import { InvestmentOpportunityIdentificationForm } from '@/components/investment-opportunity-identification/investment-opportunity-identification-form';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
@@ -149,7 +149,15 @@ export default function InvestmentOpportunityIdentificationPage() {
       </Card>
 
       {/* Investment Opportunity Form */}
-      <InvestmentOpportunityIdentificationForm />
+      <Card>
+        <CardHeader>
+          <CardTitle>Investment Opportunity Analysis</CardTitle>
+          <CardDescription>Analyze potential investment opportunities in your market</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">Investment opportunity analysis tools coming soon.</p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

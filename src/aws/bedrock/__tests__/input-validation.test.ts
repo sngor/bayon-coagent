@@ -12,7 +12,7 @@ import { definePrompt, MODEL_CONFIGS } from '../flow-base';
 import { BedrockClient } from '../client';
 
 // Mock the BedrockClient to track invocations
-jest.mock('../client');
+jest.mock('@/aws/bedrock/client');
 
 describe('Input Validation Property Tests', () => {
   beforeEach(() => {
@@ -102,14 +102,14 @@ describe('Input Validation Property Tests', () => {
             // Verify that:
             // 1. An error was thrown (validation failed)
             expect(error).toBeDefined();
-            
+
             // 2. The error is a Zod validation error
             expect(error).toHaveProperty('name');
             expect((error as any).name).toBe('ZodError');
-            
+
             // 3. The model was NEVER invoked
             expect(mockInvoke).not.toHaveBeenCalled();
-            
+
             return true;
           }
         }),
@@ -163,14 +163,14 @@ describe('Input Validation Property Tests', () => {
         fc.asyncProperty(validInputArbitrary, async (validInput) => {
           // Clear mock before each test
           mockInvoke.mockClear();
-          
+
           try {
             // Invoke with valid input
             await testPrompt(validInput);
-            
+
             // Verify that the model WAS invoked
             expect(mockInvoke).toHaveBeenCalledTimes(1);
-            
+
             return true;
           } catch (error) {
             // Valid input should not throw validation errors
@@ -227,34 +227,34 @@ describe('Input Validation Property Tests', () => {
         fc.asyncProperty(anyInputArbitrary, async (input) => {
           // Clear mock before each test
           mockInvoke.mockClear();
-          
+
           // Try the same input twice
           let result1: { success: boolean; error?: any };
           let result2: { success: boolean; error?: any };
-          
+
           try {
             await testPrompt(input);
             result1 = { success: true };
           } catch (error) {
             result1 = { success: false, error: (error as any).name };
           }
-          
+
           // Clear mock between attempts
           mockInvoke.mockClear();
-          
+
           try {
             await testPrompt(input);
             result2 = { success: true };
           } catch (error) {
             result2 = { success: false, error: (error as any).name };
           }
-          
+
           // Both attempts should have the same outcome
           expect(result1.success).toBe(result2.success);
           if (!result1.success && !result2.success) {
             expect(result1.error).toBe(result2.error);
           }
-          
+
           return true;
         }),
         { numRuns: 50 }
@@ -306,27 +306,27 @@ describe('Input Validation Property Tests', () => {
 
       for (const testCase of edgeCases) {
         mockInvoke.mockClear();
-        
+
         try {
           await testPrompt(testCase as any);
-          
+
           // If successful, verify it was a valid case
-          const isValid = 
-            testCase.count >= 0 && 
-            testCase.count <= 100 && 
-            testCase.text.length >= 1 && 
+          const isValid =
+            testCase.count >= 0 &&
+            testCase.count <= 100 &&
+            testCase.text.length >= 1 &&
             testCase.text.length <= 1000;
-          
+
           expect(isValid).toBe(true);
           expect(mockInvoke).toHaveBeenCalledTimes(1);
         } catch (error) {
           // If failed, verify it was an invalid case
-          const isValid = 
-            testCase.count >= 0 && 
-            testCase.count <= 100 && 
-            testCase.text.length >= 1 && 
+          const isValid =
+            testCase.count >= 0 &&
+            testCase.count <= 100 &&
+            testCase.text.length >= 1 &&
             testCase.text.length <= 1000;
-          
+
           expect(isValid).toBe(false);
           expect((error as any).name).toBe('ZodError');
           expect(mockInvoke).not.toHaveBeenCalled();
@@ -372,7 +372,7 @@ describe('Input Validation Property Tests', () => {
       await fc.assert(
         fc.asyncProperty(inputWithExtraFieldsArbitrary, async (input) => {
           mockInvoke.mockClear();
-          
+
           try {
             await testPrompt(input as any);
             // Should not reach here with strict schema

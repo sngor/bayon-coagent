@@ -12,7 +12,7 @@ export function PageLayoutDemo() {
         <div className="p-8 space-y-12">
             {/* Example 1: Full featured layout */}
             <div>
-                <h2 className="text-xl font-semibold mb-4">
+                <h2 className="font-headline text-xl font-semibold mb-4">
                     Example 1: Full Featured Layout
                 </h2>
                 <PageLayout
@@ -44,7 +44,7 @@ export function PageLayoutDemo() {
 
             {/* Example 2: Simple layout without breadcrumbs */}
             <div>
-                <h2 className="text-xl font-semibold mb-4">
+                <h2 className="font-headline text-xl font-semibold mb-4">
                     Example 2: Simple Layout (No Breadcrumbs)
                 </h2>
                 <PageLayout
@@ -82,7 +82,7 @@ export function PageLayoutDemo() {
 
             {/* Example 3: Layout with action but no description */}
             <div>
-                <h2 className="text-xl font-semibold mb-4">
+                <h2 className="font-headline text-xl font-semibold mb-4">
                     Example 3: With Action, No Description
                 </h2>
                 <PageLayout
@@ -108,7 +108,7 @@ export function PageLayoutDemo() {
 
             {/* Example 4: Minimal layout */}
             <div>
-                <h2 className="text-xl font-semibold mb-4">Example 4: Minimal Layout</h2>
+                <h2 className="font-headline text-xl font-semibold mb-4">Example 4: Minimal Layout</h2>
                 <PageLayout title="Settings">
                     <Card>
                         <CardContent className="pt-6">

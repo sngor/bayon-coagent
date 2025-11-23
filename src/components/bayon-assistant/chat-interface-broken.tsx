@@ -201,7 +201,7 @@ export function ChatInterface({
 
                             {/* Welcome Message */}
                             <div className="max-w-md space-y-4">
-                                <h2 className="text-2xl font-bold text-foreground">
+                                <h2 className="font-headline text-2xl font-bold text-foreground">
                                     👋 Hi there! I'm your AI real estate assistant
                                 </h2>
                                 <p className="text-muted-foreground leading-relaxed">

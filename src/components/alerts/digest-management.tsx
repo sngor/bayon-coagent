@@ -234,7 +234,7 @@ export function DigestManagement({ className }: DigestManagementProps) {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div>
-                            <h4 className="font-medium mb-2">Real-time Notifications</h4>
+                            <h4 className="font-headline font-medium mb-2">Real-time Notifications</h4>
                             <p className="text-sm text-muted-foreground">
                                 Sent immediately when new alerts are created, unless quiet hours are enabled.
                                 During quiet hours, notifications are queued for later delivery.
@@ -242,7 +242,7 @@ export function DigestManagement({ className }: DigestManagementProps) {
                         </div>
 
                         <div>
-                            <h4 className="font-medium mb-2">Daily Digests</h4>
+                            <h4 className="font-headline font-medium mb-2">Daily Digests</h4>
                             <p className="text-sm text-muted-foreground">
                                 Sent once per day at your specified time, containing all alerts from the past 24 hours.
                                 Only sent if there are alerts to include.
@@ -250,7 +250,7 @@ export function DigestManagement({ className }: DigestManagementProps) {
                         </div>
 
                         <div>
-                            <h4 className="font-medium mb-2">Weekly Digests</h4>
+                            <h4 className="font-headline font-medium mb-2">Weekly Digests</h4>
                             <p className="text-sm text-muted-foreground">
                                 Sent once per week at your specified time, containing all alerts from the past 7 days.
                                 Includes summary statistics and trends.
@@ -258,7 +258,7 @@ export function DigestManagement({ className }: DigestManagementProps) {
                         </div>
 
                         <div>
-                            <h4 className="font-medium mb-2">Email Templates</h4>
+                            <h4 className="font-headline font-medium mb-2">Email Templates</h4>
                             <p className="text-sm text-muted-foreground">
                                 Professional email templates are stored in AWS SES and include your branding,
                                 contact information, and unsubscribe links.

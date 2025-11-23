@@ -161,7 +161,7 @@ function DefaultErrorFallback({
                     {/* Suggested Actions */}
                     {pattern && pattern.suggestedActions.length > 0 && (
                         <div className="space-y-2">
-                            <h3 className="font-semibold text-sm">What you can do:</h3>
+                            <h3 className="font-headline font-semibold text-sm">What you can do:</h3>
                             <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                                 {pattern.suggestedActions.map((action, index) => (
                                     <li key={index}>{action}</li>

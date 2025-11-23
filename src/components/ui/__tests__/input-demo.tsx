@@ -46,7 +46,7 @@ export function InputDemo() {
 
     return (
         <div className="container mx-auto p-8 space-y-8">
-            <h1 className="text-3xl font-bold">Enhanced Input Component Demo</h1>
+            <h1 className="font-headline text-3xl font-bold">Enhanced Input Component Demo</h1>
 
             {/* Basic Input */}
             <Card>
@@ -183,7 +183,7 @@ export function InputDemo() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
-                        <h3 className="font-semibold">Keyboard Navigation</h3>
+                        <h3 className="font-headline font-semibold">Keyboard Navigation</h3>
                         <p className="text-sm text-muted-foreground">
                             Try tabbing through these inputs. Notice the enhanced focus states
                             with visible rings.
@@ -193,7 +193,7 @@ export function InputDemo() {
                         <Input placeholder="Third input" label="Field 3" />
                     </div>
                     <div className="space-y-2">
-                        <h3 className="font-semibold">Screen Reader Support</h3>
+                        <h3 className="font-headline font-semibold">Screen Reader Support</h3>
                         <p className="text-sm text-muted-foreground">
                             All inputs have proper ARIA labels, descriptions, and error
                             announcements for screen readers.

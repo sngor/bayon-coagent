@@ -83,7 +83,7 @@ export function FilterControlsDemo() {
                 <CardContent className="space-y-6">
                     {/* Filter Controls */}
                     <div>
-                        <h3 className="text-sm font-medium mb-3">Filters</h3>
+                        <h3 className="font-headline text-sm font-medium mb-3">Filters</h3>
                         <FilterControls
                             filterGroups={filterGroups}
                             selectedFilters={selectedFilters}
@@ -94,7 +94,7 @@ export function FilterControlsDemo() {
 
                     {/* Results */}
                     <div>
-                        <h3 className="text-sm font-medium mb-3">
+                        <h3 className="font-headline text-sm font-medium mb-3">
                             Results ({filteredProducts.length} of {sampleProducts.length})
                         </h3>
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

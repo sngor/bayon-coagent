@@ -255,7 +255,7 @@ export function SocialPublishingDialog({
                 <div className="space-y-6">
                     {/* Platform Selection */}
                     <div>
-                        <h3 className="text-sm font-medium mb-3">Select Platforms</h3>
+                        <h3 className="font-headline text-sm font-medium mb-3">Select Platforms</h3>
                         <div className="grid grid-cols-3 gap-4">
                             {(Object.keys(PLATFORM_INFO) as Platform[]).map(platform => {
                                 const info = PLATFORM_INFO[platform];

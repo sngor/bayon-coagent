@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/glass-card';
 import { SubtleGradientMesh } from '@/components/ui/gradient-mesh';
 import { Button } from '@/components/ui/button';
-import { Star, Award, User, Briefcase, Calendar, TrendingUp, ArrowRight, Newspaper, RefreshCcw, Loader2, MessageSquare } from 'lucide-react';
+import { Star, Award, TrendingUp, ArrowRight, Newspaper, RefreshCcw, Loader2, MessageSquare } from 'lucide-react';
 import {
     ContentIcon,
     AISparkleIcon,
@@ -191,8 +191,6 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-6">
-
-
             {/* Profile Completion Banner */}
             {agentProfile && (
                 <div className="animate-fade-in-up animate-delay-100">
@@ -230,7 +228,7 @@ export default function DashboardPage() {
                                     >
                                         <div className="flex-shrink-0 font-bold text-primary text-xl md:text-2xl font-headline mt-0.5">{index + 1}</div>
                                         <div className="flex-1 min-w-0">
-                                            <h4 className="font-semibold text-sm md:text-base leading-tight">{task.task}</h4>
+                                            <h4 className="font-headline font-semibold text-sm md:text-base leading-tight">{task.task}</h4>
                                             <p className="text-xs md:text-sm text-muted-foreground mt-1 line-clamp-2">{task.rationale}</p>
                                         </div>
                                     </div>
@@ -320,7 +318,7 @@ export default function DashboardPage() {
                                 />
                             </div>
                         )}
-                        <h3 className="text-xs md:text-sm font-medium text-muted-foreground mb-2 md:mb-3">Latest Testimonials</h3>
+                        <h3 className="font-headline text-xs md:text-sm font-medium text-muted-foreground mb-2 md:mb-3">Latest Testimonials</h3>
                         <Carousel
                             opts={{
                                 align: 'start',
@@ -391,65 +389,6 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="tablet:col-span-1 lg:col-span-1 space-y-6">
-                    <StandardCard
-                        variant="elevated"
-                        className="animate-fade-in-up animate-delay-100 overflow-hidden"
-                        contentClassName="p-0"
-                    >
-                        {isLoadingProfile ? (
-                            <div className="p-6">
-                                <StandardSkeleton variant="content" count={4} />
-                            </div>
-                        ) : (
-                            <>
-                                <div className="items-center text-center pb-3 bg-gradient-to-b from-primary/5 to-transparent p-6">
-                                    <div className="relative group inline-block">
-                                        <Image
-                                            src={agentProfile?.photoURL || 'https://picsum.photos/seed/1/96/96'}
-                                            alt={agentProfile?.name || 'Agent Profile'}
-                                            width={96}
-                                            height={96}
-                                            className="rounded-full border-4 border-background shadow-lg group-hover:shadow-2xl group-hover:scale-105 transition-all duration-300"
-                                        />
-                                        <div className="absolute inset-0 rounded-full bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                    </div>
-                                    <h3 className="text-heading-2 mt-4">
-                                        {agentProfile?.name}
-                                    </h3>
-                                    <p className="text-base font-medium text-muted-foreground mt-2">
-                                        {agentProfile?.agencyName}
-                                    </p>
-                                </div>
-                                <div className="text-xs md:text-sm space-y-2 p-6 pt-4">
-                                    <div className="group flex items-center gap-4 p-3 rounded-lg hover:bg-primary/5 hover:border-primary/20 border border-transparent transition-all duration-200 cursor-default">
-                                        <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-200">
-                                            <User className="w-4 h-4 md:w-5 md:h-5 text-primary" />
-                                        </div>
-                                        <span className="text-foreground font-medium truncate">
-                                            {agentProfile?.licenseNumber}
-                                        </span>
-                                    </div>
-                                    <div className="group flex items-center gap-4 p-3 rounded-lg hover:bg-primary/5 hover:border-primary/20 border border-transparent transition-all duration-200 cursor-default">
-                                        <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-200">
-                                            <Briefcase className="w-4 h-4 md:w-5 md:h-5 text-primary" />
-                                        </div>
-                                        <span className="text-foreground font-medium truncate">
-                                            {agentProfile?.certifications?.[0] || 'Real Estate'}
-                                        </span>
-                                    </div>
-                                    <div className="group flex items-center gap-4 p-3 rounded-lg hover:bg-primary/5 hover:border-primary/20 border border-transparent transition-all duration-200 cursor-default">
-                                        <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-200">
-                                            <Calendar className="w-4 h-4 md:w-5 md:h-5 text-primary" />
-                                        </div>
-                                        <span className="text-foreground font-medium">
-                                            {agentProfile?.yearsOfExperience} years experience
-                                        </span>
-                                    </div>
-                                </div>
-                            </>
-                        )}
-                    </StandardCard>
-
                     {/* Suggested Next Steps */}
                     {!isLoadingProfile && suggestedSteps.length > 0 && (
                         <div className="animate-fade-in-up animate-delay-200">
@@ -486,7 +425,7 @@ export default function DashboardPage() {
                                         rel="noopener noreferrer"
                                         className="group block rounded-lg border-2 border-transparent p-3 md:p-4 transition-all duration-300 hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent hover:shadow-lg hover:border-primary/20 hover:scale-[1.01]"
                                     >
-                                        <h4 className="font-semibold text-sm md:text-base group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                                        <h4 className="font-headline font-semibold text-sm md:text-base group-hover:text-primary transition-colors line-clamp-2 leading-snug">
                                             {article.title}
                                         </h4>
                                         <p className="text-xs md:text-sm text-muted-foreground mt-2 line-clamp-2 leading-relaxed">

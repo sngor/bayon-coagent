@@ -165,7 +165,7 @@ export function EditOptionsPanel({
             {/* Header */}
             <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                    <h2 className="text-2xl font-bold">Choose an Edit</h2>
+                    <h2 className="font-headline text-2xl font-bold">Choose an Edit</h2>
                     <HelpTooltip
                         content="Select the type of edit you want to apply. AI-recommended edits are highlighted with priority badges. Click any edit card to get started."
                         side="right"
@@ -196,7 +196,7 @@ export function EditOptionsPanel({
                                 <Sparkles className="h-5 w-5 text-primary" />
                             </div>
                             <div className="flex-1 space-y-1">
-                                <h3 className="font-semibold">AI Recommendations</h3>
+                                <h3 className="font-headline font-semibold">AI Recommendations</h3>
                                 <p className="text-sm text-muted-foreground">
                                     Based on your image analysis, we recommend {suggestions.length}{' '}
                                     {suggestions.length === 1 ? 'edit' : 'edits'} highlighted below

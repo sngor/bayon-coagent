@@ -61,7 +61,7 @@ export default function SearchDemoPage() {
                                 <div key={item.id} className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
                                     <div className="flex items-start justify-between">
                                         <div>
-                                            <h4 className="font-medium text-sm">{item.title}</h4>
+                                            <h4 className="font-headline font-medium text-sm">{item.title}</h4>
                                             <p className="text-xs text-muted-foreground mt-1">{item.price}</p>
                                         </div>
                                         <Badge variant="outline" className="text-xs">{item.category}</Badge>

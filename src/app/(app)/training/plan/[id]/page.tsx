@@ -169,7 +169,7 @@ export default function TrainingPlanViewPage() {
                 <CardContent>
                     <div className="space-y-4">
                         <div className="p-4 bg-muted/50 rounded-lg">
-                            <h4 className="font-semibold mb-2">Challenge:</h4>
+                            <h4 className="font-headline font-semibold mb-2">Challenge:</h4>
                             <p className="text-sm">{plan.topic}</p>
                         </div>
                         <div

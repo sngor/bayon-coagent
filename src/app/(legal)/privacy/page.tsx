@@ -22,7 +22,7 @@ export default function PrivacyPolicyPage() {
 
             <div className="prose prose-slate dark:prose-invert max-w-none space-y-8">
                 <section className="bg-muted/30 rounded-lg p-6 border">
-                    <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+                    <h2 className="font-headline text-2xl font-semibold mb-4 flex items-center gap-2">
                         <Eye className="h-6 w-6 text-primary" />
                         1. Introduction
                     </h2>
@@ -34,12 +34,12 @@ export default function PrivacyPolicyPage() {
                 </section>
 
                 <section>
-                    <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+                    <h2 className="font-headline text-2xl font-semibold mb-4 flex items-center gap-2">
                         <Database className="h-6 w-6 text-primary" />
                         2. Information We Collect
                     </h2>
 
-                    <h3 className="text-xl font-semibold mb-3 mt-6">2.1 Information You Provide</h3>
+                    <h3 className="font-headline text-xl font-semibold mb-3 mt-6">2.1 Information You Provide</h3>
                     <ul className="list-disc pl-6 space-y-2">
                         <li><strong>Account Information:</strong> Name, email address, phone number, business name, and professional details</li>
                         <li><strong>Profile Data:</strong> Professional bio, service areas, specializations, certifications, and brand information</li>
@@ -48,7 +48,7 @@ export default function PrivacyPolicyPage() {
                         <li><strong>Payment Information:</strong> Billing details processed securely through our payment processor</li>
                     </ul>
 
-                    <h3 className="text-xl font-semibold mb-3 mt-6">2.2 Automatically Collected Information</h3>
+                    <h3 className="font-headline text-xl font-semibold mb-3 mt-6">2.2 Automatically Collected Information</h3>
                     <ul className="list-disc pl-6 space-y-2">
                         <li><strong>Usage Data:</strong> Features used, content generated, time spent, and interaction patterns</li>
                         <li><strong>Device Information:</strong> Browser type, operating system, IP address, and device identifiers</li>
@@ -57,7 +57,7 @@ export default function PrivacyPolicyPage() {
                 </section>
 
                 <section>
-                    <h2 className="text-2xl font-semibold mb-4">3. How We Use Your Information</h2>
+                    <h2 className="font-headline text-2xl font-semibold mb-4">3. How We Use Your Information</h2>
                     <p className="mb-4">We use your information to:</p>
                     <ul className="list-disc pl-6 space-y-2">
                         <li>Provide, maintain, and improve our AI-powered platform</li>
@@ -72,7 +72,7 @@ export default function PrivacyPolicyPage() {
                 </section>
 
                 <section className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-6 border border-purple-200 dark:border-purple-900">
-                    <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+                    <h2 className="font-headline text-2xl font-semibold mb-4 flex items-center gap-2">
                         <Brain className="h-6 w-6 text-purple-600 dark:text-purple-400" />
                         4. AI and Data Processing
                     </h2>
@@ -88,7 +88,7 @@ export default function PrivacyPolicyPage() {
                 </section>
 
                 <section className="bg-green-50 dark:bg-green-950/20 rounded-lg p-6 border border-green-200 dark:border-green-900">
-                    <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+                    <h2 className="font-headline text-2xl font-semibold mb-4 flex items-center gap-2">
                         <Lock className="h-6 w-6 text-green-600 dark:text-green-400" />
                         5. Data Storage and Security
                     </h2>
@@ -105,7 +105,7 @@ export default function PrivacyPolicyPage() {
                 </section>
 
                 <section>
-                    <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+                    <h2 className="font-headline text-2xl font-semibold mb-4 flex items-center gap-2">
                         <Server className="h-6 w-6 text-primary" />
                         6. Data Sharing and Disclosure
                     </h2>
@@ -119,7 +119,7 @@ export default function PrivacyPolicyPage() {
                 </section>
 
                 <section className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-6 border border-blue-200 dark:border-blue-900">
-                    <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+                    <h2 className="font-headline text-2xl font-semibold mb-4 flex items-center gap-2">
                         <UserCheck className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                         7. Your Rights and Choices
                     </h2>
@@ -138,14 +138,14 @@ export default function PrivacyPolicyPage() {
                 </section>
 
                 <section>
-                    <h2 className="text-2xl font-semibold mb-4">8. Cookies and Tracking</h2>
+                    <h2 className="font-headline text-2xl font-semibold mb-4">8. Cookies and Tracking</h2>
                     <p className="mb-4">
                         We use cookies and similar technologies to enhance your experience. You can control cookies through your browser settings.
                     </p>
                 </section>
 
                 <section>
-                    <h2 className="text-2xl font-semibold mb-4">9. Data Retention</h2>
+                    <h2 className="font-headline text-2xl font-semibold mb-4">9. Data Retention</h2>
                     <p>
                         We retain your data for as long as your account is active or as needed to provide services.
                         After account deletion, we may retain certain data for legal compliance, dispute resolution, and legitimate business purposes.
@@ -153,14 +153,14 @@ export default function PrivacyPolicyPage() {
                 </section>
 
                 <section>
-                    <h2 className="text-2xl font-semibold mb-4">10. Children's Privacy</h2>
+                    <h2 className="font-headline text-2xl font-semibold mb-4">10. Children's Privacy</h2>
                     <p>
                         Our platform is not intended for users under 18. We do not knowingly collect data from children.
                     </p>
                 </section>
 
                 <section>
-                    <h2 className="text-2xl font-semibold mb-4">11. International Data Transfers</h2>
+                    <h2 className="font-headline text-2xl font-semibold mb-4">11. International Data Transfers</h2>
                     <p>
                         Your data may be transferred to and processed in countries other than your own.
                         We ensure appropriate safeguards are in place for international transfers.
@@ -168,14 +168,14 @@ export default function PrivacyPolicyPage() {
                 </section>
 
                 <section>
-                    <h2 className="text-2xl font-semibold mb-4">12. Changes to This Policy</h2>
+                    <h2 className="font-headline text-2xl font-semibold mb-4">12. Changes to This Policy</h2>
                     <p>
                         We may update this privacy policy periodically. We will notify you of significant changes via email or platform notification.
                     </p>
                 </section>
 
                 <section className="bg-muted/30 rounded-lg p-6 border">
-                    <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+                    <h2 className="font-headline text-2xl font-semibold mb-4 flex items-center gap-2">
                         <Globe className="h-6 w-6 text-primary" />
                         13. Contact Us
                     </h2>

@@ -465,7 +465,7 @@ export function AlertDetailModal({
 
                                 {/* Historical Context */}
                                 <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
-                                    <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Historical Context</h4>
+                                    <h4 className="font-headline font-medium text-blue-900 dark:text-blue-100 mb-2">Historical Context</h4>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                         <div>
                                             <span className="text-blue-700 dark:text-blue-300">90-day average:</span>

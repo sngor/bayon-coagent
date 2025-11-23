@@ -120,7 +120,7 @@ export function AlertPerformanceMonitor({ className }: PerformanceMonitorProps) 
                         {/* Query Performance */}
                         {Object.keys(metrics).length > 0 && (
                             <div className="space-y-2">
-                                <h4 className="text-sm font-medium flex items-center gap-2">
+                                <h4 className="font-headline text-sm font-medium flex items-center gap-2">
                                     <Database className="w-4 h-4" />
                                     Query Performance
                                 </h4>
@@ -158,7 +158,7 @@ export function AlertPerformanceMonitor({ className }: PerformanceMonitorProps) 
                         {/* Cache Performance */}
                         {cacheStats.entries && cacheStats.entries.length > 0 && (
                             <div className="space-y-2">
-                                <h4 className="text-sm font-medium flex items-center gap-2">
+                                <h4 className="font-headline text-sm font-medium flex items-center gap-2">
                                     <Zap className="w-4 h-4" />
                                     Cache Performance
                                 </h4>
@@ -196,7 +196,7 @@ export function AlertPerformanceMonitor({ className }: PerformanceMonitorProps) 
 
                         {/* Performance Recommendations */}
                         <div className="space-y-2">
-                            <h4 className="text-sm font-medium flex items-center gap-2">
+                            <h4 className="font-headline text-sm font-medium flex items-center gap-2">
                                 <TrendingUp className="w-4 h-4" />
                                 Recommendations
                             </h4>

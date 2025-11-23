@@ -19,7 +19,7 @@ export function BasicPageTransitionExample() {
     return (
         <PageTransition>
             <div className="space-y-6">
-                <h1 className="text-3xl font-bold">Page Content</h1>
+                <h1 className="font-headline text-3xl font-bold">Page Content</h1>
                 <p>This content will fade in smoothly when the page loads.</p>
             </div>
         </PageTransition>
@@ -32,22 +32,22 @@ export function ComplexPageTransitionExample() {
         <PageTransition>
             <div className="space-y-8">
                 <header>
-                    <h1 className="text-4xl font-bold">Dashboard</h1>
+                    <h1 className="font-headline text-4xl font-bold">Dashboard</h1>
                     <p className="text-muted-foreground">Welcome back!</p>
                 </header>
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {/* Cards will all fade in together */}
                     <div className="rounded-lg border p-6">
-                        <h3 className="font-semibold">Metric 1</h3>
+                        <h3 className="font-headline font-semibold">Metric 1</h3>
                         <p className="text-2xl font-bold">1,234</p>
                     </div>
                     <div className="rounded-lg border p-6">
-                        <h3 className="font-semibold">Metric 2</h3>
+                        <h3 className="font-headline font-semibold">Metric 2</h3>
                         <p className="text-2xl font-bold">5,678</p>
                     </div>
                     <div className="rounded-lg border p-6">
-                        <h3 className="font-semibold">Metric 3</h3>
+                        <h3 className="font-headline font-semibold">Metric 3</h3>
                         <p className="text-2xl font-bold">9,012</p>
                     </div>
                 </div>
@@ -60,7 +60,7 @@ export function ComplexPageTransitionExample() {
 export function ReducedMotionExample() {
     return (
         <div className="space-y-4 p-6">
-            <h2 className="text-2xl font-bold">Testing Reduced Motion</h2>
+            <h2 className="font-headline text-2xl font-bold">Testing Reduced Motion</h2>
             <div className="space-y-2">
                 <p>To test reduced motion preferences:</p>
                 <ol className="list-decimal list-inside space-y-1">

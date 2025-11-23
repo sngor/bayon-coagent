@@ -148,7 +148,7 @@ export function EnhanceForm({
                     )}
 
                     <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-                        <h4 className="text-sm font-medium">Enhancement Tips</h4>
+                        <h4 className="font-headline text-sm font-medium">Enhancement Tips</h4>
                         <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                             <li>Auto adjust works best for most images</li>
                             <li>Manual adjustments give you precise control</li>

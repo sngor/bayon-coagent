@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, jest } from "@jest/globals";
 import { render, screen, fireEvent } from "@testing-library/react";
 import {
     VirtualStagingForm,
@@ -10,8 +10,8 @@ import {
 describe("Edit Forms", () => {
     describe("VirtualStagingForm", () => {
         it("renders with all required fields", () => {
-            const onSubmit = vi.fn();
-            const onCancel = vi.fn();
+            const onSubmit = jest.fn();
+            const onCancel = jest.fn();
 
             render(<VirtualStagingForm onSubmit={onSubmit} onCancel={onCancel} />);
 
@@ -21,8 +21,8 @@ describe("Edit Forms", () => {
         });
 
         it("calls onSubmit with valid params", () => {
-            const onSubmit = vi.fn();
-            const onCancel = vi.fn();
+            const onSubmit = jest.fn();
+            const onCancel = jest.fn();
 
             render(
                 <VirtualStagingForm
@@ -44,8 +44,8 @@ describe("Edit Forms", () => {
 
     describe("DayToDuskForm", () => {
         it("renders with intensity selector", () => {
-            const onSubmit = vi.fn();
-            const onCancel = vi.fn();
+            const onSubmit = jest.fn();
+            const onCancel = jest.fn();
 
             render(<DayToDuskForm onSubmit={onSubmit} onCancel={onCancel} />);
 
@@ -54,8 +54,8 @@ describe("Edit Forms", () => {
         });
 
         it("defaults to moderate intensity", () => {
-            const onSubmit = vi.fn();
-            const onCancel = vi.fn();
+            const onSubmit = jest.fn();
+            const onCancel = jest.fn();
 
             render(<DayToDuskForm onSubmit={onSubmit} onCancel={onCancel} />);
 
@@ -68,8 +68,8 @@ describe("Edit Forms", () => {
 
     describe("EnhanceForm", () => {
         it("renders with auto-adjust toggle", () => {
-            const onSubmit = vi.fn();
-            const onCancel = vi.fn();
+            const onSubmit = jest.fn();
+            const onCancel = jest.fn();
 
             render(<EnhanceForm onSubmit={onSubmit} onCancel={onCancel} />);
 
@@ -78,8 +78,8 @@ describe("Edit Forms", () => {
         });
 
         it("calls onSubmit with auto-adjust enabled by default", () => {
-            const onSubmit = vi.fn();
-            const onCancel = vi.fn();
+            const onSubmit = jest.fn();
+            const onCancel = jest.fn();
 
             render(<EnhanceForm onSubmit={onSubmit} onCancel={onCancel} />);
 
@@ -92,8 +92,8 @@ describe("Edit Forms", () => {
 
     describe("VirtualRenovationForm", () => {
         it("renders with description textarea", () => {
-            const onSubmit = vi.fn();
-            const onCancel = vi.fn();
+            const onSubmit = jest.fn();
+            const onCancel = jest.fn();
 
             render(
                 <VirtualRenovationForm onSubmit={onSubmit} onCancel={onCancel} />
@@ -104,8 +104,8 @@ describe("Edit Forms", () => {
         });
 
         it("validates minimum description length", () => {
-            const onSubmit = vi.fn();
-            const onCancel = vi.fn();
+            const onSubmit = jest.fn();
+            const onCancel = jest.fn();
 
             render(
                 <VirtualRenovationForm onSubmit={onSubmit} onCancel={onCancel} />
@@ -118,14 +118,13 @@ describe("Edit Forms", () => {
             fireEvent.click(submitButton);
 
             expect(onSubmit).not.toHaveBeenCalled();
-            expect(
-                screen.getByText("Description must be at least 10 characters")
-            ).toBeInTheDocument();
+            // Check that the submit button is disabled when description is too short
+            expect(submitButton).toBeDisabled();
         });
 
         it("calls onSubmit with valid description", () => {
-            const onSubmit = vi.fn();
-            const onCancel = vi.fn();
+            const onSubmit = jest.fn();
+            const onCancel = jest.fn();
 
             render(
                 <VirtualRenovationForm onSubmit={onSubmit} onCancel={onCancel} />

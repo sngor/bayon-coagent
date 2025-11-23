@@ -1,12 +1,13 @@
 'use client';
 
-import { HubLayout } from '@/components/hub/hub-layout';
-import { GraduationCap } from 'lucide-react';
+import { HubLayout } from '@/components/hub';
+import { FeatureGuard } from '@/components/feature-guard';
+import { GraduationCap, BookOpen, Brain, Target } from 'lucide-react';
 
 const trainingTabs = [
-    { id: 'lessons', label: 'Lessons', href: '/training/lessons' },
-    { id: 'ai-plan', label: 'AI Plan', href: '/training/ai-plan' },
-    { id: 'practice', label: 'Practice', href: '/training/practice' },
+    { id: 'lessons', label: 'Lessons', href: '/training/lessons', icon: BookOpen },
+    { id: 'ai-plan', label: 'AI Plan', href: '/training/ai-plan', icon: Brain },
+    { id: 'practice', label: 'Practice', href: '/training/practice', icon: Target },
 ];
 
 export default function TrainingLayout({
@@ -15,14 +16,16 @@ export default function TrainingLayout({
     children: React.ReactNode;
 }) {
     return (
-        <HubLayout
-            title="Training Hub"
-            description="Sharpen your skills with proven strategies and personalized AI coaching"
-            icon={GraduationCap}
-            tabs={trainingTabs}
-            tabsVariant="pills"
-        >
-            {children}
-        </HubLayout>
+        <FeatureGuard featureId="training">
+            <HubLayout
+                title="Training Hub"
+                description="Sharpen your skills with proven strategies and personalized AI coaching"
+                icon={GraduationCap}
+                tabs={trainingTabs}
+                tabsVariant="pills"
+            >
+                {children}
+            </HubLayout>
+        </FeatureGuard>
     );
 }

@@ -163,7 +163,7 @@ export function TaskGuidance({ guidance, onStepComplete, onClose }: TaskGuidance
                                             {/* Instructions */}
                                             <div className="space-y-3">
                                                 <div>
-                                                    <h4 className="text-sm font-medium mb-2">Instructions</h4>
+                                                    <h4 className="font-headline text-sm font-medium mb-2">Instructions</h4>
                                                     <ol className="space-y-2">
                                                         {step.instructions.map((instruction, i) => (
                                                             <li key={i} className="text-sm text-muted-foreground flex gap-2">

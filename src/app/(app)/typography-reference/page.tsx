@@ -10,7 +10,7 @@ export default function TypographyReferencePage() {
         <div className="container mx-auto py-8 space-y-12 max-w-6xl">
             {/* Page Header */}
             <div className="space-y-4">
-                <h1 className="text-display-large text-gradient">
+                <h1 className="font-headline text-display-large text-gradient">
                     Typography Scale Reference
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-3xl">
@@ -25,7 +25,7 @@ export default function TypographyReferencePage() {
             {/* Display Text Section */}
             <section className="space-y-6">
                 <div>
-                    <h2 className="text-heading-1 mb-2">Display Text</h2>
+                    <h2 className="font-headline text-heading-1 mb-2">Display Text</h2>
                     <p className="text-muted-foreground">
                         Use for hero sections, landing pages, and major announcements
                     </p>
@@ -102,7 +102,7 @@ export default function TypographyReferencePage() {
             {/* Heading Styles Section */}
             <section className="space-y-6">
                 <div>
-                    <h2 className="text-heading-1 mb-2">Heading Styles</h2>
+                    <h2 className="font-headline text-heading-1 mb-2">Heading Styles</h2>
                     <p className="text-muted-foreground">
                         Use for content hierarchy within pages
                     </p>
@@ -116,7 +116,7 @@ export default function TypographyReferencePage() {
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <h1 className="text-heading-1">Brand Audit Results</h1>
+                        <h1 className="font-headline text-heading-1">Brand Audit Results</h1>
                         <div className="text-sm text-muted-foreground font-mono bg-muted p-3 rounded">
                             className="text-heading-1"
                         </div>
@@ -135,7 +135,7 @@ export default function TypographyReferencePage() {
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <h2 className="text-heading-2">NAP Consistency Check</h2>
+                        <h2 className="font-headline text-heading-2">NAP Consistency Check</h2>
                         <div className="text-sm text-muted-foreground font-mono bg-muted p-3 rounded">
                             className="text-heading-2"
                         </div>
@@ -154,7 +154,7 @@ export default function TypographyReferencePage() {
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <h3 className="text-heading-3">Recent Activity</h3>
+                        <h3 className="font-headline text-heading-3">Recent Activity</h3>
                         <div className="text-sm text-muted-foreground font-mono bg-muted p-3 rounded">
                             className="text-heading-3"
                         </div>
@@ -171,7 +171,7 @@ export default function TypographyReferencePage() {
             {/* Metric Display Styles Section */}
             <section className="space-y-6">
                 <div>
-                    <h2 className="text-heading-1 mb-2">Metric Display Styles</h2>
+                    <h2 className="font-headline text-heading-1 mb-2">Metric Display Styles</h2>
                     <p className="text-muted-foreground">
                         Use for displaying numbers, statistics, and data visualizations
                     </p>
@@ -272,7 +272,7 @@ export default function TypographyReferencePage() {
             {/* CTA Styles Section */}
             <section className="space-y-6">
                 <div>
-                    <h2 className="text-heading-1 mb-2">Call-to-Action Styles</h2>
+                    <h2 className="font-headline text-heading-1 mb-2">Call-to-Action Styles</h2>
                     <p className="text-muted-foreground">
                         Use for buttons, links, and action-oriented text
                     </p>
@@ -326,7 +326,7 @@ export default function TypographyReferencePage() {
             {/* Gradient Text Effects Section */}
             <section className="space-y-6">
                 <div>
-                    <h2 className="text-heading-1 mb-2">Gradient Text Effects</h2>
+                    <h2 className="font-headline text-heading-1 mb-2">Gradient Text Effects</h2>
                     <p className="text-muted-foreground">
                         Add visual interest and emphasis to headings
                     </p>
@@ -405,7 +405,7 @@ export default function TypographyReferencePage() {
             {/* Real-World Examples Section */}
             <section className="space-y-6">
                 <div>
-                    <h2 className="text-heading-1 mb-2">Real-World Examples</h2>
+                    <h2 className="font-headline text-heading-1 mb-2">Real-World Examples</h2>
                     <p className="text-muted-foreground">
                         See how typography styles work together in common UI patterns
                     </p>
@@ -442,7 +442,7 @@ export default function TypographyReferencePage() {
                     </CardHeader>
                     <CardContent>
                         <div className="bg-gradient-to-br from-primary/10 to-purple-600/10 p-12 rounded-lg">
-                            <h1 className="text-display-hero text-gradient mb-6">
+                            <h1 className="font-headline text-display-hero text-gradient mb-6">
                                 Transform Your Real Estate Marketing
                             </h1>
                             <p className="text-xl text-muted-foreground mb-8 max-w-2xl">
@@ -495,7 +495,7 @@ export default function TypographyReferencePage() {
             {/* Accessibility Section */}
             <section className="space-y-6">
                 <div>
-                    <h2 className="text-heading-1 mb-2">Accessibility Guidelines</h2>
+                    <h2 className="font-headline text-heading-1 mb-2">Accessibility Guidelines</h2>
                     <p className="text-muted-foreground">
                         Ensure your typography meets WCAG 2.1 Level AA standards
                     </p>

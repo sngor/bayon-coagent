@@ -152,7 +152,7 @@ export function ListingMetricsDisplay({
                     {/* Platform Breakdown */}
                     {Object.keys(metrics.byPlatform).length > 0 && (
                         <div>
-                            <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                            <h3 className="font-headline text-sm font-medium mb-3 flex items-center gap-2">
                                 <TrendingUp className="h-4 w-4" />
                                 By Platform
                             </h3>
@@ -189,7 +189,7 @@ export function ListingMetricsDisplay({
                     {/* Daily Breakdown (for weekly/monthly views) */}
                     {period !== 'daily' && metrics.dailyBreakdown && metrics.dailyBreakdown.length > 0 && (
                         <div>
-                            <h3 className="text-sm font-medium mb-3">Daily Breakdown</h3>
+                            <h3 className="font-headline text-sm font-medium mb-3">Daily Breakdown</h3>
                             <div className="space-y-2 max-h-64 overflow-y-auto">
                                 {metrics.dailyBreakdown
                                     .filter((day) => day.views > 0 || day.shares > 0 || day.inquiries > 0)

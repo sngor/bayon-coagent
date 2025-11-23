@@ -127,7 +127,7 @@ export function WorkflowOptimizationDemo({
                                         >
                                             <div className="flex items-start justify-between">
                                                 <div className="flex-1">
-                                                    <h3 className="font-medium">{pattern.name}</h3>
+                                                    <h3 className="font-headline font-medium">{pattern.name}</h3>
                                                     <p className="text-sm text-muted-foreground mt-1">
                                                         {pattern.description}
                                                     </p>
@@ -170,7 +170,7 @@ export function WorkflowOptimizationDemo({
                                             key={shortcut.id}
                                             className="p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
                                         >
-                                            <h3 className="font-medium">{shortcut.title}</h3>
+                                            <h3 className="font-headline font-medium">{shortcut.title}</h3>
                                             <p className="text-sm text-muted-foreground mt-1">
                                                 {shortcut.description}
                                             </p>
@@ -252,7 +252,7 @@ export function WorkflowOptimizationDemo({
                                                 key={suggestion.id}
                                                 className="p-3 rounded-lg border bg-card"
                                             >
-                                                <h3 className="font-medium text-sm">{suggestion.title}</h3>
+                                                <h3 className="font-headline font-medium text-sm">{suggestion.title}</h3>
                                                 <p className="text-xs text-muted-foreground mt-1">
                                                     {suggestion.description}
                                                 </p>

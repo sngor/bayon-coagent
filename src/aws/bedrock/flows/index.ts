@@ -80,6 +80,27 @@ export {
     type PhotoData
 } from './listing-description-flow';
 
+// Photo Description Generation (Mobile Quick Capture)
+export { generatePhotoDescription, type GeneratePhotoDescriptionInput, type GeneratePhotoDescriptionOutput } from './generate-photo-description';
+
+// Audio Transcription (Mobile Voice Memo)
+export { transcribeAudio, type AudioTranscriptionInput, type AudioTranscriptionOutput } from './transcribe-audio';
+
+// Voice-to-Content Conversion (Mobile Voice Memo)
+export {
+    convertVoiceToContent,
+    convertVoiceToBlogPost,
+    convertVoiceToSocialMedia,
+    convertVoiceToMarketUpdate,
+    convertVoiceToNotes,
+    type VoiceToContentInput,
+    type VoiceToContentOutput,
+    type BlogPostContent,
+    type SocialMediaContent,
+    type MarketUpdateContent,
+    type NotesContent
+} from './voice-to-content';
+
 // Reimagine Image Toolkit
 export { analyzeImage, type AnalyzeImageInput, type AnalyzeImageOutput } from './reimagine-analyze';
 export { virtualStaging, type VirtualStagingInput, type VirtualStagingOutput } from './reimagine-staging';

@@ -9,7 +9,7 @@ import { AgentProfileRepository, AgentProfile, CreateAgentProfileInput } from '.
 import { DynamoDBRepository } from './repository';
 
 // Mock the repository
-jest.mock('./repository');
+jest.mock('@/aws/dynamodb/repository');
 
 describe('AgentProfileRepository', () => {
   let repository: AgentProfileRepository;
@@ -188,7 +188,7 @@ describe('AgentProfileRepository', () => {
 
       // First call - cache miss
       await repository.getProfile('user123');
-      
+
       // Second call - cache hit
       await repository.getProfile('user123');
 
@@ -299,7 +299,7 @@ describe('AgentProfileRepository', () => {
 
       // First get to populate cache
       await repository.getProfile('user123');
-      
+
       // Delete should invalidate cache
       await repository.deleteProfile('user123');
 

@@ -59,7 +59,7 @@ export function AnimationPerformanceDemo() {
                 <CardContent className="space-y-6">
                     {/* Performance Metrics */}
                     <div className="space-y-3">
-                        <h3 className="text-lg font-semibold">Real-Time Metrics</h3>
+                        <h3 className="font-headline text-lg font-semibold">Real-Time Metrics</h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="rounded-lg border p-4">
                                 <div className="text-sm text-muted-foreground">FPS</div>
@@ -83,7 +83,7 @@ export function AnimationPerformanceDemo() {
 
                     {/* Monitoring Controls */}
                     <div className="space-y-3">
-                        <h3 className="text-lg font-semibold">Performance Monitoring</h3>
+                        <h3 className="font-headline text-lg font-semibold">Performance Monitoring</h3>
                         <div className="flex gap-2">
                             <Button
                                 onClick={handleStartMonitoring}
@@ -127,7 +127,7 @@ export function AnimationPerformanceDemo() {
 
                     {/* Optimized Animation Demo */}
                     <div className="space-y-3">
-                        <h3 className="text-lg font-semibold">Optimized Animation</h3>
+                        <h3 className="font-headline text-lg font-semibold">Optimized Animation</h3>
                         <p className="text-sm text-muted-foreground">
                             Uses GPU acceleration, will-change hints, and transform/opacity
                         </p>
@@ -146,7 +146,7 @@ export function AnimationPerformanceDemo() {
 
                     {/* Unoptimized Animation Demo */}
                     <div className="space-y-3">
-                        <h3 className="text-lg font-semibold">Unoptimized Animation</h3>
+                        <h3 className="font-headline text-lg font-semibold">Unoptimized Animation</h3>
                         <p className="text-sm text-muted-foreground">
                             Uses width/height changes (causes reflow)
                         </p>
@@ -171,7 +171,7 @@ export function AnimationPerformanceDemo() {
 
                     {/* GPU Acceleration Demo */}
                     <div className="space-y-3">
-                        <h3 className="text-lg font-semibold">GPU Acceleration</h3>
+                        <h3 className="font-headline text-lg font-semibold">GPU Acceleration</h3>
                         <Card
                             ref={gpuRef}
                             className="p-4 card-hover-lift cursor-pointer"
@@ -185,7 +185,7 @@ export function AnimationPerformanceDemo() {
 
                     {/* Animation Classes Demo */}
                     <div className="space-y-3">
-                        <h3 className="text-lg font-semibold">Animation Classes</h3>
+                        <h3 className="font-headline text-lg font-semibold">Animation Classes</h3>
                         <div className="grid grid-cols-2 gap-4">
                             <Card className="p-4 animate-fade-in">
                                 <p className="text-sm">animate-fade-in</p>
@@ -204,7 +204,7 @@ export function AnimationPerformanceDemo() {
 
                     {/* Best Practices */}
                     <div className="space-y-3">
-                        <h3 className="text-lg font-semibold">Best Practices</h3>
+                        <h3 className="font-headline text-lg font-semibold">Best Practices</h3>
                         <ul className="space-y-2 text-sm">
                             <li className="flex items-start gap-2">
                                 <span className="text-success">✓</span>

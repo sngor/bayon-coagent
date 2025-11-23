@@ -205,7 +205,7 @@ export function ListingsContent() {
         return (
             <div className="flex flex-col items-center justify-center py-12 text-center">
                 <Home className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="text-xl font-semibold mb-2">No listings yet</h3>
+                <h3 className="font-headline text-xl font-semibold mb-2">No listings yet</h3>
                 <p className="text-muted-foreground mb-4 max-w-md">
                     Connect your MLS account in Settings to automatically import your listings.
                 </p>
@@ -436,7 +436,7 @@ function ListingDetailDialog({
                         {/* Photos Gallery */}
                         {listing.photos && listing.photos.length > 0 && (
                             <div>
-                                <h3 className="text-lg font-semibold mb-3">Photos</h3>
+                                <h3 className="font-headline text-lg font-semibold mb-3">Photos</h3>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                     {listing.photos.slice(0, 6).map((photo, index) => (
                                         <div
@@ -461,7 +461,7 @@ function ListingDetailDialog({
 
                         {/* Property Details */}
                         <div>
-                            <h3 className="text-lg font-semibold mb-3">Property Details</h3>
+                            <h3 className="font-headline text-lg font-semibold mb-3">Property Details</h3>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 <div className="space-y-1">
                                     <p className="text-sm text-muted-foreground">Price</p>
@@ -503,7 +503,7 @@ function ListingDetailDialog({
                         {/* Description */}
                         {listing.description && (
                             <div>
-                                <h3 className="text-lg font-semibold mb-3">Description</h3>
+                                <h3 className="font-headline text-lg font-semibold mb-3">Description</h3>
                                 <p className="text-muted-foreground whitespace-pre-line">
                                     {listing.description}
                                 </p>
@@ -513,7 +513,7 @@ function ListingDetailDialog({
                         {/* Features */}
                         {listing.features && listing.features.length > 0 && (
                             <div>
-                                <h3 className="text-lg font-semibold mb-3">Features</h3>
+                                <h3 className="font-headline text-lg font-semibold mb-3">Features</h3>
                                 <div className="flex flex-wrap gap-2">
                                     {listing.features.map((feature, index) => (
                                         <Badge key={index} variant="secondary">

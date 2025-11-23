@@ -4,12 +4,12 @@
  * Chat Interface Component - Enhanced UI/UX Version
  */
 
-import React, { useState, useRef, useEffect, useCallback, useActionState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './avatar-animations.css';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
-
+import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -25,10 +25,21 @@ import {
     Copy,
     ThumbsUp,
     ThumbsDown,
-    Square
+    Square,
+    Mic,
+    MicOff,
+    Image,
+    Paperclip,
+    MoreHorizontal,
+    Zap,
+    Clock,
+    CheckCircle2,
+    X
 } from 'lucide-react';
 import { handleChatQuery, type ChatQueryResponse } from '@/app/bayon-assistant-actions';
 import type { AgentProfile } from '@/aws/dynamodb/agent-profile-repository';
+import { useUserProfile } from '@/hooks/use-user-profile';
+import { useUser } from '@/aws/auth';
 
 /**
  * Message type
@@ -44,6 +55,14 @@ export interface Message {
         sourceType: string;
     }>;
     keyPoints?: string[];
+    attachments?: Array<{
+        id: string;
+        name: string;
+        type: string;
+        size: number;
+        url?: string;
+        content?: string; // For text files or extracted text
+    }>;
 }
 
 /**
@@ -59,13 +78,6 @@ export interface ChatInterfaceProps {
 }
 
 /**
- * Initial form state
- */
-const initialState: ChatQueryResponse = {
-    success: false,
-};
-
-/**
  * Chat Interface Component
  */
 export function ChatInterface({
@@ -75,14 +87,30 @@ export function ChatInterface({
     onMessageSent,
     placeholder = "Hi! What's on your mind today? Ask about deals, market trends, clients, or anything real estate! 😊",
 }: ChatInterfaceProps) {
+    const { userName } = useUserProfile();
     const [messages, setMessages] = useState<Message[]>(initialMessages);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [state, formAction] = useActionState(handleChatQuery, initialState);
+    const [isTyping, setIsTyping] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(true);
+    const [messageCount, setMessageCount] = useState(0);
+    const [uploadedFiles, setUploadedFiles] = useState<Array<{
+        id: string;
+        name: string;
+        type: string;
+        size: number;
+        file: File;
+        content?: string;
+    }>>([]);
+    const [isProcessingFiles, setIsProcessingFiles] = useState(false);
+    const [isDragOver, setIsDragOver] = useState(false);
     const formRef = useRef<HTMLFormElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
+    const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Scroll to bottom when new messages arrive
     const scrollToBottom = useCallback(() => {
@@ -92,6 +120,111 @@ export function ChatInterface({
     useEffect(() => {
         scrollToBottom();
     }, [messages, scrollToBottom]);
+
+    // Handle typing indicator
+    const handleInputChange = (value: string) => {
+        setInputValue(value);
+        setIsTyping(true);
+
+        // Clear existing timeout
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+        }
+
+        // Set new timeout
+        typingTimeoutRef.current = setTimeout(() => {
+            setIsTyping(false);
+        }, 1000);
+
+        // Hide suggestions when user starts typing
+        if (value.trim() && showSuggestions) {
+            setShowSuggestions(false);
+        }
+    };
+
+    // Auto-resize textarea
+    const adjustTextareaHeight = useCallback(() => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+        }
+    }, []);
+
+    useEffect(() => {
+        adjustTextareaHeight();
+    }, [inputValue, adjustTextareaHeight]);
+
+    // Handle file upload
+    const handleFileUpload = async (files: FileList) => {
+        setIsProcessingFiles(true);
+        const newFiles: Array<{
+            id: string;
+            name: string;
+            type: string;
+            size: number;
+            file: File;
+            content?: string;
+        }> = [];
+
+        for (const file of Array.from(files)) {
+            // Check file size (max 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert(`File ${file.name} is too large. Maximum size is 10MB.`);
+                continue;
+            }
+
+            const fileId = `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            let content: string | undefined;
+
+            // Extract text content for text files
+            if (file.type.startsWith('text/') || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
+                try {
+                    content = await file.text();
+                } catch (error) {
+                    console.error('Error reading text file:', error);
+                }
+            }
+
+            newFiles.push({
+                id: fileId,
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                file,
+                content,
+            });
+        }
+
+        setUploadedFiles(prev => [...prev, ...newFiles]);
+        setIsProcessingFiles(false);
+    };
+
+    // Handle file removal
+    const handleRemoveFile = (fileId: string) => {
+        setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+    };
+
+    // Handle drag and drop
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(false);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(false);
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFileUpload(files);
+        }
+    };
 
     // Handle stopping the chat
     const handleStop = () => {
@@ -124,11 +257,21 @@ export function ChatInterface({
             role: 'user',
             content: inputValue,
             timestamp: new Date().toISOString(),
+            attachments: uploadedFiles.length > 0 ? uploadedFiles.map(f => ({
+                id: f.id,
+                name: f.name,
+                type: f.type,
+                size: f.size,
+                content: f.content,
+            })) : undefined,
         };
 
         setMessages(prev => [...prev, userMessage]);
         setInputValue('');
+        setUploadedFiles([]);
         setIsLoading(true);
+        setMessageCount(prev => prev + 1);
+        setShowSuggestions(false);
 
         // Create abort controller for this request
         abortControllerRef.current = new AbortController();
@@ -140,8 +283,13 @@ export function ChatInterface({
             formData.set('conversationId', conversationId);
         }
 
+        // Add file information
+        if (userMessage.attachments && userMessage.attachments.length > 0) {
+            formData.set('attachments', JSON.stringify(userMessage.attachments));
+        }
+
         try {
-            const result = await handleChatQuery(initialState, formData);
+            const result = await handleChatQuery({ success: false }, formData);
 
             // Check if request was aborted
             if (abortControllerRef.current?.signal.aborted) {
@@ -210,78 +358,154 @@ export function ChatInterface({
         }
     };
 
+    // Quick action suggestions
+    const quickActions = [
+        { icon: TrendingUp, text: "Market Analysis", query: "What are the current market trends in my area?" },
+        { icon: MessageCircle, text: "Client Scripts", query: "Give me a script for following up with potential buyers" },
+        { icon: Search, text: "Lead Generation", query: "What are the best lead generation strategies for 2024?" },
+        { icon: Zap, text: "Deal Strategy", query: "How can I structure a competitive offer in this market?" }
+    ];
+
+    const handleQuickAction = (query: string) => {
+        setInputValue(query);
+        setShowSuggestions(false);
+        // Auto-focus textarea after setting value
+        setTimeout(() => textareaRef.current?.focus(), 100);
+    };
+
     return (
-        <div className={cn('flex flex-col h-full bg-gradient-to-b from-background to-muted/10', className)}>
+        <div
+            className={cn('flex flex-col h-full bg-gradient-to-b from-background to-muted/10 relative', className)}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+        >
+            {/* Drag and Drop Overlay */}
+            {isDragOver && (
+                <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary z-50 flex items-center justify-center">
+                    <div className="text-center">
+                        <Paperclip className="w-12 h-12 text-primary mx-auto mb-4" />
+                        <p className="text-lg font-semibold text-primary">Drop files here to upload</p>
+                        <p className="text-sm text-muted-foreground">Supports PDF, TXT, DOC, images, and more</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Chat Header */}
+            <div className="flex-shrink-0 border-b bg-background/80 backdrop-blur-sm p-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
+                                <Bot className="w-4 h-4 text-white" />
+                            </div>
+                            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                        </div>
+                        <div>
+                            <h3 className="font-semibold text-sm">AI Assistant</h3>
+                            <p className="text-xs text-muted-foreground">
+                                {isLoading ? 'Thinking...' : 'Online'}
+                            </p>
+                        </div>
+                    </div>
+
+                    {messageCount > 0 && (
+                        <Badge variant="secondary" className="text-xs">
+                            {messageCount} messages
+                        </Badge>
+                    )}
+                </div>
+            </div>
+
             {/* Messages Area */}
             <div className="flex-1 overflow-hidden">
-                <ScrollArea className="h-full p-6">
-                    <div className="space-y-4">
+                <ScrollArea className="h-full">
+                    <div className="p-4 space-y-4">
                         {messages.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-full text-center py-12 px-6">
+                            <div className="flex flex-col items-center justify-center min-h-[400px] text-center py-8 px-4">
                                 {/* Enhanced Animated AI Avatar */}
-                                <div className="relative mb-6 group/avatar">
+                                <div className="relative mb-4 group/avatar">
                                     {/* Outer Breathing Ring */}
-                                    <div className="absolute inset-0 w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 opacity-20 animate-ping-slow"></div>
+                                    <div className="absolute inset-0 w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 opacity-20 animate-ping-slow"></div>
 
                                     {/* Middle Glow Ring */}
-                                    <div className="absolute inset-1 w-18 h-18 rounded-full bg-gradient-to-br from-blue-300 to-purple-400 opacity-30 animate-pulse-gentle"></div>
+                                    <div className="absolute inset-1 w-14 h-14 rounded-full bg-gradient-to-br from-blue-300 to-purple-400 opacity-30 animate-pulse-gentle"></div>
 
                                     {/* Main Avatar */}
-                                    <div className="relative w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-110 animate-float">
-                                        <Bot className="w-10 h-10 text-white transition-transform duration-300 group-hover/avatar:rotate-12 group-hover/avatar:scale-110" />
+                                    <div className="relative w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-110 animate-float">
+                                        <Bot className="w-8 h-8 text-white transition-transform duration-300 group-hover/avatar:rotate-12 group-hover/avatar:scale-110" />
 
                                         {/* Inner Sparkle Effect */}
                                         <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-300"></div>
                                     </div>
 
                                     {/* Status Indicator with Animation */}
-                                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-bounce-gentle hover:animate-spin-slow">
-                                        <Sparkles className="w-3 h-3 text-white animate-twinkle" />
+                                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-bounce-gentle hover:animate-spin-slow">
+                                        <Sparkles className="w-2.5 h-2.5 text-white animate-twinkle" />
                                     </div>
 
                                     {/* Floating Particles */}
-                                    <div className="absolute -top-2 -left-2 w-2 h-2 bg-blue-400 rounded-full opacity-60 animate-float-delayed"></div>
-                                    <div className="absolute -bottom-2 -right-2 w-1.5 h-1.5 bg-purple-400 rounded-full opacity-60 animate-float-delayed-2"></div>
-                                    <div className="absolute top-1/2 -left-3 w-1 h-1 bg-green-400 rounded-full opacity-60 animate-float-delayed-3"></div>
+                                    <div className="absolute -top-2 -left-2 w-1.5 h-1.5 bg-blue-400 rounded-full opacity-60 animate-float-delayed"></div>
+                                    <div className="absolute -bottom-2 -right-2 w-1 h-1 bg-purple-400 rounded-full opacity-60 animate-float-delayed-2"></div>
+                                    <div className="absolute top-1/2 -left-3 w-0.5 h-0.5 bg-green-400 rounded-full opacity-60 animate-float-delayed-3"></div>
                                 </div>
 
                                 {/* Welcome Message */}
-                                <div className="max-w-md space-y-4">
-                                    <h2 className="text-2xl font-bold text-foreground">
+                                <div className="max-w-lg space-y-3 text-center">
+                                    <h2 className="font-headline text-xl sm:text-2xl font-bold text-foreground">
                                         👋 Hi there! I'm your AI real estate assistant
                                     </h2>
-                                    <p className="text-muted-foreground leading-relaxed">
-                                        I'm here to help you succeed in real estate! Ask me about market trends, deal strategies,
-                                        client communication, financing, or anything else related to your business.
+                                    <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                                        I'm here to help you succeed in real estate! Ask me about market trends, deal strategies, client communication, or anything else.
                                     </p>
                                 </div>
 
-                                {/* Quick Start Suggestions */}
-                                <div className="mt-8 w-full max-w-2xl">
-                                    <p className="text-sm font-medium text-muted-foreground mb-4">Try asking me about:</p>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        {[
-                                            { icon: TrendingUp, text: "Current market trends", query: "What are the current market trends?" },
-                                            { icon: MessageCircle, text: "Client communication tips", query: "How can I improve client communication?" },
-                                            { icon: Search, text: "Lead generation strategies", query: "What are the best lead generation strategies?" },
-                                            { icon: Info, text: "Deal closing techniques", query: "How do I close more deals?" }
-                                        ].map((suggestion, idx) => (
+                                {/* Quick Actions */}
+                                {showSuggestions && (
+                                    <div className="mt-6 w-full max-w-lg">
+                                        <p className="text-sm font-medium text-muted-foreground mb-3 text-center">Quick actions:</p>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {quickActions.map((action, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => handleQuickAction(action.query)}
+                                                    className="flex items-center gap-2 p-3 text-left bg-muted/50 hover:bg-muted rounded-lg transition-all duration-200 group hover:scale-[1.02] active:scale-[0.98]"
+                                                >
+                                                    <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center group-hover:bg-primary/20 transition-colors flex-shrink-0">
+                                                        <action.icon className="w-3 h-3 text-primary group-hover:scale-110 transition-transform" />
+                                                    </div>
+                                                    <span className="text-xs sm:text-sm font-medium truncate">{action.text}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <>
+                                {messages.map((message) => (
+                                    <MessageBubble key={message.id} message={message} userName={userName} />
+                                ))}
+
+                                {/* Show suggestions after first message */}
+                                {messages.length > 0 && showSuggestions && !isLoading && (
+                                    <div className="flex flex-wrap gap-2 px-4 py-2">
+                                        <p className="text-xs text-muted-foreground w-full mb-2">Suggested follow-ups:</p>
+                                        {quickActions.slice(0, 2).map((action, idx) => (
                                             <button
                                                 key={idx}
-                                                onClick={() => setInputValue(suggestion.query)}
-                                                className="flex items-center gap-3 p-3 text-left bg-muted/50 hover:bg-muted rounded-lg transition-colors group"
+                                                type="button"
+                                                onClick={() => handleQuickAction(action.query)}
+                                                className="inline-flex items-center gap-2 px-3 py-1.5 text-xs bg-muted/50 hover:bg-muted rounded-full transition-colors"
                                             >
-                                                <suggestion.icon className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
-                                                <span className="text-sm font-medium">{suggestion.text}</span>
+                                                <action.icon className="w-3 h-3" />
+                                                {action.text}
                                             </button>
                                         ))}
                                     </div>
-                                </div>
-                            </div>
-                        ) : (
-                            messages.map((message) => (
-                                <MessageBubble key={message.id} message={message} />
-                            ))
+                                )}
+                            </>
                         )}
 
                         {/* Enhanced Loading indicator with Animated Avatar */}
@@ -309,9 +533,9 @@ export function ChatInterface({
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 <div className="flex gap-1">
-                                                    <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-bounce-typing" style={{ animationDelay: '0ms' }}></div>
-                                                    <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-green-500 rounded-full animate-bounce-typing" style={{ animationDelay: '150ms' }}></div>
-                                                    <div className="w-2 h-2 bg-gradient-to-r from-green-500 to-purple-500 rounded-full animate-bounce-typing" style={{ animationDelay: '300ms' }}></div>
+                                                    <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-bounce-typing typing-dot-1"></div>
+                                                    <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-green-500 rounded-full animate-bounce-typing typing-dot-2"></div>
+                                                    <div className="w-2 h-2 bg-gradient-to-r from-green-500 to-purple-500 rounded-full animate-bounce-typing typing-dot-3"></div>
                                                 </div>
                                                 <span className="text-sm text-muted-foreground ml-2 animate-pulse">AI is thinking...</span>
                                                 <Sparkles className="w-4 h-4 text-purple-500 animate-spin-slow" />
@@ -345,29 +569,185 @@ export function ChatInterface({
             </div>
 
             {/* Enhanced Input Area */}
-            <div className="border-t bg-gradient-to-r from-background to-muted/20 p-4">
+            <div className="flex-shrink-0 border-t bg-background/80 backdrop-blur-sm p-4">
+                {/* Typing Indicator */}
+                {isTyping && (
+                    <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
+                        <div className="flex gap-1">
+                            <div className="w-1 h-1 bg-primary rounded-full animate-bounce typing-dot-1"></div>
+                            <div className="w-1 h-1 bg-primary rounded-full animate-bounce typing-dot-2"></div>
+                            <div className="w-1 h-1 bg-primary rounded-full animate-bounce typing-dot-3"></div>
+                        </div>
+                        <span>You're typing...</span>
+                    </div>
+                )}
+
                 <form ref={formRef} onSubmit={handleSubmit} className="relative">
+                    {/* File Upload Inputs */}
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        accept=".pdf,.txt,.doc,.docx,.md,.csv,.json"
+                        onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
+                        className="hidden"
+                        aria-label="Upload document files"
+                        title="Upload document files"
+                    />
+                    <input
+                        ref={imageInputRef}
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
+                        className="hidden"
+                        aria-label="Upload image files"
+                        title="Upload image files"
+                    />
+
+                    {/* File Processing Indicator */}
+                    {isProcessingFiles && (
+                        <div className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                            <span>Processing files...</span>
+                        </div>
+                    )}
+
+                    {/* Uploaded Files Display */}
+                    {uploadedFiles.length > 0 && (
+                        <div className="mb-3 space-y-2">
+                            <p className="text-sm font-medium text-muted-foreground">
+                                Attached files ({uploadedFiles.length}):
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {uploadedFiles.map((file) => (
+                                    <div
+                                        key={file.id}
+                                        className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg text-sm border"
+                                    >
+                                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                                            {file.type.startsWith('image/') ? (
+                                                <Image className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                                            ) : file.type.includes('pdf') ? (
+                                                <div className="w-4 h-4 bg-red-500 rounded text-white text-xs flex items-center justify-center flex-shrink-0">
+                                                    PDF
+                                                </div>
+                                            ) : (
+                                                <Paperclip className="w-4 h-4 text-green-500 flex-shrink-0" />
+                                            )}
+                                            <div className="min-w-0 flex-1">
+                                                <span className="font-medium truncate block">{file.name}</span>
+                                                <span className="text-muted-foreground text-xs">
+                                                    {(file.size / 1024).toFixed(1)} KB
+                                                    {file.content && ` • ${file.content.split(/\s+/).length} words`}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground flex-shrink-0"
+                                            onClick={() => handleRemoveFile(file.id)}
+                                            title="Remove file"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="relative flex items-end gap-3">
+                        {/* Input Actions */}
+                        <div className="flex items-center gap-1">
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                                            disabled={isLoading || isProcessingFiles}
+                                            onClick={() => fileInputRef.current?.click()}
+                                        >
+                                            <Paperclip className="w-4 h-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Attach file (PDF, TXT, DOC, etc.)</TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                                            disabled={isLoading || isProcessingFiles}
+                                            onClick={() => imageInputRef.current?.click()}
+                                        >
+                                            <Image className="w-4 h-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Add image (JPG, PNG, etc.)</TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+
+                        {/* Enhanced Textarea */}
                         <div className="flex-1 relative">
                             <Textarea
                                 ref={textareaRef}
                                 name="query"
                                 value={inputValue}
-                                onChange={(e) => setInputValue(e.target.value)}
+                                onChange={(e) => handleInputChange(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 placeholder={placeholder}
                                 className={cn(
-                                    "min-h-[60px] max-h-[200px] resize-none pr-12 transition-all duration-200",
+                                    "min-h-[52px] max-h-[200px] resize-none pr-20 transition-all duration-200",
                                     "border-2 focus:border-primary/50 focus:ring-2 focus:ring-primary/20",
-                                    "bg-white dark:bg-gray-800 shadow-sm",
+                                    "bg-white dark:bg-gray-800 shadow-sm rounded-xl",
                                     isLoading && "opacity-50"
                                 )}
                                 disabled={isLoading}
+                                rows={1}
                             />
 
-                            {/* Character Counter */}
-                            <div className="absolute bottom-2 right-2 text-xs text-muted-foreground">
-                                {inputValue.length}/1000
+                            {/* Input Enhancements */}
+                            <div className="absolute bottom-2 right-2 flex items-center gap-2">
+                                {inputValue.length > 800 && (
+                                    <Badge
+                                        variant={inputValue.length > 950 ? "destructive" : "secondary"}
+                                        className="text-xs h-5"
+                                    >
+                                        {inputValue.length}/1000
+                                    </Badge>
+                                )}
+
+                                {inputValue.trim() && !isLoading && (
+                                    <div className="flex items-center gap-1">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                                                    >
+                                                        <Mic className="w-3 h-3" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>Voice input (coming soon)</TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -378,9 +758,9 @@ export function ChatInterface({
                                 size="icon"
                                 onClick={handleStop}
                                 className={cn(
-                                    "h-[60px] w-[60px] flex-shrink-0 transition-all duration-200",
+                                    "h-[52px] w-[52px] flex-shrink-0 transition-all duration-200",
                                     "bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700",
-                                    "shadow-lg hover:shadow-xl hover:scale-105"
+                                    "shadow-lg hover:shadow-xl hover:scale-105 rounded-xl"
                                 )}
                             >
                                 <Square className="w-5 h-5 fill-current" />
@@ -391,9 +771,9 @@ export function ChatInterface({
                                 size="icon"
                                 disabled={!inputValue.trim()}
                                 className={cn(
-                                    "h-[60px] w-[60px] flex-shrink-0 transition-all duration-200",
+                                    "h-[52px] w-[52px] flex-shrink-0 transition-all duration-200",
                                     "bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70",
-                                    "shadow-lg hover:shadow-xl hover:scale-105",
+                                    "shadow-lg hover:shadow-xl hover:scale-105 rounded-xl",
                                     "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                                 )}
                             >
@@ -404,10 +784,19 @@ export function ChatInterface({
 
                     {/* Enhanced Help Text */}
                     <div className="flex items-center justify-between mt-3">
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Info className="w-3 h-3" />
-                            Press Enter to send, Shift+Enter for new line
-                        </p>
+                        <div className="flex items-center gap-4">
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Info className="w-3 h-3" />
+                                Press Enter to send, Shift+Enter for new line
+                            </p>
+
+                            {messageCount > 0 && (
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <CheckCircle2 className="w-3 h-3 text-green-500" />
+                                    {messageCount} messages sent
+                                </div>
+                            )}
+                        </div>
 
                         {isLoading && (
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -425,9 +814,10 @@ export function ChatInterface({
 /**
  * Enhanced Message Bubble Component
  */
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({ message, userName }: { message: Message; userName: string }) {
     const isUser = message.role === 'user';
     const [copied, setCopied] = useState(false);
+    const [liked, setLiked] = useState<boolean | null>(null);
 
     const copyToClipboard = async () => {
         await navigator.clipboard.writeText(message.content);
@@ -435,23 +825,39 @@ function MessageBubble({ message }: { message: Message }) {
         setTimeout(() => setCopied(false), 2000);
     };
 
+    const handleFeedback = (isPositive: boolean) => {
+        setLiked(isPositive);
+        // Here you could send feedback to your analytics service
+    };
+
+    const formatTime = (timestamp: string) => {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+
+        if (diffInMinutes < 1) return 'Just now';
+        if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+        if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+        return date.toLocaleDateString();
+    };
+
     return (
-        <div className={cn('flex items-start gap-4 group', isUser && 'flex-row-reverse')}>
+        <div className={cn('flex items-start gap-3 group animate-fade-in', isUser && 'flex-row-reverse')}>
             {/* Enhanced Animated Avatar */}
             <div className="flex-shrink-0">
                 <div className="relative">
                     <div
                         className={cn(
-                            'w-10 h-10 rounded-full flex items-center justify-center shadow-sm transition-all duration-300 hover:scale-110',
+                            'w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-all duration-300',
                             isUser
-                                ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:shadow-blue-200'
-                                : 'bg-gradient-to-br from-purple-500 to-purple-600 text-white hover:shadow-purple-200 animate-pulse-subtle'
+                                ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'
+                                : 'bg-gradient-to-br from-purple-500 to-purple-600 text-white animate-pulse-subtle'
                         )}
                     >
                         {isUser ? (
-                            <User className="w-5 h-5 transition-transform duration-200" />
+                            <User className="w-4 h-4" />
                         ) : (
-                            <Bot className="w-5 h-5 transition-transform duration-200 group-hover:rotate-12" />
+                            <Bot className="w-4 h-4 transition-transform duration-200 group-hover:rotate-12" />
                         )}
                     </div>
 
@@ -462,7 +868,7 @@ function MessageBubble({ message }: { message: Message }) {
 
                     {/* Status Indicator */}
                     {!isUser && (
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white shadow-sm animate-bounce-gentle">
+                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm">
                             <div className="w-full h-full bg-green-400 rounded-full animate-pulse"></div>
                         </div>
                     )}
@@ -470,88 +876,185 @@ function MessageBubble({ message }: { message: Message }) {
             </div>
 
             {/* Message Content */}
-            <div className={cn('flex-1', isUser && 'flex justify-end')}>
-                <div className="relative group/message max-w-[85%] w-fit">
+            <div className={cn('flex-1 max-w-[80%] md:max-w-[70%]', isUser && 'flex justify-end')}>
+                <div className="relative group/message w-full">
+                    {/* Message Header */}
+                    <div className={cn('flex items-center gap-2 mb-1', isUser && 'justify-end')}>
+                        <span className="text-xs font-medium text-muted-foreground">
+                            {isUser ? userName : 'AI Assistant'}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                            {formatTime(message.timestamp)}
+                        </span>
+                    </div>
+
                     <Card
                         className={cn(
-                            'p-4 shadow-sm transition-all duration-200 hover:shadow-md',
+                            'p-3 shadow-sm transition-all duration-200 hover:shadow-md relative',
                             isUser
-                                ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white border-blue-200'
-                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                                ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white border-blue-200 rounded-2xl rounded-br-md'
+                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-2xl rounded-bl-md'
                         )}
                     >
                         <div className="max-w-none">
                             <p className={cn(
-                                "whitespace-pre-wrap break-words m-0 leading-relaxed word-break-break-word",
+                                "whitespace-pre-wrap break-words m-0 leading-relaxed text-sm",
                                 isUser ? "text-white" : "text-foreground"
                             )}>
                                 {message.content}
                             </p>
                         </div>
 
+                        {/* Attachments */}
+                        {message.attachments && message.attachments.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                                {message.attachments.map((attachment) => (
+                                    <div
+                                        key={attachment.id}
+                                        className={cn(
+                                            "flex items-center gap-2 p-2 rounded-lg border",
+                                            isUser
+                                                ? "bg-white/10 border-white/20 text-white"
+                                                : "bg-muted/50 border-border"
+                                        )}
+                                    >
+                                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                                            {attachment.type.startsWith('image/') ? (
+                                                <Image className="w-4 h-4 flex-shrink-0" />
+                                            ) : (
+                                                <Paperclip className="w-4 h-4 flex-shrink-0" />
+                                            )}
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-xs font-medium truncate">{attachment.name}</p>
+                                                <p className={cn(
+                                                    "text-xs",
+                                                    isUser ? "text-white/70" : "text-muted-foreground"
+                                                )}>
+                                                    {(attachment.size / 1024).toFixed(1)} KB
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {attachment.type.startsWith('image/') && attachment.url && (
+                                            <img
+                                                src={attachment.url}
+                                                alt={attachment.name}
+                                                className="w-8 h-8 object-cover rounded"
+                                            />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
                         {/* Key Points */}
                         {message.keyPoints && message.keyPoints.length > 0 && (
-                            <div className="mt-4 pt-4 border-t border-border/50">
-                                <p className="text-xs font-semibold mb-2 flex items-center gap-1">
+                            <div className="mt-3 pt-3 border-t border-border/30">
+                                <p className="text-xs font-semibold mb-2 flex items-center gap-1 text-muted-foreground">
                                     <TrendingUp className="w-3 h-3" />
                                     Key Points
                                 </p>
-                                <ul className="text-xs space-y-1 list-disc list-inside">
+                                <ul className="text-xs space-y-1">
                                     {message.keyPoints.map((point, idx) => (
-                                        <li key={idx}>{point}</li>
+                                        <li key={idx} className="flex items-start gap-2">
+                                            <div className="w-1 h-1 bg-current rounded-full mt-2 flex-shrink-0"></div>
+                                            <span>{point}</span>
+                                        </li>
                                     ))}
                                 </ul>
                             </div>
                         )}
 
-                        {/* Message Actions */}
-                        {!isUser && (
-                            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 opacity-0 group-hover/message:opacity-100 transition-opacity">
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={copyToClipboard}
-                                                className="h-7 px-2 text-xs"
-                                            >
-                                                <Copy className="w-3 h-3 mr-1" />
-                                                {copied ? 'Copied!' : 'Copy'}
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>Copy message</TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                                                <ThumbsUp className="w-3 h-3" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>Helpful response</TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                                                <ThumbsDown className="w-3 h-3" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>Not helpful</TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
+                        {/* Citations */}
+                        {message.citations && message.citations.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-border/30">
+                                <p className="text-xs font-semibold mb-2 text-muted-foreground">Sources</p>
+                                <div className="space-y-1">
+                                    {message.citations.map((citation, idx) => (
+                                        <a
+                                            key={idx}
+                                            href={citation.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+                                        >
+                                            {citation.title}
+                                        </a>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </Card>
-                    {/* Timestamp */}
-                    <p className="text-xs text-muted-foreground px-2 mt-2">
-                        {new Date(message.timestamp).toLocaleTimeString()}
-                    </p>
+
+                    {/* Message Actions */}
+                    {!isUser && (
+                        <div className="flex items-center gap-1 mt-2 opacity-0 group-hover/message:opacity-100 transition-opacity">
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={copyToClipboard}
+                                            className="h-6 px-2 text-xs hover:bg-muted/50"
+                                        >
+                                            <Copy className="w-3 h-3 mr-1" />
+                                            {copied ? 'Copied!' : 'Copy'}
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Copy message</TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleFeedback(true)}
+                                            className={cn(
+                                                "h-6 w-6 p-0 hover:bg-green-100 hover:text-green-600",
+                                                liked === true && "bg-green-100 text-green-600"
+                                            )}
+                                        >
+                                            <ThumbsUp className="w-3 h-3" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Helpful response</TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleFeedback(false)}
+                                            className={cn(
+                                                "h-6 w-6 p-0 hover:bg-red-100 hover:text-red-600",
+                                                liked === false && "bg-red-100 text-red-600"
+                                            )}
+                                        >
+                                            <ThumbsDown className="w-3 h-3" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Not helpful</TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                            <MoreHorizontal className="w-3 h-3" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>More actions</TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

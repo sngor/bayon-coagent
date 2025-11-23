@@ -10,7 +10,7 @@ export default function TestDropdownsPage() {
     return (
         <div className="container mx-auto p-8 space-y-8">
             <div>
-                <h1 className="text-3xl font-bold mb-2">Dropdown Components Test</h1>
+                <h1 className="font-headline text-3xl font-bold mb-2">Dropdown Components Test</h1>
                 <p className="text-muted-foreground">
                     Testing the improved Select and DropdownMenu components with responsive styling
                 </p>

@@ -24,7 +24,7 @@ export function EmptyStatesDemo() {
     return (
         <div className="space-y-8 p-8">
             <div>
-                <h2 className="text-2xl font-bold mb-4">Basic Empty State</h2>
+                <h2 className="font-headline text-2xl font-bold mb-4">Basic Empty State</h2>
                 <EmptyState
                     icon={<FileText className="w-8 h-8 text-primary" />}
                     title="No documents found"
@@ -37,7 +37,7 @@ export function EmptyStatesDemo() {
             </div>
 
             <div>
-                <h2 className="text-2xl font-bold mb-4">No Data Empty State</h2>
+                <h2 className="font-headline text-2xl font-bold mb-4">No Data Empty State</h2>
                 <NoDataEmptyState
                     icon={<ClipboardList className="w-8 h-8 text-primary" />}
                     title="No marketing plans yet"
@@ -51,7 +51,7 @@ export function EmptyStatesDemo() {
             </div>
 
             <div>
-                <h2 className="text-2xl font-bold mb-4">No Results Empty State</h2>
+                <h2 className="font-headline text-2xl font-bold mb-4">No Results Empty State</h2>
                 <NoResultsEmptyState
                     icon={<Search className="w-8 h-8 text-muted-foreground" />}
                     searchTerm="luxury condos"
@@ -60,7 +60,7 @@ export function EmptyStatesDemo() {
             </div>
 
             <div>
-                <h2 className="text-2xl font-bold mb-4">
+                <h2 className="font-headline text-2xl font-bold mb-4">
                     No Results (without search term)
                 </h2>
                 <NoResultsEmptyState
@@ -69,7 +69,7 @@ export function EmptyStatesDemo() {
             </div>
 
             <div>
-                <h2 className="text-2xl font-bold mb-4">
+                <h2 className="font-headline text-2xl font-bold mb-4">
                     First Time Use Empty State
                 </h2>
                 <FirstTimeUseEmptyState
@@ -89,7 +89,7 @@ export function EmptyStatesDemo() {
             </div>
 
             <div>
-                <h2 className="text-2xl font-bold mb-4">
+                <h2 className="font-headline text-2xl font-bold mb-4">
                     Empty State with Multiple Actions
                 </h2>
                 <EmptyState
@@ -108,7 +108,7 @@ export function EmptyStatesDemo() {
             </div>
 
             <div>
-                <h2 className="text-2xl font-bold mb-4">
+                <h2 className="font-headline text-2xl font-bold mb-4">
                     Subtle Variant (for inline use)
                 </h2>
                 <NoResultsEmptyState

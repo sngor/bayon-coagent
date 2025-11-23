@@ -55,7 +55,7 @@ function SignInForm({ onSwitch, onShowVerify }: { onSwitch: () => void; onShowVe
     return (
         <div className="grid gap-6 animate-fade-in">
             <div className="grid gap-3 text-center">
-                <h1 className="text-display-medium text-gradient-primary">Welcome Back</h1>
+                <h1 className="font-headline text-display-medium text-gradient-primary">Welcome Back</h1>
                 <p className="text-heading-3 text-muted-foreground">
                     Sign in to grow your business
                 </p>
@@ -226,7 +226,7 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
         return (
             <div className="grid gap-6 animate-fade-in">
                 <div className="grid gap-3 text-center">
-                    <h1 className="text-display-medium text-gradient-primary">Check Your Email</h1>
+                    <h1 className="font-headline text-display-medium text-gradient-primary">Check Your Email</h1>
                     <p className="text-heading-3 text-muted-foreground">
                         We sent a code to <span className="font-semibold text-foreground">{userEmail}</span>
                     </p>
@@ -285,7 +285,7 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     return (
         <div className="grid gap-6 animate-fade-in">
             <div className="grid gap-3 text-center">
-                <h1 className="text-display-medium text-gradient-primary">Start Your Journey</h1>
+                <h1 className="font-headline text-display-medium text-gradient-primary">Start Your Journey</h1>
                 <p className="text-heading-3 text-muted-foreground">
                     Create your account and unlock AI-powered marketing
                 </p>
@@ -443,7 +443,7 @@ function VerifyEmailForm({ onBack }: { onBack: () => void }) {
         return (
             <div className="grid gap-6 animate-fade-in">
                 <div className="grid gap-3 text-center">
-                    <h1 className="text-display-medium text-gradient-primary">Verify Your Email</h1>
+                    <h1 className="font-headline text-display-medium text-gradient-primary">Verify Your Email</h1>
                     <p className="text-heading-3 text-muted-foreground">
                         Enter your email to receive a verification code
                     </p>
@@ -508,7 +508,7 @@ function VerifyEmailForm({ onBack }: { onBack: () => void }) {
     return (
         <div className="grid gap-6 animate-fade-in">
             <div className="grid gap-3 text-center">
-                <h1 className="text-display-medium text-gradient-primary">Enter Verification Code</h1>
+                <h1 className="font-headline text-display-medium text-gradient-primary">Enter Verification Code</h1>
                 <p className="text-heading-3 text-muted-foreground">
                     We sent a code to <span className="font-semibold text-foreground">{email}</span>
                 </p>
@@ -627,7 +627,7 @@ export default function LoginPage() {
                                     <Sparkles className="w-4 h-4" />
                                     AI-Powered Marketing Platform
                                 </div>
-                                <h1 className="text-display-hero text-gradient-primary">
+                                <h1 className="font-headline text-display-hero text-gradient-primary">
                                     Transform Your Real Estate Marketing
                                 </h1>
                                 <p className="text-heading-2 text-muted-foreground leading-relaxed">
@@ -642,7 +642,7 @@ export default function LoginPage() {
                                         <TrendingUp className="w-6 h-6 text-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="text-heading-3 text-foreground mb-1">Brand Intelligence</h3>
+                                        <h3 className="font-headline text-heading-3 text-foreground mb-1">Brand Intelligence</h3>
                                         <p className="text-base text-muted-foreground">
                                             Monitor your online presence and track competitor strategies in real-time.
                                         </p>
@@ -654,7 +654,7 @@ export default function LoginPage() {
                                         <Zap className="w-6 h-6 text-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="text-heading-3 text-foreground mb-1">Content Generation</h3>
+                                        <h3 className="font-headline text-heading-3 text-foreground mb-1">Content Generation</h3>
                                         <p className="text-base text-muted-foreground">
                                             Create compelling blog posts, social media content, and marketing materials instantly.
                                         </p>
@@ -666,7 +666,7 @@ export default function LoginPage() {
                                         <Target className="w-6 h-6 text-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="text-heading-3 text-foreground mb-1">Strategic Planning</h3>
+                                        <h3 className="font-headline text-heading-3 text-foreground mb-1">Strategic Planning</h3>
                                         <p className="text-base text-muted-foreground">
                                             Get personalized marketing plans tailored to your market and goals.
                                         </p>

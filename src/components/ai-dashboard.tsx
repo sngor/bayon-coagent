@@ -202,7 +202,7 @@ export function AIDashboard({ userId, userName }: AIDashboardProps) {
                 transition={{ duration: 0.5 }}
                 className="space-y-2"
             >
-                <h2 className="text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                <h2 className="font-headline text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                     Good {getTimeOfDay()}{userName ? `, ${userName}` : ''}
                 </h2>
                 <p className="text-muted-foreground">
@@ -245,7 +245,7 @@ export function AIDashboard({ userId, userName }: AIDashboardProps) {
                                                 </div>
                                                 <div className="flex-1 min-w-0 space-y-1">
                                                     <div className="flex items-center gap-2 flex-wrap">
-                                                        <h4 className="font-semibold text-sm md:text-base group-hover:text-primary transition-colors">
+                                                        <h4 className="font-headline font-semibold text-sm md:text-base group-hover:text-primary transition-colors">
                                                             {action.title}
                                                         </h4>
                                                         <Badge variant={getPriorityVariant(action.priority)} className="text-xs">
@@ -318,7 +318,7 @@ export function AIDashboard({ userId, userName }: AIDashboardProps) {
                                             </div>
                                             <div className="flex-1 space-y-1">
                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                    <h4 className="font-semibold text-sm md:text-base">
+                                                    <h4 className="font-headline font-semibold text-sm md:text-base">
                                                         {insight.title}
                                                     </h4>
                                                     <Badge variant="outline" className="text-xs capitalize">
@@ -371,7 +371,7 @@ export function AIDashboard({ userId, userName }: AIDashboardProps) {
                                     >
                                         <Link href="/content-engine">
                                             <div className="group p-4 rounded-lg border-2 border-transparent hover:border-primary/30 hover:bg-primary/5 cursor-pointer transition-all duration-300 hover:shadow-md">
-                                                <h4 className="font-semibold text-sm md:text-base group-hover:text-primary transition-colors">
+                                                <h4 className="font-headline font-semibold text-sm md:text-base group-hover:text-primary transition-colors">
                                                     {content.title}
                                                 </h4>
                                                 <p className="text-xs text-muted-foreground mt-1">

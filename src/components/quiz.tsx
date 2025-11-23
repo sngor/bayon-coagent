@@ -47,7 +47,7 @@ export function Quiz({ moduleId, questions, onComplete, isCompleted }: QuizProps
             <Award className="h-6 w-6 text-white" />
           </div>
           <div className="flex-1">
-            <h4 className="font-bold text-green-900 dark:text-green-100 text-lg">Module Complete!</h4>
+            <h4 className="font-headline font-bold text-green-900 dark:text-green-100 text-lg">Module Complete!</h4>
             <p className="text-green-700 dark:text-green-300 mt-1">
               Excellent work! You've successfully mastered this module and passed the knowledge check.
             </p>

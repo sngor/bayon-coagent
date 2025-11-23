@@ -11,7 +11,10 @@ import { DynamoDBError, ThroughputExceededError } from './errors';
 import * as client from './client';
 
 // Mock the client module
-jest.mock('./client');
+jest.mock('@/aws/dynamodb/client', () => ({
+  getDocumentClient: jest.fn(),
+  getTableName: jest.fn(),
+}));
 
 const mockSend = jest.fn();
 const mockGetDocumentClient = client.getDocumentClient as jest.MockedFunction<typeof client.getDocumentClient>;
@@ -676,7 +679,7 @@ describe('DynamoDB Repository', () => {
         expect(result.count).toBe(2);
         expect(result.items[0].editId).toBe('edit3');
         expect(mockSend).toHaveBeenCalledTimes(1);
-        
+
         const call = mockSend.mock.calls[0][0];
         expect(call.input.KeyConditionExpression).toContain('PK = :pk');
         expect(call.input.KeyConditionExpression).toContain('begins_with(SK, :skPrefix)');

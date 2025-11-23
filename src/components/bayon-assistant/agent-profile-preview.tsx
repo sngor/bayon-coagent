@@ -175,7 +175,7 @@ export function AgentProfilePreview({
             <CardContent className="space-y-6">
                 {/* Basic Information */}
                 <div className="space-y-4">
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                    <h3 className="font-headline text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                         Basic Information
                     </h3>
                     <div className="space-y-4">
@@ -196,7 +196,7 @@ export function AgentProfilePreview({
 
                 {/* Professional Details */}
                 <div className="space-y-4">
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                    <h3 className="font-headline text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                         Professional Details
                     </h3>
                     <div className="space-y-4">
@@ -219,7 +219,7 @@ export function AgentProfilePreview({
 
                 {/* Core Principle */}
                 <div className="space-y-4">
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                    <h3 className="font-headline text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                         Core Principle
                     </h3>
                     <div className="flex items-start gap-3">

@@ -443,9 +443,7 @@ export default function BrandAuditPage() {
 
 
     return (
-        <StandardPageLayout
-            spacing="default"
-        >
+        <div className="space-y-8">
             <div className="space-y-8">
                 {/* Prominent Brand Score Hero Section */}
                 <Card className="bg-gradient-to-br from-primary/5 to-purple-600/5 border-2 border-primary/30">
@@ -563,7 +561,7 @@ export default function BrandAuditPage() {
 
                                 {/* Official Business Info */}
                                 <div className="bg-gradient-to-br from-primary/5 to-purple-600/5 rounded-lg p-5 border border-primary/10">
-                                    <h3 className="text-sm font-semibold uppercase text-primary mb-3 flex items-center gap-2">
+                                    <h3 className="font-headline text-sm font-semibold uppercase text-primary mb-3 flex items-center gap-2">
                                         <Shield className="h-4 w-4" />
                                         Your Official Business Information
                                     </h3>
@@ -696,7 +694,7 @@ export default function BrandAuditPage() {
                                                     <Lightbulb className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-semibold text-blue-900 dark:text-blue-100">How to Fix Inconsistencies</h4>
+                                                    <h4 className="font-headline font-semibold text-blue-900 dark:text-blue-100">How to Fix Inconsistencies</h4>
                                                     <p className="text-sm text-blue-800 dark:text-blue-200 mt-1">
                                                         For any platforms marked 'Inconsistent', use the 'Fix Now' button to go to the page and update your profile information to exactly match your official details. For 'Not Found' results, create a profile on that platform. Consistency is key for local SEO.
                                                     </p>
@@ -711,7 +709,7 @@ export default function BrandAuditPage() {
                                         <div className="flex items-start gap-3">
                                             <ServerCrash className="h-5 mt-0.5 text-destructive flex-shrink-0" />
                                             <div>
-                                                <h4 className="font-semibold text-destructive">Audit Failed</h4>
+                                                <h4 className="font-headline font-semibold text-destructive">Audit Failed</h4>
                                                 <p className="text-sm text-destructive/80">
                                                     {auditState.message}
                                                 </p>
@@ -914,7 +912,7 @@ export default function BrandAuditPage() {
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div>
-                                            <h4 className="font-semibold">Overall Sentiment</h4>
+                                            <h4 className="font-headline font-semibold">Overall Sentiment</h4>
                                             <Badge
                                                 variant={displayAnalysisData.overallSentiment === 'Positive' ? 'default' : displayAnalysisData.overallSentiment === 'Negative' ? 'destructive' : 'secondary'}
                                                 className={cn(
@@ -927,17 +925,17 @@ export default function BrandAuditPage() {
                                             </Badge>
                                         </div>
                                         <div>
-                                            <h4 className="font-semibold">Summary</h4>
+                                            <h4 className="font-headline font-semibold">Summary</h4>
                                             <p className="text-sm text-muted-foreground mt-1">{displayAnalysisData.summary}</p>
                                         </div>
                                         <div>
-                                            <h4 className="font-semibold">Common Themes</h4>
+                                            <h4 className="font-headline font-semibold">Common Themes</h4>
                                             <div className="flex flex-wrap gap-2 mt-1">
                                                 {displayAnalysisData.commonThemes.map((theme: string) => <Badge key={theme} variant="secondary">{theme}</Badge>)}
                                             </div>
                                         </div>
                                         <div>
-                                            <h4 className="font-semibold">Keywords</h4>
+                                            <h4 className="font-headline font-semibold">Keywords</h4>
                                             <div className="flex flex-wrap gap-2 mt-1">
                                                 {displayAnalysisData.keywords.map((keyword: string) => <Badge key={keyword} variant="outline">{keyword}</Badge>)}
                                             </div>
@@ -1037,7 +1035,7 @@ export default function BrandAuditPage() {
                                                 </p>
                                             </CardContent>
                                             <CardFooter className="flex-col items-start gap-2 pt-4">
-                                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Review Schema</h4>
+                                                <h4 className="font-headline text-xs font-semibold text-muted-foreground uppercase tracking-wider">Review Schema</h4>
                                                 <JsonLdDisplay schema={generateReviewSchema(review)} />
                                             </CardFooter>
                                         </Card>
@@ -1087,6 +1085,6 @@ export default function BrandAuditPage() {
                 message="✅ Brand Audit Complete!"
                 onComplete={() => setShowCelebration(false)}
             />
-        </StandardPageLayout>
+        </div>
     );
 }

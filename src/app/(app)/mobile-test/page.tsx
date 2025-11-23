@@ -76,7 +76,7 @@ export default function MobileTestPage() {
 
                             {auditResults.issues.length > 0 && (
                                 <div className="space-y-2">
-                                    <h4 className="font-semibold text-destructive">Issues:</h4>
+                                    <h4 className="font-headline font-semibold text-destructive">Issues:</h4>
                                     <ul className="list-disc list-inside space-y-1">
                                         {auditResults.issues.map((issue, i) => (
                                             <li key={i} className="text-sm text-destructive">{issue}</li>
@@ -87,7 +87,7 @@ export default function MobileTestPage() {
 
                             {auditResults.warnings.length > 0 && (
                                 <div className="space-y-2">
-                                    <h4 className="font-semibold text-yellow-600">Warnings:</h4>
+                                    <h4 className="font-headline font-semibold text-yellow-600">Warnings:</h4>
                                     <ul className="list-disc list-inside space-y-1">
                                         {auditResults.warnings.map((warning, i) => (
                                             <li key={i} className="text-sm text-yellow-600">{warning}</li>
@@ -282,7 +282,7 @@ export default function MobileTestPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div>
-                        <h4 className="font-semibold mb-2">Desktop Testing:</h4>
+                        <h4 className="font-headline font-semibold mb-2">Desktop Testing:</h4>
                         <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
                             <li>Open Chrome DevTools (F12)</li>
                             <li>Click the device toolbar icon (Ctrl+Shift+M)</li>
@@ -291,7 +291,7 @@ export default function MobileTestPage() {
                         </ol>
                     </div>
                     <div>
-                        <h4 className="font-semibold mb-2">Mobile Device Testing:</h4>
+                        <h4 className="font-headline font-semibold mb-2">Mobile Device Testing:</h4>
                         <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
                             <li>Open this page on your mobile device</li>
                             <li>Try tapping all buttons and links</li>
@@ -300,7 +300,7 @@ export default function MobileTestPage() {
                         </ol>
                     </div>
                     <div>
-                        <h4 className="font-semibold mb-2">What to Check:</h4>
+                        <h4 className="font-headline font-semibold mb-2">What to Check:</h4>
                         <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                             <li>All buttons are easily tappable (44x44px minimum)</li>
                             <li>Email field shows email keyboard</li>

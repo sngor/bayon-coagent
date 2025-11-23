@@ -105,7 +105,7 @@ export function AIOperationProgress({
                         <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
                     </div>
                     <div>
-                        <h3 className="font-semibold text-lg">AI Processing</h3>
+                        <h3 className="font-headline font-semibold text-lg">AI Processing</h3>
                         <p className="text-sm text-muted-foreground">
                             {formatOperationName(operationName)}
                         </p>

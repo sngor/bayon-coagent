@@ -231,9 +231,7 @@ export default function MarketingPlanPage() {
   };
 
   return (
-    <StandardPageLayout
-      spacing="default"
-    >
+    <div className="space-y-8">
       <div className="space-y-8">
         <Card className="text-center">
           <CardHeader>
@@ -297,7 +295,7 @@ export default function MarketingPlanPage() {
                       {index + 1}
                     </div>
                     <div className="flex-grow">
-                      <h3 className="font-semibold text-lg">{item.task}</h3>
+                      <h3 className="font-headline font-semibold text-lg">{item.task}</h3>
                       <p className="text-sm text-muted-foreground mt-1 mb-3">{item.rationale}</p>
                       <Link href={item.toolLink}>
                         <Button size="sm" className="transition-all hover:scale-105">
@@ -360,7 +358,7 @@ export default function MarketingPlanPage() {
                       {brandAuditData ? "✓" : "1"}
                     </div>
                     <div className="flex-grow">
-                      <h4 className="font-medium text-sm">Complete Your Brand Audit</h4>
+                      <h4 className="font-headline font-medium text-sm">Complete Your Brand Audit</h4>
                       <p className="text-sm text-muted-foreground mt-1">
                         Check how your business appears online and where you can improve.
                       </p>
@@ -384,7 +382,7 @@ export default function MarketingPlanPage() {
                       {competitorsData && competitorsData.length > 0 ? "✓" : "2"}
                     </div>
                     <div className="flex-grow">
-                      <h4 className="font-medium text-sm">Add Your Competitors</h4>
+                      <h4 className="font-headline font-medium text-sm">Add Your Competitors</h4>
                       <p className="text-sm text-muted-foreground mt-1">
                         Tell us who you're competing against so we can find ways to stand out.
                       </p>
@@ -490,6 +488,6 @@ export default function MarketingPlanPage() {
         message="🎉 Marketing Plan Generated!"
         onComplete={() => setShowCelebration(false)}
       />
-    </StandardPageLayout>
+    </div>
   );
 }

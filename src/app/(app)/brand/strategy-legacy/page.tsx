@@ -277,7 +277,7 @@ export default function MarketingPlanPage() {
                     {index + 1}
                   </div>
                   <div className="flex-grow">
-                    <h3 className="font-semibold text-lg">{item.task}</h3>
+                    <h3 className="font-headline font-semibold text-lg">{item.task}</h3>
                     <p className="text-sm text-muted-foreground mt-1 mb-3">{item.rationale}</p>
                     <Link href={item.toolLink}>
                       <Button size="sm" className="transition-all hover:scale-105">
@@ -339,7 +339,7 @@ export default function MarketingPlanPage() {
                       {brandAuditData ? "✓" : "1"}
                     </div>
                     <div className="flex-grow">
-                      <h4 className="font-medium text-sm">Complete Your Brand Audit</h4>
+                      <h4 className="font-headline font-medium text-sm">Complete Your Brand Audit</h4>
                       <p className="text-sm text-muted-foreground mt-1">
                         Run a brand audit to analyze your online presence, NAP consistency, and review sentiment.
                       </p>
@@ -363,7 +363,7 @@ export default function MarketingPlanPage() {
                       {competitorsData && competitorsData.length > 0 ? "✓" : "2"}
                     </div>
                     <div className="flex-grow">
-                      <h4 className="font-medium text-sm">Add Your Competitors</h4>
+                      <h4 className="font-headline font-medium text-sm">Add Your Competitors</h4>
                       <p className="text-sm text-muted-foreground mt-1">
                         Add at least one competitor to understand your competitive landscape and identify opportunities.
                       </p>

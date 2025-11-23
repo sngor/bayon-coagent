@@ -556,7 +556,7 @@ Interest Savings with 15-year: ${formatCurrency(calculation.totalInterest * 0.4)
 
                                     {/* Payment Breakdown */}
                                     <div className="space-y-4">
-                                        <h4 className="font-semibold">Monthly Payment Breakdown</h4>
+                                        <h4 className="font-headline font-semibold">Monthly Payment Breakdown</h4>
 
                                         <div className="space-y-3">
                                             <div className="flex justify-between items-center">
@@ -587,7 +587,7 @@ Interest Savings with 15-year: ${formatCurrency(calculation.totalInterest * 0.4)
 
                                     {/* Loan Summary */}
                                     <div className="space-y-4">
-                                        <h4 className="font-semibold">Loan Summary</h4>
+                                        <h4 className="font-headline font-semibold">Loan Summary</h4>
 
                                         <div className="space-y-3">
                                             <div className="flex justify-between items-center">
@@ -633,7 +633,7 @@ Interest Savings with 15-year: ${formatCurrency(calculation.totalInterest * 0.4)
 
                                     {/* Quick Scenario Buttons */}
                                     <div className="space-y-3">
-                                        <h4 className="font-semibold">Quick Comparisons</h4>
+                                        <h4 className="font-headline font-semibold">Quick Comparisons</h4>
                                         <div className="grid grid-cols-2 gap-2">
                                             {commonScenarios.map((scenario) => (
                                                 <Button
@@ -667,7 +667,7 @@ Interest Savings with 15-year: ${formatCurrency(calculation.totalInterest * 0.4)
                         {comparisons.length === 0 ? (
                             <div className="text-center py-8">
                                 <Calculator className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                                <h3 className="text-lg font-semibold mb-2">No Comparisons Yet</h3>
+                                <h3 className="font-headline text-lg font-semibold mb-2">No Comparisons Yet</h3>
                                 <p className="text-muted-foreground mb-4">
                                     Add scenarios from the calculator to compare different mortgage options
                                 </p>
@@ -839,7 +839,7 @@ Interest Savings with 15-year: ${formatCurrency(calculation.totalInterest * 0.4)
                                 {/* Recommendations */}
                                 {calculation.recommendations && calculation.recommendations.length > 0 && (
                                     <div className="space-y-3">
-                                        <h4 className="font-semibold">Recommendations</h4>
+                                        <h4 className="font-headline font-semibold">Recommendations</h4>
                                         <div className="space-y-2">
                                             {calculation.recommendations.map((rec, index) => (
                                                 <Alert key={index}>
@@ -853,7 +853,7 @@ Interest Savings with 15-year: ${formatCurrency(calculation.totalInterest * 0.4)
 
                                 {/* Affordability Breakdown */}
                                 <div className="space-y-4">
-                                    <h4 className="font-semibold">Monthly Budget Breakdown</h4>
+                                    <h4 className="font-headline font-semibold">Monthly Budget Breakdown</h4>
                                     <div className="space-y-3">
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm">Gross Monthly Income</span>
@@ -918,7 +918,7 @@ Interest Savings with 15-year: ${formatCurrency(calculation.totalInterest * 0.4)
 
                                 {/* First Year Breakdown */}
                                 <div className="space-y-4">
-                                    <h4 className="font-semibold">First Year Payment Breakdown</h4>
+                                    <h4 className="font-headline font-semibold">First Year Payment Breakdown</h4>
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-sm">
                                             <thead>
@@ -947,7 +947,7 @@ Interest Savings with 15-year: ${formatCurrency(calculation.totalInterest * 0.4)
 
                                 {/* Key Milestones */}
                                 <div className="space-y-4">
-                                    <h4 className="font-semibold">Key Milestones</h4>
+                                    <h4 className="font-headline font-semibold">Key Milestones</h4>
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <Alert>
                                             <Calendar className="h-4 w-4" />
@@ -1071,7 +1071,7 @@ Interest Savings with 15-year: ${formatCurrency(calculation.totalInterest * 0.4)
                                 <>
                                     {/* Rent vs Buy */}
                                     <div className="p-4 border rounded">
-                                        <h4 className="font-semibold mb-2">Rent vs Buy Analysis</h4>
+                                        <h4 className="font-headline font-semibold mb-2">Rent vs Buy Analysis</h4>
                                         <div className="space-y-2 text-sm">
                                             <div className="flex justify-between">
                                                 <span>Monthly Payment:</span>
@@ -1090,7 +1090,7 @@ Interest Savings with 15-year: ${formatCurrency(calculation.totalInterest * 0.4)
 
                                     {/* Refinance Analysis */}
                                     <div className="p-4 border rounded">
-                                        <h4 className="font-semibold mb-2">Refinance Potential</h4>
+                                        <h4 className="font-headline font-semibold mb-2">Refinance Potential</h4>
                                         <div className="space-y-2 text-sm">
                                             <div className="flex justify-between">
                                                 <span>Current Rate:</span>
@@ -1109,7 +1109,7 @@ Interest Savings with 15-year: ${formatCurrency(calculation.totalInterest * 0.4)
 
                                     {/* Extra Payment Impact */}
                                     <div className="p-4 border rounded">
-                                        <h4 className="font-semibold mb-2">Extra Payment Impact</h4>
+                                        <h4 className="font-headline font-semibold mb-2">Extra Payment Impact</h4>
                                         <div className="space-y-2 text-sm">
                                             <div className="flex justify-between">
                                                 <span>+$100/month saves:</span>
@@ -1128,7 +1128,7 @@ Interest Savings with 15-year: ${formatCurrency(calculation.totalInterest * 0.4)
 
                                     {/* Market Insights */}
                                     <div className="p-4 border rounded">
-                                        <h4 className="font-semibold mb-2">Market Context</h4>
+                                        <h4 className="font-headline font-semibold mb-2">Market Context</h4>
                                         <div className="space-y-2 text-sm">
                                             <div className="flex justify-between">
                                                 <span>Rate vs 2023 Avg (7.8%):</span>

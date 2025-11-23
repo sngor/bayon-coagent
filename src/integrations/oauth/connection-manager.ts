@@ -29,6 +29,8 @@ export interface OAuthConnectionManager {
     refreshToken(connection: OAuthConnection): Promise<OAuthConnection>;
     disconnect(connectionId: string): Promise<void>;
     getConnection(userId: string, platform: Platform): Promise<OAuthConnection | null>;
+    updateConnectionMetadata(userId: string, platform: Platform, metadata: Record<string, any>): Promise<OAuthConnection>;
+    validateConnection(userId: string, platform: Platform): Promise<{ isValid: boolean; error?: string }>;
 }
 
 /**
@@ -92,6 +94,15 @@ function getPlatformConfig(platform: Platform): PlatformOAuthConfig {
                 clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
                 redirectUri: `${baseRedirectUri}/api/oauth/linkedin/callback`,
                 scope: OAUTH_SCOPES.linkedin,
+            };
+        case 'twitter':
+            return {
+                authUrl: 'https://twitter.com/i/oauth2/authorize',
+                tokenUrl: 'https://api.twitter.com/2/oauth2/token',
+                clientId: process.env.TWITTER_CLIENT_ID || '',
+                clientSecret: process.env.TWITTER_CLIENT_SECRET || '',
+                redirectUri: `${baseRedirectUri}/api/oauth/twitter/callback`,
+                scope: OAUTH_SCOPES.twitter,
             };
     }
 }
@@ -393,6 +404,8 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
                 return await this.getInstagramUserInfo(accessToken);
             case 'linkedin':
                 return await this.getLinkedInUserInfo(accessToken);
+            case 'twitter':
+                return await this.getTwitterUserInfo(accessToken);
         }
     }
 
@@ -496,6 +509,175 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
             username: `${data.localizedFirstName} ${data.localizedLastName}`,
             metadata: {},
         };
+    }
+
+    /**
+     * Get Twitter user info
+     * @private
+     */
+    private async getTwitterUserInfo(accessToken: string): Promise<{
+        id: string;
+        username: string;
+        metadata?: Record<string, any>;
+    }> {
+        const response = await fetch(
+            `${PLATFORM_API_ENDPOINTS.twitter}/users/me?user.fields=id,username,name,public_metrics`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                },
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error('Failed to get Twitter user info');
+        }
+
+        const data = await response.json();
+
+        return {
+            id: data.data.id,
+            username: `@${data.data.username}`,
+            metadata: {
+                name: data.data.name,
+                publicMetrics: data.data.public_metrics,
+            },
+        };
+    }
+
+    /**
+     * Update connection metadata
+     * 
+     * @param userId - User ID
+     * @param platform - Social media platform
+     * @param metadata - Metadata to update
+     * @returns Updated OAuth connection
+     */
+    async updateConnectionMetadata(
+        userId: string,
+        platform: Platform,
+        metadata: Record<string, any>
+    ): Promise<OAuthConnection> {
+        const connection = await this.getConnection(userId, platform);
+
+        if (!connection) {
+            throw new Error('Connection not found');
+        }
+
+        // Update metadata and timestamp
+        const updatedConnection: OAuthConnection = {
+            ...connection,
+            metadata: {
+                ...connection.metadata,
+                ...metadata,
+            },
+            updatedAt: Date.now(),
+        };
+
+        // Store updated connection
+        await this.storeConnection(updatedConnection);
+
+        return updatedConnection;
+    }
+
+    /**
+     * Validate connection by testing API access
+     * 
+     * @param userId - User ID
+     * @param platform - Social media platform
+     * @returns Validation result
+     */
+    async validateConnection(
+        userId: string,
+        platform: Platform
+    ): Promise<{ isValid: boolean; error?: string }> {
+        try {
+            const connection = await this.getConnection(userId, platform);
+
+            if (!connection) {
+                return {
+                    isValid: false,
+                    error: 'Connection not found',
+                };
+            }
+
+            // Check if token is expired
+            if (connection.expiresAt < Date.now()) {
+                return {
+                    isValid: false,
+                    error: 'Token expired',
+                };
+            }
+
+            // Test API access with a simple call
+            const testResult = await this.testPlatformAPI(platform, connection.accessToken);
+
+            // Update last validated timestamp
+            await this.updateConnectionMetadata(userId, platform, {
+                lastValidated: Date.now(),
+                lastValidationResult: testResult,
+            });
+
+            return testResult;
+        } catch (error) {
+            return {
+                isValid: false,
+                error: error instanceof Error ? error.message : 'Validation failed',
+            };
+        }
+    }
+
+    /**
+     * Test platform API access
+     * @private
+     */
+    private async testPlatformAPI(
+        platform: Platform,
+        accessToken: string
+    ): Promise<{ isValid: boolean; error?: string }> {
+        try {
+            let testUrl: string;
+            let headers: Record<string, string> = {};
+
+            switch (platform) {
+                case 'facebook':
+                    testUrl = `${PLATFORM_API_ENDPOINTS.facebook}/me?fields=id,name&access_token=${accessToken}`;
+                    break;
+                case 'instagram':
+                    testUrl = `${PLATFORM_API_ENDPOINTS.instagram}/me?fields=id,username&access_token=${accessToken}`;
+                    break;
+                case 'linkedin':
+                    testUrl = `${PLATFORM_API_ENDPOINTS.linkedin}/me`;
+                    headers['Authorization'] = `Bearer ${accessToken}`;
+                    break;
+                case 'twitter':
+                    testUrl = `${PLATFORM_API_ENDPOINTS.twitter}/users/me`;
+                    headers['Authorization'] = `Bearer ${accessToken}`;
+                    break;
+            }
+
+            const response = await fetch(testUrl, {
+                method: 'GET',
+                headers,
+                // Add timeout to prevent hanging
+                signal: AbortSignal.timeout(10000), // 10 second timeout
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                return {
+                    isValid: false,
+                    error: `API call failed: ${response.status} ${errorText}`,
+                };
+            }
+
+            return { isValid: true };
+        } catch (error) {
+            return {
+                isValid: false,
+                error: error instanceof Error ? error.message : 'API test failed',
+            };
+        }
     }
 
     /**

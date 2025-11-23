@@ -9,7 +9,7 @@ export default function GradientBorderDemoPage() {
     return (
         <div className="container mx-auto p-6 space-y-12">
             <div className="space-y-4">
-                <h1 className="text-4xl font-bold">Gradient Borders & Glows Demo</h1>
+                <h1 className="font-headline text-4xl font-bold">Gradient Borders & Glows Demo</h1>
                 <p className="text-muted-foreground text-lg">
                     Showcase of gradient border utilities and glow effects for premium UI components
                 </p>
@@ -18,14 +18,14 @@ export default function GradientBorderDemoPage() {
             {/* Gradient Border Variants */}
             <section className="space-y-6">
                 <div>
-                    <h2 className="text-2xl font-semibold mb-2">Gradient Border Variants</h2>
+                    <h2 className="font-headline text-2xl font-semibold mb-2">Gradient Border Variants</h2>
                     <p className="text-muted-foreground">Different gradient border styles and colors</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <GradientBorder variant="default" borderWidth="medium" rounded="lg">
                         <div className="p-6">
-                            <h3 className="font-semibold mb-2">Default Gradient</h3>
+                            <h3 className="font-headline font-semibold mb-2">Default Gradient</h3>
                             <p className="text-sm text-muted-foreground">
                                 Subtle gradient border with primary colors
                             </p>
@@ -34,7 +34,7 @@ export default function GradientBorderDemoPage() {
 
                     <GradientBorder variant="primary" borderWidth="medium" rounded="lg">
                         <div className="p-6">
-                            <h3 className="font-semibold mb-2">Primary Gradient</h3>
+                            <h3 className="font-headline font-semibold mb-2">Primary Gradient</h3>
                             <p className="text-sm text-muted-foreground">
                                 Bold primary color gradient border
                             </p>
@@ -43,7 +43,7 @@ export default function GradientBorderDemoPage() {
 
                     <GradientBorder variant="accent" borderWidth="medium" rounded="lg">
                         <div className="p-6">
-                            <h3 className="font-semibold mb-2">Accent Gradient</h3>
+                            <h3 className="font-headline font-semibold mb-2">Accent Gradient</h3>
                             <p className="text-sm text-muted-foreground">
                                 Vibrant accent color gradient border
                             </p>
@@ -52,7 +52,7 @@ export default function GradientBorderDemoPage() {
 
                     <GradientBorder variant="success" borderWidth="medium" rounded="lg">
                         <div className="p-6">
-                            <h3 className="font-semibold mb-2">Success Gradient</h3>
+                            <h3 className="font-headline font-semibold mb-2">Success Gradient</h3>
                             <p className="text-sm text-muted-foreground">
                                 Success state gradient border
                             </p>
@@ -61,7 +61,7 @@ export default function GradientBorderDemoPage() {
 
                     <GradientBorder variant="animated" borderWidth="medium" rounded="lg" animate>
                         <div className="p-6">
-                            <h3 className="font-semibold mb-2 flex items-center gap-2">
+                            <h3 className="font-headline font-semibold mb-2 flex items-center gap-2">
                                 <Sparkles className="w-4 h-4" />
                                 Animated Gradient
                             </h3>
@@ -73,7 +73,7 @@ export default function GradientBorderDemoPage() {
 
                     <GradientBorder variant="primary" borderWidth="thick" rounded="xl">
                         <div className="p-6">
-                            <h3 className="font-semibold mb-2">Thick Border</h3>
+                            <h3 className="font-headline font-semibold mb-2">Thick Border</h3>
                             <p className="text-sm text-muted-foreground">
                                 Thicker gradient border for emphasis
                             </p>
@@ -85,7 +85,7 @@ export default function GradientBorderDemoPage() {
             {/* Gradient Borders with Glow */}
             <section className="space-y-6">
                 <div>
-                    <h2 className="text-2xl font-semibold mb-2">Gradient Borders with Glow Effects</h2>
+                    <h2 className="font-headline text-2xl font-semibold mb-2">Gradient Borders with Glow Effects</h2>
                     <p className="text-muted-foreground">Combining gradient borders with glow effects</p>
                 </div>
 
@@ -93,7 +93,7 @@ export default function GradientBorderDemoPage() {
                     <GradientBorder variant="primary" glow="sm" rounded="lg">
                         <div className="p-6">
                             <Zap className="w-8 h-8 mb-3 text-primary" />
-                            <h3 className="font-semibold mb-2">Small Glow</h3>
+                            <h3 className="font-headline font-semibold mb-2">Small Glow</h3>
                             <p className="text-sm text-muted-foreground">
                                 Subtle glow effect around the border
                             </p>
@@ -103,7 +103,7 @@ export default function GradientBorderDemoPage() {
                     <GradientBorder variant="accent" glow="md" rounded="lg">
                         <div className="p-6">
                             <Star className="w-8 h-8 mb-3 text-primary" />
-                            <h3 className="font-semibold mb-2">Medium Glow</h3>
+                            <h3 className="font-headline font-semibold mb-2">Medium Glow</h3>
                             <p className="text-sm text-muted-foreground">
                                 Moderate glow effect for emphasis
                             </p>
@@ -113,7 +113,7 @@ export default function GradientBorderDemoPage() {
                     <GradientBorder variant="animated" glow="lg" rounded="lg" animate>
                         <div className="p-6">
                             <Heart className="w-8 h-8 mb-3 text-primary" />
-                            <h3 className="font-semibold mb-2">Large Glow</h3>
+                            <h3 className="font-headline font-semibold mb-2">Large Glow</h3>
                             <p className="text-sm text-muted-foreground">
                                 Strong glow effect with animation
                             </p>
@@ -125,7 +125,7 @@ export default function GradientBorderDemoPage() {
             {/* Button Glow Variants */}
             <section className="space-y-6">
                 <div>
-                    <h2 className="text-2xl font-semibold mb-2">Button Glow Effects</h2>
+                    <h2 className="font-headline text-2xl font-semibold mb-2">Button Glow Effects</h2>
                     <p className="text-muted-foreground">Premium button variants with glow effects</p>
                 </div>
 
@@ -162,7 +162,7 @@ export default function GradientBorderDemoPage() {
             {/* Card with Gradient Borders */}
             <section className="space-y-6">
                 <div>
-                    <h2 className="text-2xl font-semibold mb-2">Cards with Gradient Borders</h2>
+                    <h2 className="font-headline text-2xl font-semibold mb-2">Cards with Gradient Borders</h2>
                     <p className="text-muted-foreground">Premium card designs with gradient borders</p>
                 </div>
 
@@ -218,7 +218,7 @@ export default function GradientBorderDemoPage() {
             {/* Hover Glow Effects */}
             <section className="space-y-6">
                 <div>
-                    <h2 className="text-2xl font-semibold mb-2">Hover Glow Effects</h2>
+                    <h2 className="font-headline text-2xl font-semibold mb-2">Hover Glow Effects</h2>
                     <p className="text-muted-foreground">Interactive glow effects on hover</p>
                 </div>
 
@@ -261,7 +261,7 @@ export default function GradientBorderDemoPage() {
             {/* Premium Glow */}
             <section className="space-y-6">
                 <div>
-                    <h2 className="text-2xl font-semibold mb-2">Premium Multi-Layer Glow</h2>
+                    <h2 className="font-headline text-2xl font-semibold mb-2">Premium Multi-Layer Glow</h2>
                     <p className="text-muted-foreground">
                         Multi-layered glow effects for premium components
                     </p>
@@ -309,7 +309,7 @@ export default function GradientBorderDemoPage() {
             {/* Usage Examples */}
             <section className="space-y-6">
                 <div>
-                    <h2 className="text-2xl font-semibold mb-2">Usage Examples</h2>
+                    <h2 className="font-headline text-2xl font-semibold mb-2">Usage Examples</h2>
                     <p className="text-muted-foreground">Code examples for implementing these effects</p>
                 </div>
 

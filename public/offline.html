@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Bayon Coagent</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 400px;
+            padding: 2rem;
+        }
+
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .retry-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .retry-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .status {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="icon">📱</div>
+        <h1>You're Offline</h1>
+        <p>Don't worry! Your work is saved locally and will sync automatically when you're back online.</p>
+        <button type="button" class="retry-btn" onclick="checkConnection()">Try Again</button>
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        function checkConnection() {
+            const status = document.getElementById('status');
+            status.textContent = 'Checking connection...';
+
+            // Try to reload the page
+            setTimeout(() => {
+                if (navigator.onLine) {
+                    window.location.reload();
+                } else {
+                    status.textContent = 'Still offline. We\'ll keep trying automatically.';
+                }
+            }, 1000);
+        }
+
+        // Auto-retry when connection is restored
+        window.addEventListener('online', () => {
+            document.getElementById('status').textContent = 'Connection restored! Redirecting...';
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        });
+
+        // Update status based on connection
+        function updateStatus() {
+            const status = document.getElementById('status');
+            if (navigator.onLine) {
+                status.textContent = 'Connection restored! Click "Try Again" to continue.';
+            } else {
+                status.textContent = 'Waiting for connection...';
+            }
+        }
+
+        // Check connection status periodically
+        setInterval(updateStatus, 5000);
+        updateStatus();
+    </script>
+</body>
+
+</html>

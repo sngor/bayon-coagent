@@ -238,7 +238,7 @@ export function AITrainingPlan({ className }: AITrainingPlanProps = {}) {
                                 <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                                     <Sparkles className="h-4 w-4 text-primary" />
                                 </div>
-                                <h3 className="font-semibold text-lg">Your Personalized Training Plan</h3>
+                                <h3 className="font-headline font-semibold text-lg">Your Personalized Training Plan</h3>
                             </div>
                             <div
                                 className="prose prose-sm md:prose-base max-w-none text-foreground/80 dark:prose-invert prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground"

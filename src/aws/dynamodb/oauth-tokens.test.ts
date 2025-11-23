@@ -15,8 +15,12 @@ import { getRepository } from './repository';
 import { getOAuthTokenKeys } from './keys';
 
 // Mock the repository
-jest.mock('./repository');
-jest.mock('./keys');
+jest.mock('@/aws/dynamodb/repository', () => ({
+  getRepository: jest.fn(),
+}));
+jest.mock('@/aws/dynamodb/keys', () => ({
+  getOAuthTokenKeys: jest.fn(),
+}));
 
 describe('OAuth Token Management', () => {
   const mockUserId = 'test-user-123';

@@ -19,7 +19,7 @@ export function MicroInteractionsDemo() {
     return (
         <div className="space-y-8 p-8">
             <div>
-                <h1 className="text-3xl font-bold mb-2">Micro-Interactions Demo</h1>
+                <h1 className="font-headline text-3xl font-bold mb-2">Micro-Interactions Demo</h1>
                 <p className="text-muted-foreground">
                     Showcasing enhanced button clicks, card hovers, and success feedback
                 </p>
@@ -27,7 +27,7 @@ export function MicroInteractionsDemo() {
 
             {/* Button Micro-Interactions */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Button Interactions</h2>
+                <h2 className="font-headline text-2xl font-semibold">Button Interactions</h2>
                 <p className="text-sm text-muted-foreground">
                     Click buttons to see ripple effects and scale transforms
                 </p>
@@ -84,7 +84,7 @@ export function MicroInteractionsDemo() {
 
             {/* Card Micro-Interactions */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Card Interactions</h2>
+                <h2 className="font-headline text-2xl font-semibold">Card Interactions</h2>
                 <p className="text-sm text-muted-foreground">
                     Hover over cards to see subtle lift and scale effects
                 </p>
@@ -166,7 +166,7 @@ export function MicroInteractionsDemo() {
 
             {/* Success Feedback */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Success Feedback</h2>
+                <h2 className="font-headline text-2xl font-semibold">Success Feedback</h2>
                 <p className="text-sm text-muted-foreground">
                     Click buttons to see satisfying completion animations
                 </p>
@@ -221,7 +221,7 @@ export function MicroInteractionsDemo() {
 
             {/* Animation Showcase */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Animation Utilities</h2>
+                <h2 className="font-headline text-2xl font-semibold">Animation Utilities</h2>
                 <p className="text-sm text-muted-foreground">
                     Various animation utilities available for use
                 </p>

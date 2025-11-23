@@ -85,7 +85,7 @@ export default function PracticePage() {
                                             >
                                                 <div className="flex items-start justify-between">
                                                     <div>
-                                                        <h4 className="font-semibold">
+                                                        <h4 className="font-headline font-semibold">
                                                             {scenario?.title || 'Unknown Scenario'}
                                                         </h4>
                                                         <p className="text-sm text-muted-foreground">

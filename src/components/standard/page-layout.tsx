@@ -44,7 +44,7 @@ export function StandardPageLayout({
             {/* Page Header */}
             <header className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                    <h1 className="text-display-large text-gradient-primary">
+                    <h1 className="font-headline text-display-large text-gradient-primary">
                         {title}
                     </h1>
                     {description && (

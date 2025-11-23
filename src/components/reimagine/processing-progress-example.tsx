@@ -109,22 +109,22 @@ export function ProcessingProgressExample() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div>
-                        <h4 className="text-sm font-medium mb-2">Idle</h4>
+                        <h4 className="font-headline text-sm font-medium mb-2">Idle</h4>
                         <ProcessingProgress status="idle" />
                     </div>
 
                     <div>
-                        <h4 className="text-sm font-medium mb-2">Uploading (50%)</h4>
+                        <h4 className="font-headline text-sm font-medium mb-2">Uploading (50%)</h4>
                         <ProcessingProgress status="uploading" progress={50} />
                     </div>
 
                     <div>
-                        <h4 className="text-sm font-medium mb-2">Analyzing</h4>
+                        <h4 className="font-headline text-sm font-medium mb-2">Analyzing</h4>
                         <ProcessingProgress status="analyzing" progress={75} />
                     </div>
 
                     <div>
-                        <h4 className="text-sm font-medium mb-2">Processing (30s estimated)</h4>
+                        <h4 className="font-headline text-sm font-medium mb-2">Processing (30s estimated)</h4>
                         <ProcessingProgress
                             status="processing"
                             progress={60}
@@ -133,12 +133,12 @@ export function ProcessingProgressExample() {
                     </div>
 
                     <div>
-                        <h4 className="text-sm font-medium mb-2">Completed</h4>
+                        <h4 className="font-headline text-sm font-medium mb-2">Completed</h4>
                         <ProcessingProgress status="completed" progress={100} />
                     </div>
 
                     <div>
-                        <h4 className="text-sm font-medium mb-2">Failed with Error</h4>
+                        <h4 className="font-headline text-sm font-medium mb-2">Failed with Error</h4>
                         <ProcessingProgress
                             status="failed"
                             error="The image could not be processed. Please try again with a different image."

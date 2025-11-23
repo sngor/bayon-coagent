@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 
-export const PlatformSchema = z.enum(["facebook", "instagram", "linkedin"]);
+export const PlatformSchema = z.enum(["facebook", "instagram", "linkedin", "twitter"]);
 
 export const OAuthConnectionSchema = z.object({
     id: z.string().min(1),

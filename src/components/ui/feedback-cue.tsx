@@ -508,7 +508,7 @@ export function SuccessErrorFeedback({
                 </div>
 
                 <div className="space-y-2">
-                    <h3 className="text-lg font-semibold">{title}</h3>
+                    <h3 className="font-headline text-lg font-semibold">{title}</h3>
                     {description && (
                         <p className="text-sm text-muted-foreground">{description}</p>
                     )}

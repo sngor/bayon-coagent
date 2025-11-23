@@ -85,8 +85,8 @@ export default function LibraryReportsPage() {
                                                 // For training plans, show in a modal or navigate to training section
                                                 router.push(`/training/plan/${report.id}`);
                                             } else {
-                                                // For research reports, navigate to market research
-                                                router.push(`/market/research/${report.id}`);
+                                                // For research reports, navigate to research reports
+                                                router.push(`/research/reports/${report.id}`);
                                             }
                                         }}
                                     >
@@ -115,7 +115,7 @@ export default function LibraryReportsPage() {
                     actions={[
                         {
                             label: "Go to Research",
-                            onClick: () => router.push('/market/research'),
+                            onClick: () => router.push('/research/agent'),
                             icon: FileSearch,
                         },
                         {

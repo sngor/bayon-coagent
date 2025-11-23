@@ -8,7 +8,7 @@ export type Profile = {
   photoURL?: string;
   licenseNumber?: string;
   certifications?: string[] | string;
-  yearsOfExperience?: number;
+  yearsOfExperience?: number | string;
   bio?: string;
   phone?: string;
   address?: string;
@@ -53,18 +53,18 @@ export type NapAuditResult = {
 };
 
 export type BrandAudit = {
-    id: string;
-    results: NapAuditResult[];
-    lastRun: string;
+  id: string;
+  results: NapAuditResult[];
+  lastRun: string;
 };
 
 export type ReviewAnalysis = {
-    id: string;
-    overallSentiment: 'Positive' | 'Negative' | 'Mixed';
-    summary: string;
-    keywords: string[];
-    commonThemes: string[];
-    analyzedAt: string;
+  id: string;
+  overallSentiment: 'Positive' | 'Negative' | 'Mixed';
+  summary: string;
+  keywords: string[];
+  commonThemes: string[];
+  analyzedAt: string;
 }
 
 export type Property = {
@@ -76,13 +76,13 @@ export type Property = {
   sqft: number | string;
   imageUrl: string;
   imageHint: string;
-  city: string; 
-  state: string; 
-  zip: string; 
-  lat: number; 
-  lng: number; 
-  type: string; 
-  description: string; 
+  city: string;
+  state: string;
+  zip: string;
+  lat: number;
+  lng: number;
+  type: string;
+  description: string;
   image: ImagePlaceholder;
 };
 
@@ -113,29 +113,29 @@ export type ResearchReport = {
 }
 
 export type Project = {
-    id: string;
-    name: string;
-    createdAt: string;
+  id: string;
+  name: string;
+  createdAt: string;
 }
 
 export type SavedContent = {
-  id: string; 
+  id: string;
   title: string;
-  content: string; 
-  type: string; 
-  createdAt: { 
+  content: string;
+  type: string;
+  createdAt: {
     seconds: number;
     nanoseconds: number;
-  } | string; 
+  } | string;
   name?: string;
   projectId?: string;
 }
 
 
 export type TrainingProgress = {
-    id: string;
-    completed: boolean;
-    completedAt: string;
+  id: string;
+  completed: boolean;
+  completedAt: string;
 }
 
 export type MarketingPlan = {
@@ -153,88 +153,88 @@ export type MarketingTask = {
 }
 
 export type ComparableProperty = {
-    property: Property;
-    justification: string;
-    similarityScore: number;
+  property: Property;
+  justification: string;
+  similarityScore: number;
 }
 
 export type CmaReport = {
-    summary: string;
-    estimatedValueRange: {
-        low: number;
-        high: number;
-    };
-    comparables: ComparableProperty[];
+  summary: string;
+  estimatedValueRange: {
+    low: number;
+    high: number;
+  };
+  comparables: ComparableProperty[];
 }
 
 export type Transaction = {
-    id: string; 
-    propertyId: string; 
-    propertyAddress: string; 
-    status: 'Pending' | 'Under Contract' | 'Closed' | 'Cancelled'; 
-    currentValue: number; 
-    buyerName: string; 
-    sellerName: string; 
-    closingDate: string; 
-    checklist: TransactionTask[]; 
+  id: string;
+  propertyId: string;
+  propertyAddress: string;
+  status: 'Pending' | 'Under Contract' | 'Closed' | 'Cancelled';
+  currentValue: number;
+  buyerName: string;
+  sellerName: string;
+  closingDate: string;
+  checklist: TransactionTask[];
 }
 
 export type TransactionTask = {
-    id: string; 
-    name: string; 
-    status: 'pending' | 'completed'; 
-    dueDate?: string; 
+  id: string;
+  name: string;
+  status: 'pending' | 'completed';
+  dueDate?: string;
 };
 
 export type MarketTrendData = {
-  month: string; 
-  price: number; 
-  inventory: number; 
-  demand: number; 
+  month: string;
+  price: number;
+  inventory: number;
+  demand: number;
 }
 
 export const marketTrendsChartConfig = {
-    price: {
-      label: "Median Price ($K)",
-      color: "hsl(var(--chart-1))",
-    },
-    inventory: {
-      label: "Inventory",
-      color: "hsl(var(--chart-2))",
-    },
-    demand: {
-      label: "Buyer Demand",
-      color: "hsl(var(--chart-3))",
-    },
+  price: {
+    label: "Median Price ($K)",
+    color: "hsl(var(--chart-1))",
+  },
+  inventory: {
+    label: "Inventory",
+    color: "hsl(var(--chart-2))",
+  },
+  demand: {
+    label: "Buyer Demand",
+    color: "hsl(var(--chart-3))",
+  },
 } satisfies ChartConfig;
 
 export type Client = {
-  id: string; 
-  name: string; 
+  id: string;
+  name: string;
   ownedProperty?: {
-    propertyId: string; 
-    address: string; 
-    purchaseDate: string; 
-    bedrooms: number; 
-    bathrooms: number; 
+    propertyId: string;
+    address: string;
+    purchaseDate: string;
+    bedrooms: number;
+    bathrooms: number;
   };
   familyDetails?: {
-    maritalStatus: 'Single' | 'Married' | 'Partnered'; 
-    children: { age: number }[]; 
+    maritalStatus: 'Single' | 'Married' | 'Partnered';
+    children: { age: number }[];
   };
-  estimatedIncome?: number; 
+  estimatedIncome?: number;
 };
 
 export type FurnitureItem = {
-    id: string;
-    name: string;
-    type: string;
-    imageUrl: string;
-    dataAiHint: string;
-    promptHint: string;
+  id: string;
+  name: string;
+  type: string;
+  imageUrl: string;
+  dataAiHint: string;
+  promptHint: string;
 };
 
 export type FurnitureStyle = {
-    name: string;
-    items: FurnitureItem[];
+  name: string;
+  items: FurnitureItem[];
 };

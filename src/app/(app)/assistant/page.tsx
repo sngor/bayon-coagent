@@ -72,6 +72,7 @@ export default function AssistantPage() {
             }
 
             try {
+                // Call the server action directly - it doesn't need form data
                 const result = await getAgentProfile();
                 if (result.success && result.data) {
                     setProfile(result.data);
@@ -290,23 +291,23 @@ export default function AssistantPage() {
         <div className="space-y-6">
             {/* Profile Setup Alert */}
             {!profile && (
-                <GlassCard blur="lg" tint="light" className="border-l-4 border-l-primary">
+                <GlassCard blur="lg" tint="light" className="border-l-4 border-l-primary animate-fade-in">
                     <GlassCardContent className="py-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
                                     <Info className="h-5 w-5 text-primary" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium">Personalize your experience</p>
-                                    <p className="text-xs text-muted-foreground">Set up your profile to get responses tailored to your market</p>
+                                    <p className="text-sm font-medium">🚀 Personalize your AI experience</p>
+                                    <p className="text-xs text-muted-foreground">Set up your profile to get responses tailored to your market and expertise</p>
                                 </div>
                             </div>
                             <Button
                                 variant="outline"
                                 size="sm"
                                 asChild
-                                className="hover:bg-primary hover:text-primary-foreground transition-colors"
+                                className="hover:bg-primary hover:text-primary-foreground transition-all duration-200 hover:scale-105"
                             >
                                 <Link href="/brand/profile">
                                     <Settings className="h-4 w-4 mr-2" />
@@ -319,27 +320,27 @@ export default function AssistantPage() {
             )}
 
             {/* Chat Controls */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'chat' | 'history')}>
-                    <TabsList>
+                    <TabsList className="grid w-full grid-cols-2 sm:w-auto">
                         <TabsTrigger value="chat" className="flex items-center gap-2">
                             <MessageSquare className="h-4 w-4" />
-                            <span>Chat</span>
+                            <span className="hidden sm:inline">Chat</span>
                         </TabsTrigger>
                         <TabsTrigger value="history" className="flex items-center gap-2">
                             <History className="h-4 w-4" />
-                            <span>History</span>
+                            <span className="hidden sm:inline">History</span>
                         </TabsTrigger>
                     </TabsList>
                 </Tabs>
 
                 {activeTab === 'chat' && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={handleNewChat}
-                            className="flex items-center gap-2"
+                            className="flex items-center gap-2 flex-1 sm:flex-none hover:scale-105 transition-transform"
                         >
                             <Plus className="h-4 w-4" />
                             <span>New Chat</span>
@@ -349,10 +350,11 @@ export default function AssistantPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={handleEndChat}
-                                className="flex items-center gap-2"
+                                className="flex items-center gap-2 flex-1 sm:flex-none hover:scale-105 transition-transform"
                             >
                                 <RotateCcw className="h-4 w-4" />
-                                <span>End Chat</span>
+                                <span className="hidden sm:inline">End Chat</span>
+                                <span className="sm:hidden">End</span>
                             </Button>
                         )}
                     </div>
@@ -362,7 +364,7 @@ export default function AssistantPage() {
             {/* Tab Content */}
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'chat' | 'history')}>
                 <TabsContent value="chat" className="mt-8">
-                    <Card className="h-[600px] overflow-hidden">
+                    <Card className="h-[700px] overflow-hidden shadow-lg border-2 border-border/50 hover:border-primary/20 transition-all duration-300">
                         <ChatInterface
                             key={chatKey} // Force re-render when chat changes
                             profile={profile}
@@ -411,61 +413,78 @@ export default function AssistantPage() {
                                     {chatHistory.map((chat) => (
                                         <div
                                             key={chat.id}
-                                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                                            className="group flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 hover:border-primary/20 transition-all duration-200 hover:shadow-sm"
                                         >
-                                            <div className="flex-1 min-w-0">
-                                                {editingChatId === chat.id ? (
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <Input
-                                                            value={editingTitle}
-                                                            onChange={(e) => setEditingTitle(e.target.value)}
-                                                            className="h-8"
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === 'Enter') handleSaveRename();
-                                                                if (e.key === 'Escape') handleCancelRename();
-                                                            }}
-                                                            autoFocus
-                                                        />
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            onClick={handleSaveRename}
-                                                            className="h-8 w-8 p-0"
-                                                        >
-                                                            <Check className="h-4 w-4" />
-                                                        </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="ghost"
-                                                            onClick={handleCancelRename}
-                                                            className="h-8 w-8 p-0"
-                                                        >
-                                                            <X className="h-4 w-4" />
-                                                        </Button>
+                                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                {/* Chat Icon */}
+                                                <div className="w-10 h-10 bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-full flex items-center justify-center flex-shrink-0">
+                                                    <MessageSquare className="w-5 h-5 text-purple-600" />
+                                                </div>
+
+                                                <div className="flex-1 min-w-0">
+                                                    {editingChatId === chat.id ? (
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <Input
+                                                                value={editingTitle}
+                                                                onChange={(e) => setEditingTitle(e.target.value)}
+                                                                className="h-8"
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') handleSaveRename();
+                                                                    if (e.key === 'Escape') handleCancelRename();
+                                                                }}
+                                                                autoFocus
+                                                            />
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={handleSaveRename}
+                                                                className="h-8 w-8 p-0 hover:bg-green-100 hover:text-green-600"
+                                                            >
+                                                                <Check className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="ghost"
+                                                                onClick={handleCancelRename}
+                                                                className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                                                            >
+                                                                <X className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <h3 className="font-headline font-medium truncate group-hover:text-primary transition-colors">{chat.title}</h3>
+                                                    )}
+                                                    <p className="text-sm text-muted-foreground truncate">
+                                                        {chat.lastMessage}
+                                                    </p>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {new Date(chat.timestamp).toLocaleDateString()}
+                                                        </p>
+                                                        <span className="text-xs text-muted-foreground">•</span>
+                                                        <div className="flex items-center gap-1">
+                                                            <MessageSquare className="w-3 h-3 text-muted-foreground" />
+                                                            <span className="text-xs text-muted-foreground">{chat.messageCount}</span>
+                                                        </div>
                                                     </div>
-                                                ) : (
-                                                    <h3 className="font-medium truncate">{chat.title}</h3>
-                                                )}
-                                                <p className="text-sm text-muted-foreground truncate">
-                                                    {chat.lastMessage}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground mt-1">
-                                                    {new Date(chat.timestamp).toLocaleDateString()} • {chat.messageCount} messages
-                                                </p>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2 ml-4">
+
+                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => handleLoadChat(chat.id)}
+                                                    className="hover:bg-primary hover:text-primary-foreground transition-colors"
                                                 >
+                                                    <MessageSquare className="h-4 w-4 mr-2" />
                                                     Continue
                                                 </Button>
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => handleStartRename(chat.id, chat.title)}
-                                                    className="h-8 w-8 p-0"
+                                                    className="h-8 w-8 p-0 hover:bg-blue-100 hover:text-blue-600"
                                                     title="Rename chat"
                                                 >
                                                     <Edit2 className="h-4 w-4" />

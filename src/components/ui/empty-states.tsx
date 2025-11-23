@@ -83,7 +83,7 @@ export const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
 
                     {/* Text content */}
                     <div className="space-y-2">
-                        <h3 className="text-lg font-semibold text-foreground">
+                        <h3 className="font-headline text-lg font-semibold text-foreground">
                             {title}
                         </h3>
                         <p className="text-sm text-muted-foreground max-w-md mx-auto">
@@ -334,7 +334,7 @@ export function IntelligentEmptyState({
                         {icon}
                     </div>
                     <div className="space-y-2">
-                        <h3 className="text-2xl font-bold text-foreground">
+                        <h3 className="font-headline text-2xl font-bold text-foreground">
                             {title}
                         </h3>
                         <p className="text-base text-muted-foreground max-w-2xl mx-auto">
@@ -349,7 +349,7 @@ export function IntelligentEmptyState({
                         <div className="flex items-start gap-3 mb-4">
                             <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
-                                <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-1">
+                                <h4 className="font-headline font-semibold text-amber-900 dark:text-amber-100 mb-1">
                                     Complete Your Profile to Get Started
                                 </h4>
                                 <p className="text-sm text-amber-700 dark:text-amber-300">
@@ -391,7 +391,7 @@ export function IntelligentEmptyState({
                     <div className="max-w-2xl mx-auto text-left space-y-3">
                         <div className="flex items-center gap-2 mb-4">
                             <TrendingUp className="w-5 h-5 text-primary" />
-                            <h4 className="font-semibold text-foreground">
+                            <h4 className="font-headline font-semibold text-foreground">
                                 Recommended Next Steps
                             </h4>
                         </div>
@@ -406,7 +406,7 @@ export function IntelligentEmptyState({
                     <div className="max-w-2xl mx-auto text-left space-y-3">
                         <div className="flex items-center gap-2 mb-4">
                             <Lightbulb className="w-5 h-5 text-primary" />
-                            <h4 className="font-semibold text-foreground">
+                            <h4 className="font-headline font-semibold text-foreground">
                                 Suggestions
                             </h4>
                         </div>
@@ -454,7 +454,7 @@ export function IntelligentEmptyState({
                         <div className="flex items-start gap-3">
                             <Lightbulb className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">
-                                <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                                <h4 className="font-headline font-semibold text-blue-900 dark:text-blue-100 mb-2">
                                     Tips to Get Started
                                 </h4>
                                 <ul className="space-y-2">
@@ -520,7 +520,7 @@ function RecommendationCard({
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2 mb-1">
-                        <h5 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                        <h5 className="font-headline font-semibold text-foreground group-hover:text-primary transition-colors">
                             {recommendation.title}
                         </h5>
                         {recommendation.estimatedTime && (

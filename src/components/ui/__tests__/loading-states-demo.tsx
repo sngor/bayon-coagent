@@ -37,7 +37,7 @@ export default function LoadingStatesDemo() {
     return (
         <div className="container mx-auto p-8 space-y-8">
             <div>
-                <h1 className="text-3xl font-bold mb-2">Loading States Demo</h1>
+                <h1 className="font-headline text-3xl font-bold mb-2">Loading States Demo</h1>
                 <p className="text-muted-foreground">
                     Visual demonstration of all loading state components
                 </p>
@@ -45,7 +45,7 @@ export default function LoadingStatesDemo() {
 
             {/* Skeleton Card Demo */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Skeleton Card</h2>
+                <h2 className="font-headline text-2xl font-semibold">Skeleton Card</h2>
                 <p className="text-sm text-muted-foreground">
                     Used for loading card content with matching layout
                 </p>
@@ -64,7 +64,7 @@ export default function LoadingStatesDemo() {
 
             {/* AI Loader Demo */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">AI Loader</h2>
+                <h2 className="font-headline text-2xl font-semibold">AI Loader</h2>
                 <p className="text-sm text-muted-foreground">
                     Used for AI operations with animated sparkles
                 </p>
@@ -84,7 +84,7 @@ export default function LoadingStatesDemo() {
 
             {/* Step Loader Demo */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Step Loader</h2>
+                <h2 className="font-headline text-2xl font-semibold">Step Loader</h2>
                 <p className="text-sm text-muted-foreground">
                     Used for multi-step processes with progress indication
                 </p>
@@ -102,7 +102,7 @@ export default function LoadingStatesDemo() {
 
             {/* Generic Skeleton Demo */}
             <section className="space-y-4">
-                <h2 className="text-2xl font-semibold">Generic Skeleton</h2>
+                <h2 className="font-headline text-2xl font-semibold">Generic Skeleton</h2>
                 <p className="text-sm text-muted-foreground">
                     Flexible skeleton loader for various content types
                 </p>

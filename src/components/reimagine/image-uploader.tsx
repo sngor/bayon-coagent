@@ -421,7 +421,7 @@ export function ImageUploader({
                             <div className="space-y-3 pt-4 border-t">
                                 <div className="flex items-center gap-2">
                                     <Sparkles className="h-5 w-5 text-primary" />
-                                    <h3 className="font-semibold">Choose Edit Type</h3>
+                                    <h3 className="font-headline font-semibold">Choose Edit Type</h3>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
                                     Select the transformation you want to apply:
@@ -451,7 +451,7 @@ export function ImageUploader({
                         {uploadedImageId && selectedEditType && (
                             <div className="space-y-3 pt-4 border-t">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="font-semibold">
+                                    <h3 className="font-headline font-semibold">
                                         {editTypes.find((t) => t.id === selectedEditType)?.title}
                                     </h3>
                                     <Button

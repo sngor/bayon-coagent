@@ -396,7 +396,7 @@ export function EditHistoryList({
                                                                 <div className="flex-1 min-w-0">
                                                                     <div className="flex items-start justify-between gap-2 mb-2">
                                                                         <div className="flex-1 min-w-0">
-                                                                            <h3 className="font-medium text-sm truncate">
+                                                                            <h3 className="font-headline font-medium text-sm truncate">
                                                                                 {formatEditType(item.editType)}
                                                                             </h3>
                                                                             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">

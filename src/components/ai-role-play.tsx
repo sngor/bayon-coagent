@@ -251,14 +251,14 @@ export function AIRolePlay({ moduleId, className }: AIRolePlayProps = {}) {
                         {selectedScenario && (
                             <div className="space-y-4 p-4 bg-secondary/30 rounded-lg border">
                                 <div>
-                                    <h4 className="font-semibold text-sm mb-1">Scenario</h4>
+                                    <h4 className="font-headline font-semibold text-sm mb-1">Scenario</h4>
                                     <p className="text-sm text-muted-foreground">
                                         {selectedScenario.description}
                                     </p>
                                 </div>
 
                                 <div>
-                                    <h4 className="font-semibold text-sm mb-1">You'll Practice</h4>
+                                    <h4 className="font-headline font-semibold text-sm mb-1">You'll Practice</h4>
                                     <ul className="text-sm text-muted-foreground space-y-1">
                                         {selectedScenario.learningObjectives.map((obj, idx) => (
                                             <li key={idx}>• {obj}</li>
@@ -267,7 +267,7 @@ export function AIRolePlay({ moduleId, className }: AIRolePlayProps = {}) {
                                 </div>
 
                                 <div>
-                                    <h4 className="font-semibold text-sm mb-1">
+                                    <h4 className="font-headline font-semibold text-sm mb-1">
                                         About {selectedScenario.persona.name}
                                     </h4>
                                     <p className="text-sm text-muted-foreground">
@@ -303,7 +303,7 @@ export function AIRolePlay({ moduleId, className }: AIRolePlayProps = {}) {
                                 <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                                     <Sparkles className="h-4 w-4 text-primary" />
                                 </div>
-                                <h3 className="font-semibold text-lg">Your Feedback</h3>
+                                <h3 className="font-headline font-semibold text-lg">Your Feedback</h3>
                             </div>
                             <div className="prose prose-sm max-w-none text-foreground/80 whitespace-pre-wrap">
                                 {feedback}

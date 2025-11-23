@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Worker Test - Bayon Coagent</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .status {
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        .success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        .info {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        pre {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Service Worker Test</h1>
+    <p>This page tests the PWA Service Worker configuration for mobile enhancements.</p>
+
+    <div id="support-status" class="status info">
+        Checking Service Worker support...
+    </div>
+
+    <div id="registration-status" class="status info">
+        Checking Service Worker registration...
+    </div>
+
+    <div id="background-sync-status" class="status info">
+        Checking Background Sync support...
+    </div>
+
+    <div id="push-status" class="status info">
+        Checking Push Notification support...
+    </div>
+
+    <h2>Actions</h2>
+    <button id="register-sw" onclick="registerServiceWorker()">Register Service Worker</button>
+    <button id="test-background-sync" onclick="testBackgroundSync()" disabled>Test Background Sync</button>
+    <button id="test-push" onclick="testPushNotification()" disabled>Test Push Notification</button>
+    <button id="clear-cache" onclick="clearCache()">Clear Cache</button>
+
+    <h2>Service Worker Details</h2>
+    <pre id="sw-details">Loading...</pre>
+
+    <h2>Log</h2>
+    <pre id="log"></pre>
+
+    <script>
+        let swRegistration = null;
+        const log = document.getElementById('log');
+
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            log.textContent += `[${timestamp}] ${message}\n`;
+            log.scrollTop = log.scrollHeight;
+            console.log(message);
+        }
+
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+
+        async function checkSupport() {
+            // Check Service Worker support
+            if ('serviceWorker' in navigator) {
+                updateStatus('support-status', '✅ Service Worker is supported', 'success');
+                addLog('Service Worker is supported');
+            } else {
+                updateStatus('support-status', '❌ Service Worker is not supported', 'error');
+                addLog('Service Worker is not supported');
+                return;
+            }
+
+            // Check Background Sync support
+            if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+                updateStatus('background-sync-status', '✅ Background Sync is supported', 'success');
+                addLog('Background Sync is supported');
+            } else {
+                updateStatus('background-sync-status', '❌ Background Sync is not supported', 'error');
+                addLog('Background Sync is not supported');
+            }
+
+            // Check Push Notification support
+            if ('serviceWorker' in navigator && 'PushManager' in window) {
+                updateStatus('push-status', '✅ Push Notifications are supported', 'success');
+                addLog('Push Notifications are supported');
+            } else {
+                updateStatus('push-status', '❌ Push Notifications are not supported', 'error');
+                addLog('Push Notifications are not supported');
+            }
+
+            // Check existing registration
+            try {
+                const registration = await navigator.serviceWorker.getRegistration();
+                if (registration) {
+                    swRegistration = registration;
+                    updateStatus('registration-status', '✅ Service Worker is already registered', 'success');
+                    addLog(`Service Worker registered at scope: ${registration.scope}`);
+                    updateServiceWorkerDetails(registration);
+                    enableButtons();
+                } else {
+                    updateStatus('registration-status', '⚠️ Service Worker is not registered', 'info');
+                    addLog('Service Worker is not registered');
+                }
+            } catch (error) {
+                updateStatus('registration-status', `❌ Error checking registration: ${error.message}`, 'error');
+                addLog(`Error checking registration: ${error.message}`);
+            }
+        }
+
+        async function registerServiceWorker() {
+            if (!('serviceWorker' in navigator)) {
+                addLog('Service Worker not supported');
+                return;
+            }
+
+            try {
+                addLog('Registering Service Worker...');
+                const registration = await navigator.serviceWorker.register('/sw-custom.js', {
+                    scope: '/'
+                });
+
+                swRegistration = registration;
+                updateStatus('registration-status', '✅ Service Worker registered successfully', 'success');
+                addLog(`Service Worker registered successfully at scope: ${registration.scope}`);
+
+                updateServiceWorkerDetails(registration);
+                enableButtons();
+
+                // Listen for updates
+                registration.addEventListener('updatefound', () => {
+                    addLog('Service Worker update found');
+                });
+
+            } catch (error) {
+                updateStatus('registration-status', `❌ Service Worker registration failed: ${error.message}`, 'error');
+                addLog(`Service Worker registration failed: ${error.message}`);
+            }
+        }
+
+        function updateServiceWorkerDetails(registration) {
+            const details = {
+                scope: registration.scope,
+                active: !!registration.active,
+                installing: !!registration.installing,
+                waiting: !!registration.waiting,
+                updateViaCache: registration.updateViaCache
+            };
+
+            if (registration.active) {
+                details.activeState = registration.active.state;
+                details.activeScriptURL = registration.active.scriptURL;
+            }
+
+            document.getElementById('sw-details').textContent = JSON.stringify(details, null, 2);
+        }
+
+        function enableButtons() {
+            document.getElementById('test-background-sync').disabled = false;
+            document.getElementById('test-push').disabled = false;
+        }
+
+        async function testBackgroundSync() {
+            if (!swRegistration) {
+                addLog('Service Worker not registered');
+                return;
+            }
+
+            if (!('sync' in window.ServiceWorkerRegistration.prototype)) {
+                addLog('Background Sync not supported');
+                return;
+            }
+
+            try {
+                addLog('Testing Background Sync...');
+                await swRegistration.sync.register('test-sync');
+                addLog('Background Sync test registered successfully');
+            } catch (error) {
+                addLog(`Background Sync test failed: ${error.message}`);
+            }
+        }
+
+        async function testPushNotification() {
+            if (!swRegistration) {
+                addLog('Service Worker not registered');
+                return;
+            }
+
+            if (!('PushManager' in window)) {
+                addLog('Push Notifications not supported');
+                return;
+            }
+
+            try {
+                addLog('Requesting Push Notification permission...');
+                const permission = await Notification.requestPermission();
+                addLog(`Push Notification permission: ${permission}`);
+
+                if (permission === 'granted') {
+                    // Show a test notification
+                    swRegistration.showNotification('Test Notification', {
+                        body: 'This is a test notification from the PWA Service Worker',
+                        icon: '/icon-192x192.svg',
+                        badge: '/icon-192x192.svg'
+                    });
+                    addLog('Test notification sent');
+                }
+            } catch (error) {
+                addLog(`Push Notification test failed: ${error.message}`);
+            }
+        }
+
+        async function clearCache() {
+            try {
+                addLog('Clearing caches...');
+                const cacheNames = await caches.keys();
+                await Promise.all(
+                    cacheNames.map(cacheName => caches.delete(cacheName))
+                );
+                addLog(`Cleared ${cacheNames.length} caches: ${cacheNames.join(', ')}`);
+            } catch (error) {
+                addLog(`Cache clearing failed: ${error.message}`);
+            }
+        }
+
+        // Listen for Service Worker messages
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('message', event => {
+                addLog(`Message from Service Worker: ${JSON.stringify(event.data)}`);
+            });
+        }
+
+        // Initialize
+        checkSupport();
+    </script>
+</body>
+
+</html>

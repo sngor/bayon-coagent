@@ -17,7 +17,7 @@ export default function GradientMeshDemoPage() {
             <section className="relative min-h-[400px] flex items-center justify-center rounded-2xl overflow-hidden">
                 <HeroGradientMesh>
                     <div className="text-center space-y-6 p-12">
-                        <h1 className="text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                        <h1 className="font-headline text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                             Gradient Mesh Backgrounds
                         </h1>
                         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -40,7 +40,7 @@ export default function GradientMeshDemoPage() {
             <section className="relative rounded-2xl overflow-hidden">
                 <SubtleGradientMesh>
                     <div className="p-12 space-y-6">
-                        <h2 className="text-3xl font-bold">Subtle Gradient Mesh</h2>
+                        <h2 className="font-headline text-3xl font-bold">Subtle Gradient Mesh</h2>
                         <p className="text-muted-foreground max-w-2xl">
                             Perfect for page backgrounds. Uses minimal opacity for a refined, professional look
                             that doesn't distract from your content.
@@ -92,7 +92,7 @@ export default function GradientMeshDemoPage() {
 
             {/* Card Gradient Mesh Examples */}
             <section className="space-y-6">
-                <h2 className="text-3xl font-bold">Card Gradient Mesh</h2>
+                <h2 className="font-headline text-3xl font-bold">Card Gradient Mesh</h2>
                 <p className="text-muted-foreground">
                     Subtle gradient meshes designed specifically for card backgrounds
                 </p>
@@ -100,7 +100,7 @@ export default function GradientMeshDemoPage() {
                     <div className="relative rounded-xl overflow-hidden border">
                         <CardGradientMesh>
                             <div className="p-8 space-y-4">
-                                <h3 className="text-2xl font-bold">Premium Feature</h3>
+                                <h3 className="font-headline text-2xl font-bold">Premium Feature</h3>
                                 <p className="text-muted-foreground">
                                     This card has a subtle gradient mesh background that adds visual interest
                                     without overwhelming the content.
@@ -113,7 +113,7 @@ export default function GradientMeshDemoPage() {
                     <div className="relative rounded-xl overflow-hidden border">
                         <CardGradientMesh>
                             <div className="p-8 space-y-4">
-                                <h3 className="text-2xl font-bold">Another Card</h3>
+                                <h3 className="font-headline text-2xl font-bold">Another Card</h3>
                                 <p className="text-muted-foreground">
                                     The gradient mesh creates depth and makes cards feel more premium and polished.
                                 </p>
@@ -126,7 +126,7 @@ export default function GradientMeshDemoPage() {
 
             {/* Custom Gradient Mesh */}
             <section className="space-y-6">
-                <h2 className="text-3xl font-bold">Custom Configuration</h2>
+                <h2 className="font-headline text-3xl font-bold">Custom Configuration</h2>
                 <p className="text-muted-foreground">
                     Create your own gradient mesh with custom orbs, colors, and animations
                 </p>
@@ -159,7 +159,7 @@ export default function GradientMeshDemoPage() {
                     >
                         <div className="p-12 flex items-center justify-center min-h-[300px]">
                             <div className="text-center space-y-4">
-                                <h3 className="text-3xl font-bold">Fully Customizable</h3>
+                                <h3 className="font-headline text-3xl font-bold">Fully Customizable</h3>
                                 <p className="text-muted-foreground max-w-md">
                                     Define your own orbs with custom colors, sizes, positions, and animation speeds
                                 </p>
@@ -171,7 +171,7 @@ export default function GradientMeshDemoPage() {
 
             {/* Usage Examples */}
             <section className="space-y-6">
-                <h2 className="text-3xl font-bold">Usage Examples</h2>
+                <h2 className="font-headline text-3xl font-bold">Usage Examples</h2>
                 <Card>
                     <CardHeader>
                         <CardTitle>Code Examples</CardTitle>
@@ -179,7 +179,7 @@ export default function GradientMeshDemoPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                            <h4 className="font-semibold">Hero Section</h4>
+                            <h4 className="font-headline font-semibold">Hero Section</h4>
                             <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
                                 <code>{`<HeroGradientMesh>
   <YourHeroContent />
@@ -188,7 +188,7 @@ export default function GradientMeshDemoPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <h4 className="font-semibold">Page Background</h4>
+                            <h4 className="font-headline font-semibold">Page Background</h4>
                             <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
                                 <code>{`<SubtleGradientMesh>
   <YourPageContent />
@@ -197,7 +197,7 @@ export default function GradientMeshDemoPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <h4 className="font-semibold">Card Background</h4>
+                            <h4 className="font-headline font-semibold">Card Background</h4>
                             <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
                                 <code>{`<CardGradientMesh>
   <YourCardContent />
@@ -206,7 +206,7 @@ export default function GradientMeshDemoPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <h4 className="font-semibold">Custom Configuration</h4>
+                            <h4 className="font-headline font-semibold">Custom Configuration</h4>
                             <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
                                 <code>{`<GradientMesh
   orbs={customOrbs}

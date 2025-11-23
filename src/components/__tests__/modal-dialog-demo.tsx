@@ -33,7 +33,7 @@ export default function ModalDialogDemo() {
     return (
         <div className="container mx-auto p-8 space-y-8">
             <div className="space-y-2">
-                <h1 className="text-3xl font-bold">Modal & Dialog Animations Demo</h1>
+                <h1 className="font-headline text-3xl font-bold">Modal & Dialog Animations Demo</h1>
                 <p className="text-muted-foreground">
                     Showcasing enhanced modal and dialog animations with backdrop blur and smooth transitions
                 </p>

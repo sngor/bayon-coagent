@@ -30,15 +30,15 @@ export default function TypographyDemoPage() {
                             <p className="text-sm text-muted-foreground">text-2xl font-semibold font-headline</p>
                         </div>
                         <div>
-                            <h4 className="text-xl font-semibold">Heading 4</h4>
+                            <h4 className="font-headline text-xl font-semibold">Heading 4</h4>
                             <p className="text-sm text-muted-foreground">text-xl font-semibold</p>
                         </div>
                         <div>
-                            <h5 className="text-lg font-semibold">Heading 5</h5>
+                            <h5 className="font-headline text-lg font-semibold">Heading 5</h5>
                             <p className="text-sm text-muted-foreground">text-lg font-semibold</p>
                         </div>
                         <div>
-                            <h6 className="text-base font-semibold">Heading 6</h6>
+                            <h6 className="font-headline text-base font-semibold">Heading 6</h6>
                             <p className="text-sm text-muted-foreground">text-base font-semibold</p>
                         </div>
                     </CardContent>
@@ -118,7 +118,7 @@ export default function TypographyDemoPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div>
-                            <h4 className="font-semibold mb-2">Unordered List</h4>
+                            <h4 className="font-headline font-semibold mb-2">Unordered List</h4>
                             <ul className="list-disc list-inside space-y-1">
                                 <li>First item</li>
                                 <li>Second item</li>
@@ -126,7 +126,7 @@ export default function TypographyDemoPage() {
                             </ul>
                         </div>
                         <div>
-                            <h4 className="font-semibold mb-2">Ordered List</h4>
+                            <h4 className="font-headline font-semibold mb-2">Ordered List</h4>
                             <ol className="list-decimal list-inside space-y-1">
                                 <li>First step</li>
                                 <li>Second step</li>

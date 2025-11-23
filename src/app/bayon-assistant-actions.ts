@@ -24,7 +24,19 @@ import { v4 as uuidv4 } from 'uuid';
 const chatQuerySchema = z.object({
   query: z.string().min(1, 'Query cannot be empty').max(5000, 'Query is too long'),
   conversationId: z.string().optional(),
+  attachments: z.string().optional(), // JSON string of attachment metadata
 });
+
+/**
+ * File attachment interface
+ */
+interface FileAttachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  content?: string; // For text files
+}
 
 /**
  * Chat query response
@@ -55,7 +67,8 @@ export interface ChatQueryResponse {
  */
 async function generateSimpleResponse(
   query: string,
-  agentProfile?: any
+  agentProfile?: any,
+  attachments?: FileAttachment[]
 ): Promise<{
   content: string;
   keyPoints: string[];
@@ -104,10 +117,25 @@ Your Personality & Communication Style:
 
 Always assume questions are about real estate business unless clearly stated otherwise. Your goal is to make every interaction helpful, encouraging, and valuable!`;
 
-    const userPrompt = `A real estate professional just said: "${query}"
+    // Build context from attachments
+    let attachmentContext = '';
+    if (attachments && attachments.length > 0) {
+      attachmentContext = '\n\nAttached Files:\n';
+      attachments.forEach((attachment, index) => {
+        attachmentContext += `${index + 1}. ${attachment.name} (${attachment.type})\n`;
+        if (attachment.content) {
+          attachmentContext += `Content: ${attachment.content.substring(0, 2000)}${attachment.content.length > 2000 ? '...' : ''}\n`;
+        }
+      });
+    }
+
+    const userPrompt = `A real estate professional just said: "${query}"${attachmentContext}
 
 Instructions:
 - If this is a greeting (like "hi", "hello", "hey"), respond with a warm, enthusiastic greeting and ask how you can help with their real estate business today
+- If they've attached files, analyze the content and provide specific insights about the documents
+- For text files, contracts, or documents: provide analysis, suggestions, or answer questions about the content
+- For images: describe what you see and provide relevant real estate insights
 - If this is a question, provide comprehensive, practical advice with specific insights
 - Always be warm, friendly, and genuinely excited to help them succeed
 - Make them feel supported and confident in their real estate journey
@@ -151,6 +179,60 @@ Respond appropriately to what they said!`;
     // Provide intelligent fallback responses based on the query content
     const lowerQuery = query.toLowerCase().trim();
 
+    // File analysis response
+    if (attachments && attachments.length > 0) {
+      const fileNames = attachments.map(f => f.name).join(', ');
+      let analysisContent = `I can see you've uploaded ${attachments.length} file(s): ${fileNames}. 📄\n\n`;
+
+      // Analyze text content if available
+      const textFiles = attachments.filter(f => f.content);
+      if (textFiles.length > 0) {
+        analysisContent += "Here's what I found in your documents:\n\n";
+        textFiles.forEach((file, index) => {
+          analysisContent += `**${file.name}:**\n`;
+          if (file.content) {
+            const wordCount = file.content.split(/\s+/).length;
+            analysisContent += `• Document length: ${wordCount} words\n`;
+
+            // Simple keyword analysis for real estate terms
+            const realEstateKeywords = ['property', 'listing', 'contract', 'buyer', 'seller', 'commission', 'closing', 'mortgage', 'appraisal', 'inspection'];
+            const foundKeywords = realEstateKeywords.filter(keyword =>
+              file.content!.toLowerCase().includes(keyword)
+            );
+
+            if (foundKeywords.length > 0) {
+              analysisContent += `• Real estate terms found: ${foundKeywords.join(', ')}\n`;
+            }
+
+            // Extract first few sentences for context
+            const sentences = file.content.split(/[.!?]+/).slice(0, 2).join('. ');
+            if (sentences.length > 0) {
+              analysisContent += `• Preview: ${sentences}...\n`;
+            }
+          }
+          analysisContent += '\n';
+        });
+      }
+
+      analysisContent += "💡 **How I can help:**\n";
+      analysisContent += "• Ask me specific questions about the content\n";
+      analysisContent += "• Request analysis or suggestions\n";
+      analysisContent += "• Get help with contract terms or clauses\n";
+      analysisContent += "• Identify potential issues or opportunities\n\n";
+      analysisContent += "What would you like to know about these documents?";
+
+      return {
+        content: analysisContent,
+        keyPoints: [
+          `Analyzed ${attachments.length} uploaded file(s)`,
+          "Ready to answer specific questions about the content",
+          "Can provide analysis and suggestions",
+          "Ask about contracts, listings, or any real estate documents"
+        ],
+        citations: [],
+      };
+    }
+
     // Greeting responses
     const isGreeting = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening'].some(greeting =>
       lowerQuery.includes(greeting)
@@ -158,7 +240,7 @@ Respond appropriately to what they said!`;
 
     if (isGreeting) {
       return {
-        content: "Hi there! 👋 Great to meet you! I'm your AI real estate assistant and I'm excited to help you succeed in your business. What's on your mind today? I can help with market trends, deal strategies, client communication, financing questions, or anything else real estate related!",
+        content: "Hi there! 👋 I'm your AI real estate assistant, ready to help you succeed! Ask me about market trends, deal strategies, client communication, or anything real estate related.",
         keyPoints: ["Ready to help with your real estate business!", "Ask about market trends, deals, clients, or any real estate topic"],
         citations: [],
       };
@@ -187,6 +269,20 @@ Respond appropriately to what they said!`;
           "Track local pricing trends and days on market",
           "Use MLS and NAR data for current insights",
           "Translate data into client-friendly explanations"
+        ],
+        citations: [],
+      };
+    }
+
+    // Competitive offer response
+    if (lowerQuery.includes('competitive offer') || lowerQuery.includes('structure') && lowerQuery.includes('offer')) {
+      return {
+        content: "Great question about structuring competitive offers! 🏆 In today's market, here's how to make your clients' offers stand out:\n\n**Financial Strength:**\n• **Strong pre-approval**: Get clients fully underwritten, not just pre-qualified\n• **Higher earnest money**: Show serious commitment (1-3% of purchase price)\n• **Larger down payment**: 20%+ demonstrates financial stability\n• **Cash equivalent offers**: Consider bridge loans or cash-backed programs\n\n**Contract Terms:**\n• **Flexible closing date**: Match seller's preferred timeline\n• **Minimal contingencies**: Waive inspection or appraisal if market allows\n• **Escalation clause**: Automatically increase offer up to a maximum\n• **Rent-back option**: Let sellers stay after closing if needed\n\n**Personal Touch:**\n• **Buyer letter**: Share client's story and connection to the home\n• **Local lender**: Use mortgage professionals the listing agent knows\n• **Quick response**: Submit offers within hours, not days\n\nWhat's your local market like right now? I can help you prioritize these strategies!",
+        keyPoints: [
+          "Strong pre-approval and higher earnest money show commitment",
+          "Flexible terms and minimal contingencies make offers attractive",
+          "Personal touches and quick responses differentiate your clients",
+          "Adapt strategy based on local market conditions"
         ],
         citations: [],
       };
@@ -260,12 +356,23 @@ export async function handleChatQuery(
     // Validate input
     const query = formData.get('query');
     const conversationId = formData.get('conversationId');
+    const attachmentsData = formData.get('attachments');
 
     if (!query || typeof query !== 'string') {
       return {
         success: false,
         error: 'Query is required and must be a string',
       };
+    }
+
+    // Parse attachments if provided
+    let attachments: FileAttachment[] = [];
+    if (attachmentsData && typeof attachmentsData === 'string') {
+      try {
+        attachments = JSON.parse(attachmentsData);
+      } catch (error) {
+        console.error('Error parsing attachments:', error);
+      }
     }
 
     if (query.trim().length === 0) {
@@ -318,7 +425,7 @@ export async function handleChatQuery(
     const agentProfile = await profileRepository.getProfile(mockUser.id);
 
     // Simple AI response using Bedrock directly (bypassing complex orchestrator for now)
-    const response = await generateSimpleResponse(sanitizedQuery, agentProfile);
+    const response = await generateSimpleResponse(sanitizedQuery, agentProfile, attachments);
 
     // Save conversation to DynamoDB
     const conversationIdToUse = (conversationId && typeof conversationId === 'string') ? conversationId : uuidv4();

@@ -438,7 +438,7 @@ export default function CompetitiveAnalysisPage() {
 
             {rankingState.data && (
               <div className="mt-6">
-                <h3 className="font-medium mb-2">Top 5 Results for "{rankingState.data[0]?.keyword || 'your keyword'}"</h3>
+                <h3 className="font-headline font-medium mb-2">Top 5 Results for "{rankingState.data[0]?.keyword || 'your keyword'}"</h3>
                 <ResponsiveTableWrapper mobileLayout="scroll" showScrollIndicator={true}>
                   <Table>
                     <TableHeader>

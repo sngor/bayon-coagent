@@ -252,7 +252,7 @@ export default function SupportPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div>
-                        <h4 className="text-sm font-semibold mb-3">AWS Services</h4>
+                        <h4 className="font-headline text-sm font-semibold mb-3">AWS Services</h4>
                         <div className="space-y-1">
                             <ServiceStatusRow name="AWS Bedrock (AI)" state={bedrockStatus} />
                             <ServiceStatusRow name="Amazon DynamoDB" state={dynamodbStatus} />
@@ -263,7 +263,7 @@ export default function SupportPage() {
                     </div>
 
                     <div>
-                        <h4 className="text-sm font-semibold mb-3">External APIs</h4>
+                        <h4 className="font-headline text-sm font-semibold mb-3">External APIs</h4>
                         <div className="space-y-1">
                             <ServiceStatusRow name="Tavily Search API" state={tavilyStatus} />
                             <ServiceStatusRow name="NewsAPI.org" state={newsApiStatus} />
@@ -276,7 +276,7 @@ export default function SupportPage() {
             {/* FAQ Sections */}
             <div className="space-y-6">
                 <div className="text-center space-y-2">
-                    <h2 className="text-3xl font-bold">Frequently Asked Questions</h2>
+                    <h2 className="font-headline text-3xl font-bold">Frequently Asked Questions</h2>
                     <p className="text-muted-foreground">Find answers to common questions organized by topic</p>
                 </div>
 
@@ -350,7 +350,7 @@ export default function SupportPage() {
                             <AccordionItem value="item-4">
                                 <AccordionTrigger>What makes the AI content unique and not generic?</AccordionTrigger>
                                 <AccordionContent>
-                                    Our AI uses your <Link href="/brand/profile" className="text-primary hover:underline">profile information</Link>, local market data, and real-time research to create personalized content. It incorporates your service areas, expertise, and brand voice. The <Link href="/market/research" className="text-primary hover:underline">Research Agent</Link> can also pull in current market trends and neighborhood-specific information to ensure content is relevant and unique.
+                                    Our AI uses your <Link href="/brand/profile" className="text-primary hover:underline">profile information</Link>, local market data, and real-time research to create personalized content. It incorporates your service areas, expertise, and brand voice. The <Link href="/research/agent" className="text-primary hover:underline">Research Agent</Link> can also pull in current market trends and neighborhood-specific information to ensure content is relevant and unique.
                                 </AccordionContent>
                             </AccordionItem>
                         </Accordion>
@@ -413,7 +413,7 @@ export default function SupportPage() {
                             <AccordionItem value="item-1">
                                 <AccordionTrigger>What is the AI Research Agent?</AccordionTrigger>
                                 <AccordionContent>
-                                    The <Link href="/market/research" className="text-primary hover:underline">AI Research Agent</Link> conducts deep-dive research on any real estate topic you specify. It searches the web, analyzes multiple sources, and creates comprehensive reports with citations. Use it to research neighborhoods, market trends, investment strategies, or any topic relevant to your business.
+                                    The <Link href="/research/agent" className="text-primary hover:underline">AI Research Agent</Link> conducts deep-dive research on any real estate topic you specify. It searches the web, analyzes multiple sources, and creates comprehensive reports with citations. Use it to research neighborhoods, market trends, investment strategies, or any topic relevant to your business.
                                 </AccordionContent>
                             </AccordionItem>
 

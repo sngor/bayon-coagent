@@ -21,7 +21,7 @@ export default function VirtualScrollDemoPage() {
         <div className="p-4 border-b hover:bg-accent/50 transition-colors">
             <div className="flex items-center justify-between">
                 <div>
-                    <h4 className="font-medium">{item.title}</h4>
+                    <h4 className="font-headline font-medium">{item.title}</h4>
                     <p className="text-sm text-muted-foreground">{item.date}</p>
                 </div>
                 <Badge variant="outline">{item.type}</Badge>

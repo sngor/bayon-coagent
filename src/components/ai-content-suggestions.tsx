@@ -185,7 +185,7 @@ export function AIContentSuggestions({
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="font-semibold group-hover:text-primary transition-colors">
+                                                <h4 className="font-headline font-semibold group-hover:text-primary transition-colors">
                                                     {type.title}
                                                 </h4>
                                                 <Badge
@@ -251,7 +251,7 @@ export function AIContentSuggestions({
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <h4 className="font-semibold group-hover:text-primary transition-colors">
+                                                <h4 className="font-headline font-semibold group-hover:text-primary transition-colors">
                                                     {idea.title}
                                                 </h4>
                                                 <Badge variant="outline" className="text-xs">
