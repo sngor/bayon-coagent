@@ -180,10 +180,10 @@ const AVAILABLE_PAGES = [
     },
     {
         id: 'market-insights',
-        title: 'Market Insights',
-        description: 'Market trends and analytics',
-        href: '/market/insights',
-        icon: 'BarChart3',
+        title: 'Market Trends',
+        description: 'Life event predictions and market trends',
+        href: '/market/trends',
+        icon: 'TrendingUp',
         color: 'bg-violet-500',
         gradient: 'from-violet-500 to-violet-600',
         category: 'Market'

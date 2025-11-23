@@ -24,11 +24,10 @@ Globals:
   Function:
     Timeout: 30
     MemorySize: 1024
-    Runtime: nodejs18.x
+    Runtime: nodejs22.x
     Environment:
       Variables:
         NODE_ENV: !Ref Environment
-        AWS_REGION: !Ref AWS::Region
         COGNITO_USER_POOL_ID: !Ref UserPool
         COGNITO_CLIENT_ID: !Ref UserPoolClient
         DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
@@ -181,6 +180,13 @@ Resources:
   # ==========================================
   # DynamoDB Table
   # ==========================================
+  # GSI Index Usage:
+  # - GSI1: General purpose index (existing)
+  # - GSI2: Content workflow scheduling - SCHEDULE#<status> → TIME#<publishTime>
+  # - GSI3: Content workflow analytics - ANALYTICS#<contentType> → DATE#<publishDate>
+  # - GSI4: Template discovery - TEMPLATE#<contentType> → NAME#<name>
+  # - EntityTypeIndex: Entity type queries (existing)
+  # - UserIndex: User-based queries (existing)
   DynamoDBTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -204,6 +210,18 @@ Resources:
           AttributeType: S
         - AttributeName: GSI1SK
           AttributeType: S
+        - AttributeName: GSI2PK
+          AttributeType: S
+        - AttributeName: GSI2SK
+          AttributeType: S
+        - AttributeName: GSI3PK
+          AttributeType: S
+        - AttributeName: GSI3SK
+          AttributeType: S
+        - AttributeName: GSI4PK
+          AttributeType: S
+        - AttributeName: GSI4SK
+          AttributeType: S
         - AttributeName: EntityType
           AttributeType: S
         - AttributeName: CreatedAt
@@ -223,6 +241,30 @@ Resources:
             - AttributeName: GSI1PK
               KeyType: HASH
             - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: GSI2
+          KeySchema:
+            - AttributeName: GSI2PK
+              KeyType: HASH
+            - AttributeName: GSI2SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: GSI3
+          KeySchema:
+            - AttributeName: GSI3PK
+              KeyType: HASH
+            - AttributeName: GSI3SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: GSI4
+          KeySchema:
+            - AttributeName: GSI4PK
+              KeyType: HASH
+            - AttributeName: GSI4SK
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
@@ -442,7 +484,7 @@ Resources:
       FunctionName: !Sub bayon-coagent-life-event-processor-${Environment}
       CodeUri: src/lambda/
       Handler: life-event-processor.handler
-      Runtime: nodejs18.x
+      Runtime: nodejs22.x
       Timeout: 900 # 15 minutes
       MemorySize: 2048
       Role: !GetAtt ApplicationRole.Arn
@@ -468,7 +510,7 @@ Resources:
       FunctionName: !Sub bayon-coagent-competitor-monitor-${Environment}
       CodeUri: src/lambda/
       Handler: competitor-monitor-processor.handler
-      Runtime: nodejs18.x
+      Runtime: nodejs22.x
       Timeout: 900 # 15 minutes
       MemorySize: 2048
       Role: !GetAtt ApplicationRole.Arn
@@ -494,7 +536,7 @@ Resources:
       FunctionName: !Sub bayon-coagent-trend-detector-${Environment}
       CodeUri: src/lambda/
       Handler: trend-detector-processor.handler
-      Runtime: nodejs18.x
+      Runtime: nodejs22.x
       Timeout: 900 # 15 minutes
       MemorySize: 2048
       Role: !GetAtt ApplicationRole.Arn
@@ -520,7 +562,7 @@ Resources:
       FunctionName: !Sub bayon-coagent-price-reduction-monitor-${Environment}
       CodeUri: src/lambda/
       Handler: price-reduction-processor.handler
-      Runtime: nodejs18.x
+      Runtime: nodejs22.x
       Timeout: 900 # 15 minutes
       MemorySize: 2048
       Role: !GetAtt ApplicationRole.Arn
@@ -620,6 +662,240 @@ Resources:
       MessageRetentionPeriod: 1209600 # 14 days
 
   # ==========================================
+  # Content Workflow Lambda Functions
+  # ==========================================
+
+  # Dead Letter Queues for Content Workflow Functions
+  PublishScheduledContentDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub bayon-coagent-publish-scheduled-content-dlq-${Environment}
+      MessageRetentionPeriod: 1209600 # 14 days
+      VisibilityTimeout: 60
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Function
+          Value: PublishScheduledContent
+
+  SyncSocialAnalyticsDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub bayon-coagent-sync-social-analytics-dlq-${Environment}
+      MessageRetentionPeriod: 1209600 # 14 days
+      VisibilityTimeout: 60
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Function
+          Value: SyncSocialAnalytics
+
+  CalculateOptimalTimesDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub bayon-coagent-calculate-optimal-times-dlq-${Environment}
+      MessageRetentionPeriod: 1209600 # 14 days
+      VisibilityTimeout: 60
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Function
+          Value: CalculateOptimalTimes
+
+  # Enhanced IAM Role for Content Workflow Lambda Functions
+  ContentWorkflowLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub bayon-coagent-content-workflow-lambda-${Environment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ContentWorkflowDynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                  - dynamodb:BatchGetItem
+                  - dynamodb:BatchWriteItem
+                Resource:
+                  - !GetAtt DynamoDBTable.Arn
+                  - !Sub ${DynamoDBTable.Arn}/index/GSI1
+                  - !Sub ${DynamoDBTable.Arn}/index/GSI2
+                  - !Sub ${DynamoDBTable.Arn}/index/GSI3
+                  - !Sub ${DynamoDBTable.Arn}/index/GSI4
+                  - !Sub ${DynamoDBTable.Arn}/index/EntityTypeIndex
+                  - !Sub ${DynamoDBTable.Arn}/index/UserIndex
+        - PolicyName: ContentWorkflowCloudWatchLogs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogStreams
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/bayon-coagent-*-${Environment}*
+        - PolicyName: ContentWorkflowSQSAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                  - sqs:GetQueueAttributes
+                Resource:
+                  - !GetAtt PublishScheduledContentDLQ.Arn
+                  - !GetAtt SyncSocialAnalyticsDLQ.Arn
+                  - !GetAtt CalculateOptimalTimesDLQ.Arn
+        - PolicyName: ContentWorkflowCloudWatchMetrics
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricData
+                Resource: "*"
+                Condition:
+                  StringEquals:
+                    cloudwatch:namespace: "BayonCoAgent/ContentWorkflow"
+
+  # Calculate Optimal Times Lambda (Weekly)
+  CalculateOptimalTimesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-calculate-optimal-times-${Environment}
+      CodeUri: src/lambda/
+      Handler: calculate-optimal-times.handler
+      Runtime: nodejs22.x
+      Timeout: 900 # 15 minutes
+      MemorySize: 3008 # High memory for ML computations
+      Role: !GetAtt ContentWorkflowLambdaRole.Arn
+      Events:
+        WeeklySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 2 ? * SUN *) # Weekly on Sundays at 2 AM UTC
+            Description: Weekly optimal times calculation with ML analysis and adaptive frequency
+            Enabled: true
+            Input: !Sub |
+              {
+                "source": "aws.events",
+                "detail-type": "Scheduled Event",
+                "detail": {
+                  "maxUsers": 50,
+                  "channels": ["facebook", "instagram", "linkedin", "twitter"],
+                  "contentTypes": ["social_media", "blog_post", "market_update"],
+                  "minSampleSize": 20,
+                  "forceRecalculation": false
+                }
+              }
+            DeadLetterConfig:
+              Arn: !GetAtt CalculateOptimalTimesDLQ.Arn
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+          CLOUDWATCH_NAMESPACE: BayonCoAgent/ContentWorkflow
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: CalculateOptimalTimes
+
+  # Publish Scheduled Content Lambda (Every 5 minutes)
+  PublishScheduledContentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-publish-scheduled-content-${Environment}
+      CodeUri: src/lambda/
+      Handler: publish-scheduled-content.handler
+      Runtime: nodejs22.x
+      Timeout: 900 # 15 minutes
+      MemorySize: 2048
+      Role: !GetAtt ContentWorkflowLambdaRole.Arn
+      Events:
+        PublishingSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes) # Every 5 minutes with dead letter queue
+            Description: Automated content publishing every 5 minutes with comprehensive error handling
+            Enabled: true
+            Input: !Sub |
+              {
+                "source": "aws.events",
+                "detail-type": "Scheduled Event",
+                "detail": {
+                  "maxItems": 100
+                }
+              }
+            DeadLetterConfig:
+              Arn: !GetAtt PublishScheduledContentDLQ.Arn
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+          CLOUDWATCH_NAMESPACE: BayonCoAgent/ContentWorkflow
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: PublishScheduledContent
+
+  # Sync Social Analytics Lambda (Daily)
+  SyncSocialAnalyticsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-sync-social-analytics-${Environment}
+      CodeUri: src/lambda/
+      Handler: sync-social-analytics.handler
+      Runtime: nodejs22.x
+      Timeout: 900 # 15 minutes
+      MemorySize: 2048
+      Role: !GetAtt ContentWorkflowLambdaRole.Arn
+      Events:
+        DailySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 2 * * ? *) # Daily at 2 AM UTC with timezone awareness
+            Description: Daily social media analytics synchronization with timezone awareness and rate limiting
+            Enabled: true
+            Input: !Sub |
+              {
+                "source": "aws.events",
+                "detail-type": "Scheduled Event",
+                "detail": {
+                  "maxUsers": 100,
+                  "channels": ["facebook", "instagram", "linkedin", "twitter"],
+                  "forceSync": false
+                }
+              }
+            DeadLetterConfig:
+              Arn: !GetAtt SyncSocialAnalyticsDLQ.Arn
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+          CLOUDWATCH_NAMESPACE: BayonCoAgent/ContentWorkflow
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: SyncSocialAnalytics
+
+  # ==========================================
   # CloudWatch Monitoring
   # ==========================================
   AlarmTopic:
@@ -629,6 +905,8 @@ Resources:
       TopicName: !Sub bayon-coagent-alarms-${Environment}
       DisplayName: !Sub Bayon CoAgent Alarms (${Environment})
       Subscription:
+        - Endpoint: !Ref AlarmEmail
+          Protocol: email
         - Endpoint: !Ref AlarmEmail
           Protocol: email
 
@@ -793,6 +1071,249 @@ Resources:
         - !Ref AlarmTopic
       TreatMissingData: notBreaching
 
+  # Content Workflow Lambda Alarms
+  CalculateOptimalTimesErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-calculate-optimal-times-errors
+      AlarmDescription: Alert when calculate optimal times has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref CalculateOptimalTimesFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  PublishScheduledContentErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-publish-scheduled-content-errors
+      AlarmDescription: Alert when publish scheduled content has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref PublishScheduledContentFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  SyncSocialAnalyticsErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-sync-social-analytics-errors
+      AlarmDescription: Alert when sync social analytics has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SyncSocialAnalyticsFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  # Enhanced Performance Monitoring Alarms for Content Workflow Functions
+  PublishScheduledContentDurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-publish-scheduled-content-duration
+      AlarmDescription: Alert when publish scheduled content duration exceeds threshold
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 600000 # 10 minutes in milliseconds
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref PublishScheduledContentFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  PublishScheduledContentThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-publish-scheduled-content-throttles
+      AlarmDescription: Alert when publish scheduled content is being throttled
+      MetricName: Throttles
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref PublishScheduledContentFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  SyncSocialAnalyticsDurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-sync-social-analytics-duration
+      AlarmDescription: Alert when sync social analytics duration exceeds threshold
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 720000 # 12 minutes in milliseconds
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SyncSocialAnalyticsFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  SyncSocialAnalyticsThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-sync-social-analytics-throttles
+      AlarmDescription: Alert when sync social analytics is being throttled
+      MetricName: Throttles
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SyncSocialAnalyticsFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  CalculateOptimalTimesDurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-calculate-optimal-times-duration
+      AlarmDescription: Alert when calculate optimal times duration exceeds threshold
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 720000 # 12 minutes in milliseconds
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref CalculateOptimalTimesFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  CalculateOptimalTimesThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-calculate-optimal-times-throttles
+      AlarmDescription: Alert when calculate optimal times is being throttled
+      MetricName: Throttles
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref CalculateOptimalTimesFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  # Dead Letter Queue Alarms
+  PublishScheduledContentDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-publish-scheduled-content-dlq-messages
+      AlarmDescription: Alert when messages appear in publish scheduled content DLQ
+      MetricName: ApproximateNumberOfVisibleMessages
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt PublishScheduledContentDLQ.QueueName
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  SyncSocialAnalyticsDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-sync-social-analytics-dlq-messages
+      AlarmDescription: Alert when messages appear in sync social analytics DLQ
+      MetricName: ApproximateNumberOfVisibleMessages
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt SyncSocialAnalyticsDLQ.QueueName
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  CalculateOptimalTimesDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-calculate-optimal-times-dlq-messages
+      AlarmDescription: Alert when messages appear in calculate optimal times DLQ
+      MetricName: ApproximateNumberOfVisibleMessages
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt CalculateOptimalTimesDLQ.QueueName
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
   # ==========================================
   # CloudWatch Dashboard
   # ==========================================
@@ -935,6 +1456,84 @@ Resources:
                 "title": "Notification Processor",
                 "yAxis": {"left": {"min": 0}}
               }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${CalculateOptimalTimesFunction}", {"stat": "Sum"}],
+                  [".", "Errors", ".", ".", {"stat": "Sum"}],
+                  [".", "Duration", ".", ".", {"stat": "Average"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Calculate Optimal Times",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${PublishScheduledContentFunction}", {"stat": "Sum"}],
+                  [".", "Errors", ".", ".", {"stat": "Sum"}],
+                  [".", "Duration", ".", ".", {"stat": "Average"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Publish Scheduled Content",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${SyncSocialAnalyticsFunction}", {"stat": "Sum"}],
+                  [".", "Errors", ".", ".", {"stat": "Sum"}],
+                  [".", "Duration", ".", ".", {"stat": "Average"}],
+                  [".", "Throttles", ".", ".", {"stat": "Sum"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Sync Social Analytics",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/SQS", "ApproximateNumberOfVisibleMessages", "QueueName", "${PublishScheduledContentDLQ.QueueName}", {"stat": "Sum"}],
+                  [".", ".", ".", "${SyncSocialAnalyticsDLQ.QueueName}", {"stat": "Sum"}],
+                  [".", ".", ".", "${CalculateOptimalTimesDLQ.QueueName}", {"stat": "Sum"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Content Workflow Dead Letter Queues",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["BayonCoAgent/ContentWorkflow", "PublishingSuccess", {"stat": "Sum"}],
+                  [".", "PublishingFailure", {"stat": "Sum"}],
+                  [".", "AnalyticsSyncSuccess", {"stat": "Sum"}],
+                  [".", "AnalyticsSyncFailure", {"stat": "Sum"}],
+                  [".", "OptimalTimesCalculated", {"stat": "Sum"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Content Workflow Business Metrics",
+                "yAxis": {"left": {"min": 0}}
+              }
             }
           ]
         }
@@ -1028,3 +1627,47 @@ Outputs:
     Value: !GetAtt NotificationProcessorFunction.Arn
     Export:
       Name: !Sub ${Environment}-NotificationProcessorFunctionArn
+
+  # Content Workflow Lambda Function Outputs
+  CalculateOptimalTimesFunctionArn:
+    Description: Calculate Optimal Times Lambda Function ARN
+    Value: !GetAtt CalculateOptimalTimesFunction.Arn
+    Export:
+      Name: !Sub ${Environment}-CalculateOptimalTimesFunctionArn
+
+  PublishScheduledContentFunctionArn:
+    Description: Publish Scheduled Content Lambda Function ARN
+    Value: !GetAtt PublishScheduledContentFunction.Arn
+    Export:
+      Name: !Sub ${Environment}-PublishScheduledContentFunctionArn
+
+  SyncSocialAnalyticsFunctionArn:
+    Description: Sync Social Analytics Lambda Function ARN
+    Value: !GetAtt SyncSocialAnalyticsFunction.Arn
+    Export:
+      Name: !Sub ${Environment}-SyncSocialAnalyticsFunctionArn
+
+  # Content Workflow Dead Letter Queue Outputs
+  PublishScheduledContentDLQArn:
+    Description: Publish Scheduled Content Dead Letter Queue ARN
+    Value: !GetAtt PublishScheduledContentDLQ.Arn
+    Export:
+      Name: !Sub ${Environment}-PublishScheduledContentDLQArn
+
+  SyncSocialAnalyticsDLQArn:
+    Description: Sync Social Analytics Dead Letter Queue ARN
+    Value: !GetAtt SyncSocialAnalyticsDLQ.Arn
+    Export:
+      Name: !Sub ${Environment}-SyncSocialAnalyticsDLQArn
+
+  CalculateOptimalTimesDLQArn:
+    Description: Calculate Optimal Times Dead Letter Queue ARN
+    Value: !GetAtt CalculateOptimalTimesDLQ.Arn
+    Export:
+      Name: !Sub ${Environment}-CalculateOptimalTimesDLQArn
+
+  ContentWorkflowLambdaRoleArn:
+    Description: Content Workflow Lambda Role ARN
+    Value: !GetAtt ContentWorkflowLambdaRole.Arn
+    Export:
+      Name: !Sub ${Environment}-ContentWorkflowLambdaRoleArn

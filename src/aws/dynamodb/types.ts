@@ -81,10 +81,22 @@ export interface DynamoDBItem<T = any> {
   CreatedAt: number;
   /** Last update timestamp (Unix milliseconds) */
   UpdatedAt: number;
-  /** Optional GSI partition key for alternate access patterns */
+  /** Optional GSI1 partition key for alternate access patterns */
   GSI1PK?: string;
-  /** Optional GSI sort key for alternate access patterns */
+  /** Optional GSI1 sort key for alternate access patterns */
   GSI1SK?: string;
+  /** Optional GSI2 partition key for content workflow scheduling */
+  GSI2PK?: string;
+  /** Optional GSI2 sort key for content workflow scheduling */
+  GSI2SK?: string;
+  /** Optional GSI3 partition key for content workflow analytics */
+  GSI3PK?: string;
+  /** Optional GSI3 sort key for content workflow analytics */
+  GSI3SK?: string;
+  /** Optional GSI4 partition key for content workflow templates */
+  GSI4PK?: string;
+  /** Optional GSI4 sort key for content workflow templates */
+  GSI4SK?: string;
 }
 
 /**

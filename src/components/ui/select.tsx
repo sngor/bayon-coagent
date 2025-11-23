@@ -33,6 +33,7 @@ const SelectTrigger = React.forwardRef<
       "[&_svg]:transition-transform [&_svg]:duration-200",
       "data-[state=open]:[&_svg]:rotate-180",
       "md:h-10", // Smaller height on desktop
+      "shadow-[inset_0_1px_2px_0_rgb(0_0_0_/_0.05)]",
       className
     )}
     {...props}

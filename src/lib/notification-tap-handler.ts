@@ -88,9 +88,8 @@ export class NotificationTapHandler {
         if (data.propertyId || data.mlsNumber) {
             // Navigate to specific property details
             return {
-                path: '/market/insights',
+                path: '/market/opportunities',
                 params: {
-                    tab: 'opportunities',
                     propertyId: data.propertyId || data.mlsNumber,
                 },
                 state: {
@@ -100,11 +99,10 @@ export class NotificationTapHandler {
             };
         }
 
-        // Navigate to market insights for the location
+        // Navigate to market trends for the location
         return {
-            path: '/market/insights',
+            path: '/market/trends',
             params: {
-                tab: 'trends',
                 location: encodeURIComponent(data.location),
             },
             state: {
@@ -121,9 +119,8 @@ export class NotificationTapHandler {
         if (data.propertyId || data.mlsNumber) {
             // Navigate to specific property details
             return {
-                path: '/market/insights',
+                path: '/market/opportunities',
                 params: {
-                    tab: 'opportunities',
                     propertyId: data.propertyId || data.mlsNumber,
                 },
                 state: {
@@ -135,9 +132,8 @@ export class NotificationTapHandler {
 
         // Navigate to opportunities for the location
         return {
-            path: '/market/insights',
+            path: '/market/opportunities',
             params: {
-                tab: 'opportunities',
                 location: encodeURIComponent(data.location),
             },
             state: {
@@ -152,9 +148,8 @@ export class NotificationTapHandler {
      */
     private getTrendShiftTarget(data: NotificationData): NavigationTarget {
         return {
-            path: '/market/insights',
+            path: '/market/trends',
             params: {
-                tab: 'trends',
                 location: encodeURIComponent(data.location),
             },
             state: {
@@ -170,7 +165,7 @@ export class NotificationTapHandler {
      */
     private getDefaultTarget(data: NotificationData): NavigationTarget {
         return {
-            path: '/market/insights',
+            path: '/market/trends',
             params: {
                 location: encodeURIComponent(data.location),
             },
@@ -291,10 +286,10 @@ export class NotificationTapHandler {
                 }
             });
 
-            return `${baseUrl}/market/insights?${params.toString()}`;
+            return `${baseUrl}/market/trends?${params.toString()}`;
         } catch (error) {
             console.error('Failed to generate deep link:', error);
-            return `${baseUrl}/market/insights`;
+            return `${baseUrl}/market/trends`;
         }
     }
 }

@@ -2,6 +2,7 @@
 'use client';
 
 import { Logo } from '@/components/logo';
+
 import {
   Sidebar,
   SidebarContent,
@@ -54,6 +55,7 @@ import { useUser, useAuthMethods } from '@/aws/auth/use-user';
 import { PageTransition } from '@/components/page-transition';
 import { TooltipProvider } from '@/contexts/tooltip-context';
 import { AdminProvider, useAdmin } from '@/contexts/admin-context';
+import { AccessibilityProvider } from '@/contexts/accessibility-context';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 import { SessionLoading } from '@/components/session-loading';
@@ -122,11 +124,11 @@ function NavigationItems() {
           >
             <Link href={item.href}>
               {item.customIcon ? (
-                <item.icon animated={false} className="w-5 h-5" />
+                <item.icon animated={false} className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
               ) : (
-                <item.icon />
+                <item.icon className="transition-transform duration-200 group-hover:scale-110" />
               )}
-              <span>{item.label}</span>
+              <span className="button-text-hover">{item.label}</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -295,112 +297,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setIsMounted(true);
   }, []);
 
-  // Extract page title and handle scroll detection - using IntersectionObserver for reliability
+  // Temporarily disable title detection to prevent infinite re-renders
+  // TODO: Re-implement with a more stable approach
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    let intersectionObserver: IntersectionObserver | null = null;
-    let mutationObserver: MutationObserver | null = null;
-    let retryCount = 0;
-    const maxRetries = 15;
-
-    const findAndSetupTitle = () => {
-      const mainElement = document.querySelector('main');
-      if (!mainElement) {
-        if (retryCount < maxRetries) {
-          retryCount++;
-          setTimeout(findAndSetupTitle, 100 * retryCount);
-        }
-        return;
-      }
-
-      // Look for h1 in multiple possible locations
-      const h1 = mainElement.querySelector('h1') ||
-        document.querySelector('[data-page-title]') ||
-        mainElement.querySelector('[role="heading"][aria-level="1"]');
-
-      if (!h1) {
-        if (retryCount < maxRetries) {
-          retryCount++;
-          setTimeout(findAndSetupTitle, 100 * retryCount);
-        } else {
-          setPageTitle('');
-          setShowStickyTitle(false);
-        }
-        return;
-      }
-
-      // Extract title
-      const title = h1.textContent || h1.getAttribute('data-page-title') || '';
-      setPageTitle(title);
-      retryCount = 0;
-
-      // Clean up existing observer
-      if (intersectionObserver) {
-        intersectionObserver.disconnect();
-      }
-
-      // Set up IntersectionObserver for more reliable scroll detection
-      intersectionObserver = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            // Show sticky title when h1 is not intersecting (scrolled out of view)
-            setShowStickyTitle(!entry.isIntersecting);
-          });
-        },
-        {
-          root: mainElement,
-          rootMargin: '-80px 0px 0px 0px', // Trigger when h1 is 80px from top
-          threshold: 0
-        }
-      );
-
-      intersectionObserver.observe(h1);
-    };
-
-    // Initial setup with delay for page transitions
-    timeoutId = setTimeout(findAndSetupTitle, 150);
-
-    // Set up MutationObserver to detect when new content is added
-    const mainElement = document.querySelector('main');
-    if (mainElement) {
-      mutationObserver = new MutationObserver((mutations) => {
-        let shouldRetry = false;
-        mutations.forEach((mutation) => {
-          if (mutation.type === 'childList') {
-            mutation.addedNodes.forEach((node) => {
-              if (node.nodeType === Node.ELEMENT_NODE) {
-                const element = node as Element;
-                if (element.tagName === 'H1' || element.querySelector('h1') || element.hasAttribute('data-page-title')) {
-                  shouldRetry = true;
-                }
-              }
-            });
-          }
-        });
-
-        if (shouldRetry) {
-          retryCount = 0; // Reset retry count
-          setTimeout(findAndSetupTitle, 100);
-        }
-      });
-
-      mutationObserver.observe(mainElement, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['data-page-title']
-      });
-    }
-
-    return () => {
-      clearTimeout(timeoutId);
-      if (intersectionObserver) {
-        intersectionObserver.disconnect();
-      }
-      if (mutationObserver) {
-        mutationObserver.disconnect();
-      }
-    };
+    // Reset title state on pathname change
+    setPageTitle('');
+    setShowStickyTitle(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -424,106 +326,105 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
       <AdminProvider>
-        <SidebarProvider>
-          <Sidebar collapsible="icon">
-            <SidebarHeader>
-              <div className="flex items-center justify-between gap-2">
-                <Logo />
-              </div>
-            </SidebarHeader>
-            <SidebarContent>
-              <DynamicNavigation />
-            </SidebarContent>
-            <SidebarFooter>
-              <div className="space-y-3">
-                {/* Feedback Button */}
-                <div className="px-1">
-                  <FeedbackButton />
+        <AccessibilityProvider>
+          <SidebarProvider>
+            <Sidebar collapsible="icon">
+              <SidebarHeader>
+                <div className="flex items-center justify-between gap-2">
+                  <Logo />
                 </div>
-              </div>
-            </SidebarFooter>
-          </Sidebar>
-          <SidebarInset>
-            <header className="sticky top-0 z-10 flex h-20 items-center justify-between px-4 mx-3 mt-3 mb-0 bg-background/80 dark:bg-background/40 backdrop-blur-xl rounded-t-xl">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                {isMounted && (
-                  <>
-                    <div className="md:hidden">
-                      <SidebarTrigger>
-                        <PanelLeft />
-                      </SidebarTrigger>
-                    </div>
-                    <div className="hidden md:block">
-                      <SidebarToggle tooltip="Toggle Sidebar" />
-                    </div>
-                  </>
-                )}
-                {/* Sticky Page Title */}
-                <div className={`ml-2 transition-all duration-300 ease-in-out ${showStickyTitle && pageTitle
-                  ? 'opacity-100 translate-x-0'
-                  : 'opacity-0 -translate-x-2 pointer-events-none'
-                  }`}>
-                  <h2 className="text-lg font-semibold font-headline truncate whitespace-nowrap">
-                    {pageTitle}
-                  </h2>
+              </SidebarHeader>
+              <SidebarContent>
+                <DynamicNavigation />
+              </SidebarContent>
+              <SidebarFooter>
+                <div className="space-y-3">
+                  {/* Feedback Button */}
+                  <div className="px-1">
+                    <FeedbackButton />
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                {/* Admin Mode Badge */}
-                <AdminModeBadge />
-                {/* Notifications Button */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 rounded-full hover:bg-accent relative"
-                  asChild
-                >
-                  <Link href="/notifications">
-                    <Bell className="h-5 w-5" />
-                    {/* Notification Badge - uncomment when you have unread notifications */}
-                    {/* <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-background" /> */}
-                    <span className="sr-only">Notifications</span>
-                  </Link>
-                </Button>
-
-                {/* User Menu */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="flex items-center gap-3 h-10 px-2 pr-3 rounded-full hover:bg-accent transition-colors"
-                    >
-                      <Avatar className="h-8 w-8 ring-2 ring-background shadow-sm">
-                        <AvatarImage src={profile?.photoURL} alt={userName} />
-                        <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-primary/20 to-primary/10 text-primary">
-                          {getInitials(userName)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="hidden sm:flex flex-col items-start min-w-0">
-                        <span className="text-sm font-medium leading-tight truncate max-w-[120px]">
-                          {firstName}
-                        </span>
-                        <span className="text-xs text-muted-foreground leading-tight mt-0.5">
-                          Agent
-                        </span>
+              </SidebarFooter>
+            </Sidebar>
+            <SidebarInset>
+              <header className="sticky top-0 z-10 flex h-20 items-center justify-between px-4 mx-3 mt-3 mb-0 bg-transparent backdrop-blur-xl">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  {isMounted && (
+                    <>
+                      <div className="md:hidden">
+                        <SidebarTrigger>
+                          <PanelLeft />
+                        </SidebarTrigger>
                       </div>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <UserDropdownContent
-                    profile={profile}
-                    user={user}
-                    userName={userName}
-                    getInitials={getInitials}
-                    handleSignOut={handleSignOut}
-                  />
-                </DropdownMenu>
-              </div>
-            </header>
-            <main className="p-4 md:p-8 lg:p-10">
-              <PageTransition>{children}</PageTransition>
-            </main>
-          </SidebarInset>
-        </SidebarProvider>
+                      <div className="hidden md:block">
+                        <SidebarToggle tooltip="Toggle Sidebar" />
+                      </div>
+                    </>
+                  )}
+                  {/* Sticky Page Title - Temporarily disabled */}
+                  <div className="opacity-0 pointer-events-none">
+                    <h2 className="text-lg font-semibold font-headline truncate whitespace-nowrap">
+                      {pageTitle}
+                    </h2>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {/* Admin Mode Badge */}
+                  <AdminModeBadge />
+                  {/* Notifications Button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 rounded-full hover:bg-accent relative"
+                    asChild
+                  >
+                    <Link href="/notifications">
+                      <Bell className="h-5 w-5" />
+                      {/* Notification Badge - uncomment when you have unread notifications */}
+                      {/* <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-background" /> */}
+                      <span className="sr-only">Notifications</span>
+                    </Link>
+                  </Button>
+
+                  {/* User Menu */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="flex items-center gap-3 h-10 px-2 pr-3 rounded-full hover:bg-accent transition-colors"
+                      >
+                        <Avatar className="h-8 w-8 ring-2 ring-background shadow-sm">
+                          <AvatarImage src={profile?.photoURL} alt={userName} />
+                          <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-primary/20 to-primary/10 text-primary">
+                            {getInitials(userName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="hidden sm:flex flex-col items-start min-w-0">
+                          <span className="text-sm font-medium leading-tight truncate max-w-[120px] button-text-hover">
+                            {firstName}
+                          </span>
+                          <span className="text-xs text-muted-foreground leading-tight mt-0.5">
+                            Agent
+                          </span>
+                        </div>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <UserDropdownContent
+                      profile={profile}
+                      user={user}
+                      userName={userName}
+                      getInitials={getInitials}
+                      handleSignOut={handleSignOut}
+                    />
+                  </DropdownMenu>
+                </div>
+              </header>
+              <main className="p-4 md:p-8 lg:p-10">
+                <PageTransition>{children}</PageTransition>
+              </main>
+            </SidebarInset>
+          </SidebarProvider>
+        </AccessibilityProvider>
       </AdminProvider>
     </TooltipProvider >
   );

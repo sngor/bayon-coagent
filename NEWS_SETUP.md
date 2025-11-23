@@ -2,7 +2,7 @@
 
 ## Overview
 
-The news feed is now located in the **Market Hub → Insights → News tab** and has been optimized to reduce NewsAPI costs and improve performance through intelligent caching, rate limiting, and fallback mechanisms.
+The news feed is now located in the **Market Hub → News tab** and has been optimized to reduce NewsAPI costs and improve performance through intelligent caching, rate limiting, and fallback mechanisms.
 
 ## Environment Variables
 

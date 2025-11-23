@@ -17,14 +17,13 @@ export const REDIRECT_MAP: Record<string, string> = {
   // Market Hub (formerly Intelligence)
   '/intelligence': '/market',
   '/intelligence/competitors': '/brand/competitors',
-  '/intelligence/market-insights': '/market/insights',
+  '/intelligence/market-insights': '/market/trends',
   '/competitive-analysis': '/brand/competitors',
-  '/investment-opportunity-identification': '/market/insights',
-  '/life-event-predictor': '/market/insights',
+  '/investment-opportunity-identification': '/market/opportunities',
+  '/life-event-predictor': '/market/trends',
 
-  // Market consolidation redirects
-  '/market/trends': '/market/insights?tab=trends',
-  '/market/analytics': '/market/insights?tab=analytics',
+  // Market consolidation redirects (legacy insights paths)
+  '/market/insights': '/market/trends',
 
   // Tools Hub (moved from Market)
   '/market/calculator': '/tools/calculator',

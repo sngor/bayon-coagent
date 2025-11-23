@@ -6,10 +6,14 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useRef, useMemo, useCallback } from 'react';
 
-export function HubTabs({ tabs, activeTab, onChange, variant = 'default' }: HubTabsProps) {
+export function HubTabs({ tabs, activeTab, onChange, variant = 'default', isSticky = false }: HubTabsProps) {
     const pathname = usePathname();
     const router = useRouter();
     const tabsRef = useRef<HTMLDivElement>(null);
+
+
+
+
 
     // Memoize the current tab calculation to prevent unnecessary re-renders
     const currentTab = useMemo(() => {
@@ -46,12 +50,12 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default' }: HubT
 
     // Memoize styles to prevent recalculation
     const styles = useMemo(() => {
-        const baseStyles = 'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-all duration-200 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
+        const baseStyles = 'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
 
         const variantStyles = {
             default: {
                 tab: 'border-b-2 border-transparent hover:border-muted-foreground/50 data-[active=true]:border-primary data-[active=true]:text-primary',
-                container: 'border-b border-border'
+                container: ''
             },
             pills: {
                 tab: 'rounded-full hover:bg-accent hover:text-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground',
@@ -59,7 +63,7 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default' }: HubT
             },
             underline: {
                 tab: 'border-b-2 border-transparent hover:text-foreground data-[active=true]:border-primary data-[active=true]:text-foreground',
-                container: 'border-b border-border'
+                container: ''
             }
         };
 
@@ -70,7 +74,11 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default' }: HubT
     }, [variant]);
 
     return (
-        <div className={cn('flex items-center gap-2 overflow-x-auto scrollbar-hide', styles.variant.container)}>
+        <div className={cn(
+            'inline-flex items-center gap-2 overflow-x-auto scrollbar-hide rounded-full p-2 transition-all duration-300 ease-in-out',
+            isSticky ? 'bg-background/30 backdrop-blur-xl border border-border/50 shadow-sm shadow-primary/10 ring-1 ring-white/10' : 'bg-transparent',
+            styles.variant.container
+        )}>
             <div ref={tabsRef} className="flex items-center gap-2" role="tablist">
                 {tabs.map((tab, index) => {
                     const isActive = tab.id === currentTab;
@@ -90,7 +98,9 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default' }: HubT
                             className={cn(
                                 styles.base,
                                 styles.variant.tab,
-                                !isActive && 'text-muted-foreground'
+                                !isActive && 'text-muted-foreground',
+                                isSticky && 'backdrop-blur-sm bg-background/20',
+                                isSticky && isActive && 'border border-border/30'
                             )}
                         >
                             {Icon && <Icon className="h-4 w-4" aria-hidden="true" />}

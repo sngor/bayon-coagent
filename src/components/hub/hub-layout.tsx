@@ -3,9 +3,8 @@
 import { HubLayoutProps } from './types';
 import { PageHeader } from '@/components/ui/page-header';
 import { HubTabs } from './hub-tabs';
-import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
-import { useMemo, memo, useRef, useEffect } from 'react';
+import { useMemo, memo, useRef, useEffect, useState } from 'react';
 
 // Static tabs that don't re-render
 const StaticHubTabs = memo(HubTabs);
@@ -21,6 +20,8 @@ export function HubLayout({
 }: HubLayoutProps) {
     const pathname = usePathname();
     const layoutRef = useRef<HTMLDivElement>(null);
+    const headerRef = useRef<HTMLDivElement>(null);
+    const [isHeaderCovered, setIsHeaderCovered] = useState(false);
 
     // Get the current hub path
     const hubPath = useMemo(() => {
@@ -41,43 +42,55 @@ export function HubLayout({
         }
     }, []);
 
+    // Use IntersectionObserver to detect when header is covered
+    useEffect(() => {
+        if (!headerRef.current) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const [entry] = entries;
+                // Header is covered when it's not intersecting with the viewport
+                // We use a small threshold to trigger slightly before it's completely hidden
+                setIsHeaderCovered(!entry.isIntersecting);
+            },
+            {
+                // Trigger when header is 20px from being completely hidden
+                rootMargin: '-20px 0px 0px 0px',
+                threshold: 0
+            }
+        );
+
+        observer.observe(headerRef.current);
+
+        return () => observer.disconnect();
+    }, []);
+
     return (
         <div ref={layoutRef} className="space-y-6">
             {/* Hub Header using consistent PageHeader component */}
-            <PageHeader
-                title={title}
-                description={description}
-                icon={icon}
-                actions={actions}
-                variant="hub"
-            />
+            <div ref={headerRef}>
+                <PageHeader
+                    title={title}
+                    description={description}
+                    icon={icon}
+                    actions={actions}
+                    variant="hub"
+                />
+            </div>
 
-            {/* Static Hub Tabs - Visually connected to topbar */}
+            {/* Static Hub Tabs - Wrapped around content */}
             {tabs.length > 0 && (
-                <div className="sticky top-20 z-50 -mx-4 md:-mx-8 lg:-mx-10 px-4 md:px-8 lg:px-10 pt-0 pb-3 bg-background/80 dark:bg-background/40 backdrop-blur-xl -mt-6">
-                    <div className="border-t border-border/20 pt-3">
-                        <StaticHubTabs tabs={tabs} activeTab="" variant={tabsVariant} />
+                <div className="sticky top-20 z-50 pt-0 pb-3 bg-transparent -mt-6 flex">
+                    <div className="border-t border-border/20 pt-3 inline-flex">
+                        <StaticHubTabs tabs={tabs} activeTab="" variant={tabsVariant} isSticky={isHeaderCovered} />
                     </div>
                 </div>
             )}
 
-            {/* Content area with smooth transitions only for content */}
-            <AnimatePresence mode="wait">
-                <motion.div
-                    key={`${hubPath}-${tabPath}`}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{
-                        duration: 0.2,
-                        ease: 'easeInOut',
-                        opacity: { duration: 0.15 }
-                    }}
-                    className="min-h-0"
-                >
-                    {children}
-                </motion.div>
-            </AnimatePresence>
+            {/* Content area with minimal transitions */}
+            <div className="min-h-0 animate-in fade-in duration-200">
+                {children}
+            </div>
         </div>
     );
 }

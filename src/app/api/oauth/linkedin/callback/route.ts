@@ -1,8 +1,9 @@
 /**
  * LinkedIn OAuth Callback Route
- * Handles OAuth 2.0 callback from LinkedIn
+ * Handles OAuth 2.0 callback from LinkedIn with enhanced analytics scopes
+ * for content workflow features
  * 
- * Requirements: 6.1
+ * Requirements: 6.1, 8.1
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -34,11 +35,30 @@ export async function GET(request: NextRequest) {
         const manager = getOAuthConnectionManager();
         const connection = await manager.handleCallback('linkedin', code, state);
 
+        // Validate analytics access for content workflow features
+        const analyticsValidation = await manager.validateAnalyticsAccess(
+            connection.userId,
+            'linkedin'
+        );
+
         // Redirect to settings with success message
         const successUrl = new URL('/settings', request.url);
         successUrl.searchParams.set('success', 'linkedin_connected');
         successUrl.searchParams.set('platform', 'linkedin');
         successUrl.searchParams.set('username', connection.platformUsername);
+
+        // Include analytics capability information
+        if (analyticsValidation.hasAccess) {
+            successUrl.searchParams.set('analytics', 'enabled');
+            if (analyticsValidation.availableMetrics) {
+                successUrl.searchParams.set('metrics', analyticsValidation.availableMetrics.length.toString());
+            }
+        } else {
+            successUrl.searchParams.set('analytics', 'limited');
+            if (analyticsValidation.error) {
+                successUrl.searchParams.set('analytics_error', encodeURIComponent(analyticsValidation.error));
+            }
+        }
 
         return NextResponse.redirect(successUrl);
     } catch (error) {

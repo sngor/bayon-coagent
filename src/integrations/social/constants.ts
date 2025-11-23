@@ -107,31 +107,63 @@ export const MAX_CONCURRENT_API_REQUESTS = 3;
 
 /**
  * OAuth scopes required for each platform
+ * Extended to support content workflow features including scheduling and analytics
  */
 export const OAUTH_SCOPES: Record<Platform, string[]> = {
     facebook: [
+        // Publishing and scheduling scopes
         "pages_manage_posts",
-        "pages_read_engagement",
         "pages_show_list",
         "public_profile",
+        // Analytics scopes for content workflow features
+        "pages_read_engagement",
+        "read_insights",
+        "pages_read_user_content",
+        // Additional scopes for comprehensive analytics
+        "business_management",
     ],
     instagram: [
+        // Publishing and scheduling scopes
         "instagram_basic",
         "instagram_content_publish",
         "pages_show_list",
+        // Analytics scopes for content workflow features
         "pages_read_engagement",
+        "instagram_manage_insights",
+        "read_insights",
+        // Additional scopes for comprehensive analytics
+        "business_management",
     ],
     linkedin: [
+        // Publishing and scheduling scopes
         "w_member_social",
         "r_basicprofile",
-        "r_organization_social",
         "w_organization_social",
+        // Analytics scopes for content workflow features
+        "r_organization_social",
+        "r_organization_admin",
+        "rw_organization_admin",
+        // Additional scopes for comprehensive analytics and metrics
+        "r_analytics",
+        "r_organization_followers_statistics",
+        "r_organization_lookup",
     ],
     twitter: [
+        // Publishing and scheduling scopes
         "tweet.read",
         "tweet.write",
         "users.read",
         "offline.access",
+        // Analytics scopes for content workflow features
+        "tweet.moderate.write",
+        "follows.read",
+        "follows.write",
+        // Additional scopes for comprehensive analytics
+        "space.read",
+        "mute.read",
+        "mute.write",
+        "block.read",
+        "block.write",
     ],
 };
 
@@ -143,6 +175,73 @@ export const PLATFORM_API_ENDPOINTS: Record<Platform, string> = {
     instagram: "https://graph.facebook.com/v18.0",
     linkedin: "https://api.linkedin.com/v2",
     twitter: "https://api.twitter.com/2",
+};
+
+/**
+ * Platform-specific analytics API endpoints for content workflow features
+ */
+export const ANALYTICS_API_ENDPOINTS: Record<Platform, string> = {
+    facebook: "https://graph.facebook.com/v18.0",
+    instagram: "https://graph.facebook.com/v18.0",
+    linkedin: "https://api.linkedin.com/v2",
+    twitter: "https://api.twitter.com/2",
+};
+
+/**
+ * Analytics metrics available for each platform
+ */
+export const ANALYTICS_METRICS: Record<Platform, string[]> = {
+    facebook: [
+        "post_impressions",
+        "post_impressions_unique",
+        "post_engaged_users",
+        "post_clicks",
+        "post_reactions_like_total",
+        "post_reactions_love_total",
+        "post_reactions_wow_total",
+        "post_reactions_haha_total",
+        "post_reactions_sorry_total",
+        "post_reactions_anger_total",
+        "post_comments",
+        "post_shares",
+        "post_video_views",
+        "post_video_views_unique",
+    ],
+    instagram: [
+        "impressions",
+        "reach",
+        "engagement",
+        "likes",
+        "comments",
+        "shares",
+        "saves",
+        "video_views",
+        "profile_visits",
+        "website_clicks",
+    ],
+    linkedin: [
+        "impressions",
+        "clicks",
+        "reactions",
+        "comments",
+        "shares",
+        "follows",
+        "engagement",
+        "videoViews",
+        "uniqueImpressions",
+        "clickThroughRate",
+    ],
+    twitter: [
+        "impression_count",
+        "like_count",
+        "reply_count",
+        "retweet_count",
+        "quote_count",
+        "bookmark_count",
+        "url_link_clicks",
+        "user_profile_clicks",
+        "public_metrics",
+    ],
 };
 
 /**

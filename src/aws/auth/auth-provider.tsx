@@ -81,7 +81,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } finally {
             setIsLoading(false);
         }
-    }, [cognitoClient]);
+    }, []); // Remove cognitoClient dependency to prevent infinite re-renders
 
     /**
      * Sign in with email and password
@@ -113,7 +113,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } finally {
             setIsLoading(false);
         }
-    }, [cognitoClient]);
+    }, []); // Remove cognitoClient dependency
 
     /**
      * Sign up with email and password
@@ -134,7 +134,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } finally {
             setIsLoading(false);
         }
-    }, [cognitoClient]);
+    }, []); // Remove cognitoClient dependency
 
     /**
      * Confirm sign up with verification code
@@ -152,7 +152,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } finally {
             setIsLoading(false);
         }
-    }, [cognitoClient]);
+    }, []); // Remove cognitoClient dependency
 
     /**
      * Resend confirmation code
@@ -170,7 +170,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } finally {
             setIsLoading(false);
         }
-    }, [cognitoClient]);
+    }, []); // Remove cognitoClient dependency
 
     /**
      * Sign out the current user
@@ -196,7 +196,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } finally {
             setIsLoading(false);
         }
-    }, [cognitoClient, session]);
+    }, [session?.accessToken]); // Only depend on accessToken, not entire session
 
     /**
      * Manually refresh the session
@@ -221,7 +221,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setUser(null);
             throw error;
         }
-    }, [cognitoClient, session]);
+    }, [session?.refreshToken]); // Only depend on refreshToken, not the entire session object
 
     /**
      * Set up automatic token refresh

@@ -5,13 +5,23 @@ import { cn } from "@/lib/utils"
 
 const Card = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & { interactive?: boolean }
->(({ className, interactive, ...props }, ref) => (
+  React.HTMLAttributes<HTMLDivElement> & {
+    interactive?: boolean;
+    variant?: 'base' | 'elevated' | 'floating' | 'modal' | 'premium' | 'bordered';
+  }
+>(({ className, interactive, variant = 'base', ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm transition-all duration-300",
-      interactive && "cursor-pointer hover:shadow-md hover:scale-[1.01] active:scale-[0.99]",
+      // Base container styling
+      variant === 'base' && "container-base",
+      variant === 'elevated' && "container-elevated",
+      variant === 'floating' && "container-floating",
+      variant === 'modal' && "container-modal",
+      variant === 'premium' && "container-premium",
+      variant === 'bordered' && "container-no-shadow",
+      // Interactive behavior
+      interactive && "cursor-pointer hover:shadow-md hover:scale-[1.01] active:scale-[0.99] transition-all duration-300",
       className
     )}
     {...props}

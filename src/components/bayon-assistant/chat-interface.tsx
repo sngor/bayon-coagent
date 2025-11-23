@@ -375,7 +375,7 @@ export function ChatInterface({
 
     return (
         <div
-            className={cn('flex flex-col h-full bg-gradient-to-b from-background to-muted/10 relative', className)}
+            className={cn('flex flex-col h-full bg-gradient-to-b from-background to-muted/10 relative ai-chatbot-context', className)}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -392,28 +392,33 @@ export function ChatInterface({
             )}
 
             {/* Chat Header */}
-            <div className="flex-shrink-0 border-b bg-background/80 backdrop-blur-sm p-4">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="relative">
-                            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
-                                <Bot className="w-4 h-4 text-white" />
+            <div className="flex-shrink-0 border-b border-border/20 p-4 relative">
+                {/* Gradient blur background */}
+                <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/20 to-background/10 backdrop-blur-lg"></div>
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/5"></div>
+                <div className="relative z-10">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="relative">
+                                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
+                                    <Bot className="w-4 h-4 text-white" />
+                                </div>
+                                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
                             </div>
-                            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                            <div>
+                                <h3 className="font-semibold text-sm">AI Assistant</h3>
+                                <p className="text-xs text-muted-foreground">
+                                    {isLoading ? 'Thinking...' : 'Online'}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <h3 className="font-semibold text-sm">AI Assistant</h3>
-                            <p className="text-xs text-muted-foreground">
-                                {isLoading ? 'Thinking...' : 'Online'}
-                            </p>
-                        </div>
-                    </div>
 
-                    {messageCount > 0 && (
-                        <Badge variant="secondary" className="text-xs">
-                            {messageCount} messages
-                        </Badge>
-                    )}
+                        {messageCount > 0 && (
+                            <Badge variant="secondary" className="text-xs">
+                                {messageCount} messages
+                            </Badge>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -455,15 +460,17 @@ export function ChatInterface({
                                     <h2 className="font-headline text-xl sm:text-2xl font-bold text-foreground">
                                         👋 Hi there! I'm your AI real estate assistant
                                     </h2>
-                                    <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                                    <div className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                                         I'm here to help you succeed in real estate! Ask me about market trends, deal strategies, client communication, or anything else.
-                                    </p>
+                                    </div>
                                 </div>
 
                                 {/* Quick Actions */}
                                 {showSuggestions && (
                                     <div className="mt-6 w-full max-w-lg">
-                                        <p className="text-sm font-medium text-muted-foreground mb-3 text-center">Quick actions:</p>
+                                        <p className="text-sm font-medium text-muted-foreground mb-3 text-center">
+                                            Quick actions:
+                                        </p>
                                         <div className="grid grid-cols-2 gap-2">
                                             {quickActions.map((action, idx) => (
                                                 <button
@@ -532,13 +539,12 @@ export function ChatInterface({
                                     <Card className="p-4 bg-white dark:bg-gray-800 shadow-sm max-w-[85%] animate-fade-in">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className="flex gap-1">
-                                                    <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-bounce-typing typing-dot-1"></div>
-                                                    <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-green-500 rounded-full animate-bounce-typing typing-dot-2"></div>
-                                                    <div className="w-2 h-2 bg-gradient-to-r from-green-500 to-purple-500 rounded-full animate-bounce-typing typing-dot-3"></div>
+                                                <div className="flex space-x-1">
+                                                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
+                                                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                                                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                                                 </div>
-                                                <span className="text-sm text-muted-foreground ml-2 animate-pulse">AI is thinking...</span>
-                                                <Sparkles className="w-4 h-4 text-purple-500 animate-spin-slow" />
+                                                <span className="text-sm text-muted-foreground ml-2">AI is thinking...</span>
                                             </div>
 
                                             {/* Stop Button in Loading Indicator */}
@@ -570,17 +576,7 @@ export function ChatInterface({
 
             {/* Enhanced Input Area */}
             <div className="flex-shrink-0 border-t bg-background/80 backdrop-blur-sm p-4">
-                {/* Typing Indicator */}
-                {isTyping && (
-                    <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground">
-                        <div className="flex gap-1">
-                            <div className="w-1 h-1 bg-primary rounded-full animate-bounce typing-dot-1"></div>
-                            <div className="w-1 h-1 bg-primary rounded-full animate-bounce typing-dot-2"></div>
-                            <div className="w-1 h-1 bg-primary rounded-full animate-bounce typing-dot-3"></div>
-                        </div>
-                        <span>You're typing...</span>
-                    </div>
-                )}
+
 
                 <form ref={formRef} onSubmit={handleSubmit} className="relative">
                     {/* File Upload Inputs */}
@@ -878,15 +874,17 @@ function MessageBubble({ message, userName }: { message: Message; userName: stri
             {/* Message Content */}
             <div className={cn('flex-1 max-w-[80%] md:max-w-[70%]', isUser && 'flex justify-end')}>
                 <div className="relative group/message w-full">
-                    {/* Message Header */}
-                    <div className={cn('flex items-center gap-2 mb-1', isUser && 'justify-end')}>
-                        <span className="text-xs font-medium text-muted-foreground">
-                            {isUser ? userName : 'AI Assistant'}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                            {formatTime(message.timestamp)}
-                        </span>
-                    </div>
+                    {/* Message Header - Only show for AI messages */}
+                    {!isUser && (
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-medium text-muted-foreground">
+                                AI Assistant
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                                {formatTime(message.timestamp)}
+                            </span>
+                        </div>
+                    )}
 
                     <Card
                         className={cn(
@@ -897,12 +895,19 @@ function MessageBubble({ message, userName }: { message: Message; userName: stri
                         )}
                     >
                         <div className="max-w-none">
-                            <p className={cn(
-                                "whitespace-pre-wrap break-words m-0 leading-relaxed text-sm",
-                                isUser ? "text-white" : "text-foreground"
-                            )}>
-                                {message.content}
-                            </p>
+                            {isUser ? (
+                                <p className={cn(
+                                    "whitespace-pre-wrap break-words m-0 leading-relaxed text-sm text-white"
+                                )}>
+                                    {message.content}
+                                </p>
+                            ) : (
+                                <div className={cn(
+                                    "whitespace-pre-wrap break-words m-0 leading-relaxed text-sm text-foreground"
+                                )}>
+                                    {message.content}
+                                </div>
+                            )}
                         </div>
 
                         {/* Attachments */}

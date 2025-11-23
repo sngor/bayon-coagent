@@ -97,6 +97,23 @@ export default function AdminFeedbackPage() {
         }
     };
 
+    // Filter feedback data based on selected category
+    const getFilteredFeedback = (statusFilter?: string) => {
+        let filtered = feedbackData;
+
+        // Apply category filter
+        if (selectedCategory !== 'all') {
+            filtered = filtered.filter(f => f.type === selectedCategory);
+        }
+
+        // Apply status filter if provided
+        if (statusFilter) {
+            filtered = filtered.filter(f => f.status === statusFilter);
+        }
+
+        return filtered;
+    };
+
     // Calculate stats from real data
     const feedbackStats = {
         total: feedbackData.length,
@@ -213,12 +230,17 @@ export default function AdminFeedbackPage() {
                                         <SelectItem value="feature">Feature Request</SelectItem>
                                         <SelectItem value="bug">Bug Report</SelectItem>
                                         <SelectItem value="improvement">Improvement</SelectItem>
-                                        <SelectItem value="praise">Praise</SelectItem>
+                                        <SelectItem value="general">General</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <Button variant="outline" size="sm">
+                                <Button
+                                    variant={selectedCategory !== 'all' ? 'default' : 'outline'}
+                                    size="sm"
+                                    className={selectedCategory !== 'all' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+                                    onClick={() => selectedCategory !== 'all' && setSelectedCategory('all')}
+                                >
                                     <Filter className="h-4 w-4 mr-2" />
-                                    Filter
+                                    {selectedCategory !== 'all' ? `Clear Filter (${selectedCategory})` : 'Filter Active'}
                                 </Button>
                             </div>
                         </div>
@@ -229,16 +251,20 @@ export default function AdminFeedbackPage() {
                                     <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
                                     <p className="text-muted-foreground">Loading feedback...</p>
                                 </div>
-                            ) : feedbackData.length === 0 ? (
+                            ) : getFilteredFeedback().length === 0 ? (
                                 /* Empty State */
                                 <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-lg">
                                     <div className="p-4 bg-blue-50 dark:bg-blue-900/50 rounded-full w-fit mx-auto mb-4">
                                         <MessageSquare className="h-8 w-8 text-blue-600" />
                                     </div>
-                                    <h3 className="text-lg font-semibold mb-2">No feedback submissions yet</h3>
+                                    <h3 className="text-lg font-semibold mb-2">
+                                        {selectedCategory === 'all' ? 'No feedback submissions yet' : `No ${selectedCategory} feedback found`}
+                                    </h3>
                                     <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                                        When users submit feedback via the sidebar button or feedback forms,
-                                        it will appear here for review and response.
+                                        {selectedCategory === 'all'
+                                            ? 'When users submit feedback via the sidebar button or feedback forms, it will appear here for review and response.'
+                                            : `No feedback of type "${selectedCategory}" has been submitted yet. Try selecting a different category or "All Categories".`
+                                        }
                                     </p>
                                     <div className="flex items-center justify-center gap-4">
                                         <Button variant="outline" onClick={() => window.location.reload()}>
@@ -250,7 +276,7 @@ export default function AdminFeedbackPage() {
                             ) : (
                                 /* Feedback List */
                                 <div className="space-y-4">
-                                    {feedbackData.map((feedback) => (
+                                    {getFilteredFeedback().map((feedback) => (
                                         <Card key={feedback.id} className="p-6">
                                             <div className="flex items-start justify-between">
                                                 <div className="flex-1">
@@ -316,15 +342,22 @@ export default function AdminFeedbackPage() {
                                     <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
                                     <p className="text-muted-foreground">Loading feedback...</p>
                                 </div>
-                            ) : feedbackData.filter(f => f.status === 'submitted').length === 0 ? (
+                            ) : getFilteredFeedback('submitted').length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground">
                                     <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                    <p className="font-medium mb-2">No pending feedback</p>
-                                    <p className="text-sm">Items requiring review will appear here</p>
+                                    <p className="font-medium mb-2">
+                                        {selectedCategory === 'all' ? 'No pending feedback' : `No pending ${selectedCategory} feedback`}
+                                    </p>
+                                    <p className="text-sm">
+                                        {selectedCategory === 'all'
+                                            ? 'Items requiring review will appear here'
+                                            : `No pending ${selectedCategory} feedback found. Try a different category.`
+                                        }
+                                    </p>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    {feedbackData.filter(f => f.status === 'submitted').map((feedback) => (
+                                    {getFilteredFeedback('submitted').map((feedback) => (
                                         <Card key={feedback.id} className="p-6">
                                             <div className="flex items-start justify-between">
                                                 <div className="flex-1">
@@ -383,15 +416,22 @@ export default function AdminFeedbackPage() {
                                     <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
                                     <p className="text-muted-foreground">Loading feedback...</p>
                                 </div>
-                            ) : feedbackData.filter(f => f.status === 'resolved').length === 0 ? (
+                            ) : getFilteredFeedback('resolved').length === 0 ? (
                                 <div className="text-center py-8 text-muted-foreground">
                                     <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                    <p className="font-medium mb-2">No resolved feedback</p>
-                                    <p className="text-sm">Completed feedback items will appear here</p>
+                                    <p className="font-medium mb-2">
+                                        {selectedCategory === 'all' ? 'No resolved feedback' : `No resolved ${selectedCategory} feedback`}
+                                    </p>
+                                    <p className="text-sm">
+                                        {selectedCategory === 'all'
+                                            ? 'Completed feedback items will appear here'
+                                            : `No resolved ${selectedCategory} feedback found. Try a different category.`
+                                        }
+                                    </p>
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    {feedbackData.filter(f => f.status === 'resolved').map((feedback) => (
+                                    {getFilteredFeedback('resolved').map((feedback) => (
                                         <Card key={feedback.id} className="p-6">
                                             <div className="flex items-start justify-between">
                                                 <div className="flex-1">

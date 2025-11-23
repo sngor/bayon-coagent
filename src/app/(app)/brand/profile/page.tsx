@@ -3,6 +3,8 @@
 
 import { useState, useEffect, useActionState, useTransition } from 'react';
 import { useFormStatus } from 'react-dom';
+import { Typewriter, LoadingDots, SuccessAnimation, StaggeredText, GradientText } from '@/components/ui/text-animations';
+import '@/styles/text-animations.css';
 import {
     ContentSection,
     FormSection,
@@ -238,9 +240,16 @@ function ProfileForm({ profile, onInputChange, onSave, isSaving, isLoading, bioF
             {/* Main Profile Information Card */}
             <Card>
                 <CardHeader className="pb-6">
-                    <CardTitle className="font-headline">Profile Information</CardTitle>
+                    <CardTitle className="font-headline">
+                        <GradientText text="Profile Information" />
+                    </CardTitle>
                     <CardDescription>
-                        Build the professional profile that gets you found and trusted online
+                        <Typewriter
+                            text="Build the professional profile that gets you found and trusted online"
+                            speed={30}
+                            delay={500}
+                            cursor={false}
+                        />
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8 pt-0">
@@ -269,13 +278,13 @@ function ProfileForm({ profile, onInputChange, onSave, isSaving, isLoading, bioF
                     <Button onClick={onSave} disabled={isSaving || isLoading} size="lg">
                         {isSaving ? (
                             <>
-                                <StandardLoadingSpinner size="sm" className="mr-2" />
-                                Saving...
+                                <LoadingDots className="mr-2 text-white" size="sm" />
+                                <span className="generating-text">Saving</span>
                             </>
                         ) : (
                             <>
                                 <Save className="mr-2 h-4 w-4" />
-                                Save Changes
+                                <span className="button-text-hover">Save Changes</span>
                             </>
                         )}
                     </Button>
@@ -289,10 +298,25 @@ export default function ProfilePage() {
     const { user, isUserLoading } = useUser();
     const [profile, setProfile] = useState<Partial<Profile>>({});
     const [isSaving, setIsSaving] = useState(false);
+    const [isChecklistSticky, setIsChecklistSticky] = useState(false);
 
     const [bioState, bioFormAction] = useActionState(generateBioAction, initialBioState);
 
     const [isLoading, setIsLoading] = useState(true);
+
+    // Detect when checklist becomes sticky
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollY = window.scrollY;
+            const shouldBeSticky = scrollY > 100; // Threshold for when backdrop should appear
+            setIsChecklistSticky(shouldBeSticky);
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        handleScroll(); // Check initial state
+
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     // Load profile data using server action instead of useItem hook
     useEffect(() => {
@@ -531,7 +555,10 @@ export default function ProfilePage() {
                                 />
                             </div>
                             <div className="lg:col-span-1">
-                                <div className={`sticky ${STICKY_POSITIONS.BELOW_HUB_TABS} z-10 self-start`}>
+                                <div className={`sticky ${STICKY_POSITIONS.BELOW_TOPBAR} z-10 self-start transition-all duration-300 ease-in-out ${isChecklistSticky
+                                        ? 'backdrop-blur-md bg-background/80 border border-border/50 shadow-lg shadow-primary/10 ring-1 ring-white/5 rounded-lg p-1'
+                                        : ''
+                                    }`}>
                                     <ProfileCompletionChecklist profile={profile} />
                                 </div>
                             </div>

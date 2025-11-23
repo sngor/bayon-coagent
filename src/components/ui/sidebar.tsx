@@ -555,13 +555,13 @@ const SidebarMenuItem = React.forwardRef<
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button relative flex w-full items-center overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-all duration-200 hover:bg-primary/10 hover:text-foreground hover:scale-[1.02] focus-visible:ring-2 active:bg-primary/15 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[state=open]:hover:bg-primary/10 data-[state=open]:hover:text-foreground group-data-[state=collapsed]/sidebar-wrapper:justify-center group-data-[state=collapsed]/sidebar-wrapper:px-2 group-data-[state=expanded]/sidebar-wrapper:gap-3 [&>span:last-child]:group-data-[state=collapsed]/sidebar-wrapper:opacity-0 [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:group-data-[state=collapsed]/sidebar-wrapper:mx-auto data-[active=true]:bg-primary/15 data-[active=true]:font-semibold data-[active=true]:text-primary data-[active=true]:shadow-sm",
+  "peer/menu-button relative flex w-full items-center overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-primary/15 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[state=collapsed]/sidebar-wrapper:justify-center group-data-[state=collapsed]/sidebar-wrapper:px-2 group-data-[state=expanded]/sidebar-wrapper:gap-3 [&>span:last-child]:group-data-[state=collapsed]/sidebar-wrapper:opacity-0 [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:group-data-[state=collapsed]/sidebar-wrapper:mx-auto data-[active=true]:bg-primary/15 data-[active=true]:font-semibold data-[active=true]:text-primary data-[active=true]:shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.1)]",
   {
     variants: {
       variant: {
-        default: "hover:bg-primary/10 hover:text-foreground",
+        default: "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         outline:
-          "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-primary/10 hover:text-foreground hover:shadow-[0_0_0_1px_hsl(var(--primary))]",
+          "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-ring))]",
       },
       size: {
         default: "h-11 text-sm min-h-[44px]",

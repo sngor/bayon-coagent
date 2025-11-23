@@ -117,12 +117,12 @@ const PAGE_METADATA: Record<string, Omit<FavoriteItem, 'addedAt'>> = {
         color: 'bg-teal-500',
         gradient: 'from-teal-500 to-teal-600'
     },
-    '/market/insights': {
-        id: 'market-insights',
-        title: 'Market Insights',
-        description: 'Market trends and analytics',
-        href: '/market/insights',
-        icon: 'BarChart3',
+    '/market/trends': {
+        id: 'market-trends',
+        title: 'Market Trends',
+        description: 'Life event predictions and market trends',
+        href: '/market/trends',
+        icon: 'TrendingUp',
         color: 'bg-violet-500',
         gradient: 'from-violet-500 to-violet-600'
     },

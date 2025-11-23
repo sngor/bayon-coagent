@@ -20,7 +20,7 @@ import type { TrainingProgress } from '@/lib/types';
 import { saveTrainingProgressAction } from '@/app/actions';
 import { marketingModules, closingModules, professionalExcellenceModules, allModules } from '@/lib/training-data';
 import { Quiz } from '@/components/quiz';
-import { motion, AnimatePresence } from 'framer-motion';
+// Removed framer-motion to improve performance
 import { cn } from '@/lib/utils';
 
 export default function TrainingLessonsPage() {
@@ -107,11 +107,10 @@ export default function TrainingLessonsPage() {
                     const isActive = openAccordion === module.id;
 
                     return (
-                        <motion.div
+                        <div
                             key={module.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3, delay: index * 0.1 }}
+                            className="animate-in fade-in slide-in-from-bottom-4"
+                            style={{ animationDelay: `${index * 50}ms` }}
                         >
                             <AccordionItem
                                 value={module.id}
@@ -126,13 +125,9 @@ export default function TrainingLessonsPage() {
                                     <div className="flex items-center gap-4 w-full">
                                         <div className="relative flex-shrink-0">
                                             {isCompleted ? (
-                                                <motion.div
-                                                    initial={{ scale: 0 }}
-                                                    animate={{ scale: 1 }}
-                                                    className="h-12 w-12 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg"
-                                                >
+                                                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg animate-in zoom-in">
                                                     <CheckCircle className="h-6 w-6 text-white" />
-                                                </motion.div>
+                                                </div>
                                             ) : (
                                                 <div className={cn(
                                                     'h-12 w-12 rounded-full border-2 flex items-center justify-center transition-all duration-200',
@@ -151,11 +146,7 @@ export default function TrainingLessonsPage() {
                                                 </div>
                                             )}
                                             {!isCompleted && isActive && (
-                                                <motion.div
-                                                    className="absolute -inset-1 rounded-full border-2 border-primary/30"
-                                                    animate={{ scale: [1, 1.1, 1] }}
-                                                    transition={{ duration: 2, repeat: Infinity }}
-                                                />
+                                                <div className="absolute -inset-1 rounded-full border-2 border-primary/30 animate-pulse" />
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
@@ -203,12 +194,7 @@ export default function TrainingLessonsPage() {
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="px-6 pb-6">
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        transition={{ duration: 0.3 }}
-                                        className="pt-4 space-y-6"
-                                    >
+                                    <div className="pt-4 space-y-6 animate-in fade-in duration-300">
                                         {/* Content */}
                                         <div className="prose prose-sm md:prose-base max-w-none text-foreground/80 dark:prose-invert prose-headings:text-foreground prose-a:text-primary prose-strong:text-foreground prose-p:leading-relaxed">
                                             <div dangerouslySetInnerHTML={{ __html: module.content }} />
@@ -223,10 +209,10 @@ export default function TrainingLessonsPage() {
                                                 isCompleted={isCompleted}
                                             />
                                         </div>
-                                    </motion.div>
+                                    </div>
                                 </AccordionContent>
                             </AccordionItem>
-                        </motion.div>
+                        </div>
                     );
                 })}
             </Accordion>
@@ -236,11 +222,7 @@ export default function TrainingLessonsPage() {
     return (
         <div className="space-y-6">
             {/* Enhanced Progress Hero Section */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-            >
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <Card className="relative overflow-hidden border-2 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
                     {/* Background Pattern */}
                     <div className="absolute inset-0 opacity-5">
@@ -264,20 +246,14 @@ export default function TrainingLessonsPage() {
                                     </div>
                                 </div>
                             </div>
-                            <AnimatePresence>
-                                {completedModules.size === allModules.length && (
-                                    <motion.div
-                                        initial={{ scale: 0, rotate: -180 }}
-                                        animate={{ scale: 1, rotate: 0 }}
-                                        transition={{ type: "spring", duration: 0.6 }}
-                                    >
-                                        <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 px-4 py-2 text-sm">
-                                            <Trophy className="h-4 w-4 mr-2" />
-                                            Expert Level
-                                        </Badge>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                            {completedModules.size === allModules.length && (
+                                <div className="animate-in zoom-in spin-in-180 duration-500">
+                                    <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 px-4 py-2 text-sm">
+                                        <Trophy className="h-4 w-4 mr-2" />
+                                        Expert Level
+                                    </Badge>
+                                </div>
+                            )}
                         </div>
                     </CardHeader>
                     <CardContent className="relative space-y-6">
@@ -295,21 +271,16 @@ export default function TrainingLessonsPage() {
                             </div>
                             <div className="relative">
                                 <Progress value={completionPercentage} className="h-4 bg-secondary/50" />
-                                <motion.div
-                                    className="absolute inset-0 h-4 rounded-full bg-gradient-to-r from-primary/20 to-transparent"
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${completionPercentage}%` }}
-                                    transition={{ duration: 1, delay: 0.5 }}
+                                <div
+                                    className="absolute inset-0 h-4 rounded-full bg-gradient-to-r from-primary/20 to-transparent transition-all duration-1000 ease-out"
+                                    style={{ width: `${completionPercentage}%` }}
                                 />
                             </div>
                         </div>
 
                         {/* Enhanced Stats Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <motion.div
-                                whileHover={{ scale: 1.02 }}
-                                className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10 border border-blue-200/50 dark:border-blue-800/30"
-                            >
+                            <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10 border border-blue-200/50 dark:border-blue-800/30 hover:scale-[1.02] transition-transform duration-200">
                                 <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
                                     <TrendingUp className="h-5 w-5 text-white" />
                                 </div>
@@ -319,12 +290,9 @@ export default function TrainingLessonsPage() {
                                         {marketingModules.filter(m => completedModules.has(m.id)).length}/{marketingModules.length}
                                     </p>
                                 </div>
-                            </motion.div>
+                            </div>
 
-                            <motion.div
-                                whileHover={{ scale: 1.02 }}
-                                className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/10 border border-green-200/50 dark:border-green-800/30"
-                            >
+                            <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/10 border border-green-200/50 dark:border-green-800/30 hover:scale-[1.02] transition-transform duration-200">
                                 <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
                                     <Handshake className="h-5 w-5 text-white" />
                                 </div>
@@ -334,12 +302,9 @@ export default function TrainingLessonsPage() {
                                         {closingModules.filter(m => completedModules.has(m.id)).length}/{closingModules.length}
                                     </p>
                                 </div>
-                            </motion.div>
+                            </div>
 
-                            <motion.div
-                                whileHover={{ scale: 1.02 }}
-                                className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/20 dark:to-purple-900/10 border border-purple-200/50 dark:border-purple-800/30"
-                            >
+                            <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/20 dark:to-purple-900/10 border border-purple-200/50 dark:border-purple-800/30 hover:scale-[1.02] transition-transform duration-200">
                                 <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
                                     <Award className="h-5 w-5 text-white" />
                                 </div>
@@ -349,18 +314,14 @@ export default function TrainingLessonsPage() {
                                         {professionalExcellenceModules.filter(m => completedModules.has(m.id)).length}/{professionalExcellenceModules.length}
                                     </p>
                                 </div>
-                            </motion.div>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
-            </motion.div>
+            </div>
 
             {/* Enhanced Learning Modules */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-            >
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '200ms' }}>
                 <Tabs defaultValue="marketing" className="w-full">
                     <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="marketing">
@@ -375,11 +336,7 @@ export default function TrainingLessonsPage() {
                     </TabsList>
 
                     <TabsContent value="marketing" className="mt-8">
-                        <motion.div
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5 }}
-                        >
+                        <div className="animate-in fade-in slide-in-from-left-4 duration-300">
                             <Card className="border-2 border-blue-200/50 dark:border-blue-800/30">
                                 <CardHeader className="space-y-6 bg-gradient-to-br from-blue-50/50 to-transparent dark:from-blue-950/20">
                                     <div className="flex items-start gap-4">
@@ -413,11 +370,9 @@ export default function TrainingLessonsPage() {
                                         </div>
                                         <div className="relative">
                                             <Progress value={marketingCompletionPercentage} className="h-3 bg-blue-200/50 dark:bg-blue-900/30" />
-                                            <motion.div
-                                                className="absolute inset-0 h-3 rounded-full bg-gradient-to-r from-blue-400/30 to-transparent"
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${marketingCompletionPercentage}%` }}
-                                                transition={{ duration: 1, delay: 0.3 }}
+                                            <div
+                                                className="absolute inset-0 h-3 rounded-full bg-gradient-to-r from-blue-400/30 to-transparent transition-all duration-1000 ease-out"
+                                                style={{ width: `${marketingCompletionPercentage}%` }}
                                             />
                                         </div>
                                         <p className="text-sm text-blue-600 dark:text-blue-400 mt-3 flex items-center gap-2">
@@ -430,15 +385,11 @@ export default function TrainingLessonsPage() {
                                     {renderModuleAccordion(marketingModules, 'blue')}
                                 </CardContent>
                             </Card>
-                        </motion.div>
+                        </div>
                     </TabsContent>
 
                     <TabsContent value="closing" className="mt-8">
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5 }}
-                        >
+                        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                             <Card className="border-2 border-green-200/50 dark:border-green-800/30">
                                 <CardHeader className="space-y-6 bg-gradient-to-br from-green-50/50 to-transparent dark:from-green-950/20">
                                     <div className="flex items-start gap-4">
@@ -472,11 +423,9 @@ export default function TrainingLessonsPage() {
                                         </div>
                                         <div className="relative">
                                             <Progress value={closingCompletionPercentage} className="h-3 bg-green-200/50 dark:bg-green-900/30" />
-                                            <motion.div
-                                                className="absolute inset-0 h-3 rounded-full bg-gradient-to-r from-green-400/30 to-transparent"
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${closingCompletionPercentage}%` }}
-                                                transition={{ duration: 1, delay: 0.3 }}
+                                            <div
+                                                className="absolute inset-0 h-3 rounded-full bg-gradient-to-r from-green-400/30 to-transparent transition-all duration-1000 ease-out"
+                                                style={{ width: `${closingCompletionPercentage}%` }}
                                             />
                                         </div>
                                         <p className="text-sm text-green-600 dark:text-green-400 mt-3 flex items-center gap-2">
@@ -489,15 +438,11 @@ export default function TrainingLessonsPage() {
                                     {renderModuleAccordion(closingModules, 'green')}
                                 </CardContent>
                             </Card>
-                        </motion.div>
+                        </div>
                     </TabsContent>
 
                     <TabsContent value="professional" className="mt-8">
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5 }}
-                        >
+                        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                             <Card className="border-2 border-purple-200/50 dark:border-purple-800/30">
                                 <CardHeader className="space-y-6 bg-gradient-to-br from-purple-50/50 to-transparent dark:from-purple-950/20">
                                     <div className="flex items-start gap-4">
@@ -531,11 +476,9 @@ export default function TrainingLessonsPage() {
                                         </div>
                                         <div className="relative">
                                             <Progress value={professionalCompletionPercentage} className="h-3 bg-purple-200/50 dark:bg-purple-900/30" />
-                                            <motion.div
-                                                className="absolute inset-0 h-3 rounded-full bg-gradient-to-r from-purple-400/30 to-transparent"
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${professionalCompletionPercentage}%` }}
-                                                transition={{ duration: 1, delay: 0.3 }}
+                                            <div
+                                                className="absolute inset-0 h-3 rounded-full bg-gradient-to-r from-purple-400/30 to-transparent transition-all duration-1000 ease-out"
+                                                style={{ width: `${professionalCompletionPercentage}%` }}
                                             />
                                         </div>
                                         <p className="text-sm text-purple-600 dark:text-purple-400 mt-3 flex items-center gap-2">
@@ -548,11 +491,11 @@ export default function TrainingLessonsPage() {
                                     {renderModuleAccordion(professionalExcellenceModules, 'green')}
                                 </CardContent>
                             </Card>
-                        </motion.div>
+                        </div>
                     </TabsContent>
 
                 </Tabs>
-            </motion.div>
+            </div>
         </div>
     );
 }

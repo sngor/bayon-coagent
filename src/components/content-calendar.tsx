@@ -63,6 +63,7 @@ import { StatusBadge } from '@/components/shared/status-badge';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ContentDetailModal } from '@/components/content-detail-modal';
+import { ConcurrentContentStack } from '@/components/concurrent-content-stack';
 import {
     ScheduledContent,
     PublishChannelType,
@@ -156,7 +157,7 @@ const MONTHS = [
 /**
  * Draggable content item component
  */
-function DraggableContentItem({
+export function DraggableContentItem({
     content,
     isCompact = false,
     onContentClick,
@@ -351,20 +352,23 @@ function DroppableCalendarDay({
             </div>
 
             <div className="space-y-1">
-                {day.content.slice(0, 3).map(content => (
-                    <DraggableContentItem
-                        key={content.id}
-                        content={content}
-                        isCompact={true}
-                        onContentClick={onContentClick}
-                        onContentAction={onContentAction}
-                    />
-                ))}
-                {day.content.length > 3 && (
-                    <div className="text-xs text-muted-foreground text-center py-1">
-                        +{day.content.length - 3} more
-                    </div>
-                )}
+                <ConcurrentContentStack
+                    content={day.content}
+                    date={day.date}
+                    isCompact={true}
+                    maxVisibleItems={3}
+                    onContentClick={onContentClick}
+                    onContentAction={onContentAction}
+                    onConflictResolve={(resolution) => {
+                        // Handle conflict resolution
+                        console.log('Conflict resolution requested:', resolution);
+                        // This could trigger a modal or action to resolve conflicts
+                    }}
+                    onTimeSlotExpand={(timeSlot, expanded) => {
+                        // Handle time slot expansion tracking
+                        console.log(`Time slot ${timeSlot} ${expanded ? 'expanded' : 'collapsed'}`);
+                    }}
+                />
             </div>
 
             {day.hasConflicts && (
@@ -1094,16 +1098,23 @@ export function ContentCalendar({
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                {selectedDayContent.map(content => (
-                                    <DraggableContentItem
-                                        key={content.id}
-                                        content={content}
-                                        onContentClick={handleContentClick}
-                                        onContentAction={handleContentAction}
-                                    />
-                                ))}
-                            </div>
+                            <ConcurrentContentStack
+                                content={selectedDayContent}
+                                date={selectedDate}
+                                isCompact={false}
+                                maxVisibleItems={5}
+                                onContentClick={handleContentClick}
+                                onContentAction={handleContentAction}
+                                onConflictResolve={(resolution) => {
+                                    // Handle conflict resolution in desktop view
+                                    console.log('Desktop conflict resolution requested:', resolution);
+                                    // This could trigger a modal or action to resolve conflicts
+                                }}
+                                onTimeSlotExpand={(timeSlot, expanded) => {
+                                    // Handle time slot expansion tracking in desktop view
+                                    console.log(`Desktop time slot ${timeSlot} ${expanded ? 'expanded' : 'collapsed'}`);
+                                }}
+                            />
                         </CardContent>
                     </Card>
                 )}

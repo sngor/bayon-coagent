@@ -121,6 +121,12 @@ body {
     --scrollbar-track: transparent;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 220 60% 50%;
+
+    /* Paper gradient colors */
+    --paper-gradient-1: 40 35% 95%;
+    --paper-gradient-2: 35 30% 92%;
+    --paper-gradient-3: 45 25% 94%;
+    --paper-gradient-4: 38 20% 96%;
   }
 
   .dark {
@@ -211,6 +217,12 @@ body {
     --sidebar-accent-foreground: 210 20% 98%;
     --sidebar-border: 220 20% 25%;
     --sidebar-ring: 210 20% 98%;
+
+    /* Paper gradient colors - dark mode */
+    --paper-gradient-1: 220 30% 8%;
+    --paper-gradient-2: 215 25% 10%;
+    --paper-gradient-3: 225 20% 9%;
+    --paper-gradient-4: 218 22% 11%;
   }
 }
 
@@ -220,15 +232,211 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    /* Paper-tone background gradient */
+    background-image: radial-gradient(
+        circle at 20% 30%,
+        hsl(var(--paper-gradient-1)) 0px,
+        transparent 60%
+      ),
+      radial-gradient(
+        circle at 80% 70%,
+        hsl(var(--paper-gradient-2)) 0px,
+        transparent 60%
+      ),
+      radial-gradient(
+        circle at 40% 80%,
+        hsl(var(--paper-gradient-3)) 0px,
+        transparent 60%
+      ),
+      radial-gradient(
+        circle at 60% 20%,
+        hsl(var(--paper-gradient-4)) 0px,
+        transparent 60%
+      );
+    background-attachment: fixed;
   }
 }
 
 @layer components {
-  .card-interactive {
-    @apply transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-xl hover:bg-secondary/50;
+  /* Standardized Container Styles */
+  .container-base {
+    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
+  }
+
+  .container-elevated {
+    @apply rounded-lg border bg-card text-card-foreground shadow-md;
+  }
+
+  .container-floating {
+    @apply rounded-lg border bg-card text-card-foreground shadow-lg;
+  }
+
+  .container-modal {
+    @apply rounded-xl border bg-card text-card-foreground shadow-xl;
+  }
+
+  .container-premium {
+    @apply rounded-xl border bg-card text-card-foreground shadow-2xl;
+  }
+
+  /* Container without shadow - uses black border */
+  .container-no-shadow {
+    @apply rounded-lg border-black dark:border-white bg-card text-card-foreground;
+  }
+
+  /* Interactive Container Variants */
+  .container-interactive {
+    @apply container-base transition-all duration-300 ease-in-out hover:shadow-md hover:scale-[1.01] cursor-pointer;
     /* GPU acceleration */
     transform: translateZ(0);
     backface-visibility: hidden;
+  }
+
+  .container-interactive-elevated {
+    @apply container-elevated transition-all duration-300 ease-in-out hover:shadow-lg hover:scale-[1.01] cursor-pointer;
+    /* GPU acceleration */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  .container-interactive-floating {
+    @apply container-floating transition-all duration-300 ease-in-out hover:shadow-xl hover:scale-[1.02] cursor-pointer;
+    /* GPU acceleration */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  /* Gradient Container Variants */
+  .container-gradient-primary {
+    @apply container-base bg-gradient-to-br from-primary/5 via-transparent to-transparent border-primary/20;
+  }
+
+  .container-gradient-success {
+    @apply container-base bg-gradient-to-br from-success/5 via-transparent to-transparent border-success/20;
+  }
+
+  .container-gradient-warning {
+    @apply container-base bg-gradient-to-br from-yellow-500/5 via-transparent to-transparent border-yellow-500/20;
+  }
+
+  .container-gradient-error {
+    @apply container-base bg-gradient-to-br from-destructive/5 via-transparent to-transparent border-destructive/20;
+  }
+
+  /* Glass Container Variants */
+  .container-glass {
+    @apply rounded-lg border shadow-lg;
+    background: hsl(var(--glass-bg));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    backdrop-filter: blur(var(--glass-blur));
+    border-color: hsl(var(--glass-border));
+    /* GPU acceleration */
+    transform: translateZ(0);
+  }
+
+  .container-glass-elevated {
+    @apply rounded-xl border shadow-xl;
+    background: hsl(var(--glass-bg));
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border-color: hsl(var(--glass-border));
+    /* GPU acceleration */
+    transform: translateZ(0);
+  }
+
+  /* Container Border Variants */
+  .container-border-subtle {
+    @apply border-border/50;
+  }
+
+  .container-border-default {
+    @apply border-border;
+  }
+
+  .container-border-strong {
+    @apply border-border border-2;
+  }
+
+  .container-border-accent {
+    @apply border-primary/20;
+  }
+
+  .container-border-success {
+    @apply border-success/20;
+  }
+
+  .container-border-warning {
+    @apply border-yellow-500/20;
+  }
+
+  .container-border-error {
+    @apply border-destructive/20;
+  }
+
+  /* Black border rule: if border doesn't have shadow, use black color */
+  .border-no-shadow {
+    @apply border-black dark:border-white;
+  }
+
+  /* Utility for borders without shadows */
+  .border-solid-fallback {
+    @apply border-black dark:border-gray-300;
+  }
+
+  /* Container Padding Variants */
+  .container-padding-sm {
+    @apply p-3;
+  }
+
+  .container-padding-md {
+    @apply p-4 sm:p-6;
+  }
+
+  .container-padding-lg {
+    @apply p-6 sm:p-8;
+  }
+
+  .container-padding-xl {
+    @apply p-8 sm:p-10;
+  }
+
+  /* Specialized Container Types */
+  .container-metric {
+    @apply container-elevated container-padding-lg text-center bg-gradient-to-br from-primary/5 via-transparent to-transparent border-primary/20;
+  }
+
+  .container-notification {
+    @apply container-base container-padding-md bg-gradient-to-r from-primary/5 via-transparent to-transparent border-primary/20;
+  }
+
+  .container-feature {
+    @apply container-floating container-padding-lg hover:shadow-xl transition-all duration-300;
+  }
+
+  .container-section {
+    @apply container-base container-padding-lg bg-muted/30;
+  }
+
+  /* Status-based Container Variants */
+  .container-success {
+    @apply container-base container-padding-md bg-gradient-to-br from-success/5 via-transparent to-transparent border-success/20;
+  }
+
+  .container-warning {
+    @apply container-base container-padding-md bg-gradient-to-br from-yellow-500/5 via-transparent to-transparent border-yellow-500/20;
+  }
+
+  .container-error {
+    @apply container-base container-padding-md bg-gradient-to-br from-destructive/5 via-transparent to-transparent border-destructive/20;
+  }
+
+  .container-info {
+    @apply container-base container-padding-md bg-gradient-to-br from-blue-500/5 via-transparent to-transparent border-blue-500/20;
+  }
+
+  /* Legacy class for backward compatibility */
+  .card-interactive {
+    @apply container-interactive-floating hover:bg-secondary/50;
   }
 
   .card-interactive:hover {
@@ -579,6 +787,524 @@ body {
       0 0 80px hsl(var(--gradient-end) / 0.4),
       0 0 120px hsl(var(--primary) / 0.3);
   }
+
+  /* Light reflect effects for containers and cards */
+  .light-reflect {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .light-reflect::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(
+      45deg,
+      transparent 30%,
+      hsl(var(--primary) / 0.1) 50%,
+      transparent 70%
+    );
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .light-reflect:hover::before {
+    opacity: 1;
+  }
+
+  /* Light reflect variants */
+  .light-reflect-subtle {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .light-reflect-subtle::before {
+    content: "";
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    bottom: -1px;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary) / 0.05) 0%,
+      transparent 25%,
+      hsl(var(--primary) / 0.08) 50%,
+      transparent 75%,
+      hsl(var(--primary) / 0.05) 100%
+    );
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  .light-reflect-subtle:hover::before {
+    opacity: 1;
+  }
+
+  .light-reflect-bright {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .light-reflect-bright::before {
+    content: "";
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    background: linear-gradient(
+      45deg,
+      hsl(var(--primary) / 0.15) 0%,
+      transparent 20%,
+      hsl(var(--primary) / 0.25) 50%,
+      transparent 80%,
+      hsl(var(--primary) / 0.15) 100%
+    );
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .light-reflect-bright:hover::before {
+    opacity: 1;
+  }
+
+  /* Animated light reflect */
+  .light-reflect-animated {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .light-reflect-animated::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: -100%;
+    width: 200%;
+    height: calc(100% + 4px);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--primary) / 0.1) 25%,
+      hsl(var(--primary) / 0.2) 50%,
+      hsl(var(--primary) / 0.1) 75%,
+      transparent 100%
+    );
+    border-radius: inherit;
+    z-index: -1;
+    transition: left 0.6s ease;
+  }
+
+  .light-reflect-animated:hover::before {
+    left: 100%;
+  }
+
+  /* Card-specific light reflects */
+  .card-light-reflect {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid hsl(var(--border));
+    transition: all 0.3s ease;
+  }
+
+  .card-light-reflect::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--primary) / 0.3) 20%,
+      hsl(var(--primary) / 0.6) 50%,
+      hsl(var(--primary) / 0.3) 80%,
+      transparent 100%
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .card-light-reflect:hover::after {
+    opacity: 1;
+  }
+
+  .card-light-reflect:hover {
+    border-color: hsl(var(--primary) / 0.2);
+    box-shadow: 0 4px 20px hsl(var(--primary) / 0.1);
+  }
+
+  /* Container light reflects */
+  .container-light-reflect {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .container-light-reflect::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary) / 0.02) 0%,
+      transparent 30%,
+      hsl(var(--primary) / 0.05) 50%,
+      transparent 70%,
+      hsl(var(--primary) / 0.02) 100%
+    );
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+  }
+
+  .container-light-reflect:hover::before {
+    opacity: 1;
+  }
+
+  /* Multi-layer light reflect */
+  .light-reflect-layered {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .light-reflect-layered::before,
+  .light-reflect-layered::after {
+    content: "";
+    position: absolute;
+    border-radius: inherit;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  .light-reflect-layered::before {
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    bottom: -1px;
+    background: linear-gradient(
+      45deg,
+      hsl(var(--primary) / 0.1) 0%,
+      transparent 50%,
+      hsl(var(--primary) / 0.1) 100%
+    );
+    z-index: -2;
+    opacity: 0;
+  }
+
+  .light-reflect-layered::after {
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--primary) / 0.4) 50%,
+      transparent 100%
+    );
+    z-index: -1;
+    opacity: 0;
+  }
+
+  .light-reflect-layered:hover::before,
+  .light-reflect-layered:hover::after {
+    opacity: 1;
+  }
+
+  /* Light Ray Effects for Shiny Borders */
+  .light-rays {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .light-rays::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      hsl(var(--primary) / 0.3) 45deg,
+      hsl(var(--primary) / 0.6) 90deg,
+      hsl(var(--primary) / 0.3) 135deg,
+      transparent 180deg,
+      hsl(var(--primary) / 0.2) 225deg,
+      hsl(var(--primary) / 0.4) 270deg,
+      hsl(var(--primary) / 0.2) 315deg,
+      transparent 360deg
+    );
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    animation: light-ray-rotate 4s linear infinite;
+  }
+
+  .light-rays:hover::before {
+    opacity: 1;
+  }
+
+  /* Light rays with constant visibility */
+  .light-rays-always {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .light-rays-always::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      hsl(var(--primary) / 0.2) 45deg,
+      hsl(var(--primary) / 0.4) 90deg,
+      hsl(var(--primary) / 0.2) 135deg,
+      transparent 180deg,
+      hsl(var(--primary) / 0.15) 225deg,
+      hsl(var(--primary) / 0.3) 270deg,
+      hsl(var(--primary) / 0.15) 315deg,
+      transparent 360deg
+    );
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 1;
+    animation: light-ray-rotate 6s linear infinite;
+  }
+
+  /* Subtle light rays */
+  .light-rays-subtle {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .light-rays-subtle::before {
+    content: "";
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    bottom: -1px;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      hsl(var(--primary) / 0.1) 60deg,
+      hsl(var(--primary) / 0.2) 120deg,
+      hsl(var(--primary) / 0.1) 180deg,
+      transparent 240deg,
+      hsl(var(--primary) / 0.15) 300deg,
+      transparent 360deg
+    );
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    animation: light-ray-rotate 8s linear infinite;
+  }
+
+  .light-rays-subtle:hover::before {
+    opacity: 1;
+  }
+
+  /* Intense light rays */
+  .light-rays-intense {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .light-rays-intense::before {
+    content: "";
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    background: conic-gradient(
+      from 0deg,
+      hsl(var(--primary) / 0.1) 0deg,
+      hsl(var(--primary) / 0.4) 30deg,
+      hsl(var(--primary) / 0.7) 60deg,
+      hsl(var(--primary) / 0.4) 90deg,
+      hsl(var(--primary) / 0.1) 120deg,
+      transparent 150deg,
+      hsl(var(--primary) / 0.2) 180deg,
+      hsl(var(--primary) / 0.5) 210deg,
+      hsl(var(--primary) / 0.8) 240deg,
+      hsl(var(--primary) / 0.5) 270deg,
+      hsl(var(--primary) / 0.2) 300deg,
+      transparent 330deg,
+      hsl(var(--primary) / 0.1) 360deg
+    );
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    animation: light-ray-rotate 3s linear infinite;
+  }
+
+  .light-rays-intense:hover::before {
+    opacity: 1;
+  }
+
+  /* Multi-color light rays */
+  .light-rays-rainbow {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .light-rays-rainbow::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: conic-gradient(
+      from 0deg,
+      hsl(0 70% 60% / 0.3) 0deg,
+      hsl(60 70% 60% / 0.3) 60deg,
+      hsl(120 70% 60% / 0.3) 120deg,
+      hsl(180 70% 60% / 0.3) 180deg,
+      hsl(240 70% 60% / 0.3) 240deg,
+      hsl(300 70% 60% / 0.3) 300deg,
+      hsl(0 70% 60% / 0.3) 360deg
+    );
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    animation: light-ray-rotate 5s linear infinite;
+  }
+
+  .light-rays-rainbow:hover::before {
+    opacity: 1;
+  }
+
+  /* Light rays with pulsing effect */
+  .light-rays-pulse {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .light-rays-pulse::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      hsl(var(--primary) / 0.3) 45deg,
+      hsl(var(--primary) / 0.6) 90deg,
+      hsl(var(--primary) / 0.3) 135deg,
+      transparent 180deg,
+      hsl(var(--primary) / 0.2) 225deg,
+      hsl(var(--primary) / 0.4) 270deg,
+      hsl(var(--primary) / 0.2) 315deg,
+      transparent 360deg
+    );
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    animation: light-ray-rotate 4s linear infinite,
+      light-ray-pulse 2s ease-in-out infinite;
+  }
+
+  .light-rays-pulse:hover::before {
+    opacity: 1;
+  }
+
+  /* Success-themed light rays */
+  .light-rays-success {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .light-rays-success::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      hsl(var(--success) / 0.3) 45deg,
+      hsl(var(--success) / 0.6) 90deg,
+      hsl(var(--success) / 0.3) 135deg,
+      transparent 180deg,
+      hsl(var(--success) / 0.2) 225deg,
+      hsl(var(--success) / 0.4) 270deg,
+      hsl(var(--success) / 0.2) 315deg,
+      transparent 360deg
+    );
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    animation: light-ray-rotate 4s linear infinite;
+  }
+
+  .light-rays-success:hover::before {
+    opacity: 1;
+  }
+
+  /* Warning-themed light rays */
+  .light-rays-warning {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .light-rays-warning::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      hsl(var(--warning) / 0.3) 45deg,
+      hsl(var(--warning) / 0.6) 90deg,
+      hsl(var(--warning) / 0.3) 135deg,
+      transparent 180deg,
+      hsl(var(--warning) / 0.2) 225deg,
+      hsl(var(--warning) / 0.4) 270deg,
+      hsl(var(--warning) / 0.2) 315deg,
+      transparent 360deg
+    );
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    animation: light-ray-rotate 4s linear infinite;
+  }
+
+  .light-rays-warning:hover::before {
+    opacity: 1;
+  }
 }
 
 @keyframes gradient-animation {
@@ -845,6 +1571,71 @@ body {
   }
 }
 
+/* Light reflect animations */
+@keyframes light-sweep {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes light-pulse {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes border-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 5px hsl(var(--primary) / 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.4),
+      0 0 30px hsl(var(--primary) / 0.2);
+  }
+}
+
+@keyframes reflect-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Light ray animations */
+@keyframes light-ray-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes light-ray-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
 /* Gradient mesh animations */
 @keyframes float-slow {
   0%,
@@ -1063,6 +1854,62 @@ body {
     backface-visibility: hidden;
   }
 
+  /* Light reflect animation utilities */
+  .animate-light-sweep {
+    animation: light-sweep 2s ease-in-out infinite;
+    /* GPU acceleration */
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+  }
+
+  .animate-light-pulse {
+    animation: light-pulse 3s ease-in-out infinite;
+    /* GPU acceleration */
+    will-change: opacity;
+  }
+
+  .animate-border-glow {
+    animation: border-glow 2s ease-in-out infinite;
+    /* GPU acceleration */
+    will-change: box-shadow;
+  }
+
+  .animate-reflect-shimmer {
+    animation: reflect-shimmer 3s linear infinite;
+    /* GPU acceleration */
+    will-change: background-position;
+  }
+
+  /* Light ray animation utilities */
+  .animate-light-rays {
+    animation: light-ray-rotate 4s linear infinite;
+    /* GPU acceleration */
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+
+  .animate-light-rays-slow {
+    animation: light-ray-rotate 8s linear infinite;
+    /* GPU acceleration */
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+
+  .animate-light-rays-fast {
+    animation: light-ray-rotate 2s linear infinite;
+    /* GPU acceleration */
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+
+  .animate-light-rays-pulse {
+    animation: light-ray-rotate 4s linear infinite,
+      light-ray-pulse 2s ease-in-out infinite;
+    /* GPU acceleration */
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+  }
+
   /* Scrollbar utilities for responsive tables */
   .scrollbar-thin {
     scrollbar-width: thin;
@@ -1272,6 +2119,91 @@ body {
 
 /* Tablet-specific optimizations */
 @layer utilities {
+  /* Border utilities - black border when no shadow */
+  .border-when-no-shadow {
+    @apply border-black dark:border-white;
+  }
+
+  /* Explicit black border utility */
+  .border-solid-black {
+    @apply border border-black dark:border-white;
+  }
+
+  /* Apply to components that need borders without shadows */
+  .border-no-shadow {
+    @apply border border-black dark:border-white;
+  }
+
+  /* High contrast borders accessibility preference - WORKING VERSION */
+
+  /* When high contrast is enabled, override border colors for ALL elements */
+  .high-contrast-borders .border {
+    border-color: var(--accessibility-border-override) !important;
+  }
+
+  .high-contrast-borders input,
+  .high-contrast-borders textarea,
+  .high-contrast-borders select {
+    border-color: var(--accessibility-border-override) !important;
+  }
+
+  .high-contrast-borders [class*="border"] {
+    border-color: var(--accessibility-border-override) !important;
+  }
+
+  /* Target all container variants */
+  .high-contrast-borders .container-base,
+  .high-contrast-borders .container-elevated,
+  .high-contrast-borders .container-floating,
+  .high-contrast-borders .container-modal,
+  .high-contrast-borders .container-premium,
+  .high-contrast-borders .container-no-shadow {
+    border-color: var(--accessibility-border-override) !important;
+  }
+
+  /* Target all card components */
+  .high-contrast-borders [class*="card"],
+  .high-contrast-borders .card {
+    border-color: var(--accessibility-border-override) !important;
+  }
+
+  /* Target any element that might have borders but no shadows */
+  .high-contrast-borders [class*="rounded"]:not([class*="shadow"]) {
+    border: 1px solid var(--accessibility-border-override) !important;
+  }
+
+  /* Target specific UI components that should have high contrast borders */
+  .high-contrast-borders .bg-card,
+  .high-contrast-borders .bg-background,
+  .high-contrast-borders .bg-muted {
+    border: 1px solid var(--accessibility-border-override) !important;
+  }
+
+  /* When high contrast is NOT enabled, restore normal colors */
+  :not(.high-contrast-borders) .border {
+    border-color: hsl(var(--border));
+  }
+
+  :not(.high-contrast-borders) input,
+  :not(.high-contrast-borders) textarea,
+  :not(.high-contrast-borders) select {
+    border-color: hsl(var(--input));
+  }
+
+  :not(.high-contrast-borders) .container-base,
+  :not(.high-contrast-borders) .container-elevated,
+  :not(.high-contrast-borders) .container-floating,
+  :not(.high-contrast-borders) .container-modal,
+  :not(.high-contrast-borders) .container-premium,
+  :not(.high-contrast-borders) .container-no-shadow {
+    border-color: hsl(var(--border));
+  }
+
+  :not(.high-contrast-borders) [class*="card"],
+  :not(.high-contrast-borders) .card {
+    border-color: hsl(var(--border));
+  }
+
   /* Tablet viewport utilities (768px - 1024px) */
   @media (min-width: 768px) and (max-width: 1024px) {
     .tablet\:grid-cols-2 {
@@ -1373,5 +2305,116 @@ body {
 
   .orientation-transition {
     transition: none !important;
+  }
+}
+
+/* Performance optimizations for animations */
+@layer utilities {
+  /* Reduce motion for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Optimize common animation patterns */
+  .transition-optimized {
+    transition-property: opacity, transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+
+  .transition-colors-fast {
+    transition-property: color, background-color, border-color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+
+  /* Limit expensive animations to essential interactions only */
+  .animate-essential-only {
+    animation-duration: 200ms;
+    animation-timing-function: ease-out;
+  }
+}
+/* Animation performance mode classes */
+.animations-disabled *,
+.animations-disabled *::before,
+.animations-disabled *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+.animations-low .animate-shimmer,
+.animations-low .animate-gradient-shift,
+.animations-low .animate-typewriter-cursor,
+.animations-low .animate-text-glow,
+.animations-low .animate-text-pulse {
+  animation: none !important;
+}
+
+.animations-low .transition-all {
+  transition-property: opacity, transform !important;
+  transition-duration: 150ms !important;
+}
+
+.animations-medium .animate-shimmer {
+  animation-duration: 4s !important;
+}
+
+.animations-medium .animate-gradient-shift {
+  animation-duration: 5s !important;
+}
+
+.animations-medium .animate-typewriter-cursor {
+  animation-duration: 2s !important;
+}
+
+/* Disable heavy animations on mobile by default */
+@media (max-width: 768px) {
+  .animate-shimmer,
+  .animate-gradient-shift,
+  .animate-text-glow,
+  .animate-text-pulse,
+  .text-gradient-animated {
+    animation: none !important;
+  }
+
+  .animate-typewriter-cursor {
+    animation-duration: 2s !important;
+  }
+}
+/* Disable typing animations by default for performance */
+.animate-shimmer,
+.animate-gradient-shift,
+.animate-text-glow,
+.animate-text-pulse,
+.text-gradient-animated,
+.text-shimmer::after {
+  animation: none !important;
+}
+
+/* Only enable animations in AI chatbot context */
+.ai-chatbot-context .animate-typewriter-cursor {
+  animation: typewriter-cursor 1.5s step-end infinite;
+}
+
+.ai-chatbot-context .animate-shimmer {
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* Completely disable typing animations on mobile for performance */
+@media (max-width: 768px) {
+  .animate-typewriter-cursor {
+    animation: none !important;
+  }
+
+  .ai-chatbot-context .animate-typewriter-cursor {
+    animation: typewriter-cursor 2s step-end infinite;
   }
 }

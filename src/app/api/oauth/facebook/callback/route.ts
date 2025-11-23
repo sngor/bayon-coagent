@@ -1,8 +1,9 @@
 /**
  * Facebook OAuth Callback Route
- * Handles OAuth 2.0 callback from Facebook
+ * Handles OAuth 2.0 callback from Facebook with enhanced analytics scopes
+ * for content workflow features
  * 
- * Requirements: 6.1, 6.4
+ * Requirements: 6.1, 6.4, 8.1
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -38,14 +39,32 @@ export async function GET(request: NextRequest) {
         const pages = connection.metadata?.pages || [];
         const hasPages = pages.length > 0;
 
+        // Validate analytics access for content workflow features
+        const analyticsValidation = await manager.validateAnalyticsAccess(
+            connection.userId,
+            'facebook'
+        );
+
         // Redirect to settings with success message
-        // If pages are available, include page selection info
         const successUrl = new URL('/settings', request.url);
         successUrl.searchParams.set('success', 'facebook_connected');
         successUrl.searchParams.set('platform', 'facebook');
 
         if (hasPages) {
             successUrl.searchParams.set('pages', pages.length.toString());
+        }
+
+        // Include analytics capability information
+        if (analyticsValidation.hasAccess) {
+            successUrl.searchParams.set('analytics', 'enabled');
+            if (analyticsValidation.availableMetrics) {
+                successUrl.searchParams.set('metrics', analyticsValidation.availableMetrics.length.toString());
+            }
+        } else {
+            successUrl.searchParams.set('analytics', 'limited');
+            if (analyticsValidation.error) {
+                successUrl.searchParams.set('analytics_error', encodeURIComponent(analyticsValidation.error));
+            }
         }
 
         return NextResponse.redirect(successUrl);

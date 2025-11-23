@@ -62,7 +62,7 @@ export function FavoritesButton({
             onClick={handleToggle}
             disabled={isLoading || isToggling}
             className={cn(
-                "transition-all duration-200",
+                "transition-colors duration-150",
                 favorited && "text-yellow-500 hover:text-yellow-600",
                 className
             )}
@@ -70,7 +70,7 @@ export function FavoritesButton({
         >
             <Star
                 className={cn(
-                    "h-4 w-4 transition-all duration-200",
+                    "h-4 w-4 transition-colors duration-150",
                     favorited && "fill-current",
                     isToggling && "animate-pulse"
                 )}

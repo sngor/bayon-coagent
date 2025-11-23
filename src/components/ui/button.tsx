@@ -7,27 +7,27 @@ import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
   // Mobile-optimized: touch-manipulation for better touch response, min-h-[44px] for touch targets
-  // Enhanced micro-interactions: relative overflow-hidden for ripple effect, improved active state
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background relative overflow-hidden transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.97] touch-manipulation [&>svg]:pointer-events-none [&>svg]:size-4 [&>svg]:shrink-0",
+  // Enhanced micro-interactions: relative overflow-hidden for ripple effect, improved active state with inset shadow
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background relative overflow-hidden transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.97] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] touch-manipulation [&>svg]:pointer-events-none [&>svg]:size-4 [&>svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary-hover shadow-sm hover:shadow-md hover:scale-[1.02]",
+        default: "bg-primary text-primary-foreground hover:bg-primary-hover shadow-sm hover:shadow-md hover:scale-[1.02] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm hover:shadow-md hover:scale-[1.02]",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm hover:shadow-md hover:scale-[1.02] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]",
         outline:
-          "border-2 border-input bg-background hover:bg-accent hover:text-accent-foreground hover:border-primary hover:scale-[1.02]",
+          "border-2 border-input bg-background hover:bg-accent hover:text-accent-foreground hover:border-primary hover:scale-[1.02] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm hover:scale-[1.02]",
-        ghost: "hover:bg-accent hover:text-accent-foreground hover:scale-[1.02]",
-        link: "text-primary underline-offset-4 hover:underline min-h-[44px]",
-        ai: "ai-gradient shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300",
-        shimmer: "shimmer-gradient shadow-lg hover:scale-105",
-        success: "bg-success text-success-foreground hover:bg-success-hover shadow-sm hover:shadow-md hover:scale-[1.02]",
-        premium: "bg-gradient-to-r from-[hsl(var(--gradient-start))] to-[hsl(var(--gradient-end))] text-primary-foreground shadow-lg hover:shadow-2xl hover:scale-[1.02] button-glow",
-        glow: "bg-primary text-primary-foreground shadow-lg hover:shadow-2xl hover:scale-[1.02] button-glow",
-        "glow-success": "bg-success text-success-foreground shadow-lg hover:shadow-2xl hover:scale-[1.02] button-glow-success",
-        "gradient-border": "bg-background text-foreground gradient-border gradient-border-animated hover:scale-[1.02]",
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm hover:scale-[1.02] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]",
+        ghost: "hover:bg-accent hover:text-accent-foreground hover:scale-[1.02] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]",
+        link: "text-primary underline-offset-4 hover:underline min-h-[44px] active:shadow-none",
+        ai: "ai-gradient shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]",
+        shimmer: "shimmer-gradient shadow-lg hover:scale-105 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]",
+        success: "bg-success text-success-foreground hover:bg-success-hover shadow-sm hover:shadow-md hover:scale-[1.02] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]",
+        premium: "bg-gradient-to-r from-[hsl(var(--gradient-start))] to-[hsl(var(--gradient-end))] text-primary-foreground shadow-lg hover:shadow-2xl hover:scale-[1.02] button-glow active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]",
+        glow: "bg-primary text-primary-foreground shadow-lg hover:shadow-2xl hover:scale-[1.02] button-glow active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]",
+        "glow-success": "bg-success text-success-foreground shadow-lg hover:shadow-2xl hover:scale-[1.02] button-glow-success active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]",
+        "gradient-border": "bg-background text-foreground gradient-border gradient-border-animated hover:scale-[1.02] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]",
       },
       size: {
         default: "min-h-[44px] px-4 py-2",

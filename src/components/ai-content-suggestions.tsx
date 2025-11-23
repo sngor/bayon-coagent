@@ -131,7 +131,7 @@ export function AIContentSuggestions({
                             {postingTimes.map((time, index) => (
                                 <div
                                     key={index}
-                                    className="p-4 rounded-lg border bg-card hover:shadow-md transition-all duration-300"
+                                    className="p-4 rounded-lg border bg-card hover:shadow-md transition-shadow duration-200"
                                 >
                                     <div className="flex items-start justify-between mb-2">
                                         <div>
@@ -177,7 +177,7 @@ export function AIContentSuggestions({
                                 <div
                                     key={index}
                                     className={cn(
-                                        'p-4 rounded-lg border bg-card hover:shadow-lg transition-all duration-300 group cursor-pointer',
+                                        'p-4 rounded-lg border bg-card hover:shadow-lg transition-shadow duration-200 group cursor-pointer',
                                         type.priority === 'high' && 'border-primary/50'
                                     )}
                                     onClick={() => onSelectContentType?.(type.type)}
@@ -245,7 +245,7 @@ export function AIContentSuggestions({
                             {contentIdeas.map((idea, index) => (
                                 <div
                                     key={index}
-                                    className="p-4 rounded-lg border bg-card hover:shadow-lg transition-all duration-300 group cursor-pointer"
+                                    className="p-4 rounded-lg border bg-card hover:shadow-lg transition-shadow duration-200 group cursor-pointer"
                                     onClick={() => onSelectIdea?.(idea)}
                                 >
                                     <div className="flex items-start justify-between gap-4">

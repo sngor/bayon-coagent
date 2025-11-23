@@ -83,7 +83,7 @@ export default function InvestmentOpportunityIdentificationPage() {
               </p>
             </div>
             <Button variant="outline" size="sm" asChild>
-              <Link href="/market/insights?tab=alerts">
+              <Link href="/market/alerts">
                 View All <ExternalLink className="ml-2 h-4 w-4" />
               </Link>
             </Button>

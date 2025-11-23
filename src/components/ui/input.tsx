@@ -9,7 +9,7 @@ import { getInputType } from "@/lib/mobile-optimization"
 
 const inputVariants = cva(
   // Mobile-optimized: min-h-[44px] for touch targets, text-base on mobile to prevent zoom, touch-manipulation
-  "flex min-h-[44px] w-full rounded-md border bg-background px-3 py-2 text-base sm:text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation",
+  "flex min-h-[44px] w-full rounded-md border bg-background px-3 py-2 text-base sm:text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation shadow-[inset_0_1px_2px_0_rgb(0_0_0_/_0.05)]",
   {
     variants: {
       variant: {

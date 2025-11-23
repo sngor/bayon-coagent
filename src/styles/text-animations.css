@@ -1,0 +1,40 @@
+/* Minimal Text Animation Styles - No complex animations to prevent re-renders */
+
+/* Simple utility classes without animations */
+.text-gradient {
+  background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.button-text-hover {
+  transition: color 0.2s ease;
+}
+
+.card-hover-lift {
+  transition: box-shadow 0.2s ease;
+}
+
+.card-hover-lift:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Disable all animations for performance */
+* {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0.1s !important;
+}
+
+/* Simple loading state without animation */
+.loading-skeleton {
+  background: hsl(var(--muted));
+  opacity: 0.6;
+}
+
+/* Focus states without complex animations */
+.focus-ring:focus {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}

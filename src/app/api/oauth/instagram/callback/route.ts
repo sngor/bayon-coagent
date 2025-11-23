@@ -1,8 +1,9 @@
 /**
  * Instagram OAuth Callback Route
- * Handles OAuth 2.0 callback from Instagram (via Facebook)
+ * Handles OAuth 2.0 callback from Instagram with enhanced analytics scopes
+ * for content workflow features
  * 
- * Requirements: 6.1, 6.5
+ * Requirements: 6.1, 6.5, 8.1
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -36,18 +37,35 @@ export async function GET(request: NextRequest) {
 
         // Check if Instagram business accounts are available in metadata
         const businessAccounts = connection.metadata?.businessAccounts || [];
-        const hasBusinessAccount = businessAccounts.length > 0;
+        const hasBusinessAccounts = businessAccounts.length > 0;
+
+        // Validate analytics access for content workflow features
+        const analyticsValidation = await manager.validateAnalyticsAccess(
+            connection.userId,
+            'instagram'
+        );
 
         // Redirect to settings with success message
         const successUrl = new URL('/settings', request.url);
         successUrl.searchParams.set('success', 'instagram_connected');
         successUrl.searchParams.set('platform', 'instagram');
+        successUrl.searchParams.set('username', connection.platformUsername);
 
-        if (hasBusinessAccount) {
-            successUrl.searchParams.set('business_account', 'true');
+        if (hasBusinessAccounts) {
+            successUrl.searchParams.set('business_accounts', businessAccounts.length.toString());
+        }
+
+        // Include analytics capability information
+        if (analyticsValidation.hasAccess) {
+            successUrl.searchParams.set('analytics', 'enabled');
+            if (analyticsValidation.availableMetrics) {
+                successUrl.searchParams.set('metrics', analyticsValidation.availableMetrics.length.toString());
+            }
         } else {
-            // Warn user if no business account found
-            successUrl.searchParams.set('warning', 'no_business_account');
+            successUrl.searchParams.set('analytics', 'limited');
+            if (analyticsValidation.error) {
+                successUrl.searchParams.set('analytics_error', encodeURIComponent(analyticsValidation.error));
+            }
         }
 
         return NextResponse.redirect(successUrl);

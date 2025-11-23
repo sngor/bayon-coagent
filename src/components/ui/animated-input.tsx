@@ -33,7 +33,7 @@ export const AnimatedInput = React.forwardRef<HTMLInputElement, AnimatedInputPro
                     <input
                         type={type}
                         className={cn(
-                            'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200',
+                            'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 shadow-[inset_0_1px_2px_0_rgb(0_0_0_/_0.05)]',
                             error && 'border-destructive focus-visible:ring-destructive',
                             success && 'border-success focus-visible:ring-success',
                             (error || success) && 'pr-10',

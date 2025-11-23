@@ -668,7 +668,7 @@ export function getPropertyComparisonKeys(
 /**
  * Generates keys for ScheduledContent
  * Pattern: PK: USER#<userId>, SK: SCHEDULE#<scheduleId>
- * GSI1: PK: SCHEDULE#<status>, SK: TIME#<publishTime>
+ * GSI2: PK: SCHEDULE#<status>, SK: TIME#<publishTime>
  */
 export function getScheduledContentKeys(
   userId: string,
@@ -676,20 +676,20 @@ export function getScheduledContentKeys(
   status?: string,
   publishTime?: string
 ): DynamoDBKey & {
-  GSI1PK?: string;
-  GSI1SK?: string;
+  GSI2PK?: string;
+  GSI2SK?: string;
 } {
-  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+  const keys: DynamoDBKey & { GSI2PK?: string; GSI2SK?: string } = {
     PK: `USER#${userId}`,
     SK: `SCHEDULE#${scheduleId}`,
   };
 
-  // Add GSI keys for efficient querying by status and time
+  // Add GSI2 keys for efficient querying by status and time
   if (status) {
-    keys.GSI1PK = `SCHEDULE#${status}`;
+    keys.GSI2PK = `SCHEDULE#${status}`;
   }
   if (publishTime) {
-    keys.GSI1SK = `TIME#${publishTime}`;
+    keys.GSI2SK = `TIME#${publishTime}`;
   }
 
   return keys;
@@ -698,7 +698,7 @@ export function getScheduledContentKeys(
 /**
  * Generates keys for Analytics
  * Pattern: PK: USER#<userId>, SK: ANALYTICS#<contentId>#<channel>
- * GSI1: PK: ANALYTICS#<contentType>, SK: DATE#<publishDate>
+ * GSI3: PK: ANALYTICS#<contentType>, SK: DATE#<publishDate>
  */
 export function getAnalyticsKeys(
   userId: string,
@@ -707,20 +707,20 @@ export function getAnalyticsKeys(
   contentType?: string,
   publishDate?: string
 ): DynamoDBKey & {
-  GSI1PK?: string;
-  GSI1SK?: string;
+  GSI3PK?: string;
+  GSI3SK?: string;
 } {
-  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+  const keys: DynamoDBKey & { GSI3PK?: string; GSI3SK?: string } = {
     PK: `USER#${userId}`,
     SK: `ANALYTICS#${contentId}#${channel}`,
   };
 
-  // Add GSI keys for content type analytics aggregation
+  // Add GSI3 keys for content type analytics aggregation
   if (contentType) {
-    keys.GSI1PK = `ANALYTICS#${contentType}`;
+    keys.GSI3PK = `ANALYTICS#${contentType}`;
   }
   if (publishDate) {
-    keys.GSI1SK = `DATE#${publishDate}`;
+    keys.GSI3SK = `DATE#${publishDate}`;
   }
 
   return keys;
@@ -743,7 +743,7 @@ export function getABTestKeys(
 /**
  * Generates keys for Template
  * Pattern: PK: USER#<userId>, SK: TEMPLATE#<templateId>
- * GSI1: PK: TEMPLATE#<contentType>, SK: NAME#<name>
+ * GSI4: PK: TEMPLATE#<contentType>, SK: NAME#<name>
  */
 export function getTemplateKeys(
   userId: string,
@@ -751,20 +751,20 @@ export function getTemplateKeys(
   contentType?: string,
   name?: string
 ): DynamoDBKey & {
-  GSI1PK?: string;
-  GSI1SK?: string;
+  GSI4PK?: string;
+  GSI4SK?: string;
 } {
-  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+  const keys: DynamoDBKey & { GSI4PK?: string; GSI4SK?: string } = {
     PK: `USER#${userId}`,
     SK: `TEMPLATE#${templateId}`,
   };
 
-  // Add GSI keys for template discovery and search
+  // Add GSI4 keys for template discovery and search
   if (contentType) {
-    keys.GSI1PK = `TEMPLATE#${contentType}`;
+    keys.GSI4PK = `TEMPLATE#${contentType}`;
   }
   if (name) {
-    keys.GSI1SK = `NAME#${name}`;
+    keys.GSI4SK = `NAME#${name}`;
   }
 
   return keys;

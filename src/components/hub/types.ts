@@ -29,6 +29,7 @@ export interface HubTabsProps {
   activeTab: string;
   onChange?: (tabId: string) => void;
   variant?: 'default' | 'pills' | 'underline';
+  isSticky?: boolean;
 }
 
 export interface HubBreadcrumbsProps {

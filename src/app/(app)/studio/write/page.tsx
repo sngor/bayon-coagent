@@ -5,6 +5,8 @@ import { useActionState, useState, useTransition, useEffect, useMemo } from 'rea
 import { useSearchParams } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
+import { Typewriter, LoadingDots, SuccessAnimation, StaggeredText, GradientText } from '@/components/ui/text-animations';
+import '@/styles/text-animations.css';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -213,11 +215,16 @@ function GenerateButton({
       {...props}
     >
       {pending ? (
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        <>
+          <LoadingDots className="mr-2 text-white" size="sm" />
+          <span className="generating-text">Creating</span>
+        </>
       ) : (
-        <Sparkles className="mr-2 h-4 w-4" />
+        <>
+          <Sparkles className="mr-2 h-4 w-4" />
+          <span className="button-text-hover">{children}</span>
+        </>
       )}
-      {pending ? 'Creating...' : children}
     </Button>
   );
 }
@@ -268,8 +275,9 @@ function SaveDialog({ dialogInfo, setDialogInfo, projects }: { dialogInfo: SaveD
 
         if (result.message === 'Content saved successfully') {
           toast({
-            title: 'Content Saved!',
+            title: '✨ Content Saved!',
             description: `Your content has been saved to your Library.`,
+            className: 'success-message',
           });
           setDialogInfo({ isOpen: false, content: '', type: '' });
           setName('');
@@ -485,9 +493,10 @@ export default function ContentEnginePage() {
     navigator.clipboard.writeText(text);
     setCopiedStates(prev => ({ ...prev, [id]: true }));
     toast({
-      title: 'Copied to Clipboard!',
+      title: '✨ Copied to Clipboard!',
       description: 'Content is ready to paste',
       duration: 2000,
+      className: 'success-message',
     });
     setTimeout(() => {
       setCopiedStates(prev => ({ ...prev, [id]: false }));
@@ -953,24 +962,32 @@ export default function ContentEnginePage() {
     <div className="space-y-8">
 
       {/* Content Type Selector */}
-      <Card>
+      <Card className="animate-slide-in-top">
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
             <Label htmlFor="content-type" className="text-sm font-medium whitespace-nowrap">
-              Content Type:
+              <GradientText text="Content Type:" className="font-semibold" />
             </Label>
             <Select value={activeTab || 'market-update'} onValueChange={setActiveTab}>
-              <SelectTrigger id="content-type" className="w-full max-w-md">
+              <SelectTrigger id="content-type" className="w-full max-w-md transition-all duration-200 hover:border-primary/50">
                 <SelectValue placeholder="Select content type" />
               </SelectTrigger>
               <SelectContent>
-                {contentTypes.map((type) => {
+                {contentTypes.map((type, index) => {
                   const Icon = type.icon;
                   return (
-                    <SelectItem key={type.id} value={type.id}>
+                    <SelectItem
+                      key={type.id}
+                      value={type.id}
+                      className={cn(
+                        "animate-slide-in-left opacity-0",
+                        `stagger-${index + 1}`
+                      )}
+                      style={{ animationFillMode: 'forwards', animationDelay: `${index * 50}ms` }}
+                    >
                       <div className="flex items-center gap-2">
-                        <Icon className="w-4 h-4" />
-                        <span>{type.title}</span>
+                        <Icon className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                        <span className="button-text-hover">{type.title}</span>
                       </div>
                     </SelectItem>
                   );
@@ -983,17 +1000,30 @@ export default function ContentEnginePage() {
 
       {/* Applied Template Indicator */}
       {appliedTemplateInfo && (
-        <Card className="border-primary/20 bg-primary/5">
+        <Card className="border-primary/20 bg-primary/5 animate-slide-in-top success-message">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-primary" />
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center animate-scale-in">
+                  <Sparkles className="w-4 h-4 text-primary animate-twinkle" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Template Applied</p>
+                  <p className="text-sm font-medium">
+                    <StaggeredText
+                      text="Template Applied"
+                      staggerBy="word"
+                      delay={200}
+                      staggerDelay={100}
+                      animation="slideUp"
+                    />
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    Using "{appliedTemplateInfo.templateName}" template
+                    <Typewriter
+                      text={`Using "${appliedTemplateInfo.templateName}" template`}
+                      speed={30}
+                      delay={800}
+                      cursor={false}
+                    />
                   </p>
                 </div>
               </div>
@@ -1001,7 +1031,7 @@ export default function ContentEnginePage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setAppliedTemplateInfo(null)}
-                className="text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground transition-all duration-200 hover:scale-105"
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -1127,38 +1157,64 @@ export default function ContentEnginePage() {
                       variant="ai"
                       size="sm"
                       onClick={() => openScheduleDialog(marketUpdateContent, 'Market Update', ContentCategory.MARKET_UPDATE)}
-                      className="font-medium"
+                      className="font-medium transition-all duration-200 hover:scale-105"
                     >
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Schedule
+                      <Sparkles className="mr-2 h-4 w-4 animate-twinkle" />
+                      <span className="button-text-hover">Schedule</span>
                     </Button>
                     <Button
                       variant={copiedStates['market-update'] ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => copyToClipboard(marketUpdateContent, 'market-update')}
+                      className="transition-all duration-200 hover:scale-105"
                     >
                       {copiedStates['market-update'] ? (
                         <>
-                          <Check className="mr-2 h-4 w-4" />
-                          Copied!
+                          <Check className="mr-2 h-4 w-4 animate-scale-in" />
+                          <span className="text-gradient-animated font-medium">Copied!</span>
                         </>
                       ) : (
                         <>
                           <Copy className="mr-2 h-4 w-4" />
-                          Copy
+                          <span className="button-text-hover">Copy</span>
                         </>
                       )}
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => openSaveDialog(marketUpdateContent, 'Market Update')}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openSaveDialog(marketUpdateContent, 'Market Update')}
+                      className="transition-all duration-200 hover:scale-105"
+                    >
                       <Save className="mr-2 h-4 w-4" />
-                      Save
+                      <span className="button-text-hover">Save</span>
                     </Button>
                   </div>
                 )}
               </CardHeader>
               <CardContent>
                 {isMarketUpdatePending ? (
-                  <StandardLoadingSpinner variant="ai" message="Writing your market update..." />
+                  <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                    <LoadingDots className="text-primary" size="lg" />
+                    <div className="text-center">
+                      <Typewriter
+                        text="Writing your market update..."
+                        speed={60}
+                        className="text-lg font-medium text-primary"
+                        cursor={true}
+                        cursorChar="▋"
+                      />
+                      <p className="text-sm text-muted-foreground mt-2">
+                        <StaggeredText
+                          text="Analyzing market data and crafting insights..."
+                          staggerBy="word"
+                          delay={2000}
+                          staggerDelay={100}
+                          animation="fadeIn"
+                        />
+                      </p>
+                    </div>
+                  </div>
                 ) : marketUpdateContent ? (
                   <div className="space-y-4">
                     <Textarea
@@ -1170,14 +1226,25 @@ export default function ContentEnginePage() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 animate-pulse-gentle">
                       <TrendingUp className="w-8 h-8 text-primary" />
                     </div>
                     <p className="text-muted-foreground text-lg">
-                      Your market update will appear here.
+                      <StaggeredText
+                        text="Your market update will appear here."
+                        staggerBy="word"
+                        delay={300}
+                        staggerDelay={80}
+                        animation="slideUp"
+                      />
                     </p>
                     <p className="text-sm text-muted-foreground mt-2">
-                      Fill in the details and we'll write it for you.
+                      <Typewriter
+                        text="Fill in the details and we'll write it for you."
+                        speed={40}
+                        delay={1500}
+                        cursor={false}
+                      />
                     </p>
                   </div>
                 )}

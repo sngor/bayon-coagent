@@ -12,6 +12,8 @@ import { Loader2, Clock, Activity, Search, FileText, Home, Share2, Sparkles, Wan
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
 import { useTheme } from 'next-themes';
+import { useAccessibility } from '@/contexts/accessibility-context';
+import { DebugAccessibility } from '@/components/debug-accessibility';
 import { LoginHistory } from '@/components/login-history';
 import { UsageTracking, UsageStats } from '@/components/ui/usage-tracking';
 import type { UsageLimit } from '@/components/ui/usage-tracking';
@@ -130,6 +132,7 @@ export default function SettingsPage() {
     const { user } = useUser();
     const { theme, setTheme } = useTheme();
     const { toast } = useToast();
+    const { preferences, updatePreference } = useAccessibility();
     const [recentActivity, setRecentActivity] = useState<any[]>([]);
     const [isLoadingActivity, setIsLoadingActivity] = useState(true);
 
@@ -154,6 +157,8 @@ export default function SettingsPage() {
     const [isSecureConnection] = useState(typeof window !== 'undefined' && window.location.protocol === 'https:');
     const [hasStrongPassword] = useState(true); // This would be checked on backend
     const [emailVerified] = useState(user?.emailVerified ?? false);
+
+
 
     // Calculate security score
     const securityScore = [
@@ -254,7 +259,7 @@ export default function SettingsPage() {
         }
     ]);
 
-    // Load profile data
+    // Load profile data and preferences
     useEffect(() => {
         async function loadProfile() {
             if (!user) {
@@ -353,558 +358,592 @@ export default function SettingsPage() {
         }
     };
 
+    // Handle accessibility preference save
+    const handleHighContrastBordersChange = async (enabled: boolean) => {
+        try {
+            await updatePreference('highContrastBorders', enabled);
+            toast({
+                title: 'Accessibility Updated',
+                description: `High contrast borders ${enabled ? 'enabled' : 'disabled'}.`,
+            });
+        } catch (error) {
+            console.error('Error saving accessibility preference:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to save accessibility preference. Please try again.',
+                variant: 'destructive',
+            });
+        }
+    };
+
     return (
-        <div className="animate-fade-in-up space-y-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="overflow-x-auto">
-                    <TabsTrigger value="account">
-                        <User className="h-4 w-4" />
-                        <span className="hidden sm:inline whitespace-nowrap">Account</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="preferences">
-                        <Palette className="h-4 w-4" />
-                        <span className="hidden sm:inline whitespace-nowrap">Preferences</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="integrations">
-                        <LinkIcon className="h-4 w-4" />
-                        <span className="hidden sm:inline whitespace-nowrap">Integrations</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="security">
-                        <Shield className="h-4 w-4" />
-                        <span className="hidden sm:inline whitespace-nowrap">Security</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="usage">
-                        <BarChart3 className="h-4 w-4" />
-                        <span className="hidden sm:inline whitespace-nowrap">Usage</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="features">
-                        <Wand2 className="h-4 w-4" />
-                        <span className="hidden sm:inline whitespace-nowrap">Features</span>
-                    </TabsTrigger>
-                </TabsList>
+        <>
+            <div className="animate-fade-in-up space-y-6">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                    <TabsList className="overflow-x-auto">
+                        <TabsTrigger value="account">
+                            <User className="h-4 w-4" />
+                            <span className="hidden sm:inline whitespace-nowrap">Account</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="preferences">
+                            <Palette className="h-4 w-4" />
+                            <span className="hidden sm:inline whitespace-nowrap">Preferences</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="integrations">
+                            <LinkIcon className="h-4 w-4" />
+                            <span className="hidden sm:inline whitespace-nowrap">Integrations</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="security">
+                            <Shield className="h-4 w-4" />
+                            <span className="hidden sm:inline whitespace-nowrap">Security</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="usage">
+                            <BarChart3 className="h-4 w-4" />
+                            <span className="hidden sm:inline whitespace-nowrap">Usage</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="features">
+                            <Wand2 className="h-4 w-4" />
+                            <span className="hidden sm:inline whitespace-nowrap">Features</span>
+                        </TabsTrigger>
+                    </TabsList>
 
-                <TabsContent value="account" className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Account Information</CardTitle>
-                            <CardDescription>Your account details and profile settings</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
-                                <Input id="email" type="email" value={user?.email || ''} disabled />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="name">Full Name</Label>
-                                <Input
-                                    id="name"
-                                    type="text"
-                                    placeholder="Enter your name"
-                                    value={fullName}
-                                    onChange={(e) => setFullName(e.target.value)}
-                                    disabled={isLoadingProfile}
-                                />
-                            </div>
-                            <Button
-                                onClick={handleSaveProfile}
-                                disabled={isSavingProfile || isLoadingProfile}
-                            >
-                                {isSavingProfile ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Saving...
-                                    </>
-                                ) : (
-                                    'Save Changes'
-                                )}
-                            </Button>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Password</CardTitle>
-                            <CardDescription>Change your password</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="current-password">Current Password</Label>
-                                <Input id="current-password" type="password" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="new-password">New Password</Label>
-                                <Input id="new-password" type="password" />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="confirm-password">Confirm New Password</Label>
-                                <Input id="confirm-password" type="password" />
-                            </div>
-                            <Button>Update Password</Button>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-destructive">Danger Zone</CardTitle>
-                            <CardDescription>Irreversible account actions</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Button variant="destructive" className="gap-2">
-                                <Trash2 className="h-4 w-4" />
-                                Delete Account
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="preferences" className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Appearance</CardTitle>
-                            <CardDescription>Customize the look and feel of the application</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="theme">Color Theme</Label>
-                                <Select value={theme} onValueChange={setTheme}>
-                                    <SelectTrigger id="theme">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="light">Light</SelectItem>
-                                        <SelectItem value="dark">Dark</SelectItem>
-                                        <SelectItem value="system">System</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label>Compact Mode</Label>
-                                    <p className="text-sm text-muted-foreground">Reduce spacing for more content</p>
+                    <TabsContent value="account" className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Account Information</CardTitle>
+                                <CardDescription>Your account details and profile settings</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="email">Email</Label>
+                                    <Input id="email" type="email" value={user?.email || ''} disabled />
                                 </div>
-                                <Switch />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Notifications</CardTitle>
-                            <CardDescription>Manage your notification preferences</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label>Content Generation Complete</Label>
-                                    <p className="text-sm text-muted-foreground">Get notified when AI content is ready</p>
+                                <div className="space-y-2">
+                                    <Label htmlFor="name">Full Name</Label>
+                                    <Input
+                                        id="name"
+                                        type="text"
+                                        placeholder="Enter your name"
+                                        value={fullName}
+                                        onChange={(e) => setFullName(e.target.value)}
+                                        disabled={isLoadingProfile}
+                                    />
                                 </div>
-                                <Switch defaultChecked />
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label>Weekly Activity Summary</Label>
-                                    <p className="text-sm text-muted-foreground">Receive a weekly digest of your activity</p>
-                                </div>
-                                <Switch defaultChecked />
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label>Marketing Tips</Label>
-                                    <p className="text-sm text-muted-foreground">Get tips and best practices</p>
-                                </div>
-                                <Switch />
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="integrations" className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Connected Services</CardTitle>
-                            <CardDescription>Manage your third-party integrations</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between p-4 border rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                                        <LinkIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                                    </div>
-                                    <div>
-                                        <p className="font-medium">Google Business Profile</p>
-                                        <p className="text-sm text-muted-foreground">Not connected</p>
-                                    </div>
-                                </div>
-                                <Button variant="outline" onClick={() => window.location.href = '/brand/profile'}>
-                                    Connect
+                                <Button
+                                    onClick={handleSaveProfile}
+                                    disabled={isSavingProfile || isLoadingProfile}
+                                >
+                                    {isSavingProfile ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        'Save Changes'
+                                    )}
                                 </Button>
-                            </div>
-                            <div className="flex items-center justify-between p-4 border rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
-                                        <LinkIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                                    </div>
-                                    <div>
-                                        <p className="font-medium">Zillow Reviews</p>
-                                        <p className="text-sm text-muted-foreground">Import your reviews</p>
-                                    </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Password</CardTitle>
+                                <CardDescription>Change your password</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="current-password">Current Password</Label>
+                                    <Input id="current-password" type="password" />
                                 </div>
-                                <Button variant="outline" onClick={() => window.location.href = '/brand/audit'}>
-                                    Import
+                                <div className="space-y-2">
+                                    <Label htmlFor="new-password">New Password</Label>
+                                    <Input id="new-password" type="password" />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                                    <Input id="confirm-password" type="password" />
+                                </div>
+                                <Button>Update Password</Button>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-destructive">Danger Zone</CardTitle>
+                                <CardDescription>Irreversible account actions</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Button variant="destructive" className="gap-2">
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete Account
                                 </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                    <MLSConnection />
+                    <TabsContent value="preferences" className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Appearance</CardTitle>
+                                <CardDescription>Customize the look and feel of the application</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="theme">Color Theme</Label>
+                                    <Select value={theme} onValueChange={setTheme}>
+                                        <SelectTrigger id="theme">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="light">Light</SelectItem>
+                                            <SelectItem value="dark">Dark</SelectItem>
+                                            <SelectItem value="system">System</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
 
-                    <SocialMediaConnections />
-                </TabsContent>
+                            </CardContent>
+                        </Card>
 
-                <TabsContent value="security" className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <ShieldCheck className="h-5 w-5" />
-                                Security Status
-                            </CardTitle>
-                            <CardDescription>Your account security overview</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between p-4 border rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <div className={`h-12 w-12 rounded-full ${securityLevel.bgColor} flex items-center justify-center`}>
-                                        <Shield className={`h-6 w-6 ${securityLevel.color}`} />
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Accessibility</CardTitle>
+                                <CardDescription>Improve accessibility and visual clarity</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label>High Contrast Borders</Label>
+                                        <p className="text-sm text-muted-foreground">Use black borders for better contrast when elements don't have shadows</p>
                                     </div>
-                                    <div>
-                                        <p className="font-semibold">Security Level: {securityLevel.label}</p>
-                                        <p className="text-sm text-muted-foreground">{securityScore} of {maxScore} security features enabled</p>
+                                    <Switch
+                                        checked={preferences.highContrastBorders}
+                                        onCheckedChange={handleHighContrastBordersChange}
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Notifications</CardTitle>
+                                <CardDescription>Manage your notification preferences</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label>Content Generation Complete</Label>
+                                        <p className="text-sm text-muted-foreground">Get notified when AI content is ready</p>
                                     </div>
+                                    <Switch defaultChecked />
                                 </div>
-                                <div className="text-right">
-                                    <p className={`text-2xl font-bold ${securityLevel.color}`}>{securityPercentage}%</p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between py-2">
-                                    <div className="flex items-center gap-2">
-                                        <Lock className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-sm">Secure Connection (HTTPS)</span>
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label>Weekly Activity Summary</Label>
+                                        <p className="text-sm text-muted-foreground">Receive a weekly digest of your activity</p>
                                     </div>
-                                    {isSecureConnection ? (
-                                        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                                    ) : (
-                                        <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                                    )}
+                                    <Switch defaultChecked />
                                 </div>
-
-                                <div className="flex items-center justify-between py-2">
-                                    <div className="flex items-center gap-2">
-                                        <Shield className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-sm">Two-Factor Authentication</span>
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label>Marketing Tips</Label>
+                                        <p className="text-sm text-muted-foreground">Get tips and best practices</p>
                                     </div>
-                                    {mfaEnabled ? (
-                                        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                                    ) : (
-                                        <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                                    )}
+                                    <Switch />
                                 </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                                <div className="flex items-center justify-between py-2">
-                                    <div className="flex items-center gap-2">
-                                        <Key className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-sm">Strong Password</span>
-                                    </div>
-                                    {hasStrongPassword ? (
-                                        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                                    ) : (
-                                        <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                                    )}
-                                </div>
-
-                                <div className="flex items-center justify-between py-2">
-                                    <div className="flex items-center gap-2">
-                                        <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                                        <span className="text-sm">Email Verified</span>
-                                    </div>
-                                    {emailVerified ? (
-                                        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                                    ) : (
-                                        <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                                    )}
-                                </div>
-                            </div>
-
-                            {securityPercentage < 100 && (
-                                <div className="pt-4 border-t">
-                                    <p className="text-sm text-muted-foreground mb-3">
-                                        Improve your security by enabling the missing features below
-                                    </p>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Two-Factor Authentication</CardTitle>
-                            <CardDescription>Add an extra layer of security to your account</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                    <Label>Enable 2FA</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        Require a verification code in addition to your password
-                                    </p>
-                                </div>
-                                <Switch checked={mfaEnabled} onCheckedChange={setMfaEnabled} />
-                            </div>
-                            {mfaEnabled && (
-                                <div className="pt-4 border-t space-y-3">
-                                    <p className="text-sm text-muted-foreground">
-                                        Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)
-                                    </p>
-                                    <div className="flex justify-center p-4 bg-muted rounded-lg">
-                                        <div className="h-48 w-48 bg-white dark:bg-gray-800 rounded-lg flex items-center justify-center">
-                                            <p className="text-xs text-muted-foreground">QR Code Placeholder</p>
+                    <TabsContent value="integrations" className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Connected Services</CardTitle>
+                                <CardDescription>Manage your third-party integrations</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex items-center justify-between p-4 border rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                                            <LinkIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium">Google Business Profile</p>
+                                            <p className="text-sm text-muted-foreground">Not connected</p>
                                         </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="verification-code">Verification Code</Label>
-                                        <Input id="verification-code" placeholder="Enter 6-digit code" maxLength={6} />
-                                    </div>
-                                    <Button className="w-full">Verify and Enable</Button>
+                                    <Button variant="outline" onClick={() => window.location.href = '/brand/profile'}>
+                                        Connect
+                                    </Button>
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                                <div className="flex items-center justify-between p-4 border rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
+                                            <LinkIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium">Zillow Reviews</p>
+                                            <p className="text-sm text-muted-foreground">Import your reviews</p>
+                                        </div>
+                                    </div>
+                                    <Button variant="outline" onClick={() => window.location.href = '/brand/audit'}>
+                                        Import
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Trusted Devices</CardTitle>
-                            <CardDescription>Devices where you're currently signed in</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-3">
-                                {trustedDevices.map((device) => {
-                                    const DeviceIcon = device.type === 'mobile' ? Smartphone : device.type === 'tablet' ? Tablet : Monitor;
-                                    return (
-                                        <div key={device.id} className="flex items-start gap-3 p-4 border rounded-lg">
-                                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                                <DeviceIcon className="h-5 w-5 text-primary" />
+                        <MLSConnection />
+
+                        <SocialMediaConnections />
+                    </TabsContent>
+
+                    <TabsContent value="security" className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <ShieldCheck className="h-5 w-5" />
+                                    Security Status
+                                </CardTitle>
+                                <CardDescription>Your account security overview</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex items-center justify-between p-4 border rounded-lg">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`h-12 w-12 rounded-full ${securityLevel.bgColor} flex items-center justify-center`}>
+                                            <Shield className={`h-6 w-6 ${securityLevel.color}`} />
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold">Security Level: {securityLevel.label}</p>
+                                            <p className="text-sm text-muted-foreground">{securityScore} of {maxScore} security features enabled</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className={`text-2xl font-bold ${securityLevel.color}`}>{securityPercentage}%</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between py-2">
+                                        <div className="flex items-center gap-2">
+                                            <Lock className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-sm">Secure Connection (HTTPS)</span>
+                                        </div>
+                                        {isSecureConnection ? (
+                                            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                        ) : (
+                                            <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                                        )}
+                                    </div>
+
+                                    <div className="flex items-center justify-between py-2">
+                                        <div className="flex items-center gap-2">
+                                            <Shield className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-sm">Two-Factor Authentication</span>
+                                        </div>
+                                        {mfaEnabled ? (
+                                            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                        ) : (
+                                            <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                                        )}
+                                    </div>
+
+                                    <div className="flex items-center justify-between py-2">
+                                        <div className="flex items-center gap-2">
+                                            <Key className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-sm">Strong Password</span>
+                                        </div>
+                                        {hasStrongPassword ? (
+                                            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                        ) : (
+                                            <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                                        )}
+                                    </div>
+
+                                    <div className="flex items-center justify-between py-2">
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-sm">Email Verified</span>
+                                        </div>
+                                        {emailVerified ? (
+                                            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                                        ) : (
+                                            <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                                        )}
+                                    </div>
+                                </div>
+
+                                {securityPercentage < 100 && (
+                                    <div className="pt-4 border-t">
+                                        <p className="text-sm text-muted-foreground mb-3">
+                                            Improve your security by enabling the missing features below
+                                        </p>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Two-Factor Authentication</CardTitle>
+                                <CardDescription>Add an extra layer of security to your account</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label>Enable 2FA</Label>
+                                        <p className="text-sm text-muted-foreground">
+                                            Require a verification code in addition to your password
+                                        </p>
+                                    </div>
+                                    <Switch checked={mfaEnabled} onCheckedChange={setMfaEnabled} />
+                                </div>
+                                {mfaEnabled && (
+                                    <div className="pt-4 border-t space-y-3">
+                                        <p className="text-sm text-muted-foreground">
+                                            Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)
+                                        </p>
+                                        <div className="flex justify-center p-4 bg-muted rounded-lg">
+                                            <div className="h-48 w-48 bg-white dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                                                <p className="text-xs text-muted-foreground">QR Code Placeholder</p>
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <p className="text-sm font-medium">{device.name}</p>
-                                                    {device.current && (
-                                                        <span className="text-xs bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full">
-                                                            Current
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="verification-code">Verification Code</Label>
+                                            <Input id="verification-code" placeholder="Enter 6-digit code" maxLength={6} />
+                                        </div>
+                                        <Button className="w-full">Verify and Enable</Button>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Trusted Devices</CardTitle>
+                                <CardDescription>Devices where you're currently signed in</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-3">
+                                    {trustedDevices.map((device) => {
+                                        const DeviceIcon = device.type === 'mobile' ? Smartphone : device.type === 'tablet' ? Tablet : Monitor;
+                                        return (
+                                            <div key={device.id} className="flex items-start gap-3 p-4 border rounded-lg">
+                                                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                                    <DeviceIcon className="h-5 w-5 text-primary" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <p className="text-sm font-medium">{device.name}</p>
+                                                        {device.current && (
+                                                            <span className="text-xs bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full">
+                                                                Current
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                                        <span className="flex items-center gap-1">
+                                                            <Globe className="h-3 w-3" />
+                                                            {device.location}
+                                                        </span>
+                                                        <span className="flex items-center gap-1">
+                                                            <Clock className="h-3 w-3" />
+                                                            {formatTimestamp(device.lastActive)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                {!device.current && (
+                                                    <Button variant="ghost" size="sm" className="gap-2 text-destructive hover:text-destructive">
+                                                        <LogOut className="h-4 w-4" />
+                                                        Revoke
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <div className="mt-4 pt-4 border-t">
+                                    <Button variant="outline" className="w-full gap-2 text-destructive hover:text-destructive">
+                                        <LogOut className="h-4 w-4" />
+                                        Sign Out All Other Devices
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Login History</CardTitle>
+                                <CardDescription>Recent sign-ins to your account</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {user && <LoginHistory userId={user.id} />}
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="font-headline">Recent Activity</CardTitle>
+                                <CardDescription>
+                                    Your latest content generation and AI interactions
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                {isLoadingActivity ? (
+                                    <div className="flex items-center justify-center py-8">
+                                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                                    </div>
+                                ) : recentActivity.length === 0 ? (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                        <p className="text-sm">No recent activity yet</p>
+                                        <p className="text-xs mt-1">Start creating content to see your activity here</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="space-y-3">
+                                            {recentActivity.map((activity) => {
+                                                const activityConfig = getActivityConfig(activity);
+                                                return (
+                                                    <div key={activity.id} className="flex items-start gap-3 rounded-lg border p-4 hover:bg-muted/50 transition-colors">
+                                                        <div className={`rounded-md ${activityConfig.bgColor} p-2`}>
+                                                            {activityConfig.icon}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-semibold mb-1">{activityConfig.label}</p>
+                                                            <p className="text-xs text-muted-foreground mb-2 truncate">
+                                                                {activity.title}
+                                                            </p>
+                                                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                                                <span className="flex items-center gap-1">
+                                                                    <Clock className="h-3 w-3" />
+                                                                    {formatTimestamp(activity.timestamp)}
+                                                                </span>
+                                                                <span className="flex items-center gap-1">
+                                                                    {activityConfig.sourceIcon}
+                                                                    {activityConfig.source}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <div className="mt-4 pt-4 border-t">
+                                            <Button
+                                                variant="outline"
+                                                className="w-full"
+                                                onClick={() => window.location.href = '/library/content'}
+                                            >
+                                                View All Activity
+                                            </Button>
+                                        </div>
+                                    </>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="usage" className="space-y-6">
+                        <UsageStats stats={usageStats} />
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>AI Feature Usage</CardTitle>
+                                <CardDescription>Track your monthly AI feature usage and limits</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {usageLimits.map((limit, index) => {
+                                    const percentage = (limit.used / limit.limit) * 100;
+                                    const isNearLimit = percentage >= 80;
+                                    const isAtLimit = percentage >= 100;
+
+                                    return (
+                                        <div key={index} className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-medium">{limit.feature}</span>
+                                                    {isAtLimit && (
+                                                        <span className="text-xs bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 px-2 py-0.5 rounded-full">
+                                                            Limit Reached
+                                                        </span>
+                                                    )}
+                                                    {isNearLimit && !isAtLimit && (
+                                                        <span className="text-xs bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full">
+                                                            Near Limit
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                                    <span className="flex items-center gap-1">
-                                                        <Globe className="h-3 w-3" />
-                                                        {device.location}
-                                                    </span>
-                                                    <span className="flex items-center gap-1">
-                                                        <Clock className="h-3 w-3" />
-                                                        {formatTimestamp(device.lastActive)}
-                                                    </span>
-                                                </div>
+                                                <span className="text-sm text-muted-foreground">
+                                                    {limit.used} / {limit.limit}
+                                                </span>
                                             </div>
-                                            {!device.current && (
-                                                <Button variant="ghost" size="sm" className="gap-2 text-destructive hover:text-destructive">
-                                                    <LogOut className="h-4 w-4" />
-                                                    Revoke
-                                                </Button>
-                                            )}
+                                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full transition-all ${isAtLimit
+                                                        ? 'bg-red-600 dark:bg-red-400'
+                                                        : isNearLimit
+                                                            ? 'bg-amber-500'
+                                                            : 'bg-primary'
+                                                        }`}
+                                                    style={{ width: `${Math.min(percentage, 100)}%` }}
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                                <span className="capitalize">{limit.period} limit</span>
+                                                {limit.resetDate && (
+                                                    <span>Resets {limit.resetDate.toLocaleDateString()}</span>
+                                                )}
+                                            </div>
                                         </div>
                                     );
                                 })}
-                            </div>
-                            <div className="mt-4 pt-4 border-t">
-                                <Button variant="outline" className="w-full gap-2 text-destructive hover:text-destructive">
-                                    <LogOut className="h-4 w-4" />
-                                    Sign Out All Other Devices
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Login History</CardTitle>
-                            <CardDescription>Recent sign-ins to your account</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {user && <LoginHistory userId={user.id} />}
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="font-headline">Recent Activity</CardTitle>
-                            <CardDescription>
-                                Your latest content generation and AI interactions
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {isLoadingActivity ? (
-                                <div className="flex items-center justify-center py-8">
-                                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                                </div>
-                            ) : recentActivity.length === 0 ? (
-                                <div className="text-center py-8 text-muted-foreground">
-                                    <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                                    <p className="text-sm">No recent activity yet</p>
-                                    <p className="text-xs mt-1">Start creating content to see your activity here</p>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="space-y-3">
-                                        {recentActivity.map((activity) => {
-                                            const activityConfig = getActivityConfig(activity);
-                                            return (
-                                                <div key={activity.id} className="flex items-start gap-3 rounded-lg border p-4 hover:bg-muted/50 transition-colors">
-                                                    <div className={`rounded-md ${activityConfig.bgColor} p-2`}>
-                                                        {activityConfig.icon}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-semibold mb-1">{activityConfig.label}</p>
-                                                        <p className="text-xs text-muted-foreground mb-2 truncate">
-                                                            {activity.title}
-                                                        </p>
-                                                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                                            <span className="flex items-center gap-1">
-                                                                <Clock className="h-3 w-3" />
-                                                                {formatTimestamp(activity.timestamp)}
-                                                            </span>
-                                                            <span className="flex items-center gap-1">
-                                                                {activityConfig.sourceIcon}
-                                                                {activityConfig.source}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Usage Tips</CardTitle>
+                                <CardDescription>Get the most out of your AI features</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <div className="flex gap-3 p-3 bg-muted rounded-lg">
+                                    <Brain className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-sm font-medium mb-1">Optimize Your Prompts</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Be specific and detailed in your content requests to get better results on the first try
+                                        </p>
                                     </div>
-                                    <div className="mt-4 pt-4 border-t">
-                                        <Button
-                                            variant="outline"
-                                            className="w-full"
-                                            onClick={() => window.location.href = '/library/content'}
-                                        >
-                                            View All Activity
-                                        </Button>
+                                </div>
+                                <div className="flex gap-3 p-3 bg-muted rounded-lg">
+                                    <Sparkles className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-sm font-medium mb-1">Save Your Templates</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Create reusable templates for frequently generated content types
+                                        </p>
                                     </div>
-                                </>
-                            )}
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="usage" className="space-y-6">
-                    <UsageStats stats={usageStats} />
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>AI Feature Usage</CardTitle>
-                            <CardDescription>Track your monthly AI feature usage and limits</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {usageLimits.map((limit, index) => {
-                                const percentage = (limit.used / limit.limit) * 100;
-                                const isNearLimit = percentage >= 80;
-                                const isAtLimit = percentage >= 100;
-
-                                return (
-                                    <div key={index} className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-medium">{limit.feature}</span>
-                                                {isAtLimit && (
-                                                    <span className="text-xs bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 px-2 py-0.5 rounded-full">
-                                                        Limit Reached
-                                                    </span>
-                                                )}
-                                                {isNearLimit && !isAtLimit && (
-                                                    <span className="text-xs bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full">
-                                                        Near Limit
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <span className="text-sm text-muted-foreground">
-                                                {limit.used} / {limit.limit}
-                                            </span>
-                                        </div>
-                                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                            <div
-                                                className={`h-full transition-all ${isAtLimit
-                                                    ? 'bg-red-600 dark:bg-red-400'
-                                                    : isNearLimit
-                                                        ? 'bg-amber-500'
-                                                        : 'bg-primary'
-                                                    }`}
-                                                style={{ width: `${Math.min(percentage, 100)}%` }}
-                                            />
-                                        </div>
-                                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                            <span className="capitalize">{limit.period} limit</span>
-                                            {limit.resetDate && (
-                                                <span>Resets {limit.resetDate.toLocaleDateString()}</span>
-                                            )}
-                                        </div>
+                                </div>
+                                <div className="flex gap-3 p-3 bg-muted rounded-lg">
+                                    <TrendingUp className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-sm font-medium mb-1">Track Your Performance</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Monitor which content types perform best and focus your usage there
+                                        </p>
                                     </div>
-                                );
-                            })}
-                        </CardContent>
-                    </Card>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Usage Tips</CardTitle>
-                            <CardDescription>Get the most out of your AI features</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <div className="flex gap-3 p-3 bg-muted rounded-lg">
-                                <Brain className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="text-sm font-medium mb-1">Optimize Your Prompts</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Be specific and detailed in your content requests to get better results on the first try
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex gap-3 p-3 bg-muted rounded-lg">
-                                <Sparkles className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="text-sm font-medium mb-1">Save Your Templates</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Create reusable templates for frequently generated content types
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex gap-3 p-3 bg-muted rounded-lg">
-                                <TrendingUp className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="text-sm font-medium mb-1">Track Your Performance</p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Monitor which content types perform best and focus your usage there
-                                    </p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="features" className="space-y-6">
-                    <FeatureToggles />
-                </TabsContent>
-            </Tabs>
-        </div>
+                    <TabsContent value="features" className="space-y-6">
+                        <FeatureToggles />
+                    </TabsContent>
+                </Tabs>
+            </div>
+            <DebugAccessibility />
+        </>
     );
 }

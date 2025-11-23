@@ -1,8 +1,9 @@
 /**
  * Twitter OAuth Callback Route
- * Handles OAuth 2.0 callback from Twitter/X
+ * Handles OAuth 2.0 callback from Twitter with enhanced analytics scopes
+ * for content workflow features
  * 
- * Requirements: 1.2, 8.1 (Task 9.2: Streamlined channel connection experience)
+ * Requirements: 6.1, 8.1
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -34,11 +35,37 @@ export async function GET(request: NextRequest) {
         const manager = getOAuthConnectionManager();
         const connection = await manager.handleCallback('twitter', code, state);
 
+        // Get Twitter user metrics from metadata
+        const publicMetrics = connection.metadata?.publicMetrics;
+
+        // Validate analytics access for content workflow features
+        const analyticsValidation = await manager.validateAnalyticsAccess(
+            connection.userId,
+            'twitter'
+        );
+
         // Redirect to settings with success message
         const successUrl = new URL('/settings', request.url);
         successUrl.searchParams.set('success', 'twitter_connected');
         successUrl.searchParams.set('platform', 'twitter');
         successUrl.searchParams.set('username', connection.platformUsername);
+
+        if (publicMetrics) {
+            successUrl.searchParams.set('followers', publicMetrics.followers_count?.toString() || '0');
+        }
+
+        // Include analytics capability information
+        if (analyticsValidation.hasAccess) {
+            successUrl.searchParams.set('analytics', 'enabled');
+            if (analyticsValidation.availableMetrics) {
+                successUrl.searchParams.set('metrics', analyticsValidation.availableMetrics.length.toString());
+            }
+        } else {
+            successUrl.searchParams.set('analytics', 'limited');
+            if (analyticsValidation.error) {
+                successUrl.searchParams.set('analytics_error', encodeURIComponent(analyticsValidation.error));
+            }
+        }
 
         return NextResponse.redirect(successUrl);
     } catch (error) {

@@ -16,7 +16,9 @@ import {
 } from '../social/types';
 import {
     OAUTH_SCOPES,
-    PLATFORM_API_ENDPOINTS
+    PLATFORM_API_ENDPOINTS,
+    ANALYTICS_API_ENDPOINTS,
+    ANALYTICS_METRICS
 } from '../social/constants';
 import { OAuthConnectionSchema } from '../social/schemas';
 
@@ -31,6 +33,9 @@ export interface OAuthConnectionManager {
     getConnection(userId: string, platform: Platform): Promise<OAuthConnection | null>;
     updateConnectionMetadata(userId: string, platform: Platform, metadata: Record<string, any>): Promise<OAuthConnection>;
     validateConnection(userId: string, platform: Platform): Promise<{ isValid: boolean; error?: string }>;
+    // New methods for content workflow features
+    validateAnalyticsAccess(userId: string, platform: Platform): Promise<{ hasAccess: boolean; error?: string; availableMetrics?: string[] }>;
+    getConnectionForAnalytics(userId: string, platform: Platform): Promise<OAuthConnection | null>;
 }
 
 /**
@@ -628,6 +633,85 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
     }
 
     /**
+     * Validate analytics access for a connection
+     * Tests if the connection has proper scopes for analytics data access
+     * 
+     * @param userId - User ID
+     * @param platform - Social media platform
+     * @returns Analytics validation result
+     */
+    async validateAnalyticsAccess(
+        userId: string,
+        platform: Platform
+    ): Promise<{ hasAccess: boolean; error?: string; availableMetrics?: string[] }> {
+        try {
+            const connection = await this.getConnection(userId, platform);
+
+            if (!connection) {
+                return {
+                    hasAccess: false,
+                    error: 'Connection not found',
+                };
+            }
+
+            // Check if token is expired
+            if (connection.expiresAt < Date.now()) {
+                return {
+                    hasAccess: false,
+                    error: 'Token expired',
+                };
+            }
+
+            // Test analytics API access
+            const analyticsResult = await this.testAnalyticsAPI(platform, connection.accessToken);
+
+            // Update analytics validation metadata
+            await this.updateConnectionMetadata(userId, platform, {
+                lastAnalyticsValidated: Date.now(),
+                analyticsValidationResult: analyticsResult,
+                analyticsScopes: connection.scope.filter(scope =>
+                    this.isAnalyticsScope(platform, scope)
+                ),
+            });
+
+            return analyticsResult;
+        } catch (error) {
+            return {
+                hasAccess: false,
+                error: error instanceof Error ? error.message : 'Analytics validation failed',
+            };
+        }
+    }
+
+    /**
+     * Get connection with automatic token refresh for analytics access
+     * Ensures the connection is valid and has analytics permissions
+     * 
+     * @param userId - User ID
+     * @param platform - Social media platform
+     * @returns OAuth connection with valid analytics access
+     */
+    async getConnectionForAnalytics(
+        userId: string,
+        platform: Platform
+    ): Promise<OAuthConnection | null> {
+        const connection = await this.getConnection(userId, platform);
+
+        if (!connection) {
+            return null;
+        }
+
+        // Validate analytics access
+        const analyticsValidation = await this.validateAnalyticsAccess(userId, platform);
+
+        if (!analyticsValidation.hasAccess) {
+            throw new Error(`Analytics access not available: ${analyticsValidation.error}`);
+        }
+
+        return connection;
+    }
+
+    /**
      * Test platform API access
      * @private
      */
@@ -678,6 +762,108 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
                 error: error instanceof Error ? error.message : 'API test failed',
             };
         }
+    }
+
+    /**
+     * Test analytics API access for content workflow features
+     * @private
+     */
+    private async testAnalyticsAPI(
+        platform: Platform,
+        accessToken: string
+    ): Promise<{ hasAccess: boolean; error?: string; availableMetrics?: string[] }> {
+        try {
+            let testUrl: string;
+            let headers: Record<string, string> = {};
+
+            switch (platform) {
+                case 'facebook':
+                    // Test Facebook Insights API access
+                    testUrl = `${ANALYTICS_API_ENDPOINTS.facebook}/me/accounts?fields=id,name,access_token&access_token=${accessToken}`;
+                    break;
+                case 'instagram':
+                    // Test Instagram Insights API access
+                    testUrl = `${ANALYTICS_API_ENDPOINTS.instagram}/me/accounts?fields=instagram_business_account&access_token=${accessToken}`;
+                    break;
+                case 'linkedin':
+                    // Test LinkedIn Analytics API access
+                    testUrl = `${ANALYTICS_API_ENDPOINTS.linkedin}/organizationAcls?q=roleAssignee`;
+                    headers['Authorization'] = `Bearer ${accessToken}`;
+                    break;
+                case 'twitter':
+                    // Test Twitter Analytics API access
+                    testUrl = `${ANALYTICS_API_ENDPOINTS.twitter}/users/me?user.fields=public_metrics`;
+                    headers['Authorization'] = `Bearer ${accessToken}`;
+                    break;
+            }
+
+            const response = await fetch(testUrl, {
+                method: 'GET',
+                headers,
+                signal: AbortSignal.timeout(10000), // 10 second timeout
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                return {
+                    hasAccess: false,
+                    error: `Analytics API call failed: ${response.status} ${errorText}`,
+                };
+            }
+
+            // Get available metrics for this platform
+            const availableMetrics = ANALYTICS_METRICS[platform] || [];
+
+            return {
+                hasAccess: true,
+                availableMetrics,
+            };
+        } catch (error) {
+            return {
+                hasAccess: false,
+                error: error instanceof Error ? error.message : 'Analytics API test failed',
+            };
+        }
+    }
+
+    /**
+     * Check if a scope is analytics-related for content workflow features
+     * @private
+     */
+    private isAnalyticsScope(platform: Platform, scope: string): boolean {
+        const analyticsScopes: Record<Platform, string[]> = {
+            facebook: [
+                'pages_read_engagement',
+                'read_insights',
+                'pages_read_user_content',
+                'business_management',
+            ],
+            instagram: [
+                'pages_read_engagement',
+                'instagram_manage_insights',
+                'read_insights',
+                'business_management',
+            ],
+            linkedin: [
+                'r_organization_social',
+                'r_organization_admin',
+                'r_analytics',
+                'r_organization_followers_statistics',
+                'r_organization_lookup',
+            ],
+            twitter: [
+                'tweet.moderate.write',
+                'follows.read',
+                'follows.write',
+                'space.read',
+                'mute.read',
+                'mute.write',
+                'block.read',
+                'block.write',
+            ],
+        };
+
+        return analyticsScopes[platform]?.includes(scope) || false;
     }
 
     /**

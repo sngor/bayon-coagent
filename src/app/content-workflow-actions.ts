@@ -1586,8 +1586,12 @@ import {
     getTemplate,
     shareTemplate,
     getSharedTemplates,
-    copySharedTemplate,
+    updateSharedTemplate,
+    unshareTemplate,
+    getTemplateAnalytics,
     getSeasonalTemplates,
+    getSeasonalNotifications,
+    getSeasonalTemplateAnalytics,
     applyTemplate
 } from '@/services/template-service';
 import {
@@ -2032,5 +2036,834 @@ export async function applyTemplateAction(
             message: 'Failed to apply template',
             errors: [error instanceof Error ? error.message : 'Unknown error']
         };
+    }
+}
+
+// ==================== Template Sharing Actions ====================
+
+/**
+ * Schema for sharing template
+ */
+const shareTemplateSchema = z.object({
+    templateId: z.string().min(1, 'Template ID is required'),
+    brokerageId: z.string().min(1, 'Brokerage ID is required'),
+    permissions: z.object({
+        canView: z.array(z.string()),
+        canEdit: z.array(z.string()),
+        canShare: z.array(z.string()),
+        canDelete: z.array(z.string())
+    })
+});
+
+/**
+ * Share template action
+ * Requirement 10.1, 10.2: Enable template sharing within brokerage organization
+ */
+export async function shareTemplateAction(
+    templateId: string,
+    brokerageId: string,
+    permissions: TemplatePermissions
+): Promise<ContentWorkflowResponse<{}>> {
+    try {
+        // Get current user
+        const user = await getCurrentUser();
+        if (!user) {
+            return {
+                success: false,
+                message: 'Authentication required',
+                errors: ['User not authenticated']
+            };
+        }
+
+        // Validate input
+        const validatedData = shareTemplateSchema.parse({
+            templateId,
+            brokerageId,
+            permissions
+        });
+
+        // Share template
+        const result = await shareTemplate({
+            userId: user.id,
+            templateId: validatedData.templateId,
+            brokerageId: validatedData.brokerageId,
+            permissions: validatedData.permissions
+        });
+
+        if (!result.success) {
+            return {
+                success: false,
+                message: result.error || 'Failed to share template',
+                errors: [result.error || 'Unknown error']
+            };
+        }
+
+        // Revalidate relevant paths
+        revalidatePath('/library/templates');
+
+        return {
+            success: true,
+            message: 'Template shared successfully',
+            data: {}
+        };
+
+    } catch (error) {
+        console.error('Share template action error:', error);
+
+        if (error instanceof z.ZodError) {
+            return {
+                success: false,
+                message: 'Invalid input data',
+                errors: error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+            };
+        }
+
+        return {
+            success: false,
+            message: 'Failed to share template',
+            errors: [error instanceof Error ? error.message : 'Unknown error']
+        };
+    }
+}
+
+/**
+ * Get shared templates action
+ * Requirement 10.2, 10.3: Access shared templates with proper permissions
+ */
+export async function getSharedTemplatesAction(
+    brokerageId: string,
+    contentType?: ContentCategory,
+    searchQuery?: string
+): Promise<ContentWorkflowResponse<{ templates: Template[] }>> {
+    try {
+        // Get current user
+        const user = await getCurrentUser();
+        if (!user) {
+            return {
+                success: false,
+                message: 'Authentication required',
+                errors: ['User not authenticated']
+            };
+        }
+
+        // Validate input
+        if (!brokerageId) {
+            return {
+                success: false,
+                message: 'Brokerage ID is required',
+                errors: ['Brokerage ID is required']
+            };
+        }
+
+        // Get shared templates
+        const result = await getSharedTemplates({
+            userId: user.id,
+            brokerageId,
+            contentType,
+            searchQuery
+        });
+
+        if (!result.success) {
+            return {
+                success: false,
+                message: result.error || 'Failed to get shared templates',
+                errors: [result.error || 'Unknown error']
+            };
+        }
+
+        return {
+            success: true,
+            message: 'Shared templates retrieved successfully',
+            data: { templates: result.templates! }
+        };
+
+    } catch (error) {
+        console.error('Get shared templates action error:', error);
+        return {
+            success: false,
+            message: 'Failed to get shared templates',
+            errors: [error instanceof Error ? error.message : 'Unknown error']
+        };
+    }
+}
+
+/**
+ * Update shared template action (with copy-on-write)
+ * Requirement 10.4: Create personal copy when user modifies shared template without edit permission
+ */
+export async function updateSharedTemplateAction(
+    templateId: string,
+    updates: Partial<Pick<Template, 'name' | 'description' | 'configuration' | 'seasonalTags' | 'previewImage'>>,
+    brokerageId?: string
+): Promise<ContentWorkflowResponse<{ templateId: string; isNewCopy: boolean }>> {
+    try {
+        // Get current user
+        const user = await getCurrentUser();
+        if (!user) {
+            return {
+                success: false,
+                message: 'Authentication required',
+                errors: ['User not authenticated']
+            };
+        }
+
+        // Validate input
+        if (!templateId) {
+            return {
+                success: false,
+                message: 'Template ID is required',
+                errors: ['Template ID is required']
+            };
+        }
+
+        // Update shared template (with copy-on-write logic)
+        const result = await updateSharedTemplate({
+            userId: user.id,
+            templateId,
+            updates,
+            brokerageId
+        });
+
+        if (!result.success) {
+            return {
+                success: false,
+                message: result.error || 'Failed to update template',
+                errors: [result.error || 'Unknown error']
+            };
+        }
+
+        // Revalidate relevant paths
+        revalidatePath('/library/templates');
+
+        return {
+            success: true,
+            message: result.isNewCopy ? 'Personal copy created successfully' : 'Template updated successfully',
+            data: {
+                templateId: result.templateId!,
+                isNewCopy: result.isNewCopy || false
+            }
+        };
+
+    } catch (error) {
+        console.error('Update shared template action error:', error);
+        return {
+            success: false,
+            message: 'Failed to update template',
+            errors: [error instanceof Error ? error.message : 'Unknown error']
+        };
+    }
+}
+
+/**
+ * Unshare template action
+ * Requirement 10.5: Manage template sharing permissions
+ */
+export async function unshareTemplateAction(
+    templateId: string,
+    brokerageId: string
+): Promise<ContentWorkflowResponse<{}>> {
+    try {
+        // Get current user
+        const user = await getCurrentUser();
+        if (!user) {
+            return {
+                success: false,
+                message: 'Authentication required',
+                errors: ['User not authenticated']
+            };
+        }
+
+        // Validate input
+        if (!templateId || !brokerageId) {
+            return {
+                success: false,
+                message: 'Template ID and Brokerage ID are required',
+                errors: ['Template ID and Brokerage ID are required']
+            };
+        }
+
+        // Unshare template
+        const result = await unshareTemplate({
+            userId: user.id,
+            templateId,
+            brokerageId
+        });
+
+        if (!result.success) {
+            return {
+                success: false,
+                message: result.error || 'Failed to unshare template',
+                errors: [result.error || 'Unknown error']
+            };
+        }
+
+        // Revalidate relevant paths
+        revalidatePath('/library/templates');
+
+        return {
+            success: true,
+            message: 'Template unshared successfully',
+            data: {}
+        };
+
+    } catch (error) {
+        console.error('Unshare template action error:', error);
+        return {
+            success: false,
+            message: 'Failed to unshare template',
+            errors: [error instanceof Error ? error.message : 'Unknown error']
+        };
+    }
+}
+
+/**
+ * Get template analytics action
+ * Requirement: Add template usage analytics and sharing metrics
+ */
+export async function getTemplateAnalyticsAction(
+    templateId?: string,
+    brokerageId?: string,
+    startDate?: Date,
+    endDate?: Date
+): Promise<ContentWorkflowResponse<{
+    analytics: {
+        totalUsage: number;
+        uniqueUsers: number;
+        sharingMetrics: {
+            timesShared: number;
+            activeShares: number;
+            copyOnWriteEvents: number;
+        };
+        usageByContentType: Record<string, number>;
+        usageOverTime: Array<{ date: string; count: number }>;
+        topUsers: Array<{ userId: string; usageCount: number }>;
+    };
+}>> {
+    try {
+        // Get current user
+        const user = await getCurrentUser();
+        if (!user) {
+            return {
+                success: false,
+                message: 'Authentication required',
+                errors: ['User not authenticated']
+            };
+        }
+
+        // Get template analytics
+        const result = await getTemplateAnalytics({
+            userId: user.id,
+            templateId,
+            brokerageId,
+            startDate,
+            endDate
+        });
+
+        if (!result.success) {
+            return {
+                success: false,
+                message: result.error || 'Failed to get template analytics',
+                errors: [result.error || 'Unknown error']
+            };
+        }
+
+        return {
+            success: true,
+            message: 'Template analytics retrieved successfully',
+            data: { analytics: result.analytics! }
+        };
+
+    } catch (error) {
+        console.error('Get template analytics action error:', error);
+        return {
+            success: false,
+            message: 'Failed to get template analytics',
+            errors: [error instanceof Error ? error.message : 'Unknown error']
+        };
+    }
+}
+
+// ==================== Helper Functions ====================
+
+/**
+ * Create a standardized response with timestamp
+ */
+function createResponse<T = any>(success: boolean, message: string, data?: T, errors?: string[]): ContentWorkflowResponse<T> {
+    const response: any = {
+        success,
+        message,
+        timestamp: new Date()
+    };
+
+    if (data !== undefined) {
+        response.data = data;
+    }
+
+    if (errors !== undefined) {
+        response.errors = errors;
+    }
+
+    return response;
+}
+
+// ==================== Seasonal Template Intelligence Actions ====================
+
+/**
+ * Get seasonal templates with intelligent recommendations
+ * Requirements 11.1, 11.2: Display seasonal templates organized by time of year and recommend relevant templates
+ */
+export async function getSeasonalTemplatesAction(
+    season?: string,
+    month?: number,
+    contentType?: ContentCategory,
+    includeUpcoming?: boolean
+): Promise<ContentWorkflowResponse<{
+    templates: Template[];
+    recommendations: {
+        current: Template[];
+        upcoming: Template[];
+        trending: Template[];
+    };
+}>> {
+    try {
+        // Get current user
+        const user = await getCurrentUser();
+        if (!user) {
+            return createResponse(false, 'Authentication required', undefined, ['User not authenticated']);
+        }
+
+        // Get user's brand information for personalization
+        const userBrandInfo = {
+            name: (user as any).name || user.email,
+            contactInfo: user.email,
+            marketArea: (user as any).profile?.marketArea || 'your local market',
+            brokerageName: (user as any).profile?.brokerageName
+        };
+
+        // Get seasonal templates
+        const result = await getSeasonalTemplates({
+            userId: user.id,
+            season,
+            month,
+            contentType,
+            includeUpcoming,
+            userBrandInfo
+        });
+
+        if (!result.success) {
+            return createResponse(false, result.error || 'Failed to get seasonal templates', undefined, [result.error || 'Unknown error']);
+        }
+
+        return createResponse(true, 'Seasonal templates retrieved successfully', {
+            templates: result.templates || [],
+            recommendations: result.recommendations || {
+                current: [],
+                upcoming: [],
+                trending: []
+            }
+        });
+
+    } catch (error) {
+        console.error('Get seasonal templates action error:', error);
+        return createResponse(false, 'Failed to get seasonal templates', undefined, [error instanceof Error ? error.message : 'Unknown error']);
+    }
+}
+
+/**
+ * Get proactive seasonal notifications for upcoming opportunities
+ * Requirements 11.2, 11.4: Recommend relevant seasonal templates and notify users of updates
+ */
+export async function getSeasonalNotificationsAction(
+    lookAheadDays?: number
+): Promise<ContentWorkflowResponse<{
+    notifications: Array<{
+        type: 'seasonal_opportunity' | 'template_update' | 'market_trend';
+        title: string;
+        message: string;
+        templates: Template[];
+        priority: 'high' | 'medium' | 'low';
+        actionUrl?: string;
+        expiresAt: Date;
+    }>;
+}>> {
+    try {
+        // Get current user
+        const user = await getCurrentUser();
+        if (!user) {
+            return createResponse(false, 'Authentication required', undefined, ['User not authenticated']);
+        }
+
+        // Get seasonal notifications
+        const result = await getSeasonalNotifications({
+            userId: user.id,
+            lookAheadDays
+        });
+
+        if (!result.success) {
+            return createResponse(false, result.error || 'Failed to get seasonal notifications', undefined, [result.error || 'Unknown error']);
+        }
+
+        return createResponse(true, 'Seasonal notifications retrieved successfully', {
+            notifications: result.notifications || []
+        });
+
+    } catch (error) {
+        console.error('Get seasonal notifications action error:', error);
+        return createResponse(false, 'Failed to get seasonal notifications', undefined, [error instanceof Error ? error.message : 'Unknown error']);
+    }
+}
+
+/**
+ * Get seasonal template performance analytics
+ * Requirements: Add seasonal template analytics and performance tracking
+ */
+export async function getSeasonalTemplateAnalyticsAction(
+    season?: string,
+    year?: number,
+    templateId?: string
+): Promise<ContentWorkflowResponse<{
+    analytics: {
+        seasonalPerformance: Record<string, {
+            totalUsage: number;
+            avgEngagement: number;
+            topTemplates: Array<{ templateId: string; name: string; usage: number; engagement: number }>;
+            trendData: Array<{ month: number; usage: number; engagement: number }>;
+        }>;
+        yearOverYear?: {
+            currentYear: number;
+            previousYear: number;
+            growthRate: number;
+            seasonalComparison: Record<string, { current: number; previous: number; growth: number }>;
+        };
+        recommendations: Array<{
+            type: 'underperforming' | 'trending' | 'opportunity';
+            message: string;
+            templates: string[];
+            actionable: boolean;
+        }>;
+    };
+}>> {
+    try {
+        // Get current user
+        const user = await getCurrentUser();
+        if (!user) {
+            return createResponse(false, 'Authentication required', undefined, ['User not authenticated']);
+        }
+
+        // Get seasonal template analytics
+        const result = await getSeasonalTemplateAnalytics({
+            userId: user.id,
+            season,
+            year,
+            templateId
+        });
+
+        if (!result.success) {
+            return createResponse(false, result.error || 'Failed to get seasonal template analytics', undefined, [result.error || 'Unknown error']);
+        }
+
+        return createResponse(true, 'Seasonal template analytics retrieved successfully', {
+            analytics: result.analytics!
+        });
+
+    } catch (error) {
+        console.error('Get seasonal template analytics action error:', error);
+        return createResponse(false, 'Failed to get seasonal template analytics', undefined, [error instanceof Error ? error.message : 'Unknown error']);
+    }
+}
+
+// ==================== Newsletter Template Actions ====================
+
+/**
+ * Newsletter section schema for validation
+ */
+const newsletterSectionSchema = z.object({
+    id: z.string().min(1, 'Section ID is required'),
+    type: z.enum(['header', 'content', 'image', 'cta', 'divider', 'footer'], {
+        errorMap: () => ({ message: 'Invalid section type' })
+    }),
+    title: z.string().optional(),
+    content: z.string().optional(),
+    imageUrl: z.string().url().optional(),
+    imageAlt: z.string().optional(),
+    ctaText: z.string().optional(),
+    ctaUrl: z.string().url().optional(),
+    backgroundColor: z.string().optional(),
+    textColor: z.string().optional(),
+    alignment: z.enum(['left', 'center', 'right']).optional(),
+    padding: z.string().optional(),
+    order: z.number().min(0, 'Order must be non-negative')
+});
+
+/**
+ * Newsletter export schema for validation
+ */
+const newsletterExportSchema = z.object({
+    templateId: z.string().min(1, 'Template ID is required'),
+    subject: z.string().min(1, 'Subject is required').max(100, 'Subject must be less than 100 characters'),
+    preheader: z.string().max(150, 'Preheader must be less than 150 characters').optional(),
+    sections: z.array(newsletterSectionSchema).min(1, 'At least one section is required'),
+    userBrandInfo: z.object({
+        name: z.string().optional(),
+        contactInfo: z.string().optional(),
+        address: z.string().optional(),
+        unsubscribeUrl: z.string().url().optional()
+    }).optional()
+});
+
+/**
+ * Create newsletter template action
+ * Requirements 12.1, 12.2: Newsletter templates with responsive design and email best practices
+ */
+export async function createNewsletterTemplateAction(
+    name: string,
+    description: string,
+    config: {
+        subject: string;
+        preheader?: string;
+        sections: Array<{
+            id: string;
+            type: 'header' | 'content' | 'image' | 'cta' | 'divider' | 'footer';
+            title?: string;
+            content?: string;
+            imageUrl?: string;
+            imageAlt?: string;
+            ctaText?: string;
+            ctaUrl?: string;
+            backgroundColor?: string;
+            textColor?: string;
+            alignment?: 'left' | 'center' | 'right';
+            padding?: string;
+            order: number;
+        }>;
+        layout: 'single-column' | 'two-column' | 'three-column';
+        branding: {
+            logo?: string;
+            primaryColor: string;
+            secondaryColor: string;
+            fontFamily: 'Arial' | 'Helvetica' | 'Georgia' | 'Times' | 'Verdana';
+        };
+        footer: {
+            includeUnsubscribe: boolean;
+            includeAddress: boolean;
+            includeDisclaimer: boolean;
+            customText?: string;
+        };
+        espCompatibility: {
+            outlook: boolean;
+            gmail: boolean;
+            appleMail: boolean;
+            yahooMail: boolean;
+            thunderbird: boolean;
+        };
+    }
+): Promise<ContentWorkflowResponse<{ templateId: string; validationResults: any[] }>> {
+    try {
+        // Get current user
+        const user = await getCurrentUser();
+        if (!user) {
+            return createResponse(false, 'Authentication required', undefined, ['User not authenticated']);
+        }
+
+        // Validate input
+        const validatedData = z.object({
+            name: z.string().min(1, 'Name is required').max(100, 'Name must be less than 100 characters'),
+            description: z.string().min(1, 'Description is required').max(500, 'Description must be less than 500 characters'),
+            config: z.object({
+                subject: z.string().min(1, 'Subject is required').max(100, 'Subject must be less than 100 characters'),
+                preheader: z.string().max(150, 'Preheader must be less than 150 characters').optional(),
+                sections: z.array(newsletterSectionSchema).min(1, 'At least one section is required'),
+                layout: z.enum(['single-column', 'two-column', 'three-column']),
+                branding: z.object({
+                    logo: z.string().optional(),
+                    primaryColor: z.string().min(1, 'Primary color is required'),
+                    secondaryColor: z.string().min(1, 'Secondary color is required'),
+                    fontFamily: z.enum(['Arial', 'Helvetica', 'Georgia', 'Times', 'Verdana'])
+                }),
+                footer: z.object({
+                    includeUnsubscribe: z.boolean(),
+                    includeAddress: z.boolean(),
+                    includeDisclaimer: z.boolean(),
+                    customText: z.string().optional()
+                }),
+                espCompatibility: z.object({
+                    outlook: z.boolean(),
+                    gmail: z.boolean(),
+                    appleMail: z.boolean(),
+                    yahooMail: z.boolean(),
+                    thunderbird: z.boolean()
+                })
+            })
+        }).parse({ name, description, config });
+
+        // Import newsletter template service functions
+        const { createNewsletterTemplate } = await import('@/services/template-service');
+
+        // Create newsletter template
+        const result = await createNewsletterTemplate({
+            userId: user.userId,
+            name: validatedData.name,
+            description: validatedData.description,
+            config: validatedData.config
+        });
+
+        if (!result.success) {
+            return createResponse(false, result.error || 'Failed to create newsletter template', undefined, [result.error || 'Unknown error']);
+        }
+
+        // Revalidate relevant paths
+        revalidatePath('/library/templates');
+        revalidatePath('/studio');
+
+        return createResponse(true, 'Newsletter template created successfully', {
+            templateId: result.templateId!,
+            validationResults: result.validationResults || []
+        });
+
+    } catch (error) {
+        console.error('Create newsletter template action error:', error);
+
+        if (error instanceof z.ZodError) {
+            return createResponse(false, 'Validation failed', undefined, error.errors.map(e => `${e.path.join('.')}: ${e.message}`));
+        }
+
+        return createResponse(false, 'Failed to create newsletter template', undefined, [error instanceof Error ? error.message : 'Unknown error']);
+    }
+}
+
+/**
+ * Export newsletter template action
+ * Requirements 12.4, 12.5: Dual-format export (HTML + plain text) compatible with ESPs
+ */
+export async function exportNewsletterAction(
+    templateId: string,
+    content: {
+        subject: string;
+        preheader?: string;
+        sections: Array<{
+            id: string;
+            type: 'header' | 'content' | 'image' | 'cta' | 'divider' | 'footer';
+            title?: string;
+            content?: string;
+            imageUrl?: string;
+            imageAlt?: string;
+            ctaText?: string;
+            ctaUrl?: string;
+            backgroundColor?: string;
+            textColor?: string;
+            alignment?: 'left' | 'center' | 'right';
+            padding?: string;
+            order: number;
+        }>;
+    },
+    userBrandInfo?: {
+        name?: string;
+        contactInfo?: string;
+        address?: string;
+        unsubscribeUrl?: string;
+    }
+): Promise<ContentWorkflowResponse<{
+    html: string;
+    plainText: string;
+    subject: string;
+    preheader?: string;
+    metadata: {
+        generatedAt: Date;
+        templateId: string;
+        userId: string;
+        espCompatibility: string[];
+        validationResults: any[];
+    };
+}>> {
+    try {
+        // Get current user
+        const user = await getCurrentUser();
+        if (!user) {
+            return createResponse(false, 'Authentication required', undefined, ['User not authenticated']);
+        }
+
+        // Validate input
+        const validatedData = newsletterExportSchema.parse({
+            templateId,
+            subject: content.subject,
+            preheader: content.preheader,
+            sections: content.sections,
+            userBrandInfo
+        });
+
+        // Import newsletter template service functions
+        const { exportNewsletterTemplate } = await import('@/services/template-service');
+
+        // Export newsletter template
+        const result = await exportNewsletterTemplate({
+            userId: user.userId,
+            templateId: validatedData.templateId,
+            content: {
+                subject: validatedData.subject,
+                preheader: validatedData.preheader,
+                sections: validatedData.sections
+            },
+            userBrandInfo: validatedData.userBrandInfo
+        });
+
+        if (!result.success || !result.export) {
+            return createResponse(false, result.error || 'Failed to export newsletter template', undefined, [result.error || 'Unknown error']);
+        }
+
+        return createResponse(true, 'Newsletter exported successfully', result.export);
+
+    } catch (error) {
+        console.error('Export newsletter action error:', error);
+
+        if (error instanceof z.ZodError) {
+            return createResponse(false, 'Validation failed', undefined, error.errors.map(e => `${e.path.join('.')}: ${e.message}`));
+        }
+
+        return createResponse(false, 'Failed to export newsletter template', undefined, [error instanceof Error ? error.message : 'Unknown error']);
+    }
+}
+
+/**
+ * Get newsletter templates action
+ * Requirements 12.1: Newsletter-specific templates with responsive design
+ */
+export async function getNewsletterTemplatesAction(
+    category?: 'market-update' | 'client-newsletter' | 'listing-showcase' | 'seasonal'
+): Promise<ContentWorkflowResponse<{ templates: Template[] }>> {
+    try {
+        // Get current user
+        const user = await getCurrentUser();
+        if (!user) {
+            return createResponse(false, 'Authentication required', undefined, ['User not authenticated']);
+        }
+
+        // Validate input
+        const validatedCategory = category ? z.enum(['market-update', 'client-newsletter', 'listing-showcase', 'seasonal']).parse(category) : undefined;
+
+        // Import newsletter template service functions
+        const { getNewsletterTemplates } = await import('@/services/template-service');
+
+        // Get newsletter templates
+        const result = await getNewsletterTemplates({
+            userId: user.userId,
+            category: validatedCategory
+        });
+
+        if (!result.success) {
+            return createResponse(false, result.error || 'Failed to get newsletter templates', undefined, [result.error || 'Unknown error']);
+        }
+
+        return createResponse(true, 'Newsletter templates retrieved successfully', {
+            templates: result.templates || []
+        });
+
+    } catch (error) {
+        console.error('Get newsletter templates action error:', error);
+
+        if (error instanceof z.ZodError) {
+            return createResponse(false, 'Validation failed', undefined, error.errors.map(e => `${e.path.join('.')}: ${e.message}`));
+        }
+
+        return createResponse(false, 'Failed to get newsletter templates', undefined, [error instanceof Error ? error.message : 'Unknown error']);
     }
 }
