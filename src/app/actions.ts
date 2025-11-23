@@ -1785,16 +1785,15 @@ export async function submitFeedbackAction(
   }
 
   try {
-    // Get current user from Cognito
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
-
-    if (!user || !user.id) {
-      return {
-        message: 'Authentication required',
-        data: null,
-        errors: { auth: ['You must be logged in to submit feedback'] },
-      };
+    // Get current user from Cognito (optional for feedback)
+    let user = null;
+    try {
+      const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+      user = await getCurrentUser();
+      console.log('Authenticated feedback submission from user:', user?.id);
+    } catch (error) {
+      // User not authenticated, continue with anonymous feedback
+      console.log('Anonymous feedback submission - authentication not available');
     }
 
     const { type, message } = validatedFields.data;
@@ -1803,14 +1802,14 @@ export async function submitFeedbackAction(
     // Store feedback in DynamoDB
     const repository = getRepository();
     const feedbackKeys = {
-      PK: `FEEDBACK#${feedbackId}`,
-      SK: `USER#${user.id}`,
+      PK: 'FEEDBACK',
+      SK: `${feedbackId}#${user?.id || 'anonymous'}`,
     };
 
     const feedbackData = {
       id: feedbackId,
-      userId: user.id,
-      userEmail: user.email,
+      userId: user?.id || 'anonymous',
+      userEmail: user?.email || 'anonymous@feedback.com',
       type,
       message,
       status: 'submitted',
@@ -1819,6 +1818,13 @@ export async function submitFeedbackAction(
     };
 
     await repository.create(feedbackKeys.PK, feedbackKeys.SK, 'Feedback', feedbackData);
+
+    console.log('Feedback successfully stored:', {
+      feedbackId,
+      userId: user?.id || 'anonymous',
+      type,
+      messageLength: message.length
+    });
 
     // TODO: Send notification to admin team (email, Slack, etc.)
     // This could be done via SNS, SES, or a webhook to your support system
@@ -1834,6 +1840,107 @@ export async function submitFeedbackAction(
       message: `Failed to submit feedback: ${errorMessage}`,
       errors: {},
       data: null,
+    };
+  }
+}
+
+/**
+ * Get all feedback submissions for admin review
+ */
+export async function getFeedbackAction(): Promise<{
+  message: string;
+  data: any[];
+  errors: any;
+}> {
+  try {
+    const repository = getRepository();
+
+    // Query all feedback items using the common partition key
+    const result = await repository.query('FEEDBACK', undefined, {
+      limit: 100,
+      scanIndexForward: false, // Most recent first
+    });
+
+    const feedbackItems = result.items.map((item: any) => ({
+      id: item.id,
+      userId: item.userId,
+      userEmail: item.userEmail,
+      type: item.type,
+      message: item.message,
+      status: item.status,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+    }));
+
+    return {
+      message: 'success',
+      data: feedbackItems,
+      errors: {},
+    };
+  } catch (error) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred while retrieving feedback.');
+    return {
+      message: `Failed to retrieve feedback: ${errorMessage}`,
+      data: [],
+      errors: {},
+    };
+  }
+}
+
+/**
+ * Update feedback status
+ */
+export async function updateFeedbackStatusAction(
+  feedbackId: string,
+  newStatus: 'submitted' | 'in-progress' | 'resolved' | 'closed'
+): Promise<{
+  message: string;
+  data: any;
+  errors: any;
+}> {
+  try {
+    const repository = getRepository();
+
+    // Query all feedback items to find the one with matching ID
+    const result = await repository.query('FEEDBACK', undefined, {
+      limit: 100
+    });
+
+    const feedbackItem = result.items.find((item: any) => item.id === feedbackId);
+
+    if (!feedbackItem) {
+      return {
+        message: 'Feedback not found',
+        data: null,
+        errors: { feedback: ['Feedback item not found'] },
+      };
+    }
+
+    const sortKey = `${feedbackId}#${feedbackItem.userId}`;
+
+    // Update the feedback status
+    await repository.update('FEEDBACK', sortKey, 'Feedback', {
+      status: newStatus,
+      updatedAt: new Date().toISOString(),
+    });
+
+    console.log('Feedback status updated:', {
+      feedbackId,
+      newStatus,
+      updatedAt: new Date().toISOString()
+    });
+
+    return {
+      message: 'success',
+      data: { feedbackId, status: newStatus },
+      errors: {},
+    };
+  } catch (error) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred while updating feedback status.');
+    return {
+      message: `Failed to update feedback status: ${errorMessage}`,
+      data: null,
+      errors: {},
     };
   }
 }

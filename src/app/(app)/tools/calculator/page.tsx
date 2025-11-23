@@ -1,3 +1,5 @@
+'use client';
+
 import { ContentSection, FeatureBanner } from '@/components/ui';
 import { MortgageCalculator } from '@/components/mortgage-calculator';
 import { Button } from '@/components/ui/button';

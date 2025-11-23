@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getFeedbackAction } from '@/app/actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsList as TabsList, AnimatedTabsTrigger as TabsTrigger } from '@/components/ui/animated-tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { updateFeedbackStatusAction } from '@/app/actions';
+import { useToast } from '@/hooks/use-toast';
 import {
     MessageSquare,
     Search,
@@ -36,18 +39,75 @@ import {
 export default function AdminFeedbackPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
+    const [feedbackData, setFeedbackData] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+    const { toast } = useToast();
 
-    // Mock feedback data structure for UI demonstration
+    // Fetch real feedback data
+    useEffect(() => {
+        async function fetchFeedback() {
+            try {
+                const result = await getFeedbackAction();
+                if (result.message === 'success') {
+                    setFeedbackData(result.data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch feedback:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchFeedback();
+    }, []);
+
+    // Handle status update
+    const handleStatusUpdate = async (feedbackId: string, newStatus: 'submitted' | 'in-progress' | 'resolved' | 'closed') => {
+        setUpdatingStatus(feedbackId);
+        try {
+            const result = await updateFeedbackStatusAction(feedbackId, newStatus);
+            if (result.message === 'success') {
+                // Update local state
+                setFeedbackData(prev =>
+                    prev.map(feedback =>
+                        feedback.id === feedbackId
+                            ? { ...feedback, status: newStatus, updatedAt: new Date().toISOString() }
+                            : feedback
+                    )
+                );
+                toast({
+                    title: 'Status Updated',
+                    description: `Feedback status changed to ${newStatus}`,
+                });
+            } else {
+                toast({
+                    title: 'Error',
+                    description: result.message,
+                    variant: 'destructive',
+                });
+            }
+        } catch (error) {
+            toast({
+                title: 'Error',
+                description: 'Failed to update feedback status',
+                variant: 'destructive',
+            });
+        } finally {
+            setUpdatingStatus(null);
+        }
+    };
+
+    // Calculate stats from real data
     const feedbackStats = {
-        total: 0,
-        pending: 0,
-        resolved: 0,
-        avgRating: 0,
+        total: feedbackData.length,
+        pending: feedbackData.filter(f => f.status === 'submitted').length,
+        resolved: feedbackData.filter(f => f.status === 'resolved').length,
+        avgRating: 0, // Not applicable for feedback
         categories: {
-            feature: 0,
-            bug: 0,
-            improvement: 0,
-            praise: 0
+            feature: feedbackData.filter(f => f.type === 'feature').length,
+            bug: feedbackData.filter(f => f.type === 'bug').length,
+            improvement: feedbackData.filter(f => f.type === 'improvement').length,
+            general: feedbackData.filter(f => f.type === 'general').length,
         }
     };
 
@@ -164,39 +224,224 @@ export default function AdminFeedbackPage() {
                         </div>
 
                         <TabsContent value="all" className="space-y-4">
-                            {/* Empty State */}
-                            <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-lg">
-                                <div className="p-4 bg-blue-50 dark:bg-blue-900/50 rounded-full w-fit mx-auto mb-4">
-                                    <MessageSquare className="h-8 w-8 text-blue-600" />
+                            {loading ? (
+                                <div className="text-center py-12">
+                                    <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+                                    <p className="text-muted-foreground">Loading feedback...</p>
                                 </div>
-                                <h3 className="text-lg font-semibold mb-2">No feedback submissions yet</h3>
-                                <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                                    When users submit feedback via the sidebar button or feedback forms,
-                                    it will appear here for review and response.
-                                </p>
-                                <div className="flex items-center justify-center gap-4">
-                                    <Button variant="outline">
-                                        <RefreshCw className="h-4 w-4 mr-2" />
-                                        Check for Updates
-                                    </Button>
+                            ) : feedbackData.length === 0 ? (
+                                /* Empty State */
+                                <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-lg">
+                                    <div className="p-4 bg-blue-50 dark:bg-blue-900/50 rounded-full w-fit mx-auto mb-4">
+                                        <MessageSquare className="h-8 w-8 text-blue-600" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold mb-2">No feedback submissions yet</h3>
+                                    <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                                        When users submit feedback via the sidebar button or feedback forms,
+                                        it will appear here for review and response.
+                                    </p>
+                                    <div className="flex items-center justify-center gap-4">
+                                        <Button variant="outline" onClick={() => window.location.reload()}>
+                                            <RefreshCw className="h-4 w-4 mr-2" />
+                                            Check for Updates
+                                        </Button>
+                                    </div>
                                 </div>
-                            </div>
+                            ) : (
+                                /* Feedback List */
+                                <div className="space-y-4">
+                                    {feedbackData.map((feedback) => (
+                                        <Card key={feedback.id} className="p-6">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <Badge variant={
+                                                            feedback.type === 'bug' ? 'destructive' :
+                                                                feedback.type === 'feature' ? 'default' :
+                                                                    feedback.type === 'improvement' ? 'secondary' :
+                                                                        'outline'
+                                                        }>
+                                                            {feedback.type === 'bug' && <Bug className="h-3 w-3 mr-1" />}
+                                                            {feedback.type === 'feature' && <Lightbulb className="h-3 w-3 mr-1" />}
+                                                            {feedback.type === 'improvement' && <TrendingUp className="h-3 w-3 mr-1" />}
+                                                            {feedback.type === 'general' && <MessageSquare className="h-3 w-3 mr-1" />}
+                                                            {feedback.type}
+                                                        </Badge>
+                                                        <Badge variant={
+                                                            feedback.status === 'submitted' ? 'secondary' :
+                                                                feedback.status === 'in-progress' ? 'default' :
+                                                                    feedback.status === 'resolved' ? 'outline' :
+                                                                        'destructive'
+                                                        }>
+                                                            {feedback.status}
+                                                        </Badge>
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground mb-2">
+                                                        From: {feedback.userEmail} • {new Date(feedback.createdAt).toLocaleDateString()}
+                                                    </p>
+                                                    <p className="text-sm">{feedback.message}</p>
+                                                </div>
+                                                <div className="ml-4 flex flex-col gap-2">
+                                                    <Select
+                                                        value={feedback.status}
+                                                        onValueChange={(value) => handleStatusUpdate(feedback.id, value as any)}
+                                                        disabled={updatingStatus === feedback.id}
+                                                    >
+                                                        <SelectTrigger className="w-32">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="submitted">Pending</SelectItem>
+                                                            <SelectItem value="in-progress">In Progress</SelectItem>
+                                                            <SelectItem value="resolved">Resolved</SelectItem>
+                                                            <SelectItem value="closed">Closed</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    {updatingStatus === feedback.id && (
+                                                        <div className="flex items-center justify-center">
+                                                            <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
                         </TabsContent>
 
                         <TabsContent value="pending" className="space-y-4">
-                            <div className="text-center py-8 text-muted-foreground">
-                                <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                <p className="font-medium mb-2">No pending feedback</p>
-                                <p className="text-sm">Items requiring review will appear here</p>
-                            </div>
+                            {loading ? (
+                                <div className="text-center py-12">
+                                    <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+                                    <p className="text-muted-foreground">Loading feedback...</p>
+                                </div>
+                            ) : feedbackData.filter(f => f.status === 'submitted').length === 0 ? (
+                                <div className="text-center py-8 text-muted-foreground">
+                                    <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                    <p className="font-medium mb-2">No pending feedback</p>
+                                    <p className="text-sm">Items requiring review will appear here</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {feedbackData.filter(f => f.status === 'submitted').map((feedback) => (
+                                        <Card key={feedback.id} className="p-6">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <Badge variant={
+                                                            feedback.type === 'bug' ? 'destructive' :
+                                                                feedback.type === 'feature' ? 'default' :
+                                                                    feedback.type === 'improvement' ? 'secondary' :
+                                                                        'outline'
+                                                        }>
+                                                            {feedback.type === 'bug' && <Bug className="h-3 w-3 mr-1" />}
+                                                            {feedback.type === 'feature' && <Lightbulb className="h-3 w-3 mr-1" />}
+                                                            {feedback.type === 'improvement' && <TrendingUp className="h-3 w-3 mr-1" />}
+                                                            {feedback.type === 'general' && <MessageSquare className="h-3 w-3 mr-1" />}
+                                                            {feedback.type}
+                                                        </Badge>
+                                                        <Badge variant="secondary">pending</Badge>
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground mb-2">
+                                                        From: {feedback.userEmail} • {new Date(feedback.createdAt).toLocaleDateString()}
+                                                    </p>
+                                                    <p className="text-sm">{feedback.message}</p>
+                                                </div>
+                                                <div className="ml-4 flex flex-col gap-2">
+                                                    <Select
+                                                        value={feedback.status}
+                                                        onValueChange={(value) => handleStatusUpdate(feedback.id, value as any)}
+                                                        disabled={updatingStatus === feedback.id}
+                                                    >
+                                                        <SelectTrigger className="w-32">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="submitted">Pending</SelectItem>
+                                                            <SelectItem value="in-progress">In Progress</SelectItem>
+                                                            <SelectItem value="resolved">Resolved</SelectItem>
+                                                            <SelectItem value="closed">Closed</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    {updatingStatus === feedback.id && (
+                                                        <div className="flex items-center justify-center">
+                                                            <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
                         </TabsContent>
 
                         <TabsContent value="resolved" className="space-y-4">
-                            <div className="text-center py-8 text-muted-foreground">
-                                <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                <p className="font-medium mb-2">No resolved feedback</p>
-                                <p className="text-sm">Completed feedback items will appear here</p>
-                            </div>
+                            {loading ? (
+                                <div className="text-center py-12">
+                                    <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+                                    <p className="text-muted-foreground">Loading feedback...</p>
+                                </div>
+                            ) : feedbackData.filter(f => f.status === 'resolved').length === 0 ? (
+                                <div className="text-center py-8 text-muted-foreground">
+                                    <CheckCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                    <p className="font-medium mb-2">No resolved feedback</p>
+                                    <p className="text-sm">Completed feedback items will appear here</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {feedbackData.filter(f => f.status === 'resolved').map((feedback) => (
+                                        <Card key={feedback.id} className="p-6">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <Badge variant={
+                                                            feedback.type === 'bug' ? 'destructive' :
+                                                                feedback.type === 'feature' ? 'default' :
+                                                                    feedback.type === 'improvement' ? 'secondary' :
+                                                                        'outline'
+                                                        }>
+                                                            {feedback.type === 'bug' && <Bug className="h-3 w-3 mr-1" />}
+                                                            {feedback.type === 'feature' && <Lightbulb className="h-3 w-3 mr-1" />}
+                                                            {feedback.type === 'improvement' && <TrendingUp className="h-3 w-3 mr-1" />}
+                                                            {feedback.type === 'general' && <MessageSquare className="h-3 w-3 mr-1" />}
+                                                            {feedback.type}
+                                                        </Badge>
+                                                        <Badge variant="outline">resolved</Badge>
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground mb-2">
+                                                        From: {feedback.userEmail} • {new Date(feedback.createdAt).toLocaleDateString()}
+                                                    </p>
+                                                    <p className="text-sm">{feedback.message}</p>
+                                                </div>
+                                                <div className="ml-4 flex flex-col gap-2">
+                                                    <Select
+                                                        value={feedback.status}
+                                                        onValueChange={(value) => handleStatusUpdate(feedback.id, value as any)}
+                                                        disabled={updatingStatus === feedback.id}
+                                                    >
+                                                        <SelectTrigger className="w-32">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="submitted">Pending</SelectItem>
+                                                            <SelectItem value="in-progress">In Progress</SelectItem>
+                                                            <SelectItem value="resolved">Resolved</SelectItem>
+                                                            <SelectItem value="closed">Closed</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    {updatingStatus === feedback.id && (
+                                                        <div className="flex items-center justify-center">
+                                                            <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
                         </TabsContent>
 
                         <TabsContent value="analytics" className="space-y-6">
@@ -233,7 +478,7 @@ export default function AdminFeedbackPage() {
                                                 <Heart className="h-5 w-5 text-green-600" />
                                                 <span className="font-medium">Praise</span>
                                             </div>
-                                            <span className="font-bold">{feedbackStats.categories.praise}</span>
+                                            <span className="font-bold">{feedbackStats.categories.general}</span>
                                         </div>
                                     </CardContent>
                                 </Card>

@@ -238,3 +238,14 @@ export type FurnitureStyle = {
   name: string;
   items: FurnitureItem[];
 };
+
+export type Feedback = {
+  id: string;
+  userId: string;
+  userEmail: string;
+  type: 'bug' | 'feature' | 'improvement' | 'general';
+  message: string;
+  status: 'submitted' | 'in-progress' | 'resolved' | 'closed';
+  createdAt: string;
+  updatedAt: string;
+};

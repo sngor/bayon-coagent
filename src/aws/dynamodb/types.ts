@@ -59,7 +59,10 @@ export type EntityType =
   | 'ABTest'
   | 'Template'
   | 'ROI'
-  | 'OptimalTimesCache';
+  | 'OptimalTimesCache'
+  | 'Feedback'
+  | 'Profile'
+  | 'RolePlaySession';
 
 /**
  * Base DynamoDB item structure

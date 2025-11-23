@@ -149,11 +149,6 @@ export default function ResearchAgentPage() {
           "Use follow-up questions to dive deeper into trends and opportunities",
           "Save important reports to reference later in client conversations"
         ]}
-        actions={
-          <Button variant="outline" size="sm">
-            View Examples
-          </Button>
-        }
       />
 
       <DataGrid columns={2}>
