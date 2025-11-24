@@ -36,12 +36,14 @@ interface ImageUploaderProps {
     userId: string;
     onUploadComplete: (imageId: string, suggestions: EditSuggestion[], editType: EditType, params: EditParams) => void;
     onUploadError: (error: string) => void;
+    onChangeImage?: () => void; // Optional callback when user wants to change image
 }
 
 export function ImageUploader({
     userId,
     onUploadComplete,
     onUploadError,
+    onChangeImage,
 }: ImageUploaderProps) {
     const [isDragging, setIsDragging] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
@@ -256,6 +258,13 @@ export function ImageUploader({
 
     // Clear selection
     const handleClear = useCallback(() => {
+        // If parent provides onChangeImage callback, use it instead
+        if (onChangeImage) {
+            onChangeImage();
+            return;
+        }
+
+        // Otherwise, clear locally
         setSelectedFile(null);
         setPreviewUrl(null);
         setError(null);
@@ -268,7 +277,7 @@ export function ImageUploader({
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
-    }, []);
+    }, [onChangeImage]);
 
     // Handle suggestion dismissal (Requirement 13.10)
     const handleDismissSuggestion = useCallback((editType: string) => {
@@ -376,17 +385,15 @@ export function ImageUploader({
                                     className="w-full h-auto max-h-[400px] object-contain"
                                 />
                             )}
-                            {!uploadedImageId && (
-                                <Button
-                                    variant="destructive"
-                                    size="icon"
-                                    className="absolute top-2 right-2"
-                                    onClick={handleClear}
-                                    disabled={isUploading}
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            )}
+                            <Button
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-2 right-2"
+                                onClick={handleClear}
+                                disabled={isUploading}
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
                         </div>
 
                         {/* File info */}
@@ -422,9 +429,18 @@ export function ImageUploader({
                         {/* Edit Type Selection - shown after upload */}
                         {uploadedImageId && !selectedEditType && (
                             <div className="space-y-3 pt-4 border-t">
-                                <div className="flex items-center gap-2">
-                                    <Sparkles className="h-5 w-5 text-primary" />
-                                    <h3 className="font-headline font-semibold">Choose Edit Type</h3>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Sparkles className="h-5 w-5 text-primary" />
+                                        <h3 className="font-headline font-semibold">Choose Edit Type</h3>
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleClear}
+                                    >
+                                        Change Image
+                                    </Button>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
                                     Select the transformation you want to apply:
@@ -457,13 +473,22 @@ export function ImageUploader({
                                     <h3 className="font-headline font-semibold">
                                         {editTypes.find((t) => t.id === selectedEditType)?.title}
                                     </h3>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={handleEditCancel}
-                                    >
-                                        Change Edit Type
-                                    </Button>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleEditCancel}
+                                        >
+                                            Change Edit Type
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={handleClear}
+                                        >
+                                            Change Image
+                                        </Button>
+                                    </div>
                                 </div>
                                 {selectedEditType === 'virtual-staging' && (
                                     <VirtualStagingForm
@@ -503,16 +528,7 @@ export function ImageUploader({
                             </div>
                         )}
 
-                        {/* Upload another button */}
-                        {uploadedImageId && !selectedEditType && (
-                            <Button
-                                variant="outline"
-                                onClick={handleClear}
-                                className="w-full"
-                            >
-                                Upload Another Image
-                            </Button>
-                        )}
+
                     </div>
                 )}
             </CardContent>

@@ -98,6 +98,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { StandardErrorDisplay } from '@/components/standard/error-display';
 import { SchedulingModal } from '@/components/scheduling-modal';
 import { TemplateSaveModal } from '@/components/template-save-modal';
+import { ProjectSelector } from '@/components/project-selector';
 import { ContentCategory, TemplateConfiguration } from '@/lib/content-workflow-types';
 
 // #region State & Button Components
@@ -247,14 +248,21 @@ function RegenerateImageButton({
 }
 
 
-function SaveDialog({ dialogInfo, setDialogInfo, projects }: { dialogInfo: SaveDialogInfo, setDialogInfo: (info: SaveDialogInfo) => void, projects: Project[] | null }) {
+function SaveDialog({ dialogInfo, setDialogInfo }: { dialogInfo: SaveDialogInfo, setDialogInfo: (info: SaveDialogInfo) => void }) {
   const { user } = useUser();
   const [isPending, startTransition] = useTransition();
   const [name, setName] = useState('');
   const [projectId, setProjectId] = useState<string | null>(null);
 
   const handleSave = () => {
+    console.log('🎯 handleSave called');
+    console.log('🎯 user:', user?.id);
+    console.log('🎯 dialogInfo:', dialogInfo);
+    console.log('🎯 name:', name);
+    console.log('🎯 projectId:', projectId);
+
     if (!user || !dialogInfo.content) {
+      console.log('❌ Missing user or content');
       toast({
         variant: 'destructive',
         title: 'Could not save',
@@ -263,8 +271,17 @@ function SaveDialog({ dialogInfo, setDialogInfo, projects }: { dialogInfo: SaveD
       return;
     }
 
+    console.log('🎯 Starting save transition...');
     startTransition(async () => {
       try {
+        console.log('🎯 Calling saveContentAction with:', {
+          userId: user.id,
+          type: dialogInfo.type,
+          name: name || dialogInfo.type,
+          projectId: projectId || null,
+          contentLength: dialogInfo.content.length
+        });
+
         const result = await saveContentAction(
           user.id,
           dialogInfo.content,
@@ -273,7 +290,10 @@ function SaveDialog({ dialogInfo, setDialogInfo, projects }: { dialogInfo: SaveD
           projectId || null
         );
 
+        console.log('🎯 Save result:', result);
+
         if (result.message === 'Content saved successfully') {
+          console.log('✅ Save successful!');
           toast({
             title: '✨ Content Saved!',
             description: `Your content has been saved to your Library.`,
@@ -283,11 +303,11 @@ function SaveDialog({ dialogInfo, setDialogInfo, projects }: { dialogInfo: SaveD
           setName('');
           setProjectId(null);
         } else {
-          console.error('Save failed:', result);
+          console.error('❌ Save failed:', result);
           throw new Error(result.errors?.[0] || 'Save failed');
         }
       } catch (error) {
-        console.error('Failed to save content:', error);
+        console.error('❌ Failed to save content:', error);
         toast({
           variant: 'destructive',
           title: 'Save Failed',
@@ -313,22 +333,12 @@ function SaveDialog({ dialogInfo, setDialogInfo, projects }: { dialogInfo: SaveD
           >
             <Input id="contentName" value={name} onChange={(e) => setName(e.target.value)} placeholder={`e.g., ${dialogInfo.type} for October`} />
           </StandardFormField>
-          <StandardFormField
+          <ProjectSelector
+            value={projectId}
+            onChange={setProjectId}
             label="Project"
-            id="project"
-          >
-            <Select onValueChange={(value) => setProjectId(value === 'uncategorized' ? null : value)}>
-              <SelectTrigger id="project">
-                <SelectValue placeholder="Select a project" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="uncategorized">Uncategorized</SelectItem>
-                {projects?.map(project => (
-                  <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </StandardFormField>
+            placeholder="Select a project (optional)"
+          />
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => setDialogInfo({ isOpen: false, content: '', type: '' })}>Cancel</Button>
@@ -2126,7 +2136,7 @@ export default function ContentEnginePage() {
           </div>
         </TabsContent>
       </Tabs>
-      <SaveDialog dialogInfo={saveDialogInfo} setDialogInfo={setSaveDialogInfo} projects={projects} />
+      <SaveDialog dialogInfo={saveDialogInfo} setDialogInfo={setSaveDialogInfo} />
       <SchedulingModal
         isOpen={scheduleDialogInfo.isOpen}
         onClose={() => setScheduleDialogInfo({ isOpen: false, content: '', title: '', contentType: ContentCategory.MARKET_UPDATE })}

@@ -7,28 +7,22 @@ const repository_1 = require("@/aws/dynamodb/repository");
 const keys_1 = require("@/aws/dynamodb/keys");
 const connection_manager_1 = require("@/integrations/oauth/connection-manager");
 const content_workflow_types_1 = require("@/lib/content-workflow-types");
+const error_handling_framework_1 = require("@/lib/error-handling-framework");
+const error_handling_1 = require("@/lib/error-handling");
 class SchedulingService {
     constructor() {
         this.repository = (0, repository_1.getRepository)();
         this.oauthManager = (0, connection_manager_1.getOAuthConnectionManager)();
     }
     async scheduleContent(params) {
-        try {
+        const result = await (0, error_handling_framework_1.executeService)(async () => {
             const now = new Date();
             if (params.publishTime <= now) {
-                return {
-                    success: false,
-                    error: 'Publishing time must be in the future',
-                    timestamp: new Date(),
-                };
+                throw (0, error_handling_framework_1.createServiceError)('Publishing time must be in the future', 'schedule_content', error_handling_1.ErrorCategory.VALIDATION);
             }
             const validationResult = await this.validateChannels(params.userId, params.channels);
             if (!validationResult.success) {
-                return {
-                    success: false,
-                    error: validationResult.error,
-                    timestamp: new Date(),
-                };
+                throw (0, error_handling_framework_1.createServiceError)(validationResult.error || 'Channel validation failed', 'schedule_content', error_handling_1.ErrorCategory.VALIDATION);
             }
             const scheduleId = (0, crypto_1.randomUUID)();
             const scheduledContent = {
@@ -53,24 +47,40 @@ class SchedulingService {
                 GSI1PK: keys.GSI1PK,
                 GSI1SK: keys.GSI1SK,
             });
+            return scheduledContent;
+        }, {
+            operation: 'schedule_content',
+            userId: params.userId,
+            timestamp: new Date(),
+            metadata: {
+                contentType: params.contentType,
+                channelCount: params.channels.length,
+                publishTime: params.publishTime.toISOString()
+            }
+        }, {
+            maxRetries: 3,
+            fallback: {
+                enabled: false
+            }
+        });
+        if (result.success && result.data) {
             return {
                 success: true,
-                data: scheduledContent,
+                data: result.data,
                 message: `Content scheduled for ${params.publishTime.toLocaleString()}`,
-                timestamp: new Date(),
+                timestamp: result.timestamp,
             };
         }
-        catch (error) {
-            console.error('Failed to schedule content:', error);
+        else {
             return {
                 success: false,
-                error: error instanceof Error ? error.message : 'Failed to schedule content',
-                timestamp: new Date(),
+                error: result.error?.userMessage || result.error?.message || 'Failed to schedule content',
+                timestamp: result.timestamp,
             };
         }
     }
     async getCalendarContent(params) {
-        try {
+        const result = await (0, error_handling_framework_1.executeService)(async () => {
             const pk = `USER#${params.userId}`;
             const skPrefix = 'SCHEDULE#';
             const queryResult = await this.repository.query(pk, skPrefix, {
@@ -94,19 +104,44 @@ class SchedulingService {
                 filteredItems = filteredItems.filter(item => params.status.includes(item.status));
             }
             const calendarData = this.groupContentByDate(filteredItems);
+            return calendarData;
+        }, {
+            operation: 'get_calendar_content',
+            userId: params.userId,
+            timestamp: new Date(),
+            metadata: {
+                dateRange: {
+                    start: params.startDate.toISOString(),
+                    end: params.endDate.toISOString()
+                },
+                filters: {
+                    channels: params.channels?.length || 0,
+                    contentTypes: params.contentTypes?.length || 0,
+                    status: params.status?.length || 0
+                }
+            }
+        }, {
+            maxRetries: 3,
+            fallback: {
+                enabled: true,
+                fallbackValue: [],
+                cacheKey: `calendar_${params.userId}_${params.startDate.toISOString()}_${params.endDate.toISOString()}`,
+                cacheTTL: 5 * 60 * 1000
+            }
+        });
+        if (result.success && result.data) {
             return {
                 success: true,
-                data: calendarData,
-                message: `Retrieved ${filteredItems.length} scheduled items`,
-                timestamp: new Date(),
+                data: result.data,
+                message: `Retrieved ${result.data.reduce((sum, day) => sum + day.totalItems, 0)} scheduled items`,
+                timestamp: result.timestamp,
             };
         }
-        catch (error) {
-            console.error('Failed to get calendar content:', error);
+        else {
             return {
                 success: false,
-                error: error instanceof Error ? error.message : 'Failed to get calendar content',
-                timestamp: new Date(),
+                error: result.error?.userMessage || result.error?.message || 'Failed to get calendar content',
+                timestamp: result.timestamp,
             };
         }
     }

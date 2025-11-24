@@ -73,7 +73,7 @@ function GeneratePlanButton({ disabled }: { disabled?: boolean }) {
       {pending ? (
         <Loader2 className="h-5 w-5 animate-spin" />
       ) : (
-        <AISparkleIcon animated={false} className="h-5 w-5" />
+        <AISparkleIcon className="h-5 w-5" />
       )}
       {pending ? 'Generating Plan...' : 'Generate My Marketing Plan'}
     </Button>
@@ -297,7 +297,7 @@ export default function MarketingPlanPage() {
       {!isPlanLoading && !displayPlan && !isGenerating && (
         <div className="space-y-6">
           <StandardEmptyState
-            icon={<AISparkleIcon animated={true} className="h-16 w-16 text-primary" />}
+            icon={<AISparkleIcon className="h-16 w-16 text-primary" />}
             title="Your Marketing Success Starts Here"
             description="Let AI analyze your brand presence and competitive landscape to create a personalized, actionable marketing plan. Get strategic recommendations tailored to your unique position in the market."
             action={{
@@ -390,7 +390,7 @@ export default function MarketingPlanPage() {
         <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-purple-600/5">
           <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2">
-              <AISparkleIcon animated={true} className="h-5 w-5 text-primary" />
+              <AISparkleIcon className="h-5 w-5 text-primary" />
               Creating Your Marketing Plan
             </CardTitle>
             <CardDescription>

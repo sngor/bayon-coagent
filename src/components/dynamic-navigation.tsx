@@ -10,6 +10,7 @@ import {
 import {
     Users,
     MessageSquare,
+    MessagesSquare,
     BarChart3,
     Settings,
     Activity,
@@ -48,6 +49,17 @@ const FilledIcons = {
             {...props}
         >
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+    ),
+    MessagesSquare: ({ ...props }) => (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            {...props}
+        >
+            <path d="M14 9a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v9l-3-3h-3a2 2 0 0 1-2-2V9Z" />
+            <path d="M5 5a2 2 0 0 0-2 2v9l3-3h5a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5Z" />
         </svg>
     ),
     Wand2: ({ ...props }) => (
@@ -204,8 +216,8 @@ const regularNavItems = [
     },
     {
         href: '/assistant',
-        icon: MessageSquare,
-        filledIcon: FilledIcons.MessageSquare,
+        icon: MessagesSquare,
+        filledIcon: FilledIcons.MessagesSquare,
         label: 'Chat',
         featureId: 'assistant'
     },
@@ -335,18 +347,10 @@ export function DynamicNavigation() {
                                 <Link href={item.href}>
                                     {isActive ? (
                                         // Show filled icon when active
-                                        item.customIcon ? (
-                                            <item.filledIcon animated={false} className="w-5 h-5" />
-                                        ) : (
-                                            <item.filledIcon className="w-5 h-5" />
-                                        )
+                                        <item.filledIcon className="w-5 h-5" />
                                     ) : (
                                         // Show outlined icon when inactive
-                                        item.customIcon ? (
-                                            <item.icon animated={false} className="w-5 h-5" />
-                                        ) : (
-                                            <item.icon className="w-5 h-5" />
-                                        )
+                                        <item.icon className="w-5 h-5" />
                                     )}
                                     <span>{item.label}</span>
                                 </Link>

@@ -59,7 +59,7 @@ export function FeatureToggles() {
     const getIcon = (iconName: string) => {
         const IconComponent = iconMap[iconName as keyof typeof iconMap];
         if (IconComponent === AISparkleIcon) {
-            return <AISparkleIcon animated={false} className="h-5 w-5" />;
+            return <AISparkleIcon className="h-5 w-5" />;
         }
         return IconComponent ? <IconComponent className="h-5 w-5" /> : <Info className="h-5 w-5" />;
     };

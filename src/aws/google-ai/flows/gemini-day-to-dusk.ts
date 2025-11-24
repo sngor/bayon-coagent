@@ -26,7 +26,7 @@ export type GeminiDayToDuskInput = z.infer<typeof GeminiDayToDuskInputSchema>;
 export const GeminiDayToDuskOutputSchema = z.object({
     duskImageData: z.string(), // Base64 encoded result image
     imageFormat: z.string(),
-    analysis?: z.string(), // Optional analysis from Gemini
+    analysis: z.string().optional(), // Optional analysis from Gemini
 });
 
 export type GeminiDayToDuskOutput = z.infer<typeof GeminiDayToDuskOutputSchema>;
@@ -35,7 +35,7 @@ export type GeminiDayToDuskOutput = z.infer<typeof GeminiDayToDuskOutputSchema>;
 // Intensity Configurations
 // ============================================================================
 
-const INTENSITY_DESCRIPTIONS = {
+const DAY_TO_DUSK_DESCRIPTIONS = {
     subtle: {
         description: 'subtle golden hour lighting with gentle warm tones',
         transformation: 'Apply a gentle golden hour filter with soft warm lighting. Keep changes minimal and natural.',
@@ -47,6 +47,21 @@ const INTENSITY_DESCRIPTIONS = {
     dramatic: {
         description: 'dramatic dusk lighting with rich golden tones, deep blue sky, and enhanced interior lighting',
         transformation: 'Create a stunning twilight scene with dramatic golden lighting, deep blue-orange sky gradients, and prominent interior lighting.',
+    },
+} as const;
+
+const DUSK_TO_DAY_DESCRIPTIONS = {
+    subtle: {
+        description: 'subtle bright daylight with natural tones',
+        transformation: 'Convert to bright midday lighting. Replace all sunset/dusk colors with clear blue sky. Remove warm golden tones and replace with natural daylight. Turn off interior lights.',
+    },
+    moderate: {
+        description: 'moderate bright daylight with clear blue sky and natural lighting',
+        transformation: 'Transform completely to bright sunny daytime. Replace orange/pink sunset sky with clear bright blue sky. Remove all golden hour warmth. Add full midday sunlight. Turn off all interior lighting.',
+    },
+    dramatic: {
+        description: 'dramatic bright daylight with vibrant blue sky and enhanced natural lighting',
+        transformation: 'Create vibrant sunny daytime scene. Replace all dusk/sunset colors with brilliant blue sky. Remove all warm evening tones completely. Add intense midday sunlight. Ensure no interior lights visible. Maximum daylight brightness.',
     },
 } as const;
 
@@ -80,14 +95,18 @@ export async function geminiDayToDusk(
     const mimeType = getImageMimeType(validatedInput.imageFormat);
     const imageInput = prepareImageForGemini(validatedInput.imageData, mimeType);
 
-    // Get intensity configuration
-    const intensityConfig = INTENSITY_DESCRIPTIONS[validatedInput.params.intensity];
+    // Get configuration based on direction
+    const direction = validatedInput.params.direction || 'day-to-dusk';
+    const intensityConfig = direction === 'day-to-dusk'
+        ? DAY_TO_DUSK_DESCRIPTIONS[validatedInput.params.intensity]
+        : DUSK_TO_DAY_DESCRIPTIONS[validatedInput.params.intensity];
 
     try {
-        // Step 1: Analyze the image for day-to-dusk transformation
+        // Step 1: Analyze the image for transformation
         console.log('[Gemini Day-to-Dusk] Analyzing image...');
 
-        const analysisPrompt = `Analyze this daytime property photo for twilight/golden hour transformation with ${validatedInput.params.intensity} intensity.
+        const analysisPrompt = direction === 'day-to-dusk'
+            ? `Analyze this daytime property photo for twilight/golden hour transformation with ${validatedInput.params.intensity} intensity.
 
 ANALYSIS REQUIREMENTS:
 1. Identify the current lighting conditions (time of day, sky color, shadows)
@@ -97,7 +116,18 @@ ANALYSIS REQUIREMENTS:
 5. Note any existing exterior lighting fixtures
 6. Evaluate the overall composition for twilight enhancement
 
-Provide a detailed analysis focusing on how to transform this daytime scene into an appealing ${intensityConfig.description} twilight scene.`;
+Provide a detailed analysis focusing on how to transform this daytime scene into an appealing ${intensityConfig.description} twilight scene.`
+            : `Analyze this dusk/evening property photo for bright daylight transformation with ${validatedInput.params.intensity} intensity.
+
+ANALYSIS REQUIREMENTS:
+1. Identify the current lighting conditions (evening/dusk lighting, warm tones, shadows)
+2. Locate windows and interior spaces with visible lighting
+3. Identify architectural features that would benefit from natural daylight
+4. Assess the sky area and cloud formations for transformation potential
+5. Note any exterior lighting that should be removed or dimmed
+6. Evaluate the overall composition for daylight enhancement
+
+Provide a detailed analysis focusing on how to transform this evening scene into an appealing ${intensityConfig.description} daylight scene.`;
 
         const analysisResult = await model.generateContent([
             analysisPrompt,
@@ -109,8 +139,9 @@ Provide a detailed analysis focusing on how to transform this daytime scene into
 
         console.log('[Gemini Day-to-Dusk] Analysis completed, generating transformation...');
 
-        // Step 2: Generate the day-to-dusk transformation
-        const transformationPrompt = `Transform this daytime property photo into a stunning twilight scene with ${validatedInput.params.intensity} intensity.
+        // Step 2: Generate the transformation
+        const transformationPrompt = direction === 'day-to-dusk'
+            ? `Transform this daytime property photo into a stunning twilight scene with ${validatedInput.params.intensity} intensity.
 
 TRANSFORMATION INSTRUCTIONS:
 ${intensityConfig.transformation}
@@ -144,7 +175,50 @@ SPECIFIC REQUIREMENTS:
 
 Based on this analysis: ${analysis.substring(0, 500)}
 
-Generate a professionally transformed twilight version of this property photo.`;
+Generate a professionally transformed twilight version of this property photo.`
+            : `Transform this dusk/evening property photo into a BRIGHT SUNNY DAYTIME scene with ${validatedInput.params.intensity} intensity.
+
+CRITICAL TRANSFORMATION INSTRUCTIONS:
+${intensityConfig.transformation}
+
+MANDATORY REQUIREMENTS - MUST BE APPLIED:
+1. SKY TRANSFORMATION (HIGHEST PRIORITY):
+   - COMPLETELY REPLACE warm evening/sunset sky with BRIGHT CLEAR BLUE daytime sky
+   - REMOVE ALL orange, pink, purple, and golden sunset colors
+   - Create BRILLIANT BLUE sky like midday on a sunny day
+   - NO sunset or dusk colors whatsoever
+   - Maintain cloud formations but make them WHITE daytime clouds
+
+2. LIGHTING EFFECTS (CRITICAL):
+   - COMPLETELY REMOVE all warm golden/orange evening tones
+   - REPLACE with BRIGHT NATURAL MIDDAY SUNLIGHT
+   - Add strong natural daylight on all building surfaces
+   - Create sharp daytime shadows with high sun angle
+   - Apply COOL natural color temperature (NOT warm)
+   - Make everything look like it's photographed at noon on a sunny day
+
+3. INTERIOR LIGHTING (MUST CHANGE):
+   - TURN OFF all visible interior lights through windows
+   - REMOVE warm amber glow from windows
+   - Windows should show natural daylight reflections only
+   - NO interior lights should be visible
+
+4. COLOR CORRECTION (ESSENTIAL):
+   - REMOVE all warm color casts completely
+   - REPLACE warm tones with cool natural daylight colors
+   - Sky must be BLUE not orange/pink
+   - Surfaces should have natural daylight appearance
+   - NO golden hour warmth remaining
+
+5. TECHNICAL REQUIREMENTS:
+   - Preserve exact composition, framing, and camera angle
+   - Keep all architectural elements unchanged
+   - Apply ${validatedInput.params.intensity} intensity level
+   - Result must look like MIDDAY PHOTOGRAPHY not evening
+
+Based on this analysis: ${analysis.substring(0, 500)}
+
+Generate a professionally transformed BRIGHT DAYTIME version of this property photo. The result MUST look like it was photographed during the day with full sunlight and blue sky.`;
 
         // Try multiple approaches for image generation
         const approaches = [
@@ -196,7 +270,8 @@ Generate a professionally transformed twilight version of this property photo.`;
                 console.log(`[Gemini Day-to-Dusk] ${approach.name} returned text:`, text.substring(0, 100));
 
             } catch (error) {
-                console.log(`[Gemini Day-to-Dusk] ${approach.name} failed:`, error.message);
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                console.log(`[Gemini Day-to-Dusk] ${approach.name} failed:`, errorMessage);
                 continue;
             }
         }
@@ -219,6 +294,7 @@ Generate a professionally transformed twilight version of this property photo.`;
         // Log error to CloudWatch
         logError(error, 'gemini-day-to-dusk', {
             intensity: validatedInput.params.intensity,
+            direction: validatedInput.params.direction,
         });
 
         // Classify and throw with user-friendly message

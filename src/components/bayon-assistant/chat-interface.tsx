@@ -392,18 +392,19 @@ export function ChatInterface({
             )}
 
             {/* Chat Header */}
-            <div className="flex-shrink-0 border-b border-border/20 p-4 relative">
-                {/* Gradient blur background */}
-                <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/20 to-background/10 backdrop-blur-lg"></div>
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/5"></div>
+            <div className="flex-shrink-0 border-b border-border/20 p-4 relative overflow-hidden">
+                {/* Gradient blur background - strong at top, soft at bottom */}
+                <div className="absolute inset-0 bg-gradient-to-b from-purple-500/15 via-blue-500/8 to-transparent backdrop-blur-[20px]"></div>
+                <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/30 to-transparent backdrop-blur-[12px]"></div>
+                <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/5 to-transparent dark:from-white/5 dark:via-white/2 dark:to-transparent"></div>
                 <div className="relative z-10">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="relative">
-                                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
+                                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
                                     <Bot className="w-4 h-4 text-white" />
                                 </div>
-                                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white shadow-sm animate-pulse"></div>
                             </div>
                             <div>
                                 <h3 className="font-semibold text-sm">AI Assistant</h3>
@@ -414,7 +415,7 @@ export function ChatInterface({
                         </div>
 
                         {messageCount > 0 && (
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="secondary" className="text-xs backdrop-blur-sm bg-background/50">
                                 {messageCount} messages
                             </Badge>
                         )}

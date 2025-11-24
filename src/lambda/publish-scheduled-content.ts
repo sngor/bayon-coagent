@@ -23,6 +23,7 @@ import {
     ContentCategory,
     PublishResult
 } from '../lib/content-workflow-types';
+import { publishContentPublishedEvent } from './utils/eventbridge-client';
 
 // Initialize DynamoDB client
 const dynamoClient = new DynamoDBClient({
@@ -270,6 +271,18 @@ export const handler = async (event: LambdaEvent, context: LambdaContext): Promi
                         undefined,
                         operationLogger
                     );
+
+                    // Publish Content Published event for each successful channel
+                    for (const channel of scheduledItem.channels) {
+                        await publishContentPublishedEvent({
+                            contentId: scheduledItem.id,
+                            userId: scheduledItem.userId,
+                            contentType: scheduledItem.category || 'general',
+                            platform: channel.type,
+                            publishedAt: new Date().toISOString(),
+                            traceId: process.env._X_AMZN_TRACE_ID,
+                        });
+                    }
                 } else {
                     result.failed++;
                     const error: ProcessingError = {

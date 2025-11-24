@@ -53,6 +53,9 @@ function getAWSConfig() {
             region: process.env.BEDROCK_REGION || region,
             endpoint: undefined,
         },
+        googleAI: {
+            apiKey: process.env.GOOGLE_AI_API_KEY,
+        },
         ses: {
             region: process.env.SES_REGION || region,
             fromEmail: process.env.SES_FROM_EMAIL || 'noreply@bayoncoagent.com',
@@ -75,6 +78,11 @@ function getAWSConfig() {
             integrationServiceApiId: process.env.INTEGRATION_SERVICE_API_ID,
             backgroundServiceApiId: process.env.BACKGROUND_SERVICE_API_ID,
             adminServiceApiId: process.env.ADMIN_SERVICE_API_ID,
+        },
+        sqs: {
+            aiJobRequestQueueUrl: process.env.AI_JOB_REQUEST_QUEUE_URL,
+            aiJobResponseQueueUrl: process.env.AI_JOB_RESPONSE_QUEUE_URL,
+            endpoint: isLocal ? 'http://localhost:4566' : undefined,
         },
     };
 }
@@ -115,6 +123,9 @@ function validateConfig() {
     else if (!isValidBedrockModel(config.bedrock.modelId)) {
         errors.push(`BEDROCK_MODEL_ID "${config.bedrock.modelId}" is not a valid model. ` +
             `Valid models: ${exports.VALID_BEDROCK_MODELS.join(', ')}`);
+    }
+    if (!config.googleAI.apiKey) {
+        errors.push('GOOGLE_AI_API_KEY is not set (required for Gemini image generation)');
     }
     return {
         valid: errors.length === 0,

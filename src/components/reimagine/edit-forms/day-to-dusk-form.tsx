@@ -35,6 +35,16 @@ const intensityDescriptions: Record<DayToDuskParams["intensity"], string> = {
     dramatic: "Deep sunset colors with rich golden lighting and vibrant sky",
 };
 
+const directionLabels: Record<DayToDuskParams["direction"], string> = {
+    "day-to-dusk": "Day to Dusk",
+    "dusk-to-day": "Dusk to Day",
+};
+
+const directionDescriptions: Record<DayToDuskParams["direction"], string> = {
+    "day-to-dusk": "Transform daytime photos to golden hour/dusk lighting",
+    "dusk-to-day": "Convert dusk/evening photos to bright daytime lighting",
+};
+
 export function DayToDuskForm({
     onSubmit,
     onCancel,
@@ -45,14 +55,18 @@ export function DayToDuskForm({
         DayToDuskParams["intensity"] | undefined
     >(defaultValues?.intensity || "moderate");
 
+    const [direction, setDirection] = React.useState<
+        DayToDuskParams["direction"]
+    >(defaultValues?.direction || "day-to-dusk");
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!intensity) {
+        if (!intensity || !direction) {
             return;
         }
 
-        const params: DayToDuskParams = { intensity };
+        const params: DayToDuskParams = { intensity, direction };
 
         // Validate with Zod schema
         const result = DayToDuskParamsSchema.safeParse(params);
@@ -61,12 +75,39 @@ export function DayToDuskForm({
         }
     };
 
-    const isValid = !!intensity;
+    const isValid = !!intensity && !!direction;
 
     return (
         <Card>
             <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-6 pt-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="direction">Conversion Direction</Label>
+                        <Select
+                            value={direction}
+                            onValueChange={(value) =>
+                                setDirection(value as DayToDuskParams["direction"])
+                            }
+                            disabled={isProcessing}
+                        >
+                            <SelectTrigger id="direction">
+                                <SelectValue placeholder="Select direction" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {Object.entries(directionLabels).map(([value, label]) => (
+                                    <SelectItem key={value} value={value}>
+                                        {label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        {direction && (
+                            <p className="text-sm text-muted-foreground">
+                                {directionDescriptions[direction]}
+                            </p>
+                        )}
+                    </div>
+
                     <div className="space-y-2">
                         <Label htmlFor="intensity">Lighting Intensity</Label>
                         <Select
@@ -97,9 +138,19 @@ export function DayToDuskForm({
                     <div className="rounded-lg bg-muted/50 p-4 space-y-2">
                         <h4 className="font-headline text-sm font-medium">Tips for Best Results</h4>
                         <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                            <li>Works best with daytime exterior photos</li>
-                            <li>Ensure the sky is visible in the image</li>
-                            <li>Interior lights will be enhanced automatically</li>
+                            {direction === "day-to-dusk" ? (
+                                <>
+                                    <li>Works best with daytime exterior photos</li>
+                                    <li>Ensure the sky is visible in the image</li>
+                                    <li>Interior lights will be enhanced automatically</li>
+                                </>
+                            ) : (
+                                <>
+                                    <li>Works best with dusk or evening exterior photos</li>
+                                    <li>Converts warm evening tones to bright daylight</li>
+                                    <li>Sky will be transformed to clear daytime blue</li>
+                                </>
+                            )}
                         </ul>
                     </div>
                 </CardContent>
@@ -119,7 +170,7 @@ export function DayToDuskForm({
                         disabled={!isValid || isProcessing}
                         className="flex-1"
                     >
-                        {isProcessing ? "Processing..." : "Convert to Dusk"}
+                        {isProcessing ? "Processing..." : direction === "day-to-dusk" ? "Convert to Dusk" : "Convert to Day"}
                     </Button>
                 </CardFooter>
             </form>

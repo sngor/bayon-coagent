@@ -23,6 +23,12 @@ import { StandardPageLayout, StandardErrorDisplay } from '@/components/standard'
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import {
+    AnimatedTabs as Tabs,
+    AnimatedTabsContent as TabsContent,
+    AnimatedTabsList as TabsList,
+    AnimatedTabsTrigger as TabsTrigger,
+} from '@/components/ui/animated-tabs';
 import { ImageUploader } from '@/components/reimagine/image-uploader';
 import { EditPreview } from '@/components/reimagine/edit-preview';
 import { EditHistoryList } from '@/components/reimagine/edit-history-list';
@@ -134,7 +140,7 @@ export default function ReimagineToolkitPage() {
         {
             id: 'day-to-dusk' as EditType,
             title: 'Day to Dusk',
-            description: 'Transform daytime photos to golden hour',
+            description: 'Transform between daytime and golden hour',
             icon: '🌅',
             color: 'from-orange-500 to-pink-500',
         },
@@ -215,6 +221,17 @@ export default function ReimagineToolkitPage() {
         console.error('Upload error:', error);
         setProcessingStatus('failed');
         setProcessingError(error);
+    }, []);
+
+    // Handle change image - reset to upload state
+    const handleChangeImage = useCallback(() => {
+        setCurrentImage(null);
+        setActiveEdit(null);
+        setPreviewData(null);
+        setChainEditData(null);
+        setProcessingStatus('idle');
+        setProcessingError(null);
+        setWorkflowState('upload');
     }, []);
 
 
@@ -336,93 +353,106 @@ export default function ReimagineToolkitPage() {
     }, [workflowState]);
 
     return (
-        <div className="space-y-8 max-w-7xl mx-auto">
-            {/* Main Content Area */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column: Main Workflow */}
-                <div className="lg:col-span-2 space-y-6">
-                    {/* Back Button */}
-                    {workflowState === 'preview' && (
-                        <Button
-                            variant="ghost"
-                            onClick={handleBack}
-                            className="mb-4"
-                        >
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Back
-                        </Button>
-                    )}
+        <div className="space-y-6 max-w-7xl mx-auto">
+            <Tabs defaultValue="create" className="w-full">
+                <TabsList className="grid w-full max-w-md grid-cols-2">
+                    <TabsTrigger value="create">Create</TabsTrigger>
+                    <TabsTrigger value="history">Edit History</TabsTrigger>
+                </TabsList>
 
-                    {/* Upload State - Combined with edit type selection */}
-                    {workflowState === 'upload' && (
-                        <ImageUploader
+                {/* Create Tab */}
+                <TabsContent value="create" className="mt-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Left Column: Main Workflow */}
+                        <div className="lg:col-span-2 space-y-6">
+                            {/* Back Button */}
+                            {workflowState === 'preview' && (
+                                <Button
+                                    variant="ghost"
+                                    onClick={handleBack}
+                                    className="mb-4"
+                                >
+                                    <ArrowLeft className="h-4 w-4 mr-2" />
+                                    Back
+                                </Button>
+                            )}
+
+                            {/* Upload State - Combined with edit type selection */}
+                            {workflowState === 'upload' && (
+                                <ImageUploader
+                                    userId={userId}
+                                    onUploadComplete={handleUploadComplete}
+                                    onUploadError={handleUploadError}
+                                    onChangeImage={handleChangeImage}
+                                />
+                            )}
+
+                            {/* Processing State */}
+                            {workflowState === 'processing' && (
+                                <Card>
+                                    <CardContent className="p-8">
+                                        <div className="flex flex-col items-center justify-center space-y-4">
+                                            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                                            <div className="text-center">
+                                                <h3 className="font-headline font-semibold text-lg mb-1">Processing your image...</h3>
+                                                <p className="text-sm text-muted-foreground">
+                                                    This usually takes 30-60 seconds
+                                                </p>
+                                            </div>
+                                            {processingError && (
+                                                <StandardErrorDisplay
+                                                    title="Processing Error"
+                                                    message={processingError}
+                                                    variant="error"
+                                                />
+                                            )}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+
+                            {/* Preview State */}
+                            {workflowState === 'preview' && previewData && (
+                                <EditPreview
+                                    originalUrl={previewData.originalUrl}
+                                    editedUrl={previewData.editedUrl}
+                                    editType={previewData.editType}
+                                    onAccept={handlePreviewAccept}
+                                    onRegenerate={handlePreviewRegenerate}
+                                    onCancel={handlePreviewCancel}
+                                    isLoading={processingStatus === 'processing'}
+                                />
+                            )}
+                        </div>
+
+                        {/* Right Column: Rate Limits */}
+                        <div className="lg:col-span-1 space-y-6">
+                            <RateLimitStatus userId={userId} />
+                        </div>
+                    </div>
+                </TabsContent>
+
+                {/* History Tab */}
+                <TabsContent value="history" className="mt-6">
+                    <div className="max-w-4xl mx-auto">
+                        <EditHistoryList
+                            key={historyRefreshKey}
                             userId={userId}
-                            onUploadComplete={handleUploadComplete}
-                            onUploadError={handleUploadError}
+                            onViewEdit={(item) => {
+                                // Handle viewing an edit from history
+                                setPreviewData({
+                                    editId: item.editId,
+                                    originalUrl: item.originalUrl,
+                                    editedUrl: item.resultUrl,
+                                    editType: item.editType,
+                                });
+                                setWorkflowState('preview');
+                            }}
+                            onEditResult={handleEditResult}
                         />
-                    )}
-
-                    {/* Processing State */}
-                    {workflowState === 'processing' && (
-                        <Card>
-                            <CardContent className="p-8">
-                                <div className="flex flex-col items-center justify-center space-y-4">
-                                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                                    <div className="text-center">
-                                        <h3 className="font-headline font-semibold text-lg mb-1">Processing your image...</h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            This usually takes 30-60 seconds
-                                        </p>
-                                    </div>
-                                    {processingError && (
-                                        <StandardErrorDisplay
-                                            title="Processing Error"
-                                            message={processingError}
-                                            variant="error"
-                                        />
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Preview State */}
-                    {workflowState === 'preview' && previewData && (
-                        <EditPreview
-                            originalUrl={previewData.originalUrl}
-                            editedUrl={previewData.editedUrl}
-                            editType={previewData.editType}
-                            onAccept={handlePreviewAccept}
-                            onRegenerate={handlePreviewRegenerate}
-                            onCancel={handlePreviewCancel}
-                            isLoading={processingStatus === 'processing'}
-                        />
-                    )}
-                </div>
-
-                {/* Right Column: Rate Limits & Edit History (Requirement 11.5) */}
-                <div className="lg:col-span-1 space-y-6">
-                    {/* Rate Limit Status */}
-                    <RateLimitStatus userId={userId} />
-
-                    {/* Edit History */}
-                    <EditHistoryList
-                        key={historyRefreshKey}
-                        userId={userId}
-                        onViewEdit={(item) => {
-                            // Handle viewing an edit from history
-                            setPreviewData({
-                                editId: item.editId,
-                                originalUrl: item.originalUrl,
-                                editedUrl: item.resultUrl,
-                                editType: item.editType,
-                            });
-                            setWorkflowState('preview');
-                        }}
-                        onEditResult={handleEditResult}
-                    />
-                </div>
-            </div>
+                    </div>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }

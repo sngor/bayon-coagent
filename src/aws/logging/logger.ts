@@ -19,6 +19,9 @@ export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
 
 export interface LogContext {
   correlationId?: string;
+  traceId?: string;
+  spanId?: string;
+  parentSpanId?: string;
   userId?: string;
   service?: string;
   operation?: string;
@@ -53,6 +56,34 @@ export class Logger {
   }
 
   /**
+   * Get current X-Ray trace context if available
+   */
+  private getTraceContext(): Partial<LogContext> {
+    try {
+      // Only attempt to get trace context in server environment
+      if (typeof window !== 'undefined') {
+        return {};
+      }
+
+      // Dynamically import X-Ray SDK to avoid issues in environments where it's not available
+      const AWSXRay = require('aws-xray-sdk-core');
+      const segment = AWSXRay.getSegment();
+
+      if (segment) {
+        return {
+          traceId: segment.trace_id,
+          spanId: segment.id,
+          parentSpanId: segment.parent_id,
+        };
+      }
+    } catch (error) {
+      // X-Ray not available or no active segment, continue without trace context
+    }
+
+    return {};
+  }
+
+  /**
    * Determines if a log level should be output based on environment
    */
   private shouldLog(level: LogLevel): boolean {
@@ -81,11 +112,14 @@ export class Logger {
     context?: LogContext,
     error?: Error
   ): LogEntry {
+    // Get current trace context from X-Ray
+    const traceContext = this.getTraceContext();
+
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
       message,
-      context: { ...this.defaultContext, ...context },
+      context: { ...this.defaultContext, ...traceContext, ...context },
       environment: this.environment,
     };
 
@@ -130,13 +164,13 @@ export class Logger {
 
     const color = colors[entry.level];
     const prefix = `${color}[${entry.level}]${reset} ${entry.timestamp}`;
-    
+
     console.log(`${prefix} ${entry.message}`);
-    
+
     if (entry.context && Object.keys(entry.context).length > 0) {
       console.log('  Context:', JSON.stringify(entry.context, null, 2));
     }
-    
+
     if (entry.error) {
       console.error('  Error:', entry.error.name, '-', entry.error.message);
       if (entry.error.stack) {
@@ -233,10 +267,10 @@ export function withCorrelationId<T extends (...args: any[]) => any>(
   return ((...args: any[]) => {
     const correlationId = generateCorrelationId();
     const contextLogger = logger.child({ correlationId, service });
-    
+
     try {
       const result = fn(...args);
-      
+
       // Handle async functions
       if (result instanceof Promise) {
         return result.catch((error: Error) => {
@@ -246,7 +280,7 @@ export function withCorrelationId<T extends (...args: any[]) => any>(
           throw error;
         });
       }
-      
+
       return result;
     } catch (error) {
       contextLogger.error(`Error in ${service}`, error as Error, {

@@ -2939,16 +2939,14 @@ export async function getPersonalizedDashboardAction(): Promise<{
  * Create a new project
  */
 export async function createProjectAction(
-  prevState: any,
-  formData: FormData
+  userId: string,
+  name: string
 ): Promise<{
   message: string;
   data: any | null;
   errors?: string[];
 }> {
   try {
-    const name = formData.get('name') as string;
-
     if (!name?.trim()) {
       return {
         message: 'Project name is required',
@@ -2957,10 +2955,7 @@ export async function createProjectAction(
       };
     }
 
-    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
-    const user = await getCurrentUserServer();
-
-    if (!user) {
+    if (!userId) {
       return {
         message: 'Authentication required',
         data: null,
@@ -2970,12 +2965,13 @@ export async function createProjectAction(
 
     const repository = getRepository();
     const projectId = Date.now().toString();
-    const keys = getProjectKeys(user.id, projectId);
+    const keys = getProjectKeys(userId, projectId);
 
     await repository.put({
       ...keys,
       EntityType: 'Project',
       Data: {
+        id: projectId,
         name,
         createdAt: new Date().toISOString(),
       },
@@ -3001,6 +2997,7 @@ export async function createProjectAction(
  * Move content to a project
  */
 export async function moveContentToProjectAction(
+  userId: string,
   contentId: string,
   projectId: string | null
 ): Promise<{
@@ -3009,10 +3006,7 @@ export async function moveContentToProjectAction(
   errors?: string[];
 }> {
   try {
-    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
-    const user = await getCurrentUserServer();
-
-    if (!user) {
+    if (!userId) {
       return {
         message: 'Authentication required',
         data: null,
@@ -3021,7 +3015,7 @@ export async function moveContentToProjectAction(
     }
 
     const repository = getRepository();
-    const keys = getSavedContentKeys(user.id, contentId);
+    const keys = getSavedContentKeys(userId, contentId);
     await repository.update(keys.PK, keys.SK, { projectId: projectId || null });
 
     return {
@@ -3042,6 +3036,7 @@ export async function moveContentToProjectAction(
  * Delete saved content
  */
 export async function deleteContentAction(
+  userId: string,
   contentId: string
 ): Promise<{
   message: string;
@@ -3049,10 +3044,7 @@ export async function deleteContentAction(
   errors?: string[];
 }> {
   try {
-    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
-    const user = await getCurrentUserServer();
-
-    if (!user) {
+    if (!userId) {
       return {
         message: 'Authentication required',
         data: null,
@@ -3061,7 +3053,7 @@ export async function deleteContentAction(
     }
 
     const repository = getRepository();
-    const keys = getSavedContentKeys(user.id, contentId);
+    const keys = getSavedContentKeys(userId, contentId);
     await repository.delete(keys.PK, keys.SK);
 
     return {
@@ -3082,6 +3074,7 @@ export async function deleteContentAction(
  * Rename saved content
  */
 export async function renameContentAction(
+  userId: string,
   contentId: string,
   name: string
 ): Promise<{
@@ -3098,10 +3091,7 @@ export async function renameContentAction(
       };
     }
 
-    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
-    const user = await getCurrentUserServer();
-
-    if (!user) {
+    if (!userId) {
       return {
         message: 'Authentication required',
         data: null,
@@ -3110,7 +3100,7 @@ export async function renameContentAction(
     }
 
     const repository = getRepository();
-    const keys = getSavedContentKeys(user.id, contentId);
+    const keys = getSavedContentKeys(userId, contentId);
     await repository.update(keys.PK, keys.SK, { name });
 
     return {
@@ -3181,6 +3171,9 @@ export async function saveContentAction(
   data: any | null;
   errors?: string[];
 }> {
+  console.log('🚀 saveContentAction STARTED - timestamp:', Date.now());
+  console.log('🚀 Parameters:', { userId, type, name, projectId, contentLength: content?.length });
+
   try {
     if (!userId || typeof userId !== 'string') {
       return {
@@ -3227,6 +3220,15 @@ export async function saveContentAction(
       contentSize: contentSizeBytes,
     };
 
+    console.log('💾 Saving content:', {
+      contentId,
+      name: contentName,
+      type,
+      projectId,
+      contentSize: contentSizeBytes
+    });
+    console.log('💾 Keys:', keys);
+
     const itemToSave = {
       ...keys,
       EntityType: 'SavedContent' as const,
@@ -3235,14 +3237,21 @@ export async function saveContentAction(
       UpdatedAt: Date.now()
     };
 
+    console.log('💾 Item to save:', JSON.stringify(itemToSave, null, 2));
+    console.log('💾 About to call repository.put...');
     await repository.put(itemToSave);
+    console.log('✅ Content saved successfully to DynamoDB!');
 
     return {
       message: 'Content saved successfully',
       data: { id: contentId, content, type, name: contentData.name },
     };
   } catch (error: any) {
-    console.error('Save content error:', error);
+    console.error('❌ Save content error:', error);
+    console.error('❌ Error type:', typeof error);
+    console.error('❌ Error message:', error?.message);
+    console.error('❌ Error stack:', error?.stack);
+    console.error('❌ Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
 
     // Handle specific DynamoDB errors
     if (error.message?.includes('hashkey has exceeded') || error.message?.includes('Item size has exceeded')) {
@@ -3256,7 +3265,7 @@ export async function saveContentAction(
     return {
       message: 'Failed to save content',
       data: null,
-      errors: [error.message || 'Unknown error occurred'],
+      errors: [error.message || error.toString() || 'Unknown error occurred'],
     };
   }
 }
@@ -3266,16 +3275,22 @@ export async function saveContentAction(
 /**
  * Get all saved content for a user
  */
-export async function getSavedContentAction(): Promise<{
+export async function getSavedContentAction(userId?: string): Promise<{
   message: string;
   data: any[] | null;
   errors?: string[];
 }> {
   try {
-    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
-    const user = await getCurrentUserServer();
+    let effectiveUserId = userId;
 
-    if (!user?.id) {
+    // If no userId provided, try to get from server session
+    if (!effectiveUserId) {
+      const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+      const user = await getCurrentUserServer();
+      effectiveUserId = user?.id;
+    }
+
+    if (!effectiveUserId) {
       return {
         message: 'Authentication required',
         data: null,
@@ -3283,20 +3298,44 @@ export async function getSavedContentAction(): Promise<{
       };
     }
 
+    console.log('📥 getSavedContentAction - fetching for userId:', effectiveUserId);
+
     const repository = getRepository();
-    const pk = `USER#${user.id}`;
+    const pk = `USER#${effectiveUserId}`;
     const skPrefix = 'CONTENT#';
 
-    const result = await repository.query(pk, skPrefix, {
+    console.log('📥 Querying DynamoDB with PK:', pk, 'SK prefix:', skPrefix);
+
+    const result = await repository.queryItems(pk, skPrefix, {
       scanIndexForward: false, // Most recent first
     });
 
+    console.log('📥 DynamoDB query result:', {
+      itemCount: result.items?.length || 0,
+      count: result.count
+    });
+
+    // Map items and ensure id is present (extract from SK if missing from Data)
+    const content = (result.items || []).map(item => {
+      const data = item.Data as any;
+      // If id is missing from Data, extract it from SK (CONTENT#<id>)
+      if (!data.id && item.SK) {
+        const idMatch = item.SK.match(/^CONTENT#(.+)$/);
+        if (idMatch) {
+          data.id = idMatch[1];
+        }
+      }
+      return data;
+    });
+
+    console.log('📥 Returning content items:', content.length);
+
     return {
       message: 'Saved content retrieved successfully',
-      data: result.items || [],
+      data: content,
     };
   } catch (error: any) {
-    console.error('Get saved content error:', error);
+    console.error('❌ Get saved content error:', error);
     return {
       message: 'Failed to retrieve saved content',
       data: null,
@@ -3308,16 +3347,22 @@ export async function getSavedContentAction(): Promise<{
 /**
  * Get all projects for a user
  */
-export async function getProjectsAction(): Promise<{
+export async function getProjectsAction(userId?: string): Promise<{
   message: string;
   data: any[] | null;
   errors?: string[];
 }> {
   try {
-    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
-    const user = await getCurrentUserServer();
+    let effectiveUserId = userId;
 
-    if (!user?.id) {
+    // If no userId provided, try to get from server session
+    if (!effectiveUserId) {
+      const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+      const user = await getCurrentUserServer();
+      effectiveUserId = user?.id;
+    }
+
+    if (!effectiveUserId) {
       return {
         message: 'Authentication required',
         data: null,
@@ -3326,21 +3371,95 @@ export async function getProjectsAction(): Promise<{
     }
 
     const repository = getRepository();
-    const pk = `USER#${user.id}`;
+    const pk = `USER#${effectiveUserId}`;
     const skPrefix = 'PROJECT#';
 
-    const result = await repository.query(pk, skPrefix, {
+    const result = await repository.queryItems(pk, skPrefix, {
       scanIndexForward: false, // Most recent first
+    });
+
+    // Map items and ensure id is present (extract from SK if missing from Data)
+    const projects = (result.items || []).map(item => {
+      const data = item.Data as any;
+      // If id is missing from Data, extract it from SK (PROJECT#<id>)
+      if (!data.id && item.SK) {
+        const idMatch = item.SK.match(/^PROJECT#(.+)$/);
+        if (idMatch) {
+          data.id = idMatch[1];
+        }
+      }
+      return data;
     });
 
     return {
       message: 'Projects retrieved successfully',
-      data: result.items || [],
+      data: projects,
     };
   } catch (error: any) {
     console.error('Get projects error:', error);
     return {
       message: 'Failed to retrieve projects',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
+ * Delete a project
+ */
+export async function deleteProjectAction(
+  userId: string,
+  projectId: string
+): Promise<{
+  message: string;
+  data: any | null;
+  errors?: string[];
+}> {
+  try {
+    if (!userId) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to delete projects'],
+      };
+    }
+
+    const repository = getRepository();
+    const keys = getProjectKeys(userId, projectId);
+
+    // First, move all content in this project to uncategorized
+    const pk = `USER#${userId}`;
+    const skPrefix = 'CONTENT#';
+    const contentResult = await repository.query(pk, skPrefix);
+
+    console.log('🗑️ Deleting project:', projectId);
+    console.log('📦 Found content items:', contentResult.items?.length || 0);
+
+    if (contentResult.items && contentResult.items.length > 0) {
+      for (const content of contentResult.items) {
+        console.log('📄 Checking content:', content.id, 'projectId:', content.projectId);
+        if (content.projectId === projectId) {
+          console.log('  ➡️ Moving to uncategorized');
+          const contentKeys = getSavedContentKeys(userId, content.id);
+          await repository.update(contentKeys.PK, contentKeys.SK, { projectId: null });
+        }
+      }
+    }
+
+    // Then delete the project
+    console.log('🗑️ Deleting project from database');
+    await repository.delete(keys.PK, keys.SK);
+    console.log('✅ Project deleted successfully');
+
+    return {
+      message: 'Project deleted successfully',
+      data: { projectId },
+    };
+  } catch (error: any) {
+    console.error('Delete project error:', error);
+    return {
+      message: 'Failed to delete project',
       data: null,
       errors: [error.message || 'Unknown error occurred'],
     };

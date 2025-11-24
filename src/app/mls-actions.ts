@@ -254,6 +254,8 @@ async function importSingleListing(
 
 /**
  * Triggers MLS import for a user's listings
+ * Uses Integration Service Lambda via API Gateway with fallback to direct implementation
+ * Requirement 1.5: Implement fallback for integration service failures
  * Requirement 2.1: Import listings from MLS
  * Requirement 2.3: Store listings with MLS linkage
  * Requirement 2.4: Implement retry logic with exponential backoff
@@ -296,50 +298,84 @@ export async function importMLSListings(
             };
         }
 
-        // Create MLS connector
-        const connector = createMLSConnector(connection.provider);
+        // Try integration service Lambda via API Gateway first
+        try {
+            const { mlsClient } = await import('@/aws/integration-service/client');
 
-        // Fetch listings from MLS
-        console.log(`Fetching listings for agent ${connection.agentId}...`);
-        const listings = await connector.fetchListings(connection, connection.agentId);
+            console.log(`Triggering MLS sync via Integration Service for agent ${connection.agentId}...`);
 
-        console.log(`Found ${listings.length} listings to import`);
+            const syncResult = await mlsClient.syncMLSData(
+                user.id,
+                connection.provider as 'mlsgrid' | 'bridgeInteractive',
+                connection.agentId,
+                'full'
+            );
 
-        // Import each listing with retry logic
-        const importResults = await Promise.all(
-            listings.map(listing =>
-                importSingleListing(listing, user.id, connection.provider)
-            )
-        );
+            console.log(`Successfully synced ${syncResult.syncedListings} of ${syncResult.totalListings} listings via Integration Service`);
 
-        // Calculate statistics
-        const successfulImports = importResults.filter(r => r.success).length;
-        const failedImports = importResults.filter(r => !r.success).length;
-        const errors = importResults
-            .filter(r => !r.success)
-            .map((r, index) => ({
-                mlsNumber: listings[index].mlsNumber,
-                error: r.error || 'Unknown error',
-                attempts: r.attempts,
-            }));
+            const result: ImportResult = {
+                totalListings: syncResult.totalListings,
+                successfulImports: syncResult.syncedListings,
+                failedImports: syncResult.failedListings,
+                errors: [], // Integration service handles error details internally
+            };
 
-        const result: ImportResult = {
-            totalListings: listings.length,
-            successfulImports,
-            failedImports,
-            errors,
-        };
+            return {
+                success: true,
+                message: `Imported ${syncResult.syncedListings} of ${syncResult.totalListings} listings`,
+                data: result,
+            };
+        } catch (integrationError) {
+            console.warn('Integration service failed for MLS sync, falling back to direct implementation:', integrationError);
 
-        // Log errors to CloudWatch (in production, this would use proper logging)
-        if (errors.length > 0) {
-            console.error('Import errors:', JSON.stringify(errors, null, 2));
+            // Fallback to direct implementation
+            // Create MLS connector
+            const connector = createMLSConnector(connection.provider);
+
+            // Fetch listings from MLS
+            console.log(`Fetching listings for agent ${connection.agentId} via direct implementation...`);
+            const listings = await connector.fetchListings(connection, connection.agentId);
+
+            console.log(`Found ${listings.length} listings to import`);
+
+            // Import each listing with retry logic
+            const importResults = await Promise.all(
+                listings.map(listing =>
+                    importSingleListing(listing, user.id, connection.provider)
+                )
+            );
+
+            // Calculate statistics
+            const successfulImports = importResults.filter(r => r.success).length;
+            const failedImports = importResults.filter(r => !r.success).length;
+            const errors = importResults
+                .filter(r => !r.success)
+                .map((r, index) => ({
+                    mlsNumber: listings[index].mlsNumber,
+                    error: r.error || 'Unknown error',
+                    attempts: r.attempts,
+                }));
+
+            const result: ImportResult = {
+                totalListings: listings.length,
+                successfulImports,
+                failedImports,
+                errors,
+            };
+
+            // Log errors to CloudWatch (in production, this would use proper logging)
+            if (errors.length > 0) {
+                console.error('Import errors:', JSON.stringify(errors, null, 2));
+            }
+
+            console.log(`Successfully imported ${successfulImports} of ${listings.length} listings via direct implementation (fallback)`);
+
+            return {
+                success: true,
+                message: `Imported ${successfulImports} of ${listings.length} listings`,
+                data: result,
+            };
         }
-
-        return {
-            success: true,
-            message: `Imported ${successfulImports} of ${listings.length} listings`,
-            data: result,
-        };
 
     } catch (error) {
         console.error('Import MLS listings error:', error);

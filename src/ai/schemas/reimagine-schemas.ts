@@ -42,6 +42,7 @@ export type VirtualStagingParams = z.infer<typeof VirtualStagingParamsSchema>;
 
 export const DayToDuskParamsSchema = z.object({
   intensity: z.enum(["subtle", "moderate", "dramatic"]),
+  direction: z.enum(["day-to-dusk", "dusk-to-day"]).optional().default("day-to-dusk"),
 });
 
 export type DayToDuskParams = z.infer<typeof DayToDuskParamsSchema>;

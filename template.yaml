@@ -37,6 +37,7 @@ Globals:
         BEDROCK_REGION: !Ref AWS::Region
         XRAY_TRACING_ENABLED: true
         XRAY_SERVICE_NAME: !Sub bayon-coagent-${Environment}
+        EVENT_BUS_NAME: !Ref ApplicationEventBus
 
 Resources:
   # ==========================================
@@ -485,6 +486,28 @@ Resources:
                   - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.titan-image-generator-v1
                   - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.titan-*
                   - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/stability.stable-diffusion-xl-v1
+        - PolicyName: SecretsManagerAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Ref GoogleOAuthSecret
+                  - !Ref FacebookOAuthSecret
+                  - !Ref InstagramOAuthSecret
+                  - !Ref LinkedInOAuthSecret
+                  - !Ref TwitterOAuthSecret
+                  - !Ref MLSAPISecret
+        - PolicyName: EventBridgeAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - events:PutEvents
+                Resource: !GetAtt ApplicationEventBus.Arn
 
   # ==========================================
   # API Gateway for Service Boundaries
@@ -596,8 +619,150 @@ Resources:
             "traceId": "$context.xrayTraceId"
           }
 
+  # AI Service API Gateway Resources and Methods
+
+  # /jobs resource
+  AiServiceJobsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      ParentId: !GetAtt AiServiceApi.RootResourceId
+      PathPart: jobs
+
+  # POST /jobs - Submit AI job
+  AiServiceSubmitJobMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      ResourceId: !Ref AiServiceJobsResource
+      HttpMethod: POST
+      AuthorizationType: AWS_IAM
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:sqs:path/${AWS::AccountId}/${AiJobRequestQueue.QueueName}
+        Credentials: !GetAtt AiServiceApiGatewayRole.Arn
+        RequestParameters:
+          integration.request.header.Content-Type: "'application/x-www-form-urlencoded'"
+        RequestTemplates:
+          application/json: |
+            Action=SendMessage&MessageBody=$util.urlEncode($input.body)
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates:
+              application/json: |
+                {
+                  "jobId": "$context.requestId",
+                  "status": "submitted",
+                  "message": "Job submitted successfully"
+                }
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: !Ref SuccessResponseModel
+
+  # /jobs/{jobId} resource
+  AiServiceJobIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      ParentId: !Ref AiServiceJobsResource
+      PathPart: "{jobId}"
+
+  # GET /jobs/{jobId} - Get job status
+  AiServiceGetJobMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      ResourceId: !Ref AiServiceJobIdResource
+      HttpMethod: GET
+      AuthorizationType: AWS_IAM
+      RequestParameters:
+        method.request.path.jobId: true
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:dynamodb:action/GetItem
+        Credentials: !GetAtt AiServiceApiGatewayRole.Arn
+        RequestTemplates:
+          application/json: !Sub |
+            {
+              "TableName": "${DynamoDBTable}",
+              "Key": {
+                "PK": {"S": "USER#$context.authorizer.principalId"},
+                "SK": {"S": "AIJOB#$input.params('jobId')"}
+              }
+            }
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates:
+              application/json: |
+                #set($item = $input.path('$.Item'))
+                {
+                  "jobId": "$item.SK.S",
+                  "status": "$item.Status.S",
+                  "jobType": "$item.JobType.S",
+                  "createdAt": "$item.CreatedAt.S",
+                  "updatedAt": "$item.UpdatedAt.S"
+                  #if($item.Result)
+                  ,"result": $item.Result.S
+                  #end
+                  #if($item.Error)
+                  ,"error": "$item.Error.S"
+                  #end
+                  #if($item.CompletedAt)
+                  ,"completedAt": "$item.CompletedAt.S"
+                  #end
+                }
+          - StatusCode: 404
+            SelectionPattern: '.*"Item":null.*'
+            ResponseTemplates:
+              application/json: |
+                {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Job not found"
+                  }
+                }
+      MethodResponses:
+        - StatusCode: 200
+        - StatusCode: 404
+
+  # IAM Role for AI Service API Gateway
+  AiServiceApiGatewayRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub bayon-coagent-ai-service-api-gateway-${Environment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SQSAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource: !GetAtt AiJobRequestQueue.Arn
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                Resource: !GetAtt DynamoDBTable.Arn
+
   AiServiceApiDeployment:
     Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - AiServiceSubmitJobMethod
+      - AiServiceGetJobMethod
     Properties:
       RestApiId: !Ref AiServiceApi
       Description: !Sub AI Service API deployment for ${Environment}
@@ -619,8 +784,226 @@ Resources:
           ThrottlingRateLimit: !If [IsProduction, 1000, 100]
           ThrottlingBurstLimit: !If [IsProduction, 2000, 200]
 
+  # Integration Service API Gateway Resources and Methods
+
+  # /oauth resource
+  IntegrationServiceOAuthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !GetAtt IntegrationServiceApi.RootResourceId
+      PathPart: oauth
+
+  # /oauth/google resource
+  IntegrationServiceGoogleResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !Ref IntegrationServiceOAuthResource
+      PathPart: google
+
+  # /oauth/google/authorize resource
+  IntegrationServiceGoogleAuthorizeResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !Ref IntegrationServiceGoogleResource
+      PathPart: authorize
+
+  # GET /oauth/google/authorize
+  IntegrationServiceGoogleAuthorizeMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ResourceId: !Ref IntegrationServiceGoogleAuthorizeResource
+      HttpMethod: GET
+      AuthorizationType: AWS_IAM
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IntegrationGoogleOAuthFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /oauth/google/callback resource
+  IntegrationServiceGoogleCallbackResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !Ref IntegrationServiceGoogleResource
+      PathPart: callback
+
+  # GET /oauth/google/callback
+  IntegrationServiceGoogleCallbackMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ResourceId: !Ref IntegrationServiceGoogleCallbackResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IntegrationGoogleOAuthFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /oauth/{platform} resource for social media
+  IntegrationServiceSocialPlatformResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !Ref IntegrationServiceOAuthResource
+      PathPart: "{platform}"
+
+  # /oauth/{platform}/authorize resource
+  IntegrationServiceSocialAuthorizeResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !Ref IntegrationServiceSocialPlatformResource
+      PathPart: authorize
+
+  # GET /oauth/{platform}/authorize
+  IntegrationServiceSocialAuthorizeMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ResourceId: !Ref IntegrationServiceSocialAuthorizeResource
+      HttpMethod: GET
+      AuthorizationType: AWS_IAM
+      RequestParameters:
+        method.request.path.platform: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IntegrationSocialOAuthFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /oauth/{platform}/callback resource
+  IntegrationServiceSocialCallbackResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !Ref IntegrationServiceSocialPlatformResource
+      PathPart: callback
+
+  # GET /oauth/{platform}/callback
+  IntegrationServiceSocialCallbackMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ResourceId: !Ref IntegrationServiceSocialCallbackResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      RequestParameters:
+        method.request.path.platform: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IntegrationSocialOAuthFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /mls resource
+  IntegrationServiceMLSResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !GetAtt IntegrationServiceApi.RootResourceId
+      PathPart: mls
+
+  # /mls/sync resource
+  IntegrationServiceMLSSyncResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !Ref IntegrationServiceMLSResource
+      PathPart: sync
+
+  # POST /mls/sync
+  IntegrationServiceMLSSyncMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ResourceId: !Ref IntegrationServiceMLSSyncResource
+      HttpMethod: POST
+      AuthorizationType: AWS_IAM
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IntegrationMLSSyncFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /mls/status resource
+  IntegrationServiceMLSStatusResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !Ref IntegrationServiceMLSResource
+      PathPart: status
+
+  # /mls/status/{syncId} resource
+  IntegrationServiceMLSStatusIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !Ref IntegrationServiceMLSStatusResource
+      PathPart: "{syncId}"
+
+  # GET /mls/status/{syncId}
+  IntegrationServiceMLSStatusMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ResourceId: !Ref IntegrationServiceMLSStatusIdResource
+      HttpMethod: GET
+      AuthorizationType: AWS_IAM
+      RequestParameters:
+        method.request.path.syncId: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IntegrationMLSSyncFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # Lambda Permissions for API Gateway to invoke Integration Service functions
+  IntegrationGoogleOAuthLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IntegrationGoogleOAuthFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IntegrationServiceApi}/*
+
+  IntegrationSocialOAuthLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IntegrationSocialOAuthFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IntegrationServiceApi}/*
+
+  IntegrationMLSSyncLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IntegrationMLSSyncFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IntegrationServiceApi}/*
+
   IntegrationServiceApiDeployment:
     Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - IntegrationServiceGoogleAuthorizeMethod
+      - IntegrationServiceGoogleCallbackMethod
+      - IntegrationServiceSocialAuthorizeMethod
+      - IntegrationServiceSocialCallbackMethod
+      - IntegrationServiceMLSSyncMethod
+      - IntegrationServiceMLSStatusMethod
     Properties:
       RestApiId: !Ref IntegrationServiceApi
       Description: !Sub Integration Service API deployment for ${Environment}
@@ -810,6 +1193,385 @@ Resources:
       ValidateRequestParameters: true
 
   # ==========================================
+  # AWS Secrets Manager for OAuth Credentials
+  # ==========================================
+
+  # Google OAuth Credentials Secret
+  GoogleOAuthSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub bayon-coagent/oauth/google-${Environment}
+      Description: Google OAuth credentials for Business Profile integration
+      SecretString: !Sub |
+        {
+          "clientId": "",
+          "clientSecret": "",
+          "redirectUri": "${IsProduction ? 'https://yourdomain.com' : 'http://localhost:3000'}/api/oauth/google/callback"
+        }
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Provider
+          Value: Google
+
+  # Facebook OAuth Credentials Secret
+  FacebookOAuthSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub bayon-coagent/oauth/facebook-${Environment}
+      Description: Facebook OAuth credentials for social media integration
+      SecretString: !Sub |
+        {
+          "appId": "",
+          "appSecret": "",
+          "redirectUri": "${IsProduction ? 'https://yourdomain.com' : 'http://localhost:3000'}/api/oauth/facebook/callback"
+        }
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Provider
+          Value: Facebook
+
+  # Instagram OAuth Credentials Secret
+  InstagramOAuthSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub bayon-coagent/oauth/instagram-${Environment}
+      Description: Instagram OAuth credentials for social media integration
+      SecretString: !Sub |
+        {
+          "appId": "",
+          "appSecret": "",
+          "redirectUri": "${IsProduction ? 'https://yourdomain.com' : 'http://localhost:3000'}/api/oauth/instagram/callback"
+        }
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Provider
+          Value: Instagram
+
+  # LinkedIn OAuth Credentials Secret
+  LinkedInOAuthSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub bayon-coagent/oauth/linkedin-${Environment}
+      Description: LinkedIn OAuth credentials for social media integration
+      SecretString: !Sub |
+        {
+          "clientId": "",
+          "clientSecret": "",
+          "redirectUri": "${IsProduction ? 'https://yourdomain.com' : 'http://localhost:3000'}/api/oauth/linkedin/callback"
+        }
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Provider
+          Value: LinkedIn
+
+  # Twitter OAuth Credentials Secret
+  TwitterOAuthSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub bayon-coagent/oauth/twitter-${Environment}
+      Description: Twitter OAuth credentials for social media integration
+      SecretString: !Sub |
+        {
+          "apiKey": "",
+          "apiSecret": "",
+          "bearerToken": "",
+          "redirectUri": "${IsProduction ? 'https://yourdomain.com' : 'http://localhost:3000'}/api/oauth/twitter/callback"
+        }
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Provider
+          Value: Twitter
+
+  # MLS API Credentials Secret
+  MLSAPISecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub bayon-coagent/mls/api-credentials-${Environment}
+      Description: MLS API credentials for listing data integration
+      SecretString: !Sub |
+        {
+          "mlsgrid": {
+            "apiKey": "",
+            "apiSecret": "",
+            "baseUrl": "https://api.mlsgrid.com/v2"
+          },
+          "bridgeInteractive": {
+            "apiKey": "",
+            "baseUrl": "https://api.bridgeinteractive.com/v2"
+          }
+        }
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Provider
+          Value: MLS
+
+  # Secret Rotation Lambda Function
+  SecretRotationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-secret-rotation-${Environment}
+      CodeUri: src/lambda/
+      Handler: secret-rotation.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 256
+      Role: !GetAtt SecretRotationRole.Arn
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: SecretRotation
+
+  # IAM Role for Secret Rotation
+  SecretRotationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub bayon-coagent-secret-rotation-${Environment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SecretRotationAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:DescribeSecret
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:PutSecretValue
+                  - secretsmanager:UpdateSecretVersionStage
+                Resource:
+                  - !Ref GoogleOAuthSecret
+                  - !Ref FacebookOAuthSecret
+                  - !Ref InstagramOAuthSecret
+                  - !Ref LinkedInOAuthSecret
+                  - !Ref TwitterOAuthSecret
+                  - !Ref MLSAPISecret
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetRandomPassword
+                Resource: "*"
+
+  # Secret Rotation Schedule for Google OAuth (90 days)
+  GoogleOAuthSecretRotationSchedule:
+    Type: AWS::SecretsManager::RotationSchedule
+    Properties:
+      SecretId: !Ref GoogleOAuthSecret
+      RotationLambdaARN: !GetAtt SecretRotationFunction.Arn
+      RotationRules:
+        AutomaticallyAfterDays: 90
+
+  # Secret Rotation Schedule for Facebook OAuth (90 days)
+  FacebookOAuthSecretRotationSchedule:
+    Type: AWS::SecretsManager::RotationSchedule
+    Properties:
+      SecretId: !Ref FacebookOAuthSecret
+      RotationLambdaARN: !GetAtt SecretRotationFunction.Arn
+      RotationRules:
+        AutomaticallyAfterDays: 90
+
+  # Secret Rotation Schedule for Instagram OAuth (90 days)
+  InstagramOAuthSecretRotationSchedule:
+    Type: AWS::SecretsManager::RotationSchedule
+    Properties:
+      SecretId: !Ref InstagramOAuthSecret
+      RotationLambdaARN: !GetAtt SecretRotationFunction.Arn
+      RotationRules:
+        AutomaticallyAfterDays: 90
+
+  # Secret Rotation Schedule for LinkedIn OAuth (90 days)
+  LinkedInOAuthSecretRotationSchedule:
+    Type: AWS::SecretsManager::RotationSchedule
+    Properties:
+      SecretId: !Ref LinkedInOAuthSecret
+      RotationLambdaARN: !GetAtt SecretRotationFunction.Arn
+      RotationRules:
+        AutomaticallyAfterDays: 90
+
+  # Secret Rotation Schedule for Twitter OAuth (90 days)
+  TwitterOAuthSecretRotationSchedule:
+    Type: AWS::SecretsManager::RotationSchedule
+    Properties:
+      SecretId: !Ref TwitterOAuthSecret
+      RotationLambdaARN: !GetAtt SecretRotationFunction.Arn
+      RotationRules:
+        AutomaticallyAfterDays: 90
+
+  # Secret Rotation Schedule for MLS API (90 days)
+  MLSAPISecretRotationSchedule:
+    Type: AWS::SecretsManager::RotationSchedule
+    Properties:
+      SecretId: !Ref MLSAPISecret
+      RotationLambdaARN: !GetAtt SecretRotationFunction.Arn
+      RotationRules:
+        AutomaticallyAfterDays: 90
+
+  # Lambda Permission for Secrets Manager to invoke rotation function
+  SecretRotationLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SecretRotationFunction
+      Action: lambda:InvokeFunction
+      Principal: secretsmanager.amazonaws.com
+
+  # ==========================================
+  # Integration Service Lambda Functions
+  # ==========================================
+
+  # IAM Role for Integration Service Lambda Functions
+  IntegrationServiceLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub bayon-coagent-integration-service-lambda-${Environment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: IntegrationServiceDynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt DynamoDBTable.Arn
+                  - !Sub ${DynamoDBTable.Arn}/index/*
+        - PolicyName: IntegrationServiceSecretsAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Ref GoogleOAuthSecret
+                  - !Ref FacebookOAuthSecret
+                  - !Ref InstagramOAuthSecret
+                  - !Ref LinkedInOAuthSecret
+                  - !Ref TwitterOAuthSecret
+                  - !Ref MLSAPISecret
+        - PolicyName: IntegrationServiceS3Access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                Resource: !Sub ${StorageBucket.Arn}/*
+        - PolicyName: IntegrationServiceCloudWatchLogs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/bayon-coagent-integration-*-${Environment}*
+
+  # Google OAuth Lambda Function
+  IntegrationGoogleOAuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-integration-google-oauth-${Environment}
+      CodeUri: src/lambda/
+      Handler: integration-google-oauth.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 512
+      Role: !GetAtt IntegrationServiceLambdaRole.Arn
+      ReservedConcurrentExecutions: 20
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: IntegrationService
+        Function: GoogleOAuth
+
+  # Social Media OAuth Lambda Function
+  IntegrationSocialOAuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-integration-social-oauth-${Environment}
+      CodeUri: src/lambda/
+      Handler: integration-social-oauth.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 512
+      Role: !GetAtt IntegrationServiceLambdaRole.Arn
+      ReservedConcurrentExecutions: 20
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: IntegrationService
+        Function: SocialOAuth
+
+  # MLS Data Sync Lambda Function
+  IntegrationMLSSyncFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-integration-mls-sync-${Environment}
+      CodeUri: src/lambda/
+      Handler: integration-mls-sync.handler
+      Runtime: nodejs22.x
+      Timeout: 900 # 15 minutes for large syncs
+      MemorySize: 2048
+      Role: !GetAtt IntegrationServiceLambdaRole.Arn
+      ReservedConcurrentExecutions: 20
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: IntegrationService
+        Function: MLSSync
+
+  # ==========================================
   # Alert Processing Lambda Functions
   # ==========================================
 
@@ -996,6 +1758,552 @@ Resources:
     Properties:
       QueueName: !Sub bayon-coagent-notification-processor-dlq-${Environment}
       MessageRetentionPeriod: 1209600 # 14 days
+
+  # ==========================================
+  # AI Processing Service SQS Queues
+  # ==========================================
+
+  # AI Job Request Queue - for submitting AI processing jobs
+  AiJobRequestQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub bayon-coagent-ai-job-request-${Environment}
+      MessageRetentionPeriod: 1209600 # 14 days
+      VisibilityTimeout: 900 # 15 minutes (matches Lambda timeout)
+      ReceiveMessageWaitTimeSeconds: 20 # Long polling
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt AiJobRequestDLQ.Arn
+        maxReceiveCount: 3
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Service
+          Value: AIProcessing
+
+  # AI Job Request Dead Letter Queue
+  AiJobRequestDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub bayon-coagent-ai-job-request-dlq-${Environment}
+      MessageRetentionPeriod: 1209600 # 14 days
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Service
+          Value: AIProcessing
+
+  # AI Job Response Queue - for receiving AI processing results
+  AiJobResponseQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub bayon-coagent-ai-job-response-${Environment}
+      MessageRetentionPeriod: 1209600 # 14 days
+      VisibilityTimeout: 300 # 5 minutes
+      ReceiveMessageWaitTimeSeconds: 20 # Long polling
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt AiJobResponseDLQ.Arn
+        maxReceiveCount: 3
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Service
+          Value: AIProcessing
+
+  # AI Job Response Dead Letter Queue
+  AiJobResponseDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub bayon-coagent-ai-job-response-dlq-${Environment}
+      MessageRetentionPeriod: 1209600 # 14 days
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Service
+          Value: AIProcessing
+
+  # ==========================================
+  # EventBridge Custom Event Bus
+  # ==========================================
+
+  # Custom Event Bus for Application Events
+  ApplicationEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Sub bayon-coagent-events-${Environment}
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+
+  # Event Archive for Replay Capability
+  ApplicationEventArchive:
+    Type: AWS::Events::Archive
+    Properties:
+      ArchiveName: !Sub bayon-coagent-event-archive-${Environment}
+      SourceArn: !GetAtt ApplicationEventBus.Arn
+      Description: Archive of all application events for replay capability
+      RetentionDays: !If [IsProduction, 90, 30]
+      EventPattern:
+        source:
+          - prefix: "bayon.coagent"
+
+  # Dead Letter Queue for Failed Events
+  EventBridgeDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub bayon-coagent-eventbridge-dlq-${Environment}
+      MessageRetentionPeriod: 1209600 # 14 days
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Service
+          Value: EventBridge
+
+  # Event Schema Registry
+  EventSchemaRegistry:
+    Type: AWS::EventSchemas::Registry
+    Properties:
+      RegistryName: !Sub bayon-coagent-schemas-${Environment}
+      Description: Schema registry for Bayon CoAgent application events
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+
+  # User Created Event Schema
+  UserCreatedEventSchema:
+    Type: AWS::EventSchemas::Schema
+    Properties:
+      RegistryName: !Ref EventSchemaRegistry
+      SchemaName: bayon.coagent.user.created
+      Type: OpenApi3
+      Description: Schema for user.created events
+      Content: |
+        {
+          "openapi": "3.0.0",
+          "info": {
+            "version": "1.0.0",
+            "title": "User Created Event"
+          },
+          "paths": {},
+          "components": {
+            "schemas": {
+              "UserCreatedEvent": {
+                "type": "object",
+                "required": ["version", "id", "detail-type", "source", "account", "time", "region", "detail"],
+                "properties": {
+                  "version": {"type": "string"},
+                  "id": {"type": "string"},
+                  "detail-type": {"type": "string", "enum": ["User Created"]},
+                  "source": {"type": "string", "enum": ["bayon.coagent.user"]},
+                  "account": {"type": "string"},
+                  "time": {"type": "string", "format": "date-time"},
+                  "region": {"type": "string"},
+                  "detail": {
+                    "type": "object",
+                    "required": ["userId", "email", "createdAt"],
+                    "properties": {
+                      "userId": {"type": "string"},
+                      "email": {"type": "string"},
+                      "createdAt": {"type": "string", "format": "date-time"},
+                      "traceId": {"type": "string"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+  # Content Published Event Schema
+  ContentPublishedEventSchema:
+    Type: AWS::EventSchemas::Schema
+    Properties:
+      RegistryName: !Ref EventSchemaRegistry
+      SchemaName: bayon.coagent.content.published
+      Type: OpenApi3
+      Description: Schema for content.published events
+      Content: |
+        {
+          "openapi": "3.0.0",
+          "info": {
+            "version": "1.0.0",
+            "title": "Content Published Event"
+          },
+          "paths": {},
+          "components": {
+            "schemas": {
+              "ContentPublishedEvent": {
+                "type": "object",
+                "required": ["version", "id", "detail-type", "source", "account", "time", "region", "detail"],
+                "properties": {
+                  "version": {"type": "string"},
+                  "id": {"type": "string"},
+                  "detail-type": {"type": "string", "enum": ["Content Published"]},
+                  "source": {"type": "string", "enum": ["bayon.coagent.content"]},
+                  "account": {"type": "string"},
+                  "time": {"type": "string", "format": "date-time"},
+                  "region": {"type": "string"},
+                  "detail": {
+                    "type": "object",
+                    "required": ["contentId", "userId", "contentType", "platform", "publishedAt"],
+                    "properties": {
+                      "contentId": {"type": "string"},
+                      "userId": {"type": "string"},
+                      "contentType": {"type": "string"},
+                      "platform": {"type": "string"},
+                      "publishedAt": {"type": "string", "format": "date-time"},
+                      "traceId": {"type": "string"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+  # AI Job Completed Event Schema
+  AiJobCompletedEventSchema:
+    Type: AWS::EventSchemas::Schema
+    Properties:
+      RegistryName: !Ref EventSchemaRegistry
+      SchemaName: bayon.coagent.ai.job.completed
+      Type: OpenApi3
+      Description: Schema for ai.job.completed events
+      Content: |
+        {
+          "openapi": "3.0.0",
+          "info": {
+            "version": "1.0.0",
+            "title": "AI Job Completed Event"
+          },
+          "paths": {},
+          "components": {
+            "schemas": {
+              "AiJobCompletedEvent": {
+                "type": "object",
+                "required": ["version", "id", "detail-type", "source", "account", "time", "region", "detail"],
+                "properties": {
+                  "version": {"type": "string"},
+                  "id": {"type": "string"},
+                  "detail-type": {"type": "string", "enum": ["AI Job Completed"]},
+                  "source": {"type": "string", "enum": ["bayon.coagent.ai"]},
+                  "account": {"type": "string"},
+                  "time": {"type": "string", "format": "date-time"},
+                  "region": {"type": "string"},
+                  "detail": {
+                    "type": "object",
+                    "required": ["jobId", "userId", "jobType", "status", "completedAt"],
+                    "properties": {
+                      "jobId": {"type": "string"},
+                      "userId": {"type": "string"},
+                      "jobType": {"type": "string"},
+                      "status": {"type": "string", "enum": ["completed", "failed"]},
+                      "completedAt": {"type": "string", "format": "date-time"},
+                      "traceId": {"type": "string"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+  # Integration Sync Completed Event Schema
+  IntegrationSyncCompletedEventSchema:
+    Type: AWS::EventSchemas::Schema
+    Properties:
+      RegistryName: !Ref EventSchemaRegistry
+      SchemaName: bayon.coagent.integration.sync.completed
+      Type: OpenApi3
+      Description: Schema for integration.sync.completed events
+      Content: |
+        {
+          "openapi": "3.0.0",
+          "info": {
+            "version": "1.0.0",
+            "title": "Integration Sync Completed Event"
+          },
+          "paths": {},
+          "components": {
+            "schemas": {
+              "IntegrationSyncCompletedEvent": {
+                "type": "object",
+                "required": ["version", "id", "detail-type", "source", "account", "time", "region", "detail"],
+                "properties": {
+                  "version": {"type": "string"},
+                  "id": {"type": "string"},
+                  "detail-type": {"type": "string", "enum": ["Integration Sync Completed"]},
+                  "source": {"type": "string", "enum": ["bayon.coagent.integration"]},
+                  "account": {"type": "string"},
+                  "time": {"type": "string", "format": "date-time"},
+                  "region": {"type": "string"},
+                  "detail": {
+                    "type": "object",
+                    "required": ["syncId", "userId", "provider", "status", "completedAt"],
+                    "properties": {
+                      "syncId": {"type": "string"},
+                      "userId": {"type": "string"},
+                      "provider": {"type": "string"},
+                      "status": {"type": "string", "enum": ["completed", "failed"]},
+                      "itemsSynced": {"type": "number"},
+                      "completedAt": {"type": "string", "format": "date-time"},
+                      "traceId": {"type": "string"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+  # ==========================================
+  # EventBridge Rules for Background Processing
+  # ==========================================
+
+  # Rule to trigger Life Event Processor on user.created events
+  LifeEventProcessorRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-life-event-processor-${Environment}
+      Description: Trigger life event processor on user.created events
+      EventBusName: !Ref ApplicationEventBus
+      State: ENABLED
+      EventPattern:
+        source:
+          - bayon.coagent.user
+        detail-type:
+          - User Created
+      Targets:
+        - Arn: !GetAtt LifeEventProcessorFunction.Arn
+          Id: LifeEventProcessorTarget
+          DeadLetterConfig:
+            Arn: !GetAtt EventBridgeDLQ.Arn
+          RetryPolicy:
+            MaximumRetryAttempts: 2
+            MaximumEventAge: 3600
+
+  # Permission for EventBridge to invoke Life Event Processor
+  LifeEventProcessorEventPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LifeEventProcessorFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt LifeEventProcessorRule.Arn
+
+  # Rule to trigger Competitor Monitor on content.published events
+  CompetitorMonitorRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-competitor-monitor-${Environment}
+      Description: Trigger competitor monitor on content.published events
+      EventBusName: !Ref ApplicationEventBus
+      State: ENABLED
+      EventPattern:
+        source:
+          - bayon.coagent.content
+        detail-type:
+          - Content Published
+      Targets:
+        - Arn: !GetAtt CompetitorMonitorProcessorFunction.Arn
+          Id: CompetitorMonitorTarget
+          DeadLetterConfig:
+            Arn: !GetAtt EventBridgeDLQ.Arn
+          RetryPolicy:
+            MaximumRetryAttempts: 2
+            MaximumEventAge: 3600
+
+  # Permission for EventBridge to invoke Competitor Monitor
+  CompetitorMonitorEventPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CompetitorMonitorProcessorFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt CompetitorMonitorRule.Arn
+
+  # Rule to trigger Trend Detector on integration.sync.completed events
+  TrendDetectorRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-trend-detector-${Environment}
+      Description: Trigger trend detector on integration.sync.completed events
+      EventBusName: !Ref ApplicationEventBus
+      State: ENABLED
+      EventPattern:
+        source:
+          - bayon.coagent.integration
+        detail-type:
+          - Integration Sync Completed
+        detail:
+          provider:
+            - mls
+      Targets:
+        - Arn: !GetAtt TrendDetectorProcessorFunction.Arn
+          Id: TrendDetectorTarget
+          DeadLetterConfig:
+            Arn: !GetAtt EventBridgeDLQ.Arn
+          RetryPolicy:
+            MaximumRetryAttempts: 2
+            MaximumEventAge: 3600
+
+  # Permission for EventBridge to invoke Trend Detector
+  TrendDetectorEventPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref TrendDetectorProcessorFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt TrendDetectorRule.Arn
+
+  # Rule to trigger Price Reduction Monitor on integration.sync.completed events
+  PriceReductionMonitorRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-price-reduction-monitor-${Environment}
+      Description: Trigger price reduction monitor on integration.sync.completed events
+      EventBusName: !Ref ApplicationEventBus
+      State: ENABLED
+      EventPattern:
+        source:
+          - bayon.coagent.integration
+        detail-type:
+          - Integration Sync Completed
+        detail:
+          provider:
+            - mls
+      Targets:
+        - Arn: !GetAtt PriceReductionProcessorFunction.Arn
+          Id: PriceReductionMonitorTarget
+          DeadLetterConfig:
+            Arn: !GetAtt EventBridgeDLQ.Arn
+          RetryPolicy:
+            MaximumRetryAttempts: 2
+            MaximumEventAge: 3600
+
+  # Permission for EventBridge to invoke Price Reduction Monitor
+  PriceReductionMonitorEventPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PriceReductionProcessorFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt PriceReductionMonitorRule.Arn
+
+  # Rule to trigger Notification Processor on various events
+  NotificationProcessorRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-notification-processor-${Environment}
+      Description: Trigger notification processor on various application events
+      EventBusName: !Ref ApplicationEventBus
+      State: ENABLED
+      EventPattern:
+        source:
+          - bayon.coagent.user
+          - bayon.coagent.content
+          - bayon.coagent.ai
+          - bayon.coagent.integration
+        detail-type:
+          - User Created
+          - Content Published
+          - AI Job Completed
+          - Integration Sync Completed
+      Targets:
+        - Arn: !GetAtt NotificationProcessorFunction.Arn
+          Id: NotificationProcessorTarget
+          DeadLetterConfig:
+            Arn: !GetAtt EventBridgeDLQ.Arn
+          RetryPolicy:
+            MaximumRetryAttempts: 2
+            MaximumEventAge: 3600
+
+  # Permission for EventBridge to invoke Notification Processor
+  NotificationProcessorEventPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref NotificationProcessorFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt NotificationProcessorRule.Arn
+
+  # Rule to trigger Content Publishing on ai.job.completed events
+  ContentPublishingRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-content-publishing-${Environment}
+      Description: Trigger content publishing on ai.job.completed events
+      EventBusName: !Ref ApplicationEventBus
+      State: ENABLED
+      EventPattern:
+        source:
+          - bayon.coagent.ai
+        detail-type:
+          - AI Job Completed
+        detail:
+          status:
+            - completed
+      Targets:
+        - Arn: !GetAtt PublishScheduledContentFunction.Arn
+          Id: ContentPublishingTarget
+          DeadLetterConfig:
+            Arn: !GetAtt EventBridgeDLQ.Arn
+          RetryPolicy:
+            MaximumRetryAttempts: 2
+            MaximumEventAge: 3600
+
+  # Permission for EventBridge to invoke Content Publishing
+  ContentPublishingEventPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PublishScheduledContentFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ContentPublishingRule.Arn
+
+  # Rule to trigger Analytics Sync on content.published events
+  AnalyticsSyncRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-analytics-sync-${Environment}
+      Description: Trigger analytics sync on content.published events
+      EventBusName: !Ref ApplicationEventBus
+      State: ENABLED
+      EventPattern:
+        source:
+          - bayon.coagent.content
+        detail-type:
+          - Content Published
+      Targets:
+        - Arn: !GetAtt SyncSocialAnalyticsFunction.Arn
+          Id: AnalyticsSyncTarget
+          DeadLetterConfig:
+            Arn: !GetAtt EventBridgeDLQ.Arn
+          RetryPolicy:
+            MaximumRetryAttempts: 2
+            MaximumEventAge: 3600
+
+  # Permission for EventBridge to invoke Analytics Sync
+  AnalyticsSyncEventPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SyncSocialAnalyticsFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt AnalyticsSyncRule.Arn
 
   # ==========================================
   # Content Workflow Lambda Functions
@@ -1262,6 +2570,202 @@ Resources:
         Environment: !Ref Environment
         Application: BayonCoAgent
         Function: SyncSocialAnalytics
+
+  # ==========================================
+  # AI Processing Service Lambda Functions
+  # ==========================================
+
+  # IAM Role for AI Processing Lambda Functions
+  AiProcessingLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub bayon-coagent-ai-processing-lambda-${Environment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: AiProcessingDynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt DynamoDBTable.Arn
+                  - !Sub ${DynamoDBTable.Arn}/index/*
+        - PolicyName: AiProcessingSQSAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                Resource:
+                  - !GetAtt AiJobRequestQueue.Arn
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource:
+                  - !GetAtt AiJobResponseQueue.Arn
+                  - !GetAtt AiJobRequestDLQ.Arn
+        - PolicyName: AiProcessingBedrockAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:InvokeModelWithResponseStream
+                Resource:
+                  - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/anthropic.claude-*
+                  - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.titan-*
+        - PolicyName: AiProcessingCloudWatchLogs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/bayon-coagent-ai-*-${Environment}*
+
+  # Blog Post Generation Lambda
+  AiBlogPostGeneratorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-ai-blog-post-generator-${Environment}
+      CodeUri: src/lambda/
+      Handler: ai-blog-post-generator.handler
+      Runtime: nodejs22.x
+      Timeout: 900 # 15 minutes
+      MemorySize: 3008 # 3GB for AI processing
+      Role: !GetAtt AiProcessingLambdaRole.Arn
+      ReservedConcurrentExecutions: 50
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+          AI_JOB_RESPONSE_QUEUE_URL: !Ref AiJobResponseQueue
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt AiJobRequestQueue.Arn
+            BatchSize: 10
+            MaximumBatchingWindowInSeconds: 5
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: AIProcessing
+        Function: BlogPostGenerator
+
+  # Social Media Post Generation Lambda
+  AiSocialMediaGeneratorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-ai-social-media-generator-${Environment}
+      CodeUri: src/lambda/
+      Handler: ai-social-media-generator.handler
+      Runtime: nodejs22.x
+      Timeout: 900 # 15 minutes
+      MemorySize: 3008 # 3GB for AI processing
+      Role: !GetAtt AiProcessingLambdaRole.Arn
+      ReservedConcurrentExecutions: 50
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+          AI_JOB_RESPONSE_QUEUE_URL: !Ref AiJobResponseQueue
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt AiJobRequestQueue.Arn
+            BatchSize: 10
+            MaximumBatchingWindowInSeconds: 5
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: AIProcessing
+        Function: SocialMediaGenerator
+
+  # Listing Description Generation Lambda
+  AiListingDescriptionGeneratorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-ai-listing-description-generator-${Environment}
+      CodeUri: src/lambda/
+      Handler: ai-listing-description-generator.handler
+      Runtime: nodejs22.x
+      Timeout: 900 # 15 minutes
+      MemorySize: 3008 # 3GB for AI processing
+      Role: !GetAtt AiProcessingLambdaRole.Arn
+      ReservedConcurrentExecutions: 50
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+          AI_JOB_RESPONSE_QUEUE_URL: !Ref AiJobResponseQueue
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt AiJobRequestQueue.Arn
+            BatchSize: 10
+            MaximumBatchingWindowInSeconds: 5
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: AIProcessing
+        Function: ListingDescriptionGenerator
+
+  # Market Update Generation Lambda
+  AiMarketUpdateGeneratorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-ai-market-update-generator-${Environment}
+      CodeUri: src/lambda/
+      Handler: ai-market-update-generator.handler
+      Runtime: nodejs22.x
+      Timeout: 900 # 15 minutes
+      MemorySize: 3008 # 3GB for AI processing
+      Role: !GetAtt AiProcessingLambdaRole.Arn
+      ReservedConcurrentExecutions: 50
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+          AI_JOB_RESPONSE_QUEUE_URL: !Ref AiJobResponseQueue
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt AiJobRequestQueue.Arn
+            BatchSize: 10
+            MaximumBatchingWindowInSeconds: 5
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: AIProcessing
+        Function: MarketUpdateGenerator
 
   # ==========================================
   # CloudWatch Monitoring
@@ -2152,3 +3656,95 @@ Outputs:
     Value: !Sub https://${AdminServiceApi}.execute-api.${AWS::Region}.amazonaws.com/v1
     Export:
       Name: !Sub ${Environment}-AdminServiceApiUrl
+
+  # Secrets Manager Outputs
+  GoogleOAuthSecretArn:
+    Description: Google OAuth Secret ARN
+    Value: !Ref GoogleOAuthSecret
+    Export:
+      Name: !Sub ${Environment}-GoogleOAuthSecretArn
+
+  FacebookOAuthSecretArn:
+    Description: Facebook OAuth Secret ARN
+    Value: !Ref FacebookOAuthSecret
+    Export:
+      Name: !Sub ${Environment}-FacebookOAuthSecretArn
+
+  InstagramOAuthSecretArn:
+    Description: Instagram OAuth Secret ARN
+    Value: !Ref InstagramOAuthSecret
+    Export:
+      Name: !Sub ${Environment}-InstagramOAuthSecretArn
+
+  LinkedInOAuthSecretArn:
+    Description: LinkedIn OAuth Secret ARN
+    Value: !Ref LinkedInOAuthSecret
+    Export:
+      Name: !Sub ${Environment}-LinkedInOAuthSecretArn
+
+  TwitterOAuthSecretArn:
+    Description: Twitter OAuth Secret ARN
+    Value: !Ref TwitterOAuthSecret
+    Export:
+      Name: !Sub ${Environment}-TwitterOAuthSecretArn
+
+  MLSAPISecretArn:
+    Description: MLS API Secret ARN
+    Value: !Ref MLSAPISecret
+    Export:
+      Name: !Sub ${Environment}-AdminServiceApiUrl
+
+  AiJobRequestQueueUrl:
+    Description: AI Job Request Queue URL
+    Value: !Ref AiJobRequestQueue
+    Export:
+      Name: !Sub ${Environment}-AiJobRequestQueueUrl
+
+  AiJobRequestQueueArn:
+    Description: AI Job Request Queue ARN
+    Value: !GetAtt AiJobRequestQueue.Arn
+    Export:
+      Name: !Sub ${Environment}-AiJobRequestQueueArn
+
+  AiJobResponseQueueUrl:
+    Description: AI Job Response Queue URL
+    Value: !Ref AiJobResponseQueue
+    Export:
+      Name: !Sub ${Environment}-AiJobResponseQueueUrl
+
+  AiJobResponseQueueArn:
+    Description: AI Job Response Queue ARN
+    Value: !GetAtt AiJobResponseQueue.Arn
+    Export:
+      Name: !Sub ${Environment}-AiJobResponseQueueArn
+
+  # EventBridge Outputs
+  ApplicationEventBusName:
+    Description: Application Event Bus Name
+    Value: !Ref ApplicationEventBus
+    Export:
+      Name: !Sub ${Environment}-ApplicationEventBusName
+
+  ApplicationEventBusArn:
+    Description: Application Event Bus ARN
+    Value: !GetAtt ApplicationEventBus.Arn
+    Export:
+      Name: !Sub ${Environment}-ApplicationEventBusArn
+
+  EventSchemaRegistryName:
+    Description: Event Schema Registry Name
+    Value: !Ref EventSchemaRegistry
+    Export:
+      Name: !Sub ${Environment}-EventSchemaRegistryName
+
+  EventBridgeDLQUrl:
+    Description: EventBridge Dead Letter Queue URL
+    Value: !Ref EventBridgeDLQ
+    Export:
+      Name: !Sub ${Environment}-EventBridgeDLQUrl
+
+  EventBridgeDLQArn:
+    Description: EventBridge Dead Letter Queue ARN
+    Value: !GetAtt EventBridgeDLQ.Arn
+    Export:
+      Name: !Sub ${Environment}-EventBridgeDLQArn

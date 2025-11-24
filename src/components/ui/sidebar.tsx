@@ -206,7 +206,7 @@ const Sidebar = React.forwardRef<
         <aside
           ref={ref}
           className={cn(
-            "group peer fixed inset-y-0 z-10 hidden md:flex flex-col text-sidebar-foreground",
+            "group peer fixed inset-y-0 z-20 hidden md:flex flex-col text-sidebar-foreground",
             side === 'left' ? "left-0 border-r" : "right-0 border-l",
             "w-[--sidebar-width] bg-sidebar border-sidebar-border",
             className
@@ -251,7 +251,7 @@ const Sidebar = React.forwardRef<
       <aside
         ref={ref}
         className={cn(
-          "group peer fixed z-10 hidden md:flex flex-col text-sidebar-foreground overflow-visible",
+          "group peer fixed z-20 hidden md:flex flex-col text-sidebar-foreground overflow-visible",
           side === 'left' ? "left-3" : "right-3",
           "top-3 bottom-3",
           "transition-[width] duration-200 ease-linear",

@@ -38,6 +38,7 @@ const crypto_1 = require("crypto");
 const repository_1 = require("@/aws/dynamodb/repository");
 const keys_1 = require("@/aws/dynamodb/keys");
 const content_workflow_types_1 = require("@/lib/content-workflow-types");
+const error_handling_framework_1 = require("@/lib/error-handling-framework");
 class RateLimitError extends Error {
     constructor(message, retryAfter) {
         super(message);
@@ -149,7 +150,7 @@ class AnalyticsService {
         this.repository = (0, repository_1.getRepository)();
     }
     async trackPublication(params) {
-        try {
+        const result = await (0, error_handling_framework_1.executeService)(async () => {
             const analyticsId = (0, crypto_1.randomUUID)();
             const metrics = {
                 views: params.initialMetrics?.views || 0,
@@ -185,19 +186,65 @@ class AnalyticsService {
                 GSI1PK: keys.GSI1PK,
                 GSI1SK: keys.GSI1SK,
             });
+            return analytics;
+        }, {
+            operation: 'track_publication',
+            userId: params.userId,
+            timestamp: new Date(),
+            metadata: {
+                contentType: params.contentType,
+                channel: params.channel,
+                contentId: params.contentId
+            }
+        }, {
+            maxRetries: 3,
+            fallback: {
+                enabled: true,
+                fallbackFunction: async () => {
+                    const fallbackData = {
+                        ...params,
+                        timestamp: new Date().toISOString(),
+                        fallback: true
+                    };
+                    if (typeof window !== 'undefined') {
+                        const existing = localStorage.getItem('analytics_fallback') || '[]';
+                        const fallbackQueue = JSON.parse(existing);
+                        fallbackQueue.push(fallbackData);
+                        localStorage.setItem('analytics_fallback', JSON.stringify(fallbackQueue));
+                    }
+                    return {
+                        id: (0, crypto_1.randomUUID)(),
+                        userId: params.userId,
+                        contentId: params.contentId,
+                        contentType: params.contentType,
+                        channel: params.channel,
+                        publishedAt: params.publishedAt,
+                        metrics: {
+                            views: 0, likes: 0, shares: 0, comments: 0, clicks: 0,
+                            saves: 0, engagementRate: 0, reach: 0, impressions: 0
+                        },
+                        platformMetrics: {},
+                        lastSynced: new Date(),
+                        syncStatus: content_workflow_types_1.AnalyticsSyncStatus.PENDING,
+                        GSI1PK: `ANALYTICS#${params.contentType}`,
+                        GSI1SK: `DATE#${params.publishedAt.toISOString().split('T')[0]}`
+                    };
+                }
+            }
+        });
+        if (result.success && result.data) {
             return {
                 success: true,
-                data: analytics,
+                data: result.data,
                 message: `Analytics tracking started for ${params.channel} content`,
-                timestamp: new Date(),
+                timestamp: result.timestamp,
             };
         }
-        catch (error) {
-            console.error('Failed to track publication:', error);
+        else {
             return {
                 success: false,
-                error: error instanceof Error ? error.message : 'Failed to track publication',
-                timestamp: new Date(),
+                error: result.error?.userMessage || result.error?.message || 'Failed to track publication',
+                timestamp: result.timestamp,
             };
         }
     }

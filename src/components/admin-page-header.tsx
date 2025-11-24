@@ -1,6 +1,8 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
+import { useRef, useEffect } from 'react';
+import { useStickyHeader } from '@/hooks/use-sticky-header';
 
 import {
     LayoutDashboard,
@@ -54,9 +56,47 @@ export function AdminPageHeader() {
     const pathname = usePathname();
     const header = pageHeaders[pathname as keyof typeof pageHeaders] || pageHeaders['/admin'];
     const IconComponent = header.icon;
+    const headerRef = useRef<HTMLDivElement>(null);
+    const { setHeaderInfo } = useStickyHeader();
+
+    // Use IntersectionObserver to detect when header is covered
+    useEffect(() => {
+        if (!headerRef.current) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const [entry] = entries;
+                // Header is covered when it's not intersecting with the viewport
+                const isCovered = !entry.isIntersecting;
+
+                // Update sticky header state
+                setHeaderInfo({
+                    title: header.title,
+                    icon: IconComponent,
+                    isVisible: isCovered
+                });
+            },
+            {
+                // Trigger when header is 20px from being completely hidden
+                rootMargin: '-20px 0px 0px 0px',
+                threshold: 0
+            }
+        );
+
+        observer.observe(headerRef.current);
+
+        return () => observer.disconnect();
+    }, [header.title, IconComponent, setHeaderInfo]);
+
+    // Clear sticky header when component unmounts
+    useEffect(() => {
+        return () => {
+            setHeaderInfo({ title: '', icon: undefined, isVisible: false });
+        };
+    }, [setHeaderInfo]);
 
     return (
-        <div className="flex items-start justify-between border-b pb-6">
+        <div ref={headerRef} className="flex items-start justify-between border-b pb-6">
             <div className="flex items-center gap-4">
                 <div className="p-3 bg-primary/10 rounded-xl">
                     <IconComponent className="h-6 w-6 text-primary" />

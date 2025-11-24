@@ -475,7 +475,7 @@ describe('Distributed Tracing Properties', () => {
          * 
          * **Validates: Requirements 5.1**
          */
-        it.skip('should collect and correlate trace data across all service boundaries', async () => {
+        it('should collect and correlate trace data across all service boundaries', async () => {
             await fc.assert(
                 fc.asyncProperty(
                     fc.array(serviceRequestArb, { minLength: 1, maxLength: 3 }),
@@ -554,7 +554,7 @@ describe('Distributed Tracing Properties', () => {
             );
         });
 
-        it.skip('should maintain trace correlation across cross-service calls', async () => {
+        it('should maintain trace correlation across cross-service calls', async () => {
             await fc.assert(
                 fc.asyncProperty(
                     fc.array(crossServiceCallArb, { minLength: 1, maxLength: 3 }),

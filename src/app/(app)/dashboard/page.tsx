@@ -615,7 +615,7 @@ export default function DashboardPage() {
                                 </div>
                             ) : (
                                 <StandardEmptyState
-                                    icon={<AISparkleIcon animated={true} className="h-8 w-8 text-primary" />}
+                                    icon={<AISparkleIcon className="h-8 w-8 text-primary" />}
                                     title="No Strategy Yet"
                                     description="Get a personalized game plan built around your strengths and opportunities."
                                     action={{

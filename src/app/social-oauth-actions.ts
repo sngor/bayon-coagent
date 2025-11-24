@@ -22,6 +22,9 @@ interface ActionResult<T = any> {
  * Initiate OAuth connection for a social media platform
  * Generates authorization URL for user to authenticate
  * 
+ * Uses Integration Service Lambda via API Gateway with fallback to direct implementation
+ * Requirement 1.5: Implement fallback for integration service failures
+ * 
  * @param userId - User ID
  * @param platform - Social media platform (facebook, instagram, linkedin, twitter)
  * @returns Authorization URL or error
@@ -45,14 +48,33 @@ export async function initiateOAuthConnectionAction(
             };
         }
 
-        const manager = getOAuthConnectionManager();
-        const authUrl = await manager.initiateConnection(platform, userId);
+        // Try integration service Lambda via API Gateway first
+        try {
+            const { oauthClient } = await import('@/aws/integration-service/client');
+            const result = await oauthClient.initiateSocialOAuth(platform, userId);
 
-        return {
-            success: true,
-            data: { authUrl },
-            message: `Redirecting to ${platform} for authorization`,
-        };
+            console.log(`Successfully initiated ${platform} OAuth via Integration Service`);
+
+            return {
+                success: true,
+                data: { authUrl: result.authUrl },
+                message: `Redirecting to ${platform} for authorization`,
+            };
+        } catch (integrationError) {
+            console.warn(`Integration service failed for ${platform} OAuth, falling back to direct implementation:`, integrationError);
+
+            // Fallback to direct implementation
+            const manager = getOAuthConnectionManager();
+            const authUrl = await manager.initiateConnection(platform, userId);
+
+            console.log(`Successfully initiated ${platform} OAuth via direct implementation (fallback)`);
+
+            return {
+                success: true,
+                data: { authUrl },
+                message: `Redirecting to ${platform} for authorization`,
+            };
+        }
     } catch (error) {
         console.error(`Failed to initiate ${platform} OAuth connection:`, error);
         return {

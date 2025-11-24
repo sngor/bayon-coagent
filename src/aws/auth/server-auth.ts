@@ -45,34 +45,18 @@ export async function getCurrentUserServer(): Promise<CognitoUser | null> {
         if (accessToken) {
             // Validate token with Cognito
             const client = getCognitoClient();
-            return await client.getCurrentUser(accessToken);
+            const user = await client.getCurrentUser(accessToken);
+            console.log('✅ Server-side auth: Real user authenticated:', user.id);
+            return user;
         }
 
-        // TEMPORARY: Return a mock user for development
-        // This allows the alerts page to work while we implement proper server-side auth
-        console.warn('Server-side auth: Using mock user for development');
-        return {
-            id: 'dev-user-123',
-            email: 'dev@example.com',
-            emailVerified: true,
-            attributes: {
-                'custom:role': 'agent'
-            }
-        };
+        // No access token found
+        console.warn('⚠️ Server-side auth: No access token found');
+        return null;
 
     } catch (error) {
-        console.error('Server authentication failed:', error);
-
-        // TEMPORARY: Return mock user even on error for development
-        console.warn('Server-side auth: Using mock user due to error');
-        return {
-            id: 'dev-user-123',
-            email: 'dev@example.com',
-            emailVerified: true,
-            attributes: {
-                'custom:role': 'agent'
-            }
-        };
+        console.error('❌ Server authentication failed:', error);
+        return null;
     }
 }
 

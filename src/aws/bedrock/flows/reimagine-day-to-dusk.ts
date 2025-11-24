@@ -36,7 +36,7 @@ const CONTROL_STRUCTURE_MODEL = 'us.stability.stable-image-control-structure-v1:
  * Intensity configurations for day-to-dusk transformation
  * Each intensity level has specific parameters for the transformation
  */
-const INTENSITY_CONFIGS = {
+const DAY_TO_DUSK_CONFIGS = {
   subtle: {
     description: 'subtle golden hour lighting with warm tones',
     cfgScale: 7.0,
@@ -54,6 +54,31 @@ const INTENSITY_CONFIGS = {
     cfgScale: 9.0,
     stylePreset: 'cinematic',
     promptStrength: 0.65, // Stronger transformation
+  },
+} as const;
+
+/**
+ * Intensity configurations for dusk-to-day transformation
+ * Each intensity level has specific parameters for the transformation
+ */
+const DUSK_TO_DAY_CONFIGS = {
+  subtle: {
+    description: 'subtle bright daylight with natural tones',
+    cfgScale: 8.0,
+    stylePreset: 'photographic',
+    promptStrength: 0.55, // Higher strength needed to override dusk lighting
+  },
+  moderate: {
+    description: 'moderate bright daylight with clear blue sky and natural lighting',
+    cfgScale: 9.0,
+    stylePreset: 'photographic',
+    promptStrength: 0.7, // Strong transformation to convert dusk to day
+  },
+  dramatic: {
+    description: 'dramatic bright daylight with vibrant blue sky and enhanced natural lighting',
+    cfgScale: 10.0,
+    stylePreset: 'photographic',
+    promptStrength: 0.85, // Very strong transformation for dramatic effect
   },
 } as const;
 
@@ -114,14 +139,24 @@ export async function dayToDusk(
       : undefined,
   });
 
-  // Get intensity configuration
-  const intensityConfig = INTENSITY_CONFIGS[validatedInput.params.intensity];
+  // Get configuration based on direction
+  const direction = validatedInput.params.direction || 'day-to-dusk';
+  const intensityConfig = direction === 'day-to-dusk'
+    ? DAY_TO_DUSK_CONFIGS[validatedInput.params.intensity]
+    : DUSK_TO_DAY_CONFIGS[validatedInput.params.intensity];
 
-  // Build transformation prompt (must be under 512 characters for Titan)
-  const prompt = `Transform to ${intensityConfig.description}. Convert sky to warm golden hour colors with orange and pink tones. Add warm golden lighting. Enhance interior lights through windows. Maintain architecture and composition. Professional real estate photo.`;
+  // Build transformation prompt based on direction
+  let prompt: string;
+  let negativePrompt: string;
 
-  // Negative prompt to avoid unwanted changes
-  const negativePrompt = `distorted, blurry, artifacts, unrealistic, changed architecture, altered structure`;
+  if (direction === 'day-to-dusk') {
+    prompt = `Transform to ${intensityConfig.description}. Convert sky to warm golden hour colors with orange and pink tones. Add warm golden lighting. Enhance interior lights through windows. Maintain architecture and composition. Professional real estate photo.`;
+    negativePrompt = `distorted, blurry, artifacts, unrealistic, changed architecture, altered structure`;
+  } else {
+    // Stronger, more explicit prompt for dusk-to-day conversion
+    prompt = `Bright sunny daytime photo with ${intensityConfig.description}. Clear bright blue sky, no sunset colors. Full midday sunlight, no golden hour. Bright natural daylight illumination. Turn off interior lights. Remove all orange, pink, and warm evening tones. Convert to crisp daytime lighting. Professional real estate daytime photography.`;
+    negativePrompt = `sunset, dusk, twilight, golden hour, orange sky, pink sky, warm tones, evening, night, dark, shadows, interior lights on, amber glow, distorted, blurry, artifacts, unrealistic, changed architecture, altered structure`;
+  }
 
   // Construct Stability AI Control Structure request for image-to-image transformation
   const requestBody = {
@@ -172,6 +207,7 @@ export async function dayToDusk(
     // Log error to CloudWatch
     logError(error, 'day-to-dusk', {
       intensity: validatedInput.params.intensity,
+      direction: validatedInput.params.direction,
     });
 
     // Classify and throw with user-friendly message

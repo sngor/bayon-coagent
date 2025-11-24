@@ -28,8 +28,9 @@ import {
     renameContentAction,
     getSavedContentAction,
     getProjectsAction,
+    deleteProjectAction,
 } from '@/app/actions';
-import { Library, Copy, Folder, FolderPlus, MoreVertical, Trash2, Pencil, ChevronsUpDown } from 'lucide-react';
+import { Library, Copy, Folder, FolderPlus, MoreVertical, Trash2, Pencil, ChevronsUpDown, LayoutGrid, LayoutList, RefreshCw } from 'lucide-react';
 import { marked } from 'marked';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
@@ -71,7 +72,7 @@ function CreateProjectDialog({
 }: {
     isOpen: boolean,
     setIsOpen: (open: boolean) => void,
-    onProjectCreated: () => void
+    onProjectCreated: (projectId?: string) => void
 }) {
     const { user } = useUser();
     const [name, setName] = useState('');
@@ -81,10 +82,12 @@ function CreateProjectDialog({
             toast({ variant: 'destructive', title: 'Error', description: 'Project name is required.' });
             return;
         }
+        if (!user?.id) {
+            toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
+            return;
+        }
         try {
-            const formData = new FormData();
-            formData.append('name', name);
-            const result = await createProjectAction(null, formData);
+            const result = await createProjectAction(user.id, name);
 
             if (result.errors || !result.data) {
                 toast({ variant: 'destructive', title: 'Error', description: result.message });
@@ -92,7 +95,7 @@ function CreateProjectDialog({
                 toast({ title: 'Project Created!', description: `"${name}" has been created.` });
                 setName('');
                 setIsOpen(false);
-                onProjectCreated();
+                onProjectCreated(result.data.id); // Pass the new project ID
             }
         } catch (error) {
             console.error('Failed to create project:', error);
@@ -148,7 +151,11 @@ function RenameContentDialog({
             return;
         }
         try {
-            const result = await renameContentAction(item.id, name);
+            if (!user?.id) {
+                toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
+                return;
+            }
+            const result = await renameContentAction(user.id, item.id, name);
 
             if (result.errors || !result.data) {
                 toast({ variant: 'destructive', title: 'Error', description: result.message });
@@ -197,6 +204,9 @@ export default function LibraryPage() {
     const [projects, setProjects] = useState<Project[] | null>(null);
     const [isLoadingContent, setIsLoadingContent] = useState(true);
     const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+    const [openProjects, setOpenProjects] = useState<string[]>(['uncategorized']);
+    const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+    const [refreshKey, setRefreshKey] = useState(0);
 
     // Fetch content and projects using Server Actions
     useEffect(() => {
@@ -210,12 +220,17 @@ export default function LibraryPage() {
 
         // Fetch saved content
         const fetchContent = async () => {
+            console.log('📥 fetchContent called');
             setIsLoadingContent(true);
             try {
-                const result = await getSavedContentAction();
+                const result = await getSavedContentAction(user?.id);
+                console.log('📥 getSavedContentAction result:', result);
                 if (result.data) {
+                    console.log('📥 Content items:', result.data.length);
+                    console.log('📥 First item:', result.data[0]);
                     setSavedContent(result.data);
                 } else {
+                    console.log('📥 No content data');
                     setSavedContent([]);
                     if (result.errors) {
                         console.error('Failed to fetch saved content:', result.errors);
@@ -231,12 +246,17 @@ export default function LibraryPage() {
 
         // Fetch projects
         const fetchProjects = async () => {
+            console.log('📂 fetchProjects called');
             setIsLoadingProjects(true);
             try {
-                const result = await getProjectsAction();
+                const result = await getProjectsAction(user?.id);
+                console.log('📂 getProjectsAction result:', result);
                 if (result.data) {
+                    console.log('📂 Projects:', result.data.length);
+                    console.log('📂 Projects data:', result.data);
                     setProjects(result.data);
                 } else {
+                    console.log('📂 No projects data');
                     setProjects([]);
                     if (result.errors) {
                         console.error('Failed to fetch projects:', result.errors);
@@ -250,22 +270,69 @@ export default function LibraryPage() {
             }
         };
 
+        console.log('🔄 Initial load - fetching data...');
         fetchContent();
         fetchProjects();
+
+        // Refresh when page becomes visible (user navigates back)
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                console.log('👁️ Page visible, refreshing data...');
+                fetchContent();
+                fetchProjects();
+            }
+        };
+
+        // Refresh when window gains focus (user clicks back to tab)
+        const handleFocus = () => {
+            console.log('🎯 Window focused, refreshing data...');
+            fetchContent();
+            fetchProjects();
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', handleFocus);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('focus', handleFocus);
+        };
     }, [user]);
 
     // Refresh functions
     const refreshContent = async () => {
+        console.log('🔄 Refreshing content...');
         const result = await getSavedContentAction();
+        console.log('📝 Content result:', result);
         if (result.data) {
-            setSavedContent(result.data);
+            console.log('📝 Setting content:', result.data.length, 'items');
+            console.log('📝 Content data:', JSON.stringify(result.data, null, 2));
+            // Force a new array reference to trigger re-render
+            setSavedContent([...result.data]);
+            setRefreshKey(prev => prev + 1);
+        } else {
+            console.log('📝 No content data received');
+            setSavedContent([]);
         }
     };
 
-    const refreshProjects = async () => {
+    const refreshProjects = async (newProjectId?: string) => {
+        console.log('🔄 Refreshing projects...');
         const result = await getProjectsAction();
+        console.log('📁 Projects result:', result);
         if (result.data) {
-            setProjects(result.data);
+            console.log('📁 Setting projects:', result.data.length, 'projects');
+            console.log('📁 Projects data:', JSON.stringify(result.data, null, 2));
+            // Force a new array reference to trigger re-render
+            setProjects([...result.data]);
+            setRefreshKey(prev => prev + 1);
+            // Auto-expand the newly created project
+            if (newProjectId) {
+                setOpenProjects(prev => [...prev, newProjectId]);
+            }
+        } else {
+            console.log('📁 No projects data received');
+            setProjects([]);
         }
     };
 
@@ -323,7 +390,11 @@ export default function LibraryPage() {
 
     const handleMoveToProject = async (contentId: string, projectId: string | null) => {
         try {
-            const result = await moveContentToProjectAction(contentId, projectId);
+            if (!user?.id) {
+                toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
+                return;
+            }
+            const result = await moveContentToProjectAction(user.id, contentId, projectId);
 
             if (result.errors || !result.data) {
                 toast({ variant: 'destructive', title: 'Error', description: result.message });
@@ -340,7 +411,11 @@ export default function LibraryPage() {
     const handleDeleteItem = async () => {
         if (!itemToDelete) return;
         try {
-            const result = await deleteContentAction(itemToDelete.id);
+            if (!user?.id) {
+                toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
+                return;
+            }
+            const result = await deleteContentAction(user.id, itemToDelete.id);
 
             if (result.errors || !result.data) {
                 toast({ variant: 'destructive', title: 'Error', description: result.message });
@@ -352,6 +427,56 @@ export default function LibraryPage() {
         } catch (error) {
             console.error('Failed to delete content:', error);
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete content.' });
+        }
+    };
+
+    const handleDeleteProject = async (projectId: string) => {
+        console.log('🎯 handleDeleteProject called with:', projectId);
+        const project = projects?.find(p => p.id === projectId);
+        console.log('🎯 Found project:', project);
+
+        if (!project) {
+            console.log('❌ Project not found!');
+            return;
+        }
+
+        const confirmed = window.confirm(
+            `Delete "${project.name}"?\n\nAll content in this project will be moved to Uncategorized. This action cannot be undone.`
+        );
+
+        console.log('🎯 User confirmed:', confirmed);
+        if (!confirmed) return;
+
+        console.log('🎯 Calling deleteProjectAction...');
+        try {
+            if (!user?.id) {
+                toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
+                return;
+            }
+            const result = await deleteProjectAction(user.id, projectId);
+            console.log('🎯 Delete result:', result);
+
+            if (result.errors || !result.data) {
+                console.log('❌ Delete failed:', result.message);
+                toast({ variant: 'destructive', title: 'Error', description: result.message });
+            } else {
+                console.log('✅ Delete successful, refreshing UI...');
+                toast({ title: 'Project Deleted', description: `"${project.name}" has been deleted.` });
+
+                // Remove from open projects if it was open
+                setOpenProjects(prev => prev.filter(id => id !== projectId));
+
+                console.log('🎯 About to refresh projects and content...');
+                // Refresh both projects and content
+                await Promise.all([
+                    refreshProjects(),
+                    refreshContent()
+                ]);
+                console.log('🎯 Refresh complete!');
+            }
+        } catch (error) {
+            console.error('❌ Failed to delete project:', error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete project.' });
         }
     }
 
@@ -366,102 +491,176 @@ export default function LibraryPage() {
 
 
     return (
-        <div className="space-y-6">
-            {!isLoading && savedContent && savedContent.length > 0 && (
-                <div className="mb-6">
-                    <SearchInput
-                        value={searchQuery}
-                        onChange={setSearchQuery}
-                        placeholder="Search content by name, type, or keywords..."
-                    />
+        <div className="space-y-6" key={refreshKey}>
+            <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                    {!isLoading && savedContent && savedContent.length > 0 && (
+                        <SearchInput
+                            value={searchQuery}
+                            onChange={setSearchQuery}
+                            placeholder="Search content by name, type, or keywords..."
+                        />
+                    )}
                 </div>
-            )}
+                <div className="flex items-center gap-2">
+                    {(projects && projects.length > 0) && (
+                        <div className="flex items-center border rounded-lg">
+                            <Button
+                                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                                size="sm"
+                                onClick={() => setViewMode('list')}
+                                className="rounded-r-none"
+                            >
+                                <LayoutList className="h-4 w-4" />
+                                <span className="sr-only">List view</span>
+                            </Button>
+                            <Button
+                                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                                size="sm"
+                                onClick={() => setViewMode('grid')}
+                                className="rounded-l-none"
+                            >
+                                <LayoutGrid className="h-4 w-4" />
+                                <span className="sr-only">Grid view</span>
+                            </Button>
+                        </div>
+                    )}
+                    <Button
+                        onClick={async () => {
+                            await Promise.all([refreshContent(), refreshProjects()]);
+                            toast({ title: 'Refreshed', description: 'Library data updated.' });
+                        }}
+                        variant="outline"
+                        size="sm"
+                        disabled={isLoading}
+                    >
+                        <RefreshCw className="h-4 w-4" />
+                        <span className="sr-only">Refresh</span>
+                    </Button>
+                    <Button onClick={() => setIsCreateProjectOpen(true)} variant="default">
+                        <FolderPlus className="mr-2 h-4 w-4" />
+                        New Project
+                    </Button>
+                </div>
+            </div>
 
             {isLoading && <StandardSkeleton variant="list" count={3} />}
 
-            {!isLoading && savedContent && savedContent.length > 0 && (
+            {!isLoading && (projects && projects.length > 0) && viewMode === 'list' && (
                 <AlertDialog>
-                    <Accordion type="multiple" className="w-full space-y-4" defaultValue={['uncategorized']}>
+                    <Accordion type="multiple" className="w-full space-y-4" value={openProjects} onValueChange={setOpenProjects}>
                         {projectList.map(project => {
                             const items = contentByProject[project.id] || [];
-                            if (items.length === 0) return null;
 
                             return (
                                 <AccordionItem value={project.id} key={project.id} className="border-none">
-                                    <AccordionTrigger className="bg-muted px-4 py-3 rounded-lg hover:no-underline text-lg font-headline">
-                                        <div className="flex items-center gap-3">
-                                            <Folder className="h-5 w-5 text-muted-foreground" />
-                                            <span>{project.name} ({items.length})</span>
-                                        </div>
-                                    </AccordionTrigger>
-                                    <AccordionContent className="pt-4 space-y-4">
-                                        {items.map(item => (
-                                            <Collapsible key={item.id} asChild>
-                                                <Card className="bg-secondary/30">
-                                                    <CardHeader className="flex flex-row justify-between items-start">
-                                                        <div>
-                                                            <CardTitle className="text-lg font-semibold">{item.name || item.type}</CardTitle>
-                                                            <CardDescription className="flex items-center gap-2 mt-1">
-                                                                <Badge variant="outline">{item.type}</Badge>
-                                                                <span>Saved on {formatDate(item.createdAt)}</span>
-                                                            </CardDescription>
-                                                        </div>
-                                                        <div className="flex items-center gap-1 flex-shrink-0">
-                                                            <CollapsibleTrigger asChild>
-                                                                <Button variant="ghost" size="icon">
-                                                                    <ChevronsUpDown className="h-4 w-4" />
-                                                                    <span className="sr-only">Expand</span>
-                                                                </Button>
-                                                            </CollapsibleTrigger>
-                                                            <Button variant="ghost" size="icon" onClick={() => copyToClipboard(item.content)}>
-                                                                <Copy className="w-4 h-4" />
-                                                                <span className="sr-only">Copy</span>
-                                                            </Button>
-                                                            <DropdownMenu>
-                                                                <DropdownMenuTrigger asChild>
+                                    <div key={`trigger-${project.id}`} className="bg-muted px-4 py-3 rounded-lg">
+                                        <AccordionTrigger className="hover:no-underline text-lg font-headline">
+                                            <div className="flex items-center justify-between w-full pr-2">
+                                                <div className="flex items-center gap-3">
+                                                    <Folder className="h-5 w-5 text-muted-foreground" />
+                                                    <span>{project.name} ({items.length})</span>
+                                                </div>
+                                                {project.id !== 'uncategorized' && (
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                                            <div className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8 cursor-pointer">
+                                                                <MoreVertical className="h-4 w-4" />
+                                                                <span className="sr-only">Project options</span>
+                                                            </div>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem
+                                                                className="text-destructive focus:text-destructive"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDeleteProject(project.id);
+                                                                }}
+                                                            >
+                                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                                Delete Project
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                )}
+                                            </div>
+                                        </AccordionTrigger>
+                                    </div>
+                                    <AccordionContent key={`content-${project.id}`} className="pt-4 space-y-4">
+                                        {items.length === 0 ? (
+                                            <div className="text-center py-8 text-muted-foreground">
+                                                <p>No content in this project yet.</p>
+                                                <p className="text-sm mt-2">Create content in Studio and save it to this project.</p>
+                                            </div>
+                                        ) : (
+                                            items.map(item => (
+                                                <Collapsible key={item.id} asChild>
+                                                    <Card className="bg-secondary/30">
+                                                        <CardHeader className="flex flex-row justify-between items-start">
+                                                            <div>
+                                                                <CardTitle className="text-lg font-semibold">{item.name || item.type}</CardTitle>
+                                                                <CardDescription className="flex items-center gap-2 mt-1">
+                                                                    <Badge variant="outline">{item.type}</Badge>
+                                                                    <span>Saved on {formatDate(item.createdAt)}</span>
+                                                                </CardDescription>
+                                                            </div>
+                                                            <div className="flex items-center gap-1 flex-shrink-0">
+                                                                <CollapsibleTrigger asChild>
                                                                     <Button variant="ghost" size="icon">
-                                                                        <MoreVertical className="w-4 h-4" />
-                                                                        <span className="sr-only">More options</span>
+                                                                        <ChevronsUpDown className="h-4 w-4" />
+                                                                        <span className="sr-only">Expand</span>
                                                                     </Button>
-                                                                </DropdownMenuTrigger>
-                                                                <DropdownMenuContent>
-                                                                    <DropdownMenuItem onSelect={() => setItemToRename(item)}>
-                                                                        <Pencil className="mr-2" />
-                                                                        Rename
-                                                                    </DropdownMenuItem>
-                                                                    <DropdownMenuSub>
-                                                                        <DropdownMenuSubTrigger>Move to...</DropdownMenuSubTrigger>
-                                                                        <DropdownMenuSubContent>
-                                                                            <DropdownMenuItem onSelect={() => handleMoveToProject(item.id, null)}>
-                                                                                Uncategorized
-                                                                            </DropdownMenuItem>
-                                                                            {projects && projects.length > 0 && <DropdownMenuSeparator />}
-                                                                            {projects?.filter(p => p.id !== item.projectId).map(p => (
-                                                                                <DropdownMenuItem key={p.id} onSelect={() => handleMoveToProject(item.id, p.id)}>
-                                                                                    {p.name}
-                                                                                </DropdownMenuItem>
-                                                                            ))}
-                                                                        </DropdownMenuSubContent>
-                                                                    </DropdownMenuSub>
-                                                                    <DropdownMenuSeparator />
-                                                                    <AlertDialogTrigger asChild>
-                                                                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setItemToDelete(item)}>
-                                                                            <Trash2 className="mr-2" />
-                                                                            Delete
+                                                                </CollapsibleTrigger>
+                                                                <Button variant="ghost" size="icon" onClick={() => copyToClipboard(item.content)}>
+                                                                    <Copy className="w-4 h-4" />
+                                                                    <span className="sr-only">Copy</span>
+                                                                </Button>
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                        <Button variant="ghost" size="icon">
+                                                                            <MoreVertical className="w-4 h-4" />
+                                                                            <span className="sr-only">More options</span>
+                                                                        </Button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent>
+                                                                        <DropdownMenuItem onSelect={() => setItemToRename(item)}>
+                                                                            <Pencil className="mr-2" />
+                                                                            Rename
                                                                         </DropdownMenuItem>
-                                                                    </AlertDialogTrigger>
-                                                                </DropdownMenuContent>
-                                                            </DropdownMenu>
-                                                        </div>
-                                                    </CardHeader>
-                                                    <CollapsibleContent>
-                                                        <CardContent>
-                                                            <div className="prose prose-sm dark:prose-invert max-w-none text-foreground/90 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: marked(item.content) as string }} />
-                                                        </CardContent>
-                                                    </CollapsibleContent>
-                                                </Card>
-                                            </Collapsible>
-                                        ))}
+                                                                        <DropdownMenuSub>
+                                                                            <DropdownMenuSubTrigger>Move to...</DropdownMenuSubTrigger>
+                                                                            <DropdownMenuSubContent>
+                                                                                <DropdownMenuItem onSelect={() => handleMoveToProject(item.id, null)}>
+                                                                                    Uncategorized
+                                                                                </DropdownMenuItem>
+                                                                                {projects && projects.length > 0 && <DropdownMenuSeparator />}
+                                                                                {projects?.filter(p => p.id !== item.projectId).map(p => (
+                                                                                    <DropdownMenuItem key={`list-move-${item.id}-${p.id}`} onSelect={() => handleMoveToProject(item.id, p.id)}>
+                                                                                        {p.name}
+                                                                                    </DropdownMenuItem>
+                                                                                ))}
+                                                                            </DropdownMenuSubContent>
+                                                                        </DropdownMenuSub>
+                                                                        <DropdownMenuSeparator />
+                                                                        <AlertDialogTrigger asChild>
+                                                                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setItemToDelete(item)}>
+                                                                                <Trash2 className="mr-2" />
+                                                                                Delete
+                                                                            </DropdownMenuItem>
+                                                                        </AlertDialogTrigger>
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
+                                                            </div>
+                                                        </CardHeader>
+                                                        <CollapsibleContent>
+                                                            <CardContent>
+                                                                <div className="prose prose-sm dark:prose-invert max-w-none text-foreground/90 whitespace-pre-line" dangerouslySetInnerHTML={{ __html: marked(item.content) as string }} />
+                                                            </CardContent>
+                                                        </CollapsibleContent>
+                                                    </Card>
+                                                </Collapsible>
+                                            ))
+                                        )}
                                     </AccordionContent>
                                 </AccordionItem>
                             )
@@ -485,7 +684,139 @@ export default function LibraryPage() {
                 </AlertDialog>
             )}
 
-            {!isLoading && (!savedContent || savedContent.length === 0) && (
+            {!isLoading && (projects && projects.length > 0) && viewMode === 'grid' && (
+                <AlertDialog>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {projectList.map(project => {
+                            const items = contentByProject[project.id] || [];
+
+                            return (
+                                <Card key={project.id} className="flex flex-col">
+                                    <CardHeader>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-3 rounded-lg bg-primary/10">
+                                                    <Folder className="h-6 w-6 text-primary" />
+                                                </div>
+                                                <div>
+                                                    <CardTitle className="text-lg">{project.name}</CardTitle>
+                                                    <CardDescription>{items.length} {items.length === 1 ? 'item' : 'items'}</CardDescription>
+                                                </div>
+                                            </div>
+                                            {project.id !== 'uncategorized' && (
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                            <MoreVertical className="h-4 w-4" />
+                                                            <span className="sr-only">Project options</span>
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem
+                                                            className="text-destructive focus:text-destructive"
+                                                            onClick={() => handleDeleteProject(project.id)}
+                                                        >
+                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                            Delete Project
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            )}
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="flex-1">
+                                        {items.length === 0 ? (
+                                            <div className="text-center py-8 text-muted-foreground text-sm">
+                                                <p>No content yet</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                {items.slice(0, 3).map(item => (
+                                                    <div key={item.id} className="flex items-start gap-2 p-2 rounded-lg hover:bg-muted/50 cursor-pointer group">
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-medium truncate">{item.name || item.type}</p>
+                                                            <p className="text-xs text-muted-foreground">{item.type}</p>
+                                                        </div>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100">
+                                                                    <MoreVertical className="h-3 w-3" />
+                                                                    <span className="sr-only">Options</span>
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem onClick={() => copyToClipboard(item.content)}>
+                                                                    <Copy className="mr-2 h-4 w-4" />
+                                                                    Copy
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem onSelect={() => setItemToRename(item)}>
+                                                                    <Pencil className="mr-2 h-4 w-4" />
+                                                                    Rename
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuSub>
+                                                                    <DropdownMenuSubTrigger>Move to...</DropdownMenuSubTrigger>
+                                                                    <DropdownMenuSubContent>
+                                                                        <DropdownMenuItem onSelect={() => handleMoveToProject(item.id, null)}>
+                                                                            Uncategorized
+                                                                        </DropdownMenuItem>
+                                                                        {projects && projects.length > 0 && <DropdownMenuSeparator />}
+                                                                        {projects?.filter(p => p.id !== item.projectId).map(p => (
+                                                                            <DropdownMenuItem key={`move-${item.id}-${p.id}`} onSelect={() => handleMoveToProject(item.id, p.id)}>
+                                                                                {p.name}
+                                                                            </DropdownMenuItem>
+                                                                        ))}
+                                                                    </DropdownMenuSubContent>
+                                                                </DropdownMenuSub>
+                                                                <DropdownMenuSeparator />
+                                                                <AlertDialogTrigger asChild>
+                                                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setItemToDelete(item)}>
+                                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                                        Delete
+                                                                    </DropdownMenuItem>
+                                                                </AlertDialogTrigger>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </div>
+                                                ))}
+                                                {items.length > 3 && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="w-full text-xs"
+                                                        onClick={() => {
+                                                            setViewMode('list');
+                                                            setOpenProjects([project.id]);
+                                                        }}
+                                                    >
+                                                        View all {items.length} items
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            );
+                        })}
+                    </div>
+
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the saved content item.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                Delete
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            )}
+
+            {!isLoading && (!projects || projects.length === 0) && (!savedContent || savedContent.length === 0) && (
                 <IntelligentEmptyState
                     icon={Library}
                     title="Your Library is Empty"

@@ -59,6 +59,12 @@ export interface ApiGatewayConfig {
   adminServiceApiId?: string;
 }
 
+export interface SQSConfig {
+  aiJobRequestQueueUrl?: string;
+  aiJobResponseQueueUrl?: string;
+  endpoint?: string;
+}
+
 /**
  * Valid Bedrock model IDs (inference profiles)
  * AWS now requires inference profiles for all Claude models
@@ -84,6 +90,7 @@ export interface AWSConfig {
   ses: SESConfig;
   sns: SNSConfig;
   apiGateway: ApiGatewayConfig;
+  sqs: SQSConfig;
 }
 
 /**
@@ -175,6 +182,12 @@ export function getAWSConfig(): AWSConfig {
       integrationServiceApiId: process.env.INTEGRATION_SERVICE_API_ID,
       backgroundServiceApiId: process.env.BACKGROUND_SERVICE_API_ID,
       adminServiceApiId: process.env.ADMIN_SERVICE_API_ID,
+    },
+
+    sqs: {
+      aiJobRequestQueueUrl: process.env.AI_JOB_REQUEST_QUEUE_URL,
+      aiJobResponseQueueUrl: process.env.AI_JOB_RESPONSE_QUEUE_URL,
+      endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
   };
 }

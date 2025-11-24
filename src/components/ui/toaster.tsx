@@ -26,7 +26,7 @@ export function Toaster() {
         if (variant === "success") {
           icon = <SuccessIcon animated={true} className="w-5 h-5 text-success flex-shrink-0" />
         } else if (variant === "ai") {
-          icon = <AISparkleIcon animated={true} className="w-5 h-5 text-primary flex-shrink-0" />
+          icon = <AISparkleIcon className="w-5 h-5 text-primary flex-shrink-0" />
         } else if (variant === "destructive") {
           icon = <AlertCircle className="w-5 h-5 text-destructive-foreground flex-shrink-0" />
         }

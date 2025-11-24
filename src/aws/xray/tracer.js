@@ -1,48 +1,53 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.METADATA_KEYS = exports.ANNOTATION_KEYS = exports.OPERATION_NAMES = exports.SERVICE_NAMES = exports.AWSXRay = exports.tracer = exports.DistributedTracer = void 0;
-const aws_xray_sdk_core_1 = __importDefault(require("aws-xray-sdk-core"));
-exports.AWSXRay = aws_xray_sdk_core_1.default;
+exports.METADATA_KEYS = exports.ANNOTATION_KEYS = exports.OPERATION_NAMES = exports.SERVICE_NAMES = exports.tracer = exports.DistributedTracer = void 0;
 const config_1 = require("./config");
 Object.defineProperty(exports, "SERVICE_NAMES", { enumerable: true, get: function () { return config_1.SERVICE_NAMES; } });
 Object.defineProperty(exports, "OPERATION_NAMES", { enumerable: true, get: function () { return config_1.OPERATION_NAMES; } });
 Object.defineProperty(exports, "ANNOTATION_KEYS", { enumerable: true, get: function () { return config_1.ANNOTATION_KEYS; } });
 Object.defineProperty(exports, "METADATA_KEYS", { enumerable: true, get: function () { return config_1.METADATA_KEYS; } });
 const logger_1 = require("@/aws/logging/logger");
+let AWSXRay = null;
+let Segment = null;
+let Subsegment = null;
 const xrayConfig = (0, config_1.getXRayConfig)();
-if (xrayConfig.enabled) {
-    aws_xray_sdk_core_1.default.config([
-        aws_xray_sdk_core_1.default.plugins.EC2Plugin,
-        aws_xray_sdk_core_1.default.plugins.ECSPlugin,
-        aws_xray_sdk_core_1.default.plugins.ElasticBeanstalkPlugin,
-    ]);
-    aws_xray_sdk_core_1.default.setContextMissingStrategy(xrayConfig.contextMissingStrategy);
-    if (xrayConfig.daemonAddress) {
-        aws_xray_sdk_core_1.default.setDaemonAddress(xrayConfig.daemonAddress);
-    }
-    if (xrayConfig.captureAWS) {
-        try {
-            const AWS = require('aws-sdk');
-            aws_xray_sdk_core_1.default.captureAWS(AWS);
-        }
-        catch (error) {
-            console.warn('AWS SDK v2 not available for X-Ray capture, using SDK v3');
-        }
-    }
-    if (xrayConfig.captureHTTP) {
-        aws_xray_sdk_core_1.default.captureHTTPs(require('https'));
-        aws_xray_sdk_core_1.default.captureHTTPs(require('http'));
-    }
-    if (xrayConfig.capturePromises) {
-        aws_xray_sdk_core_1.default.capturePromise();
-    }
-}
 class DistributedTracer {
     constructor() {
-        this.enabled = xrayConfig.enabled;
+        this.initialized = false;
+        this.enabled = xrayConfig.enabled && typeof window === 'undefined';
     }
     static getInstance() {
         if (!DistributedTracer.instance) {
@@ -50,14 +55,57 @@ class DistributedTracer {
         }
         return DistributedTracer.instance;
     }
+    async initializeXRay() {
+        if (this.initialized || !this.enabled)
+            return;
+        try {
+            const xrayModule = await Promise.resolve().then(() => __importStar(require('aws-xray-sdk-core')));
+            AWSXRay = xrayModule.default;
+            Segment = xrayModule.Segment;
+            Subsegment = xrayModule.Subsegment;
+            AWSXRay.config([
+                AWSXRay.plugins.EC2Plugin,
+                AWSXRay.plugins.ECSPlugin,
+                AWSXRay.plugins.ElasticBeanstalkPlugin,
+            ]);
+            AWSXRay.setContextMissingStrategy(xrayConfig.contextMissingStrategy);
+            if (xrayConfig.daemonAddress) {
+                AWSXRay.setDaemonAddress(xrayConfig.daemonAddress);
+            }
+            if (xrayConfig.captureAWS) {
+                try {
+                    const AWS = require('aws-sdk');
+                    AWSXRay.captureAWS(AWS);
+                }
+                catch (error) {
+                    console.warn('AWS SDK v2 not available for X-Ray capture, using SDK v3');
+                }
+            }
+            if (xrayConfig.captureHTTP) {
+                AWSXRay.captureHTTPs(require('https'));
+                AWSXRay.captureHTTPs(require('http'));
+            }
+            if (xrayConfig.capturePromises) {
+                AWSXRay.capturePromise();
+            }
+            this.initialized = true;
+        }
+        catch (error) {
+            console.warn('Failed to initialize X-Ray SDK:', error);
+            this.enabled = false;
+        }
+    }
     isEnabled() {
         return this.enabled;
     }
-    createSegment(name, traceId, parentId) {
+    async createSegment(name, traceId, parentId) {
         if (!this.enabled)
             return null;
+        await this.initializeXRay();
+        if (!AWSXRay)
+            return null;
         try {
-            const segment = new aws_xray_sdk_core_1.default.Segment(name, traceId, parentId);
+            const segment = new AWSXRay.Segment(name, traceId, parentId);
             segment.addAnnotation(config_1.ANNOTATION_KEYS.SERVICE_NAME, xrayConfig.serviceName);
             segment.addAnnotation(config_1.ANNOTATION_KEYS.AWS_REGION, process.env.AWS_REGION || 'us-east-1');
             return segment;
@@ -67,11 +115,14 @@ class DistributedTracer {
             return null;
         }
     }
-    createSubsegment(name, parent) {
+    async createSubsegment(name, parent) {
         if (!this.enabled)
             return null;
+        await this.initializeXRay();
+        if (!AWSXRay)
+            return null;
         try {
-            const parentSegment = parent || aws_xray_sdk_core_1.default.getSegment();
+            const parentSegment = parent || AWSXRay.getSegment();
             if (!parentSegment) {
                 console.warn('No parent segment available for subsegment:', name);
                 return null;
@@ -84,13 +135,16 @@ class DistributedTracer {
             return null;
         }
     }
-    startTrace(operationName, options = {}) {
+    async startTrace(operationName, options = {}) {
         if (!this.enabled)
+            return null;
+        await this.initializeXRay();
+        if (!AWSXRay)
             return null;
         try {
             const serviceName = options.serviceName || xrayConfig.serviceName;
             const correlationId = (0, logger_1.generateCorrelationId)();
-            const segment = this.createSegment(`${serviceName}-${operationName}`);
+            const segment = await this.createSegment(`${serviceName}-${operationName}`);
             if (!segment)
                 return null;
             segment.addAnnotation(config_1.ANNOTATION_KEYS.OPERATION_NAME, operationName);
@@ -112,7 +166,7 @@ class DistributedTracer {
                     segment.addAnnotation(key, value);
                 });
             }
-            aws_xray_sdk_core_1.default.setSegment(segment);
+            AWSXRay.setSegment(segment);
             return {
                 traceId: segment.trace_id,
                 segmentId: segment.id,
@@ -128,45 +182,14 @@ class DistributedTracer {
             return null;
         }
     }
-    startSubsegment(operationName, options = {}) {
-        if (!this.enabled)
-            return null;
-        try {
-            const subsegment = this.createSubsegment(operationName);
-            if (!subsegment)
-                return null;
-            subsegment.addAnnotation(config_1.ANNOTATION_KEYS.OPERATION_NAME, operationName);
-            if (options.serviceName) {
-                subsegment.addAnnotation(config_1.ANNOTATION_KEYS.SERVICE_NAME, options.serviceName);
-            }
-            if (options.userId) {
-                subsegment.addAnnotation(config_1.ANNOTATION_KEYS.USER_ID, options.userId);
-            }
-            if (options.requestId) {
-                subsegment.addAnnotation(config_1.ANNOTATION_KEYS.REQUEST_ID, options.requestId);
-            }
-            if (options.metadata) {
-                Object.entries(options.metadata).forEach(([key, value]) => {
-                    subsegment.addMetadata(key, value);
-                });
-            }
-            if (options.annotations) {
-                Object.entries(options.annotations).forEach(([key, value]) => {
-                    subsegment.addAnnotation(key, value);
-                });
-            }
-            return subsegment;
-        }
-        catch (error) {
-            console.warn('Failed to start X-Ray subsegment:', error);
-            return null;
-        }
-    }
-    addAnnotation(key, value) {
+    async addAnnotation(key, value) {
         if (!this.enabled)
             return;
+        await this.initializeXRay();
+        if (!AWSXRay)
+            return;
         try {
-            const segment = aws_xray_sdk_core_1.default.getSegment();
+            const segment = AWSXRay.getSegment();
             if (segment) {
                 segment.addAnnotation(key, value);
             }
@@ -175,11 +198,14 @@ class DistributedTracer {
             console.warn('Failed to add X-Ray annotation:', error);
         }
     }
-    addMetadata(key, value, namespace) {
+    async addMetadata(key, value, namespace) {
         if (!this.enabled)
             return;
+        await this.initializeXRay();
+        if (!AWSXRay)
+            return;
         try {
-            const segment = aws_xray_sdk_core_1.default.getSegment();
+            const segment = AWSXRay.getSegment();
             if (segment) {
                 segment.addMetadata(key, value, namespace);
             }
@@ -188,11 +214,14 @@ class DistributedTracer {
             console.warn('Failed to add X-Ray metadata:', error);
         }
     }
-    addError(error, remote = false) {
+    async addError(error, remote = false) {
         if (!this.enabled)
             return;
+        await this.initializeXRay();
+        if (!AWSXRay)
+            return;
         try {
-            const segment = aws_xray_sdk_core_1.default.getSegment();
+            const segment = AWSXRay.getSegment();
             if (segment) {
                 if (typeof error === 'string') {
                     segment.addError(new Error(error), remote);
@@ -208,14 +237,17 @@ class DistributedTracer {
             console.warn('Failed to add X-Ray error:', err);
         }
     }
-    closeSegment(error) {
+    async closeSegment(error) {
         if (!this.enabled)
             return;
+        await this.initializeXRay();
+        if (!AWSXRay)
+            return;
         try {
-            const segment = aws_xray_sdk_core_1.default.getSegment();
+            const segment = AWSXRay.getSegment();
             if (segment) {
                 if (error) {
-                    this.addError(error);
+                    await this.addError(error);
                 }
                 segment.close();
             }
@@ -224,112 +256,22 @@ class DistributedTracer {
             console.warn('Failed to close X-Ray segment:', err);
         }
     }
-    closeSubsegment(subsegment, error) {
-        if (!this.enabled || !subsegment)
-            return;
-        try {
-            if (error) {
-                subsegment.addError(error);
-                subsegment.addAnnotation(config_1.ANNOTATION_KEYS.ERROR, true);
-                subsegment.addAnnotation(config_1.ANNOTATION_KEYS.ERROR_MESSAGE, error.message);
-            }
-            subsegment.close();
-        }
-        catch (err) {
-            console.warn('Failed to close X-Ray subsegment:', err);
-        }
-    }
-    getCurrentTraceContext() {
-        if (!this.enabled)
-            return null;
-        try {
-            const segment = aws_xray_sdk_core_1.default.getSegment();
-            if (!segment)
-                return null;
-            return {
-                traceId: segment.trace_id,
-                segmentId: segment.id,
-                parentId: segment.parent_id,
-                correlationId: segment.metadata?.default?.[config_1.METADATA_KEYS.CORRELATION_ID] || (0, logger_1.generateCorrelationId)(),
-                serviceName: segment.annotations?.[config_1.ANNOTATION_KEYS.SERVICE_NAME] || xrayConfig.serviceName,
-                operationName: segment.annotations?.[config_1.ANNOTATION_KEYS.OPERATION_NAME] || 'unknown',
-                userId: segment.annotations?.[config_1.ANNOTATION_KEYS.USER_ID],
-                requestId: segment.annotations?.[config_1.ANNOTATION_KEYS.REQUEST_ID],
-            };
-        }
-        catch (error) {
-            console.warn('Failed to get X-Ray trace context:', error);
-            return null;
-        }
-    }
-    getTraceHeader() {
-        if (!this.enabled)
-            return null;
-        try {
-            const segment = aws_xray_sdk_core_1.default.getSegment();
-            if (!segment)
-                return null;
-            return `Root=${segment.trace_id};Parent=${segment.id};Sampled=1`;
-        }
-        catch (error) {
-            console.warn('Failed to get X-Ray trace header:', error);
-            return null;
-        }
-    }
-    parseTraceHeader(traceHeader) {
-        if (!this.enabled || !traceHeader)
-            return null;
-        try {
-            const parts = traceHeader.split(';');
-            const result = {};
-            parts.forEach(part => {
-                const [key, value] = part.split('=');
-                switch (key) {
-                    case 'Root':
-                        result.traceId = value;
-                        break;
-                    case 'Parent':
-                        result.parentId = value;
-                        break;
-                    case 'Sampled':
-                        result.sampled = value === '1';
-                        break;
-                }
-            });
-            return result;
-        }
-        catch (error) {
-            console.warn('Failed to parse X-Ray trace header:', error);
-            return null;
-        }
-    }
     async traceAsync(operationName, fn, options = {}) {
         if (!this.enabled) {
             return fn();
         }
-        const subsegment = this.startSubsegment(operationName, options);
+        const subsegment = await this.createSubsegment(operationName);
         try {
             const result = await fn();
-            this.closeSubsegment(subsegment);
+            if (subsegment)
+                subsegment.close();
             return result;
         }
         catch (error) {
-            this.closeSubsegment(subsegment, error);
-            throw error;
-        }
-    }
-    trace(operationName, fn, options = {}) {
-        if (!this.enabled) {
-            return fn();
-        }
-        const subsegment = this.startSubsegment(operationName, options);
-        try {
-            const result = fn();
-            this.closeSubsegment(subsegment);
-            return result;
-        }
-        catch (error) {
-            this.closeSubsegment(subsegment, error);
+            if (subsegment) {
+                subsegment.addError(error);
+                subsegment.close();
+            }
             throw error;
         }
     }

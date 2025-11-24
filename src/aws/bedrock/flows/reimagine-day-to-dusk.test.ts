@@ -15,12 +15,13 @@ describe('Day-to-Dusk Transformation Flow', () => {
     return pngData;
   };
 
-  it('should return transformed image data with subtle intensity', async () => {
+  it('should return transformed image data with subtle intensity (day-to-dusk)', async () => {
     const input = {
       imageData: createTestImageData(),
       imageFormat: 'png' as const,
       params: {
         intensity: 'subtle' as const,
+        direction: 'day-to-dusk' as const,
       },
     };
 
@@ -29,14 +30,80 @@ describe('Day-to-Dusk Transformation Flow', () => {
     // Verify structure
     expect(output).toHaveProperty('duskImageData');
     expect(output).toHaveProperty('imageFormat');
-    
+
     // Verify output format
     expect(typeof output.duskImageData).toBe('string');
     expect(output.duskImageData.length).toBeGreaterThan(0);
     expect(output.imageFormat).toBe('png');
   }, 60000); // 60 second timeout for API calls
 
-  it('should return transformed image data with moderate intensity', async () => {
+  it('should return transformed image data with moderate intensity (day-to-dusk)', async () => {
+    const input = {
+      imageData: createTestImageData(),
+      imageFormat: 'png' as const,
+      params: {
+        intensity: 'moderate' as const,
+        direction: 'day-to-dusk' as const,
+      },
+    };
+
+    const output = await dayToDusk(input);
+
+    // Verify structure
+    expect(output).toHaveProperty('duskImageData');
+    expect(output).toHaveProperty('imageFormat');
+
+    // Verify output format
+    expect(typeof output.duskImageData).toBe('string');
+    expect(output.duskImageData.length).toBeGreaterThan(0);
+    expect(output.imageFormat).toBe('png');
+  }, 60000);
+
+  it('should return transformed image data with dramatic intensity (day-to-dusk)', async () => {
+    const input = {
+      imageData: createTestImageData(),
+      imageFormat: 'png' as const,
+      params: {
+        intensity: 'dramatic' as const,
+        direction: 'day-to-dusk' as const,
+      },
+    };
+
+    const output = await dayToDusk(input);
+
+    // Verify structure
+    expect(output).toHaveProperty('duskImageData');
+    expect(output).toHaveProperty('imageFormat');
+
+    // Verify output format
+    expect(typeof output.duskImageData).toBe('string');
+    expect(output.duskImageData.length).toBeGreaterThan(0);
+    expect(output.imageFormat).toBe('png');
+  }, 60000);
+
+  it('should return transformed image data with moderate intensity (dusk-to-day)', async () => {
+    const input = {
+      imageData: createTestImageData(),
+      imageFormat: 'png' as const,
+      params: {
+        intensity: 'moderate' as const,
+        direction: 'dusk-to-day' as const,
+      },
+    };
+
+    const output = await dayToDusk(input);
+
+    // Verify structure
+    expect(output).toHaveProperty('duskImageData');
+    expect(output).toHaveProperty('imageFormat');
+
+    // Verify output format
+    expect(typeof output.duskImageData).toBe('string');
+    expect(output.duskImageData.length).toBeGreaterThan(0);
+    expect(output.imageFormat).toBe('png');
+  }, 60000);
+
+  it('should default to day-to-dusk when direction is not specified', async () => {
     const input = {
       imageData: createTestImageData(),
       imageFormat: 'png' as const,
@@ -50,28 +117,7 @@ describe('Day-to-Dusk Transformation Flow', () => {
     // Verify structure
     expect(output).toHaveProperty('duskImageData');
     expect(output).toHaveProperty('imageFormat');
-    
-    // Verify output format
-    expect(typeof output.duskImageData).toBe('string');
-    expect(output.duskImageData.length).toBeGreaterThan(0);
-    expect(output.imageFormat).toBe('png');
-  }, 60000);
 
-  it('should return transformed image data with dramatic intensity', async () => {
-    const input = {
-      imageData: createTestImageData(),
-      imageFormat: 'png' as const,
-      params: {
-        intensity: 'dramatic' as const,
-      },
-    };
-
-    const output = await dayToDusk(input);
-
-    // Verify structure
-    expect(output).toHaveProperty('duskImageData');
-    expect(output).toHaveProperty('imageFormat');
-    
     // Verify output format
     expect(typeof output.duskImageData).toBe('string');
     expect(output.duskImageData.length).toBeGreaterThan(0);
@@ -85,6 +131,7 @@ describe('Day-to-Dusk Transformation Flow', () => {
       imageFormat: 'png' as const,
       params: {
         intensity: 'invalid' as any,
+        direction: 'day-to-dusk' as const,
       },
     };
 
@@ -98,6 +145,7 @@ describe('Day-to-Dusk Transformation Flow', () => {
       imageFormat: 'gif' as any,
       params: {
         intensity: 'moderate' as const,
+        direction: 'day-to-dusk' as const,
       },
     };
 
@@ -110,6 +158,7 @@ describe('Day-to-Dusk Transformation Flow', () => {
       imageFormat: 'png' as const,
       params: {
         intensity: 'moderate' as const,
+        direction: 'day-to-dusk' as const,
       },
     };
 
@@ -119,13 +168,14 @@ describe('Day-to-Dusk Transformation Flow', () => {
 
   it('should accept all supported image formats', async () => {
     const formats: Array<'jpeg' | 'png' | 'webp'> = ['jpeg', 'png', 'webp'];
-    
+
     for (const format of formats) {
       const input = {
         imageData: createTestImageData(),
         imageFormat: format,
         params: {
           intensity: 'moderate' as const,
+          direction: 'day-to-dusk' as const,
         },
       };
 

@@ -202,6 +202,8 @@ async function syncSingleListing(
 
 /**
  * Sync status for all listings from a specific MLS connection
+ * Uses Integration Service Lambda via API Gateway with fallback to direct implementation
+ * Requirement 1.5: Implement fallback for integration service failures
  * Requirement 5.1: Detect status changes within 15 minutes
  * 
  * This function should be called by a scheduled job every 15 minutes
@@ -279,73 +281,111 @@ export async function syncMLSStatus(
             mlsIds.push(listing.mlsId);
         }
 
-        // Create MLS connector
-        const connector = createMLSConnector(connection.provider);
+        // Try integration service Lambda via API Gateway first
+        try {
+            const { mlsClient } = await import('@/aws/integration-service/client');
 
-        // Fetch current status from MLS
-        console.log(`Syncing status for ${mlsIds.length} listings...`);
-        const statusUpdates = await connector.syncStatus(connection, mlsIds);
+            console.log(`Triggering MLS status sync via Integration Service for ${mlsIds.length} listings...`);
 
-        // Process each status update
-        const result: SyncResult = {
-            totalListings: listingsResult.items.length,
-            updatedListings: 0,
-            unpublishedPosts: 0,
-            restoredListings: 0,
-            errors: [],
-            statusChanges: [],
-        };
+            // Trigger incremental sync via Integration Service
+            const syncResult = await mlsClient.syncMLSData(
+                user.id,
+                connection.provider as 'mlsgrid' | 'bridgeInteractive',
+                connection.agentId,
+                'incremental'
+            );
 
-        for (const update of statusUpdates) {
-            const listing = listingsMap.get(update.mlsId);
+            console.log(`Successfully synced status for ${syncResult.syncedListings} listings via Integration Service`);
 
-            if (!listing) {
-                console.warn(`Listing ${update.mlsNumber} not found in local database`);
-                continue;
-            }
+            // Note: The Integration Service handles the status sync internally
+            // For now, we'll return a simplified result
+            // In a full implementation, the Integration Service would return detailed status changes
+            const result: SyncResult = {
+                totalListings: listingsResult.items.length,
+                updatedListings: syncResult.syncedListings,
+                unpublishedPosts: 0, // Integration service handles this internally
+                restoredListings: 0, // Integration service handles this internally
+                errors: [],
+                statusChanges: [],
+            };
 
-            try {
-                const syncResult = await syncSingleListing(
-                    user.id,
-                    listing,
-                    update.newStatus
-                );
+            return {
+                success: true,
+                message: `Synced ${result.totalListings} listings, ${result.updatedListings} updated`,
+                data: result,
+            };
+        } catch (integrationError) {
+            console.warn('Integration service failed for MLS status sync, falling back to direct implementation:', integrationError);
 
-                if (syncResult.updated) {
-                    result.updatedListings++;
-                    result.unpublishedPosts += syncResult.unpublishedPosts;
+            // Fallback to direct implementation
+            // Create MLS connector
+            const connector = createMLSConnector(connection.provider);
 
-                    if (syncResult.restored) {
-                        result.restoredListings++;
+            // Fetch current status from MLS
+            console.log(`Syncing status for ${mlsIds.length} listings via direct implementation...`);
+            const statusUpdates = await connector.syncStatus(connection, mlsIds);
+
+            // Process each status update
+            const result: SyncResult = {
+                totalListings: listingsResult.items.length,
+                updatedListings: 0,
+                unpublishedPosts: 0,
+                restoredListings: 0,
+                errors: [],
+                statusChanges: [],
+            };
+
+            for (const update of statusUpdates) {
+                const listing = listingsMap.get(update.mlsId);
+
+                if (!listing) {
+                    console.warn(`Listing ${update.mlsNumber} not found in local database`);
+                    continue;
+                }
+
+                try {
+                    const syncResult = await syncSingleListing(
+                        user.id,
+                        listing,
+                        update.newStatus
+                    );
+
+                    if (syncResult.updated) {
+                        result.updatedListings++;
+                        result.unpublishedPosts += syncResult.unpublishedPosts;
+
+                        if (syncResult.restored) {
+                            result.restoredListings++;
+                        }
+
+                        result.statusChanges.push({
+                            listingId: listing.listingId,
+                            mlsNumber: listing.mlsNumber,
+                            oldStatus: syncResult.oldStatus,
+                            newStatus: syncResult.newStatus,
+                        });
                     }
+                } catch (error) {
+                    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                    console.error(`Failed to sync listing ${listing.mlsNumber}:`, error);
 
-                    result.statusChanges.push({
+                    result.errors.push({
                         listingId: listing.listingId,
                         mlsNumber: listing.mlsNumber,
-                        oldStatus: syncResult.oldStatus,
-                        newStatus: syncResult.newStatus,
+                        error: errorMessage,
                     });
                 }
-            } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-                console.error(`Failed to sync listing ${listing.mlsNumber}:`, error);
-
-                result.errors.push({
-                    listingId: listing.listingId,
-                    mlsNumber: listing.mlsNumber,
-                    error: errorMessage,
-                });
             }
+
+            // Log summary
+            console.log(`Status sync complete via direct implementation (fallback): ${result.updatedListings} updated, ${result.unpublishedPosts} posts unpublished, ${result.restoredListings} restored`);
+
+            return {
+                success: true,
+                message: `Synced ${result.totalListings} listings, ${result.updatedListings} updated`,
+                data: result,
+            };
         }
-
-        // Log summary
-        console.log(`Status sync complete: ${result.updatedListings} updated, ${result.unpublishedPosts} posts unpublished, ${result.restoredListings} restored`);
-
-        return {
-            success: true,
-            message: `Synced ${result.totalListings} listings, ${result.updatedListings} updated`,
-            data: result,
-        };
 
     } catch (error) {
         console.error('Sync MLS status error:', error);

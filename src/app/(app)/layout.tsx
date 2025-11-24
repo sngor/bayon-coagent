@@ -50,13 +50,14 @@ import {
 } from '@/components/ui/real-estate-icons';
 import Link from 'next/link';
 import { usePathname, useRouter, redirect } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useUser, useAuthMethods } from '@/aws/auth/use-user';
 import { PageTransition } from '@/components/page-transition';
 import { TooltipProvider } from '@/contexts/tooltip-context';
 import { AdminProvider, useAdmin } from '@/contexts/admin-context';
 import { AccessibilityProvider } from '@/contexts/accessibility-context';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { StickyHeaderProvider, useStickyHeader } from '@/hooks/use-sticky-header';
 
 import { SessionLoading } from '@/components/session-loading';
 import { FeedbackButton } from '@/components/feedback-button';
@@ -77,6 +78,22 @@ const allNavItems = [
 
 function AppLoadingScreen() {
   return <SessionLoading />;
+}
+
+function StickyHeaderTitle() {
+  const { headerInfo } = useStickyHeader();
+
+  if (!headerInfo.isVisible || !headerInfo.title) {
+    return null;
+  }
+
+  return (
+    <div className="animate-in fade-in slide-in-from-left-2 duration-200">
+      <h2 className="text-lg font-semibold font-headline truncate whitespace-nowrap">
+        {headerInfo.title}
+      </h2>
+    </div>
+  );
 }
 
 function NavigationItems() {
@@ -123,11 +140,7 @@ function NavigationItems() {
             tooltip={item.label}
           >
             <Link href={item.href}>
-              {item.customIcon ? (
-                <item.icon animated={false} className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
-              ) : (
-                <item.icon className="transition-transform duration-200 group-hover:scale-110" />
-              )}
+              <item.icon className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
               <span className="button-text-hover">{item.label}</span>
             </Link>
           </SidebarMenuButton>
@@ -242,10 +255,9 @@ function UserDropdownContent({ profile, user, userName, getInitials, handleSignO
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isMounted, setIsMounted] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { user, isUserLoading } = useUser();
   const { signOut } = useAuthMethods();
-  const [showStickyTitle, setShowStickyTitle] = useState(false);
-  const [pageTitle, setPageTitle] = useState<string>('');
 
   // Fetch user profile data using the same approach as dashboard
   const [profile, setProfile] = useState<any>(null);
@@ -297,13 +309,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setIsMounted(true);
   }, []);
 
-  // Temporarily disable title detection to prevent infinite re-renders
-  // TODO: Re-implement with a more stable approach
+  // Scroll detection for header border
   useEffect(() => {
-    // Reset title state on pathname change
-    setPageTitle('');
-    setShowStickyTitle(false);
-  }, [pathname]);
+    const handleScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      setIsScrolled(scrollTop > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -327,103 +342,101 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <TooltipProvider>
       <AdminProvider>
         <AccessibilityProvider>
-          <SidebarProvider>
-            <Sidebar collapsible="icon">
-              <SidebarHeader>
-                <div className="flex items-center justify-between gap-2">
-                  <Logo />
-                </div>
-              </SidebarHeader>
-              <SidebarContent>
-                <DynamicNavigation />
-              </SidebarContent>
-              <SidebarFooter>
-                <div className="space-y-3">
-                  {/* Feedback Button */}
-                  <div className="px-1">
-                    <FeedbackButton />
+          <StickyHeaderProvider>
+            <SidebarProvider>
+              <Sidebar collapsible="icon">
+                <SidebarHeader>
+                  <div className="flex items-center justify-between gap-2">
+                    <Logo />
                   </div>
-                </div>
-              </SidebarFooter>
-            </Sidebar>
-            <SidebarInset>
-              <header className="sticky top-0 z-10 flex h-20 items-center justify-between px-4 mx-3 mt-3 mb-0 bg-transparent backdrop-blur-xl">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  {isMounted && (
-                    <>
-                      <div className="md:hidden">
-                        <SidebarTrigger>
-                          <PanelLeft />
-                        </SidebarTrigger>
-                      </div>
-                      <div className="hidden md:block">
-                        <SidebarToggle tooltip="Toggle Sidebar" />
-                      </div>
-                    </>
-                  )}
-                  {/* Sticky Page Title - Temporarily disabled */}
-                  <div className="opacity-0 pointer-events-none">
-                    <h2 className="text-lg font-semibold font-headline truncate whitespace-nowrap">
-                      {pageTitle}
-                    </h2>
+                </SidebarHeader>
+                <SidebarContent>
+                  <DynamicNavigation />
+                </SidebarContent>
+                <SidebarFooter>
+                  <div className="space-y-3">
+                    {/* Feedback Button */}
+                    <div className="px-1">
+                      <FeedbackButton />
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {/* Admin Mode Badge */}
-                  <AdminModeBadge />
-                  {/* Notifications Button */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 rounded-full hover:bg-accent relative"
-                    asChild
-                  >
-                    <Link href="/notifications">
-                      <Bell className="h-5 w-5" />
-                      {/* Notification Badge - uncomment when you have unread notifications */}
-                      {/* <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-background" /> */}
-                      <span className="sr-only">Notifications</span>
-                    </Link>
-                  </Button>
-
-                  {/* User Menu */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="flex items-center gap-3 h-10 px-2 pr-3 rounded-full hover:bg-accent transition-colors"
-                      >
-                        <Avatar className="h-8 w-8 ring-2 ring-background shadow-sm">
-                          <AvatarImage src={profile?.photoURL} alt={userName} />
-                          <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-primary/20 to-primary/10 text-primary">
-                            {getInitials(userName)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="hidden sm:flex flex-col items-start min-w-0">
-                          <span className="text-sm font-medium leading-tight truncate max-w-[120px] button-text-hover">
-                            {firstName}
-                          </span>
-                          <span className="text-xs text-muted-foreground leading-tight mt-0.5">
-                            Agent
-                          </span>
+                </SidebarFooter>
+              </Sidebar>
+              <SidebarInset>
+                <header className={`sticky top-0 z-10 flex h-20 items-center justify-between px-6 -mx-4 bg-transparent backdrop-blur-xl transition-all duration-200 ${isScrolled ? 'border-b border-border/40' : ''}`}>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {isMounted && (
+                      <>
+                        <div className="md:hidden">
+                          <SidebarTrigger>
+                            <PanelLeft />
+                          </SidebarTrigger>
                         </div>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <UserDropdownContent
-                      profile={profile}
-                      user={user}
-                      userName={userName}
-                      getInitials={getInitials}
-                      handleSignOut={handleSignOut}
-                    />
-                  </DropdownMenu>
-                </div>
-              </header>
-              <main className="p-4 md:p-8 lg:p-10">
-                <PageTransition>{children}</PageTransition>
-              </main>
-            </SidebarInset>
-          </SidebarProvider>
+                        <div className="hidden md:block">
+                          <SidebarToggle tooltip="Toggle Sidebar" />
+                        </div>
+                      </>
+                    )}
+                    {/* Sticky Page Title */}
+                    <StickyHeaderTitle />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {/* Admin Mode Badge */}
+                    <AdminModeBadge />
+                    {/* Notifications Button */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 rounded-full hover:bg-accent relative"
+                      asChild
+                    >
+                      <Link href="/notifications">
+                        <Bell className="h-5 w-5" />
+                        {/* Notification Badge - uncomment when you have unread notifications */}
+                        {/* <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-background" /> */}
+                        <span className="sr-only">Notifications</span>
+                      </Link>
+                    </Button>
+
+                    {/* User Menu */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className="flex items-center gap-3 h-10 px-2 pr-3 rounded-full hover:bg-accent transition-colors"
+                        >
+                          <Avatar className="h-8 w-8 ring-2 ring-background shadow-sm">
+                            <AvatarImage src={profile?.photoURL} alt={userName} />
+                            <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-primary/20 to-primary/10 text-primary">
+                              {getInitials(userName)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="hidden sm:flex flex-col items-start min-w-0">
+                            <span className="text-sm font-medium leading-tight truncate max-w-[120px] button-text-hover">
+                              {firstName}
+                            </span>
+                            <span className="text-xs text-muted-foreground leading-tight mt-0.5">
+                              Agent
+                            </span>
+                          </div>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <UserDropdownContent
+                        profile={profile}
+                        user={user}
+                        userName={userName}
+                        getInitials={getInitials}
+                        handleSignOut={handleSignOut}
+                      />
+                    </DropdownMenu>
+                  </div>
+                </header>
+                <main className="p-4 md:p-8 lg:p-10">
+                  <PageTransition>{children}</PageTransition>
+                </main>
+              </SidebarInset>
+            </SidebarProvider>
+          </StickyHeaderProvider>
         </AccessibilityProvider>
       </AdminProvider>
     </TooltipProvider >

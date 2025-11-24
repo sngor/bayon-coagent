@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { HubTabs } from './hub-tabs';
 import { usePathname } from 'next/navigation';
 import { useMemo, memo, useRef, useEffect, useState } from 'react';
+import { useStickyHeader } from '@/hooks/use-sticky-header';
 
 // Static tabs that don't re-render
 const StaticHubTabs = memo(HubTabs);
@@ -22,6 +23,9 @@ export function HubLayout({
     const layoutRef = useRef<HTMLDivElement>(null);
     const headerRef = useRef<HTMLDivElement>(null);
     const [isHeaderCovered, setIsHeaderCovered] = useState(false);
+
+    // Use sticky header hook to sync with topbar
+    const { setHeaderInfo } = useStickyHeader();
 
     // Get the current hub path
     const hubPath = useMemo(() => {
@@ -51,7 +55,15 @@ export function HubLayout({
                 const [entry] = entries;
                 // Header is covered when it's not intersecting with the viewport
                 // We use a small threshold to trigger slightly before it's completely hidden
-                setIsHeaderCovered(!entry.isIntersecting);
+                const isCovered = !entry.isIntersecting;
+                setIsHeaderCovered(isCovered);
+
+                // Update sticky header state
+                setHeaderInfo({
+                    title,
+                    icon,
+                    isVisible: isCovered
+                });
             },
             {
                 // Trigger when header is 20px from being completely hidden
@@ -63,7 +75,14 @@ export function HubLayout({
         observer.observe(headerRef.current);
 
         return () => observer.disconnect();
-    }, []);
+    }, [title, icon, setHeaderInfo]);
+
+    // Clear sticky header when component unmounts
+    useEffect(() => {
+        return () => {
+            setHeaderInfo({ title: '', icon: undefined, isVisible: false });
+        };
+    }, [setHeaderInfo]);
 
     return (
         <div ref={layoutRef} className="space-y-6">

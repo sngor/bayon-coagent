@@ -331,6 +331,91 @@ export class DistributedTracer {
     }
 
     /**
+     * Parse trace header from incoming request
+     */
+    public parseTraceHeader(traceHeader: string): { traceId?: string; parentId?: string } | null {
+        if (!traceHeader) return null;
+
+        try {
+            // X-Ray trace header format: Root=1-5f8a1234-abcd1234efgh5678ijkl9012;Parent=53995c3f42cd8ad8;Sampled=1
+            const parts = traceHeader.split(';');
+            const result: { traceId?: string; parentId?: string } = {};
+
+            for (const part of parts) {
+                const [key, value] = part.split('=');
+                if (key === 'Root') {
+                    result.traceId = value;
+                } else if (key === 'Parent') {
+                    result.parentId = value;
+                }
+            }
+
+            return result;
+        } catch (error) {
+            console.warn('Failed to parse trace header:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Get trace header for outgoing requests
+     */
+    public getTraceHeader(): string | null {
+        if (!this.enabled) return null;
+
+        try {
+            if (!AWSXRay) return null;
+
+            const segment = AWSXRay.getSegment();
+            if (!segment) return null;
+
+            // Format: Root=1-5f8a1234-abcd1234efgh5678ijkl9012;Parent=53995c3f42cd8ad8;Sampled=1
+            return `Root=${segment.trace_id};Parent=${segment.id};Sampled=1`;
+        } catch (error) {
+            console.warn('Failed to get trace header:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Get current trace context
+     */
+    public getCurrentTraceContext(): TraceContext | null {
+        if (!this.enabled) return null;
+
+        try {
+            if (!AWSXRay) return null;
+
+            const segment = AWSXRay.getSegment();
+            if (!segment) return null;
+
+            return {
+                traceId: segment.trace_id,
+                segmentId: segment.id,
+                parentId: segment.parent_id,
+                correlationId: segment.metadata?.default?.['correlation.id'] || '',
+                serviceName: segment.name,
+                operationName: segment.annotations?.['operation.name'] || '',
+                userId: segment.annotations?.['user.id'],
+                requestId: segment.annotations?.['request.id'],
+            };
+        } catch (error) {
+            console.warn('Failed to get current trace context:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Start a subsegment
+     */
+    public async startSubsegment(
+        name: string,
+        options: SpanOptions = {}
+    ): Promise<any | null> {
+        return this.createSubsegment(name);
+    }
+
+    /**
      * Wrap an async function with tracing
      */
     public async traceAsync<T>(

@@ -17,7 +17,6 @@ exports.getErrorBoundaryState = getErrorBoundaryState;
 exports.isRetryableError = isRetryableError;
 exports.getErrorSeverity = getErrorSeverity;
 exports.shouldNotifyUser = shouldNotifyUser;
-const use_toast_1 = require("@/hooks/use-toast");
 var ErrorCategory;
 (function (ErrorCategory) {
     ErrorCategory["NETWORK"] = "network";
@@ -271,10 +270,10 @@ function handleError(error, options = {}) {
     if (showToast) {
         const isRecurring = isRecurringError(errorObj);
         if (isRecurring) {
-            (0, use_toast_1.showWarningToast)("Recurring Issue Detected", "This error has occurred multiple times. Please contact support for assistance.");
+            console.warn("Recurring Issue Detected:", "This error has occurred multiple times. Please contact support for assistance.");
         }
         else {
-            (0, use_toast_1.showErrorToast)(pattern.userMessage, pattern.suggestedActions[0]);
+            console.error("Error:", pattern.userMessage, pattern.suggestedActions[0]);
         }
     }
     return pattern;
@@ -311,7 +310,7 @@ function handleAuthError(error) {
 function handleValidationError(errors, showToast = true) {
     if (showToast) {
         const errorCount = Object.keys(errors).length;
-        (0, use_toast_1.showErrorToast)("Validation Error", `Please correct ${errorCount} field${errorCount > 1 ? "s" : ""} and try again.`);
+        console.error("Validation Error:", `Please correct ${errorCount} field${errorCount > 1 ? "s" : ""} and try again.`);
     }
     return {
         errors,
@@ -341,7 +340,7 @@ function createRecoveryActions(pattern, customActions) {
     if (pattern.category === ErrorCategory.NOT_FOUND) {
         defaultActions.push({
             label: "Go to Dashboard",
-            action: () => (window.location.href = "/dashboard"),
+            action: () => { window.location.href = "/dashboard"; },
             primary: true,
         });
     }
@@ -349,7 +348,7 @@ function createRecoveryActions(pattern, customActions) {
         pattern.category === ErrorCategory.AUTHORIZATION) {
         defaultActions.push({
             label: "Sign In",
-            action: () => (window.location.href = "/login"),
+            action: () => { window.location.href = "/login"; },
             primary: true,
         });
     }
