@@ -53,6 +53,29 @@ function getAWSConfig() {
             region: process.env.BEDROCK_REGION || region,
             endpoint: undefined,
         },
+        ses: {
+            region: process.env.SES_REGION || region,
+            fromEmail: process.env.SES_FROM_EMAIL || 'noreply@bayoncoagent.com',
+            replyToEmail: process.env.SES_REPLY_TO_EMAIL,
+            endpoint: isLocal ? 'http://localhost:4566' : undefined,
+        },
+        sns: {
+            region: process.env.SNS_REGION || region,
+            platformApplicationArn: process.env.SNS_PLATFORM_APPLICATION_ARN,
+            endpoint: isLocal ? 'http://localhost:4566' : undefined,
+        },
+        apiGateway: {
+            mainApiUrl: process.env.MAIN_API_URL,
+            aiServiceApiUrl: process.env.AI_SERVICE_API_URL,
+            integrationServiceApiUrl: process.env.INTEGRATION_SERVICE_API_URL,
+            backgroundServiceApiUrl: process.env.BACKGROUND_SERVICE_API_URL,
+            adminServiceApiUrl: process.env.ADMIN_SERVICE_API_URL,
+            mainRestApiId: process.env.MAIN_REST_API_ID,
+            aiServiceApiId: process.env.AI_SERVICE_API_ID,
+            integrationServiceApiId: process.env.INTEGRATION_SERVICE_API_ID,
+            backgroundServiceApiId: process.env.BACKGROUND_SERVICE_API_ID,
+            adminServiceApiId: process.env.ADMIN_SERVICE_API_ID,
+        },
     };
 }
 function getAWSCredentials() {

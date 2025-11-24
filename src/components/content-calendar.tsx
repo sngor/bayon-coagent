@@ -64,6 +64,12 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ContentDetailModal } from '@/components/content-detail-modal';
 import { ConcurrentContentStack } from '@/components/concurrent-content-stack';
+import { ContentCalendarSkeleton } from '@/components/ui/skeleton-loading';
+import { EmptyCalendarState, EmptySearchResultsState } from '@/components/ui/empty-states';
+import { NetworkErrorState, DataLoadErrorState } from '@/components/ui/error-states';
+import { ContentScheduledNotification } from '@/components/ui/success-notifications';
+import { SkipLink, LiveRegion, VisuallyHidden, useAnnouncer } from '@/components/ui/accessibility-helpers';
+import { ResponsiveContainer, touchSpacing } from '@/components/ui/responsive-helpers';
 import {
     ScheduledContent,
     PublishChannelType,
@@ -461,6 +467,7 @@ export function ContentCalendar({
     className
 }: ContentCalendarProps) {
     const isMobile = useIsMobile();
+    const { announce, AnnouncerComponent } = useAnnouncer();
 
     // ==================== State ====================
     const [currentDate, setCurrentDate] = useState(initialDate);
@@ -489,6 +496,11 @@ export function ContentCalendar({
     const [modalOptimalTimes, setModalOptimalTimes] = useState<OptimalTime[]>([]);
     const [modalROIData, setModalROIData] = useState<ROIAnalytics | undefined>(undefined);
     const [modalLoading, setModalLoading] = useState(false);
+
+    // UI state
+    const [error, setError] = useState<string | null>(null);
+    const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+    const [lastScheduledContent, setLastScheduledContent] = useState<ScheduledContent | null>(null);
 
     // Configure sensors for drag and drop
     const sensors = useSensors(
@@ -717,6 +729,7 @@ export function ContentCalendar({
 
             try {
                 setIsRescheduling(true);
+                setError(null);
 
                 // Create new publish time maintaining the original time
                 const newPublishTime = new Date(newDate);
@@ -730,13 +743,16 @@ export function ContentCalendar({
                 // Call the update handler with optimistic UI
                 await onScheduleUpdate?.(draggedContent.id, newPublishTime);
 
-                // Success feedback could be added here
-                console.log(`Content rescheduled from ${originalDate.toDateString()} to ${newDate.toDateString()}`);
+                // Success feedback
+                announce(`Content rescheduled to ${newDate.toDateString()}`, 'polite');
+                setLastScheduledContent({ ...draggedContent, publishTime: newPublishTime });
+                setShowSuccessNotification(true);
 
             } catch (error) {
                 console.error('Failed to reschedule content:', error);
-                // Error handling - could show toast notification
-                // The UI will automatically revert due to optimistic updates
+                const errorMessage = error instanceof Error ? error.message : 'Failed to reschedule content';
+                setError(errorMessage);
+                announce(`Error: ${errorMessage}`, 'assertive');
             } finally {
                 setIsRescheduling(false);
             }
@@ -793,6 +809,38 @@ export function ContentCalendar({
             </span>
         </Badge>
     );
+
+    // ==================== Loading and Error States ====================
+    if (loading) {
+        return <ContentCalendarSkeleton className={className} />;
+    }
+
+    if (error) {
+        return (
+            <ResponsiveContainer className={className}>
+                <DataLoadErrorState
+                    dataType="calendar content"
+                    onRetry={() => {
+                        setError(null);
+                        window.location.reload();
+                    }}
+                    errorCode="CAL_001"
+                />
+            </ResponsiveContainer>
+        );
+    }
+
+    // ==================== Empty State ====================
+    if (scheduledContent.length === 0 && !loading) {
+        return (
+            <ResponsiveContainer className={className}>
+                <EmptyCalendarState
+                    onAction={() => window.open('/studio/write', '_blank')}
+                />
+                <AnnouncerComponent />
+            </ResponsiveContainer>
+        );
+    }
 
     // ==================== Mobile View ====================
     if (isMobile) {
@@ -934,6 +982,18 @@ export function ContentCalendar({
                     roiData={modalROIData}
                     loading={modalLoading}
                 />
+
+                {/* Success Notification */}
+                <ContentScheduledNotification
+                    isVisible={showSuccessNotification}
+                    onClose={() => setShowSuccessNotification(false)}
+                    scheduledTime={lastScheduledContent?.publishTime}
+                    channelCount={lastScheduledContent?.channels.length}
+                    contentTitle={lastScheduledContent?.title}
+                />
+
+                {/* Accessibility Components */}
+                <AnnouncerComponent />
             </DndContext>
         );
     }
@@ -948,7 +1008,9 @@ export function ContentCalendar({
             onDragEnd={handleDragEnd}
             onDragCancel={handleDragCancel}
         >
-            <div className={cn("space-y-6", className)}>
+            <ResponsiveContainer className={cn("space-y-6", className)}>
+                {/* Skip Link for Accessibility */}
+                <SkipLink href="#calendar-grid">Skip to calendar grid</SkipLink>
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -1061,11 +1123,11 @@ export function ContentCalendar({
                 </div>
 
                 {/* Calendar Grid */}
-                <div className="border rounded-lg overflow-hidden">
+                <div id="calendar-grid" className="border rounded-lg overflow-hidden" role="grid" aria-label="Content calendar">
                     {/* Weekday Headers */}
-                    <div className="grid grid-cols-7 border-b bg-muted/30">
+                    <div className="grid grid-cols-7 border-b bg-muted/30" role="row">
                         {WEEKDAYS.map(day => (
-                            <div key={day} className="p-4 text-center font-medium text-sm">
+                            <div key={day} className="p-4 text-center font-medium text-sm" role="columnheader">
                                 {day}
                             </div>
                         ))}
@@ -1119,13 +1181,22 @@ export function ContentCalendar({
                     </Card>
                 )}
 
-                {/* Loading State */}
-                {loading && (
-                    <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-                    </div>
-                )}
-            </div>
+                {/* Success Notification */}
+                <ContentScheduledNotification
+                    isVisible={showSuccessNotification}
+                    onClose={() => setShowSuccessNotification(false)}
+                    scheduledTime={lastScheduledContent?.publishTime}
+                    channelCount={lastScheduledContent?.channels.length}
+                    contentTitle={lastScheduledContent?.title}
+                />
+
+                {/* Accessibility Components */}
+                <AnnouncerComponent />
+                <LiveRegion>
+                    {isRescheduling && "Rescheduling content..."}
+                    {error && `Error: ${error}`}
+                </LiveRegion>
+            </ResponsiveContainer>
 
             {/* Drag Overlay */}
             <DragOverlay>

@@ -2749,3 +2749,507 @@ export async function getNewsletterTemplates(params: {
         };
     }
 }
+
+/**
+ * Test newsletter template compatibility with major ESPs
+ * Requirements 12.3: ESP compatibility testing and validation
+ */
+export async function testESPCompatibility(params: {
+    html: string;
+    plainText: string;
+    espList?: ('mailchimp' | 'constant-contact' | 'sendgrid' | 'campaign-monitor')[];
+}): Promise<{
+    success: boolean;
+    results?: {
+        esp: string;
+        compatible: boolean;
+        issues: ValidationResult[];
+        recommendations: string[];
+    }[];
+    error?: string;
+}> {
+    try {
+        const esps = params.espList || ['mailchimp', 'constant-contact', 'sendgrid', 'campaign-monitor'];
+        const results = [];
+
+        for (const esp of esps) {
+            const compatibility = await testSingleESPCompatibility(params.html, params.plainText, esp);
+            results.push(compatibility);
+        }
+
+        return { success: true, results };
+    } catch (error) {
+        console.error('Failed to test ESP compatibility:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to test ESP compatibility'
+        };
+    }
+}
+
+/**
+ * Test compatibility with a single ESP
+ */
+async function testSingleESPCompatibility(
+    html: string,
+    plainText: string,
+    esp: string
+): Promise<{
+    esp: string;
+    compatible: boolean;
+    issues: ValidationResult[];
+    recommendations: string[];
+}> {
+    const issues: ValidationResult[] = [];
+    const recommendations: string[] = [];
+
+    switch (esp) {
+        case 'mailchimp':
+            // Mailchimp-specific validation
+            if (html.includes('position: absolute') || html.includes('position: fixed')) {
+                issues.push({
+                    type: 'error',
+                    category: 'css',
+                    message: 'Mailchimp does not support absolute or fixed positioning',
+                    suggestion: 'Use table-based layouts instead'
+                });
+            }
+
+            if (html.includes('background-attachment')) {
+                issues.push({
+                    type: 'warning',
+                    category: 'css',
+                    message: 'Background-attachment may not work in Mailchimp',
+                    suggestion: 'Use solid background colors or simple images'
+                });
+            }
+
+            if (!html.includes('*|MC:SUBJECT|*')) {
+                recommendations.push('Consider using Mailchimp merge tags like *|MC:SUBJECT|* for dynamic content');
+            }
+            break;
+
+        case 'constant-contact':
+            // Constant Contact validation
+            if (html.includes('display: flex') || html.includes('display: grid')) {
+                issues.push({
+                    type: 'error',
+                    category: 'css',
+                    message: 'Constant Contact has limited support for flexbox and grid',
+                    suggestion: 'Use table-based layouts for better compatibility'
+                });
+            }
+
+            if (html.length > 100000) {
+                issues.push({
+                    type: 'warning',
+                    category: 'html',
+                    message: 'HTML size may exceed Constant Contact limits',
+                    suggestion: 'Optimize HTML size to under 100KB'
+                });
+            }
+            break;
+
+        case 'sendgrid':
+            // SendGrid validation
+            if (!html.includes('<!DOCTYPE html>')) {
+                issues.push({
+                    type: 'warning',
+                    category: 'html',
+                    message: 'Missing DOCTYPE declaration',
+                    suggestion: 'Add <!DOCTYPE html> for better SendGrid compatibility'
+                });
+            }
+
+            if (html.includes('javascript:') || html.includes('<script')) {
+                issues.push({
+                    type: 'error',
+                    category: 'html',
+                    message: 'JavaScript is not allowed in SendGrid emails',
+                    suggestion: 'Remove all JavaScript code'
+                });
+            }
+            break;
+
+        case 'campaign-monitor':
+            // Campaign Monitor validation
+            if (html.includes('margin:') && !html.includes('padding:')) {
+                issues.push({
+                    type: 'warning',
+                    category: 'css',
+                    message: 'Campaign Monitor has inconsistent margin support',
+                    suggestion: 'Use padding instead of margins for spacing'
+                });
+            }
+
+            if (html.includes('font-family:') && !html.includes('Arial') && !html.includes('Helvetica')) {
+                recommendations.push('Campaign Monitor works best with web-safe fonts like Arial or Helvetica');
+            }
+            break;
+    }
+
+    // Common ESP validations
+    if (html.includes('<form')) {
+        issues.push({
+            type: 'error',
+            category: 'html',
+            message: 'Forms are not supported in most email clients',
+            suggestion: 'Use links to external forms instead'
+        });
+    }
+
+    if (html.includes('video') || html.includes('audio')) {
+        issues.push({
+            type: 'error',
+            category: 'html',
+            message: 'Video and audio elements are not supported in email',
+            suggestion: 'Use static images with play buttons linking to external content'
+        });
+    }
+
+    const compatible = issues.filter(i => i.type === 'error').length === 0;
+
+    return {
+        esp,
+        compatible,
+        issues,
+        recommendations
+    };
+}
+
+/**
+ * Generate newsletter preview for different email clients
+ * Requirements 12.3: Preview compatibility across email clients
+ */
+export async function generateNewsletterPreviews(params: {
+    html: string;
+    clients?: ('outlook' | 'gmail' | 'apple-mail' | 'yahoo' | 'thunderbird')[];
+}): Promise<{
+    success: boolean;
+    previews?: {
+        client: string;
+        previewHtml: string;
+        warnings: string[];
+    }[];
+    error?: string;
+}> {
+    try {
+        const clients = params.clients || ['outlook', 'gmail', 'apple-mail', 'yahoo', 'thunderbird'];
+        const previews = [];
+
+        for (const client of clients) {
+            const preview = generateClientSpecificPreview(params.html, client);
+            previews.push(preview);
+        }
+
+        return { success: true, previews };
+    } catch (error) {
+        console.error('Failed to generate newsletter previews:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to generate newsletter previews'
+        };
+    }
+}
+
+/**
+ * Generate client-specific preview with adjustments
+ */
+function generateClientSpecificPreview(html: string, client: string): {
+    client: string;
+    previewHtml: string;
+    warnings: string[];
+} {
+    let previewHtml = html;
+    const warnings: string[] = [];
+
+    switch (client) {
+        case 'outlook':
+            // Outlook-specific adjustments
+            previewHtml = previewHtml.replace(/border-radius:\s*\d+px/g, '');
+            warnings.push('Border-radius removed for Outlook compatibility');
+
+            // Add Outlook conditional comments
+            previewHtml = previewHtml.replace(
+                /<table/g,
+                '<!--[if mso]><table cellpadding="0" cellspacing="0" border="0"><![endif]--><table'
+            );
+            break;
+
+        case 'gmail':
+            // Gmail strips out <style> tags in some cases
+            if (previewHtml.includes('<style>')) {
+                warnings.push('Gmail may strip <style> tags - ensure all styles are inline');
+            }
+
+            // Gmail has issues with certain CSS properties
+            if (previewHtml.includes('display: block')) {
+                warnings.push('Gmail may not respect display: block on some elements');
+            }
+            break;
+
+        case 'apple-mail':
+            // Apple Mail generally has good CSS support
+            if (previewHtml.includes('font-size') && !previewHtml.includes('line-height')) {
+                warnings.push('Consider adding line-height for better text rendering in Apple Mail');
+            }
+            break;
+
+        case 'yahoo':
+            // Yahoo has limited CSS support
+            previewHtml = previewHtml.replace(/box-shadow:[^;]+;/g, '');
+            warnings.push('Box-shadow removed for Yahoo Mail compatibility');
+            break;
+
+        case 'thunderbird':
+            // Thunderbird is generally standards-compliant
+            if (previewHtml.includes('webkit-')) {
+                warnings.push('WebKit-specific CSS properties may not work in Thunderbird');
+            }
+            break;
+    }
+
+    return {
+        client,
+        previewHtml,
+        warnings
+    };
+}
+
+/**
+ * Optimize newsletter HTML for better deliverability
+ * Requirements 12.3: Email-safe HTML/CSS optimization
+ */
+export async function optimizeNewsletterHTML(params: {
+    html: string;
+    optimizations?: ('inline-css' | 'remove-unused-css' | 'optimize-images' | 'minify')[];
+}): Promise<{
+    success: boolean;
+    optimizedHtml?: string;
+    optimizations?: string[];
+    error?: string;
+}> {
+    try {
+        let optimizedHtml = params.html;
+        const appliedOptimizations: string[] = [];
+        const optimizations = params.optimizations || ['inline-css', 'remove-unused-css', 'optimize-images'];
+
+        for (const optimization of optimizations) {
+            switch (optimization) {
+                case 'inline-css':
+                    optimizedHtml = inlineCSS(optimizedHtml);
+                    appliedOptimizations.push('Moved CSS styles inline for better email client support');
+                    break;
+
+                case 'remove-unused-css':
+                    optimizedHtml = removeUnusedCSS(optimizedHtml);
+                    appliedOptimizations.push('Removed unused CSS rules');
+                    break;
+
+                case 'optimize-images':
+                    optimizedHtml = optimizeImageTags(optimizedHtml);
+                    appliedOptimizations.push('Optimized image tags for email clients');
+                    break;
+
+                case 'minify':
+                    optimizedHtml = minifyHTML(optimizedHtml);
+                    appliedOptimizations.push('Minified HTML to reduce size');
+                    break;
+            }
+        }
+
+        return {
+            success: true,
+            optimizedHtml,
+            optimizations: appliedOptimizations
+        };
+    } catch (error) {
+        console.error('Failed to optimize newsletter HTML:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to optimize newsletter HTML'
+        };
+    }
+}
+
+/**
+ * Move CSS styles inline (simplified implementation)
+ */
+function inlineCSS(html: string): string {
+    // This is a simplified implementation
+    // In production, you'd use a library like 'juice' or 'inline-css'
+
+    // Extract styles from <style> tags
+    const styleRegex = /<style[^>]*>([\s\S]*?)<\/style>/gi;
+    const styles = [];
+    let match;
+
+    while ((match = styleRegex.exec(html)) !== null) {
+        styles.push(match[1]);
+    }
+
+    // Remove <style> tags
+    html = html.replace(styleRegex, '');
+
+    // Apply basic inline styles (simplified)
+    if (styles.length > 0) {
+        // This would need a proper CSS parser in production
+        html = html.replace(/(<table[^>]*>)/g, '$1');
+        html = html.replace(/(<td[^>]*>)/g, '$1');
+    }
+
+    return html;
+}
+
+/**
+ * Remove unused CSS rules
+ */
+function removeUnusedCSS(html: string): string {
+    // Simplified implementation - remove common unused CSS
+    const unusedPatterns = [
+        /\.unused-class\s*{[^}]*}/g,
+        /@media\s+print\s*{[^}]*}/g,
+        /\/\*[\s\S]*?\*\//g // Remove CSS comments
+    ];
+
+    for (const pattern of unusedPatterns) {
+        html = html.replace(pattern, '');
+    }
+
+    return html;
+}
+
+/**
+ * Optimize image tags for email clients
+ */
+function optimizeImageTags(html: string): string {
+    // Add display: block to images
+    html = html.replace(/<img([^>]*?)>/g, (match, attrs) => {
+        if (!attrs.includes('style=')) {
+            return `<img${attrs} style="display: block; max-width: 100%; height: auto;">`;
+        } else {
+            // Add to existing style
+            return match.replace(/style="([^"]*)"/, (styleMatch, styles) => {
+                if (!styles.includes('display:') && !styles.includes('display ')) {
+                    return `style="${styles}; display: block; max-width: 100%; height: auto;"`;
+                }
+                return styleMatch;
+            });
+        }
+    });
+
+    return html;
+}
+
+/**
+ * Minify HTML (simplified implementation)
+ */
+function minifyHTML(html: string): string {
+    return html
+        .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+        .replace(/>\s+</g, '><') // Remove spaces between tags
+        .replace(/\s+>/g, '>') // Remove spaces before closing brackets
+        .replace(/<!--[\s\S]*?-->/g, '') // Remove HTML comments (except conditional)
+        .trim();
+}
+
+/**
+ * Validate newsletter content for spam filters
+ * Requirements: Ensure newsletter content passes spam filters
+ */
+export async function validateSpamScore(params: {
+    html: string;
+    plainText: string;
+    subject: string;
+}): Promise<{
+    success: boolean;
+    spamScore?: number;
+    issues?: {
+        type: 'high-risk' | 'medium-risk' | 'low-risk';
+        message: string;
+        suggestion: string;
+    }[];
+    error?: string;
+}> {
+    try {
+        const issues = [];
+        let spamScore = 0;
+
+        // Check subject line
+        const spamWords = [
+            'free', 'urgent', 'act now', 'limited time', 'click here',
+            'make money', 'guarantee', 'no obligation', 'risk free'
+        ];
+
+        const subjectLower = params.subject.toLowerCase();
+        for (const word of spamWords) {
+            if (subjectLower.includes(word)) {
+                spamScore += 2;
+                issues.push({
+                    type: 'medium-risk',
+                    message: `Subject contains spam trigger word: "${word}"`,
+                    suggestion: 'Consider rephrasing the subject line to avoid spam filters'
+                });
+            }
+        }
+
+        // Check for excessive capitalization
+        const capsRatio = (params.subject.match(/[A-Z]/g) || []).length / params.subject.length;
+        if (capsRatio > 0.5) {
+            spamScore += 3;
+            issues.push({
+                type: 'high-risk',
+                message: 'Subject line has excessive capitalization',
+                suggestion: 'Use normal sentence case in subject lines'
+            });
+        }
+
+        // Check HTML content
+        const htmlLower = params.html.toLowerCase();
+
+        // Check image-to-text ratio
+        const imageCount = (params.html.match(/<img/g) || []).length;
+        const textLength = params.plainText.length;
+
+        if (imageCount > 0 && textLength < 100) {
+            spamScore += 4;
+            issues.push({
+                type: 'high-risk',
+                message: 'High image-to-text ratio detected',
+                suggestion: 'Add more text content to balance images'
+            });
+        }
+
+        // Check for suspicious links
+        if (htmlLower.includes('bit.ly') || htmlLower.includes('tinyurl')) {
+            spamScore += 2;
+            issues.push({
+                type: 'medium-risk',
+                message: 'Shortened URLs detected',
+                suggestion: 'Use full URLs for better deliverability'
+            });
+        }
+
+        // Check for missing unsubscribe
+        if (!htmlLower.includes('unsubscribe')) {
+            spamScore += 5;
+            issues.push({
+                type: 'high-risk',
+                message: 'No unsubscribe link found',
+                suggestion: 'Add a clear unsubscribe link (required by law)'
+            });
+        }
+
+        return {
+            success: true,
+            spamScore,
+            issues
+        };
+    } catch (error) {
+        console.error('Failed to validate spam score:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to validate spam score'
+        };
+    }
+}

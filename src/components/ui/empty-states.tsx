@@ -1,543 +1,385 @@
-import * as React from "react";
-import { ArrowRight, LucideIcon, CheckCircle2, Circle, AlertCircle, Lightbulb, TrendingUp } from "lucide-react";
-import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils";
-import { Card, CardContent } from "./card";
-import { Button } from "./button";
-import { Progress } from "./progress";
-import { Badge } from "./badge";
+'use client';
+
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+    Calendar,
+    BarChart3,
+    FileText,
+    Users,
+    Plus,
+    Sparkles,
+    Target,
+    TrendingUp,
+    Clock,
+    Settings,
+    Wifi,
+    BookOpen,
+    Image,
+    Share2,
+    Zap,
+    Search,
+    Filter,
+    RefreshCw,
+    ArrowRight,
+    PlayCircle,
+    CheckCircle2,
+    Lightbulb
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 /**
- * Empty State Variants
- * Different visual styles for different contexts
+ * Empty state components with actionable guidance for new users
+ * Following WCAG 2.1 AA accessibility standards
  */
-const emptyStateVariants = cva(
-    "text-center py-12",
-    {
-        variants: {
-            variant: {
-                default: "",
-                subtle: "py-8",
-                prominent: "py-16",
-            },
-        },
-        defaultVariants: {
-            variant: "default",
-        },
-    }
-);
 
-/**
- * Empty State Props
- */
-export interface EmptyStateProps
-    extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof emptyStateVariants> {
-    icon: React.ReactNode;
-    title: string;
-    description: string;
-    action?: {
-        label: string;
-        onClick: () => void;
-        variant?: "default" | "outline" | "ai";
-    };
-    secondaryAction?: {
-        label: string;
-        onClick: () => void;
-    };
+interface EmptyStateProps {
+    className?: string;
+    onAction?: () => void;
+    actionLabel?: string;
+    secondaryAction?: () => void;
+    secondaryActionLabel?: string;
 }
 
-/**
- * Empty State Component
- * Displays when no data exists with clear guidance on next steps
- * 
- * Validates Requirements 3.3, 19.4:
- * - 3.3: WHEN no data exists for a feature THEN the Application SHALL display an informative empty state with clear next steps
- * - 19.4: WHEN no data exists THEN the Application SHALL explain how to get started
- */
-export const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
-    (
-        {
-            icon,
-            title,
-            description,
-            action,
-            secondaryAction,
-            variant,
-            className,
-            ...props
-        },
-        ref
-    ) => {
-        return (
-            <Card
-                ref={ref}
-                className={cn(emptyStateVariants({ variant }), className)}
-                {...props}
-            >
-                <CardContent className="space-y-4">
-                    {/* Icon container */}
-                    <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                        {icon}
+export function EmptyCalendarState({ className, onAction, actionLabel = "Schedule Your First Post" }: EmptyStateProps) {
+    return (
+        <Card className={cn("border-dashed border-2", className)}>
+            <CardContent className="flex flex-col items-center justify-center py-16 px-8 text-center">
+                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+                    <Calendar className="h-10 w-10 text-primary" />
+                </div>
+
+                <h3 className="text-xl font-semibold mb-2">Your Content Calendar is Empty</h3>
+                <p className="text-muted-foreground mb-6 max-w-md">
+                    Start building your content strategy by scheduling your first post.
+                    Use AI-powered optimal timing to maximize engagement.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                    <Button onClick={onAction} className="min-w-[180px]">
+                        <Plus className="h-4 w-4 mr-2" />
+                        {actionLabel}
+                    </Button>
+                    <Button variant="outline" onClick={() => window.open('/studio/write', '_blank')}>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Create Content First
+                    </Button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-muted-foreground max-w-2xl">
+                    <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-primary" />
+                        <span>AI optimal timing</span>
                     </div>
-
-                    {/* Text content */}
-                    <div className="space-y-2">
-                        <h3 className="font-headline text-lg font-semibold text-foreground">
-                            {title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                            {description}
-                        </p>
+                    <div className="flex items-center gap-2">
+                        <Target className="h-4 w-4 text-primary" />
+                        <span>Multi-platform publishing</span>
                     </div>
-
-                    {/* Action buttons */}
-                    {(action || secondaryAction) && (
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-6">
-                            {action && (
-                                <Button
-                                    onClick={action.onClick}
-                                    size="lg"
-                                    variant={action.variant || "default"}
-                                    className="w-full sm:w-auto"
-                                >
-                                    {action.label}
-                                    <ArrowRight className="ml-2 h-4 w-4" />
-                                </Button>
-                            )}
-                            {secondaryAction && (
-                                <Button
-                                    onClick={secondaryAction.onClick}
-                                    size="lg"
-                                    variant="outline"
-                                    className="w-full sm:w-auto"
-                                >
-                                    {secondaryAction.label}
-                                </Button>
-                            )}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-        );
-    }
-);
-
-EmptyState.displayName = "EmptyState";
-
-/**
- * Preset Empty State Variants for Common Contexts
- */
-
-/**
- * No Data Empty State
- * Used when a feature has no data yet
- */
-interface NoDataEmptyStateProps {
-    title?: string;
-    description?: string;
-    icon: React.ReactNode;
-    action?: EmptyStateProps["action"];
-    className?: string;
-}
-
-export function NoDataEmptyState({
-    title = "No data yet",
-    description = "Get started by creating your first item.",
-    icon,
-    action,
-    className,
-}: NoDataEmptyStateProps) {
-    return (
-        <EmptyState
-            variant="default"
-            icon={icon}
-            title={title}
-            description={description}
-            action={action}
-            className={className}
-        />
-    );
-}
-
-/**
- * No Results Empty State
- * Used when a search or filter returns no results
- */
-interface NoResultsEmptyStateProps {
-    searchTerm?: string;
-    onClearSearch?: () => void;
-    icon: React.ReactNode;
-    className?: string;
-}
-
-export function NoResultsEmptyState({
-    searchTerm,
-    onClearSearch,
-    icon,
-    className,
-}: NoResultsEmptyStateProps) {
-    const title = searchTerm
-        ? `No results for "${searchTerm}"`
-        : "No results found";
-    const description = searchTerm
-        ? "Try adjusting your search or filters to find what you're looking for."
-        : "Try a different search term or adjust your filters.";
-
-    return (
-        <EmptyState
-            variant="subtle"
-            icon={icon}
-            title={title}
-            description={description}
-            action={
-                onClearSearch
-                    ? {
-                        label: "Clear search",
-                        onClick: onClearSearch,
-                        variant: "outline",
-                    }
-                    : undefined
-            }
-            className={className}
-        />
-    );
-}
-
-/**
- * First Time Use Empty State
- * Used for onboarding and first-time feature use
- */
-interface FirstTimeUseEmptyStateProps {
-    title: string;
-    description: string;
-    icon: React.ReactNode;
-    action: EmptyStateProps["action"];
-    secondaryAction?: EmptyStateProps["secondaryAction"];
-    className?: string;
-}
-
-export function FirstTimeUseEmptyState({
-    title,
-    description,
-    icon,
-    action,
-    secondaryAction,
-    className,
-}: FirstTimeUseEmptyStateProps) {
-    return (
-        <EmptyState
-            variant="prominent"
-            icon={icon}
-            title={title}
-            description={description}
-            action={action}
-            secondaryAction={secondaryAction}
-            className={className}
-        />
-    );
-}
-
-// ============================================================================
-// Intelligent Empty States with Contextual Guidance
-// Requirements: 27.2, 27.4, 27.7
-// ============================================================================
-
-/**
- * Smart Recommendation Interface
- */
-export interface SmartRecommendation {
-    id: string;
-    title: string;
-    description: string;
-    href: string;
-    priority: 'high' | 'medium' | 'low';
-    icon?: React.ReactNode;
-    estimatedTime?: string;
-    prerequisitesMet: boolean;
-    prerequisites?: Array<{
-        description: string;
-        met: boolean;
-        actionHref?: string;
-        actionLabel?: string;
-    }>;
-}
-
-/**
- * Profile Completion Status Interface
- */
-export interface ProfileCompletionStatus {
-    percentage: number;
-    isComplete: boolean;
-    hasRequiredFields: boolean;
-    missingFields: Array<{
-        key: string;
-        label: string;
-        benefit: string;
-        required: boolean;
-    }>;
-    nextField?: {
-        key: string;
-        label: string;
-        benefit: string;
-        required: boolean;
-    };
-}
-
-/**
- * Intelligent Empty State Props
- * Validates Requirements 27.2, 27.4, 27.7:
- * - 27.2: WHEN viewing dashboards THEN the Application SHALL use AI to highlight actionable insights
- * - 27.4: WHERE data is missing THEN the Application SHALL proactively guide the Agent to complete their profile
- * - 27.7: WHEN viewing content THEN the Application SHALL use progressive disclosure to reduce cognitive load
- */
-export interface IntelligentEmptyStateProps {
-    icon: React.ReactNode;
-    title: string;
-    description: string;
-    recommendations?: SmartRecommendation[];
-    profileCompletion?: ProfileCompletionStatus;
-    contextualTips?: string[];
-    primaryAction?: {
-        label: string;
-        onClick: () => void;
-        variant?: "default" | "outline" | "ai";
-    };
-    className?: string;
-}
-
-/**
- * Intelligent Empty State Component
- * Provides contextual guidance, smart recommendations, and visual progress indicators
- */
-export function IntelligentEmptyState({
-    icon,
-    title,
-    description,
-    recommendations = [],
-    profileCompletion,
-    contextualTips = [],
-    primaryAction,
-    className,
-}: IntelligentEmptyStateProps) {
-    // Filter recommendations by priority
-    const highPriorityRecs = recommendations.filter(r => r.priority === 'high' && r.prerequisitesMet);
-    const mediumPriorityRecs = recommendations.filter(r => r.priority === 'medium' && r.prerequisitesMet);
-    const blockedRecs = recommendations.filter(r => !r.prerequisitesMet);
-
-    return (
-        <Card className={cn("text-center py-12", className)}>
-            <CardContent className="space-y-8">
-                {/* Icon and Title */}
-                <div className="space-y-4">
-                    <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                        {icon}
-                    </div>
-                    <div className="space-y-2">
-                        <h3 className="font-headline text-2xl font-bold text-foreground">
-                            {title}
-                        </h3>
-                        <p className="text-base text-muted-foreground max-w-2xl mx-auto">
-                            {description}
-                        </p>
+                    <div className="flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-primary" />
+                        <span>Performance tracking</span>
                     </div>
                 </div>
 
-                {/* Profile Completion Progress */}
-                {profileCompletion && !profileCompletion.hasRequiredFields && (
-                    <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-6 text-left max-w-2xl mx-auto">
-                        <div className="flex items-start gap-3 mb-4">
-                            <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                            <div className="flex-1">
-                                <h4 className="font-headline font-semibold text-amber-900 dark:text-amber-100 mb-1">
-                                    Complete Your Profile to Get Started
-                                </h4>
-                                <p className="text-sm text-amber-700 dark:text-amber-300">
-                                    Fill in required fields to unlock AI-powered features
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-amber-700 dark:text-amber-300">
-                                    Profile Completion
-                                </span>
-                                <span className="font-semibold text-amber-900 dark:text-amber-100">
-                                    {profileCompletion.percentage}%
-                                </span>
-                            </div>
-                            <Progress
-                                value={profileCompletion.percentage}
-                                className="h-2"
-                            />
-
-                            {profileCompletion.nextField && (
-                                <div className="pt-2">
-                                    <p className="text-sm text-amber-700 dark:text-amber-300">
-                                        <span className="font-medium">Next step:</span> Add your {profileCompletion.nextField.label.toLowerCase()}
-                                    </p>
-                                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                                        {profileCompletion.nextField.benefit}
-                                    </p>
-                                </div>
-                            )}
+                <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg max-w-md">
+                    <div className="flex items-start gap-3">
+                        <Lightbulb className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-left">
+                            <p className="text-sm font-medium text-blue-900 mb-1">Pro Tip</p>
+                            <p className="text-sm text-blue-800">
+                                Schedule content in batches to maintain consistent posting and save time.
+                            </p>
                         </div>
                     </div>
-                )}
-
-                {/* High Priority Recommendations */}
-                {highPriorityRecs.length > 0 && (
-                    <div className="max-w-2xl mx-auto text-left space-y-3">
-                        <div className="flex items-center gap-2 mb-4">
-                            <TrendingUp className="w-5 h-5 text-primary" />
-                            <h4 className="font-headline font-semibold text-foreground">
-                                Recommended Next Steps
-                            </h4>
-                        </div>
-                        {highPriorityRecs.map((rec, index) => (
-                            <RecommendationCard key={rec.id} recommendation={rec} index={index} />
-                        ))}
-                    </div>
-                )}
-
-                {/* Medium Priority Recommendations */}
-                {mediumPriorityRecs.length > 0 && highPriorityRecs.length === 0 && (
-                    <div className="max-w-2xl mx-auto text-left space-y-3">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Lightbulb className="w-5 h-5 text-primary" />
-                            <h4 className="font-headline font-semibold text-foreground">
-                                Suggestions
-                            </h4>
-                        </div>
-                        {mediumPriorityRecs.slice(0, 3).map((rec, index) => (
-                            <RecommendationCard key={rec.id} recommendation={rec} index={index} />
-                        ))}
-                    </div>
-                )}
-
-                {/* Blocked Recommendations (Prerequisites Not Met) */}
-                {blockedRecs.length > 0 && (
-                    <div className="max-w-2xl mx-auto text-left">
-                        <details className="group">
-                            <summary className="cursor-pointer list-none">
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                                    <Circle className="w-4 h-4 group-open:hidden" />
-                                    <CheckCircle2 className="w-4 h-4 hidden group-open:block" />
-                                    <span>View locked features ({blockedRecs.length})</span>
-                                </div>
-                            </summary>
-                            <div className="mt-3 space-y-2 pl-6">
-                                {blockedRecs.map((rec) => (
-                                    <div key={rec.id} className="text-sm text-muted-foreground">
-                                        <p className="font-medium">{rec.title}</p>
-                                        {rec.prerequisites && rec.prerequisites.length > 0 && (
-                                            <ul className="mt-1 space-y-1 text-xs">
-                                                {rec.prerequisites.map((prereq, idx) => (
-                                                    <li key={idx} className="flex items-start gap-2">
-                                                        <span className="text-destructive">•</span>
-                                                        <span>Requires: {prereq.description}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </details>
-                    </div>
-                )}
-
-                {/* Contextual Tips */}
-                {contextualTips.length > 0 && (
-                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 text-left max-w-2xl mx-auto">
-                        <div className="flex items-start gap-3">
-                            <Lightbulb className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                            <div className="flex-1">
-                                <h4 className="font-headline font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                                    Tips to Get Started
-                                </h4>
-                                <ul className="space-y-2">
-                                    {contextualTips.map((tip, index) => (
-                                        <li key={index} className="text-sm text-blue-700 dark:text-blue-300 flex items-start gap-2">
-                                            <span className="text-blue-500 mt-0.5">•</span>
-                                            <span>{tip}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Primary Action */}
-                {primaryAction && (
-                    <div className="pt-4">
-                        <Button
-                            onClick={primaryAction.onClick}
-                            size="lg"
-                            variant={primaryAction.variant || "default"}
-                            className="w-full sm:w-auto"
-                        >
-                            {primaryAction.label}
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                    </div>
-                )}
+                </div>
             </CardContent>
         </Card>
     );
 }
 
-/**
- * Recommendation Card Component
- * Displays individual recommendation with priority and estimated time
- */
-function RecommendationCard({
-    recommendation,
-    index
-}: {
-    recommendation: SmartRecommendation;
-    index: number;
-}) {
-    const priorityColors = {
-        high: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
-        medium: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
-        low: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-    };
-
+export function EmptyAnalyticsState({ className, onAction, actionLabel = "Connect Social Accounts" }: EmptyStateProps) {
     return (
-        <a
-            href={recommendation.href}
-            className="block group"
-        >
-            <div className="flex items-start gap-4 p-4 rounded-lg border border-border bg-card hover:bg-accent/50 hover:border-primary/50 transition-all duration-200">
-                {/* Number Badge */}
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary font-semibold flex items-center justify-center text-sm group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                    {index + 1}
+        <Card className={cn("border-dashed border-2", className)}>
+            <CardContent className="flex flex-col items-center justify-center py-16 px-8 text-center">
+                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+                    <BarChart3 className="h-10 w-10 text-primary" />
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                        <h5 className="font-headline font-semibold text-foreground group-hover:text-primary transition-colors">
-                            {recommendation.title}
-                        </h5>
-                        {recommendation.estimatedTime && (
-                            <Badge variant="secondary" className="text-xs flex-shrink-0">
-                                {recommendation.estimatedTime}
-                            </Badge>
-                        )}
+                <h3 className="text-xl font-semibold mb-2">No Analytics Data Available</h3>
+                <p className="text-muted-foreground mb-6 max-w-md">
+                    Connect your social media accounts and publish content to start tracking
+                    performance metrics, engagement rates, and ROI.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                    <Button onClick={onAction} className="min-w-[180px]">
+                        <Wifi className="h-4 w-4 mr-2" />
+                        {actionLabel}
+                    </Button>
+                    <Button variant="outline" onClick={() => window.open('/library/calendar', '_blank')}>
+                        <Calendar className="h-4 w-4 mr-2" />
+                        View Calendar
+                    </Button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-muted-foreground max-w-2xl">
+                    <div className="flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-primary" />
+                        <span>Engagement tracking</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                        {recommendation.description}
-                    </p>
+                    <div className="flex items-center gap-2">
+                        <Target className="h-4 w-4 text-primary" />
+                        <span>A/B testing</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4 text-primary" />
+                        <span>ROI analysis</span>
+                    </div>
                 </div>
 
-                {/* Arrow */}
-                <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all flex-shrink-0" />
-            </div>
-        </a>
+                <div className="mt-8 p-4 bg-green-50 border border-green-200 rounded-lg max-w-md">
+                    <div className="flex items-start gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-left">
+                            <p className="text-sm font-medium text-green-900 mb-1">Getting Started</p>
+                            <p className="text-sm text-green-800">
+                                Analytics data will appear within 24 hours after your first post is published.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
     );
 }
 
+export function EmptyTemplateLibraryState({
+    className,
+    onAction,
+    actionLabel = "Create Your First Template",
+    secondaryAction,
+    secondaryActionLabel = "Browse Seasonal Templates"
+}: EmptyStateProps) {
+    return (
+        <Card className={cn("border-dashed border-2", className)}>
+            <CardContent className="flex flex-col items-center justify-center py-16 px-8 text-center">
+                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+                    <FileText className="h-10 w-10 text-primary" />
+                </div>
+
+                <h3 className="text-xl font-semibold mb-2">No Templates Saved Yet</h3>
+                <p className="text-muted-foreground mb-6 max-w-md">
+                    Save time by creating reusable templates for your most successful content formats.
+                    Share templates with your team for consistent branding.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                    <Button onClick={onAction} className="min-w-[180px]">
+                        <Plus className="h-4 w-4 mr-2" />
+                        {actionLabel}
+                    </Button>
+                    <Button variant="outline" onClick={secondaryAction}>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        {secondaryActionLabel}
+                    </Button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-muted-foreground max-w-2xl">
+                    <div className="flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-primary" />
+                        <span>Quick content creation</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-primary" />
+                        <span>Team collaboration</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Settings className="h-4 w-4 text-primary" />
+                        <span>Brand consistency</span>
+                    </div>
+                </div>
+
+                <div className="mt-8 p-4 bg-purple-50 border border-purple-200 rounded-lg max-w-md">
+                    <div className="flex items-start gap-3">
+                        <BookOpen className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-left">
+                            <p className="text-sm font-medium text-purple-900 mb-1">Template Ideas</p>
+                            <p className="text-sm text-purple-800">
+                                Market updates, listing highlights, client testimonials, and seasonal campaigns.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+export function EmptyContentListState({
+    className,
+    onAction,
+    actionLabel = "Create Your First Content"
+}: EmptyStateProps) {
+    return (
+        <Card className={cn("border-dashed border-2", className)}>
+            <CardContent className="flex flex-col items-center justify-center py-16 px-8 text-center">
+                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+                    <Image className="h-10 w-10 text-primary" />
+                </div>
+
+                <h3 className="text-xl font-semibold mb-2">No Content Created Yet</h3>
+                <p className="text-muted-foreground mb-6 max-w-md">
+                    Start creating engaging content for your real estate business.
+                    Use AI-powered tools to generate blog posts, social media content, and more.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                    <Button onClick={onAction} className="min-w-[180px]">
+                        <Plus className="h-4 w-4 mr-2" />
+                        {actionLabel}
+                    </Button>
+                    <Button variant="outline" onClick={() => window.open('/studio', '_blank')}>
+                        <PlayCircle className="h-4 w-4 mr-2" />
+                        Explore Studio
+                    </Button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-muted-foreground max-w-2xl">
+                    <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                        <span>AI-powered writing</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Image className="h-4 w-4 text-primary" />
+                        <span>Image enhancement</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Share2 className="h-4 w-4 text-primary" />
+                        <span>Multi-platform sharing</span>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+export function EmptySearchResultsState({
+    className,
+    searchQuery,
+    onClearFilters,
+    onRetry
+}: {
+    className?: string;
+    searchQuery?: string;
+    onClearFilters?: () => void;
+    onRetry?: () => void;
+}) {
+    return (
+        <Card className={cn("border-dashed border-2", className)}>
+            <CardContent className="flex flex-col items-center justify-center py-12 px-8 text-center">
+                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                    <Search className="h-8 w-8 text-muted-foreground" />
+                </div>
+
+                <h3 className="text-lg font-semibold mb-2">No Results Found</h3>
+                <p className="text-muted-foreground mb-4 max-w-md">
+                    {searchQuery
+                        ? `No results found for "${searchQuery}". Try adjusting your search terms or filters.`
+                        : "No items match your current filters. Try adjusting your criteria."
+                    }
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-2">
+                    {onClearFilters && (
+                        <Button variant="outline" onClick={onClearFilters}>
+                            <Filter className="h-4 w-4 mr-2" />
+                            Clear Filters
+                        </Button>
+                    )}
+                    {onRetry && (
+                        <Button variant="outline" onClick={onRetry}>
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Try Again
+                        </Button>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+export function EmptyABTestsState({ className, onAction, actionLabel = "Create A/B Test" }: EmptyStateProps) {
+    return (
+        <Card className={cn("border-dashed border-2", className)}>
+            <CardContent className="flex flex-col items-center justify-center py-16 px-8 text-center">
+                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+                    <Target className="h-10 w-10 text-primary" />
+                </div>
+
+                <h3 className="text-xl font-semibold mb-2">No A/B Tests Running</h3>
+                <p className="text-muted-foreground mb-6 max-w-md">
+                    Optimize your content performance by testing different variations.
+                    Compare headlines, images, and messaging to find what works best.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                    <Button onClick={onAction} className="min-w-[180px]">
+                        <Plus className="h-4 w-4 mr-2" />
+                        {actionLabel}
+                    </Button>
+                    <Button variant="outline" onClick={() => window.open('/help/ab-testing', '_blank')}>
+                        <BookOpen className="h-4 w-4 mr-2" />
+                        Learn About A/B Testing
+                    </Button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-muted-foreground max-w-2xl">
+                    <div className="flex items-center gap-2">
+                        <Target className="h-4 w-4 text-primary" />
+                        <span>Statistical significance</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-primary" />
+                        <span>Performance optimization</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4 text-primary" />
+                        <span>Data-driven decisions</span>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+export function NoConnectionsState({ className, onAction, actionLabel = "Connect Accounts" }: EmptyStateProps) {
+    return (
+        <Card className={cn("border-dashed border-2", className)}>
+            <CardContent className="flex flex-col items-center justify-center py-12 px-8 text-center">
+                <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mb-4">
+                    <Wifi className="h-8 w-8 text-orange-600" />
+                </div>
+
+                <h3 className="text-lg font-semibold mb-2">No Social Media Accounts Connected</h3>
+                <p className="text-muted-foreground mb-4 max-w-md">
+                    Connect your social media accounts to start scheduling and publishing content
+                    across multiple platforms.
+                </p>
+
+                <Button onClick={onAction} className="mb-4">
+                    <Plus className="h-4 w-4 mr-2" />
+                    {actionLabel}
+                </Button>
+
+                <div className="flex flex-wrap justify-center gap-2">
+                    <Badge variant="outline">Facebook</Badge>
+                    <Badge variant="outline">Instagram</Badge>
+                    <Badge variant="outline">LinkedIn</Badge>
+                    <Badge variant="outline">Twitter/X</Badge>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}

@@ -34,6 +34,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser } from '@/aws/auth';
+import { SchedulingModalSkeleton } from '@/components/ui/skeleton-loading';
+import { NoConnectionsState } from '@/components/ui/empty-states';
+import { NetworkErrorState, ValidationErrorState } from '@/components/ui/error-states';
+import { ContentScheduledNotification } from '@/components/ui/success-notifications';
+import { FocusTrap, VisuallyHidden, useAnnouncer } from '@/components/ui/accessibility-helpers';
+import { ResponsiveModal, TouchOptimizedButton, touchSpacing } from '@/components/ui/responsive-helpers';
 import {
     Clock,
     Calendar as CalendarIcon,
@@ -759,6 +765,7 @@ export function SchedulingModal({
 }: SchedulingModalProps) {
     const { user } = useUser();
     const isMobile = useIsMobile();
+    const { announce, AnnouncerComponent } = useAnnouncer();
 
     // ==================== State ====================
     const [currentStep, setCurrentStep] = useState<'channels' | 'timing' | 'preview'>('channels');
@@ -768,6 +775,10 @@ export function SchedulingModal({
     const [optimalTimes, setOptimalTimes] = useState<OptimalTime[]>(MOCK_OPTIMAL_TIMES);
     const [isScheduling, setIsScheduling] = useState(false);
     const [isLoadingOptimalTimes, setIsLoadingOptimalTimes] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [validationErrors, setValidationErrors] = useState<string[]>([]);
+    const [showSuccessNotification, setShowSuccessNotification] = useState(false);
+    const [scheduledContentResult, setScheduledContentResult] = useState<any>(null);
 
     // ==================== Computed Values ====================
     const steps: SchedulingStep[] = [
@@ -856,9 +867,18 @@ export function SchedulingModal({
     }, []);
 
     const handleSchedule = async () => {
-        if (!user || !publishDateTime || selectedChannels.length === 0) return;
+        if (!user || !publishDateTime || selectedChannels.length === 0) {
+            const errors = [];
+            if (!publishDateTime) errors.push('Please select a date and time');
+            if (selectedChannels.length === 0) errors.push('Please select at least one channel');
+            setValidationErrors(errors);
+            return;
+        }
 
         setIsScheduling(true);
+        setError(null);
+        setValidationErrors([]);
+
         try {
             const formData = new FormData();
             formData.append('contentId', contentData.contentId);
@@ -877,81 +897,157 @@ export function SchedulingModal({
             const result = await scheduleContentAction(null, formData);
 
             if (result.success) {
-                toast({
-                    title: 'Content Scheduled!',
-                    description: `Your content will be published on ${formatDateTime(publishDateTime)}`
-                });
+                announce(`Content scheduled successfully for ${formatDateTime(publishDateTime)}`, 'polite');
 
-                onScheduled?.(result.data);
-                onClose();
+                setScheduledContentResult(result.data);
+                setShowSuccessNotification(true);
+
+                // Close modal after showing success
+                setTimeout(() => {
+                    onScheduled?.(result.data);
+                    onClose();
+                }, 2000);
             } else {
                 throw new Error(result.error || 'Failed to schedule content');
             }
         } catch (error) {
             console.error('Failed to schedule content:', error);
-            toast({
-                variant: 'destructive',
-                title: 'Scheduling Failed',
-                description: error instanceof Error ? error.message : 'Please try again.'
-            });
+            const errorMessage = error instanceof Error ? error.message : 'Failed to schedule content. Please try again.';
+            setError(errorMessage);
+            announce(`Error: ${errorMessage}`, 'assertive');
         } finally {
             setIsScheduling(false);
         }
     };
 
     // ==================== Render ====================
+    if (validationErrors.length > 0) {
+        return (
+            <ResponsiveModal isOpen={isOpen} onClose={onClose} className={className}>
+                <ValidationErrorState
+                    errors={validationErrors}
+                    onGoBack={() => setValidationErrors([])}
+                    errorCode="SCHED_VAL_001"
+                />
+            </ResponsiveModal>
+        );
+    }
+
+    if (error) {
+        return (
+            <ResponsiveModal isOpen={isOpen} onClose={onClose} className={className}>
+                <NetworkErrorState
+                    onRetry={() => {
+                        setError(null);
+                        handleSchedule();
+                    }}
+                    onGoBack={() => setError(null)}
+                    errorCode="SCHED_NET_001"
+                />
+            </ResponsiveModal>
+        );
+    }
+
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className={cn(
-                "max-w-4xl max-h-[90vh] overflow-y-auto",
-                isMobile && "max-w-[95vw] h-[95vh]",
-                className
-            )}>
-                <DialogHeader className="space-y-3">
-                    <DialogTitle className="text-xl font-semibold">
-                        Schedule Content
-                    </DialogTitle>
-                    <DialogDescription>
-                        Schedule your content to be published across your social media channels at the optimal time.
-                    </DialogDescription>
-                </DialogHeader>
+        <>
+            <Dialog open={isOpen} onOpenChange={onClose}>
+                <DialogContent className={cn(
+                    "max-w-4xl max-h-[90vh] overflow-y-auto",
+                    isMobile && "max-w-[95vw] h-[95vh]",
+                    className
+                )}>
+                    <FocusTrap isActive={isOpen}>
+                        <DialogHeader className="space-y-3">
+                            <DialogTitle className="text-xl font-semibold">
+                                Schedule Content
+                            </DialogTitle>
+                            <DialogDescription>
+                                Schedule your content to be published across your social media channels at the optimal time.
+                            </DialogDescription>
+                        </DialogHeader>
 
-                <div className="space-y-6">
-                    <SchedulingStepIndicator steps={steps} currentStep={currentStep} />
+                        <div className="space-y-6">
+                            {isLoadingOptimalTimes ? (
+                                <SchedulingModalSkeleton />
+                            ) : (
+                                <>
+                                    <SchedulingStepIndicator steps={steps} currentStep={currentStep} />
 
-                    {currentStep === 'channels' && (
-                        <ChannelSelectionStep
-                            channels={connectedChannels}
-                            onChannelToggle={handleChannelToggle}
-                            onNext={() => setCurrentStep('timing')}
-                        />
-                    )}
+                                    {currentStep === 'channels' && (
+                                        <>
+                                            {connectedChannels.length === 0 ? (
+                                                <NoConnectionsState
+                                                    onAction={() => window.open('/settings/connections', '_blank')}
+                                                />
+                                            ) : (
+                                                <ChannelSelectionStep
+                                                    channels={connectedChannels}
+                                                    onChannelToggle={handleChannelToggle}
+                                                    onNext={() => {
+                                                        setCurrentStep('timing');
+                                                        announce('Moved to timing selection step', 'polite');
+                                                    }}
+                                                />
+                                            )}
+                                        </>
+                                    )}
 
-                    {currentStep === 'timing' && (
-                        <TimingSelectionStep
-                            selectedDate={selectedDate}
-                            onDateChange={setSelectedDate}
-                            selectedTime={selectedTime}
-                            onTimeChange={setSelectedTime}
-                            optimalTimes={optimalTimes}
-                            onNext={() => setCurrentStep('preview')}
-                            onBack={() => setCurrentStep('channels')}
-                            contentType={contentData.contentType}
-                        />
-                    )}
+                                    {currentStep === 'timing' && (
+                                        <TimingSelectionStep
+                                            selectedDate={selectedDate}
+                                            onDateChange={setSelectedDate}
+                                            selectedTime={selectedTime}
+                                            onTimeChange={setSelectedTime}
+                                            optimalTimes={optimalTimes}
+                                            onNext={() => {
+                                                setCurrentStep('preview');
+                                                announce('Moved to preview step', 'polite');
+                                            }}
+                                            onBack={() => {
+                                                setCurrentStep('channels');
+                                                announce('Moved back to channel selection', 'polite');
+                                            }}
+                                            contentType={contentData.contentType}
+                                        />
+                                    )}
 
-                    {currentStep === 'preview' && publishDateTime && (
-                        <PreviewStep
-                            contentData={contentData}
-                            selectedChannels={selectedChannels}
-                            publishDateTime={publishDateTime}
-                            onSchedule={handleSchedule}
-                            onBack={() => setCurrentStep('timing')}
-                            isScheduling={isScheduling}
-                        />
-                    )}
-                </div>
-            </DialogContent>
-        </Dialog>
+                                    {currentStep === 'preview' && publishDateTime && (
+                                        <PreviewStep
+                                            contentData={contentData}
+                                            selectedChannels={selectedChannels}
+                                            publishDateTime={publishDateTime}
+                                            onSchedule={handleSchedule}
+                                            onBack={() => {
+                                                setCurrentStep('timing');
+                                                announce('Moved back to timing selection', 'polite');
+                                            }}
+                                            isScheduling={isScheduling}
+                                        />
+                                    )}
+                                </>
+                            )}
+                        </div>
+
+                        <VisuallyHidden>
+                            <div aria-live="polite" aria-atomic="true">
+                                {isScheduling && "Scheduling content, please wait..."}
+                            </div>
+                        </VisuallyHidden>
+                    </FocusTrap>
+                </DialogContent>
+            </Dialog>
+
+            {/* Success Notification */}
+            <ContentScheduledNotification
+                isVisible={showSuccessNotification}
+                onClose={() => setShowSuccessNotification(false)}
+                scheduledTime={publishDateTime}
+                channelCount={selectedChannels.length}
+                contentTitle={contentData.title}
+            />
+
+            {/* Accessibility Components */}
+            <AnnouncerComponent />
+        </>
     );
 }

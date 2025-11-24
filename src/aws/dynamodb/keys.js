@@ -39,6 +39,20 @@ exports.getTrendIndicatorsKeys = getTrendIndicatorsKeys;
 exports.getTargetAreaKeys = getTargetAreaKeys;
 exports.getPriceHistoryKeys = getPriceHistoryKeys;
 exports.getListingSnapshotKeys = getListingSnapshotKeys;
+exports.getNotificationPreferencesKeys = getNotificationPreferencesKeys;
+exports.getPushTokenKeys = getPushTokenKeys;
+exports.getSyncOperationKeys = getSyncOperationKeys;
+exports.getMarketStatsKeys = getMarketStatsKeys;
+exports.getOpenHouseSessionKeys = getOpenHouseSessionKeys;
+exports.getMeetingPrepKeys = getMeetingPrepKeys;
+exports.getPropertyComparisonKeys = getPropertyComparisonKeys;
+exports.getScheduledContentKeys = getScheduledContentKeys;
+exports.getAnalyticsKeys = getAnalyticsKeys;
+exports.getABTestKeys = getABTestKeys;
+exports.getTemplateKeys = getTemplateKeys;
+exports.getSharedTemplateKeys = getSharedTemplateKeys;
+exports.getROIKeys = getROIKeys;
+exports.getOptimalTimesKeys = getOptimalTimesKeys;
 function getUserProfileKeys(userId) {
     return {
         PK: `USER#${userId}`,
@@ -283,5 +297,110 @@ function getListingSnapshotKeys(userId, mlsNumber) {
     return {
         PK: `USER#${userId}`,
         SK: `LISTING_SNAPSHOT#${mlsNumber}`,
+    };
+}
+function getNotificationPreferencesKeys(userId) {
+    return {
+        PK: `USER#${userId}`,
+        SK: 'NOTIFICATIONPREFS',
+    };
+}
+function getPushTokenKeys(userId, deviceId) {
+    return {
+        PK: `USER#${userId}`,
+        SK: `PUSH_TOKEN#${deviceId}`,
+    };
+}
+function getSyncOperationKeys(userId, operationId) {
+    return {
+        PK: `USER#${userId}`,
+        SK: `SYNC#${operationId}`,
+    };
+}
+function getMarketStatsKeys(userId, location) {
+    return {
+        PK: `USER#${userId}`,
+        SK: `MARKETSTATS#${location}`,
+    };
+}
+function getOpenHouseSessionKeys(userId, sessionId) {
+    return {
+        PK: `USER#${userId}`,
+        SK: `OPENHOUSE#${sessionId}`,
+    };
+}
+function getMeetingPrepKeys(userId, prepId) {
+    return {
+        PK: `USER#${userId}`,
+        SK: `MEETINGPREP#${prepId}`,
+    };
+}
+function getPropertyComparisonKeys(userId, comparisonId) {
+    return {
+        PK: `USER#${userId}`,
+        SK: `COMPARISON#${comparisonId}`,
+    };
+}
+function getScheduledContentKeys(userId, scheduleId, status, publishTime) {
+    const keys = {
+        PK: `USER#${userId}`,
+        SK: `SCHEDULE#${scheduleId}`,
+    };
+    if (status) {
+        keys.GSI2PK = `SCHEDULE#${status}`;
+    }
+    if (publishTime) {
+        keys.GSI2SK = `TIME#${publishTime}`;
+    }
+    return keys;
+}
+function getAnalyticsKeys(userId, contentId, channel, contentType, publishDate) {
+    const keys = {
+        PK: `USER#${userId}`,
+        SK: `ANALYTICS#${contentId}#${channel}`,
+    };
+    if (contentType) {
+        keys.GSI3PK = `ANALYTICS#${contentType}`;
+    }
+    if (publishDate) {
+        keys.GSI3SK = `DATE#${publishDate}`;
+    }
+    return keys;
+}
+function getABTestKeys(userId, testId) {
+    return {
+        PK: `USER#${userId}`,
+        SK: `ABTEST#${testId}`,
+    };
+}
+function getTemplateKeys(userId, templateId, contentType, name) {
+    const keys = {
+        PK: `USER#${userId}`,
+        SK: `TEMPLATE#${templateId}`,
+    };
+    if (contentType) {
+        keys.GSI4PK = `TEMPLATE#${contentType}`;
+    }
+    if (name) {
+        keys.GSI4SK = `NAME#${name}`;
+    }
+    return keys;
+}
+function getSharedTemplateKeys(brokerageId, templateId) {
+    return {
+        PK: `BROKERAGE#${brokerageId}`,
+        SK: `TEMPLATE#${templateId}`,
+    };
+}
+function getROIKeys(userId, contentId, eventId) {
+    return {
+        PK: `USER#${userId}`,
+        SK: `ROI#${contentId}#${eventId}`,
+    };
+}
+function getOptimalTimesKeys(userId, channel, contentType) {
+    return {
+        PK: `USER#${userId}`,
+        SK: `OPTIMAL#${channel}#${contentType}`,
     };
 }

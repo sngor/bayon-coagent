@@ -1,9 +1,10 @@
 /**
  * AWS Bedrock Module
  * 
- * Exports the Bedrock client and related utilities for AI operations
+ * Exports the Bedrock client, enhanced multi-agent architecture, and related utilities for AI operations
  */
 
+// Core Bedrock Client
 export {
   BedrockClient,
   BedrockError,
@@ -13,8 +14,106 @@ export {
   type InvokeOptions,
   type InvokeStreamOptions,
   type RetryConfig,
+  type ImageContent,
 } from './client';
 
+// Flow Base and Utilities
+export {
+  defineFlow,
+  definePrompt,
+  MODEL_CONFIGS,
+  BEDROCK_MODELS,
+  formatPromptValue,
+  invokeStream,
+  mergeFlowOptions,
+  type AIFlow,
+  type FlowOptions,
+  type FlowExecutionOptions,
+} from './flow-base';
+
+// Enhanced Multi-Agent Architecture
+export {
+  getAgentCore,
+  resetAgentCore,
+  AgentCore,
+  type AgentStrand,
+  type AgentCapabilities,
+  type AgentStrandState,
+  type AgentMemory,
+  type AgentMetrics,
+  type AllocationStrategy,
+} from './agent-core';
+
+export {
+  DataAnalystStrand,
+  ContentGeneratorStrand,
+  MarketForecasterStrand,
+  createStrandInstance,
+} from './agent-strands';
+
+export {
+  getEnhancedWorkflowOrchestrator,
+  resetEnhancedWorkflowOrchestrator,
+  EnhancedWorkflowOrchestrator,
+  type EnhancedWorkflowResult,
+} from './enhanced-orchestrator';
+
+// Enhanced Integration Layer
+export {
+  Research,
+  Content,
+  Market,
+  FlowManager,
+  type EnhancedFlowOptions,
+} from './enhanced-integration';
+
+// Enhanced Flows
+export {
+  executeEnhancedResearchAgent,
+  runEnhancedResearch,
+  type EnhancedResearchAgentInput,
+  type EnhancedResearchAgentOutput,
+} from './flows/enhanced-research-agent';
+
+// Legacy Orchestration (for backward compatibility)
+export {
+  getWorkflowOrchestrator,
+  resetWorkflowOrchestrator,
+  WorkflowOrchestrator,
+  type WorkflowExecutionResult,
+} from './orchestrator';
+
+// Worker Protocol
+export {
+  createWorkerTask,
+  createSuccessResult,
+  createErrorResult,
+  validateWorkerTask,
+  validateWorkerResult,
+  isSuccessResult,
+  isErrorResult,
+  type WorkerTask,
+  type WorkerResult,
+  type WorkerAgentType,
+  type WorkerError,
+  type TaskStatus,
+} from './worker-protocol';
+
+// Enhanced Schemas
+export type {
+  EnhancedAgentProfile,
+  EnhancedContext,
+  EnhancedDataAnalystInput,
+  EnhancedDataAnalystOutput,
+  EnhancedContentGeneratorInput,
+  EnhancedContentGeneratorOutput,
+  EnhancedMarketForecasterInput,
+  EnhancedMarketForecasterOutput,
+  WorkflowCoordination,
+  EnhancedWorkflowResult as EnhancedWorkflowResultSchema,
+} from '@/ai/schemas/enhanced-workflow-schemas';
+
+// Existing Services and Utilities
 export {
   ExecutionLogger,
   createExecutionLogger,
@@ -73,5 +172,3 @@ export {
   type OptimizationConfig,
   type OptimizationResult,
 } from './efficiency-optimizer';
-
-export type { ImageContent } from './client';

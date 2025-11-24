@@ -113,34 +113,8 @@ export function ImageUploader({
         return { valid: true };
     }, []);
 
-    // Handle file selection
-    const handleFileSelect = useCallback(
-        (file: File) => {
-            setError(null);
-            setSuggestions([]);
-            setUploadedImageId(null);
-
-            // Validate file (Requirement 1.2, 1.3)
-            const validation = validateFile(file);
-            if (!validation.valid) {
-                setError(validation.error!);
-                onUploadError(validation.error!);
-                return;
-            }
-
-            setSelectedFile(file);
-
-            // Create preview URL
-            const url = URL.createObjectURL(file);
-            setPreviewUrl(url);
-        },
-        [validateFile, onUploadError]
-    );
-
-    // Handle file upload
-    const handleUpload = useCallback(async () => {
-        if (!selectedFile) return;
-
+    // Handle auto-upload immediately after file selection
+    const handleAutoUpload = useCallback(async (file: File) => {
         setIsUploading(true);
         setUploadProgress(0);
         setError(null);
@@ -159,7 +133,7 @@ export function ImageUploader({
 
             // Create form data
             const formData = new FormData();
-            formData.append('file', selectedFile);
+            formData.append('file', file);
             formData.append('userId', userId);
 
             // Upload image via API route (Requirement 1.4)
@@ -197,7 +171,40 @@ export function ImageUploader({
         } finally {
             setIsUploading(false);
         }
-    }, [selectedFile, userId, onUploadComplete, onUploadError]);
+    }, [userId, onUploadError]);
+
+    // Handle manual upload (kept for backward compatibility)
+    const handleUpload = useCallback(async () => {
+        if (!selectedFile) return;
+        await handleAutoUpload(selectedFile);
+    }, [selectedFile, handleAutoUpload]);
+
+    // Handle file selection with auto-upload
+    const handleFileSelect = useCallback(
+        async (file: File) => {
+            setError(null);
+            setSuggestions([]);
+            setUploadedImageId(null);
+
+            // Validate file (Requirement 1.2, 1.3)
+            const validation = validateFile(file);
+            if (!validation.valid) {
+                setError(validation.error!);
+                onUploadError(validation.error!);
+                return;
+            }
+
+            setSelectedFile(file);
+
+            // Create preview URL
+            const url = URL.createObjectURL(file);
+            setPreviewUrl(url);
+
+            // Auto-upload immediately after selection
+            await handleAutoUpload(file);
+        },
+        [validateFile, onUploadError, handleAutoUpload]
+    );
 
     // Handle drag events
     const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -404,16 +411,12 @@ export function ImageUploader({
                             </div>
                         )}
 
-                        {/* Upload button */}
-                        {!uploadedImageId && !isUploading && (
-                            <Button
-                                onClick={handleUpload}
-                                className="w-full"
-                                size="lg"
-                            >
-                                <Upload className="h-4 w-4 mr-2" />
-                                Upload Image
-                            </Button>
+                        {/* Auto-upload message */}
+                        {selectedFile && !uploadedImageId && !isUploading && (
+                            <div className="text-center text-sm text-muted-foreground">
+                                <Upload className="h-4 w-4 mx-auto mb-1" />
+                                Image selected - uploading automatically...
+                            </div>
                         )}
 
                         {/* Edit Type Selection - shown after upload */}

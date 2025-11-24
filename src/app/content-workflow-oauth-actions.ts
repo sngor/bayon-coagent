@@ -375,3 +375,78 @@ export async function refreshConnectionToken(
         };
     }
 }
+
+/**
+ * Get comprehensive analytics health status for all platforms
+ * Enhanced monitoring for content workflow features
+ * 
+ * @returns Health status for all connected platforms
+ */
+export async function getAnalyticsHealthStatus(): Promise<ActionResponse<{
+    platforms: Array<{
+        platform: Platform;
+        isConnected: boolean;
+        hasAnalyticsAccess: boolean;
+        lastValidated?: number;
+        healthScore: number;
+        issues: string[];
+    }>;
+    overallHealth: number;
+    recommendations: string[];
+}>> {
+    try {
+        // Get current user
+        const user = await getCurrentUser();
+        if (!user) {
+            return {
+                success: false,
+                error: 'User not authenticated',
+            };
+        }
+
+        // Get OAuth manager and health status
+        const manager = getOAuthConnectionManager();
+        const healthStatus = await manager.getAnalyticsHealthStatus(user.id);
+
+        // Generate recommendations based on health status
+        const recommendations: string[] = [];
+
+        if (healthStatus.overallHealth < 50) {
+            recommendations.push('Consider reconnecting your social media accounts for better analytics access');
+        }
+
+        const disconnectedPlatforms = healthStatus.platforms.filter(p => !p.isConnected);
+        if (disconnectedPlatforms.length > 0) {
+            recommendations.push(`Connect ${disconnectedPlatforms.map(p => p.platform).join(', ')} to expand your analytics coverage`);
+        }
+
+        const expiredTokens = healthStatus.platforms.filter(p =>
+            p.isConnected && p.issues.some(issue => issue.includes('expired'))
+        );
+        if (expiredTokens.length > 0) {
+            recommendations.push(`Refresh tokens for ${expiredTokens.map(p => p.platform).join(', ')} to restore analytics access`);
+        }
+
+        const limitedAnalytics = healthStatus.platforms.filter(p =>
+            p.isConnected && !p.hasAnalyticsAccess
+        );
+        if (limitedAnalytics.length > 0) {
+            recommendations.push(`Reconnect ${limitedAnalytics.map(p => p.platform).join(', ')} with analytics permissions for full functionality`);
+        }
+
+        return {
+            success: true,
+            data: {
+                ...healthStatus,
+                recommendations,
+            },
+            message: `Analytics health status retrieved (${healthStatus.overallHealth}% healthy)`,
+        };
+    } catch (error) {
+        console.error('Failed to get analytics health status:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to get health status',
+        };
+    }
+}

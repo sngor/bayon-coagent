@@ -25,6 +25,7 @@ Globals:
     Timeout: 30
     MemorySize: 1024
     Runtime: nodejs22.x
+    Tracing: Active
     Environment:
       Variables:
         NODE_ENV: !Ref Environment
@@ -34,6 +35,8 @@ Globals:
         S3_BUCKET_NAME: !Ref StorageBucket
         BEDROCK_MODEL_ID: anthropic.claude-3-5-sonnet-20241022-v2:0
         BEDROCK_REGION: !Ref AWS::Region
+        XRAY_TRACING_ENABLED: true
+        XRAY_SERVICE_NAME: !Sub bayon-coagent-${Environment}
 
 Resources:
   # ==========================================
@@ -183,8 +186,14 @@ Resources:
   # GSI Index Usage:
   # - GSI1: General purpose index (existing)
   # - GSI2: Content workflow scheduling - SCHEDULE#<status> → TIME#<publishTime>
+  #   Purpose: Query all scheduled content by status and time for background job processing
+  #   Example: Query all "scheduled" content due for publishing
   # - GSI3: Content workflow analytics - ANALYTICS#<contentType> → DATE#<publishDate>
+  #   Purpose: Aggregate analytics by content type for performance comparisons
+  #   Example: Get all "blog_post" analytics for time-based analysis
   # - GSI4: Template discovery - TEMPLATE#<contentType> → NAME#<name>
+  #   Purpose: Browse and search templates by type
+  #   Example: Find all "social_media" templates sorted by name
   # - EntityTypeIndex: Entity type queries (existing)
   # - UserIndex: User-based queries (existing)
   DynamoDBTable:
@@ -244,6 +253,7 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
+        # Content Workflow Scheduling Index - SCHEDULE#<status> → TIME#<publishTime>
         - IndexName: GSI2
           KeySchema:
             - AttributeName: GSI2PK
@@ -252,6 +262,7 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
+        # Content Workflow Analytics Index - ANALYTICS#<contentType> → DATE#<publishDate>
         - IndexName: GSI3
           KeySchema:
             - AttributeName: GSI3PK
@@ -260,6 +271,7 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
+        # Template Discovery Index - TEMPLATE#<contentType> → NAME#<name>
         - IndexName: GSI4
           KeySchema:
             - AttributeName: GSI4PK
@@ -397,6 +409,7 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
       Policies:
         - PolicyName: CognitoAccess
           PolicyDocument:
@@ -472,6 +485,329 @@ Resources:
                   - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.titan-image-generator-v1
                   - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.titan-*
                   - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/stability.stable-diffusion-xl-v1
+
+  # ==========================================
+  # API Gateway for Service Boundaries
+  # ==========================================
+
+  # CloudWatch Log Group for API Gateway
+  ApiGatewayLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/apigateway/bayon-coagent-${Environment}
+      RetentionInDays: !If [IsProduction, 30, 7]
+
+  # Main API Gateway for Core Platform Service
+  MainRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub bayon-coagent-main-${Environment}
+      Description: !Sub Bayon CoAgent Main API Gateway (${Environment})
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Policy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: execute-api:Invoke
+            Resource: "*"
+
+  # AI Processing Service API Gateway
+  AiServiceApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub bayon-coagent-ai-${Environment}
+      Description: !Sub Bayon CoAgent AI Processing Service API (${Environment})
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # External Integration Service API Gateway
+  IntegrationServiceApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub bayon-coagent-integration-${Environment}
+      Description: !Sub Bayon CoAgent Integration Service API (${Environment})
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # Background Processing Service API Gateway
+  BackgroundServiceApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub bayon-coagent-background-${Environment}
+      Description: !Sub Bayon CoAgent Background Processing Service API (${Environment})
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # Admin Service API Gateway
+  AdminServiceApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub bayon-coagent-admin-${Environment}
+      Description: !Sub Bayon CoAgent Admin Service API (${Environment})
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # API Gateway Deployments and Stages
+  MainApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref MainRestApi
+      Description: !Sub Main API deployment for ${Environment}
+
+  MainApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref MainRestApi
+      DeploymentId: !Ref MainApiDeployment
+      StageName: !Ref Environment
+      Description: !Sub Main API stage for ${Environment}
+      TracingEnabled: true
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+          DataTraceEnabled: !If [IsProduction, false, true]
+          MetricsEnabled: true
+          ThrottlingRateLimit: !If [IsProduction, 1000, 100]
+          ThrottlingBurstLimit: !If [IsProduction, 2000, 200]
+      AccessLogSetting:
+        DestinationArn: !GetAtt ApiGatewayLogGroup.Arn
+        Format: >
+          {
+            "requestId": "$context.requestId",
+            "ip": "$context.identity.sourceIp",
+            "caller": "$context.identity.caller",
+            "user": "$context.identity.user",
+            "requestTime": "$context.requestTime",
+            "httpMethod": "$context.httpMethod",
+            "resourcePath": "$context.resourcePath",
+            "status": "$context.status",
+            "protocol": "$context.protocol",
+            "responseLength": "$context.responseLength",
+            "error.message": "$context.error.message",
+            "error.messageString": "$context.error.messageString",
+            "traceId": "$context.xrayTraceId"
+          }
+
+  AiServiceApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      Description: !Sub AI Service API deployment for ${Environment}
+
+  AiServiceApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      DeploymentId: !Ref AiServiceApiDeployment
+      StageName: v1
+      Description: !Sub AI Service API stage for ${Environment}
+      TracingEnabled: true
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+          DataTraceEnabled: !If [IsProduction, false, true]
+          MetricsEnabled: true
+          ThrottlingRateLimit: !If [IsProduction, 1000, 100]
+          ThrottlingBurstLimit: !If [IsProduction, 2000, 200]
+
+  IntegrationServiceApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      Description: !Sub Integration Service API deployment for ${Environment}
+
+  IntegrationServiceApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      DeploymentId: !Ref IntegrationServiceApiDeployment
+      StageName: v1
+      Description: !Sub Integration Service API stage for ${Environment}
+      TracingEnabled: true
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+          DataTraceEnabled: !If [IsProduction, false, true]
+          MetricsEnabled: true
+          ThrottlingRateLimit: !If [IsProduction, 500, 50]
+          ThrottlingBurstLimit: !If [IsProduction, 1000, 100]
+
+  BackgroundServiceApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref BackgroundServiceApi
+      Description: !Sub Background Service API deployment for ${Environment}
+
+  BackgroundServiceApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref BackgroundServiceApi
+      DeploymentId: !Ref BackgroundServiceApiDeployment
+      StageName: v1
+      Description: !Sub Background Service API stage for ${Environment}
+      TracingEnabled: true
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+          DataTraceEnabled: !If [IsProduction, false, true]
+          MetricsEnabled: true
+          ThrottlingRateLimit: !If [IsProduction, 200, 20]
+          ThrottlingBurstLimit: !If [IsProduction, 400, 40]
+
+  AdminServiceApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      Description: !Sub Admin Service API deployment for ${Environment}
+
+  AdminServiceApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      DeploymentId: !Ref AdminServiceApiDeployment
+      StageName: v1
+      Description: !Sub Admin Service API stage for ${Environment}
+      TracingEnabled: true
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+          DataTraceEnabled: !If [IsProduction, false, true]
+          MetricsEnabled: true
+          ThrottlingRateLimit: !If [IsProduction, 100, 10]
+          ThrottlingBurstLimit: !If [IsProduction, 200, 20]
+
+  # Usage Plans for different service tiers
+  BasicUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      UsagePlanName: !Sub bayon-coagent-basic-${Environment}
+      Description: Basic usage plan for standard users
+      ApiStages:
+        - ApiId: !Ref MainRestApi
+          Stage: !Ref MainApiStage
+      Throttle:
+        RateLimit: !If [IsProduction, 100, 10]
+        BurstLimit: !If [IsProduction, 200, 20]
+      Quota:
+        Limit: !If [IsProduction, 10000, 1000]
+        Period: DAY
+
+  PremiumUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      UsagePlanName: !Sub bayon-coagent-premium-${Environment}
+      Description: Premium usage plan for power users
+      ApiStages:
+        - ApiId: !Ref MainRestApi
+          Stage: !Ref MainApiStage
+      Throttle:
+        RateLimit: !If [IsProduction, 500, 50]
+        BurstLimit: !If [IsProduction, 1000, 100]
+      Quota:
+        Limit: !If [IsProduction, 50000, 5000]
+        Period: DAY
+
+  EnterpriseUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      UsagePlanName: !Sub bayon-coagent-enterprise-${Environment}
+      Description: Enterprise usage plan for high-volume users
+      ApiStages:
+        - ApiId: !Ref MainRestApi
+          Stage: !Ref MainApiStage
+      Throttle:
+        RateLimit: !If [IsProduction, 2000, 200]
+        BurstLimit: !If [IsProduction, 4000, 400]
+      Quota:
+        Limit: !If [IsProduction, 200000, 20000]
+        Period: DAY
+
+  AiServiceUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      UsagePlanName: !Sub bayon-coagent-ai-service-${Environment}
+      Description: Usage plan for AI processing service
+      ApiStages:
+        - ApiId: !Ref AiServiceApi
+          Stage: !Ref AiServiceApiStage
+      Throttle:
+        RateLimit: !If [IsProduction, 1000, 100]
+        BurstLimit: !If [IsProduction, 2000, 200]
+      Quota:
+        Limit: !If [IsProduction, 100000, 10000]
+        Period: DAY
+
+  # Request/Response Models for API validation
+  ErrorResponseModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      RestApiId: !Ref MainRestApi
+      ContentType: application/json
+      Name: ErrorResponse
+      Schema:
+        $schema: http://json-schema.org/draft-04/schema#
+        title: Error Response
+        type: object
+        properties:
+          error:
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              details:
+                type: object
+              traceId:
+                type: string
+            required:
+              - code
+              - message
+        required:
+          - error
+
+  SuccessResponseModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      RestApiId: !Ref MainRestApi
+      ContentType: application/json
+      Name: SuccessResponse
+      Schema:
+        $schema: http://json-schema.org/draft-04/schema#
+        title: Success Response
+        type: object
+        properties:
+          success:
+            type: boolean
+          data:
+            type: object
+          message:
+            type: string
+          traceId:
+            type: string
+        required:
+          - success
+
+  # Request Validator
+  RequestValidator:
+    Type: AWS::ApiGateway::RequestValidator
+    Properties:
+      RestApiId: !Ref MainRestApi
+      Name: Validate body and parameters
+      ValidateRequestBody: true
+      ValidateRequestParameters: true
 
   # ==========================================
   # Alert Processing Lambda Functions
@@ -722,6 +1058,7 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
       Policies:
         - PolicyName: ContentWorkflowDynamoDBAccess
           PolicyDocument:
@@ -773,10 +1110,26 @@ Resources:
               - Effect: Allow
                 Action:
                   - cloudwatch:PutMetricData
+                  - cloudwatch:GetMetricStatistics
+                  - cloudwatch:ListMetrics
                 Resource: "*"
                 Condition:
                   StringEquals:
                     cloudwatch:namespace: "BayonCoAgent/ContentWorkflow"
+        - PolicyName: ContentWorkflowSecretsAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:bayon-coagent/oauth/*
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:GetParametersByPath
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/bayon-coagent/${Environment}/*
 
   # Calculate Optimal Times Lambda (Weekly)
   CalculateOptimalTimesFunction:
@@ -810,10 +1163,15 @@ Resources:
               }
             DeadLetterConfig:
               Arn: !GetAtt CalculateOptimalTimesDLQ.Arn
+            RetryPolicy:
+              MaximumRetryAttempts: 3
       Environment:
         Variables:
           LOG_LEVEL: INFO
           CLOUDWATCH_NAMESPACE: BayonCoAgent/ContentWorkflow
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+          S3_BUCKET_NAME: !Ref StorageBucket
+          LAMBDA_VERSION: "1.0.0"
       Tags:
         Environment: !Ref Environment
         Application: BayonCoAgent
@@ -847,10 +1205,15 @@ Resources:
               }
             DeadLetterConfig:
               Arn: !GetAtt PublishScheduledContentDLQ.Arn
+            RetryPolicy:
+              MaximumRetryAttempts: 2
       Environment:
         Variables:
           LOG_LEVEL: INFO
           CLOUDWATCH_NAMESPACE: BayonCoAgent/ContentWorkflow
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+          S3_BUCKET_NAME: !Ref StorageBucket
+          LAMBDA_VERSION: "1.0.0"
       Tags:
         Environment: !Ref Environment
         Application: BayonCoAgent
@@ -886,10 +1249,15 @@ Resources:
               }
             DeadLetterConfig:
               Arn: !GetAtt SyncSocialAnalyticsDLQ.Arn
+            RetryPolicy:
+              MaximumRetryAttempts: 3
       Environment:
         Variables:
           LOG_LEVEL: INFO
           CLOUDWATCH_NAMESPACE: BayonCoAgent/ContentWorkflow
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+          S3_BUCKET_NAME: !Ref StorageBucket
+          LAMBDA_VERSION: "1.0.0"
       Tags:
         Environment: !Ref Environment
         Application: BayonCoAgent
@@ -1314,6 +1682,58 @@ Resources:
         - !Ref AlarmTopic
       TreatMissingData: notBreaching
 
+  # Content Workflow Business Metrics Alarms
+  ContentWorkflowPublishingFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-content-workflow-publishing-failures
+      AlarmDescription: Alert when content publishing failure rate exceeds threshold
+      MetricName: PublishingFailure
+      Namespace: BayonCoAgent/ContentWorkflow
+      Statistic: Sum
+      Period: 900 # 15 minutes
+      EvaluationPeriods: 2
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  ContentWorkflowAnalyticsSyncFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-content-workflow-analytics-sync-failures
+      AlarmDescription: Alert when analytics sync failure rate exceeds threshold
+      MetricName: AnalyticsSyncFailure
+      Namespace: BayonCoAgent/ContentWorkflow
+      Statistic: Sum
+      Period: 3600 # 1 hour
+      EvaluationPeriods: 2
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  ContentWorkflowRateLimitAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-content-workflow-rate-limits
+      AlarmDescription: Alert when rate limiting occurs frequently
+      MetricName: RateLimitEncountered
+      Namespace: BayonCoAgent/ContentWorkflow
+      Statistic: Sum
+      Period: 3600 # 1 hour
+      EvaluationPeriods: 1
+      Threshold: 20
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
   # ==========================================
   # CloudWatch Dashboard
   # ==========================================
@@ -1671,3 +2091,64 @@ Outputs:
     Value: !GetAtt ContentWorkflowLambdaRole.Arn
     Export:
       Name: !Sub ${Environment}-ContentWorkflowLambdaRoleArn
+
+  # API Gateway Outputs
+  MainRestApiId:
+    Description: Main REST API ID
+    Value: !Ref MainRestApi
+    Export:
+      Name: !Sub ${Environment}-MainRestApiId
+
+  MainRestApiUrl:
+    Description: Main REST API URL
+    Value: !Sub https://${MainRestApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+    Export:
+      Name: !Sub ${Environment}-MainRestApiUrl
+
+  AiServiceApiId:
+    Description: AI Service API ID
+    Value: !Ref AiServiceApi
+    Export:
+      Name: !Sub ${Environment}-AiServiceApiId
+
+  AiServiceApiUrl:
+    Description: AI Service API URL
+    Value: !Sub https://${AiServiceApi}.execute-api.${AWS::Region}.amazonaws.com/v1
+    Export:
+      Name: !Sub ${Environment}-AiServiceApiUrl
+
+  IntegrationServiceApiId:
+    Description: Integration Service API ID
+    Value: !Ref IntegrationServiceApi
+    Export:
+      Name: !Sub ${Environment}-IntegrationServiceApiId
+
+  IntegrationServiceApiUrl:
+    Description: Integration Service API URL
+    Value: !Sub https://${IntegrationServiceApi}.execute-api.${AWS::Region}.amazonaws.com/v1
+    Export:
+      Name: !Sub ${Environment}-IntegrationServiceApiUrl
+
+  BackgroundServiceApiId:
+    Description: Background Service API ID
+    Value: !Ref BackgroundServiceApi
+    Export:
+      Name: !Sub ${Environment}-BackgroundServiceApiId
+
+  BackgroundServiceApiUrl:
+    Description: Background Service API URL
+    Value: !Sub https://${BackgroundServiceApi}.execute-api.${AWS::Region}.amazonaws.com/v1
+    Export:
+      Name: !Sub ${Environment}-BackgroundServiceApiUrl
+
+  AdminServiceApiId:
+    Description: Admin Service API ID
+    Value: !Ref AdminServiceApi
+    Export:
+      Name: !Sub ${Environment}-AdminServiceApiId
+
+  AdminServiceApiUrl:
+    Description: Admin Service API URL
+    Value: !Sub https://${AdminServiceApi}.execute-api.${AWS::Region}.amazonaws.com/v1
+    Export:
+      Name: !Sub ${Environment}-AdminServiceApiUrl

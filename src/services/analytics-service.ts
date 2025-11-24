@@ -1,5 +1,5 @@
 /**
- * Core Analytics Tracking Service
+ * Core Analytics Tracking Service with Enhanced Error Handling
  * 
  * Provides comprehensive analytics tracking functionality including:
  * - Publication tracking with comprehensive metadata capture
@@ -7,6 +7,7 @@
  * - Advanced filtering and grouping by content type
  * - Flexible time range filtering with preset options (7d, 30d, 90d, custom)
  * - Engagement rate calculations with industry benchmarking
+ * - Enterprise-grade error handling with retry logic and fallbacks
  * 
  * Validates Requirements: 5.1, 5.2, 5.4
  */
@@ -42,6 +43,13 @@ import {
     SyncResult,
     ExternalAnalyticsData,
 } from '@/lib/content-workflow-types';
+import {
+    executeService,
+    createServiceError,
+    type ServiceResult,
+    serviceWrapper
+} from '@/lib/error-handling-framework';
+import { ErrorCategory } from '@/lib/error-handling';
 
 /**
  * Custom error class for rate limit handling
@@ -339,81 +347,137 @@ export class AnalyticsService {
     private repository = getRepository();
 
     /**
-     * Track content publication with comprehensive metadata capture
+     * Track content publication with comprehensive metadata capture and enhanced error handling
      * 
      * Requirement 5.1: Track engagement metrics for published content
      */
     async trackPublication(params: TrackPublicationParams): Promise<ContentWorkflowResponse<Analytics>> {
-        try {
-            // Generate unique analytics ID
-            const analyticsId = randomUUID();
+        const result = await executeService(
+            async () => {
+                // Generate unique analytics ID
+                const analyticsId = randomUUID();
 
-            // Initialize metrics with provided data or defaults
-            const metrics: EngagementMetrics = {
-                views: params.initialMetrics?.views || 0,
-                likes: params.initialMetrics?.likes || 0,
-                shares: params.initialMetrics?.shares || 0,
-                comments: params.initialMetrics?.comments || 0,
-                clicks: params.initialMetrics?.clicks || 0,
-                saves: params.initialMetrics?.saves || 0,
-                engagementRate: params.initialMetrics?.engagementRate || 0,
-                reach: params.initialMetrics?.reach || 0,
-                impressions: params.initialMetrics?.impressions || 0,
-            };
+                // Initialize metrics with provided data or defaults
+                const metrics: EngagementMetrics = {
+                    views: params.initialMetrics?.views || 0,
+                    likes: params.initialMetrics?.likes || 0,
+                    shares: params.initialMetrics?.shares || 0,
+                    comments: params.initialMetrics?.comments || 0,
+                    clicks: params.initialMetrics?.clicks || 0,
+                    saves: params.initialMetrics?.saves || 0,
+                    engagementRate: params.initialMetrics?.engagementRate || 0,
+                    reach: params.initialMetrics?.reach || 0,
+                    impressions: params.initialMetrics?.impressions || 0,
+                };
 
-            // Create analytics entity
-            const analytics: Analytics = {
-                id: analyticsId,
+                // Create analytics entity
+                const analytics: Analytics = {
+                    id: analyticsId,
+                    userId: params.userId,
+                    contentId: params.contentId,
+                    contentType: params.contentType,
+                    channel: params.channel,
+                    publishedAt: params.publishedAt,
+                    metrics,
+                    platformMetrics: {
+                        platformPostId: params.platformPostId,
+                        publishedUrl: params.publishedUrl,
+                        metadata: params.metadata,
+                    },
+                    lastSynced: new Date(),
+                    syncStatus: AnalyticsSyncStatus.COMPLETED,
+                    // GSI keys for content type analytics aggregation
+                    GSI1PK: `ANALYTICS#${params.contentType}`,
+                    GSI1SK: `DATE#${params.publishedAt.toISOString().split('T')[0]}`, // YYYY-MM-DD
+                };
+
+                // Store in DynamoDB using existing patterns
+                const keys = getAnalyticsKeys(
+                    params.userId,
+                    params.contentId,
+                    params.channel,
+                    params.contentType,
+                    params.publishedAt.toISOString().split('T')[0]
+                );
+
+                await this.repository.create(
+                    keys.PK,
+                    keys.SK,
+                    'Analytics' as EntityType,
+                    analytics,
+                    {
+                        GSI1PK: keys.GSI1PK,
+                        GSI1SK: keys.GSI1SK,
+                    }
+                );
+
+                return analytics;
+            },
+            {
+                operation: 'track_publication',
                 userId: params.userId,
-                contentId: params.contentId,
-                contentType: params.contentType,
-                channel: params.channel,
-                publishedAt: params.publishedAt,
-                metrics,
-                platformMetrics: {
-                    platformPostId: params.platformPostId,
-                    publishedUrl: params.publishedUrl,
-                    metadata: params.metadata,
-                },
-                lastSynced: new Date(),
-                syncStatus: AnalyticsSyncStatus.COMPLETED,
-                // GSI keys for content type analytics aggregation
-                GSI1PK: `ANALYTICS#${params.contentType}`,
-                GSI1SK: `DATE#${params.publishedAt.toISOString().split('T')[0]}`, // YYYY-MM-DD
-            };
-
-            // Store in DynamoDB using existing patterns
-            const keys = getAnalyticsKeys(
-                params.userId,
-                params.contentId,
-                params.channel,
-                params.contentType,
-                params.publishedAt.toISOString().split('T')[0]
-            );
-
-            await this.repository.create(
-                keys.PK,
-                keys.SK,
-                'Analytics' as EntityType,
-                analytics,
-                {
-                    GSI1PK: keys.GSI1PK,
-                    GSI1SK: keys.GSI1SK,
+                timestamp: new Date(),
+                metadata: {
+                    contentType: params.contentType,
+                    channel: params.channel,
+                    contentId: params.contentId
                 }
-            );
+            },
+            {
+                maxRetries: 3,
+                fallback: {
+                    enabled: true,
+                    fallbackFunction: async () => {
+                        // Fallback: Log to local storage for later sync
+                        const fallbackData = {
+                            ...params,
+                            timestamp: new Date().toISOString(),
+                            fallback: true
+                        };
 
+                        if (typeof window !== 'undefined') {
+                            const existing = localStorage.getItem('analytics_fallback') || '[]';
+                            const fallbackQueue = JSON.parse(existing);
+                            fallbackQueue.push(fallbackData);
+                            localStorage.setItem('analytics_fallback', JSON.stringify(fallbackQueue));
+                        }
+
+                        // Return minimal analytics object
+                        return {
+                            id: randomUUID(),
+                            userId: params.userId,
+                            contentId: params.contentId,
+                            contentType: params.contentType,
+                            channel: params.channel,
+                            publishedAt: params.publishedAt,
+                            metrics: {
+                                views: 0, likes: 0, shares: 0, comments: 0, clicks: 0,
+                                saves: 0, engagementRate: 0, reach: 0, impressions: 0
+                            },
+                            platformMetrics: {},
+                            lastSynced: new Date(),
+                            syncStatus: AnalyticsSyncStatus.PENDING,
+                            GSI1PK: `ANALYTICS#${params.contentType}`,
+                            GSI1SK: `DATE#${params.publishedAt.toISOString().split('T')[0]}`
+                        } as Analytics;
+                    }
+                }
+            }
+        );
+
+        // Convert ServiceResult to ContentWorkflowResponse
+        if (result.success && result.data) {
             return {
                 success: true,
-                data: analytics,
+                data: result.data,
                 message: `Analytics tracking started for ${params.channel} content`,
-                timestamp: new Date(),
+                timestamp: result.timestamp,
             };
-        } catch (error) {
-            console.error('Failed to track publication:', error);
+        } else {
             return {
                 success: false,
-                error: error instanceof Error ? error.message : 'Failed to track publication',
-                timestamp: new Date(),
+                error: result.error?.userMessage || result.error?.message || 'Failed to track publication',
+                timestamp: result.timestamp,
             };
         }
     }

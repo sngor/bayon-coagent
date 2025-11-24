@@ -68,6 +68,8 @@ interface PreviewData {
     originalUrl: string;
     editedUrl: string;
     editType: EditType;
+    editParams?: EditParams; // Store original parameters for regeneration
+    sourceImageId?: string; // Store source image ID for regeneration
 }
 
 interface ChainEditData {
@@ -188,6 +190,8 @@ export default function ReimagineToolkitPage() {
                         originalUrl,
                         editedUrl: result.resultUrl,
                         editType: editType,
+                        editParams: params, // Store parameters for regeneration
+                        sourceImageId: imageId, // Store source image ID for regeneration
                     });
 
                     setProcessingStatus('completed');
@@ -243,12 +247,57 @@ export default function ReimagineToolkitPage() {
         }
     }, [previewData, userId]);
 
-    // Handle preview regenerate - go back to upload
-    const handlePreviewRegenerate = useCallback(() => {
-        setPreviewData(null);
-        setCurrentImage(null);
-        setWorkflowState('upload');
-    }, []);
+    // Handle preview regenerate - reprocess with same parameters
+    const handlePreviewRegenerate = useCallback(async () => {
+        if (!previewData || !previewData.editParams || !previewData.sourceImageId) {
+            // Fallback to going back to upload if we don't have the necessary data
+            setPreviewData(null);
+            setCurrentImage(null);
+            setWorkflowState('upload');
+            return;
+        }
+
+        try {
+            setProcessingStatus('processing');
+            setProcessingError(null);
+
+            // Regenerate with the same parameters
+            const result = await processEditAction(
+                userId,
+                previewData.sourceImageId,
+                previewData.editType,
+                previewData.editParams,
+                chainEditData?.parentEditId
+            );
+
+            if (result.success && result.editId && result.resultUrl) {
+                // Get original image URL
+                const originalImageResult = await getOriginalImageAction(userId, result.editId);
+                const originalUrl = originalImageResult.success ? originalImageResult.originalUrl || '' : '';
+
+                // Update preview data with new result but keep same parameters
+                setPreviewData({
+                    editId: result.editId,
+                    originalUrl,
+                    editedUrl: result.resultUrl,
+                    editType: previewData.editType,
+                    editParams: previewData.editParams, // Keep original parameters
+                    sourceImageId: previewData.sourceImageId, // Keep source image ID
+                });
+
+                setProcessingStatus('completed');
+                // Stay in preview state to show the new result
+            } else {
+                throw new Error(result.error || 'Failed to regenerate edit');
+            }
+        } catch (error) {
+            console.error('Regenerate error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Failed to regenerate image';
+            setProcessingStatus('failed');
+            setProcessingError(errorMessage);
+            // Stay in preview state so user can try again
+        }
+    }, [previewData, userId, chainEditData]);
 
     // Handle preview cancel
     const handlePreviewCancel = useCallback(() => {
@@ -346,6 +395,7 @@ export default function ReimagineToolkitPage() {
                             onAccept={handlePreviewAccept}
                             onRegenerate={handlePreviewRegenerate}
                             onCancel={handlePreviewCancel}
+                            isLoading={processingStatus === 'processing'}
                         />
                     )}
                 </div>

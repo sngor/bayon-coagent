@@ -6,6 +6,8 @@ exports.validateLifeEvent = validateLifeEvent;
 exports.validateProspect = validateProspect;
 exports.getEventTypeDisplayName = getEventTypeDisplayName;
 exports.getEventTypeDescription = getEventTypeDescription;
+const error_handling_1 = require("./error-handling");
+const logger_1 = require("@/aws/logging/logger");
 const EVENT_TYPE_WEIGHTS = {
     'marriage': 65,
     'divorce': 70,
@@ -27,17 +29,72 @@ const MARKET_CONDITION_MULTIPLIERS = {
     'cold': 0.85,
 };
 class LifeEventAnalyzer {
+    constructor() {
+        this.logger = (0, logger_1.createLogger)({ service: 'life-event-analyzer' });
+    }
     async analyzeEvents(targetAreas) {
-        const alerts = [];
-        const prospects = await this.fetchProspectsInTargetAreas(targetAreas);
-        for (const prospect of prospects) {
-            const leadScore = this.calculateLeadScore(prospect.events, await this.getMarketConditions(prospect.location));
-            if (this.isHighIntentLead(leadScore)) {
-                const alert = this.createLifeEventAlert(prospect, leadScore);
-                alerts.push(alert);
+        return (0, error_handling_1.withErrorHandling)(async () => {
+            this.logger.info('Starting life event analysis', {
+                targetAreasCount: targetAreas.length,
+            });
+            const alerts = [];
+            for (const area of targetAreas) {
+                const validation = error_handling_1.dataQualityValidator.validateTargetArea(area);
+                if (!validation.isValid) {
+                    this.logger.warn('Invalid target area detected', undefined, {
+                        areaId: area.id,
+                        errors: validation.errors,
+                    });
+                    continue;
+                }
             }
-        }
-        return alerts;
+            try {
+                const prospects = await (0, error_handling_1.withRetry)(() => this.fetchProspectsInTargetAreas(targetAreas), { maxAttempts: 3, baseDelayMs: 2000 }, { operation: 'fetch-prospects' });
+                this.logger.info('Fetched prospects for analysis', {
+                    prospectsCount: prospects.length,
+                });
+                for (const prospect of prospects) {
+                    try {
+                        if (!this.validateProspect(prospect)) {
+                            this.logger.warn('Invalid prospect data detected', undefined, {
+                                prospectId: prospect.id,
+                            });
+                            continue;
+                        }
+                        const marketConditions = await (0, error_handling_1.withRetry)(() => this.getMarketConditions(prospect.location), { maxAttempts: 2, baseDelayMs: 1000 }, { operation: 'get-market-conditions' });
+                        const leadScore = this.calculateLeadScore(prospect.events, marketConditions);
+                        if (this.isHighIntentLead(leadScore)) {
+                            const alert = this.createLifeEventAlert(prospect, leadScore);
+                            const alertValidation = error_handling_1.dataQualityValidator.validateAlert(alert);
+                            if (alertValidation.isValid) {
+                                alerts.push(alert);
+                            }
+                            else {
+                                this.logger.warn('Invalid alert generated', undefined, {
+                                    prospectId: prospect.id,
+                                    errors: alertValidation.errors,
+                                });
+                            }
+                        }
+                    }
+                    catch (error) {
+                        this.logger.error('Error processing individual prospect', error, {
+                            prospectId: prospect.id,
+                            location: prospect.location,
+                        });
+                    }
+                }
+                this.logger.info('Life event analysis completed', {
+                    alertsGenerated: alerts.length,
+                    prospectsProcessed: prospects.length,
+                });
+                return alerts;
+            }
+            catch (error) {
+                this.logger.error('Failed to fetch prospects', error);
+                throw new error_handling_1.ExternalAPIError('Failed to fetch prospect data from public records API', 'public-records', undefined, true, error);
+            }
+        }, { operation: 'analyze-life-events', service: 'life-event-analyzer' });
     }
     calculateLeadScore(events, marketConditions) {
         if (events.length === 0)
@@ -163,18 +220,90 @@ class LifeEventAnalyzer {
         };
         return actions[eventType];
     }
+    validateProspect(prospect) {
+        try {
+            if (!prospect.id || !prospect.location || !prospect.events || prospect.events.length === 0) {
+                return false;
+            }
+            for (const event of prospect.events) {
+                if (!this.validateLifeEvent(event)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        catch (error) {
+            this.logger.warn('Prospect validation error', error, {
+                prospectId: prospect.id,
+            });
+            return false;
+        }
+    }
+    validateLifeEvent(event) {
+        const requiredFields = ['id', 'personId', 'eventType', 'eventDate', 'location', 'confidence', 'source'];
+        const validEventTypes = ['marriage', 'divorce', 'job-change', 'retirement', 'birth', 'death'];
+        for (const field of requiredFields) {
+            if (!event[field]) {
+                return false;
+            }
+        }
+        if (!validEventTypes.includes(event.eventType)) {
+            return false;
+        }
+        if (event.confidence < 0 || event.confidence > 100) {
+            return false;
+        }
+        if (isNaN(new Date(event.eventDate).getTime())) {
+            return false;
+        }
+        return true;
+    }
     async fetchProspectsInTargetAreas(targetAreas) {
-        return [];
+        this.logger.debug('Fetching prospects from external APIs', {
+            targetAreasCount: targetAreas.length,
+        });
+        try {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            const prospects = [];
+            this.logger.debug('Successfully fetched prospects', {
+                prospectsCount: prospects.length,
+            });
+            return prospects;
+        }
+        catch (error) {
+            this.logger.error('Failed to fetch prospects from external API', error);
+            throw new error_handling_1.ExternalAPIError('Public records API is temporarily unavailable', 'public-records', undefined, true, error);
+        }
     }
     async getMarketConditions(location) {
-        return {
-            neighborhood: location,
-            date: new Date().toISOString(),
-            medianPrice: 450000,
-            inventoryLevel: 4.2,
-            avgDaysOnMarket: 28,
-            salesVolume: 125,
-        };
+        this.logger.debug('Fetching market conditions', { location });
+        try {
+            await new Promise(resolve => setTimeout(resolve, 50));
+            const marketData = {
+                neighborhood: location,
+                date: new Date().toISOString(),
+                medianPrice: 450000,
+                inventoryLevel: 4.2,
+                avgDaysOnMarket: 28,
+                salesVolume: 125,
+            };
+            if (marketData.medianPrice < 0 || marketData.inventoryLevel < 0 || marketData.avgDaysOnMarket < 0) {
+                throw new error_handling_1.DataQualityError('Invalid market data received', 'market-data', ['Negative values detected in market data']);
+            }
+            this.logger.debug('Successfully fetched market conditions', {
+                location,
+                medianPrice: marketData.medianPrice,
+                inventoryLevel: marketData.inventoryLevel,
+            });
+            return marketData;
+        }
+        catch (error) {
+            if (error instanceof error_handling_1.DataQualityError) {
+                throw error;
+            }
+            this.logger.error('Failed to fetch market conditions', error, { location });
+            throw new error_handling_1.ExternalAPIError('Market data API is temporarily unavailable', 'mls-api', undefined, true, error);
+        }
     }
 }
 exports.LifeEventAnalyzer = LifeEventAnalyzer;

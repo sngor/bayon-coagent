@@ -16,6 +16,11 @@ import {
 import { getConfig, getAWSCredentials } from '@/aws/config';
 import { DayToDuskParamsSchema, type DayToDuskParams } from '@/ai/schemas/reimagine-schemas';
 
+// Polyfill for structuredClone if not available (Node.js < 17)
+if (typeof globalThis.structuredClone === 'undefined') {
+  globalThis.structuredClone = (obj: any) => JSON.parse(JSON.stringify(obj));
+}
+
 // ============================================================================
 // Constants
 // ============================================================================
@@ -103,9 +108,9 @@ export async function dayToDusk(
     endpoint: config.bedrock.endpoint,
     credentials: credentials.accessKeyId && credentials.secretAccessKey
       ? {
-          accessKeyId: credentials.accessKeyId,
-          secretAccessKey: credentials.secretAccessKey,
-        }
+        accessKeyId: credentials.accessKeyId,
+        secretAccessKey: credentials.secretAccessKey,
+      }
       : undefined,
   });
 
@@ -163,12 +168,12 @@ export async function dayToDusk(
   } catch (error) {
     // Import error handling utilities
     const { logError, classifyError } = await import('../reimagine-error-handler');
-    
+
     // Log error to CloudWatch
     logError(error, 'day-to-dusk', {
       intensity: validatedInput.params.intensity,
     });
-    
+
     // Classify and throw with user-friendly message
     const classifiedError = classifyError(error, 'day-to-dusk');
     throw new Error(classifiedError.userMessage);

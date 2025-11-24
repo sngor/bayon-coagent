@@ -16,6 +16,7 @@ import {
   validateEditParams,
   type EditType,
   type EditParams,
+  type EditSuggestion,
   type VirtualStagingParams,
   type DayToDuskParams,
   type EnhanceParams,
@@ -168,14 +169,14 @@ export async function processEditAction(
       }
       sourceKey = imageMetadata.originalKey;
     }
-    
+
     // Download source image from S3
     const { downloadFile } = await import('@/aws/s3');
     const sourceImageBuffer = await downloadFile(sourceKey);
-    
+
     // Convert buffer to base64 for Bedrock
     const base64Image = sourceImageBuffer.toString('base64');
-    
+
     // Determine image format from source key extension
     let imageFormat: 'jpeg' | 'png' | 'webp' = 'jpeg';
     const keyLower = sourceKey.toLowerCase();
@@ -193,13 +194,13 @@ export async function processEditAction(
     let resultFormat: string;
     let modelId: string;
 
-    // Route to appropriate Bedrock flow with retry logic (Requirement 2.2, 3.2, 4.2, 5.2, 6.2)
+    // Route to appropriate Gemini flow with retry logic (Requirement 2.2, 3.2, 4.2, 5.2, 6.2)
     try {
       const editResult = await withRetry(
         async () => {
           switch (editType) {
             case 'virtual-staging': {
-              const { virtualStaging } = await import('@/aws/bedrock/flows/reimagine-staging');
+              const { virtualStaging } = await import('@/aws/google-ai/flows/gemini-image-generation');
               const result = await virtualStaging({
                 imageData: base64Image,
                 imageFormat,
@@ -208,12 +209,13 @@ export async function processEditAction(
               return {
                 imageData: result.stagedImageData,
                 format: result.imageFormat,
-                modelId: 'us.stability.stable-image-control-structure-v1:0',
+                modelId: 'gemini-2.5-flash-image',
               };
             }
 
             case 'day-to-dusk': {
-              const { dayToDusk } = await import('@/aws/bedrock/flows/reimagine-day-to-dusk');
+              // Use Gemini 2.5 Flash Image for day-to-dusk transformation
+              const { dayToDusk } = await import('@/aws/google-ai/flows/gemini-image-generation');
               const result = await dayToDusk({
                 imageData: base64Image,
                 imageFormat,
@@ -222,12 +224,12 @@ export async function processEditAction(
               return {
                 imageData: result.duskImageData,
                 format: result.imageFormat,
-                modelId: 'us.stability.stable-image-control-structure-v1:0',
+                modelId: 'gemini-2.5-flash-image',
               };
             }
 
             case 'enhance': {
-              const { enhanceImage } = await import('@/aws/bedrock/flows/reimagine-enhance');
+              const { enhanceImage } = await import('@/aws/google-ai/flows/gemini-image-generation');
               const result = await enhanceImage({
                 imageData: base64Image,
                 imageFormat,
@@ -236,12 +238,13 @@ export async function processEditAction(
               return {
                 imageData: result.enhancedImageData,
                 format: result.imageFormat,
-                modelId: 'us.stability.stable-conservative-upscale-v1:0',
+                modelId: 'gemini-2.5-flash-image',
               };
             }
 
             case 'item-removal': {
-              const { removeItems } = await import('@/aws/bedrock/flows/reimagine-remove');
+              // Use Gemini 2.5 Flash Image for item removal
+              const { removeItems } = await import('@/aws/google-ai/flows/gemini-image-generation');
               const result = await removeItems({
                 imageData: base64Image,
                 imageFormat,
@@ -250,12 +253,12 @@ export async function processEditAction(
               return {
                 imageData: result.cleanedImageData,
                 format: result.imageFormat,
-                modelId: 'us.stability.stable-image-erase-object-v1:0',
+                modelId: 'gemini-2.5-flash-image',
               };
             }
 
             case 'virtual-renovation': {
-              const { virtualRenovation } = await import('@/aws/bedrock/flows/reimagine-renovate');
+              const { virtualRenovation } = await import('@/aws/google-ai/flows/gemini-image-generation');
               const result = await virtualRenovation({
                 imageData: base64Image,
                 imageFormat,
@@ -264,7 +267,7 @@ export async function processEditAction(
               return {
                 imageData: result.renovatedImageData,
                 format: result.imageFormat,
-                modelId: 'us.stability.stable-image-control-structure-v1:0',
+                modelId: 'gemini-2.5-flash-image',
               };
             }
 
@@ -284,7 +287,7 @@ export async function processEditAction(
       console.error('[Process Edit] Error details:', error);
       console.error('[Process Edit] Error stack:', error instanceof Error ? error.stack : 'No stack');
       console.error('[Process Edit] Edit type:', editType);
-      
+
       // Log error to CloudWatch (Requirement 8.4)
       logError(error, 'process-edit', {
         userId,
@@ -292,7 +295,7 @@ export async function processEditAction(
         editType,
         operation: 'processEditAction',
       });
-      
+
       // Return formatted error response with recovery suggestions (Requirement 2.4, 8.4)
       return formatErrorResponse(error, 'process-edit');
     }
@@ -328,7 +331,7 @@ export async function processEditAction(
     // Create edit record in DynamoDB with status 'preview' (Requirement 12.1)
     // Include parentEditId for chained edits (Requirement 9.3)
     const createdAt = new Date().toISOString();
-    
+
     await withRetry(
       () => repository.saveEditRecord(userId, editId, {
         imageId: sourceImageId, // Use original image ID for tracking
@@ -364,7 +367,7 @@ export async function processEditAction(
       editType,
       operation: 'processEditAction',
     });
-    
+
     // Return formatted error response with recovery suggestions (Requirement 2.4, 8.4)
     return formatErrorResponse(error, 'process-edit-save');
   }
@@ -814,19 +817,20 @@ export async function reAnalyzeImageAction(
     let suggestions: EditSuggestion[] = [];
 
     try {
+      const { analyzeImage } = await import('@/aws/google-ai/flows/gemini-analyze');
       const analysisResult = await analyzeImage({
         imageData: base64Image,
         imageFormat,
       });
 
       suggestions = analysisResult.suggestions;
-      
+
       // Invalidate old cache and cache new suggestions (Performance optimization)
       invalidateSuggestions(imageId);
       cacheSuggestions(imageId, suggestions);
     } catch (error) {
       console.error('Error re-analyzing image:', error);
-      
+
       // Provide fallback suggestions if analysis fails
       suggestions = [
         {

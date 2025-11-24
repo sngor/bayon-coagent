@@ -28,26 +28,40 @@ jest.mock('recharts', () => ({
     Legend: () => <div data-testid="legend" />,
 }));
 
-// Mock the analytics service with simple implementations
-jest.mock('@/services/analytics-service', () => ({
-    getAnalyticsForTimeRange: jest.fn().mockResolvedValue({
-        success: true,
-        data: [],
+// Mock Next.js cache to avoid server-side import issues
+jest.mock('next/cache', () => ({}));
+
+// Mock the analytics server actions with simple implementations
+jest.mock('@/app/content-workflow-actions', () => ({
+    getAnalyticsAction: jest.fn().mockImplementation(async () => {
+        // Simulate async operation
+        await new Promise(resolve => setTimeout(resolve, 0));
+        return {
+            success: true,
+            data: [],
+        };
     }),
-    getROIAnalytics: jest.fn().mockResolvedValue({
-        success: true,
-        data: null,
+    getROIAnalyticsAction: jest.fn().mockImplementation(async () => {
+        await new Promise(resolve => setTimeout(resolve, 0));
+        return {
+            success: true,
+            data: null,
+        };
     }),
-    exportROIData: jest.fn().mockResolvedValue({
-        success: true,
-        data: 'mock,csv,data',
+    exportROIDataAction: jest.fn().mockImplementation(async () => {
+        await new Promise(resolve => setTimeout(resolve, 0));
+        return {
+            success: true,
+            data: 'mock,csv,data',
+        };
     }),
-    TimeRangePreset: {
-        LAST_7_DAYS: '7d',
-        LAST_30_DAYS: '30d',
-        LAST_90_DAYS: '90d',
-        CUSTOM: 'custom',
-    },
+    getABTestResultsAction: jest.fn().mockImplementation(async () => {
+        await new Promise(resolve => setTimeout(resolve, 0));
+        return {
+            success: true,
+            data: [],
+        };
+    }),
 }));
 
 // Import the component
@@ -66,18 +80,18 @@ describe('AnalyticsDashboard', () => {
         expect(container.querySelector('.space-y-6')).toBeInTheDocument();
     });
 
-    it('renders loading skeleton initially', () => {
+    it('renders dashboard header correctly', () => {
         render(<AnalyticsDashboard userId={mockUserId} />);
 
-        // Should show loading skeleton elements
-        expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
+        // Should show the dashboard title
+        expect(screen.getByText('Analytics Dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Track your content performance and ROI across all channels')).toBeInTheDocument();
     });
 
-    it('handles component lifecycle correctly', () => {
+    it('renders time range selector', () => {
         render(<AnalyticsDashboard userId={mockUserId} />);
 
-        // Should handle the component lifecycle without crashing
-        // The component correctly shows loading skeleton when data fails to load
-        expect(document.querySelector('.space-y-6')).toBeInTheDocument();
+        // Should have time range selector
+        expect(screen.getByRole('combobox')).toBeInTheDocument();
     });
 });

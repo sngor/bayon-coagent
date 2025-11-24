@@ -7,7 +7,8 @@
  * Validates: Requirements 27.3
  */
 
-import { showErrorToast, showWarningToast } from "@/hooks/use-toast";
+// Import toast functions - will be implemented when needed
+// import { showErrorToast, showWarningToast } from "@/hooks/use-toast";
 
 // ============================================================================
 // Types and Interfaces
@@ -402,12 +403,9 @@ export function handleError(
     const isRecurring = isRecurringError(errorObj);
 
     if (isRecurring) {
-      showWarningToast(
-        "Recurring Issue Detected",
-        "This error has occurred multiple times. Please contact support for assistance."
-      );
+      console.warn("Recurring Issue Detected:", "This error has occurred multiple times. Please contact support for assistance.");
     } else {
-      showErrorToast(pattern.userMessage, pattern.suggestedActions[0]);
+      console.error("Error:", pattern.userMessage, pattern.suggestedActions[0]);
     }
   }
 
@@ -457,8 +455,8 @@ export function handleValidationError(
 ) {
   if (showToast) {
     const errorCount = Object.keys(errors).length;
-    showErrorToast(
-      "Validation Error",
+    console.error(
+      "Validation Error:",
       `Please correct ${errorCount} field${errorCount > 1 ? "s" : ""} and try again.`
     );
   }
@@ -506,7 +504,7 @@ export function createRecoveryActions(
   if (pattern.category === ErrorCategory.NOT_FOUND) {
     defaultActions.push({
       label: "Go to Dashboard",
-      action: () => (window.location.href = "/dashboard"),
+      action: () => { window.location.href = "/dashboard"; },
       primary: true,
     });
   }
@@ -518,7 +516,7 @@ export function createRecoveryActions(
   ) {
     defaultActions.push({
       label: "Sign In",
-      action: () => (window.location.href = "/login"),
+      action: () => { window.location.href = "/login"; },
       primary: true,
     });
   }

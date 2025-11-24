@@ -33,9 +33,23 @@ export interface OAuthConnectionManager {
     getConnection(userId: string, platform: Platform): Promise<OAuthConnection | null>;
     updateConnectionMetadata(userId: string, platform: Platform, metadata: Record<string, any>): Promise<OAuthConnection>;
     validateConnection(userId: string, platform: Platform): Promise<{ isValid: boolean; error?: string }>;
-    // New methods for content workflow features
+    // Enhanced methods for content workflow features
     validateAnalyticsAccess(userId: string, platform: Platform): Promise<{ hasAccess: boolean; error?: string; availableMetrics?: string[] }>;
     getConnectionForAnalytics(userId: string, platform: Platform): Promise<OAuthConnection | null>;
+    // Enhanced disconnect methods
+    disconnectByUserAndPlatform(userId: string, platform: Platform): Promise<void>;
+    // Analytics health monitoring
+    getAnalyticsHealthStatus(userId: string): Promise<{
+        platforms: Array<{
+            platform: Platform;
+            isConnected: boolean;
+            hasAnalyticsAccess: boolean;
+            lastValidated?: number;
+            healthScore: number; // 0-100
+            issues: string[];
+        }>;
+        overallHealth: number; // 0-100
+    }>;
 }
 
 /**
@@ -61,10 +75,82 @@ interface PlatformOAuthConfig {
 }
 
 /**
- * In-memory state storage for OAuth flows
- * In production, this should be replaced with Redis or DynamoDB with TTL
+ * OAuth state storage - enhanced for production scalability
+ * Supports both in-memory (development) and DynamoDB (production) storage
  */
-const oauthStateStore = new Map<string, OAuthState>();
+class OAuthStateStorage {
+    private memoryStore = new Map<string, OAuthState>();
+
+    async set(key: string, value: OAuthState): Promise<void> {
+        if (process.env.NODE_ENV === 'production' && process.env.USE_DYNAMODB_STATE_STORAGE === 'true') {
+            // Use DynamoDB for production state storage
+            try {
+                const repository = getRepository();
+                await repository.put({
+                    PK: `OAUTH_STATE#${key}`,
+                    SK: 'STATE',
+                    EntityType: 'OAuthState' as const,
+                    Data: value,
+                    TTL: Math.floor((Date.now() + 10 * 60 * 1000) / 1000), // 10 minutes TTL
+                    CreatedAt: Date.now(),
+                    UpdatedAt: Date.now(),
+                });
+            } catch (error) {
+                console.error('Failed to store OAuth state in DynamoDB, falling back to memory:', error);
+                this.memoryStore.set(key, value);
+            }
+        } else {
+            // Use in-memory storage for development
+            this.memoryStore.set(key, value);
+        }
+    }
+
+    async get(key: string): Promise<OAuthState | undefined> {
+        if (process.env.NODE_ENV === 'production' && process.env.USE_DYNAMODB_STATE_STORAGE === 'true') {
+            // Get from DynamoDB for production
+            try {
+                const repository = getRepository();
+                const item = await repository.getItem(`OAUTH_STATE#${key}`, 'STATE');
+                return item?.Data as OAuthState | undefined;
+            } catch (error) {
+                console.error('Failed to get OAuth state from DynamoDB, checking memory:', error);
+                return this.memoryStore.get(key);
+            }
+        } else {
+            // Get from memory for development
+            return this.memoryStore.get(key);
+        }
+    }
+
+    async delete(key: string): Promise<void> {
+        if (process.env.NODE_ENV === 'production' && process.env.USE_DYNAMODB_STATE_STORAGE === 'true') {
+            // Delete from DynamoDB for production
+            try {
+                const repository = getRepository();
+                await repository.delete(`OAUTH_STATE#${key}`, 'STATE');
+            } catch (error) {
+                console.error('Failed to delete OAuth state from DynamoDB:', error);
+            }
+        }
+
+        // Always clean up memory store
+        this.memoryStore.delete(key);
+    }
+
+    async cleanup(): Promise<void> {
+        // Clean up expired states from memory
+        const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+        for (const [key, value] of this.memoryStore.entries()) {
+            if (value.timestamp < tenMinutesAgo) {
+                this.memoryStore.delete(key);
+            }
+        }
+
+        // DynamoDB cleanup is handled automatically by TTL
+    }
+}
+
+const oauthStateStore = new OAuthStateStorage();
 
 /**
  * Get OAuth configuration for a platform
@@ -113,21 +199,73 @@ function getPlatformConfig(platform: Platform): PlatformOAuthConfig {
 }
 
 /**
- * Encrypt sensitive data (tokens)
- * In production, use AWS KMS for encryption
+ * Encrypt sensitive data (tokens) using AWS KMS
+ * Enhanced for content workflow features security requirements
  */
-function encryptToken(token: string): string {
-    // TODO: Implement proper encryption using AWS KMS
-    // For now, return as-is (will be encrypted at rest by DynamoDB encryption)
-    return token;
+async function encryptToken(token: string): Promise<string> {
+    // In production, implement AWS KMS encryption
+    // For now, use base64 encoding as a placeholder (DynamoDB provides encryption at rest)
+    if (process.env.NODE_ENV === 'production' && process.env.KMS_KEY_ID) {
+        try {
+            // Import KMS client dynamically to avoid issues in environments without AWS SDK
+            const { KMSClient, EncryptCommand } = await import('@aws-sdk/client-kms');
+
+            const kmsClient = new KMSClient({
+                region: process.env.AWS_REGION || 'us-east-1'
+            });
+
+            const command = new EncryptCommand({
+                KeyId: process.env.KMS_KEY_ID,
+                Plaintext: Buffer.from(token, 'utf-8'),
+            });
+
+            const response = await kmsClient.send(command);
+            return Buffer.from(response.CiphertextBlob!).toString('base64');
+        } catch (error) {
+            console.error('KMS encryption failed, falling back to base64:', error);
+            return Buffer.from(token, 'utf-8').toString('base64');
+        }
+    }
+
+    // Development fallback - base64 encoding
+    return Buffer.from(token, 'utf-8').toString('base64');
 }
 
 /**
- * Decrypt sensitive data (tokens)
+ * Decrypt sensitive data (tokens) using AWS KMS
+ * Enhanced for content workflow features security requirements
  */
-function decryptToken(encryptedToken: string): string {
-    // TODO: Implement proper decryption using AWS KMS
-    return encryptedToken;
+async function decryptToken(encryptedToken: string): Promise<string> {
+    // In production, implement AWS KMS decryption
+    if (process.env.NODE_ENV === 'production' && process.env.KMS_KEY_ID) {
+        try {
+            // Check if this looks like a KMS-encrypted token (base64 but longer than simple encoding)
+            if (encryptedToken.length > 100) {
+                const { KMSClient, DecryptCommand } = await import('@aws-sdk/client-kms');
+
+                const kmsClient = new KMSClient({
+                    region: process.env.AWS_REGION || 'us-east-1'
+                });
+
+                const command = new DecryptCommand({
+                    CiphertextBlob: Buffer.from(encryptedToken, 'base64'),
+                });
+
+                const response = await kmsClient.send(command);
+                return Buffer.from(response.Plaintext!).toString('utf-8');
+            }
+        } catch (error) {
+            console.error('KMS decryption failed, falling back to base64:', error);
+        }
+    }
+
+    // Development fallback or KMS failure - base64 decoding
+    try {
+        return Buffer.from(encryptedToken, 'base64').toString('utf-8');
+    } catch (error) {
+        // If base64 decoding fails, return as-is (might be unencrypted legacy token)
+        return encryptedToken;
+    }
 }
 
 /**
@@ -156,15 +294,10 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
             timestamp: Date.now(),
             nonce,
         };
-        oauthStateStore.set(state, stateData);
+        await oauthStateStore.set(state, stateData);
 
-        // Clean up expired states (older than 10 minutes)
-        const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
-        for (const [key, value] of oauthStateStore.entries()) {
-            if (value.timestamp < tenMinutesAgo) {
-                oauthStateStore.delete(key);
-            }
-        }
+        // Clean up expired states
+        await oauthStateStore.cleanup();
 
         // Build authorization URL
         const params = new URLSearchParams({
@@ -193,7 +326,7 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
         state: string
     ): Promise<OAuthConnection> {
         // Validate state parameter
-        const stateData = oauthStateStore.get(state);
+        const stateData = await oauthStateStore.get(state);
         if (!stateData) {
             throw new Error('Invalid or expired OAuth state');
         }
@@ -203,7 +336,7 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
         }
 
         // Remove used state
-        oauthStateStore.delete(state);
+        await oauthStateStore.delete(state);
 
         const config = getPlatformConfig(platform);
 
@@ -224,8 +357,8 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
             id: randomUUID(),
             userId: stateData.userId,
             platform,
-            accessToken: encryptToken(tokenResponse.access_token),
-            refreshToken: encryptToken(tokenResponse.refresh_token || ''),
+            accessToken: await encryptToken(tokenResponse.access_token),
+            refreshToken: await encryptToken(tokenResponse.refresh_token || ''),
             expiresAt: Date.now() + (tokenResponse.expires_in * 1000),
             scope: config.scope,
             platformUserId: userInfo.id,
@@ -254,7 +387,7 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
         const config = getPlatformConfig(connection.platform);
 
         // Decrypt refresh token
-        const refreshToken = decryptToken(connection.refreshToken);
+        const refreshToken = await decryptToken(connection.refreshToken);
 
         if (!refreshToken) {
             throw new Error('No refresh token available');
@@ -286,8 +419,8 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
         // Update connection with new tokens
         const updatedConnection: OAuthConnection = {
             ...connection,
-            accessToken: encryptToken(tokenData.access_token),
-            refreshToken: encryptToken(tokenData.refresh_token || connection.refreshToken),
+            accessToken: await encryptToken(tokenData.access_token),
+            refreshToken: await encryptToken(tokenData.refresh_token || connection.refreshToken),
             expiresAt: Date.now() + (tokenData.expires_in * 1000),
             updatedAt: Date.now(),
         };
@@ -299,19 +432,46 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
     }
 
     /**
-     * Disconnect OAuth connection
-     * Removes connection from database
+     * Disconnect OAuth connection by connection ID
+     * Enhanced to support disconnection by connection ID for content workflow features
      * 
      * @param connectionId - Connection ID to disconnect
      */
     async disconnect(connectionId: string): Promise<void> {
-        // Note: We need to query by connectionId to get userId and platform
-        // This is a limitation of the current key structure
-        // In production, consider adding a GSI for connectionId lookups
+        // Enhanced implementation: scan for connection by ID
+        // This is less efficient than direct key lookup but provides better UX
+        const repository = getRepository();
 
-        // For now, we'll need to pass userId and platform separately
-        // This method signature should be updated in the interface
-        throw new Error('disconnect method requires userId and platform - interface needs update');
+        try {
+            // Scan for the connection with matching ID
+            // In production, consider adding a GSI for connectionId lookups for better performance
+            const scanResult = await repository.scan({
+                FilterExpression: '#entityType = :entityType AND #data.#id = :connectionId',
+                ExpressionAttributeNames: {
+                    '#entityType': 'EntityType',
+                    '#data': 'Data',
+                    '#id': 'id',
+                },
+                ExpressionAttributeValues: {
+                    ':entityType': 'SocialConnection',
+                    ':connectionId': connectionId,
+                },
+            });
+
+            if (!scanResult.Items || scanResult.Items.length === 0) {
+                throw new Error(`Connection with ID ${connectionId} not found`);
+            }
+
+            const connectionItem = scanResult.Items[0];
+
+            // Delete the connection using its PK and SK
+            await repository.delete(connectionItem.PK, connectionItem.SK);
+
+            console.log(`Successfully disconnected OAuth connection: ${connectionId}`);
+        } catch (error) {
+            console.error(`Failed to disconnect connection ${connectionId}:`, error);
+            throw error;
+        }
     }
 
     /**
@@ -339,8 +499,8 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
             const connection = item.Data;
 
             // Decrypt tokens before returning
-            connection.accessToken = decryptToken(connection.accessToken);
-            connection.refreshToken = decryptToken(connection.refreshToken);
+            connection.accessToken = await decryptToken(connection.accessToken);
+            connection.refreshToken = await decryptToken(connection.refreshToken);
 
             // Check if token is expired and refresh if needed
             if (connection.expiresAt < Date.now() + 5 * 60 * 1000) { // Refresh if expires in < 5 minutes
@@ -766,12 +926,15 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
 
     /**
      * Test analytics API access for content workflow features
+     * Enhanced with better error handling and monitoring
      * @private
      */
     private async testAnalyticsAPI(
         platform: Platform,
         accessToken: string
     ): Promise<{ hasAccess: boolean; error?: string; availableMetrics?: string[] }> {
+        const startTime = Date.now();
+
         try {
             let testUrl: string;
             let headers: Record<string, string> = {};
@@ -803,13 +966,48 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
                 signal: AbortSignal.timeout(10000), // 10 second timeout
             });
 
+            const duration = Date.now() - startTime;
+
             if (!response.ok) {
                 const errorText = await response.text();
+
+                // Log analytics API failures for monitoring
+                console.error(`Analytics API test failed for ${platform}:`, {
+                    status: response.status,
+                    error: errorText,
+                    duration,
+                    url: testUrl.replace(accessToken, '[REDACTED]'),
+                });
+
+                // Handle specific error cases
+                if (response.status === 403) {
+                    return {
+                        hasAccess: false,
+                        error: `Insufficient permissions for ${platform} analytics. Please reconnect with analytics permissions.`,
+                    };
+                } else if (response.status === 401) {
+                    return {
+                        hasAccess: false,
+                        error: `Authentication failed for ${platform}. Please reconnect your account.`,
+                    };
+                } else if (response.status === 429) {
+                    return {
+                        hasAccess: false,
+                        error: `Rate limit exceeded for ${platform}. Please try again later.`,
+                    };
+                }
+
                 return {
                     hasAccess: false,
                     error: `Analytics API call failed: ${response.status} ${errorText}`,
                 };
             }
+
+            // Log successful analytics API test
+            console.log(`Analytics API test successful for ${platform}:`, {
+                duration,
+                status: response.status,
+            });
 
             // Get available metrics for this platform
             const availableMetrics = ANALYTICS_METRICS[platform] || [];
@@ -819,6 +1017,29 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
                 availableMetrics,
             };
         } catch (error) {
+            const duration = Date.now() - startTime;
+
+            // Log analytics API errors for monitoring
+            console.error(`Analytics API test error for ${platform}:`, {
+                error: error instanceof Error ? error.message : 'Unknown error',
+                duration,
+            });
+
+            // Handle specific error types
+            if (error instanceof Error) {
+                if (error.name === 'AbortError') {
+                    return {
+                        hasAccess: false,
+                        error: `Analytics API test timed out for ${platform}. Please check your connection.`,
+                    };
+                } else if (error.message.includes('network')) {
+                    return {
+                        hasAccess: false,
+                        error: `Network error testing ${platform} analytics. Please check your connection.`,
+                    };
+                }
+            }
+
             return {
                 hasAccess: false,
                 error: error instanceof Error ? error.message : 'Analytics API test failed',
@@ -867,6 +1088,133 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
     }
 
     /**
+     * Disconnect OAuth connection by user ID and platform
+     * Enhanced method for content workflow features
+     * 
+     * @param userId - User ID
+     * @param platform - Social media platform
+     */
+    async disconnectByUserAndPlatform(userId: string, platform: Platform): Promise<void> {
+        const repository = getRepository();
+        const keys = getSocialConnectionKeys(userId, platform);
+
+        try {
+            await repository.delete(keys.PK, keys.SK);
+            console.log(`Successfully disconnected ${platform} for user ${userId}`);
+        } catch (error) {
+            console.error(`Failed to disconnect ${platform} for user ${userId}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get comprehensive analytics health status for all platforms
+     * Enhanced monitoring for content workflow features
+     * 
+     * @param userId - User ID
+     * @returns Health status for all platforms
+     */
+    async getAnalyticsHealthStatus(userId: string): Promise<{
+        platforms: Array<{
+            platform: Platform;
+            isConnected: boolean;
+            hasAnalyticsAccess: boolean;
+            lastValidated?: number;
+            healthScore: number;
+            issues: string[];
+        }>;
+        overallHealth: number;
+    }> {
+        const platforms: Platform[] = ['facebook', 'instagram', 'linkedin', 'twitter'];
+        const platformStatuses = [];
+        let totalHealthScore = 0;
+
+        for (const platform of platforms) {
+            try {
+                const connection = await this.getConnection(userId, platform);
+                const issues: string[] = [];
+                let healthScore = 0;
+
+                if (!connection) {
+                    platformStatuses.push({
+                        platform,
+                        isConnected: false,
+                        hasAnalyticsAccess: false,
+                        healthScore: 0,
+                        issues: ['Not connected'],
+                    });
+                    continue;
+                }
+
+                // Check connection health
+                healthScore += 25; // Base score for being connected
+
+                // Check token expiration
+                const timeUntilExpiry = connection.expiresAt - Date.now();
+                if (timeUntilExpiry < 0) {
+                    issues.push('Token expired');
+                } else if (timeUntilExpiry < 24 * 60 * 60 * 1000) {
+                    issues.push('Token expires soon');
+                    healthScore += 10; // Partial score for expiring token
+                } else {
+                    healthScore += 25; // Full score for valid token
+                }
+
+                // Check analytics access
+                const analyticsValidation = await this.validateAnalyticsAccess(userId, platform);
+                if (analyticsValidation.hasAccess) {
+                    healthScore += 25; // Full score for analytics access
+                } else {
+                    issues.push(`Analytics access limited: ${analyticsValidation.error}`);
+                }
+
+                // Check last validation time
+                const lastValidated = connection.metadata?.lastAnalyticsValidated;
+                if (lastValidated) {
+                    const timeSinceValidation = Date.now() - lastValidated;
+                    if (timeSinceValidation < 24 * 60 * 60 * 1000) {
+                        healthScore += 25; // Full score for recent validation
+                    } else if (timeSinceValidation < 7 * 24 * 60 * 60 * 1000) {
+                        healthScore += 15; // Partial score for validation within a week
+                        issues.push('Analytics not validated recently');
+                    } else {
+                        issues.push('Analytics validation overdue');
+                    }
+                } else {
+                    issues.push('Analytics never validated');
+                }
+
+                platformStatuses.push({
+                    platform,
+                    isConnected: true,
+                    hasAnalyticsAccess: analyticsValidation.hasAccess,
+                    lastValidated,
+                    healthScore,
+                    issues,
+                });
+
+                totalHealthScore += healthScore;
+            } catch (error) {
+                console.error(`Failed to check health for ${platform}:`, error);
+                platformStatuses.push({
+                    platform,
+                    isConnected: false,
+                    hasAnalyticsAccess: false,
+                    healthScore: 0,
+                    issues: ['Health check failed'],
+                });
+            }
+        }
+
+        const overallHealth = Math.round(totalHealthScore / platforms.length);
+
+        return {
+            platforms: platformStatuses,
+            overallHealth,
+        };
+    }
+
+    /**
      * Store OAuth connection in DynamoDB
      * @private
      */
@@ -902,14 +1250,12 @@ export function getOAuthConnectionManager(): OAuthConnectionManager {
 
 /**
  * Helper function to disconnect a connection by userId and platform
- * This is a workaround for the disconnect method limitation
+ * Enhanced to use the improved connection manager method
  */
 export async function disconnectConnection(
     userId: string,
     platform: Platform
 ): Promise<void> {
-    const repository = getRepository();
-    const keys = getSocialConnectionKeys(userId, platform);
-
-    await repository.delete(keys.PK, keys.SK);
+    const manager = getOAuthConnectionManager();
+    await manager.disconnectByUserAndPlatform(userId, platform);
 }

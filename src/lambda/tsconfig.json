@@ -27,7 +27,10 @@
         "life-event-processor.ts",
         "competitor-monitor-processor.ts",
         "trend-detector-processor.ts",
-        "price-reduction-processor.ts"
+        "price-reduction-processor.ts",
+        "publish-scheduled-content.ts",
+        "sync-social-analytics.ts",
+        "calculate-optimal-times.ts"
     ],
     "exclude": [
         "node_modules",

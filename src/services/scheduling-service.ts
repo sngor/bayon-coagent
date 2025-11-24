@@ -1,5 +1,5 @@
 /**
- * Core Scheduling Service
+ * Core Scheduling Service with Enhanced Error Handling
  * 
  * Provides comprehensive content scheduling functionality including:
  * - Individual content scheduling with channel validation
@@ -8,6 +8,7 @@
  * - Schedule cancellation with proper cleanup and status updates
  * - Future date validation with timezone support
  * - Integration with existing social media publishing infrastructure
+ * - Enterprise-grade error handling with retry logic and fallbacks
  * 
  * Validates Requirements: 1.1, 1.3, 1.4, 2.1
  */
@@ -33,6 +34,13 @@ import {
     ContentWorkflowResponse,
 } from '@/lib/content-workflow-types';
 import type { Platform } from '@/integrations/social/types';
+import {
+    executeService,
+    createServiceError,
+    type ServiceResult,
+    serviceWrapper
+} from '@/lib/error-handling-framework';
+import { ErrorCategory } from '@/lib/error-handling';
 
 /**
  * Parameters for scheduling individual content
@@ -95,7 +103,7 @@ export class SchedulingService {
     private oauthManager = getOAuthConnectionManager();
 
     /**
-     * Schedule content for future publication
+     * Schedule content for future publication with enhanced error handling
      * Validates future date, channel connections, and stores with metadata
      * 
      * Requirement 1.1: Provide scheduling option from Studio
@@ -103,146 +111,199 @@ export class SchedulingService {
      * Requirement 1.4: Save content with scheduling metadata
      */
     async scheduleContent(params: ScheduleContentParams): Promise<ContentWorkflowResponse<ScheduledContent>> {
-        try {
-            // Validate future date with timezone support
-            const now = new Date();
-            if (params.publishTime <= now) {
-                return {
-                    success: false,
-                    error: 'Publishing time must be in the future',
-                    timestamp: new Date(),
-                };
-            }
-
-            // Validate channels are connected and active
-            const validationResult = await this.validateChannels(params.userId, params.channels);
-            if (!validationResult.success) {
-                return {
-                    success: false,
-                    error: validationResult.error,
-                    timestamp: new Date(),
-                };
-            }
-
-            // Generate unique schedule ID
-            const scheduleId = randomUUID();
-
-            // Create scheduled content entity
-            const scheduledContent: ScheduledContent = {
-                id: scheduleId,
-                userId: params.userId,
-                contentId: params.contentId,
-                title: params.title,
-                content: params.content,
-                contentType: params.contentType,
-                publishTime: params.publishTime,
-                channels: params.channels,
-                status: ScheduledContentStatus.SCHEDULED,
-                metadata: params.metadata,
-                retryCount: 0,
-                createdAt: now,
-                updatedAt: now,
-                // GSI keys for efficient querying by status and time
-                GSI1PK: `SCHEDULE#${ScheduledContentStatus.SCHEDULED}`,
-                GSI1SK: `TIME#${params.publishTime.toISOString()}`,
-            };
-
-            // Store in DynamoDB using existing patterns
-            const keys = getScheduledContentKeys(
-                params.userId,
-                scheduleId,
-                ScheduledContentStatus.SCHEDULED,
-                params.publishTime.toISOString()
-            );
-            await this.repository.create(
-                keys.PK,
-                keys.SK,
-                'ScheduledContent' as EntityType,
-                scheduledContent,
-                {
-                    GSI1PK: keys.GSI1PK,
-                    GSI1SK: keys.GSI1SK,
+        const result = await executeService(
+            async () => {
+                // Validate future date with timezone support
+                const now = new Date();
+                if (params.publishTime <= now) {
+                    throw createServiceError(
+                        'Publishing time must be in the future',
+                        'schedule_content',
+                        ErrorCategory.VALIDATION
+                    );
                 }
-            );
 
+                // Validate channels are connected and active
+                const validationResult = await this.validateChannels(params.userId, params.channels);
+                if (!validationResult.success) {
+                    throw createServiceError(
+                        validationResult.error || 'Channel validation failed',
+                        'schedule_content',
+                        ErrorCategory.VALIDATION
+                    );
+                }
+
+                // Generate unique schedule ID
+                const scheduleId = randomUUID();
+
+                // Create scheduled content entity
+                const scheduledContent: ScheduledContent = {
+                    id: scheduleId,
+                    userId: params.userId,
+                    contentId: params.contentId,
+                    title: params.title,
+                    content: params.content,
+                    contentType: params.contentType,
+                    publishTime: params.publishTime,
+                    channels: params.channels,
+                    status: ScheduledContentStatus.SCHEDULED,
+                    metadata: params.metadata,
+                    retryCount: 0,
+                    createdAt: now,
+                    updatedAt: now,
+                    // GSI keys for efficient querying by status and time
+                    GSI1PK: `SCHEDULE#${ScheduledContentStatus.SCHEDULED}`,
+                    GSI1SK: `TIME#${params.publishTime.toISOString()}`,
+                };
+
+                // Store in DynamoDB using existing patterns
+                const keys = getScheduledContentKeys(
+                    params.userId,
+                    scheduleId,
+                    ScheduledContentStatus.SCHEDULED,
+                    params.publishTime.toISOString()
+                );
+
+                await this.repository.create(
+                    keys.PK,
+                    keys.SK,
+                    'ScheduledContent' as EntityType,
+                    scheduledContent,
+                    {
+                        GSI1PK: keys.GSI1PK,
+                        GSI1SK: keys.GSI1SK,
+                    }
+                );
+
+                return scheduledContent;
+            },
+            {
+                operation: 'schedule_content',
+                userId: params.userId,
+                timestamp: new Date(),
+                metadata: {
+                    contentType: params.contentType,
+                    channelCount: params.channels.length,
+                    publishTime: params.publishTime.toISOString()
+                }
+            },
+            {
+                maxRetries: 3,
+                fallback: {
+                    enabled: false // No fallback for scheduling operations
+                }
+            }
+        );
+
+        // Convert ServiceResult to ContentWorkflowResponse
+        if (result.success && result.data) {
             return {
                 success: true,
-                data: scheduledContent,
+                data: result.data,
                 message: `Content scheduled for ${params.publishTime.toLocaleString()}`,
-                timestamp: new Date(),
+                timestamp: result.timestamp,
             };
-        } catch (error) {
-            console.error('Failed to schedule content:', error);
+        } else {
             return {
                 success: false,
-                error: error instanceof Error ? error.message : 'Failed to schedule content',
-                timestamp: new Date(),
+                error: result.error?.userMessage || result.error?.message || 'Failed to schedule content',
+                timestamp: result.timestamp,
             };
         }
     }
 
     /**
-     * Get calendar content for date range with efficient GSI queries
+     * Get calendar content for date range with efficient GSI queries and enhanced error handling
      * 
      * Requirement 2.1: Display scheduled content organized by date
      */
     async getCalendarContent(params: GetCalendarContentParams): Promise<ContentWorkflowResponse<CalendarContent[]>> {
-        try {
-            // Query scheduled content for user within date range
-            const pk = `USER#${params.userId}`;
-            const skPrefix = 'SCHEDULE#';
+        const result = await executeService(
+            async () => {
+                // Query scheduled content for user within date range
+                const pk = `USER#${params.userId}`;
+                const skPrefix = 'SCHEDULE#';
 
-            const queryResult = await this.repository.query<ScheduledContent>(
-                pk,
-                skPrefix,
-                {
-                    filterExpression: '#publishTime BETWEEN :startDate AND :endDate',
-                    expressionAttributeNames: {
-                        '#publishTime': 'Data.publishTime',
-                    },
-                    expressionAttributeValues: {
-                        ':startDate': params.startDate.toISOString(),
-                        ':endDate': params.endDate.toISOString(),
-                    },
+                const queryResult = await this.repository.query<ScheduledContent>(
+                    pk,
+                    skPrefix,
+                    {
+                        filterExpression: '#publishTime BETWEEN :startDate AND :endDate',
+                        expressionAttributeNames: {
+                            '#publishTime': 'Data.publishTime',
+                        },
+                        expressionAttributeValues: {
+                            ':startDate': params.startDate.toISOString(),
+                            ':endDate': params.endDate.toISOString(),
+                        },
+                    }
+                );
+
+                // Apply additional filters if specified
+                let filteredItems = queryResult.items;
+
+                if (params.channels && params.channels.length > 0) {
+                    filteredItems = filteredItems.filter(item =>
+                        item.channels.some(channel => params.channels!.includes(channel.type))
+                    );
                 }
-            );
 
-            // Apply additional filters if specified
-            let filteredItems = queryResult.items;
+                if (params.contentTypes && params.contentTypes.length > 0) {
+                    filteredItems = filteredItems.filter(item =>
+                        params.contentTypes!.includes(item.contentType)
+                    );
+                }
 
-            if (params.channels && params.channels.length > 0) {
-                filteredItems = filteredItems.filter(item =>
-                    item.channels.some(channel => params.channels!.includes(channel.type))
-                );
+                if (params.status && params.status.length > 0) {
+                    filteredItems = filteredItems.filter(item =>
+                        params.status!.includes(item.status)
+                    );
+                }
+
+                // Group content by date
+                const calendarData = this.groupContentByDate(filteredItems);
+                return calendarData;
+            },
+            {
+                operation: 'get_calendar_content',
+                userId: params.userId,
+                timestamp: new Date(),
+                metadata: {
+                    dateRange: {
+                        start: params.startDate.toISOString(),
+                        end: params.endDate.toISOString()
+                    },
+                    filters: {
+                        channels: params.channels?.length || 0,
+                        contentTypes: params.contentTypes?.length || 0,
+                        status: params.status?.length || 0
+                    }
+                }
+            },
+            {
+                maxRetries: 3,
+                fallback: {
+                    enabled: true,
+                    fallbackValue: [], // Return empty array if database fails
+                    cacheKey: `calendar_${params.userId}_${params.startDate.toISOString()}_${params.endDate.toISOString()}`,
+                    cacheTTL: 5 * 60 * 1000 // 5 minutes
+                }
             }
+        );
 
-            if (params.contentTypes && params.contentTypes.length > 0) {
-                filteredItems = filteredItems.filter(item =>
-                    params.contentTypes!.includes(item.contentType)
-                );
-            }
-
-            if (params.status && params.status.length > 0) {
-                filteredItems = filteredItems.filter(item =>
-                    params.status!.includes(item.status)
-                );
-            }
-
-            // Group content by date
-            const calendarData = this.groupContentByDate(filteredItems);
-
+        // Convert ServiceResult to ContentWorkflowResponse
+        if (result.success && result.data) {
             return {
                 success: true,
-                data: calendarData,
-                message: `Retrieved ${filteredItems.length} scheduled items`,
-                timestamp: new Date(),
+                data: result.data,
+                message: `Retrieved ${result.data.reduce((sum, day) => sum + day.totalItems, 0)} scheduled items`,
+                timestamp: result.timestamp,
             };
-        } catch (error) {
-            console.error('Failed to get calendar content:', error);
+        } else {
             return {
                 success: false,
-                error: error instanceof Error ? error.message : 'Failed to get calendar content',
-                timestamp: new Date(),
+                error: result.error?.userMessage || result.error?.message || 'Failed to get calendar content',
+                timestamp: result.timestamp,
             };
         }
     }

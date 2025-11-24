@@ -2,111 +2,127 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.saveAlertSettings = exports.getAlertSettings = exports.getAlertStatistics = exports.archiveAlerts = exports.dismissAlerts = exports.markAlertsAsRead = exports.searchAlerts = exports.getAlertsByDateRange = exports.getAlertsByPriority = exports.getAlertsByStatus = exports.getAlertsByType = exports.getUnreadCount = exports.updateAlertStatus = exports.getAlerts = exports.saveAlert = exports.getAlertDataAccess = exports.alertDataAccess = exports.AlertDataAccess = void 0;
 const repository_1 = require("@/aws/dynamodb/repository");
+const cache_1 = require("./cache");
+const query_optimization_1 = require("./query-optimization");
 class AlertDataAccess {
     constructor() {
         this.repository = new repository_1.DynamoDBRepository();
     }
     async saveAlert(userId, alert) {
         await this.repository.createAlert(userId, alert.id, alert);
+        cache_1.alertCache.invalidateNewAlert(userId);
     }
     async getAlerts(userId, filters = {}, options = {}) {
-        const { limit = 50, offset = 0, sortBy = 'createdAt', sortOrder = 'desc' } = options;
-        const queryOptions = {
-            limit: limit + offset,
-            scanIndexForward: sortOrder === 'asc',
-        };
-        const filterExpressions = [];
-        const expressionAttributeValues = {};
-        const expressionAttributeNames = {};
-        if (filters.status && filters.status.length > 0) {
-            const statusPlaceholders = filters.status.map((_, index) => `:status${index}`);
-            filterExpressions.push(`#data.#status IN (${statusPlaceholders.join(', ')})`);
-            expressionAttributeNames['#data'] = 'Data';
-            expressionAttributeNames['#status'] = 'status';
-            filters.status.forEach((status, index) => {
-                expressionAttributeValues[`:status${index}`] = status;
-            });
+        const startTime = Date.now();
+        const cachedResult = cache_1.alertCache.get(userId, filters, options);
+        if (cachedResult) {
+            query_optimization_1.performanceMonitor.recordQuery('cache_hit', Date.now() - startTime);
+            return cachedResult;
         }
-        if (filters.priority && filters.priority.length > 0) {
-            const priorityPlaceholders = filters.priority.map((_, index) => `:priority${index}`);
-            filterExpressions.push(`#data.#priority IN (${priorityPlaceholders.join(', ')})`);
-            expressionAttributeNames['#data'] = 'Data';
-            expressionAttributeNames['#priority'] = 'priority';
-            filters.priority.forEach((priority, index) => {
-                expressionAttributeValues[`:priority${index}`] = priority;
-            });
-        }
-        if (filters.dateRange) {
-            if (filters.dateRange.start) {
-                filterExpressions.push('#data.#createdAt >= :startDate');
-                expressionAttributeNames['#data'] = 'Data';
-                expressionAttributeNames['#createdAt'] = 'createdAt';
-                expressionAttributeValues[':startDate'] = filters.dateRange.start;
+        try {
+            const optimizedQuery = query_optimization_1.queryOptimizer.optimizeQuery(userId, filters, options);
+            const { limit = 50, offset = 0, sortBy = 'createdAt', sortOrder = 'desc' } = options;
+            let allAlerts = [];
+            let totalCount = 0;
+            let unreadCount = 0;
+            if (optimizedQuery.strategy === 'gsi1_type') {
+                const queryConfig = optimizedQuery.queries[0];
+                const result = await this.repository.queryAlertsByType(userId, filters.types[0], {
+                    limit: limit + offset,
+                    scanIndexForward: queryConfig.scanIndexForward,
+                    filterExpression: queryConfig.filterExpression,
+                    expressionAttributeNames: queryConfig.expressionAttributeNames,
+                    expressionAttributeValues: queryConfig.expressionAttributeValues,
+                });
+                allAlerts = result.items;
+                totalCount = result.count;
             }
-            if (filters.dateRange.end) {
-                filterExpressions.push('#data.#createdAt <= :endDate');
-                expressionAttributeNames['#data'] = 'Data';
-                expressionAttributeNames['#createdAt'] = 'createdAt';
-                expressionAttributeValues[':endDate'] = filters.dateRange.end;
+            else if (optimizedQuery.strategy === 'parallel_queries') {
+                const promises = optimizedQuery.queries.map(async (queryConfig) => {
+                    const alertType = queryConfig.expressionAttributeValues?.[':gsi1pk']?.split('#')[2] || '';
+                    return this.repository.queryAlertsByType(userId, alertType, {
+                        limit: queryConfig.limit,
+                        scanIndexForward: queryConfig.scanIndexForward,
+                        filterExpression: queryConfig.filterExpression,
+                        expressionAttributeNames: queryConfig.expressionAttributeNames,
+                        expressionAttributeValues: queryConfig.expressionAttributeValues,
+                    });
+                });
+                const results = await Promise.all(promises);
+                const allResults = results.map(r => r.items);
+                allAlerts = query_optimization_1.resultMerger.mergeAndSort(allResults, sortOrder, limit + offset);
+                totalCount = results.reduce((sum, r) => sum + r.count, 0);
             }
-        }
-        if (filterExpressions.length > 0) {
-            queryOptions.filterExpression = filterExpressions.join(' AND ');
-            queryOptions.expressionAttributeValues = expressionAttributeValues;
-            queryOptions.expressionAttributeNames = expressionAttributeNames;
-        }
-        let allAlerts = [];
-        let totalCount = 0;
-        let unreadCount = 0;
-        if (filters.types && filters.types.length > 0) {
-            for (const alertType of filters.types) {
-                const typeResult = await this.repository.queryAlertsByType(userId, alertType, queryOptions);
-                allAlerts.push(...typeResult.items);
-                totalCount += typeResult.count;
+            else {
+                const queryConfig = optimizedQuery.queries[0];
+                const result = await this.repository.queryAlerts(userId, {
+                    limit: limit + offset,
+                    scanIndexForward: queryConfig.scanIndexForward,
+                    filterExpression: queryConfig.filterExpression,
+                    expressionAttributeNames: queryConfig.expressionAttributeNames,
+                    expressionAttributeValues: queryConfig.expressionAttributeValues,
+                });
+                allAlerts = result.items;
+                totalCount = result.count;
             }
-            allAlerts.sort((a, b) => {
-                const aTime = new Date(a.createdAt).getTime();
-                const bTime = new Date(b.createdAt).getTime();
-                return sortOrder === 'desc' ? bTime - aTime : aTime - bTime;
-            });
+            if (filters.searchQuery) {
+                allAlerts = this.applySearchFilter(allAlerts, filters.searchQuery);
+            }
+            unreadCount = allAlerts.filter(alert => alert.status === 'unread').length;
+            const paginatedAlerts = allAlerts.slice(offset, offset + limit);
+            const response = {
+                alerts: paginatedAlerts,
+                totalCount: allAlerts.length,
+                unreadCount,
+                hasMore: offset + limit < allAlerts.length
+            };
+            const cacheTTL = this.getCacheTTL(filters, options);
+            cache_1.alertCache.set(userId, response, filters, options, cacheTTL);
+            query_optimization_1.performanceMonitor.recordQuery(optimizedQuery.strategy, Date.now() - startTime);
+            return response;
         }
-        else {
-            const result = await this.repository.queryAlerts(userId, queryOptions);
-            allAlerts = result.items;
-            totalCount = result.count;
+        catch (error) {
+            query_optimization_1.performanceMonitor.recordQuery('error', Date.now() - startTime, false);
+            throw error;
+        }
+    }
+    applySearchFilter(alerts, searchQuery) {
+        const searchLower = searchQuery.toLowerCase();
+        return alerts.filter(alert => {
+            switch (alert.type) {
+                case 'life-event-lead':
+                    return alert.data.prospectLocation.toLowerCase().includes(searchLower) ||
+                        alert.data.eventType.toLowerCase().includes(searchLower) ||
+                        alert.data.recommendedAction.toLowerCase().includes(searchLower);
+                case 'competitor-new-listing':
+                case 'competitor-price-reduction':
+                case 'competitor-withdrawal':
+                    return alert.data.competitorName.toLowerCase().includes(searchLower) ||
+                        alert.data.propertyAddress.toLowerCase().includes(searchLower);
+                case 'neighborhood-trend':
+                    return alert.data.neighborhood.toLowerCase().includes(searchLower) ||
+                        alert.data.trendType.toLowerCase().includes(searchLower);
+                case 'price-reduction':
+                    return alert.data.propertyAddress.toLowerCase().includes(searchLower) ||
+                        alert.data.propertyDetails.propertyType.toLowerCase().includes(searchLower);
+                default:
+                    return false;
+            }
+        });
+    }
+    getCacheTTL(filters, options) {
+        if (filters.dateRange && filters.dateRange.end) {
+            const endDate = new Date(filters.dateRange.end);
+            const now = new Date();
+            const daysDiff = (now.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24);
+            if (daysDiff > 7) {
+                return 30 * 60 * 1000;
+            }
         }
         if (filters.searchQuery) {
-            const searchLower = filters.searchQuery.toLowerCase();
-            allAlerts = allAlerts.filter(alert => {
-                switch (alert.type) {
-                    case 'life-event-lead':
-                        return alert.data.prospectLocation.toLowerCase().includes(searchLower) ||
-                            alert.data.eventType.toLowerCase().includes(searchLower) ||
-                            alert.data.recommendedAction.toLowerCase().includes(searchLower);
-                    case 'competitor-new-listing':
-                    case 'competitor-price-reduction':
-                    case 'competitor-withdrawal':
-                        return alert.data.competitorName.toLowerCase().includes(searchLower) ||
-                            alert.data.propertyAddress.toLowerCase().includes(searchLower);
-                    case 'neighborhood-trend':
-                        return alert.data.neighborhood.toLowerCase().includes(searchLower) ||
-                            alert.data.trendType.toLowerCase().includes(searchLower);
-                    case 'price-reduction':
-                        return alert.data.propertyAddress.toLowerCase().includes(searchLower) ||
-                            alert.data.propertyDetails.propertyType.toLowerCase().includes(searchLower);
-                    default:
-                        return false;
-                }
-            });
+            return 2 * 60 * 1000;
         }
-        unreadCount = allAlerts.filter(alert => alert.status === 'unread').length;
-        const paginatedAlerts = allAlerts.slice(offset, offset + limit);
-        return {
-            alerts: paginatedAlerts,
-            totalCount: allAlerts.length,
-            unreadCount,
-            hasMore: offset + limit < allAlerts.length
-        };
+        return 5 * 60 * 1000;
     }
     async updateAlertStatus(userId, alertId, status) {
         const alerts = await this.repository.queryAlerts(userId, {
@@ -133,8 +149,13 @@ class AlertDataAccess {
             updates.dismissedAt = new Date().toISOString();
         }
         await this.repository.updateAlert(userId, alertId, timestamp, updates);
+        cache_1.alertCache.invalidateAlertUpdate(userId, alertId);
     }
     async getUnreadCount(userId) {
+        const cachedCount = cache_1.alertCache.getUnreadCount(userId);
+        if (cachedCount !== null) {
+            return cachedCount;
+        }
         const result = await this.repository.queryAlerts(userId, {
             filterExpression: '#data.#status = :status',
             expressionAttributeNames: {
@@ -145,6 +166,7 @@ class AlertDataAccess {
                 ':status': 'unread'
             }
         });
+        cache_1.alertCache.setUnreadCount(userId, result.count, 2 * 60 * 1000);
         return result.count;
     }
     async getAlertsByType(userId, alertType, options = {}) {

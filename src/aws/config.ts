@@ -29,6 +29,10 @@ export interface BedrockConfig {
   endpoint?: string;
 }
 
+export interface GoogleAIConfig {
+  apiKey?: string;
+}
+
 export interface SESConfig {
   region: string;
   fromEmail: string;
@@ -40,6 +44,19 @@ export interface SNSConfig {
   region: string;
   platformApplicationArn?: string;
   endpoint?: string;
+}
+
+export interface ApiGatewayConfig {
+  mainApiUrl?: string;
+  aiServiceApiUrl?: string;
+  integrationServiceApiUrl?: string;
+  backgroundServiceApiUrl?: string;
+  adminServiceApiUrl?: string;
+  mainRestApiId?: string;
+  aiServiceApiId?: string;
+  integrationServiceApiId?: string;
+  backgroundServiceApiId?: string;
+  adminServiceApiId?: string;
 }
 
 /**
@@ -63,8 +80,10 @@ export interface AWSConfig {
   dynamodb: DynamoDBConfig;
   s3: S3Config;
   bedrock: BedrockConfig;
+  googleAI: GoogleAIConfig;
   ses: SESConfig;
   sns: SNSConfig;
+  apiGateway: ApiGatewayConfig;
 }
 
 /**
@@ -128,6 +147,10 @@ export function getAWSConfig(): AWSConfig {
       endpoint: undefined, // Bedrock typically doesn't have local emulation
     },
 
+    googleAI: {
+      apiKey: process.env.GOOGLE_AI_API_KEY,
+    },
+
     ses: {
       region: process.env.SES_REGION || region,
       fromEmail: process.env.SES_FROM_EMAIL || 'noreply@bayoncoagent.com',
@@ -139,6 +162,19 @@ export function getAWSConfig(): AWSConfig {
       region: process.env.SNS_REGION || region,
       platformApplicationArn: process.env.SNS_PLATFORM_APPLICATION_ARN,
       endpoint: isLocal ? 'http://localhost:4566' : undefined,
+    },
+
+    apiGateway: {
+      mainApiUrl: process.env.MAIN_API_URL,
+      aiServiceApiUrl: process.env.AI_SERVICE_API_URL,
+      integrationServiceApiUrl: process.env.INTEGRATION_SERVICE_API_URL,
+      backgroundServiceApiUrl: process.env.BACKGROUND_SERVICE_API_URL,
+      adminServiceApiUrl: process.env.ADMIN_SERVICE_API_URL,
+      mainRestApiId: process.env.MAIN_REST_API_ID,
+      aiServiceApiId: process.env.AI_SERVICE_API_ID,
+      integrationServiceApiId: process.env.INTEGRATION_SERVICE_API_ID,
+      backgroundServiceApiId: process.env.BACKGROUND_SERVICE_API_ID,
+      adminServiceApiId: process.env.ADMIN_SERVICE_API_ID,
     },
   };
 }
@@ -202,6 +238,10 @@ export function validateConfig(): { valid: boolean; errors: string[] } {
       `BEDROCK_MODEL_ID "${config.bedrock.modelId}" is not a valid model. ` +
       `Valid models: ${VALID_BEDROCK_MODELS.join(', ')}`
     );
+  }
+
+  if (!config.googleAI.apiKey) {
+    errors.push('GOOGLE_AI_API_KEY is not set (required for Gemini image generation)');
   }
 
   return {

@@ -28,6 +28,14 @@ import {
     type BulkScheduleProgress
 } from '@/services/scheduling-service';
 import {
+    createNewsletterTemplate,
+    exportNewsletterTemplate,
+    testESPCompatibility,
+    getNewsletterTemplates,
+    validateSpamScore,
+    optimizeNewsletterHTML
+} from '@/services/template-service';
+import {
     analyticsService,
     type GetAnalyticsByTypeParams,
     type CreateABTestParams,
@@ -2865,5 +2873,205 @@ export async function getNewsletterTemplatesAction(
         }
 
         return createResponse(false, 'Failed to get newsletter templates', undefined, [error instanceof Error ? error.message : 'Unknown error']);
+    }
+}
+
+// ==================== Newsletter Template Actions ====================
+
+/**
+ * Export newsletter template action
+ * Requirements 12.4, 12.5: Dual-format export compatible with ESPs
+ */
+export async function exportNewsletterTemplateAction(formData: FormData): Promise<ContentWorkflowResponse> {
+    try {
+        // Get current user
+        const user = await getCurrentUser();
+        if (!user) {
+            return { success: false, error: 'Authentication required', timestamp: new Date() };
+        }
+
+        // Parse form data
+        const templateId = formData.get('templateId') as string;
+        const contentJson = formData.get('content') as string;
+        const userBrandInfoJson = formData.get('userBrandInfo') as string;
+
+        if (!templateId || !contentJson) {
+            return { success: false, error: 'Missing required fields', timestamp: new Date() };
+        }
+
+        let content, userBrandInfo;
+        try {
+            content = JSON.parse(contentJson);
+            userBrandInfo = userBrandInfoJson ? JSON.parse(userBrandInfoJson) : undefined;
+        } catch (error) {
+            return { success: false, error: 'Invalid JSON data', timestamp: new Date() };
+        }
+
+        // Export newsletter template
+        const result = await exportNewsletterTemplate({
+            userId: user.id,
+            templateId,
+            content,
+            userBrandInfo
+        });
+
+        if (!result.success) {
+            return { success: false, error: result.error, timestamp: new Date() };
+        }
+
+        return {
+            success: true,
+            data: result.export,
+            message: 'Newsletter exported successfully',
+            timestamp: new Date()
+        };
+    } catch (error) {
+        console.error('Failed to export newsletter template:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to export newsletter template',
+            timestamp: new Date()
+        };
+    }
+}
+
+/**
+ * Test ESP compatibility action
+ * Requirements 12.3: ESP compatibility testing
+ */
+export async function testESPCompatibilityAction(formData: FormData): Promise<ContentWorkflowResponse> {
+    try {
+        const html = formData.get('html') as string;
+        const plainText = formData.get('plainText') as string;
+        const espListJson = formData.get('espList') as string;
+
+        if (!html || !plainText) {
+            return { success: false, error: 'Missing HTML or plain text content', timestamp: new Date() };
+        }
+
+        let espList;
+        try {
+            espList = espListJson ? JSON.parse(espListJson) : undefined;
+        } catch (error) {
+            return { success: false, error: 'Invalid ESP list JSON', timestamp: new Date() };
+        }
+
+        // Test ESP compatibility
+        const result = await testESPCompatibility({
+            html,
+            plainText,
+            espList
+        });
+
+        if (!result.success) {
+            return { success: false, error: result.error, timestamp: new Date() };
+        }
+
+        return {
+            success: true,
+            data: result.results,
+            message: 'ESP compatibility test completed',
+            timestamp: new Date()
+        };
+    } catch (error) {
+        console.error('Failed to test ESP compatibility:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to test ESP compatibility',
+            timestamp: new Date()
+        };
+    }
+}
+
+/**
+ * Validate spam score action
+ * Requirements: Spam filter validation
+ */
+export async function validateSpamScoreAction(formData: FormData): Promise<ContentWorkflowResponse> {
+    try {
+        const html = formData.get('html') as string;
+        const plainText = formData.get('plainText') as string;
+        const subject = formData.get('subject') as string;
+
+        if (!html || !plainText || !subject) {
+            return { success: false, error: 'Missing required content', timestamp: new Date() };
+        }
+
+        // Validate spam score
+        const result = await validateSpamScore({
+            html,
+            plainText,
+            subject
+        });
+
+        if (!result.success) {
+            return { success: false, error: result.error, timestamp: new Date() };
+        }
+
+        return {
+            success: true,
+            data: {
+                spamScore: result.spamScore,
+                issues: result.issues
+            },
+            message: 'Spam score validation completed',
+            timestamp: new Date()
+        };
+    } catch (error) {
+        console.error('Failed to validate spam score:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to validate spam score',
+            timestamp: new Date()
+        };
+    }
+}
+
+/**
+ * Optimize newsletter HTML action
+ * Requirements 12.3: HTML optimization for email clients
+ */
+export async function optimizeNewsletterHTMLAction(formData: FormData): Promise<ContentWorkflowResponse> {
+    try {
+        const html = formData.get('html') as string;
+        const optimizationsJson = formData.get('optimizations') as string;
+
+        if (!html) {
+            return { success: false, error: 'Missing HTML content', timestamp: new Date() };
+        }
+
+        let optimizations;
+        try {
+            optimizations = optimizationsJson ? JSON.parse(optimizationsJson) : undefined;
+        } catch (error) {
+            return { success: false, error: 'Invalid optimizations JSON', timestamp: new Date() };
+        }
+
+        // Optimize newsletter HTML
+        const result = await optimizeNewsletterHTML({
+            html,
+            optimizations
+        });
+
+        if (!result.success) {
+            return { success: false, error: result.error, timestamp: new Date() };
+        }
+
+        return {
+            success: true,
+            data: {
+                optimizedHtml: result.optimizedHtml,
+                optimizations: result.optimizations
+            },
+            message: 'Newsletter HTML optimized successfully',
+            timestamp: new Date()
+        };
+    } catch (error) {
+        console.error('Failed to optimize newsletter HTML:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to optimize newsletter HTML',
+            timestamp: new Date()
+        };
     }
 }

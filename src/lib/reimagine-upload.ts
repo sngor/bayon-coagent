@@ -8,7 +8,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { uploadFile } from '@/aws/s3';
 import { getRepository } from '@/aws/dynamodb/repository';
-import { analyzeImage } from '@/aws/bedrock/flows/reimagine-analyze';
+import { analyzeImage } from '@/aws/google-ai/flows/gemini-analyze';
 import {
   validateFileUpload,
   type EditSuggestion,
@@ -77,10 +77,10 @@ export async function handleImageUpload(
     // Generate unique image ID
     const imageId = uuidv4();
     const timestamp = Date.now();
-    
+
     // Sanitize filename
     const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-    
+
     // Generate S3 key with user-specific pattern
     const s3Key = `users/${userId}/reimagine/originals/${imageId}/${timestamp}-${sanitizedFileName}`;
 
@@ -101,11 +101,11 @@ export async function handleImageUpload(
 
     // Prepare image metadata
     const uploadedAt = new Date().toISOString();
-    
+
     // Invoke AI analysis to generate suggestions
     let suggestions: EditSuggestion[] = [];
     let analysisError: string | undefined;
-    
+
     const cachedSuggestions = getCachedSuggestions(imageId);
     if (cachedSuggestions) {
       suggestions = cachedSuggestions;
@@ -113,7 +113,7 @@ export async function handleImageUpload(
       try {
         // Convert image to base64 for analysis
         const base64Image = buffer.toString('base64');
-        
+
         // Determine image format
         let imageFormat: 'jpeg' | 'png' | 'webp' = 'jpeg';
         if (file.type === 'image/png') {
@@ -121,7 +121,7 @@ export async function handleImageUpload(
         } else if (file.type === 'image/webp') {
           imageFormat = 'webp';
         }
-        
+
         // Analyze image and get suggestions with retry logic
         const analysisResult = await withRetry(
           () => analyzeImage({
@@ -131,9 +131,9 @@ export async function handleImageUpload(
           'analysis',
           { maxRetries: 2 }
         );
-        
+
         suggestions = analysisResult.suggestions;
-        
+
         // Cache suggestions for 5 minutes
         cacheSuggestions(imageId, suggestions);
       } catch (error) {
@@ -143,9 +143,9 @@ export async function handleImageUpload(
           imageId,
           operation: 'handleImageUpload',
         });
-        
+
         analysisError = 'Image analysis failed, but upload succeeded.';
-        
+
         // Provide fallback suggestions
         suggestions = [
           {
@@ -190,7 +190,7 @@ export async function handleImageUpload(
     logError(error, 'upload-image', {
       operation: 'handleImageUpload',
     });
-    
+
     // Return formatted error response
     return formatErrorResponse(error, 'upload-image');
   }

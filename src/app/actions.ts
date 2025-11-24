@@ -2957,8 +2957,8 @@ export async function createProjectAction(
       };
     }
 
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -3009,8 +3009,8 @@ export async function moveContentToProjectAction(
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -3049,8 +3049,8 @@ export async function deleteContentAction(
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -3098,8 +3098,8 @@ export async function renameContentAction(
       };
     }
 
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -3272,8 +3272,8 @@ export async function getSavedContentAction(): Promise<{
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user?.id) {
       return {
@@ -3314,8 +3314,8 @@ export async function getProjectsAction(): Promise<{
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user?.id) {
       return {

@@ -1,0 +1,596 @@
+# Enhanced CloudWatch Alarms for Content Workflow Features
+# This file extends the existing template.yaml with additional intelligent alarms
+# for proactive monitoring and alerting
+
+# ==========================================
+# Enhanced Content Workflow Alarms
+# ==========================================
+
+# Predictive Rate Limit Alarms
+ContentWorkflowRateLimitPredictiveAlarm:
+  Type: AWS::CloudWatch::Alarm
+  Condition: HasAlarmEmail
+  Properties:
+    AlarmName: !Sub ${Environment}-content-workflow-rate-limit-predictive
+    AlarmDescription: Predictive alert for API rate limit usage before limits are reached
+    MetricName: RateLimitUsage
+    Namespace: BayonCoAgent/ContentWorkflow
+    Statistic: Average
+    Period: 300 # 5 minutes
+    EvaluationPeriods: 2
+    Threshold: 80 # Alert at 80% usage
+    ComparisonOperator: GreaterThanThreshold
+    AlarmActions:
+      - !Ref AlarmTopic
+    TreatMissingData: notBreaching
+    Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: AlertType
+        Value: Predictive
+      - Key: Severity
+        Value: Warning
+
+ContentWorkflowRateLimitCriticalAlarm:
+  Type: AWS::CloudWatch::Alarm
+  Condition: HasAlarmEmail
+  Properties:
+    AlarmName: !Sub ${Environment}-content-workflow-rate-limit-critical
+    AlarmDescription: Critical alert when API rate limit usage exceeds 95%
+    MetricName: RateLimitUsage
+    Namespace: BayonCoAgent/ContentWorkflow
+    Statistic: Maximum
+    Period: 300
+    EvaluationPeriods: 1
+    Threshold: 95
+    ComparisonOperator: GreaterThanThreshold
+    AlarmActions:
+      - !Ref AlarmTopic
+    TreatMissingData: notBreaching
+    Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: AlertType
+        Value: Critical
+      - Key: Severity
+        Value: Critical
+
+# Enhanced Publishing Failure Alarms with Automatic Retry Status
+ContentWorkflowPublishingFailureRateAlarm:
+  Type: AWS::CloudWatch::Alarm
+  Condition: HasAlarmEmail
+  Properties:
+    AlarmName: !Sub ${Environment}-content-workflow-publishing-failure-rate
+    AlarmDescription: Alert when publishing failure rate exceeds acceptable threshold
+    MetricName: PublishingFailureRate
+    Namespace: BayonCoAgent/ContentWorkflow
+    Statistic: Average
+    Period: 900 # 15 minutes
+    EvaluationPeriods: 2
+    Threshold: 10 # 10% failure rate
+    ComparisonOperator: GreaterThanThreshold
+    AlarmActions:
+      - !Ref AlarmTopic
+    TreatMissingData: notBreaching
+    Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: AlertType
+        Value: BusinessMetric
+      - Key: Severity
+        Value: Error
+
+ContentWorkflowPublishingRetryExhaustionAlarm:
+  Type: AWS::CloudWatch::Alarm
+  Condition: HasAlarmEmail
+  Properties:
+    AlarmName: !Sub ${Environment}-content-workflow-publishing-retry-exhaustion
+    AlarmDescription: Alert when publishing retries are exhausted and manual intervention needed
+    MetricName: PublishingRetryExhaustion
+    Namespace: BayonCoAgent/ContentWorkflow
+    Statistic: Sum
+    Period: 300
+    EvaluationPeriods: 1
+    Threshold: 1
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    AlarmActions:
+      - !Ref AlarmTopic
+    TreatMissingData: notBreaching
+    Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: AlertType
+        Value: RetryExhaustion
+      - Key: Severity
+        Value: Critical
+
+# Analytics Sync Failure Alarms with Data Freshness Monitoring
+ContentWorkflowAnalyticsDataFreshnessAlarm:
+  Type: AWS::CloudWatch::Alarm
+  Condition: HasAlarmEmail
+  Properties:
+    AlarmName: !Sub ${Environment}-content-workflow-analytics-data-freshness
+    AlarmDescription: Alert when analytics data exceeds 24-hour freshness requirement
+    MetricName: AnalyticsDataAge
+    Namespace: BayonCoAgent/ContentWorkflow
+    Statistic: Maximum
+    Period: 3600 # 1 hour
+    EvaluationPeriods: 1
+    Threshold: 1440 # 24 hours in minutes
+    ComparisonOperator: GreaterThanThreshold
+    AlarmActions:
+      - !Ref AlarmTopic
+    TreatMissingData: breaching # Treat missing data as stale
+    Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: AlertType
+        Value: DataFreshness
+      - Key: Severity
+        Value: Error
+
+ContentWorkflowAnalyticsSyncConsecutiveFailuresAlarm:
+  Type: AWS::CloudWatch::Alarm
+  Condition: HasAlarmEmail
+  Properties:
+    AlarmName: !Sub ${Environment}-content-workflow-analytics-sync-consecutive-failures
+    AlarmDescription: Alert when analytics sync has consecutive failures indicating systematic issue
+    MetricName: AnalyticsSyncConsecutiveFailures
+    Namespace: BayonCoAgent/ContentWorkflow
+    Statistic: Maximum
+    Period: 3600
+    EvaluationPeriods: 1
+    Threshold: 3 # 3 consecutive failures
+    ComparisonOperator: GreaterThanOrEqualToThreshold
+    AlarmActions:
+      - !Ref AlarmTopic
+    TreatMissingData: notBreaching
+    Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: AlertType
+        Value: ConsecutiveFailures
+      - Key: Severity
+        Value: Error
+
+# Business Metric Monitoring Alarms
+ContentWorkflowSchedulingSuccessRateAlarm:
+  Type: AWS::CloudWatch::Alarm
+  Condition: HasAlarmEmail
+  Properties:
+    AlarmName: !Sub ${Environment}-content-workflow-scheduling-success-rate
+    AlarmDescription: Alert when scheduling success rate falls below 95% target
+    MetricName: SchedulingSuccessRate
+    Namespace: BayonCoAgent/ContentWorkflow
+    Statistic: Average
+    Period: 3600
+    EvaluationPeriods: 2
+    Threshold: 95
+    ComparisonOperator: LessThanThreshold
+    AlarmActions:
+      - !Ref AlarmTopic
+    TreatMissingData: breaching
+    Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: AlertType
+        Value: BusinessMetric
+      - Key: Severity
+        Value: Warning
+
+ContentWorkflowSystemHealthScoreAlarm:
+  Type: AWS::CloudWatch::Alarm
+  Condition: HasAlarmEmail
+  Properties:
+    AlarmName: !Sub ${Environment}-content-workflow-system-health-score
+    AlarmDescription: Alert when overall system health score indicates degraded performance
+    MetricName: SystemHealthScore
+    Namespace: BayonCoAgent/ContentWorkflow
+    Statistic: Average
+    Period: 1800 # 30 minutes
+    EvaluationPeriods: 2
+    Threshold: 90
+    ComparisonOperator: LessThanThreshold
+    AlarmActions:
+      - !Ref AlarmTopic
+    TreatMissingData: breaching
+    Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: AlertType
+        Value: SystemHealth
+      - Key: Severity
+        Value: Error
+
+ContentWorkflowUserEngagementScoreAlarm:
+  Type: AWS::CloudWatch::Alarm
+  Condition: HasAlarmEmail
+  Properties:
+    AlarmName: !Sub ${Environment}-content-workflow-user-engagement-score
+    AlarmDescription: Alert when user engagement score drops significantly
+    MetricName: UserEngagementScore
+    Namespace: BayonCoAgent/ContentWorkflow
+    Statistic: Average
+    Period: 7200 # 2 hours
+    EvaluationPeriods: 2
+    Threshold: 75
+    ComparisonOperator: LessThanThreshold
+    AlarmActions:
+      - !Ref AlarmTopic
+    TreatMissingData: notBreaching
+    Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: AlertType
+        Value: UserEngagement
+      - Key: Severity
+        Value: Warning
+
+# Lambda Function Performance Alarms with Severity-Based Escalation
+ContentWorkflowLambdaMemoryUtilizationAlarm:
+  Type: AWS::CloudWatch::Alarm
+  Condition: HasAlarmEmail
+  Properties:
+    AlarmName: !Sub ${Environment}-content-workflow-lambda-memory-utilization
+    AlarmDescription: Alert when Lambda functions approach memory limits
+    MetricName: MemoryUtilization
+    Namespace: AWS/Lambda
+    Statistic: Maximum
+    Period: 300
+    EvaluationPeriods: 2
+    Threshold: 90 # 90% memory utilization
+    ComparisonOperator: GreaterThanThreshold
+    AlarmActions:
+      - !Ref AlarmTopic
+    TreatMissingData: notBreaching
+    Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: AlertType
+        Value: Performance
+      - Key: Severity
+        Value: Warning
+
+ContentWorkflowLambdaConcurrentExecutionsAlarm:
+  Type: AWS::CloudWatch::Alarm
+  Condition: HasAlarmEmail
+  Properties:
+    AlarmName: !Sub ${Environment}-content-workflow-lambda-concurrent-executions
+    AlarmDescription: Alert when Lambda concurrent executions approach account limits
+    MetricName: ConcurrentExecutions
+    Namespace: AWS/Lambda
+    Statistic: Maximum
+    Period: 300
+    EvaluationPeriods: 2
+    Threshold: 800 # Alert before hitting 1000 limit
+    ComparisonOperator: GreaterThanThreshold
+    AlarmActions:
+      - !Ref AlarmTopic
+    TreatMissingData: notBreaching
+    Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: AlertType
+        Value: Capacity
+      - Key: Severity
+        Value: Warning
+
+# Enhanced DynamoDB Monitoring
+ContentWorkflowDynamoDBReadThrottleAlarm:
+  Type: AWS::CloudWatch::Alarm
+  Condition: HasAlarmEmail
+  Properties:
+    AlarmName: !Sub ${Environment}-content-workflow-dynamodb-read-throttle
+    AlarmDescription: Alert when DynamoDB read operations are being throttled
+    MetricName: ReadThrottledEvents
+    Namespace: AWS/DynamoDB
+    Statistic: Sum
+    Period: 300
+    EvaluationPeriods: 2
+    Threshold: 5
+    ComparisonOperator: GreaterThanThreshold
+    Dimensions:
+      - Name: TableName
+        Value: !Ref DynamoDBTable
+    AlarmActions:
+      - !Ref AlarmTopic
+    TreatMissingData: notBreaching
+    Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: AlertType
+        Value: DatabaseThrottle
+      - Key: Severity
+        Value: Error
+
+ContentWorkflowDynamoDBWriteThrottleAlarm:
+  Type: AWS::CloudWatch::Alarm
+  Condition: HasAlarmEmail
+  Properties:
+    AlarmName: !Sub ${Environment}-content-workflow-dynamodb-write-throttle
+    AlarmDescription: Alert when DynamoDB write operations are being throttled
+    MetricName: WriteThrottledEvents
+    Namespace: AWS/DynamoDB
+    Statistic: Sum
+    Period: 300
+    EvaluationPeriods: 2
+    Threshold: 5
+    ComparisonOperator: GreaterThanThreshold
+    Dimensions:
+      - Name: TableName
+        Value: !Ref DynamoDBTable
+    AlarmActions:
+      - !Ref AlarmTopic
+    TreatMissingData: notBreaching
+    Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: AlertType
+        Value: DatabaseThrottle
+      - Key: Severity
+        Value: Error
+
+# API Gateway Enhanced Monitoring
+ContentWorkflowApiGateway4xxErrorRateAlarm:
+  Type: AWS::CloudWatch::Alarm
+  Condition: HasAlarmEmail
+  Properties:
+    AlarmName: !Sub ${Environment}-content-workflow-api-gateway-4xx-error-rate
+    AlarmDescription: Alert when API Gateway 4xx error rate exceeds threshold
+    MetricName: 4XXError
+    Namespace: AWS/ApiGateway
+    Statistic: Sum
+    Period: 300
+    EvaluationPeriods: 3
+    Threshold: 20 # 20 4xx errors in 15 minutes
+    ComparisonOperator: GreaterThanThreshold
+    Dimensions:
+      - Name: ApiName
+        Value: !Sub bayon-coagent-main-${Environment}
+    AlarmActions:
+      - !Ref AlarmTopic
+    TreatMissingData: notBreaching
+    Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: AlertType
+        Value: ClientError
+      - Key: Severity
+        Value: Warning
+
+ContentWorkflowApiGateway5xxErrorRateAlarm:
+  Type: AWS::CloudWatch::Alarm
+  Condition: HasAlarmEmail
+  Properties:
+    AlarmName: !Sub ${Environment}-content-workflow-api-gateway-5xx-error-rate
+    AlarmDescription: Alert when API Gateway 5xx error rate exceeds threshold
+    MetricName: 5XXError
+    Namespace: AWS/ApiGateway
+    Statistic: Sum
+    Period: 300
+    EvaluationPeriods: 2
+    Threshold: 5 # 5 5xx errors in 10 minutes
+    ComparisonOperator: GreaterThanThreshold
+    Dimensions:
+      - Name: ApiName
+        Value: !Sub bayon-coagent-main-${Environment}
+    AlarmActions:
+      - !Ref AlarmTopic
+    TreatMissingData: notBreaching
+    Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: AlertType
+        Value: ServerError
+      - Key: Severity
+        Value: Error
+
+ContentWorkflowApiGatewayLatencyAlarm:
+  Type: AWS::CloudWatch::Alarm
+  Condition: HasAlarmEmail
+  Properties:
+    AlarmName: !Sub ${Environment}-content-workflow-api-gateway-latency
+    AlarmDescription: Alert when API Gateway latency exceeds acceptable threshold
+    MetricName: Latency
+    Namespace: AWS/ApiGateway
+    Statistic: Average
+    Period: 300
+    EvaluationPeriods: 3
+    Threshold: 5000 # 5 seconds
+    ComparisonOperator: GreaterThanThreshold
+    Dimensions:
+      - Name: ApiName
+        Value: !Sub bayon-coagent-main-${Environment}
+    AlarmActions:
+      - !Ref AlarmTopic
+    TreatMissingData: notBreaching
+    Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: AlertType
+        Value: Performance
+      - Key: Severity
+        Value: Warning
+
+# Composite Alarms for Intelligent Escalation
+ContentWorkflowCriticalSystemFailureCompositeAlarm:
+  Type: AWS::CloudWatch::CompositeAlarm
+  Condition: HasAlarmEmail
+  Properties:
+    AlarmName: !Sub ${Environment}-content-workflow-critical-system-failure
+    AlarmDescription: Composite alarm that triggers when multiple critical components fail simultaneously
+    AlarmRule: !Sub |
+      (ALARM("${Environment}-content-workflow-publishing-failure-rate") OR 
+       ALARM("${Environment}-content-workflow-system-health-score")) AND
+      (ALARM("${Environment}-dynamodb-throttling") OR 
+       ALARM("${Environment}-content-workflow-lambda-concurrent-executions"))
+    ActionsEnabled: true
+    AlarmActions:
+      - !Ref AlarmTopic
+    Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: AlertType
+        Value: CompositeAlarm
+      - Key: Severity
+        Value: Critical
+
+ContentWorkflowServiceDegradationCompositeAlarm:
+  Type: AWS::CloudWatch::CompositeAlarm
+  Condition: HasAlarmEmail
+  Properties:
+    AlarmName: !Sub ${Environment}-content-workflow-service-degradation
+    AlarmDescription: Composite alarm for detecting service degradation patterns
+    AlarmRule: !Sub |
+      ALARM("${Environment}-content-workflow-rate-limit-predictive") AND
+      (ALARM("${Environment}-content-workflow-analytics-data-freshness") OR
+       ALARM("${Environment}-content-workflow-api-gateway-latency"))
+    ActionsEnabled: true
+    AlarmActions:
+      - !Ref AlarmTopic
+    Tags:
+      - Key: Environment
+        Value: !Ref Environment
+      - Key: AlertType
+        Value: CompositeAlarm
+      - Key: Severity
+        Value: Warning
+
+# ==========================================
+# Enhanced CloudWatch Dashboard Widgets
+# ==========================================
+
+# Additional dashboard widgets for enhanced monitoring
+# These would be added to the existing MonitoringDashboard in template.yaml
+
+ContentWorkflowEnhancedDashboardWidgets:
+  # Rate Limit Monitoring Widget
+  - type: "metric"
+    properties:
+      metrics:
+        - [
+            "BayonCoAgent/ContentWorkflow",
+            "RateLimitUsage",
+            "Platform",
+            "facebook",
+          ]
+        - [".", ".", ".", "instagram"]
+        - [".", ".", ".", "linkedin"]
+        - [".", ".", ".", "twitter"]
+      period: 300
+      stat: "Average"
+      region: "${AWS::Region}"
+      title: "API Rate Limit Usage by Platform"
+      yAxis:
+        left:
+          min: 0
+          max: 100
+      annotations:
+        horizontal:
+          - value: 80
+            label: "Warning Threshold"
+            fill: "above"
+          - value: 95
+            label: "Critical Threshold"
+            fill: "above"
+
+  # Business Metrics Widget
+  - type: "metric"
+    properties:
+      metrics:
+        - ["BayonCoAgent/ContentWorkflow", "SchedulingSuccessRate"]
+        - [".", "PublishingSuccessRate"]
+        - [".", "AnalyticsSyncSuccessRate"]
+        - [".", "SystemHealthScore"]
+      period: 3600
+      stat: "Average"
+      region: "${AWS::Region}"
+      title: "Content Workflow Business Metrics"
+      yAxis:
+        left:
+          min: 0
+          max: 100
+
+  # Publishing Performance Widget
+  - type: "metric"
+    properties:
+      metrics:
+        - [
+            "BayonCoAgent/ContentWorkflow",
+            "PublishingSuccess",
+            { "stat": "Sum" },
+          ]
+        - [".", "PublishingFailure", { "stat": "Sum" }]
+        - [".", "PublishingRetryExhaustion", { "stat": "Sum" }]
+      period: 900
+      stat: "Sum"
+      region: "${AWS::Region}"
+      title: "Publishing Performance Metrics"
+      yAxis:
+        left:
+          min: 0
+
+  # Analytics Sync Health Widget
+  - type: "metric"
+    properties:
+      metrics:
+        - [
+            "BayonCoAgent/ContentWorkflow",
+            "AnalyticsDataAge",
+            { "stat": "Maximum" },
+          ]
+        - [".", "AnalyticsSyncConsecutiveFailures", { "stat": "Maximum" }]
+      period: 3600
+      stat: "Maximum"
+      region: "${AWS::Region}"
+      title: "Analytics Sync Health"
+      yAxis:
+        left:
+          min: 0
+      annotations:
+        horizontal:
+          - value: 1440
+            label: "24 Hour Freshness Limit"
+            fill: "above"
+
+  # Lambda Performance Overview Widget
+  - type: "metric"
+    properties:
+      metrics:
+        - [
+            "AWS/Lambda",
+            "Duration",
+            "FunctionName",
+            "${PublishScheduledContentFunction}",
+            { "stat": "Average" },
+          ]
+        - [
+            ".",
+            ".",
+            ".",
+            "${SyncSocialAnalyticsFunction}",
+            { "stat": "Average" },
+          ]
+        - [
+            ".",
+            ".",
+            ".",
+            "${CalculateOptimalTimesFunction}",
+            { "stat": "Average" },
+          ]
+        - [
+            ".",
+            "Errors",
+            ".",
+            "${PublishScheduledContentFunction}",
+            { "stat": "Sum" },
+          ]
+        - [".", ".", ".", "${SyncSocialAnalyticsFunction}", { "stat": "Sum" }]
+        - [".", ".", ".", "${CalculateOptimalTimesFunction}", { "stat": "Sum" }]
+      period: 300
+      stat: "Average"
+      region: "${AWS::Region}"
+      title: "Content Workflow Lambda Performance"
+      yAxis:
+        left:
+          min: 0

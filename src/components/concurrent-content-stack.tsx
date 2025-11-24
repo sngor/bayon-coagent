@@ -104,12 +104,12 @@ function ContentItem({
                         "font-medium truncate",
                         isCompact ? "text-xs" : "text-sm"
                     )}>
-                        {content.title}
+                        {content.title.trim() || 'Untitled Content'}
                     </h4>
                     <div className="flex flex-wrap gap-1 mt-1">
-                        {content.channels.map(channel => (
+                        {content.channels.map((channel, channelIndex) => (
                             <Badge
-                                key={channel.type}
+                                key={`${channel.type}-${channelIndex}-${content.id}`}
                                 variant="outline"
                                 className={cn("text-xs px-1.5 py-0.5", CHANNEL_COLORS[channel.type])}
                             >
@@ -424,14 +424,12 @@ function TimeSlotGroup({
             <div className="space-y-1">
                 {displayItems.map((item, index) => (
                     <div
-                        key={item.id}
+                        key={`${item.id}-${index}-${group.timeSlot}`}
                         className={cn(
-                            "transition-transform duration-150",
+                            "transition-transform duration-150 relative",
                             index > 0 && group.hasConflicts && "ml-2 border-l border-muted pl-2"
                         )}
-                        style={{
-                            zIndex: group.items.length - index // Higher priority items on top
-                        }}
+                        data-priority={group.items.length - index}
                     >
                         <ContentItem
                             content={item}
@@ -454,15 +452,13 @@ function TimeSlotGroup({
                         <CollapsibleContent className="space-y-1">
                             {group.items.slice(visibleItems).map((item, index) => (
                                 <div
-                                    key={item.id}
+                                    key={`${item.id}-${visibleItems + index}-${group.timeSlot}`}
                                     className={cn(
-                                        "animate-in slide-in-from-top-2 duration-150",
+                                        "animate-in slide-in-from-top-2 duration-150 relative",
                                         group.hasConflicts && "ml-2 border-l border-muted pl-2"
                                     )}
-                                    style={{
-                                        animationDelay: `${index * 50}ms`,
-                                        zIndex: group.items.length - (visibleItems + index)
-                                    }}
+                                    data-priority={group.items.length - (visibleItems + index)}
+                                    data-animation-delay={index * 50}
                                 >
                                     <ContentItem
                                         content={item}
@@ -529,6 +525,11 @@ export function ConcurrentContentStack({
         const groups = new Map<string, ConcurrentContentGroup>();
 
         content.forEach(item => {
+            // Skip items with invalid dates
+            if (!item.publishTime || isNaN(item.publishTime.getTime())) {
+                return;
+            }
+
             const timeSlot = item.publishTime.toISOString();
 
             if (!groups.has(timeSlot)) {
