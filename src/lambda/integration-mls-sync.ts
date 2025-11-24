@@ -12,6 +12,7 @@ import { getRepository } from '../aws/dynamodb/repository';
 import { uploadFile } from '../aws/s3/client';
 import { withCircuitBreaker } from '../lib/circuit-breaker';
 import { publishIntegrationSyncCompletedEvent } from './utils/eventbridge-client';
+import { retry } from './utils/retry';
 
 interface MLSSyncRequest {
     userId: string;
@@ -145,18 +146,27 @@ async function handleSync(
     const syncId = `sync-${Date.now()}-${Math.random().toString(36).substring(7)}`;
     const repository = getRepository();
 
-    // Create sync job record
-    await repository.createItem(request.userId, `MLSSYNC#${syncId}`, {
-        syncId,
-        provider: request.provider,
-        agentId: request.agentId,
-        syncType: request.syncType || 'full',
-        status: 'in_progress',
-        startedAt: Date.now(),
-        totalListings: 0,
-        syncedListings: 0,
-        failedListings: 0,
-    });
+    // Create sync job record with retry logic
+    await retry(
+        async () => await repository.createItem(request.userId, `MLSSYNC#${syncId}`, {
+            syncId,
+            provider: request.provider,
+            agentId: request.agentId,
+            syncType: request.syncType || 'full',
+            status: 'in_progress',
+            startedAt: Date.now(),
+            totalListings: 0,
+            syncedListings: 0,
+            failedListings: 0,
+        }),
+        {
+            maxAttempts: 3,
+            initialDelayMs: 100,
+            onRetry: (error, attempt, delayMs) => {
+                console.log(`Retrying DynamoDB create (attempt ${attempt}, delay ${delayMs}ms):`, error.message);
+            },
+        }
+    );
 
     // Fetch listings from MLS provider
     let listings: MLSListing[];
@@ -259,26 +269,32 @@ async function handleSync(
                 })
             );
 
-            // Store listing in DynamoDB
-            await repository.createItem(request.userId, `LISTING#${listing.mlsNumber}`, {
-                listingId: listing.mlsNumber,
-                mlsId: listing.mlsId,
-                mlsNumber: listing.mlsNumber,
-                mlsProvider: request.provider,
-                address: listing.address,
-                price: listing.price,
-                bedrooms: listing.bedrooms,
-                bathrooms: listing.bathrooms,
-                squareFeet: listing.squareFeet,
-                propertyType: listing.propertyType,
-                status: listing.status,
-                listDate: listing.listDate,
-                description: listing.description,
-                photos: storedPhotos,
-                features: listing.features,
-                syncedAt: Date.now(),
-                syncId,
-            });
+            // Store listing in DynamoDB with retry logic
+            await retry(
+                async () => await repository.createItem(request.userId, `LISTING#${listing.mlsNumber}`, {
+                    listingId: listing.mlsNumber,
+                    mlsId: listing.mlsId,
+                    mlsNumber: listing.mlsNumber,
+                    mlsProvider: request.provider,
+                    address: listing.address,
+                    price: listing.price,
+                    bedrooms: listing.bedrooms,
+                    bathrooms: listing.bathrooms,
+                    squareFeet: listing.squareFeet,
+                    propertyType: listing.propertyType,
+                    status: listing.status,
+                    listDate: listing.listDate,
+                    description: listing.description,
+                    photos: storedPhotos,
+                    features: listing.features,
+                    syncedAt: Date.now(),
+                    syncId,
+                }),
+                {
+                    maxAttempts: 3,
+                    initialDelayMs: 100,
+                }
+            );
 
             syncedCount++;
         } catch (error) {

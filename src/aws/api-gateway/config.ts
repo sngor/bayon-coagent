@@ -44,14 +44,15 @@ export function getApiGatewayConfig(): ApiGatewayConfig {
     }
 
     // Use environment variables for deployed API Gateway endpoints
+    // All services now use /v1 prefix for API versioning
     return {
-        mainApiUrl: process.env.MAIN_API_URL || `https://${process.env.MAIN_REST_API_ID}.execute-api.${region}.amazonaws.com/${environment}`,
+        mainApiUrl: process.env.MAIN_API_URL || `https://${process.env.MAIN_REST_API_ID}.execute-api.${region}.amazonaws.com/v1`,
         aiServiceApiUrl: process.env.AI_SERVICE_API_URL || `https://${process.env.AI_SERVICE_API_ID}.execute-api.${region}.amazonaws.com/v1`,
         integrationServiceApiUrl: process.env.INTEGRATION_SERVICE_API_URL || `https://${process.env.INTEGRATION_SERVICE_API_ID}.execute-api.${region}.amazonaws.com/v1`,
         backgroundServiceApiUrl: process.env.BACKGROUND_SERVICE_API_URL || `https://${process.env.BACKGROUND_SERVICE_API_ID}.execute-api.${region}.amazonaws.com/v1`,
         adminServiceApiUrl: process.env.ADMIN_SERVICE_API_URL || `https://${process.env.ADMIN_SERVICE_API_ID}.execute-api.${region}.amazonaws.com/v1`,
         region,
-        stage: environment === 'production' ? 'production' : 'development',
+        stage: 'v1', // All services use v1 stage for versioning
     };
 }
 
@@ -100,26 +101,31 @@ export interface ApiGatewayResponse {
 }
 
 /**
- * Create a standardized API Gateway response
+ * Create a standardized API Gateway response with version headers
  */
 export function createApiGatewayResponse(
     statusCode: number,
     data: any,
-    headers: Record<string, string> = {}
+    headers: Record<string, string> = {},
+    version: string = 'v1'
 ): ApiGatewayResponse {
     const defaultHeaders = {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production'
             ? 'https://yourdomain.com'
             : 'http://localhost:3000',
-        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Trace-Id',
+        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Trace-Id,API-Version,X-API-Version',
         'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
         'Access-Control-Allow-Credentials': 'true',
+        'Access-Control-Expose-Headers': 'API-Version,X-API-Version,X-API-Version-Number,X-API-Deprecated,X-API-Sunset',
         'X-Content-Type-Options': 'nosniff',
         'X-Frame-Options': 'DENY',
         'X-XSS-Protection': '1; mode=block',
         ...headers,
     };
+
+    // Add version headers
+    const headersWithVersion = addVersionHeaders(defaultHeaders, version);
 
     let body: string;
 
@@ -144,7 +150,7 @@ export function createApiGatewayResponse(
 
     return {
         statusCode,
-        headers: defaultHeaders,
+        headers: headersWithVersion,
         body,
     };
 }
@@ -255,33 +261,63 @@ export interface ApiVersion {
     deprecated?: boolean;
     deprecationDate?: string;
     supportedUntil?: string;
+    releaseDate: string;
+    breaking?: boolean;
+    features?: string[];
 }
 
 export const API_VERSIONS: Record<string, ApiVersion> = {
     'v1': {
         version: '1.0.0',
         deprecated: false,
+        releaseDate: '2024-01-01',
+        breaking: false,
+        features: [
+            'Initial microservices architecture',
+            'AI processing service',
+            'Integration service',
+            'Background processing service',
+            'Admin service',
+        ],
     },
-    'v2': {
-        version: '2.0.0',
-        deprecated: false,
-    },
+    // Future versions can be added here
+    // 'v2': {
+    //     version: '2.0.0',
+    //     deprecated: false,
+    //     releaseDate: '2025-01-01',
+    //     breaking: true,
+    //     features: ['New feature set'],
+    // },
 };
 
 /**
  * Get API version from request
+ * Supports both path-based (/v1/resource) and header-based (API-Version: v1) versioning
  */
 export function getApiVersion(event: ApiGatewayRequest): string {
-    // Check path for version (e.g., /v1/users)
+    // Priority 1: Check path for version (e.g., /v1/users)
     const pathVersion = event.path.match(/^\/v(\d+)\//)?.[1];
     if (pathVersion) {
         return `v${pathVersion}`;
     }
 
-    // Check headers for version
-    const headerVersion = event.headers?.['API-Version'] || event.headers?.['api-version'];
+    // Priority 2: Check headers for version (case-insensitive)
+    const headers = event.headers || {};
+    const headerVersion =
+        headers['API-Version'] ||
+        headers['api-version'] ||
+        headers['X-API-Version'] ||
+        headers['x-api-version'];
+
     if (headerVersion) {
-        return headerVersion;
+        // Normalize version format (ensure it starts with 'v')
+        return headerVersion.startsWith('v') ? headerVersion : `v${headerVersion}`;
+    }
+
+    // Priority 3: Check query parameter for version
+    const queryVersion = event.queryStringParameters?.version || event.queryStringParameters?.api_version;
+    if (queryVersion) {
+        return queryVersion.startsWith('v') ? queryVersion : `v${queryVersion}`;
     }
 
     // Default to v1
@@ -289,18 +325,86 @@ export function getApiVersion(event: ApiGatewayRequest): string {
 }
 
 /**
- * Validate API version
+ * Validate API version and return validation result
  */
-export function validateApiVersion(version: string): void {
+export function validateApiVersion(version: string): {
+    valid: boolean;
+    deprecated: boolean;
+    message?: string;
+    apiVersion?: ApiVersion;
+} {
     const apiVersion = API_VERSIONS[version];
 
     if (!apiVersion) {
-        throw new Error(`Unsupported API version: ${version}`);
+        return {
+            valid: false,
+            deprecated: false,
+            message: `Unsupported API version: ${version}. Supported versions: ${Object.keys(API_VERSIONS).join(', ')}`,
+        };
     }
 
     if (apiVersion.deprecated) {
-        console.warn(`API version ${version} is deprecated. Support ends on ${apiVersion.supportedUntil}`);
+        return {
+            valid: true,
+            deprecated: true,
+            message: `API version ${version} is deprecated. Support ends on ${apiVersion.supportedUntil}. Please migrate to a newer version.`,
+            apiVersion,
+        };
     }
+
+    return {
+        valid: true,
+        deprecated: false,
+        apiVersion,
+    };
+}
+
+/**
+ * Add version headers to API Gateway response
+ */
+export function addVersionHeaders(
+    headers: Record<string, string>,
+    version: string
+): Record<string, string> {
+    const apiVersion = API_VERSIONS[version];
+
+    const versionHeaders: Record<string, string> = {
+        'API-Version': version,
+        'X-API-Version': version,
+        ...headers,
+    };
+
+    if (apiVersion) {
+        versionHeaders['X-API-Version-Number'] = apiVersion.version;
+        versionHeaders['X-API-Release-Date'] = apiVersion.releaseDate;
+
+        if (apiVersion.deprecated) {
+            versionHeaders['X-API-Deprecated'] = 'true';
+            if (apiVersion.supportedUntil) {
+                versionHeaders['X-API-Sunset'] = apiVersion.supportedUntil;
+            }
+            if (apiVersion.deprecationDate) {
+                versionHeaders['X-API-Deprecation-Date'] = apiVersion.deprecationDate;
+            }
+        }
+    }
+
+    return versionHeaders;
+}
+
+/**
+ * Get all supported API versions
+ */
+export function getSupportedVersions(): string[] {
+    return Object.keys(API_VERSIONS);
+}
+
+/**
+ * Get latest API version
+ */
+export function getLatestVersion(): string {
+    const versions = Object.keys(API_VERSIONS);
+    return versions[versions.length - 1];
 }
 
 /**

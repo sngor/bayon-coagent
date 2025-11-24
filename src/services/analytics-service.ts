@@ -2506,13 +2506,23 @@ ${analytics.topPerformingContent.map(content =>
         accessToken: string,
         postId: string
     ): Promise<ExternalAnalyticsData> {
+        const { retry } = await import('@/lib/retry-utility');
+
         const url = `https://graph.facebook.com/v18.0/${postId}/insights`;
         const params = new URLSearchParams({
             access_token: accessToken,
             metric: 'post_impressions,post_engaged_users,post_clicks,post_reactions_like_total,post_reactions_love_total,post_reactions_wow_total,post_reactions_haha_total,post_reactions_sorry_total,post_reactions_anger_total'
         });
 
-        const response = await fetch(`${url}?${params}`);
+        const response = await retry(
+            async () => fetch(`${url}?${params}`),
+            {
+                maxRetries: 3,
+                baseDelay: 1000,
+                backoffMultiplier: 2,
+                operationName: 'facebook-insights-fetch',
+            }
+        );
 
         if (!response.ok) {
             if (response.status === 429) {
@@ -2566,13 +2576,23 @@ ${analytics.topPerformingContent.map(content =>
         accessToken: string,
         postId: string
     ): Promise<ExternalAnalyticsData> {
+        const { retry } = await import('@/lib/retry-utility');
+
         const url = `https://graph.facebook.com/v18.0/${postId}/insights`;
         const params = new URLSearchParams({
             access_token: accessToken,
             metric: 'impressions,reach,likes,comments,saves,shares'
         });
 
-        const response = await fetch(`${url}?${params}`);
+        const response = await retry(
+            async () => fetch(`${url}?${params}`),
+            {
+                maxRetries: 3,
+                baseDelay: 1000,
+                backoffMultiplier: 2,
+                operationName: 'instagram-analytics-fetch',
+            }
+        );
 
         if (!response.ok) {
             if (response.status === 429) {
@@ -2609,14 +2629,24 @@ ${analytics.topPerformingContent.map(content =>
         accessToken: string,
         postId: string
     ): Promise<ExternalAnalyticsData> {
+        const { retry } = await import('@/lib/retry-utility');
+
         const url = `https://api.linkedin.com/v2/socialActions/${postId}/statistics`;
 
-        const response = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'X-Restli-Protocol-Version': '2.0.0'
+        const response = await retry(
+            async () => fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'X-Restli-Protocol-Version': '2.0.0'
+                }
+            }),
+            {
+                maxRetries: 3,
+                baseDelay: 1000,
+                backoffMultiplier: 2,
+                operationName: 'linkedin-analytics-fetch',
             }
-        });
+        );
 
         if (!response.ok) {
             if (response.status === 429) {
@@ -2651,16 +2681,26 @@ ${analytics.topPerformingContent.map(content =>
         accessToken: string,
         postId: string
     ): Promise<ExternalAnalyticsData> {
+        const { retry } = await import('@/lib/retry-utility');
+
         const url = `https://api.twitter.com/2/tweets/${postId}`;
         const params = new URLSearchParams({
             'tweet.fields': 'public_metrics'
         });
 
-        const response = await fetch(`${url}?${params}`, {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
+        const response = await retry(
+            async () => fetch(`${url}?${params}`, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                }
+            }),
+            {
+                maxRetries: 3,
+                baseDelay: 1000,
+                backoffMultiplier: 2,
+                operationName: 'twitter-analytics-fetch',
             }
-        });
+        );
 
         if (!response.ok) {
             if (response.status === 429) {

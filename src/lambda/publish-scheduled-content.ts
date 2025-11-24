@@ -24,6 +24,7 @@ import {
     PublishResult
 } from '../lib/content-workflow-types';
 import { publishContentPublishedEvent } from './utils/eventbridge-client';
+import { invokeIntegrationService, invokeAiService } from './utils/request-signer';
 
 // Initialize DynamoDB client
 const dynamoClient = new DynamoDBClient({
@@ -413,7 +414,18 @@ async function getDueScheduledContent(
             ScanIndexForward: true // Oldest items first
         });
 
-        const response = await docClient.send(queryCommand);
+        // Import retry utility
+        const { retry } = await import('../lib/retry-utility');
+
+        const response = await retry(
+            async () => docClient.send(queryCommand),
+            {
+                maxRetries: 3,
+                baseDelay: 1000,
+                backoffMultiplier: 2,
+                operationName: 'dynamodb-query-scheduled-content',
+            }
+        );
         let items = response.Items || [];
 
         logger.info(`Found ${items.length} potentially due items from GSI2 query`);
@@ -534,7 +546,17 @@ async function updateScheduledContentStatus(
             ExpressionAttributeValues: expressionAttributeValues
         });
 
-        await docClient.send(updateCommand);
+        const { retry } = await import('../lib/retry-utility');
+
+        await retry(
+            async () => docClient.send(updateCommand),
+            {
+                maxRetries: 3,
+                baseDelay: 1000,
+                backoffMultiplier: 2,
+                operationName: 'dynamodb-update-scheduled-content-status',
+            }
+        );
 
         logger.debug('Updated scheduled content status', {
             userId,
@@ -836,11 +858,27 @@ async function publishToSocialMediaDirect(
     scheduledContent: ScheduledContent,
     logger: Logger
 ): Promise<boolean> {
-    // In a real implementation, this would:
-    // 1. Get OAuth tokens from DynamoDB
-    // 2. Format content for the specific platform
-    // 3. Make API calls to the social media platform
-    // 4. Handle platform-specific errors and rate limits
+    // In a real implementation, this would use the Integration Service
+    // to handle OAuth and platform-specific publishing
+    // Example of using signed requests for cross-service communication:
+    /*
+    try {
+        const result = await invokeIntegrationService<{ success: boolean }>(
+            `/social/publish/${channel.type}`,
+            'POST',
+            {
+                accountId: channel.accountId,
+                content: scheduledContent.content,
+                mediaUrls: scheduledContent.mediaUrls,
+                scheduledFor: scheduledContent.publishTime,
+            }
+        );
+        return result.success;
+    } catch (error) {
+        logger.error('Failed to publish via Integration Service', error as Error);
+        return false;
+    }
+    */
 
     logger.debug('Publishing to social media channel', {
         channelType: channel.type,

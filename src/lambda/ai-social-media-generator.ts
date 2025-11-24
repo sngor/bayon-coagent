@@ -9,6 +9,9 @@ import { DynamoDBClient, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { generateSocialMediaPost } from '../aws/bedrock/flows/generate-social-media-post';
 import { AWSXRay } from 'aws-xray-sdk-core';
+import { publishAiJobCompletedEvent } from './utils/eventbridge-client';
+import { invokeIntegrationService } from './utils/request-signer';
+import { retry } from '../lib/retry-utility';
 
 // Wrap AWS SDK clients with X-Ray
 const dynamoClient = AWSXRay.captureAWSv3Client(new DynamoDBClient({}));
@@ -117,17 +120,28 @@ async function processJob(record: SQSRecord): Promise<void> {
         // Update status to processing
         await updateJobStatus(jobId, userId, 'processing');
 
-        // Generate social media post using Bedrock flow
-        const result = await generateSocialMediaPost({
-            platform,
-            topic,
-            tone,
-            includeHashtags,
-            includeEmojis,
-            callToAction,
-        }, {
-            userId,
-        });
+        // Generate social media post using Bedrock flow with retry logic
+        const result = await retry(
+            async () => await generateSocialMediaPost({
+                platform,
+                topic,
+                tone,
+                includeHashtags,
+                includeEmojis,
+                callToAction,
+            }, {
+                userId,
+            }),
+            {
+                maxRetries: 3,
+                baseDelay: 1000,
+                backoffMultiplier: 2,
+                operationName: 'ai-social-media-generation',
+                onRetry: (error, attempt, delay) => {
+                    console.log(`Retrying social media generation (attempt ${attempt}, delay ${delay}ms):`, error.message);
+                },
+            }
+        );
 
         // Update status to completed with result
         await updateJobStatus(jobId, userId, 'completed', result);
@@ -135,16 +149,70 @@ async function processJob(record: SQSRecord): Promise<void> {
         // Send response to queue
         await sendJobResponse(jobId, userId, result);
 
+        // Publish AI Job Completed event
+        await publishAiJobCompletedEvent({
+            jobId,
+            userId,
+            jobType: 'social-media',
+            status: 'completed',
+            completedAt: new Date().toISOString(),
+            traceId: process.env._X_AMZN_TRACE_ID,
+        });
+
+        // Example: If we need to call Integration Service to schedule social media post
+        // This demonstrates how to use signed requests for cross-service communication
+        // Uncomment when integration is needed:
+        /*
+        try {
+            await invokeIntegrationService('/schedule/social', 'POST', {
+                userId,
+                contentId: jobId,
+                content: result,
+                platform: platform || 'facebook',
+            });
+            console.log(`Social media post ${jobId} scheduled via Integration Service`);
+        } catch (error) {
+            console.warn(`Failed to schedule via Integration Service:`, error);
+            // Non-critical - continue processing
+        }
+        */
+
         console.log(`Successfully completed social media job ${jobId}`);
     } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(`Failed to process social media job ${jobId}:`, errorMessage);
+        const { formatErrorResponse, ErrorCode } = await import('../lib/error-response');
+
+        const errorResponse = formatErrorResponse(error as Error, {
+            service: 'ai-social-media-generator',
+            code: ErrorCode.AI_SERVICE_ERROR,
+            userId,
+            requestId: jobId,
+            retryable: true,
+            additionalDetails: {
+                jobType: 'social-media',
+                platform,
+                topic,
+            },
+        });
+
+        const errorMessage = errorResponse.error.message;
+        console.error(`Failed to process social media job ${jobId}:`, JSON.stringify(errorResponse));
 
         // Update status to failed with error
         await updateJobStatus(jobId, userId, 'failed', undefined, errorMessage);
 
         // Send error response to queue
-        await sendJobResponse(jobId, userId, undefined, errorMessage);
+        await sendJobResponse(jobId, userId, undefined, JSON.stringify(errorResponse));
+
+        // Publish AI Job Failed event
+        await publishAiJobCompletedEvent({
+            jobId,
+            userId,
+            jobType: 'social-media',
+            status: 'failed',
+            completedAt: new Date().toISOString(),
+            error: errorMessage,
+            traceId: errorResponse.error.details.traceId,
+        });
 
         // Re-throw to trigger SQS retry/DLQ
         throw error;

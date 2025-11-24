@@ -4,10 +4,14 @@ node_modules
 localstack-data/
 
 # Environment files
+.env
 .env.local
 .env.production
+.env.development
 .env*.local
 .env.migration
+!.env.example
+!.env.migration.example
 
 # Migration data
 migration-data/

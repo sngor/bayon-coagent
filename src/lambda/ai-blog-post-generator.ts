@@ -11,6 +11,13 @@ import { marshall } from '@aws-sdk/util-dynamodb';
 import { generateBlogPost } from '../aws/bedrock/flows/generate-blog-post';
 import { AWSXRay } from 'aws-xray-sdk-core';
 import { publishAiJobCompletedEvent } from './utils/eventbridge-client';
+import { invokeIntegrationService, invokeBackgroundService } from './utils/request-signer';
+import { retry } from '../lib/retry-utility';
+import {
+    executeWithFallback,
+    aiResponseCache,
+    backgroundJobQueue
+} from '../lib/fallback-mechanisms';
 
 // Wrap AWS SDK clients with X-Ray
 const dynamoClient = AWSXRay.captureAWSv3Client(new DynamoDBClient({}));
@@ -131,16 +138,42 @@ async function processJob(record: SQSRecord): Promise<void> {
         // Update status to processing
         await updateJobStatus(jobId, userId, 'processing');
 
-        // Generate blog post using Bedrock flow
-        const result = await generateBlogPost({
-            topic,
-            tone,
-            keywords,
-            targetAudience,
-            length,
-        }, {
-            userId,
-        });
+        // Generate blog post using Bedrock flow with retry logic and fallback
+        const cacheKey = `${topic}_${tone}_${length}`;
+        const fallbackResult = await executeWithFallback(
+            async () => await generateBlogPost({
+                topic,
+                tone,
+                keywords,
+                targetAudience,
+                length,
+            }),
+            {
+                operationName: 'ai-blog-post-generation',
+                userId,
+                cacheKey: {
+                    prompt: cacheKey,
+                    modelId: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+                },
+                queueOnFailure: {
+                    type: 'ai',
+                    payload: job,
+                    priority: 'medium',
+                },
+            }
+        );
+
+        // Check if we used a fallback
+        if (!fallbackResult.success) {
+            throw new Error(fallbackResult.message || 'Failed to generate blog post');
+        }
+
+        const result = fallbackResult.data;
+        const usedFallback = fallbackResult.metadata?.usedFallback || false;
+
+        if (usedFallback) {
+            console.log(`Used fallback for job ${jobId}: ${fallbackResult.metadata?.fallbackType}`);
+        }
 
         // Update status to completed with result
         await updateJobStatus(jobId, userId, 'completed', result);
@@ -158,16 +191,47 @@ async function processJob(record: SQSRecord): Promise<void> {
             traceId: process.env._X_AMZN_TRACE_ID,
         });
 
+        // Example: If we need to call Integration Service to publish content
+        // This demonstrates how to use signed requests for cross-service communication
+        // Uncomment when integration is needed:
+        /*
+        try {
+            await invokeIntegrationService('/publish/blog', 'POST', {
+                userId,
+                contentId: jobId,
+                content: result,
+            });
+            console.log(`Blog post ${jobId} published via Integration Service`);
+        } catch (error) {
+            console.warn(`Failed to publish via Integration Service:`, error);
+            // Non-critical - continue processing
+        }
+        */
+
         console.log(`Successfully completed blog post job ${jobId}`);
     } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(`Failed to process blog post job ${jobId}:`, errorMessage);
+        const { formatErrorResponse, ErrorCode } = await import('../lib/error-response');
+
+        const errorResponse = formatErrorResponse(error as Error, {
+            service: 'ai-blog-post-generator',
+            code: ErrorCode.AI_SERVICE_ERROR,
+            userId,
+            requestId: jobId,
+            retryable: true,
+            additionalDetails: {
+                jobType: 'blog-post',
+                topic,
+            },
+        });
+
+        const errorMessage = errorResponse.error.message;
+        console.error(`Failed to process blog post job ${jobId}:`, JSON.stringify(errorResponse));
 
         // Update status to failed with error
         await updateJobStatus(jobId, userId, 'failed', undefined, errorMessage);
 
         // Send error response to queue
-        await sendJobResponse(jobId, userId, undefined, errorMessage);
+        await sendJobResponse(jobId, userId, undefined, JSON.stringify(errorResponse));
 
         // Publish AI Job Failed event
         await publishAiJobCompletedEvent({
@@ -177,7 +241,7 @@ async function processJob(record: SQSRecord): Promise<void> {
             status: 'failed',
             completedAt: new Date().toISOString(),
             error: errorMessage,
-            traceId: process.env._X_AMZN_TRACE_ID,
+            traceId: errorResponse.error.details.traceId,
         });
 
         // Re-throw to trigger SQS retry/DLQ

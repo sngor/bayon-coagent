@@ -70,10 +70,15 @@ export class Logger {
       const segment = AWSXRay.getSegment();
 
       if (segment) {
+        // Extract correlation ID from segment metadata if available
+        const correlationId = segment.metadata?.default?.['correlation.id'] ||
+          segment.annotations?.['correlation.id'];
+
         return {
           traceId: segment.trace_id,
           spanId: segment.id,
           parentSpanId: segment.parent_id,
+          correlationId: correlationId || this.defaultContext.correlationId,
         };
       }
     } catch (error) {

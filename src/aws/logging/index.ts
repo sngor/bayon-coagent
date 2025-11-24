@@ -81,3 +81,34 @@ export {
   trackBedrockInvocation,
   trackStorageOperation,
 } from './reimagine-metrics';
+
+export {
+  InsightsQuery,
+  allQueries,
+  queryTemplates,
+  prepareQuery,
+  getQueryByName,
+  findLogsByTraceId,
+  findLogsByCorrelationId,
+  traceRequestAcrossServices,
+  findErrorsWithTraceContext,
+  analyzeServicePerformance,
+  findSlowOperations,
+  analyzeErrorPatterns,
+  findLogsByUserId,
+  analyzeRequestFlow,
+  findOrphanedLogs,
+  analyzeServiceDependencies,
+  findConcurrentOperations,
+  calculateEndToEndLatency,
+  findFailedTraces,
+  analyzeServiceHealth,
+} from './cloudwatch-insights-queries';
+
+export {
+  InsightsClient,
+  QueryExecutionOptions,
+  QueryResult,
+  getInsightsClient,
+  resetInsightsClient,
+} from './insights-client';

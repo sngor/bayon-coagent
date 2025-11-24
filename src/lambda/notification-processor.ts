@@ -9,6 +9,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, ScanCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { notificationService } from '../lib/alerts/notification-service';
 import { NotificationJob, NotificationPreferences } from '../lib/alerts/notification-types';
+import { invokeIntegrationService, invokeBackgroundService } from './utils/request-signer';
 
 // Initialize DynamoDB client
 const dynamoClient = new DynamoDBClient({
@@ -335,12 +336,41 @@ async function processNotificationJob(job: NotificationJob): Promise<void> {
     try {
         if (job.type === 'real-time') {
             // Process real-time notifications
-            // For now, we'll just mark as sent since the actual notification
-            // would have been handled by the real-time notification service
+            // Example: If we need to call Integration Service to send via external channels
+            // This demonstrates how to use signed requests for cross-service communication
+            /*
+            try {
+                await invokeIntegrationService('/notifications/send', 'POST', {
+                    userId: job.userId,
+                    notificationId: job.id,
+                    type: job.type,
+                    data: job.data,
+                });
+                console.log(`Notification ${job.id} sent via Integration Service`);
+            } catch (error) {
+                console.warn(`Failed to send via Integration Service:`, error);
+                // Fall back to local processing
+            }
+            */
             await updateJobStatus(job, 'sent');
         } else if (job.type === 'digest') {
             // Process digest notifications
-            // This would typically be handled by the digest functions above
+            // Example: If we need to call Background Service to aggregate analytics
+            /*
+            try {
+                const analytics = await invokeBackgroundService<{ data: any }>(
+                    '/analytics/digest',
+                    'POST',
+                    {
+                        userId: job.userId,
+                        period: 'daily',
+                    }
+                );
+                console.log(`Analytics retrieved for digest ${job.id}`);
+            } catch (error) {
+                console.warn(`Failed to get analytics via Background Service:`, error);
+            }
+            */
             await updateJobStatus(job, 'sent');
         }
 

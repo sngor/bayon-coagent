@@ -49,7 +49,7 @@ Only one API key needed in your `.env.local` file:
 
 ```bash
 # Google AI Configuration (✅ Already added)
-GOOGLE_AI_API_KEY=AIzaSyCk9DXfcUI3pBUdOMW1FL33SJwe-lOB_Uw
+GOOGLE_AI_API_KEY=your-google-ai-api-key
 ```
 
 ### 2. No Additional Services Required

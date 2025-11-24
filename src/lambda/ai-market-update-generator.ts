@@ -9,6 +9,9 @@ import { DynamoDBClient, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { generateMarketUpdate } from '../aws/bedrock/flows/generate-market-update';
 import { AWSXRay } from 'aws-xray-sdk-core';
+import { publishAiJobCompletedEvent } from './utils/eventbridge-client';
+import { invokeIntegrationService, invokeBackgroundService } from './utils/request-signer';
+import { retry } from '../lib/retry-utility';
 
 // Wrap AWS SDK clients with X-Ray
 const dynamoClient = AWSXRay.captureAWSv3Client(new DynamoDBClient({}));
@@ -121,15 +124,26 @@ async function processJob(record: SQSRecord): Promise<void> {
         // Update status to processing
         await updateJobStatus(jobId, userId, 'processing');
 
-        // Generate market update using Bedrock flow
-        const result = await generateMarketUpdate({
-            location,
-            marketData,
-            timeframe,
-            tone,
-        }, {
-            userId,
-        });
+        // Generate market update using Bedrock flow with retry logic
+        const result = await retry(
+            async () => await generateMarketUpdate({
+                location,
+                marketData,
+                timeframe,
+                tone,
+            }, {
+                userId,
+            }),
+            {
+                maxRetries: 3,
+                baseDelay: 1000,
+                backoffMultiplier: 2,
+                operationName: 'ai-market-update-generation',
+                onRetry: (error, attempt, delay) => {
+                    console.log(`Retrying market update generation (attempt ${attempt}, delay ${delay}ms):`, error.message);
+                },
+            }
+        );
 
         // Update status to completed with result
         await updateJobStatus(jobId, userId, 'completed', result);
@@ -137,16 +151,70 @@ async function processJob(record: SQSRecord): Promise<void> {
         // Send response to queue
         await sendJobResponse(jobId, userId, result);
 
+        // Publish AI Job Completed event
+        await publishAiJobCompletedEvent({
+            jobId,
+            userId,
+            jobType: 'market-update',
+            status: 'completed',
+            completedAt: new Date().toISOString(),
+            traceId: process.env._X_AMZN_TRACE_ID,
+        });
+
+        // Example: If we need to call Background Service to trigger analytics update
+        // This demonstrates how to use signed requests for cross-service communication
+        // Uncomment when integration is needed:
+        /*
+        try {
+            await invokeBackgroundService('/analytics/market-update', 'POST', {
+                userId,
+                updateId: jobId,
+                location: location,
+                data: result,
+            });
+            console.log(`Market update ${jobId} triggered analytics via Background Service`);
+        } catch (error) {
+            console.warn(`Failed to trigger analytics via Background Service:`, error);
+            // Non-critical - continue processing
+        }
+        */
+
         console.log(`Successfully completed market update job ${jobId}`);
     } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(`Failed to process market update job ${jobId}:`, errorMessage);
+        const { formatErrorResponse, ErrorCode } = await import('../lib/error-response');
+
+        const errorResponse = formatErrorResponse(error as Error, {
+            service: 'ai-market-update-generator',
+            code: ErrorCode.AI_SERVICE_ERROR,
+            userId,
+            requestId: jobId,
+            retryable: true,
+            additionalDetails: {
+                jobType: 'market-update',
+                location,
+                updateType,
+            },
+        });
+
+        const errorMessage = errorResponse.error.message;
+        console.error(`Failed to process market update job ${jobId}:`, JSON.stringify(errorResponse));
 
         // Update status to failed with error
         await updateJobStatus(jobId, userId, 'failed', undefined, errorMessage);
 
         // Send error response to queue
-        await sendJobResponse(jobId, userId, undefined, errorMessage);
+        await sendJobResponse(jobId, userId, undefined, JSON.stringify(errorResponse));
+
+        // Publish AI Job Failed event
+        await publishAiJobCompletedEvent({
+            jobId,
+            userId,
+            jobType: 'market-update',
+            status: 'failed',
+            completedAt: new Date().toISOString(),
+            error: errorMessage,
+            traceId: errorResponse.error.details.traceId,
+        });
 
         // Re-throw to trigger SQS retry/DLQ
         throw error;
