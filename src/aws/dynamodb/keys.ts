@@ -872,3 +872,46 @@ export function getDashboardAnalyticsKeys(
     SK: `VIEW#${timestamp}`,
   };
 }
+
+/**
+ * Generates keys for CMAReport
+ * Pattern: PK: AGENT#<agentId>, SK: CMA#<cmaReportId>
+ */
+export function getCMAReportKeys(
+  agentId: string,
+  cmaReportId: string
+): DynamoDBKey {
+  return {
+    PK: `AGENT#${agentId}`,
+    SK: `CMA#${cmaReportId}`,
+  };
+}
+
+/**
+ * Generates keys for DashboardDocument
+ * Pattern: PK: AGENT#<agentId>, SK: DOCUMENT#<documentId>
+ */
+export function getDashboardDocumentKeys(
+  agentId: string,
+  documentId: string
+): DynamoDBKey {
+  return {
+    PK: `AGENT#${agentId}`,
+    SK: `DOCUMENT#${documentId}`,
+  };
+}
+
+/**
+ * Generates keys for DocumentDownloadLog
+ * Pattern: PK: DOCUMENT#<documentId>, SK: DOWNLOAD#<timestamp>#<dashboardId>
+ */
+export function getDocumentDownloadLogKeys(
+  documentId: string,
+  timestamp: string,
+  dashboardId: string
+): DynamoDBKey {
+  return {
+    PK: `DOCUMENT#${documentId}`,
+    SK: `DOWNLOAD#${timestamp}#${dashboardId}`,
+  };
+}

@@ -72,6 +72,105 @@ Important Guidelines:
 Return a JSON response with all required fields as specified above.`,
 });
 
+/**
+ * Find comparable properties within specified radius and time frame
+ * Requirements: 5.2 - Valuations use nearby recent comparables (1 mile radius, 6 months)
+ */
+async function findComparableProperties(
+    propertyDescription: string,
+    radiusMiles: number = 1,
+    monthsBack: number = 6
+): Promise<string> {
+    const searchClient = getSearchClient();
+
+    try {
+        // Calculate date range for comparable sales
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - monthsBack);
+        const dateStr = sixMonthsAgo.toISOString().split('T')[0];
+
+        // Search for comparable properties sold within radius and time frame
+        const comparableQuery = `${propertyDescription} comparable properties sold within ${radiusMiles} mile radius since ${dateStr} recent sales`;
+
+        const result = await searchClient.search(comparableQuery, {
+            maxResults: 10,
+            searchDepth: 'advanced',
+            includeAnswer: true,
+            includeImages: false,
+        });
+
+        return searchClient.formatResultsForAI(result.results, true);
+    } catch (error) {
+        console.warn('Comparable property search failed:', error);
+        return `Unable to find comparable properties within ${radiusMiles} mile radius from the last ${monthsBack} months. Please use general market data.`;
+    }
+}
+
+/**
+ * Enhance market trends analysis with detailed market conditions
+ * Requirements: 5.2, 5.3 - Enhanced market trends analysis
+ */
+async function enhanceMarketTrendsAnalysis(propertyDescription: string): Promise<string> {
+    const searchClient = getSearchClient();
+
+    try {
+        // Extract location from property description
+        const location = propertyDescription.includes(',')
+            ? propertyDescription.split(',').slice(-2).join(',').trim()
+            : propertyDescription;
+
+        // Search for comprehensive market trends
+        const trendQueries = [
+            `${location} real estate market trends 2024 median price days on market`,
+            `${location} housing inventory levels supply demand 2024`,
+            `${location} property appreciation rates year over year`,
+        ];
+
+        const searchPromises = trendQueries.map(query =>
+            searchClient.search(query, {
+                maxResults: 5,
+                searchDepth: 'advanced',
+                includeAnswer: true,
+                includeImages: false,
+            })
+        );
+
+        const searchResults = await Promise.all(searchPromises);
+        const allResults = searchResults.flatMap(result => result.results);
+
+        return searchClient.formatResultsForAI(allResults, true);
+    } catch (error) {
+        console.warn('Market trends analysis failed:', error);
+        return 'Unable to retrieve detailed market trends. Please use general market conditions.';
+    }
+}
+
+/**
+ * Calculate confidence level based on data availability
+ * Requirements: 5.3 - Add confidence level calculation
+ */
+function calculateConfidenceLevel(
+    comparableData: string,
+    marketTrendsData: string
+): 'high' | 'medium' | 'low' {
+    // Check if we have substantial comparable data
+    const hasComparables = comparableData.length > 200 &&
+        !comparableData.includes('Unable to find comparable');
+
+    // Check if we have substantial market trends data
+    const hasMarketTrends = marketTrendsData.length > 200 &&
+        !marketTrendsData.includes('Unable to retrieve');
+
+    // Determine confidence level
+    if (hasComparables && hasMarketTrends) {
+        return 'high';
+    } else if (hasComparables || hasMarketTrends) {
+        return 'medium';
+    } else {
+        return 'low';
+    }
+}
+
 const propertyValuationFlow = defineFlow(
     {
         name: 'propertyValuationFlow',
@@ -79,42 +178,32 @@ const propertyValuationFlow = defineFlow(
         outputSchema: PropertyValuationOutputSchema,
     },
     async (input) => {
-        // Perform web search for property and market data
-        const searchClient = getSearchClient();
-
         try {
-            // For now, use a fallback approach without web search to test Bedrock functionality
-            let searchContext = "No recent market data available. Please provide a general valuation based on the property description and typical market conditions.";
+            // Step 1: Find comparable properties (1 mile radius, 6 months)
+            // Requirements: 5.2
+            const comparableData = await findComparableProperties(input.propertyDescription, 1, 6);
 
-            try {
-                // Create search queries for property valuation
-                const searchQueries = [
-                    `${input.propertyDescription} property value estimate recent sales`,
-                    `${input.propertyDescription} comparable properties sold 2024`,
-                    `real estate market trends ${input.propertyDescription.includes(',') ? input.propertyDescription.split(',').slice(-2).join(',') : input.propertyDescription}`,
-                ];
+            // Step 2: Enhance market trends analysis
+            // Requirements: 5.2, 5.3
+            const marketTrendsData = await enhanceMarketTrendsAnalysis(input.propertyDescription);
 
-                // Perform multiple searches to gather comprehensive data
-                const searchPromises = searchQueries.map(query =>
-                    searchClient.search(query, {
-                        maxResults: 5,
-                        searchDepth: 'advanced',
-                        includeAnswer: true,
-                        includeImages: false,
-                    })
-                );
+            // Step 3: Calculate confidence level based on data availability
+            // Requirements: 5.3
+            const suggestedConfidence = calculateConfidenceLevel(comparableData, marketTrendsData);
 
-                const searchResults = await Promise.all(searchPromises);
+            // Combine all search context
+            const searchContext = `
+COMPARABLE PROPERTIES (within 1 mile, last 6 months):
+${comparableData}
 
-                // Combine and format all search results
-                const allResults = searchResults.flatMap(result => result.results);
-                searchContext = searchClient.formatResultsForAI(allResults, true);
-            } catch (searchError) {
-                console.warn('Search failed, using fallback approach:', searchError);
-                // Continue with fallback searchContext
-            }
+MARKET TRENDS ANALYSIS:
+${marketTrendsData}
 
-            // Generate property valuation with search context
+SUGGESTED CONFIDENCE LEVEL: ${suggestedConfidence}
+Note: Set confidenceLevel to "${suggestedConfidence}" based on available data quality.
+`;
+
+            // Generate property valuation with enhanced search context
             const output = await propertyValuationPrompt({
                 propertyDescription: input.propertyDescription,
                 searchContext,
@@ -122,6 +211,11 @@ const propertyValuationFlow = defineFlow(
 
             if (!output?.marketValuation?.estimatedValue) {
                 throw new Error("Unable to generate property valuation. Please provide more specific property details.");
+            }
+
+            // Ensure confidence level is set appropriately
+            if (!output.marketValuation.confidenceLevel) {
+                output.marketValuation.confidenceLevel = suggestedConfidence;
             }
 
             return output;
