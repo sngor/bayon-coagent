@@ -54,23 +54,30 @@ DropdownMenuSubTrigger.displayName =
 const DropdownMenuSubContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
->(({ className, ...props }, ref) => (
-  <DropdownMenuPrimitive.SubContent
-    ref={ref}
-    className={cn(
-      "z-50 min-w-[12rem] overflow-hidden rounded-lg border p-1.5",
-      "bg-background/80 dark:bg-background/40 backdrop-blur-xl",
-      "text-popover-foreground shadow-lg",
-      "data-[state=open]:animate-in data-[state=closed]:animate-out",
-      "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-      "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-      "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2",
-      "data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-      className
-    )}
-    {...props}
-  />
-))
+>(({ className, ...props }, ref) => {
+  const [isMobile, setIsMobile] = React.useState(false)
+
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  return (
+    <DropdownMenuPrimitive.SubContent
+      ref={ref}
+      collisionPadding={isMobile ? MOBILE_COLLISION_PADDING : DESKTOP_COLLISION_PADDING}
+      className={cn(
+        "z-50 min-w-[12rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border p-1.5",
+        "bg-background/80 dark:bg-background/40 backdrop-blur-xl",
+        "text-popover-foreground shadow-lg",
+        className
+      )}
+      {...props}
+    />
+  )
+})
 DropdownMenuSubContent.displayName =
   DropdownMenuPrimitive.SubContent.displayName
 
@@ -97,11 +104,6 @@ const DropdownMenuContent = React.forwardRef<
           "z-50 min-w-[12rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border p-1.5",
           "bg-background/80 dark:bg-background/40 backdrop-blur-xl",
           "text-popover-foreground shadow-lg",
-          "data-[state=open]:animate-in data-[state=closed]:animate-out",
-          "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-          "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-          "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2",
-          "data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
           className
         )}
         {...props}

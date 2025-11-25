@@ -57,7 +57,6 @@ import Image from 'next/image';
 import { type OAuthTokenData } from '@/aws/dynamodb';
 import { getOAuthTokensAction } from '@/app/oauth-actions';
 import { useUser } from '@/aws/auth';
-import { useItem, useQuery } from '@/aws/dynamodb/hooks';
 import type { Profile, Review, BrandAudit as BrandAuditType, ReviewAnalysis } from '@/lib/types';
 import { runNapAuditAction, getZillowReviewsAction, analyzeReviewSentimentAction, analyzeMultipleReviewsAction } from '@/app/actions';
 import { toast } from '@/hooks/use-toast';
@@ -65,6 +64,7 @@ import { JsonLdDisplay } from '@/components/json-ld-display';
 import { useFormStatus } from 'react-dom';
 import { FirstTimeUseEmptyState } from '@/components/ui/empty-states';
 import { Celebration } from '@/components/ui/celebration';
+import { AIOperationProgress, useAIOperation } from '@/components/ui/ai-operation-progress';
 
 
 type AuditResult = {
@@ -163,7 +163,7 @@ function RunAuditButton({ disabled }: { disabled?: boolean }) {
     return (
         <StandardFormActions
             primaryAction={{
-                label: 'Check My Listings',
+                label: 'Run NAP Audit',
                 type: 'submit',
                 variant: 'ai',
                 loading: pending,
@@ -292,27 +292,72 @@ export default function BrandAuditPage() {
     const [reviewToDelete, setReviewToDelete] = useState<Review | null>(null);
     const [showCelebration, setShowCelebration] = useState(false);
 
-    // Memoize keys for DynamoDB queries
-    const agentProfilePK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
-    const agentProfileSK = useMemo(() => 'AGENT#main', []);
-
-    const brandAuditPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
-    const brandAuditSK = useMemo(() => 'AUDIT#main', []);
-
-    const reviewAnalysisPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
-    const reviewAnalysisSK = useMemo(() => 'ANALYSIS#main', []);
-
-    const reviewsPK = useMemo(() => user ? `REVIEW#${user.id}` : null, [user]);
-    const reviewsSKPrefix = useMemo(() => 'REVIEW#', []);
-
-    // Fetch data using DynamoDB hooks
-    const { data: agentProfileData, isLoading: isProfileLoading } = useItem<Profile>(agentProfilePK, agentProfileSK);
-    const { data: savedAuditData } = useItem<BrandAuditType>(brandAuditPK, brandAuditSK);
-    const { data: savedAnalysisData } = useItem<ReviewAnalysis>(reviewAnalysisPK, reviewAnalysisSK);
-    const { data: reviews, isLoading: isLoadingReviews } = useQuery<Review>(reviewsPK, reviewsSKPrefix);
+    // State for profile and audit data
+    const [agentProfileData, setAgentProfileData] = useState<Profile | null>(null);
+    const [isProfileLoading, setIsProfileLoading] = useState(true);
+    const [savedAuditData, setSavedAuditData] = useState<BrandAuditType | null>(null);
+    const [savedAnalysisData, setSavedAnalysisData] = useState<ReviewAnalysis | null>(null);
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [isLoadingReviews, setIsLoadingReviews] = useState(true);
 
     const [gbpData, setGbpData] = useState<OAuthTokenData | null>(null);
 
+    // AI operation tracking for NAP audit
+    const napAuditOperation = useAIOperation('run-nap-audit');
+
+    // Wrapper for audit form action to track operation
+    const handleAuditSubmit = async (formData: FormData) => {
+        napAuditOperation.start();
+        return auditFormAction(formData);
+    };
+
+    // Load profile data
+    useEffect(() => {
+        async function loadProfile() {
+            if (!user?.id) {
+                setIsProfileLoading(false);
+                return;
+            }
+
+            try {
+                setIsProfileLoading(true);
+                const { getProfileAction } = await import('@/app/actions');
+                const result = await getProfileAction(user.id);
+
+                if (result.message === 'success' && result.data) {
+                    setAgentProfileData(result.data);
+                }
+            } catch (error) {
+                console.error('Failed to load profile:', error);
+            } finally {
+                setIsProfileLoading(false);
+            }
+        }
+
+        loadProfile();
+    }, [user?.id]);
+
+    // Load saved audit data
+    useEffect(() => {
+        async function loadAuditData() {
+            if (!user?.id) return;
+
+            try {
+                const { getAuditDataAction } = await import('@/app/actions');
+                const result = await getAuditDataAction(user.id);
+
+                if (result.message === 'success' && result.data) {
+                    setSavedAuditData(result.data);
+                }
+            } catch (error) {
+                console.error('Failed to load audit data:', error);
+            }
+        }
+
+        loadAuditData();
+    }, [user?.id]);
+
+    // Load OAuth tokens
     useEffect(() => {
         async function loadOAuthTokens() {
             if (!user) return;
@@ -371,18 +416,29 @@ export default function BrandAuditPage() {
 
     useEffect(() => {
         if (auditState.message === 'success' && auditState.data) {
+            napAuditOperation.complete();
+
+            // Update saved audit data with new results
+            setSavedAuditData({
+                id: 'main',
+                results: auditState.data,
+                lastRun: new Date().toISOString(),
+            });
+
             setShowCelebration(true);
             toast({
                 title: 'Audit Complete',
                 description: "Your NAP consistency results have been updated."
             });
         } else if (auditState.message && auditState.message !== 'success') {
+            napAuditOperation.fail(auditState.message);
             toast({
                 variant: 'destructive',
                 title: 'Audit Failed',
                 description: auditState.message,
             });
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [auditState]);
 
     const handleDeleteReview = () => {
@@ -527,19 +583,30 @@ export default function BrandAuditPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
+                                {/* Hidden form for audit submission */}
+                                <form action={handleAuditSubmit} data-audit-form style={{ display: 'none' }}>
+                                    <input type="hidden" name="userId" value={user?.id || ''} />
+                                    <input type="hidden" name="name" value={agentProfileData?.name || ''} />
+                                    <input type="hidden" name="agencyName" value={agentProfileData?.agencyName || ''} />
+                                    <input type="hidden" name="address" value={agentProfileData?.address || ''} />
+                                    <input type="hidden" name="phone" value={agentProfileData?.phone || ''} />
+                                    <input type="hidden" name="website" value={agentProfileData?.website || ''} />
+                                </form>
+
                                 {/* Show empty state if no audit has been run */}
-                                {!displayAuditData ? (
+                                {!displayAuditData && !napAuditOperation.isRunning ? (
                                     <FirstTimeUseEmptyState
                                         icon={<TrendingUp className="h-8 w-8 text-primary" />}
-                                        title="Run Your First Brand Audit"
+                                        title="Run Your First NAP Audit"
                                         description="We'll check if your business name, address, and phone number match across Google, Yelp, and Facebook. When they match, clients can find you easier and you rank higher in local searches. Complete your profile first, then run your audit to see how you look online."
                                         action={{
-                                            label: isAuditDisabled ? "Complete Profile First" : "Run Your First Audit",
+                                            label: isAuditDisabled ? "Complete Profile First" : "Run NAP Audit",
                                             onClick: () => {
                                                 if (isAuditDisabled) {
-                                                    window.location.href = '/profile';
+                                                    window.location.href = '/brand/profile';
                                                 } else {
-                                                    // Trigger the form submission
+                                                    // Start the operation and trigger form submission
+                                                    napAuditOperation.start();
                                                     const form = document.querySelector('form[data-audit-form]') as HTMLFormElement;
                                                     if (form) form.requestSubmit();
                                                 }
@@ -552,7 +619,7 @@ export default function BrandAuditPage() {
                                                 : {
                                                     label: "Learn More About NAP",
                                                     onClick: () => {
-                                                        window.open('https://moz.com/learn/seo/nap', '_blank');
+                                                        window.location.href = '/training';
                                                     },
                                                 }
                                         }
@@ -585,14 +652,30 @@ export default function BrandAuditPage() {
                                     </div>
                                 </div>
 
-                                <form action={auditFormAction} data-audit-form>
-                                    <input type="hidden" name="name" value={agentProfileData?.name || ''} />
-                                    <input type="hidden" name="agencyName" value={agentProfileData?.agencyName || ''} />
-                                    <input type="hidden" name="address" value={agentProfileData?.address || ''} />
-                                    <input type="hidden" name="phone" value={agentProfileData?.phone || ''} />
-                                    <input type="hidden" name="website" value={agentProfileData?.website || ''} />
-                                    <RunAuditButton disabled={isAuditDisabled} />
-                                </form>
+                                {/* AI Operation Progress */}
+                                {napAuditOperation.isRunning && napAuditOperation.tracker && (
+                                    <AIOperationProgress
+                                        operationName="run-nap-audit"
+                                        tracker={napAuditOperation.tracker}
+                                    />
+                                )}
+
+                                {/* Show run button if audit has been run before and not currently running */}
+                                {displayAuditData && !napAuditOperation.isRunning && (
+                                    <div>
+                                        <Button
+                                            variant="ai"
+                                            onClick={() => {
+                                                napAuditOperation.start();
+                                                const form = document.querySelector('form[data-audit-form]') as HTMLFormElement;
+                                                if (form) form.requestSubmit();
+                                            }}
+                                            disabled={isAuditDisabled}
+                                        >
+                                            Run NAP Audit
+                                        </Button>
+                                    </div>
+                                )}
 
                                 {displayAuditData && (
                                     <div className="mt-6 space-y-4">
@@ -753,7 +836,7 @@ export default function BrandAuditPage() {
                                 </p>
                             </CardContent>
                             <CardFooter>
-                                <Link href="/profile" className="w-full">
+                                <Link href="/brand/profile" className="w-full">
                                     <Button variant="outline" className="w-full">
                                         Edit Profile <ArrowRight className="ml-2 h-4 w-4" />
                                     </Button>
@@ -902,7 +985,7 @@ export default function BrandAuditPage() {
                                     </form>
                                 )}
                             </div>
-                            {isZillowDisabled && <p className="text-sm text-muted-foreground mt-2">Set your Zillow email in your <Link href="/profile" className="underline">profile</Link> to use this feature.</p>}
+                            {isZillowDisabled && <p className="text-sm text-muted-foreground mt-2">Set your Zillow email in your <Link href="/brand/profile" className="underline">profile</Link> to use this feature.</p>}
 
                             {displayAnalysisData && (
                                 <Card className="mt-6 bg-gradient-to-br from-primary/5 to-purple-600/5">

@@ -39,7 +39,10 @@ The script should include:
 Format the script with scene descriptions and voiceover clearly separated.
 Keep the total length appropriate for a 60-second video (approximately 150-180 words of voiceover).
 
-Return a JSON response with a "script" field containing the complete video script.`,
+Return a JSON response with:
+- script.title: A compelling title for the video
+- script.duration: The estimated duration (e.g., "60 seconds")
+- script.content: The complete video script with scene descriptions and voiceover`,
 });
 
 const generateVideoScriptFlow = defineFlow(
@@ -50,7 +53,7 @@ const generateVideoScriptFlow = defineFlow(
   },
   async (input) => {
     const output = await prompt(input);
-    if (!output?.script) {
+    if (!output?.script?.content) {
       throw new Error("The AI returned an empty video script. Please try again.");
     }
     return output;

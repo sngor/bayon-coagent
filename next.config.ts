@@ -36,6 +36,11 @@ const nextConfig: NextConfig = {
     } : false,
   },
 
+  // Server Actions configuration
+  serverActions: {
+    bodySizeLimit: '5mb', // Increase limit for base64 images
+  },
+
   // Enable experimental features for better performance
   experimental: {
     // Optimize package imports

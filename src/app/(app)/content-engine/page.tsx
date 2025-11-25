@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useActionState, useState, useTransition, useEffect, useMemo } from 'react';
+import { useActionState, useState, useTransition, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
@@ -31,6 +31,7 @@ import {
   generateVideoScriptAction,
   generateBlogPostAction,
   regenerateImageAction,
+  generateBlogImageAction,
   saveContentAction,
 } from '@/app/actions';
 
@@ -66,6 +67,7 @@ import {
   MessageSquare,
   Home,
   Check,
+  ImagePlus,
 } from 'lucide-react';
 import { marked } from 'marked';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -87,11 +89,11 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { useUser } from '@/aws/auth';
-import { useQuery } from '@/aws/dynamodb/hooks';
 import type { Project } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { StandardErrorDisplay } from '@/components/standard/error-display';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ProjectSelector } from '@/components/project-selector';
 
 // #region State & Button Components
 type GuideInitialState = {
@@ -110,6 +112,8 @@ type SocialInitialState = {
   data: GenerateSocialMediaPostOutput | null;
   errors: any;
 };
+
+type SocialPostContentWithTopic = GenerateSocialMediaPostOutput & { topic?: string };
 const socialInitialState: SocialInitialState = {
   message: '',
   data: null,
@@ -218,7 +222,7 @@ function RegenerateImageButton({
 }
 
 
-function SaveDialog({ dialogInfo, setDialogInfo, projects }: { dialogInfo: SaveDialogInfo, setDialogInfo: (info: SaveDialogInfo) => void, projects: Project[] | null }) {
+function SaveDialog({ dialogInfo, setDialogInfo }: { dialogInfo: SaveDialogInfo, setDialogInfo: (info: SaveDialogInfo) => void }) {
   const { user } = useUser();
   const [isPending, startTransition] = useTransition();
   const [name, setName] = useState('');
@@ -280,20 +284,12 @@ function SaveDialog({ dialogInfo, setDialogInfo, projects }: { dialogInfo: SaveD
             <Label htmlFor="contentName">Content Name (Optional)</Label>
             <Input id="contentName" value={name} onChange={(e) => setName(e.target.value)} placeholder={`e.g., ${dialogInfo.type} for October`} />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="project">Project</Label>
-            <Select onValueChange={(value) => setProjectId(value === 'uncategorized' ? null : value)}>
-              <SelectTrigger id="project">
-                <SelectValue placeholder="Select a project" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="uncategorized">Uncategorized</SelectItem>
-                {projects?.map(project => (
-                  <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <ProjectSelector
+            value={projectId}
+            onChange={setProjectId}
+            label="Project"
+            placeholder="Select a project (optional)"
+          />
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => setDialogInfo({ isOpen: false, content: '', type: '' })}>Cancel</Button>
@@ -467,6 +463,10 @@ export default function ContentEnginePage() {
     regenerateImageAction,
     imageInitialState
   );
+  const [blogImageState, blogImageAction, isBlogImagePending] = useActionState(
+    generateBlogImageAction,
+    { message: '', data: { imageUrl: null }, errors: {} }
+  );
 
   const [headerImage, setHeaderImage] = useState<string | null>(null);
 
@@ -474,15 +474,9 @@ export default function ContentEnginePage() {
   const [blogPostContent, setBlogPostContent] = useState('');
   const [videoScriptContent, setVideoScriptContent] = useState('');
   const [guideContent, setGuideContent] = useState('');
-  const [socialPostContent, setSocialPostContent] = useState<GenerateSocialMediaPostOutput | null>(null);
+  const [socialPostContent, setSocialPostContent] = useState<SocialPostContentWithTopic | null>(null);
 
-  // Memoize DynamoDB keys
-  const projectsPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
-  const projectsSKPrefix = useMemo(() => 'PROJECT#', []);
 
-  const { data: projects } = useQuery<Project>(projectsPK, projectsSKPrefix, {
-    scanIndexForward: false, // descending order
-  });
 
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
 
@@ -537,15 +531,36 @@ export default function ContentEnginePage() {
   }, [listingState]);
 
   useEffect(() => {
-    if (blogPostState.message === 'success' && blogPostState.data?.headerImage) {
-      setHeaderImage(blogPostState.data.headerImage);
-      if (blogPostState.data.blogPost) {
+    console.log('Blog post state changed:', {
+      message: blogPostState.message,
+      hasData: !!blogPostState.data,
+      hasBlogPost: !!blogPostState.data?.blogPost,
+      blogPostLength: blogPostState.data?.blogPost?.length,
+      fullState: blogPostState
+    });
+
+    if (blogPostState.message === 'success') {
+      if (blogPostState.data?.blogPost) {
+        console.log('Setting blog post content, length:', blogPostState.data.blogPost.length);
         setBlogPostContent(blogPostState.data.blogPost);
+        toast({ title: 'Blog Post Generated', description: 'Your blog post is ready!' });
+      } else {
+        console.error('Blog post data is missing:', blogPostState);
+        toast({ variant: 'destructive', title: 'Error', description: 'Blog post was generated but content is missing.' });
       }
     } else if (blogPostState.message && blogPostState.message !== 'success') {
       toast({ variant: 'destructive', title: 'Blog Post Failed', description: blogPostState.message });
     }
   }, [blogPostState]);
+
+  useEffect(() => {
+    if (blogImageState.message === 'success' && blogImageState.data?.imageUrl) {
+      setHeaderImage(blogImageState.data.imageUrl);
+      toast({ title: 'Image Generated', description: 'Blog header image generated successfully!' });
+    } else if (blogImageState.message && blogImageState.message !== 'success') {
+      toast({ variant: 'destructive', title: 'Image Generation Failed', description: blogImageState.message });
+    }
+  }, [blogImageState]);
 
   useEffect(() => {
     if (imageState.message === 'success' && imageState.data?.headerImage) {
@@ -941,10 +956,44 @@ export default function ContentEnginePage() {
                 )}
               </CardHeader>
               <CardContent>
+                {(() => {
+                  console.log('Rendering blog post card:', {
+                    isBlogPostPending,
+                    hasBlogPostContent: !!blogPostContent,
+                    blogPostContentLength: blogPostContent?.length,
+                    blogPostContentPreview: blogPostContent?.substring(0, 100)
+                  });
+                  return null;
+                })()}
                 {isBlogPostPending ? (
                   <GeneratingContentPlaceholder />
                 ) : blogPostContent ? (
                   <div className="space-y-4">
+                    {!headerImage && blogTopic && (
+                      <div className="mb-6">
+                        <form action={blogImageAction}>
+                          <input type="hidden" name="topic" value={blogTopic} />
+                          <Button
+                            type="submit"
+                            variant="outline"
+                            className="w-full"
+                            disabled={isBlogImagePending}
+                          >
+                            {isBlogImagePending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Generating Image...
+                              </>
+                            ) : (
+                              <>
+                                <ImagePlus className="mr-2 h-4 w-4" />
+                                Generate Header Image
+                              </>
+                            )}
+                          </Button>
+                        </form>
+                      </div>
+                    )}
                     {headerImage && (
                       <div className="relative aspect-video mb-6 overflow-hidden rounded-lg group shadow-lg">
                         <Image
@@ -954,15 +1003,15 @@ export default function ContentEnginePage() {
                           objectFit="cover"
                         />
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                          <form action={imageAction}>
+                          <form action={blogImageAction}>
                             <input
                               type="hidden"
                               name="topic"
                               value={blogTopic}
                             />
-                            <RegenerateImageButton>
-                              Regenerate Image
-                            </RegenerateImageButton>
+                            <Button type="submit" variant="secondary" disabled={isBlogImagePending}>
+                              {isBlogImagePending ? 'Regenerating...' : 'Regenerate Image'}
+                            </Button>
                           </form>
                         </div>
                       </div>
@@ -1255,7 +1304,7 @@ export default function ContentEnginePage() {
                       placeholder="e.g., 'The benefits of using a real estate agent for first-time homebuyers'"
                       rows={5}
                       value={socialPostContent?.topic || ''}
-                      onChange={e => setSocialPostContent(prev => ({ ...prev, topic: e.target.value } as GenerateSocialMediaPostOutput))}
+                      onChange={e => setSocialPostContent(prev => ({ ...prev, topic: e.target.value } as SocialPostContentWithTopic))}
                     />
                     {socialState.errors?.topic && (
                       <p className="text-sm text-destructive">
@@ -1651,7 +1700,7 @@ export default function ContentEnginePage() {
           </div>
         </TabsContent>
       </Tabs>
-      <SaveDialog dialogInfo={saveDialogInfo} setDialogInfo={setSaveDialogInfo} projects={projects} />
+      <SaveDialog dialogInfo={saveDialogInfo} setDialogInfo={setSaveDialogInfo} />
     </div>
   );
 }

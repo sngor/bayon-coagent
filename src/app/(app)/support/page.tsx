@@ -223,56 +223,6 @@ export default function SupportPage() {
                 </CardContent>
             </Card>
 
-            {/* System Status */}
-            <Card className={anyServiceChecking ? '' : allServicesOperational ? 'border-green-200 dark:border-green-900' : 'border-yellow-200 dark:border-yellow-900'}>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            {anyServiceChecking ? (
-                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                            ) : (
-                                <div className={`h-2 w-2 rounded-full ${allServicesOperational ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`} />
-                            )}
-                            <CardTitle className="text-lg">System Status</CardTitle>
-                        </div>
-                        {anyServiceChecking ? (
-                            <Badge variant="outline" className="bg-muted text-muted-foreground">
-                                Checking...
-                            </Badge>
-                        ) : allServicesOperational ? (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800">
-                                All Systems Operational
-                            </Badge>
-                        ) : (
-                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-400 dark:border-yellow-800">
-                                Some Services Degraded
-                            </Badge>
-                        )}
-                    </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div>
-                        <h4 className="font-headline text-sm font-semibold mb-3">AWS Services</h4>
-                        <div className="space-y-1">
-                            <ServiceStatusRow name="AWS Bedrock (AI)" state={bedrockStatus} />
-                            <ServiceStatusRow name="Amazon DynamoDB" state={dynamodbStatus} />
-                            <ServiceStatusRow name="Amazon S3" state={s3Status} />
-                            <ServiceStatusRow name="AWS Cognito" state={cognitoStatus} />
-                            <ServiceStatusRow name="AWS CloudWatch" state={cloudwatchStatus} />
-                        </div>
-                    </div>
-
-                    <div>
-                        <h4 className="font-headline text-sm font-semibold mb-3">External APIs</h4>
-                        <div className="space-y-1">
-                            <ServiceStatusRow name="Tavily Search API" state={tavilyStatus} />
-                            <ServiceStatusRow name="NewsAPI.org" state={newsApiStatus} />
-                            <ServiceStatusRow name="Bridge API (Zillow)" state={bridgeApiStatus} />
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
             {/* FAQ Sections */}
             <div className="space-y-6">
                 <div className="text-center space-y-2">
@@ -789,6 +739,56 @@ export default function SupportPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* System Status */}
+            <Card className={anyServiceChecking ? '' : allServicesOperational ? 'border-green-200 dark:border-green-900' : 'border-yellow-200 dark:border-yellow-900'}>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            {anyServiceChecking ? (
+                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                            ) : (
+                                <div className={`h-2 w-2 rounded-full ${allServicesOperational ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`} />
+                            )}
+                            <CardTitle className="text-lg">System Status</CardTitle>
+                        </div>
+                        {anyServiceChecking ? (
+                            <Badge variant="outline" className="bg-muted text-muted-foreground">
+                                Checking...
+                            </Badge>
+                        ) : allServicesOperational ? (
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800">
+                                All Systems Operational
+                            </Badge>
+                        ) : (
+                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950 dark:text-yellow-400 dark:border-yellow-800">
+                                Some Services Degraded
+                            </Badge>
+                        )}
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div>
+                        <h4 className="font-headline text-sm font-semibold mb-3">AWS Services</h4>
+                        <div className="space-y-1">
+                            <ServiceStatusRow name="AWS Bedrock (AI)" state={bedrockStatus} />
+                            <ServiceStatusRow name="Amazon DynamoDB" state={dynamodbStatus} />
+                            <ServiceStatusRow name="Amazon S3" state={s3Status} />
+                            <ServiceStatusRow name="AWS Cognito" state={cognitoStatus} />
+                            <ServiceStatusRow name="AWS CloudWatch" state={cloudwatchStatus} />
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 className="font-headline text-sm font-semibold mb-3">External APIs</h4>
+                        <div className="space-y-1">
+                            <ServiceStatusRow name="Tavily Search API" state={tavilyStatus} />
+                            <ServiceStatusRow name="NewsAPI.org" state={newsApiStatus} />
+                            <ServiceStatusRow name="Bridge API (Zillow)" state={bridgeApiStatus} />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }

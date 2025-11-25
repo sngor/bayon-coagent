@@ -27,7 +27,7 @@ async function basicParallelSearch() {
   const agent = new ParallelSearchAgent(config);
 
   const input: ParallelSearchInput = {
-    query: 'What are the current real estate market trends in Austin, Texas?',
+    query: 'What are the current real estate market trends in Seattle, Washington?',
     platforms: ['chatgpt', 'gemini', 'claude'],
   };
 
@@ -142,7 +142,7 @@ async function highStakesValidation() {
 
   const input: ParallelSearchInput = {
     query:
-      'What are the legal requirements for real estate disclosures in California?',
+      'What are the legal requirements for real estate disclosures in Washington?',
     platforms: ['chatgpt', 'gemini', 'claude'],
   };
 

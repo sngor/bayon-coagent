@@ -1,5 +1,7 @@
 'use server';
 
+import { setSessionCookie as setServerSessionCookie, clearSessionCookie } from '@/aws/auth/server-auth';
+
 // AWS Bedrock flows (migrated from Genkit)
 import {
   generateNeighborhoodGuide,
@@ -7,10 +9,18 @@ import {
   type GenerateNeighborhoodGuideOutput,
 } from '@/aws/bedrock/flows/generate-neighborhood-guides';
 import {
+  generateNewListingDescription,
+  optimizeListingDescription,
   generateListingDescription,
-  type GenerateListingDescriptionInput,
-  type GenerateListingDescriptionOutput,
+  type ListingDescriptionOutput,
 } from '@/aws/bedrock/flows/listing-description-generator';
+import {
+  type GenerateNewListingInput,
+  type OptimizeListingInput,
+  type GenerateListingDescriptionInput,
+  GenerateNewListingInputSchema,
+  OptimizeListingInputSchema,
+} from '@/ai/schemas/listing-description-schemas';
 import {
   generateListingFaqs,
   type GenerateListingFaqsInput,
@@ -513,14 +523,14 @@ export async function enrichCompetitorAction(
 }
 
 const napAuditSchema = z.object({
+  userId: z.string().min(1, 'User ID is required'),
   name: z.string().min(1, 'Your name must be set in your profile.'),
   address: z.string().min(1, 'Your address must be set in your profile.'),
   phone: z.string().min(1, 'Your phone number must be set in your profile.'),
   website: z
     .string()
-    .url('A valid website URL is required.')
     .optional()
-    .or(z.literal('')),
+    .transform(val => val || ''),
   agencyName: z
     .string()
     .min(1, 'Your agency name must be set in your profile.'),
@@ -528,6 +538,7 @@ const napAuditSchema = z.object({
 
 export async function runNapAuditAction(prevState: any, formData: FormData) {
   const validatedFields = napAuditSchema.safeParse({
+    userId: formData.get('userId'),
     name: formData.get('name'),
     address: formData.get('address'),
     phone: formData.get('phone'),
@@ -546,10 +557,26 @@ export async function runNapAuditAction(prevState: any, formData: FormData) {
     };
   }
 
-  const auditInput = validatedFields.data;
+  const { userId, ...auditInput } = validatedFields.data;
 
   try {
+    // Run the NAP audit
     const result = await runNapAudit(auditInput as RunNapAuditInput);
+
+    // Save audit results to DynamoDB
+    const repository = getRepository();
+    await repository.put({
+      PK: `USER#${userId}`,
+      SK: 'AUDIT#main',
+      EntityType: 'BrandAudit',
+      Data: {
+        id: 'main',
+        results: result.results,
+        lastRun: new Date().toISOString(),
+      },
+      CreatedAt: Date.now(),
+      UpdatedAt: Date.now(),
+    });
 
     return {
       message: 'success',
@@ -560,6 +587,26 @@ export async function runNapAuditAction(prevState: any, formData: FormData) {
     const errorMessage = handleAWSError(error, 'An unexpected error occurred while running the audit.');
     return {
       message: `Failed to run audit: ${errorMessage}`,
+      data: null,
+      errors: {},
+    };
+  }
+}
+
+export async function getAuditDataAction(userId: string): Promise<{ message: string; data?: any; errors: any }> {
+  try {
+    const repository = getRepository();
+    const auditData = await repository.get(`USER#${userId}`, 'AUDIT#main');
+
+    return {
+      message: 'success',
+      data: auditData,
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Get audit data error:', error);
+    return {
+      message: error.message || 'Failed to load audit data',
       data: null,
       errors: {},
     };
@@ -764,8 +811,8 @@ export async function generateNeighborhoodProfileAction(
 
   try {
     // Get current user from Cognito
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user || !user.id) {
       return {
@@ -861,8 +908,8 @@ export async function exportNeighborhoodProfileAction(
 }> {
   try {
     // Get current user from Cognito
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user || !user.id) {
       return {
@@ -972,8 +1019,8 @@ export async function uploadPDFToS3Action(
 }> {
   try {
     // Get current user from Cognito
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user || !user.id) {
       return {
@@ -1021,8 +1068,8 @@ export async function regenerateNeighborhoodProfileAction(
 }> {
   try {
     // Get current user from Cognito
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user || !user.id) {
       return {
@@ -1189,9 +1236,13 @@ export async function generateVideoScriptAction(
     const result = await generateVideoScript(
       validatedFields.data as GenerateVideoScriptInput
     );
+
+    // Format the script with title and duration
+    const formattedScript = `${result.script.title}\n${result.script.duration}\n\n${result.script.content}`;
+
     return {
       message: 'success',
-      data: result.script,
+      data: formattedScript,
       errors: {},
     };
   } catch (error) {
@@ -1282,11 +1333,27 @@ export async function generateBlogPostAction(
     const result: GenerateBlogPostOutput = await generateBlogPost(
       validatedFields.data as GenerateBlogPostInput
     );
-    return {
+
+    console.log('Action returning result:', {
+      hasBlogPost: !!result.blogPost,
+      blogPostLength: result.blogPost?.length,
+      hasHeaderImage: !!result.headerImage,
+      blogPostPreview: result.blogPost?.substring(0, 100)
+    });
+
+    const response = {
       message: 'success',
       data: result,
       errors: {},
     };
+
+    console.log('Action response structure:', {
+      message: response.message,
+      hasData: !!response.data,
+      dataKeys: Object.keys(response.data || {})
+    });
+
+    return response;
   } catch (error) {
     const errorMessage = handleAWSError(error, 'An unexpected error occurred while generating the blog post.');
     return {
@@ -1330,6 +1397,184 @@ export async function regenerateImageAction(
     const errorMessage = handleAWSError(error, 'An unexpected error occurred while regenerating the image.');
     return {
       message: `Failed to regenerate image: ${errorMessage}`,
+      errors: {},
+      data: null,
+    };
+  }
+}
+
+const generateBlogImageSchema = z.object({
+  topic: z.string().min(10, 'A topic is required to generate the image.'),
+});
+
+export async function generateBlogImageAction(
+  prevState: any,
+  formData: FormData
+) {
+  const validatedFields = generateBlogImageSchema.safeParse({
+    topic: formData.get('topic'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      message: 'Validation failed',
+      errors: validatedFields.error.flatten().fieldErrors,
+      data: { imageUrl: null },
+    };
+  }
+
+  try {
+    const { generateBlogHeaderImage } = await import('@/lib/gemini-image');
+    const { uploadBase64ImageToS3 } = await import('@/lib/s3-image-upload');
+
+    // Generate the image (returns base64 data URL)
+    const base64ImageUrl = await generateBlogHeaderImage(validatedFields.data.topic);
+
+    // Upload to S3 and get permanent URL
+    const s3Url = await uploadBase64ImageToS3(base64ImageUrl, 'blog-headers');
+
+    return {
+      message: 'success',
+      data: { imageUrl: s3Url },
+      errors: {},
+    };
+  } catch (error) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred while generating the image.');
+    return {
+      message: `Failed to generate image: ${errorMessage}`,
+      errors: {},
+      data: { imageUrl: null },
+    };
+  }
+}
+
+const generateBlogImageWithPromptSchema = z.object({
+  topic: z.string().min(1, 'Topic is required.'),
+  customPrompt: z.string().optional(),
+});
+
+export async function generateBlogImageWithPromptAction(
+  prevState: any,
+  formData: FormData
+) {
+  const validatedFields = generateBlogImageWithPromptSchema.safeParse({
+    topic: formData.get('topic'),
+    customPrompt: formData.get('customPrompt'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      message: 'Validation failed',
+      errors: validatedFields.error.flatten().fieldErrors,
+      data: { imageUrl: null },
+    };
+  }
+
+  try {
+    const { generateImageWithGemini } = await import('@/lib/gemini-image');
+
+    // Use custom prompt if provided, otherwise generate from topic
+    let prompt: string;
+    if (validatedFields.data.customPrompt && validatedFields.data.customPrompt.trim()) {
+      prompt = validatedFields.data.customPrompt.trim();
+    } else {
+      prompt = `A professional, high-quality header image for a real estate blog post about: "${validatedFields.data.topic}". Professional photography style, modern and bright, featuring real estate elements like houses, neighborhoods, or property details. Clean composition, visually appealing, suitable for a real estate blog header. No text or overlays. 16:9 aspect ratio.`;
+    }
+
+    const result = await generateImageWithGemini({
+      prompt,
+      aspectRatio: '16:9',
+    });
+
+    // Upload to S3 and get permanent URL
+    const { uploadBase64ImageToS3 } = await import('@/lib/s3-image-upload');
+    const s3Url = await uploadBase64ImageToS3(result.imageUrl, 'blog-headers');
+
+    return {
+      message: 'success',
+      data: { imageUrl: s3Url },
+      errors: {},
+    };
+  } catch (error) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred while generating the image.');
+    return {
+      message: `Failed to generate image: ${errorMessage}`,
+      errors: {},
+      data: { imageUrl: null },
+    };
+  }
+}
+
+/**
+ * Generate new listing description from property details
+ */
+export async function generateNewListingDescriptionAction(
+  input: GenerateNewListingInput
+): Promise<{
+  message: string;
+  data: ListingDescriptionOutput | null;
+  errors: any;
+}> {
+  try {
+    // Validate input with Zod schema
+    const validated = GenerateNewListingInputSchema.safeParse(input);
+    if (!validated.success) {
+      const firstError = validated.error.errors[0];
+      return {
+        message: firstError?.message || 'Invalid input data',
+        errors: validated.error.flatten().fieldErrors,
+        data: null,
+      };
+    }
+
+    const result = await generateNewListingDescription(validated.data);
+    return {
+      message: 'success',
+      data: result,
+      errors: {},
+    };
+  } catch (error) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred while generating the listing description.');
+    return {
+      message: `Failed to generate listing description: ${errorMessage}`,
+      errors: {},
+      data: null,
+    };
+  }
+}
+
+/**
+ * Optimize existing listing description for target persona
+ */
+export async function optimizeListingDescriptionAction(
+  input: OptimizeListingInput
+): Promise<{
+  message: string;
+  data: ListingDescriptionOutput | null;
+  errors: any;
+}> {
+  try {
+    // Validate input with Zod schema
+    const validated = OptimizeListingInputSchema.safeParse(input);
+    if (!validated.success) {
+      const firstError = validated.error.errors[0];
+      return {
+        message: firstError?.message || 'Invalid input data',
+        errors: validated.error.flatten().fieldErrors,
+        data: null,
+      };
+    }
+
+    const result = await optimizeListingDescription(validated.data);
+    return {
+      message: 'success',
+      data: result,
+      errors: {},
+    };
+  } catch (error) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred while optimizing the listing description.');
+    return {
+      message: `Failed to optimize listing description: ${errorMessage}`,
       errors: {},
       data: null,
     };
@@ -1788,8 +2033,8 @@ export async function submitFeedbackAction(
     // Get current user from Cognito (optional for feedback)
     let user = null;
     try {
-      const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-      user = await getCurrentUser();
+      const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+      user = await getCurrentUserServer();
       console.log('Authenticated feedback submission from user:', user?.id);
     } catch (error) {
       // User not authenticated, continue with anonymous feedback
@@ -2280,9 +2525,9 @@ export async function trackContentCreationAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { getContentSuggestionsEngine } = await import('@/lib/ai-content-suggestions');
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
 
-    const user = await getCurrentUser();
+    const user = await getCurrentUserServer();
     if (!user) {
       return { success: false, error: 'User not authenticated' };
     }
@@ -2458,8 +2703,8 @@ export async function getUserReportsAction(
 }> {
   try {
     // Get current user from Cognito
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser(userId);
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user || !user.id) {
       return {
@@ -2511,8 +2756,8 @@ export async function getReportByIdAction(
 }> {
   try {
     // Get current user from Cognito
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser(userId);
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user || !user.id) {
       return {
@@ -2574,8 +2819,8 @@ export async function saveTrainingPlanAction(
 }> {
   try {
     // Get current user from Cognito
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser(userId);
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user || !user.id) {
       return {
@@ -2628,8 +2873,8 @@ export async function startRolePlayAction(
 }> {
   try {
     // Get current user from Cognito
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -2695,8 +2940,8 @@ export async function sendRolePlayMessageAction(
 }> {
   try {
     // Get current user from Cognito
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -2783,8 +3028,8 @@ export async function endRolePlayAction(
 }> {
   try {
     // Get current user from Cognito
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -2856,8 +3101,8 @@ export async function getRolePlaySessionsAction(): Promise<{
 }> {
   try {
     // Get current user from Cognito
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -2906,8 +3151,8 @@ export async function getPersonalizedDashboardAction(): Promise<{
 }> {
   try {
     // Get current user from Cognito
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -3118,6 +3363,53 @@ export async function renameContentAction(
 }
 
 /**
+ * Update saved content
+ */
+export async function updateContentAction(
+  userId: string,
+  contentId: string,
+  content: string
+): Promise<{
+  message: string;
+  data: any | null;
+  errors?: string[];
+}> {
+  try {
+    if (!content?.trim()) {
+      return {
+        message: 'Content is required',
+        data: null,
+        errors: ['Content cannot be empty'],
+      };
+    }
+
+    if (!userId) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to update content'],
+      };
+    }
+
+    const repository = getRepository();
+    const keys = getSavedContentKeys(userId, contentId);
+    await repository.update(keys.PK, keys.SK, { content });
+
+    return {
+      message: 'Content updated successfully',
+      data: { contentId, content },
+    };
+  } catch (error: any) {
+    console.error('Update content error:', error);
+    return {
+      message: 'Failed to update content',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
  * Delete research report
  */
 export async function deleteResearchReportAction(
@@ -3128,8 +3420,8 @@ export async function deleteResearchReportAction(
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -3165,7 +3457,8 @@ export async function saveContentAction(
   content: string,
   type: string,
   name?: string,
-  projectId?: string | null
+  projectId?: string | null,
+  headerImage?: string | null
 ): Promise<{
   message: string;
   data: any | null;
@@ -3218,6 +3511,7 @@ export async function saveContentAction(
       projectId: projectId || null,
       createdAt: new Date().toISOString(),
       contentSize: contentSizeBytes,
+      ...(headerImage && { headerImage }), // Include header image if provided
     };
 
     console.log('💾 Saving content:', {
@@ -3478,8 +3772,8 @@ export async function saveResearchReportAction(
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -3532,8 +3826,8 @@ export async function saveCompetitorAction(
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -3586,8 +3880,8 @@ export async function saveMarketingPlanAction(
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -3706,8 +4000,8 @@ export async function saveTrainingProgressAction(
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -3755,8 +4049,8 @@ export async function getRecentActivityAction(userId?: string): Promise<{
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser(userId);
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user || !user.id) {
       return {
@@ -3892,8 +4186,8 @@ export async function getAlertSettingsAction(): Promise<{
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -3932,8 +4226,8 @@ export async function updateAlertSettingsAction(
   errors?: any;
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -4017,8 +4311,8 @@ export async function addTargetAreaAction(
   errors?: any;
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -4108,8 +4402,8 @@ export async function removeTargetAreaAction(
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -4192,8 +4486,8 @@ export async function addTrackedCompetitorAction(
   errors?: any;
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -4273,8 +4567,8 @@ export async function getTrackedCompetitorsAction(): Promise<{
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -4314,8 +4608,8 @@ export async function updateTrackedCompetitorAction(
   errors?: any;
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -4408,8 +4702,8 @@ export async function removeTrackedCompetitorAction(
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -4479,8 +4773,8 @@ export async function getCompetitorAlertsAction(
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -4539,8 +4833,8 @@ export async function markCompetitorAlertAsReadAction(
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -4587,8 +4881,8 @@ export async function dismissCompetitorAlertAction(
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -4632,8 +4926,8 @@ export async function getUnreadCompetitorAlertCountAction(): Promise<{
   errors?: string[];
 }> {
   try {
-    const { getCurrentUser } = await import('@/aws/auth/cognito-client');
-    const user = await getCurrentUser();
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
 
     if (!user) {
       return {
@@ -5210,5 +5504,40 @@ export async function initializeEmailTemplatesAction(): Promise<{
       data: null,
       errors: [error.message || 'Unknown error occurred'],
     };
+  }
+}
+/*
+*
+ * Set session cookie for server-side authentication
+ * This should be called from the client after successful login
+ */
+export async function setSessionCookieAction(
+  accessToken: string,
+  idToken: string,
+  refreshToken: string,
+  expiresAt: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await setServerSessionCookie(accessToken, idToken, refreshToken, expiresAt);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to set session cookie:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to set session cookie'
+    };
+  }
+}
+
+/**
+ * Clear session cookie on logout
+ */
+export async function clearSessionCookieAction(): Promise<{ success: boolean }> {
+  try {
+    await clearSessionCookie();
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to clear session cookie:', error);
+    return { success: false };
   }
 }

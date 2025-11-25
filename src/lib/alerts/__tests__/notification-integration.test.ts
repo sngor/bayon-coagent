@@ -69,18 +69,18 @@ describe('Notification Integration', () => {
             const testCases = [
                 {
                     type: 'life-event-lead',
-                    data: { eventType: 'marriage', prospectLocation: 'New York, NY' },
-                    expected: 'New High-Intent Lead: marriage in New York, NY',
+                    data: { eventType: 'marriage', prospectLocation: 'Seattle, WA' },
+                    expected: 'New High-Intent Lead: marriage in Seattle, WA',
                 },
                 {
                     type: 'competitor-new-listing',
-                    data: { propertyAddress: '123 Main St, Boston, MA' },
-                    expected: 'Competitor New Listing: 123 Main St, Boston, MA',
+                    data: { propertyAddress: '123 Main St, Seattle, WA' },
+                    expected: 'Competitor New Listing: 123 Main St, Seattle, WA',
                 },
                 {
                     type: 'price-reduction',
-                    data: { propertyAddress: '456 Oak Ave, Chicago, IL' },
-                    expected: 'Price Reduction Alert: 456 Oak Ave, Chicago, IL',
+                    data: { propertyAddress: '456 Oak Ave, Seattle, WA' },
+                    expected: 'Price Reduction Alert: 456 Oak Ave, Seattle, WA',
                 },
             ];
 
@@ -125,7 +125,7 @@ describe('Notification Integration', () => {
                     status: 'unread',
                     createdAt: '2024-01-01T10:00:00Z',
                     data: {
-                        prospectLocation: 'Boston, MA',
+                        prospectLocation: 'Seattle, WA',
                         eventType: 'marriage',
                         eventDate: '2024-01-01T00:00:00Z',
                         leadScore: 85,
@@ -141,7 +141,7 @@ describe('Notification Integration', () => {
                     createdAt: '2024-01-01T11:00:00Z',
                     data: {
                         competitorName: 'John Smith Realty',
-                        propertyAddress: '123 Main St, Boston, MA',
+                        propertyAddress: '123 Main St, Seattle, WA',
                         listingPrice: 500000,
                     },
                 },

@@ -73,7 +73,7 @@ src/__tests__/mocks/
 - `GET /v1/location/:location` - Alternative demographics API
 - `POST /v1/batch` - Batch demographics lookup
 
-**Mock Data**: Comprehensive demographic data including population, income, age distribution, household composition, education, and employment statistics for major Texas cities.
+**Mock Data**: Comprehensive demographic data including population, income, age distribution, household composition, education, and employment statistics for major Washington cities.
 
 ### 4. Schools API
 

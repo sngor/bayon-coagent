@@ -42,7 +42,7 @@ export type VirtualStagingParams = z.infer<typeof VirtualStagingParamsSchema>;
 
 export const DayToDuskParamsSchema = z.object({
   intensity: z.enum(["subtle", "moderate", "dramatic"]),
-  direction: z.enum(["day-to-dusk", "dusk-to-day"]).optional().default("day-to-dusk"),
+  direction: z.literal("day-to-dusk").optional().default("day-to-dusk"),
 });
 
 export type DayToDuskParams = z.infer<typeof DayToDuskParamsSchema>;
@@ -174,6 +174,7 @@ export const EditHistoryItemSchema = z.object({
   createdAt: z.string(),
   status: z.string(),
   parentEditId: z.string().optional(),
+  name: z.string().optional(), // Custom name for the edit
 });
 
 export type EditHistoryItem = z.infer<typeof EditHistoryItemSchema>;

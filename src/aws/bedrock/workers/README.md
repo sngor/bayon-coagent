@@ -154,10 +154,10 @@ interface WorkerError {
 import { analyzeData } from "@/aws/bedrock/workers";
 
 const result = await analyzeData({
-  query: "What are the average home prices in Austin?",
+  query: "What are the average home prices in Seattle?",
   dataSource: "tavily",
   context: {
-    market: "Austin, TX",
+    market: "Seattle, WA",
     timeframe: "2024",
   },
 });
@@ -224,7 +224,7 @@ const result = await generateContent({
   },
   agentProfile: {
     agentName: "Jane Smith",
-    primaryMarket: "Austin, TX",
+    primaryMarket: "Seattle, WA",
     specialization: "luxury",
     preferredTone: "warm-consultative",
     corePrinciple: "Maximize client ROI with data-first strategies",
@@ -286,7 +286,7 @@ const result = await forecastMarket({
     // ... more data
   ],
   timeframe: "90-day",
-  market: "Austin, TX",
+  market: "Seattle, WA",
   propertyType: "single-family",
 });
 ```

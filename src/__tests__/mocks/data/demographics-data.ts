@@ -9,10 +9,10 @@ export const demographicsMockData = {
     areas: [
         // Austin areas
         {
-            id: 'austin-78701',
-            name: 'Austin, TX 78701',
-            city: 'Austin',
-            state: 'TX',
+            id: 'seattle-98101',
+            name: 'Seattle, WA 98101',
+            city: 'Seattle',
+            state: 'WA',
             zipCode: '78701',
             stateCode: '48',
             placeCode: '05000',
@@ -45,10 +45,10 @@ export const demographicsMockData = {
             }
         },
         {
-            id: 'austin-78702',
-            name: 'Austin, TX 78702',
-            city: 'Austin',
-            state: 'TX',
+            id: 'seattle-98102',
+            name: 'Seattle, WA 98102',
+            city: 'Seattle',
+            state: 'WA',
             zipCode: '78702',
             stateCode: '48',
             placeCode: '05000',
@@ -274,9 +274,9 @@ export const demographicsMockData = {
 
     // Regional statistics for comparison
     regionalStats: {
-        texas: {
-            medianHouseholdIncome: 64034,
-            populationGrowthRate: 1.3,
+        washington: {
+            medianHouseholdIncome: 78687,
+            populationGrowthRate: 1.1,
             unemploymentRate: 3.8,
             medianHomeValue: 172000,
             bachelorsOrHigher: 30.7

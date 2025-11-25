@@ -97,7 +97,8 @@ const agent = new ParallelSearchAgent(config);
 
 ```typescript
 const input: ParallelSearchInput = {
-  query: "What are the current real estate market trends in Austin, Texas?",
+  query:
+    "What are the current real estate market trends in Seattle, Washington?",
   platforms: ["chatgpt", "gemini", "claude"],
 };
 
@@ -112,7 +113,7 @@ console.log("Discrepancies:", result.discrepancies);
 
 ```typescript
 const input: ParallelSearchInput = {
-  query: "Who are the top luxury real estate agents in Miami?",
+  query: "Who are the top luxury real estate agents in Seattle?",
   platforms: ["chatgpt", "gemini", "claude"],
   agentName: "Jane Smith",
   firmName: "Smith Luxury Realty",
@@ -130,7 +131,7 @@ console.log("Rankings:", result.agentVisibility.rankings);
 ```typescript
 const input: ParallelSearchInput = {
   query:
-    "What are the legal requirements for real estate disclosures in California?",
+    "What are the legal requirements for real estate disclosures in Washington?",
   platforms: ["chatgpt", "gemini", "claude"],
 };
 

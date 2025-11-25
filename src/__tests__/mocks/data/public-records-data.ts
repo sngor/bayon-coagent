@@ -13,13 +13,13 @@ export const publicRecordsMockData = {
             personId: 'person-001',
             eventType: 'marriage' as const,
             eventDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days ago
-            location: 'Austin, TX 78701',
+            location: 'Seattle, WA 98101',
             confidence: 95,
-            source: 'travis-county-clerk',
+            source: 'king-county-clerk',
             details: {
                 spouseName: 'Jane Smith',
                 marriageDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-                venue: 'Austin City Hall'
+                venue: 'Seattle City Hall'
             }
         },
         {
@@ -58,9 +58,9 @@ export const publicRecordsMockData = {
             personId: 'person-004',
             eventType: 'divorce' as const,
             eventDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(), // 60 days ago
-            location: 'San Antonio, TX 78201',
+            location: 'Bellevue, WA 98004',
             confidence: 92,
-            source: 'bexar-county-clerk',
+            source: 'king-county-clerk',
             details: {
                 filingDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
                 finalizedDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
@@ -75,7 +75,7 @@ export const publicRecordsMockData = {
             personId: 'person-005',
             eventType: 'job-change' as const,
             eventDate: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(), // 20 days ago
-            location: 'Austin, TX 78701',
+            location: 'Seattle, WA 98101',
             confidence: 75,
             source: 'employment-verification',
             details: {
@@ -174,17 +174,17 @@ export const publicRecordsMockData = {
     propertyOwnershipChanges: [
         {
             id: 'property-001',
-            propertyAddress: '123 Main St, Austin, TX 78701',
+            propertyAddress: '123 Main St, Seattle, WA 98101',
             previousOwner: 'John Smith',
             newOwner: 'Jane Doe',
             transferDate: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
             transferType: 'sale',
             salePrice: 450000,
-            location: 'Austin, TX 78701'
+            location: 'Seattle, WA 98101'
         },
         {
             id: 'property-002',
-            propertyAddress: '456 Oak Ave, Dallas, TX 75201',
+            propertyAddress: '456 Oak Ave, Bellevue, WA 98004',
             previousOwner: 'Estate of Robert Johnson',
             newOwner: 'Michael Brown',
             transferDate: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString(),
@@ -194,7 +194,7 @@ export const publicRecordsMockData = {
         },
         {
             id: 'property-003',
-            propertyAddress: '789 Pine St, Houston, TX 77001',
+            propertyAddress: '789 Pine St, Tacoma, WA 98402',
             previousOwner: 'Sarah Wilson',
             newOwner: 'David Lee',
             transferDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
@@ -208,23 +208,23 @@ export const publicRecordsMockData = {
     prospects: [
         {
             id: 'prospect-001',
-            location: 'Austin, TX 78701',
+            location: 'Seattle, WA 98101',
             events: [
                 {
                     id: 'marriage-001',
                     personId: 'person-001',
                     eventType: 'marriage' as const,
                     eventDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-                    location: 'Austin, TX 78701',
+                    location: 'Seattle, WA 98101',
                     confidence: 95,
-                    source: 'travis-county-clerk'
+                    source: 'king-county-clerk'
                 },
                 {
                     id: 'job-change-003',
                     personId: 'person-001',
                     eventType: 'job-change' as const,
                     eventDate: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
-                    location: 'Austin, TX 78701',
+                    location: 'Seattle, WA 98101',
                     confidence: 80,
                     source: 'employment-verification'
                 }

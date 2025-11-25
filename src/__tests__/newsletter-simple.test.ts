@@ -329,7 +329,7 @@ describe('Newsletter Template Core Properties', () => {
                 userBrandInfo: {
                     name: 'John Doe',
                     contactInfo: 'john@example.com',
-                    address: '123 Main St, City, State',
+                    address: '123 Main St, Seattle, WA',
                     unsubscribeUrl: 'https://example.com/unsubscribe'
                 }
             });

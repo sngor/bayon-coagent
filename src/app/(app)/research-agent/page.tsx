@@ -250,7 +250,7 @@ export default function ResearchAgentPage() {
               <Textarea
                 id="topic"
                 name="topic"
-                placeholder="e.g., 'The impact of rising interest rates on the commercial real estate market in New York City'"
+                placeholder="e.g., 'The impact of rising interest rates on the commercial real estate market in Seattle'"
                 rows={3}
               />
               {state.errors?.topic && (

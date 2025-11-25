@@ -63,7 +63,7 @@ const input: VisionAnalysisInput = {
   question: "How can I improve the curb appeal of this property?",
   agentProfile: {
     agentName: "Jane Smith",
-    primaryMarket: "Austin, TX",
+    primaryMarket: "Seattle, WA",
     specialization: "luxury",
     preferredTone: "warm-consultative",
     corePrinciple: "Maximize client ROI with data-first strategies",

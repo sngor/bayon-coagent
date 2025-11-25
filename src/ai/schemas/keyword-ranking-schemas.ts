@@ -12,8 +12,8 @@ export const GetKeywordRankingsOutputSchema = z.object({
   rankings: z.array(z.object({
     rank: z.number().describe('The ranking position'),
     agentName: z.string().describe('The agent name'),
-    agency: z.string().describe('The agency name'),
-    url: z.string().describe('The agent website URL'),
+    agencyName: z.string().describe('The agency name'),
+    url: z.string().optional().describe('The agent website URL'),
   })).describe('Array of top ranking agents'),
 });
 

@@ -79,16 +79,16 @@ export class SearchClient {
    * Gets API key from environment variables
    */
   private getApiKeyFromEnv(): string {
-    const key = this.provider === 'tavily' 
-      ? process.env.TAVILY_API_KEY 
+    const key = this.provider === 'tavily'
+      ? process.env.TAVILY_API_KEY
       : process.env.SERPER_API_KEY;
-    
+
     if (!key) {
       throw new SearchError(
         `Missing API key for ${this.provider}. Set ${this.provider === 'tavily' ? 'TAVILY_API_KEY' : 'SERPER_API_KEY'} environment variable.`
       );
     }
-    
+
     return key;
   }
 
@@ -126,6 +126,9 @@ export class SearchClient {
     query: string,
     options: SearchOptions
   ): Promise<SearchResponse> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
     try {
       const requestBody = {
         api_key: this.apiKey,
@@ -144,7 +147,10 @@ export class SearchClient {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -171,8 +177,28 @@ export class SearchClient {
         followUpQuestions: data.follow_up_questions || [],
       };
     } catch (error) {
+      clearTimeout(timeoutId);
+
       if (error instanceof SearchError) {
         throw error;
+      }
+
+      // Handle abort/timeout errors
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new SearchError(
+          'Search request timed out after 30 seconds',
+          'TIMEOUT',
+          408
+        );
+      }
+
+      // Handle connection reset errors
+      if (error instanceof Error && (error.message.includes('ECONNRESET') || error.message.includes('aborted'))) {
+        throw new SearchError(
+          'Search connection was reset. Please try again.',
+          'CONNECTION_RESET',
+          503
+        );
       }
 
       throw new SearchError(
@@ -271,7 +297,7 @@ export class SearchClient {
    * @returns Array of citation strings
    */
   extractCitations(results: SearchResult[]): string[] {
-    return results.map((result, index) => 
+    return results.map((result, index) =>
       `[${index + 1}] ${result.title} - ${result.url}`
     );
   }

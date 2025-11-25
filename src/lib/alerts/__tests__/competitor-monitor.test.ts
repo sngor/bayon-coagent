@@ -65,8 +65,8 @@ describe('CompetitorMonitor', () => {
             {
                 id: 'area-2',
                 type: 'city',
-                value: 'Los Angeles',
-                label: 'Los Angeles',
+                value: 'Seattle',
+                label: 'Seattle',
             },
         ];
     });

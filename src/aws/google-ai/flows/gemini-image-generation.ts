@@ -1,13 +1,14 @@
 /**
- * @fileOverview Gemini 2.5 Flash native image generation flows
+ * @fileOverview Gemini 2.5 Flash and Imagen 4.0 Ultra image generation flows
  * 
- * This module uses Gemini 2.5 Flash's native image generation capabilities
- * for the Reimagine toolkit, eliminating the need for external services.
+ * This module uses:
+ * - Imagen 4.0 Ultra for virtual staging (high-quality image editing)
+ * - Gemini 2.5 Flash for other image generation tasks
  * 
  * Flow:
  * 1. Gemini 2.5 Flash analyzes the input image with advanced vision understanding
  * 2. Generates detailed edit instructions based on the analysis
- * 3. Uses Gemini's native image generation to create the edited image
+ * 3. Uses Imagen 4.0 Ultra for virtual staging, Gemini for other edits
  * 
  * Requirements: 2.2, 2.3, 10.1
  */
@@ -152,7 +153,8 @@ Generate the edited result as an image file.`,
             }
 
         } catch (error) {
-            console.log(`[Gemini Native Generation] ${approach.name} failed:`, error.message);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            console.log(`[Gemini Native Generation] ${approach.name} failed:`, errorMessage);
             // Continue to next approach
             continue;
         }
@@ -204,7 +206,42 @@ export async function generateImageWithGemini(
             analysisPrompt = `Analyze this empty room for virtual staging as ${roomDescription} with ${styleDescription} design. 
 Provide detailed recommendations for furniture placement, color schemes, and styling.`;
 
-            editPrompt = `Transform this empty room into ${roomDescription} with ${styleDescription} design.
+            // Check if this is a multi-angle staging (has detailed custom prompt)
+            const isMultiAngle = params.customPrompt && params.customPrompt.includes('MULTI-ANGLE STAGING');
+
+            if (isMultiAngle) {
+                // Multi-angle staging: balance furniture consistency with spatial adaptation
+                editPrompt = `Transform this empty room into ${roomDescription} with ${styleDescription} design.
+
+${params.customPrompt}
+
+CRITICAL TECHNICAL REQUIREMENTS:
+1. ANALYZE THIS IMAGE FIRST:
+   - Study THIS room's actual layout, dimensions, and architectural features
+   - Identify natural furniture placement zones in THIS space
+   - Respect THIS room's windows, doors, walls, and floor plan
+
+2. STAGING EXECUTION:
+   - Stage THIS room naturally based on its actual layout
+   - Use furniture that matches the reference style, colors, and aesthetic
+   - Position furniture appropriately for THIS room's dimensions
+   - Adapt furniture placement to THIS camera angle and perspective
+
+3. PRESERVE ARCHITECTURE:
+   - Keep all architectural elements of THIS room exactly as shown
+   - Maintain THIS room's exact camera angle and perspective
+   - Do not alter walls, windows, doors, or flooring
+   - Respect THIS room's spatial constraints
+
+4. QUALITY:
+   - Create photorealistic staging suitable for luxury real estate marketing
+   - Ensure furniture is properly scaled for THIS space
+   - Match lighting and atmosphere to THIS room's conditions
+
+Generate a professionally staged version of THIS room using furniture that matches the reference style.`;
+            } else {
+                // First angle or regular staging
+                editPrompt = `Transform this empty room into ${roomDescription} with ${styleDescription} design.
 
 EDIT INSTRUCTIONS:
 - ADD appropriate furniture and decor for ${roomDescription}
@@ -214,9 +251,10 @@ EDIT INSTRUCTIONS:
 - CREATE photorealistic staging suitable for luxury real estate marketing
 - ENSURE furniture is properly scaled and positioned for the space
 
-${params.customPrompt ? `Additional requirements: ${params.customPrompt}` : ''}
+${params.customPrompt ? `Additional styling notes: ${params.customPrompt}` : ''}
 
 Generate a professionally staged version of this room.`;
+            }
             break;
         }
 
@@ -383,6 +421,8 @@ export async function virtualStaging(input: {
     imageFormat: 'jpeg' | 'png' | 'webp';
     params: VirtualStagingParams;
 }) {
+    // Virtual staging requires image editing with reference image
+    // Imagen 4.0 Ultra is text-to-image only, so we use Gemini's capabilities
     const result = await generateImageWithGemini({
         ...input,
         editType: 'virtual-staging',

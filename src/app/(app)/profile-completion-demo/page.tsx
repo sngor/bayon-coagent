@@ -23,7 +23,7 @@ export default function ProfileCompletionDemoPage() {
         name: 'Jane Doe',
         agencyName: 'Doe Real Estate',
         phone: '555-0456',
-        address: '123 Main St, City, State 12345',
+        address: '123 Main St, Seattle, WA 98101',
         bio: 'Experienced real estate agent specializing in luxury homes.',
         yearsOfExperience: 10,
         licenseNumber: 'RE123456',

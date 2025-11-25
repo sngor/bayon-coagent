@@ -17,9 +17,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowLeft, Loader2 } from 'lucide-react';
+import { Sparkles, ArrowLeft, Loader2, XCircle } from 'lucide-react';
 import { useUser } from '@/aws/auth/use-user';
-import { StandardPageLayout, StandardErrorDisplay } from '@/components/standard';
+import { StandardPageLayout, StandardErrorDisplay, StandardLoadingSpinner } from '@/components/standard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -34,6 +34,7 @@ import { EditPreview } from '@/components/reimagine/edit-preview';
 import { EditHistoryList } from '@/components/reimagine/edit-history-list';
 import { ProcessingProgress, type ProcessingStatus } from '@/components/reimagine/processing-progress';
 import { RateLimitStatus } from '@/components/reimagine/rate-limit-status';
+import { MultiAngleStagingInterface } from '@/components/reimagine/multi-angle-staging-interface';
 import {
     VirtualStagingForm,
     DayToDuskForm,
@@ -78,6 +79,12 @@ interface PreviewData {
     sourceImageId?: string; // Store source image ID for regeneration
 }
 
+interface SavedFormState {
+    editType: EditType;
+    imageId: string;
+    imageUrl: string;
+}
+
 interface ChainEditData {
     parentEditId: string;
     imageId: string;
@@ -100,6 +107,12 @@ export default function ReimagineToolkitPage() {
 
     // History refresh trigger
     const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+
+    // Preloaded image for chained edits
+    const [preloadedImage, setPreloadedImage] = useState<{ id: string; url: string } | null>(null);
+
+    // Saved form state for back navigation
+    const [savedFormState, setSavedFormState] = useState<SavedFormState | null>(null);
 
     // Authentication check and redirect (Requirement 11.4)
     useEffect(() => {
@@ -169,16 +182,33 @@ export default function ReimagineToolkitPage() {
 
     // Handle upload complete - now directly processes the edit
     const handleUploadComplete = useCallback(
-        async (imageId: string, suggestions: EditSuggestion[], editType: EditType, params: EditParams) => {
-            setCurrentImage({ imageId, suggestions });
+        async (imageId: string, suggestions?: EditSuggestion[], editType?: EditType, params?: EditParams) => {
+            setCurrentImage({ imageId, suggestions: suggestions || [] });
 
+            let result;
             try {
                 setWorkflowState('processing');
                 setProcessingStatus('processing');
                 setProcessingError(null);
 
+                console.log('Processing edit with:', { userId, imageId, editType, params });
+
+                // Validate required data
+                if (!userId) {
+                    throw new Error('User ID is missing. Please refresh the page and try again.');
+                }
+                if (!imageId) {
+                    throw new Error('Image ID is missing. Please upload the image again.');
+                }
+                if (!editType) {
+                    throw new Error('Edit type is missing. Please select an edit type.');
+                }
+                if (!params) {
+                    throw new Error('Edit parameters are missing. Please fill in the form.');
+                }
+
                 // Process the edit immediately
-                const result = await processEditAction(
+                result = await processEditAction(
                     userId,
                     imageId,
                     editType,
@@ -186,10 +216,21 @@ export default function ReimagineToolkitPage() {
                     chainEditData?.parentEditId
                 );
 
+                console.log('Process edit result:', result);
+
+                if (!result) {
+                    throw new Error('No response from server. Please check your connection and try again.');
+                }
+
                 if (result.success && result.editId && result.resultUrl) {
                     // Get original image URL
                     const originalImageResult = await getOriginalImageAction(userId, result.editId);
-                    const originalUrl = originalImageResult.success ? originalImageResult.originalUrl || '' : '';
+
+                    if (!originalImageResult) {
+                        console.warn('Failed to get original image URL, using empty string');
+                    }
+
+                    const originalUrl = originalImageResult?.success ? originalImageResult.originalUrl || '' : '';
 
                     setPreviewData({
                         editId: result.editId,
@@ -203,11 +244,16 @@ export default function ReimagineToolkitPage() {
                     setProcessingStatus('completed');
                     setWorkflowState('preview');
                 } else {
-                    throw new Error(result.error || 'Failed to process edit');
+                    const errorMsg = result.error || 'Failed to process edit. Please try again.';
+                    throw new Error(errorMsg);
                 }
             } catch (error) {
                 console.error('Edit processing error:', error);
-                const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+                console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
+                console.error('Result was:', result);
+                console.error('Input data:', { userId, imageId, editType, params });
+
+                const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.';
                 setProcessingStatus('failed');
                 setProcessingError(errorMessage);
                 setWorkflowState('upload'); // Go back to upload on error
@@ -229,6 +275,8 @@ export default function ReimagineToolkitPage() {
         setActiveEdit(null);
         setPreviewData(null);
         setChainEditData(null);
+        setPreloadedImage(null);
+        setSavedFormState(null);
         setProcessingStatus('idle');
         setProcessingError(null);
         setWorkflowState('upload');
@@ -255,6 +303,9 @@ export default function ReimagineToolkitPage() {
                 setPreviewData(null);
                 setChainEditData(null);
                 setWorkflowState('upload');
+
+                // Switch back to history tab to see the saved edit
+                setActiveTab('history');
             } else {
                 throw new Error(result.error || 'Failed to accept edit');
             }
@@ -322,42 +373,79 @@ export default function ReimagineToolkitPage() {
         setActiveEdit(null);
         setChainEditData(null);
         setCurrentImage(null);
+        setPreloadedImage(null);
         setWorkflowState('upload');
     }, []);
 
     // Handle edit result (chained edit) - Requirement 9.1
     const handleEditResult = useCallback((item: any) => {
-        // Set up for a chained edit
+        // Set up for a chained edit with the result image
         setChainEditData({
             parentEditId: item.editId,
-            imageId: item.imageId,
+            imageId: item.editId, // Use the edit ID as the image ID for chained edits
         });
 
-        // Set current image for the chained edit
+        // Set current image for the chained edit with the result URL
         setCurrentImage({
-            imageId: item.imageId,
+            imageId: item.editId,
             suggestions: [],
         });
 
+        // Set preloaded image for the uploader
+        setPreloadedImage({
+            id: item.editId,
+            url: item.resultUrl,
+        });
+
+        // Clear preview data
+        setPreviewData(null);
+
         // Move back to upload for chained edit
         setWorkflowState('upload');
+
+        // Switch to Create tab to show the upload interface
+        setActiveTab('create');
     }, []);
 
-    // Handle back navigation
+    // Handle back navigation - preserve image and settings
     const handleBack = useCallback(() => {
-        if (workflowState === 'preview') {
+        if (workflowState === 'preview' && previewData) {
+            // Save the form state before going back
+            if (previewData.sourceImageId && previewData.originalUrl && previewData.editType) {
+                setSavedFormState({
+                    editType: previewData.editType,
+                    imageId: previewData.sourceImageId,
+                    imageUrl: previewData.originalUrl,
+                });
+
+                setPreloadedImage({
+                    id: previewData.sourceImageId,
+                    url: previewData.originalUrl,
+                });
+                setCurrentImage({
+                    imageId: previewData.sourceImageId,
+                    suggestions: [],
+                });
+            }
+
+            // Clear preview and go back to upload state
             setPreviewData(null);
-            setCurrentImage(null);
+            setProcessingStatus('idle');
+            setProcessingError(null);
             setWorkflowState('upload');
         }
-    }, [workflowState]);
+    }, [workflowState, previewData]);
+
+    // Active tab state
+    const [activeTab, setActiveTab] = useState<string>('create');
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
-            <Tabs defaultValue="create" className="w-full">
-                <TabsList className="grid w-full max-w-md grid-cols-2">
-                    <TabsTrigger value="create">Create</TabsTrigger>
-                    <TabsTrigger value="history">Edit History</TabsTrigger>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full max-w-2xl grid-cols-3">
+                    <TabsTrigger value="create">Single Edit</TabsTrigger>
+                    <TabsTrigger value="multi-angle">Multi-Angle</TabsTrigger>
+                    <TabsTrigger value="history">History</TabsTrigger>
                 </TabsList>
 
                 {/* Create Tab */}
@@ -365,50 +453,127 @@ export default function ReimagineToolkitPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Left Column: Main Workflow */}
                         <div className="lg:col-span-2 space-y-6">
-                            {/* Back Button */}
-                            {workflowState === 'preview' && (
-                                <Button
-                                    variant="ghost"
-                                    onClick={handleBack}
-                                    className="mb-4"
-                                >
-                                    <ArrowLeft className="h-4 w-4 mr-2" />
-                                    Back
-                                </Button>
-                            )}
+                            {/* Navigation Buttons */}
+                            <div className="flex items-center justify-between">
+                                {workflowState === 'preview' && (
+                                    <Button
+                                        variant="ghost"
+                                        onClick={handleBack}
+                                    >
+                                        <ArrowLeft className="h-4 w-4 mr-2" />
+                                        Back
+                                    </Button>
+                                )}
+                                {(currentImage || previewData) && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleChangeImage}
+                                        className={cn(!workflowState || workflowState === 'upload' ? 'ml-auto' : '')}
+                                    >
+                                        <XCircle className="h-4 w-4 mr-2" />
+                                        Reset
+                                    </Button>
+                                )}
+                            </div>
 
                             {/* Upload State - Combined with edit type selection */}
                             {workflowState === 'upload' && (
                                 <ImageUploader
+                                    key={savedFormState ? `saved-${savedFormState.imageId}` : (preloadedImage?.id || 'new')}
                                     userId={userId}
                                     onUploadComplete={handleUploadComplete}
                                     onUploadError={handleUploadError}
                                     onChangeImage={handleChangeImage}
+                                    preloadedImageId={savedFormState?.imageId || preloadedImage?.id}
+                                    preloadedImageUrl={savedFormState?.imageUrl || preloadedImage?.url}
+                                    preselectedEditType={savedFormState?.editType}
                                 />
                             )}
 
                             {/* Processing State */}
                             {workflowState === 'processing' && (
-                                <Card>
-                                    <CardContent className="p-8">
-                                        <div className="flex flex-col items-center justify-center space-y-4">
-                                            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                                            <div className="text-center">
-                                                <h3 className="font-headline font-semibold text-lg mb-1">Processing your image...</h3>
-                                                <p className="text-sm text-muted-foreground">
-                                                    This usually takes 30-60 seconds
-                                                </p>
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ duration: 0.3 }}
+                                >
+                                    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+                                        <CardContent className="p-12">
+                                            <div className="flex flex-col items-center justify-center space-y-6">
+                                                {/* Animated Icon */}
+                                                <motion.div
+                                                    animate={{
+                                                        scale: [1, 1.1, 1],
+                                                        rotate: [0, 5, -5, 0],
+                                                    }}
+                                                    transition={{
+                                                        duration: 2,
+                                                        repeat: Infinity,
+                                                        ease: "easeInOut"
+                                                    }}
+                                                    className="relative"
+                                                >
+                                                    <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl" />
+                                                    <div className="relative bg-primary/10 p-6 rounded-full">
+                                                        <Sparkles className="h-12 w-12 text-primary" />
+                                                    </div>
+                                                </motion.div>
+
+                                                {/* Loading Text */}
+                                                <div className="text-center space-y-2">
+                                                    <motion.h3
+                                                        animate={{ opacity: [0.5, 1, 0.5] }}
+                                                        transition={{ duration: 2, repeat: Infinity }}
+                                                        className="text-2xl font-headline font-semibold text-primary"
+                                                    >
+                                                        {previewData?.editType === 'virtual-staging' ? 'Staging your room...' :
+                                                            previewData?.editType === 'day-to-dusk' ? 'Transforming to golden hour...' :
+                                                                previewData?.editType === 'enhance' ? 'Enhancing your image...' :
+                                                                    previewData?.editType === 'item-removal' ? 'Removing unwanted items...' :
+                                                                        previewData?.editType === 'virtual-renovation' ? 'Visualizing your renovation...' :
+                                                                            'Processing your image...'}
+                                                    </motion.h3>
+                                                    <p className="text-muted-foreground">
+                                                        This may take 30-60 seconds
+                                                    </p>
+                                                </div>
+
+                                                {/* Progress Dots */}
+                                                <div className="flex gap-2">
+                                                    {[0, 1, 2].map((i) => (
+                                                        <motion.div
+                                                            key={i}
+                                                            animate={{
+                                                                scale: [1, 1.5, 1],
+                                                                opacity: [0.3, 1, 0.3],
+                                                            }}
+                                                            transition={{
+                                                                duration: 1.5,
+                                                                repeat: Infinity,
+                                                                delay: i * 0.2,
+                                                            }}
+                                                            className="w-2 h-2 bg-primary rounded-full"
+                                                        />
+                                                    ))}
+                                                </div>
                                             </div>
+
                                             {processingError && (
-                                                <StandardErrorDisplay
-                                                    title="Processing Error"
-                                                    message={processingError}
-                                                    variant="error"
-                                                />
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className="mt-6"
+                                                >
+                                                    <StandardErrorDisplay
+                                                        title="Processing Error"
+                                                        message={processingError}
+                                                        variant="error"
+                                                    />
+                                                </motion.div>
                                             )}
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
                             )}
 
                             {/* Preview State */}
@@ -432,25 +597,30 @@ export default function ReimagineToolkitPage() {
                     </div>
                 </TabsContent>
 
+                {/* Multi-Angle Tab */}
+                <TabsContent value="multi-angle" className="mt-6">
+                    <MultiAngleStagingInterface userId={userId} />
+                </TabsContent>
+
                 {/* History Tab */}
                 <TabsContent value="history" className="mt-6">
-                    <div className="max-w-4xl mx-auto">
-                        <EditHistoryList
-                            key={historyRefreshKey}
-                            userId={userId}
-                            onViewEdit={(item) => {
-                                // Handle viewing an edit from history
-                                setPreviewData({
-                                    editId: item.editId,
-                                    originalUrl: item.originalUrl,
-                                    editedUrl: item.resultUrl,
-                                    editType: item.editType,
-                                });
-                                setWorkflowState('preview');
-                            }}
-                            onEditResult={handleEditResult}
-                        />
-                    </div>
+                    <EditHistoryList
+                        key={historyRefreshKey}
+                        userId={userId}
+                        onViewEdit={(item) => {
+                            // Handle viewing an edit from history
+                            setPreviewData({
+                                editId: item.editId,
+                                originalUrl: item.originalUrl,
+                                editedUrl: item.resultUrl,
+                                editType: item.editType,
+                            });
+                            setWorkflowState('preview');
+                            // Switch to Create tab to show the preview
+                            setActiveTab('create');
+                        }}
+                        onEditResult={handleEditResult}
+                    />
                 </TabsContent>
             </Tabs>
         </div>

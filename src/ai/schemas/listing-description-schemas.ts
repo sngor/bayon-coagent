@@ -10,6 +10,34 @@ export const generateListingDescriptionSchema = z.object({
 export type GenerateListingDescriptionInput = z.infer<typeof generateListingDescriptionSchema>;
 
 /**
+ * Schema for generating new listing descriptions
+ */
+export const GenerateNewListingInputSchema = z.object({
+  propertyType: z.string(),
+  bedrooms: z.string(),
+  bathrooms: z.string(),
+  squareFeet: z.string().optional(),
+  location: z.string(),
+  keyFeatures: z.string(),
+  buyerPersona: z.string(),
+  writingStyle: z.string(),
+});
+
+export type GenerateNewListingInput = z.infer<typeof GenerateNewListingInputSchema>;
+
+/**
+ * Schema for optimizing existing listing descriptions
+ */
+export const OptimizeListingInputSchema = z.object({
+  originalDescription: z.string().min(50, 'Original description must be at least 50 characters'),
+  buyerPersona: z.string().min(1, 'Buyer persona is required'),
+  sellingPoints: z.string().optional().default(''),
+  emotionalAppeal: z.string().min(1, 'Emotional appeal style is required'),
+});
+
+export type OptimizeListingInput = z.infer<typeof OptimizeListingInputSchema>;
+
+/**
  * Schema for photo data with base64 encoding
  */
 export const PhotoDataSchema = z.object({

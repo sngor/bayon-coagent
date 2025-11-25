@@ -383,3 +383,114 @@ export function NoConnectionsState({ className, onAction, actionLabel = "Connect
         </Card>
     );
 }
+
+// Base EmptyState component for reusable empty state patterns
+interface EmptyStateBaseProps {
+    className?: string;
+    icon?: React.ReactNode;
+    title: string;
+    description: string;
+    action?: {
+        label: string;
+        onClick: () => void;
+        variant?: 'default' | 'outline' | 'ai';
+    };
+    secondaryAction?: {
+        label: string;
+        onClick: () => void;
+    };
+}
+
+export function EmptyState({
+    className,
+    icon,
+    title,
+    description,
+    action,
+    secondaryAction
+}: EmptyStateBaseProps) {
+    return (
+        <Card className={cn("border-dashed border-2", className)}>
+            <CardContent className="flex flex-col items-center justify-center py-16 px-8 text-center">
+                {icon && (
+                    <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+                        {icon}
+                    </div>
+                )}
+
+                <h3 className="text-xl font-semibold mb-2">{title}</h3>
+                <p className="text-muted-foreground mb-6 max-w-md">
+                    {description}
+                </p>
+
+                {(action || secondaryAction) && (
+                    <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                        {action && (
+                            <Button
+                                onClick={action.onClick}
+                                variant={action.variant || 'default'}
+                                className="min-w-[180px]"
+                            >
+                                {action.label}
+                            </Button>
+                        )}
+                        {secondaryAction && (
+                            <Button variant="outline" onClick={secondaryAction.onClick}>
+                                {secondaryAction.label}
+                            </Button>
+                        )}
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+export function FirstTimeUseEmptyState(props: EmptyStateBaseProps) {
+    return <EmptyState {...props} />;
+}
+
+export function NoDataEmptyState(props: EmptyStateBaseProps) {
+    return <EmptyState {...props} />;
+}
+
+export function NoResultsEmptyState({
+    className,
+    icon,
+    searchTerm,
+    onClearSearch
+}: {
+    className?: string;
+    icon?: React.ReactNode;
+    searchTerm?: string;
+    onClearSearch?: () => void;
+}) {
+    return (
+        <Card className={cn("border-dashed border-2", className)}>
+            <CardContent className="flex flex-col items-center justify-center py-12 px-8 text-center">
+                {icon && (
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                        {icon}
+                    </div>
+                )}
+
+                <h3 className="text-lg font-semibold mb-2">No Results Found</h3>
+                <p className="text-muted-foreground mb-4 max-w-md">
+                    {searchTerm
+                        ? `No results found for "${searchTerm}". Try adjusting your search terms or filters.`
+                        : "No items match your current filters. Try adjusting your criteria."
+                    }
+                </p>
+
+                {onClearSearch && (
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        <Button variant="outline" onClick={onClearSearch}>
+                            <Filter className="h-4 w-4 mr-2" />
+                            Clear Search
+                        </Button>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
+    );
+}

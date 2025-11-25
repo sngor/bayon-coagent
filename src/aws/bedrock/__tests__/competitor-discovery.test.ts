@@ -39,24 +39,24 @@ const competitorDiscoveryInputArbitrary = (): fc.Arbitrary<FindCompetitorsInput>
       fc.integer({ min: 100, max: 9999 }),
       fc.constantFrom('Main', 'Oak', 'Maple', 'Park', 'Washington', 'First', 'Second'),
       fc.constantFrom('Street', 'Avenue', 'Road', 'Drive', 'Boulevard'),
-      fc.constantFrom('New York, NY', 'Los Angeles, CA', 'Chicago, IL', 'Houston, TX', 'Phoenix, AZ', 'Miami, FL')
+      fc.constantFrom('Seattle, WA', 'Bellevue, WA', 'Tacoma, WA', 'Redmond, WA', 'Kirkland, WA', 'Everett, WA')
     ).map(([number, street, type, city]) => `${number} ${street} ${type}, ${city}`)
   });
 };
 
 describe('Competitor Discovery Property Tests', () => {
   // Check if required API keys are available
-  const hasApiKeys = process.env.TAVILY_API_KEY && 
-                     process.env.TAVILY_API_KEY !== 'your-tavily-api-key' &&
-                     process.env.AWS_BEDROCK_REGION;
-  
+  const hasApiKeys = process.env.TAVILY_API_KEY &&
+    process.env.TAVILY_API_KEY !== 'your-tavily-api-key' &&
+    process.env.AWS_BEDROCK_REGION;
+
   if (!hasApiKeys) {
     console.warn('\n⚠️  Skipping competitor discovery property tests: Missing API keys');
     console.warn('   Set TAVILY_API_KEY and AWS_BEDROCK_REGION to run these tests\n');
   }
-  
+
   const describeOrSkip = hasApiKeys ? describe : describe.skip;
-  
+
   describeOrSkip('Property 13: Competitor discovery returns 3-5 results', () => {
     /**
      * For any valid competitor discovery request, the system should return
@@ -70,16 +70,16 @@ describe('Competitor Discovery Property Tests', () => {
           competitorDiscoveryInputArbitrary(),
           async (input) => {
             const output = await findCompetitors(input);
-            
+
             // Should have a competitors array
             expect(output).toHaveProperty('competitors');
             expect(Array.isArray(output.competitors)).toBe(true);
-            
+
             // Should return between 0 and 5 competitors
             // (0 is allowed when insufficient data exists)
             expect(output.competitors.length).toBeGreaterThanOrEqual(0);
             expect(output.competitors.length).toBeLessThanOrEqual(5);
-            
+
             return true;
           }
         ),
@@ -97,7 +97,7 @@ describe('Competitor Discovery Property Tests', () => {
           competitorDiscoveryInputArbitrary(),
           async (input) => {
             const output = await findCompetitors(input);
-            
+
             // Each competitor should have all required fields
             output.competitors.forEach(competitor => {
               expect(competitor).toHaveProperty('name');
@@ -106,7 +106,7 @@ describe('Competitor Discovery Property Tests', () => {
               expect(competitor).toHaveProperty('avgRating');
               expect(competitor).toHaveProperty('socialFollowers');
               expect(competitor).toHaveProperty('domainAuthority');
-              
+
               // Fields should be the correct type
               expect(typeof competitor.name).toBe('string');
               expect(typeof competitor.agency).toBe('string');
@@ -114,24 +114,24 @@ describe('Competitor Discovery Property Tests', () => {
               expect(typeof competitor.avgRating).toBe('number');
               expect(typeof competitor.socialFollowers).toBe('number');
               expect(typeof competitor.domainAuthority).toBe('number');
-              
+
               // Name and agency should not be empty
               expect(competitor.name.trim().length).toBeGreaterThan(0);
               expect(competitor.agency.trim().length).toBeGreaterThan(0);
-              
+
               // Numeric fields should be non-negative
               expect(competitor.reviewCount).toBeGreaterThanOrEqual(0);
               expect(competitor.avgRating).toBeGreaterThanOrEqual(0);
               expect(competitor.socialFollowers).toBeGreaterThanOrEqual(0);
               expect(competitor.domainAuthority).toBeGreaterThanOrEqual(0);
-              
+
               // Rating should be between 0 and 5
               expect(competitor.avgRating).toBeLessThanOrEqual(5);
-              
+
               // Domain authority should be between 0 and 100
               expect(competitor.domainAuthority).toBeLessThanOrEqual(100);
             });
-            
+
             return true;
           }
         ),
@@ -149,14 +149,14 @@ describe('Competitor Discovery Property Tests', () => {
           competitorDiscoveryInputArbitrary(),
           async (input) => {
             const output = await findCompetitors(input);
-            
+
             // None of the competitors should have the same name as the input agent
             const agentNameLower = input.name.toLowerCase().trim();
             output.competitors.forEach(competitor => {
               const competitorNameLower = competitor.name.toLowerCase().trim();
               expect(competitorNameLower).not.toBe(agentNameLower);
             });
-            
+
             return true;
           }
         ),
@@ -174,13 +174,13 @@ describe('Competitor Discovery Property Tests', () => {
           competitorDiscoveryInputArbitrary(),
           async (input) => {
             const output = await findCompetitors(input);
-            
+
             // Check for duplicate names
             const names = output.competitors.map(c => c.name.toLowerCase().trim());
             const uniqueNames = new Set(names);
-            
+
             expect(uniqueNames.size).toBe(names.length);
-            
+
             return true;
           }
         ),
@@ -197,7 +197,7 @@ describe('Competitor Discovery Property Tests', () => {
         {
           name: 'John Smith',
           agencyName: 'Smith Realty',
-          address: '123 Main Street, New York, NY'
+          address: '123 Main Street, Seattle, WA'
         },
         {
           name: 'Jane Doe',
@@ -213,7 +213,7 @@ describe('Competitor Discovery Property Tests', () => {
 
       for (const input of testCases) {
         const output = await findCompetitors(input);
-        
+
         // Should return valid output
         expect(output).toHaveProperty('competitors');
         expect(Array.isArray(output.competitors)).toBe(true);
@@ -231,11 +231,11 @@ describe('Competitor Discovery Property Tests', () => {
       const input: FindCompetitorsInput = {
         name: 'John Smith',
         agencyName: 'ABC Realty',
-        address: '123 Main Street, New York, NY'
+        address: '123 Main Street, Seattle, WA'
       };
 
       const output = await findCompetitors(input);
-      
+
       expect(output).toHaveProperty('competitors');
       expect(Array.isArray(output.competitors)).toBe(true);
       expect(output.competitors.length).toBeGreaterThanOrEqual(0);
@@ -253,7 +253,7 @@ describe('Competitor Discovery Property Tests', () => {
       };
 
       const output = await findCompetitors(input);
-      
+
       expect(output).toHaveProperty('competitors');
       expect(Array.isArray(output.competitors)).toBe(true);
       expect(output.competitors.length).toBeGreaterThanOrEqual(0);
@@ -271,7 +271,7 @@ describe('Competitor Discovery Property Tests', () => {
       };
 
       const output = await findCompetitors(input);
-      
+
       // In small markets, might return fewer than 3 competitors
       expect(output).toHaveProperty('competitors');
       expect(Array.isArray(output.competitors)).toBe(true);
@@ -286,11 +286,11 @@ describe('Competitor Discovery Property Tests', () => {
       const input: FindCompetitorsInput = {
         name: 'Sarah Williams',
         agencyName: 'Williams Properties',
-        address: '500 Fifth Avenue, New York, NY'
+        address: '500 Fifth Avenue, Seattle, WA'
       };
 
       const output = await findCompetitors(input);
-      
+
       // In large markets, should return 3-5 competitors
       expect(output).toHaveProperty('competitors');
       expect(Array.isArray(output.competitors)).toBe(true);

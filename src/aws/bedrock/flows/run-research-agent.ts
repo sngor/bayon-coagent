@@ -50,7 +50,7 @@ const runResearchAgentFlow = defineFlow(
   async (input) => {
     // Perform web search using Tavily
     const searchClient = getSearchClient();
-    
+
     try {
       const searchResults = await searchClient.search(input.topic, {
         maxResults: 10,
@@ -58,6 +58,11 @@ const runResearchAgentFlow = defineFlow(
         includeAnswer: true,
         includeImages: false,
       });
+
+      // Check if we got any results
+      if (!searchResults.results || searchResults.results.length === 0) {
+        throw new Error("No search results found for your topic. Please try a different query.");
+      }
 
       // Format search results for AI consumption
       const searchContext = searchClient.formatResultsForAI(searchResults.results, true);
@@ -78,8 +83,17 @@ const runResearchAgentFlow = defineFlow(
 
       return output;
     } catch (error) {
-      if (error instanceof Error && error.message.includes('API key')) {
-        throw new Error("Search service is not configured. Please contact support.");
+      // Handle specific error types
+      if (error instanceof Error) {
+        if (error.message.includes('API key')) {
+          throw new Error("Search service is not configured. Please contact support.");
+        }
+        if (error.message.includes('timeout') || error.message.includes('TIMEOUT')) {
+          throw new Error("Research request timed out. Please try a more specific topic or try again.");
+        }
+        if (error.message.includes('ECONNRESET') || error.message.includes('CONNECTION_RESET') || error.message.includes('aborted')) {
+          throw new Error("Connection was interrupted. Please try again.");
+        }
       }
       throw error;
     }

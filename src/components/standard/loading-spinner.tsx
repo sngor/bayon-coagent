@@ -11,15 +11,95 @@ export interface StandardLoadingSpinnerProps {
     message?: string;
     className?: string;
     showSubtext?: boolean;
+    featureType?: 'blog-post' | 'market-update' | 'video-script' | 'neighborhood-guide' | 'social-media' | 'listing-description' | 'virtual-staging' | 'day-to-dusk' | 'enhance' | 'item-removal' | 'virtual-renovation' | 'default';
 }
 
-const AI_SUBTEXTS = [
-    'Powered by Claude 3.5 Sonnet',
-    'Analyzing market trends',
-    'Optimizing for engagement',
-    'Crafting your unique voice',
-    'Building your authority',
-];
+const AI_SUBTEXTS: Record<string, string[]> = {
+    default: [
+        'Analyzing market trends',
+        'Optimizing for engagement',
+        'Crafting your unique voice',
+        'Building your authority',
+        'Processing your request',
+    ],
+    'blog-post': [
+        'Researching your topic',
+        'Crafting compelling headlines',
+        'Structuring your content',
+        'Optimizing for SEO',
+        'Adding engaging hooks',
+    ],
+    'market-update': [
+        'Analyzing market data',
+        'Identifying key trends',
+        'Gathering statistics',
+        'Crafting insights',
+        'Polishing your update',
+    ],
+    'video-script': [
+        'Structuring your narrative',
+        'Writing engaging hooks',
+        'Adding visual cues',
+        'Timing your segments',
+        'Crafting your call-to-action',
+    ],
+    'neighborhood-guide': [
+        'Researching neighborhood data',
+        'Highlighting key features',
+        'Gathering local insights',
+        'Creating compelling descriptions',
+        'Optimizing for your audience',
+    ],
+    'social-media': [
+        'Crafting engaging copy',
+        'Selecting trending hashtags',
+        'Optimizing for platforms',
+        'Adding personality',
+        'Creating multiple variations',
+    ],
+    'listing-description': [
+        'Analyzing property features',
+        'Highlighting unique selling points',
+        'Crafting compelling descriptions',
+        'Optimizing for buyer personas',
+        'Adding emotional appeal',
+    ],
+    'virtual-staging': [
+        'Analyzing room layout',
+        'Selecting furniture styles',
+        'Placing decor elements',
+        'Adjusting lighting',
+        'Finalizing your staged room',
+    ],
+    'day-to-dusk': [
+        'Analyzing lighting conditions',
+        'Adjusting sky tones',
+        'Enhancing golden hour glow',
+        'Balancing shadows',
+        'Perfecting the atmosphere',
+    ],
+    'enhance': [
+        'Analyzing image quality',
+        'Adjusting brightness and contrast',
+        'Enhancing colors',
+        'Sharpening details',
+        'Finalizing improvements',
+    ],
+    'item-removal': [
+        'Detecting objects',
+        'Analyzing surroundings',
+        'Removing unwanted items',
+        'Blending backgrounds',
+        'Perfecting the result',
+    ],
+    'virtual-renovation': [
+        'Analyzing current state',
+        'Applying renovation changes',
+        'Adjusting materials and finishes',
+        'Enhancing architectural details',
+        'Finalizing your vision',
+    ],
+};
 
 const sizeClasses = {
     sm: 'h-4 w-4',
@@ -33,17 +113,19 @@ export function StandardLoadingSpinner({
     message,
     className,
     showSubtext = false,
+    featureType = 'default',
 }: StandardLoadingSpinnerProps) {
     const [subtextIndex, setSubtextIndex] = React.useState(0);
+    const subtexts = AI_SUBTEXTS[featureType] || AI_SUBTEXTS.default;
 
     React.useEffect(() => {
         if (variant === 'ai' && showSubtext) {
             const interval = setInterval(() => {
-                setSubtextIndex((prev) => (prev + 1) % AI_SUBTEXTS.length);
+                setSubtextIndex((prev) => (prev + 1) % subtexts.length);
             }, 4000);
             return () => clearInterval(interval);
         }
-    }, [variant, showSubtext]);
+    }, [variant, showSubtext, subtexts.length]);
 
     if (variant === 'overlay') {
         return (
@@ -73,58 +155,60 @@ export function StandardLoadingSpinner({
     if (variant === 'ai') {
         return (
             <div
-                className={cn('relative flex flex-col items-center justify-center text-center p-12', className)}
+                className={cn('relative flex flex-col items-center justify-center text-center p-12 min-h-[400px]', className)}
                 role="status"
                 aria-live="polite"
                 aria-busy="true"
             >
-                {/* Animated gradient mesh blur background */}
-                <div className="absolute inset-0 overflow-hidden rounded-lg" aria-hidden="true">
-                    {/* Gradient blob 1 */}
-                    <motion.div
-                        className="absolute top-0 left-0 h-32 w-32 rounded-full bg-primary/30 blur-2xl"
-                        animate={{
-                            x: [0, 50, 0],
-                            y: [0, 30, 0],
-                            scale: [1, 1.2, 1],
-                        }}
-                        transition={{
-                            duration: 6,
-                            repeat: Infinity,
-                            ease: 'easeInOut',
-                        }}
-                    />
+                {/* Animated gradient mesh blur background - centered */}
+                <div className="absolute inset-0 flex items-center justify-center rounded-lg pointer-events-none" aria-hidden="true">
+                    <div className="relative w-full h-full max-w-lg">
+                        {/* Gradient blob 1 */}
+                        <motion.div
+                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-32 w-32 rounded-full bg-primary/30 blur-2xl"
+                            animate={{
+                                x: [-20, 20, -20],
+                                y: [-20, 20, -20],
+                                scale: [1, 1.2, 1],
+                            }}
+                            transition={{
+                                duration: 6,
+                                repeat: Infinity,
+                                ease: 'easeInOut',
+                            }}
+                        />
 
-                    {/* Gradient blob 2 */}
-                    <motion.div
-                        className="absolute top-0 right-0 h-40 w-40 rounded-full bg-purple-500/20 blur-2xl"
-                        animate={{
-                            x: [0, -40, 0],
-                            y: [0, 40, 0],
-                            scale: [1, 1.3, 1],
-                        }}
-                        transition={{
-                            duration: 7,
-                            repeat: Infinity,
-                            ease: 'easeInOut',
-                            delay: 1,
-                        }}
-                    />
+                        {/* Gradient blob 2 */}
+                        <motion.div
+                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-40 w-40 rounded-full bg-purple-500/20 blur-2xl"
+                            animate={{
+                                x: [20, -20, 20],
+                                y: [20, -20, 20],
+                                scale: [1, 1.3, 1],
+                            }}
+                            transition={{
+                                duration: 7,
+                                repeat: Infinity,
+                                ease: 'easeInOut',
+                                delay: 1,
+                            }}
+                        />
 
-                    {/* Gradient blob 3 */}
-                    <motion.div
-                        className="absolute bottom-0 left-1/2 -translate-x-1/2 h-36 w-36 rounded-full bg-blue-500/20 blur-2xl"
-                        animate={{
-                            scale: [1, 1.15, 1],
-                            opacity: [0.3, 0.5, 0.3],
-                        }}
-                        transition={{
-                            duration: 5,
-                            repeat: Infinity,
-                            ease: 'easeInOut',
-                            delay: 0.5,
-                        }}
-                    />
+                        {/* Gradient blob 3 */}
+                        <motion.div
+                            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-36 w-36 rounded-full bg-blue-500/20 blur-2xl"
+                            animate={{
+                                scale: [1, 1.15, 1],
+                                opacity: [0.3, 0.5, 0.3],
+                            }}
+                            transition={{
+                                duration: 5,
+                                repeat: Infinity,
+                                ease: 'easeInOut',
+                                delay: 0.5,
+                            }}
+                        />
+                    </div>
                 </div>
 
                 {/* Content */}
@@ -206,7 +290,7 @@ export function StandardLoadingSpinner({
                                         transition={{ duration: 0.5 }}
                                         className="text-sm text-muted-foreground/80"
                                     >
-                                        {AI_SUBTEXTS[subtextIndex]}
+                                        {subtexts[subtextIndex]}
                                     </motion.p>
                                 )}
                             </AnimatePresence>

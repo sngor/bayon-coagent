@@ -196,12 +196,20 @@ export default function CompetitiveAnalysisPage() {
   };
 
   const handleAddSuggestion = async (suggestion: CompetitorSuggestion) => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Required',
+        description: 'Please log in to add competitors.'
+      });
+      return;
+    }
+
     try {
       const result = await saveCompetitorAction(
         suggestion.name,
-        suggestion.website,
-        suggestion.description
+        '', // website - not provided in suggestion
+        `${suggestion.agency} - ${suggestion.reviewCount} reviews, ${suggestion.avgRating.toFixed(1)} avg rating` // description
       );
 
       if (result.message === 'Competitor saved successfully') {
@@ -210,14 +218,18 @@ export default function CompetitiveAnalysisPage() {
           description: `${suggestion.name} is now being tracked.`
         });
       } else {
-        throw new Error(result.errors?.[0] || 'Save failed');
+        toast({
+          variant: 'destructive',
+          title: 'Failed to Add',
+          description: result.message || result.errors?.[0] || 'Could not add competitor.'
+        });
       }
     } catch (error) {
       console.error('Failed to add competitor:', error);
       toast({
         variant: 'destructive',
         title: 'Failed to Add',
-        description: 'Could not add competitor.'
+        description: error instanceof Error ? error.message : 'Could not add competitor.'
       });
     }
   }
@@ -242,7 +254,6 @@ export default function CompetitiveAnalysisPage() {
     }
   }, [rankingState]);
 
-  const isFindDisabled = isUserLoading || isProfileLoading || !agentProfileData?.name || !agentProfileData?.agencyName || !agentProfileData?.address;
   const isRankingDisabled = isUserLoading || isProfileLoading || !agentProfileData?.address;
   const isLoadingTable = areCompetitorsLoading || isProfileLoading;
 
@@ -258,20 +269,48 @@ export default function CompetitiveAnalysisPage() {
               <StandardFormField
                 label="Your Agent Name"
                 id="name"
-                hint="Your name from your profile"
+                hint="Enter your full name"
+                error={(findState.errors as any)?.name?.[0]}
               >
-                <Input id="name" name="name" placeholder="e.g., John Smith" value={agentProfileData?.name || ''} readOnly className="bg-secondary" />
+                <Input
+                  id="name"
+                  name="name"
+                  placeholder="e.g., John Smith"
+                  defaultValue={agentProfileData?.name || ''}
+                  required
+                />
               </StandardFormField>
               <StandardFormField
                 label="Your Agency Name"
                 id="agencyName"
-                hint="Your agency from your profile"
+                hint="Enter your agency or brokerage name"
+                error={(findState.errors as any)?.agencyName?.[0]}
               >
-                <Input id="agencyName" name="agencyName" placeholder="e.g., Seattle Homes Realty" value={agentProfileData?.agencyName || ''} readOnly className="bg-secondary" />
+                <Input
+                  type="text"
+                  id="agencyName"
+                  name="agencyName"
+                  placeholder="e.g., Seattle Homes Realty"
+                  defaultValue={agentProfileData?.agencyName || ''}
+                  required
+                />
               </StandardFormField>
             </div>
-            <input type="hidden" name="address" value={agentProfileData?.address || ''} />
-            <FindButton disabled={isFindDisabled}>Auto-Find Competitors</FindButton>
+            <StandardFormField
+              label="Your Location"
+              id="address"
+              hint="Enter your city and state (e.g., Seattle, WA)"
+              error={(findState.errors as any)?.address?.[0]}
+            >
+              <Input
+                id="address"
+                name="address"
+                placeholder="e.g., Seattle, WA"
+                defaultValue={agentProfileData?.address || ''}
+                required
+              />
+            </StandardFormField>
+            <FindButton disabled={isUserLoading}>Auto-Find Competitors</FindButton>
           </form>
           {findState.data && findState.data.length > 0 && (
             <div className="mt-6">

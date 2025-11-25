@@ -312,12 +312,36 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // Scroll detection for header border
   useEffect(() => {
     const handleScroll = () => {
-      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      // SidebarInset renders as <main> with overflow-y-auto, so it's the scroll container
+      const scrollContainer = document.querySelector('main');
+      const scrollTop = scrollContainer?.scrollTop || window.scrollY || document.documentElement.scrollTop;
       setIsScrolled(scrollTop > 10);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    // Listen to both window scroll and main container scroll
+    const scrollContainer = document.querySelector('main');
+
+    const addScrollListeners = () => {
+      window.addEventListener('scroll', handleScroll);
+      if (scrollContainer) {
+        scrollContainer.addEventListener('scroll', handleScroll);
+      }
+    };
+
+    const removeScrollListeners = () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollContainer) {
+        scrollContainer.removeEventListener('scroll', handleScroll);
+      }
+    };
+
+    // Add listeners after a short delay to ensure DOM is ready
+    const timeoutId = setTimeout(addScrollListeners, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      removeScrollListeners();
+    };
   }, []);
 
   useEffect(() => {
@@ -363,7 +387,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </SidebarFooter>
               </Sidebar>
               <SidebarInset>
-                <header className={`sticky top-0 z-10 flex h-20 items-center justify-between px-6 -mx-4 bg-transparent backdrop-blur-xl transition-all duration-200 ${isScrolled ? 'border-b border-border/40' : ''}`}>
+                <header className={`sticky top-0 z-10 flex h-20 items-center justify-between px-6 -mx-6 bg-transparent backdrop-blur-xl transition-all duration-200 ${isScrolled ? 'border-b border-border/20' : ''}`}>
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     {isMounted && (
                       <>

@@ -30,7 +30,7 @@ describe('AlertDataAccess', () => {
         status: 'unread',
         createdAt: '2022-01-01T00:00:00.000Z',
         data: {
-            prospectLocation: '123 Main St, Austin, TX',
+            prospectLocation: '123 Main St, Seattle, WA',
             eventType: 'marriage',
             eventDate: '2021-12-15',
             leadScore: 85,
@@ -48,7 +48,7 @@ describe('AlertDataAccess', () => {
         createdAt: '2022-01-02T00:00:00.000Z',
         data: {
             competitorName: 'John Smith',
-            propertyAddress: '456 Oak Ave, Austin, TX',
+            propertyAddress: '456 Oak Ave, Seattle, WA',
             listingPrice: 450000,
             daysOnMarket: 1
         }
@@ -63,7 +63,7 @@ describe('AlertDataAccess', () => {
         createdAt: '2022-01-03T00:00:00.000Z',
         readAt: '2022-01-03T10:00:00.000Z',
         data: {
-            propertyAddress: '789 Pine St, Austin, TX',
+            propertyAddress: '789 Pine St, Seattle, WA',
             originalPrice: 500000,
             newPrice: 475000,
             priceReduction: 25000,
@@ -138,10 +138,10 @@ describe('AlertDataAccess', () => {
 
         it('should handle search query filters', () => {
             const filters: AlertFilters = {
-                searchQuery: 'austin'
+                searchQuery: 'seattle'
             };
 
-            expect(filters.searchQuery).toBe('austin');
+            expect(filters.searchQuery).toBe('seattle');
         });
 
         it('should combine multiple filters', () => {
@@ -152,13 +152,13 @@ describe('AlertDataAccess', () => {
                     start: '2022-01-01T00:00:00.000Z',
                     end: '2022-01-02T23:59:59.999Z'
                 },
-                searchQuery: 'austin'
+                searchQuery: 'seattle'
             };
 
             expect(filters.status).toEqual(['unread']);
             expect(filters.priority).toEqual(['high']);
             expect(filters.dateRange?.start).toBe('2022-01-01T00:00:00.000Z');
-            expect(filters.searchQuery).toBe('austin');
+            expect(filters.searchQuery).toBe('seattle');
         });
     });
 
@@ -258,7 +258,7 @@ describe('AlertDataAccess', () => {
         });
 
         it('should filter alerts by common search term', () => {
-            const searchQuery = 'austin';
+            const searchQuery = 'seattle';
             const searchLower = searchQuery.toLowerCase();
 
             const filteredAlerts = mockAlerts.filter(alert => {
@@ -276,7 +276,7 @@ describe('AlertDataAccess', () => {
                 }
             });
 
-            // All three alerts contain "Austin" in their addresses
+            // All three alerts contain "Seattle" in their addresses
             expect(filteredAlerts).toHaveLength(3);
         });
     });

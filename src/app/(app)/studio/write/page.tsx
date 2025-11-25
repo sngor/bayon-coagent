@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useActionState, useState, useTransition, useEffect, useMemo } from 'react';
+import { useActionState, useState, useTransition, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
-import { Typewriter, LoadingDots, SuccessAnimation, StaggeredText, GradientText } from '@/components/ui/text-animations';
+import { SuccessAnimation, StaggeredText, GradientText, Typewriter } from '@/components/ui/text-animations';
 import '@/styles/text-animations.css';
 
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,8 @@ import {
   generateVideoScriptAction,
   generateBlogPostAction,
   regenerateImageAction,
+  generateBlogImageAction,
+  generateBlogImageWithPromptAction,
   saveContentAction,
 } from '@/app/actions';
 
@@ -70,6 +72,7 @@ import {
   Home,
   Check,
   Building2,
+  ImagePlus,
 } from 'lucide-react';
 import { marked } from 'marked';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -91,7 +94,6 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { useUser } from '@/aws/auth';
-import { useQuery } from '@/aws/dynamodb/hooks';
 import type { Project } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -186,6 +188,7 @@ type SaveDialogInfo = {
   isOpen: boolean;
   content: string;
   type: string;
+  headerImage?: string | null;
 }
 
 type ScheduleDialogInfo = {
@@ -203,6 +206,12 @@ type TemplateSaveDialogInfo = {
   previewContent: string;
 }
 
+type ImageRegenerateDialogInfo = {
+  isOpen: boolean;
+  topic: string;
+  customPrompt: string;
+}
+
 function GenerateButton({
   children,
   ...props
@@ -217,7 +226,7 @@ function GenerateButton({
     >
       {pending ? (
         <>
-          <LoadingDots className="mr-2 text-white" size="sm" />
+          <Loader2 className="mr-2 h-4 w-4 animate-spin text-white" />
           <span className="generating-text">Creating</span>
         </>
       ) : (
@@ -287,7 +296,8 @@ function SaveDialog({ dialogInfo, setDialogInfo }: { dialogInfo: SaveDialogInfo,
           dialogInfo.content,
           dialogInfo.type,
           name || dialogInfo.type,
-          projectId || null
+          projectId || null,
+          dialogInfo.headerImage || null
         );
 
         console.log('🎯 Save result:', result);
@@ -299,7 +309,7 @@ function SaveDialog({ dialogInfo, setDialogInfo }: { dialogInfo: SaveDialogInfo,
             description: `Your content has been saved to your Library.`,
             className: 'success-message',
           });
-          setDialogInfo({ isOpen: false, content: '', type: '' });
+          setDialogInfo({ isOpen: false, content: '', type: '', headerImage: null });
           setName('');
           setProjectId(null);
         } else {
@@ -341,7 +351,7 @@ function SaveDialog({ dialogInfo, setDialogInfo }: { dialogInfo: SaveDialogInfo,
           />
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => setDialogInfo({ isOpen: false, content: '', type: '' })}>Cancel</Button>
+          <Button variant="ghost" onClick={() => setDialogInfo({ isOpen: false, content: '', type: '', headerImage: null })}>Cancel</Button>
           <Button onClick={handleSave} disabled={isPending}>
             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             Save
@@ -350,6 +360,73 @@ function SaveDialog({ dialogInfo, setDialogInfo }: { dialogInfo: SaveDialogInfo,
       </DialogContent>
     </Dialog>
   )
+}
+
+function ImageRegenerateDialog({
+  isOpen,
+  topic,
+  customPrompt,
+  onClose,
+  onGenerate,
+  isPending,
+}: {
+  isOpen: boolean;
+  topic: string;
+  customPrompt: string;
+  onClose: () => void;
+  onGenerate: (formData: FormData) => void;
+  isPending: boolean;
+}) {
+  const [prompt, setPrompt] = useState(customPrompt);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>Regenerate Header Image</DialogTitle>
+          <DialogDescription>
+            Provide a custom prompt to generate a new header image, or leave blank to use the default prompt based on your blog topic.
+          </DialogDescription>
+        </DialogHeader>
+        <form action={onGenerate} className="space-y-4">
+          <input type="hidden" name="topic" value={topic} />
+          <div className="space-y-2">
+            <Label htmlFor="customPrompt">Custom Image Prompt (Optional)</Label>
+            <Textarea
+              id="customPrompt"
+              name="customPrompt"
+              placeholder="e.g., A modern luxury home exterior at sunset with palm trees, professional real estate photography, 16:9 aspect ratio"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              rows={4}
+              className="resize-none"
+            />
+            <p className="text-xs text-muted-foreground">
+              Leave blank to generate an image based on your blog topic: "{topic}"
+            </p>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={onClose} disabled={isPending}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <ImagePlus className="mr-2 h-4 w-4" />
+                  Generate Image
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 // #endregion
@@ -426,7 +503,12 @@ export default function ContentEnginePage() {
     searchParams.get('tab') || 'market-update'
   );
   const [blogTopic, setBlogTopic] = useState('');
-  const [saveDialogInfo, setSaveDialogInfo] = useState<SaveDialogInfo>({ isOpen: false, content: '', type: '' });
+  const [saveDialogInfo, setSaveDialogInfo] = useState<SaveDialogInfo>({ isOpen: false, content: '', type: '', headerImage: null });
+  const [imageRegenerateDialog, setImageRegenerateDialog] = useState<ImageRegenerateDialogInfo>({
+    isOpen: false,
+    topic: '',
+    customPrompt: ''
+  });
   const [scheduleDialogInfo, setScheduleDialogInfo] = useState<ScheduleDialogInfo>({
     isOpen: false,
     content: '',
@@ -480,6 +562,14 @@ export default function ContentEnginePage() {
     regenerateImageAction,
     imageInitialState
   );
+  const [blogImageState, blogImageAction, isBlogImagePending] = useActionState(
+    generateBlogImageAction,
+    { message: '', data: { imageUrl: null }, errors: {} }
+  );
+  const [customImageState, customImageAction, isCustomImagePending] = useActionState(
+    generateBlogImageWithPromptAction,
+    { message: '', data: { imageUrl: null }, errors: {} }
+  );
 
   const [headerImage, setHeaderImage] = useState<string | null>(null);
 
@@ -489,13 +579,7 @@ export default function ContentEnginePage() {
   const [guideContent, setGuideContent] = useState('');
   const [socialPostContent, setSocialPostContent] = useState<SocialPostContentWithTopic | null>(null);
 
-  // Memoize DynamoDB keys
-  const projectsPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
-  const projectsSKPrefix = useMemo(() => 'PROJECT#', []);
 
-  const { data: projects } = useQuery<Project>(projectsPK, projectsSKPrefix, {
-    scanIndexForward: false, // descending order
-  });
 
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
 
@@ -513,9 +597,9 @@ export default function ContentEnginePage() {
     }, 2000);
   };
 
-  const openSaveDialog = (content: string, type: string) => {
+  const openSaveDialog = (content: string, type: string, image?: string | null) => {
     if (!content) return;
-    setSaveDialogInfo({ isOpen: true, content, type });
+    setSaveDialogInfo({ isOpen: true, content, type, headerImage: image || null });
   }
 
   const openScheduleDialog = (content: string, title: string, contentType: ContentCategory) => {
@@ -648,15 +732,35 @@ export default function ContentEnginePage() {
   }, [listingState]);
 
   useEffect(() => {
-    if (blogPostState.message === 'success' && blogPostState.data?.headerImage) {
-      setHeaderImage(blogPostState.data.headerImage);
-      if (blogPostState.data.blogPost) {
+    if (blogPostState.message === 'success') {
+      if (blogPostState.data?.blogPost) {
         setBlogPostContent(blogPostState.data.blogPost);
+        toast({ title: 'Blog Post Generated', description: 'Your blog post is ready!' });
       }
+      // Don't set header image from blog post state anymore
     } else if (blogPostState.message && blogPostState.message !== 'success') {
       toast({ variant: 'destructive', title: 'Blog Post Failed', description: blogPostState.message });
     }
   }, [blogPostState]);
+
+  useEffect(() => {
+    if (blogImageState.message === 'success' && blogImageState.data?.imageUrl) {
+      setHeaderImage(blogImageState.data.imageUrl);
+      toast({ title: 'Image Generated', description: 'Blog header image generated successfully!' });
+    } else if (blogImageState.message && blogImageState.message !== 'success') {
+      toast({ variant: 'destructive', title: 'Image Generation Failed', description: blogImageState.message });
+    }
+  }, [blogImageState]);
+
+  useEffect(() => {
+    if (customImageState.message === 'success' && customImageState.data?.imageUrl) {
+      setHeaderImage(customImageState.data.imageUrl);
+      setImageRegenerateDialog({ isOpen: false, topic: '', customPrompt: '' });
+      toast({ title: 'Image Generated', description: 'Custom header image generated successfully!' });
+    } else if (customImageState.message && customImageState.message !== 'success') {
+      toast({ variant: 'destructive', title: 'Image Generation Failed', description: customImageState.message });
+    }
+  }, [customImageState]);
 
   useEffect(() => {
     if (imageState.message === 'success' && imageState.data?.headerImage) {
@@ -1204,27 +1308,7 @@ export default function ContentEnginePage() {
               </CardHeader>
               <CardContent>
                 {isMarketUpdatePending ? (
-                  <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                    <LoadingDots className="text-primary" size="lg" />
-                    <div className="text-center">
-                      <Typewriter
-                        text="Writing your market update..."
-                        speed={60}
-                        className="text-lg font-medium text-primary"
-                        cursor={true}
-                        cursorChar="▋"
-                      />
-                      <p className="text-sm text-muted-foreground mt-2">
-                        <StaggeredText
-                          text="Analyzing market data and crafting insights..."
-                          staggerBy="word"
-                          delay={2000}
-                          staggerDelay={100}
-                          animation="fadeIn"
-                        />
-                      </p>
-                    </div>
-                  </div>
+                  <StandardLoadingSpinner variant="ai" message="Writing your market update..." showSubtext={true} featureType="market-update" />
                 ) : marketUpdateContent ? (
                   <div className="space-y-4">
                     <Textarea
@@ -1380,7 +1464,7 @@ export default function ContentEnginePage() {
                         </>
                       )}
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => openSaveDialog(blogPostContent, 'Blog Post')}>
+                    <Button variant="outline" size="sm" onClick={() => openSaveDialog(blogPostContent, 'Blog Post', headerImage)}>
                       <Save className="mr-2 h-4 w-4" />
                       Save
                     </Button>
@@ -1389,9 +1473,34 @@ export default function ContentEnginePage() {
               </CardHeader>
               <CardContent>
                 {isBlogPostPending ? (
-                  <StandardLoadingSpinner variant="ai" message="Writing your blog post..." />
+                  <StandardLoadingSpinner variant="ai" message="Writing your blog post..." showSubtext={true} featureType="blog-post" />
                 ) : blogPostContent ? (
                   <div className="space-y-4">
+                    {!headerImage && blogTopic && (
+                      <div className="mb-6">
+                        <form action={blogImageAction}>
+                          <input type="hidden" name="topic" value={blogTopic} />
+                          <Button
+                            type="submit"
+                            variant="outline"
+                            className="w-full"
+                            disabled={isBlogImagePending}
+                          >
+                            {isBlogImagePending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Generating Image...
+                              </>
+                            ) : (
+                              <>
+                                <ImagePlus className="mr-2 h-4 w-4" />
+                                Generate Header Image
+                              </>
+                            )}
+                          </Button>
+                        </form>
+                      </div>
+                    )}
                     {headerImage && (
                       <div className="relative aspect-video mb-6 overflow-hidden rounded-lg group shadow-lg">
                         <Image
@@ -1400,17 +1509,54 @@ export default function ContentEnginePage() {
                           fill
                           objectFit="cover"
                         />
-                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                          <form action={imageAction}>
-                            <input
-                              type="hidden"
-                              name="topic"
-                              value={blogTopic}
-                            />
-                            <RegenerateImageButton>
-                              Regenerate Image
-                            </RegenerateImageButton>
-                          </form>
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                // Fetch the image and convert to blob for download
+                                const response = await fetch(headerImage);
+                                const blob = await response.blob();
+                                const url = window.URL.createObjectURL(blob);
+
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.download = `blog-header-${blogTopic.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.png`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+
+                                // Clean up the blob URL
+                                window.URL.revokeObjectURL(url);
+
+                                toast({ title: 'Image Downloaded', description: 'Your header image has been downloaded.' });
+                              } catch (error) {
+                                console.error('Download error:', error);
+                                toast({
+                                  variant: 'destructive',
+                                  title: 'Download Failed',
+                                  description: 'Failed to download the image. Please try again.'
+                                });
+                              }
+                            }}
+                          >
+                            <Save className="mr-2 h-4 w-4" />
+                            Download
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setImageRegenerateDialog({
+                              isOpen: true,
+                              topic: blogTopic,
+                              customPrompt: ''
+                            })}
+                            disabled={isBlogImagePending || isCustomImagePending}
+                          >
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Regenerate
+                          </Button>
                         </div>
                       </div>
                     )}
@@ -1584,7 +1730,7 @@ export default function ContentEnginePage() {
               </CardHeader>
               <CardContent>
                 {isVideoScriptPending ? (
-                  <StandardLoadingSpinner variant="ai" message="Writing your video script..." />
+                  <StandardLoadingSpinner variant="ai" message="Writing your video script..." showSubtext={true} featureType="video-script" />
                 ) : videoScriptContent ? (
                   <div className="space-y-4">
                     <Textarea
@@ -1634,7 +1780,6 @@ export default function ContentEnginePage() {
                       id="targetMarket"
                       name="targetMarket"
                       placeholder="e.g., 'Seattle, WA'"
-                      defaultValue="Seattle, WA"
                       required
                     />
                   </StandardFormField>
@@ -1647,7 +1792,6 @@ export default function ContentEnginePage() {
                       id="pillarTopic"
                       name="pillarTopic"
                       placeholder="e.g., 'Capitol Hill'"
-                      defaultValue="The Ultimate Guide to Living in the Capitol Hill Neighborhood"
                       required
                     />
                   </StandardFormField>
@@ -1753,7 +1897,7 @@ export default function ContentEnginePage() {
               </CardHeader>
               <CardContent>
                 {isGuidePending ? (
-                  <StandardLoadingSpinner variant="ai" message="Writing your neighborhood guide..." />
+                  <StandardLoadingSpinner variant="ai" message="Writing your neighborhood guide..." showSubtext={true} featureType="neighborhood-guide" />
                 ) : guideContent ? (
                   <div className="space-y-4">
                     <Textarea
@@ -1892,7 +2036,7 @@ export default function ContentEnginePage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {isSocialPending ? (
-                    <StandardLoadingSpinner variant="ai" message="Writing your social posts..." />
+                    <StandardLoadingSpinner variant="ai" message="Writing your social posts..." showSubtext={true} featureType="social-media" />
                   ) : socialPostContent ? (
                     <>
                       <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-700/30">
@@ -2137,6 +2281,14 @@ export default function ContentEnginePage() {
         </TabsContent>
       </Tabs>
       <SaveDialog dialogInfo={saveDialogInfo} setDialogInfo={setSaveDialogInfo} />
+      <ImageRegenerateDialog
+        isOpen={imageRegenerateDialog.isOpen}
+        topic={imageRegenerateDialog.topic}
+        customPrompt={imageRegenerateDialog.customPrompt}
+        onClose={() => setImageRegenerateDialog({ isOpen: false, topic: '', customPrompt: '' })}
+        onGenerate={customImageAction}
+        isPending={isCustomImagePending}
+      />
       <SchedulingModal
         isOpen={scheduleDialogInfo.isOpen}
         onClose={() => setScheduleDialogInfo({ isOpen: false, content: '', title: '', contentType: ContentCategory.MARKET_UPDATE })}

@@ -28,7 +28,7 @@ describe('Alert Settings Validation', () => {
 
     describe('validateCityName', () => {
         it('should validate correct city names', () => {
-            expect(validateCityName('New York')).toBe(true);
+            expect(validateCityName('Seattle')).toBe(true);
             expect(validateCityName('San Francisco')).toBe(true);
             expect(validateCityName("O'Fallon")).toBe(true);
             expect(validateCityName('Winston-Salem')).toBe(true);
@@ -83,7 +83,7 @@ describe('Alert Settings Validation', () => {
             const cityArea: TargetArea = {
                 id: '2',
                 type: 'city',
-                value: 'New York',
+                value: 'Seattle',
                 label: 'Test City',
             };
             const result = validateTargetArea(cityArea);

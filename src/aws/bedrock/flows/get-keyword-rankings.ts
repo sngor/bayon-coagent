@@ -40,12 +40,12 @@ Based on the search results above, identify the top 5 real estate agents or agen
 For each of the top 5 results that are real estate agents, return:
 - rank: An integer from 1 to 5 (based on their position in search results)
 - agentName: The name of the agent
-- agency: The name of their agency
-- url: The website URL from the search result
+- agencyName: The name of their agency or brokerage
+- url: The website URL from the search result (optional)
 
 Return a JSON response with a "rankings" array containing up to 5 objects with the above fields.
 
-Your answer must be based on the search results. Do not invent or hallucinate rankings or agent details. If you cannot find a URL, use an empty string.`,
+Your answer must be based on the search results. Do not invent or hallucinate rankings or agent details. If you cannot find enough real estate agents in the results, return fewer than 5 rankings.`,
 });
 
 const getKeywordRankingsFlow = defineFlow(
@@ -58,7 +58,7 @@ const getKeywordRankingsFlow = defineFlow(
     // Perform localized search for the keyword
     const searchClient = getSearchClient();
     const searchQuery = `${input.keyword} ${input.location}`;
-    
+
     try {
       const searchResults = await searchClient.search(searchQuery, {
         maxResults: 10,
@@ -79,7 +79,7 @@ const getKeywordRankingsFlow = defineFlow(
     } catch (error) {
       // If search fails, fall back to AI knowledge
       console.warn('Web search failed for keyword rankings:', error);
-      
+
       const output = await prompt({
         ...input,
         searchContext: 'Web search unavailable. Please provide estimates based on typical market patterns.',

@@ -27,6 +27,9 @@ import {
     Image as ImageIcon,
     AlertCircle,
     Edit3,
+    Pencil,
+    Check,
+    X as XIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,9 +41,11 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { StandardErrorDisplay } from '@/components/standard';
-import { getEditHistoryAction, deleteEditAction, getDownloadUrlAction } from '@/app/reimagine-actions';
+import { StandardErrorDisplay, StandardLoadingSpinner } from '@/components/standard';
+import { getEditHistoryAction, deleteEditAction, getDownloadUrlAction, updateEditNameAction } from '@/app/reimagine-actions';
 import { OptimizedImage } from './optimized-image';
+import { DeleteConfirmationModal } from './delete-confirmation-modal';
+import { ImageViewerModal } from './image-viewer-modal';
 import type { EditType } from '@/ai/schemas/reimagine-schemas';
 
 interface EditHistoryItem {
@@ -52,6 +57,7 @@ interface EditHistoryItem {
     createdAt: string;
     status: string;
     parentEditId?: string;
+    name?: string;
 }
 
 interface EditHistoryListProps {
@@ -71,6 +77,12 @@ export function EditHistoryList({
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [editToDelete, setEditToDelete] = useState<{ id: string; type: string } | null>(null);
+    const [viewerModalOpen, setViewerModalOpen] = useState(false);
+    const [viewerImage, setViewerImage] = useState<EditHistoryItem | null>(null);
+    const [editingNameId, setEditingNameId] = useState<string | null>(null);
+    const [editingName, setEditingName] = useState<string>('');
 
     // Load edit history on mount
     useEffect(() => {
@@ -98,37 +110,97 @@ export function EditHistoryList({
         }
     }, [userId]);
 
-    // Handle delete edit
-    const handleDelete = useCallback(
-        async (editId: string) => {
-            if (!confirm('Are you sure you want to delete this edit? This action cannot be undone.')) {
-                return;
+    // Open delete confirmation modal
+    const handleDeleteClick = useCallback((editId: string, editType: EditType) => {
+        setEditToDelete({ id: editId, type: formatEditType(editType) });
+        setDeleteModalOpen(true);
+    }, []);
+
+    // Close delete modal
+    const handleDeleteCancel = useCallback(() => {
+        setDeleteModalOpen(false);
+        setEditToDelete(null);
+    }, []);
+
+    // Open image viewer modal
+    const handleViewClick = useCallback((item: EditHistoryItem) => {
+        setViewerImage(item);
+        setViewerModalOpen(true);
+    }, []);
+
+    // Close image viewer modal
+    const handleViewerClose = useCallback(() => {
+        setViewerModalOpen(false);
+        setViewerImage(null);
+    }, []);
+
+    // Start editing name
+    const handleStartEditName = useCallback((item: EditHistoryItem) => {
+        setEditingNameId(item.editId);
+        setEditingName(item.name || '');
+    }, []);
+
+    // Cancel editing name
+    const handleCancelEditName = useCallback(() => {
+        setEditingNameId(null);
+        setEditingName('');
+    }, []);
+
+    // Save edited name
+    const handleSaveEditName = useCallback(async (editId: string) => {
+        try {
+            const response = await updateEditNameAction(userId, editId, editingName);
+
+            if (!response.success) {
+                throw new Error(response.error || 'Failed to update name');
             }
 
-            try {
-                setDeletingIds((prev) => new Set(prev).add(editId));
+            // Update local state
+            setEdits((prev) =>
+                prev.map((edit) =>
+                    edit.editId === editId ? { ...edit, name: editingName || undefined } : edit
+                )
+            );
 
-                const response = await deleteEditAction(userId, editId);
+            // Clear editing state
+            setEditingNameId(null);
+            setEditingName('');
+        } catch (err) {
+            console.error('Error updating name:', err);
+            alert(err instanceof Error ? err.message : 'Failed to update name');
+        }
+    }, [userId, editingName]);
 
-                if (!response.success) {
-                    throw new Error(response.error || 'Failed to delete edit');
-                }
+    // Confirm delete
+    const handleDeleteConfirm = useCallback(async () => {
+        if (!editToDelete) return;
 
-                // Remove from local state
-                setEdits((prev) => prev.filter((edit) => edit.editId !== editId));
-            } catch (err) {
-                console.error('Error deleting edit:', err);
-                alert(err instanceof Error ? err.message : 'Failed to delete edit');
-            } finally {
-                setDeletingIds((prev) => {
-                    const next = new Set(prev);
-                    next.delete(editId);
-                    return next;
-                });
+        try {
+            setDeletingIds((prev) => new Set(prev).add(editToDelete.id));
+
+            const response = await deleteEditAction(userId, editToDelete.id);
+
+            if (!response.success) {
+                throw new Error(response.error || 'Failed to delete edit');
             }
-        },
-        [userId]
-    );
+
+            // Remove from local state
+            setEdits((prev) => prev.filter((edit) => edit.editId !== editToDelete.id));
+
+            // Close modal
+            setDeleteModalOpen(false);
+            setEditToDelete(null);
+        } catch (err) {
+            console.error('Error deleting edit:', err);
+            alert(err instanceof Error ? err.message : 'Failed to delete edit');
+        } finally {
+            setDeletingIds((prev) => {
+                const next = new Set(prev);
+                next.delete(editToDelete.id);
+                return next;
+            });
+        }
+    }, [editToDelete, userId]);
 
     // Handle download edit (Requirement 7.3)
     const handleDownload = useCallback(async (item: EditHistoryItem) => {
@@ -271,9 +343,11 @@ export function EditHistoryList({
                     <CardTitle>Edit History</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex items-center justify-center py-12">
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                    </div>
+                    <StandardLoadingSpinner
+                        variant="default"
+                        message="Loading edit history..."
+                        size="md"
+                    />
                 </CardContent>
             </Card>
         );
@@ -369,20 +443,20 @@ export function EditHistoryList({
 
                                                     <Card
                                                         className={cn(
-                                                            'transition-all duration-200',
+                                                            'group transition-all duration-200',
                                                             isDeleting && 'opacity-50'
                                                         )}
                                                     >
                                                         <CardContent className="p-4">
                                                             <div className="flex gap-4">
                                                                 {/* Thumbnail with lazy loading */}
-                                                                <div className="relative flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden">
+                                                                <div className="relative flex-shrink-0 w-48 max-h-48 rounded-lg overflow-hidden">
                                                                     <OptimizedImage
                                                                         src={item.resultUrl}
                                                                         alt={`${formatEditType(item.editType)} result`}
-                                                                        width={96}
-                                                                        height={96}
-                                                                        className="w-full h-full"
+                                                                        width={192}
+                                                                        height={192}
+                                                                        className="w-full h-auto object-contain"
                                                                         quality={75}
                                                                     />
                                                                     {isChainItem && (
@@ -396,13 +470,55 @@ export function EditHistoryList({
                                                                 <div className="flex-1 min-w-0">
                                                                     <div className="flex items-start justify-between gap-2 mb-2">
                                                                         <div className="flex-1 min-w-0">
-                                                                            <h3 className="font-headline font-medium text-sm truncate">
-                                                                                {formatEditType(item.editType)}
-                                                                            </h3>
-                                                                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                                                                                <Clock className="h-3 w-3" />
-                                                                                {formatTimestamp(item.createdAt)}
-                                                                            </p>
+                                                                            {editingNameId === item.editId ? (
+                                                                                <div className="flex items-center gap-1 mb-1">
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        value={editingName}
+                                                                                        onChange={(e) => setEditingName(e.target.value)}
+                                                                                        className="flex-1 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-primary"
+                                                                                        placeholder="Enter name..."
+                                                                                        autoFocus
+                                                                                        maxLength={100}
+                                                                                    />
+                                                                                    <button
+                                                                                        onClick={() => handleSaveEditName(item.editId)}
+                                                                                        className="p-1 hover:bg-muted rounded"
+                                                                                        aria-label="Save name"
+                                                                                    >
+                                                                                        <Check className="h-4 w-4 text-green-600" />
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={handleCancelEditName}
+                                                                                        className="p-1 hover:bg-muted rounded"
+                                                                                        aria-label="Cancel"
+                                                                                    >
+                                                                                        <XIcon className="h-4 w-4 text-muted-foreground" />
+                                                                                    </button>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="flex items-center gap-2 mb-1">
+                                                                                    <h3 className="font-headline font-medium text-sm truncate">
+                                                                                        {item.name || formatEditType(item.editType)}
+                                                                                    </h3>
+                                                                                    <button
+                                                                                        onClick={() => handleStartEditName(item)}
+                                                                                        className="p-1 hover:bg-muted rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                                        aria-label="Edit name"
+                                                                                    >
+                                                                                        <Pencil className="h-3 w-3 text-muted-foreground" />
+                                                                                    </button>
+                                                                                </div>
+                                                                            )}
+                                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                                <Badge variant="outline" className="text-xs">
+                                                                                    {formatEditType(item.editType)}
+                                                                                </Badge>
+                                                                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                                                                    <Clock className="h-3 w-3" />
+                                                                                    {formatTimestamp(item.createdAt)}
+                                                                                </p>
+                                                                            </div>
                                                                         </div>
                                                                         <Badge
                                                                             variant={statusDisplay.variant}
@@ -420,38 +536,19 @@ export function EditHistoryList({
 
                                                                     {/* Actions */}
                                                                     <div className="flex items-center gap-2 mt-3">
-                                                                        {onViewEdit && (
-                                                                            <Tooltip>
-                                                                                <TooltipTrigger asChild>
-                                                                                    <Button
-                                                                                        variant="outline"
-                                                                                        size="sm"
-                                                                                        onClick={() => onViewEdit(item)}
-                                                                                        disabled={isDeleting}
-                                                                                    >
-                                                                                        <Eye className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                </TooltipTrigger>
-                                                                                <TooltipContent>View</TooltipContent>
-                                                                            </Tooltip>
-                                                                        )}
-
-                                                                        {/* Edit Result button for completed edits (Requirement 9.1) */}
-                                                                        {onEditResult && item.status === 'completed' && (
-                                                                            <Tooltip>
-                                                                                <TooltipTrigger asChild>
-                                                                                    <Button
-                                                                                        variant="default"
-                                                                                        size="sm"
-                                                                                        onClick={() => onEditResult(item)}
-                                                                                        disabled={isDeleting}
-                                                                                    >
-                                                                                        <Edit3 className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                </TooltipTrigger>
-                                                                                <TooltipContent>Edit Result</TooltipContent>
-                                                                            </Tooltip>
-                                                                        )}
+                                                                        <Tooltip>
+                                                                            <TooltipTrigger asChild>
+                                                                                <Button
+                                                                                    variant="outline"
+                                                                                    size="sm"
+                                                                                    onClick={() => handleViewClick(item)}
+                                                                                    disabled={isDeleting}
+                                                                                >
+                                                                                    <Eye className="h-4 w-4" />
+                                                                                </Button>
+                                                                            </TooltipTrigger>
+                                                                            <TooltipContent>View</TooltipContent>
+                                                                        </Tooltip>
 
                                                                         <Tooltip>
                                                                             <TooltipTrigger asChild>
@@ -472,7 +569,7 @@ export function EditHistoryList({
                                                                                 <Button
                                                                                     variant="outline"
                                                                                     size="sm"
-                                                                                    onClick={() => handleDelete(item.editId)}
+                                                                                    onClick={() => handleDeleteClick(item.editId, item.editType)}
                                                                                     disabled={isDeleting}
                                                                                 >
                                                                                     {isDeleting ? (
@@ -507,6 +604,27 @@ export function EditHistoryList({
                     </div>
                 </TooltipProvider>
             </CardContent>
+
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirmationModal
+                isOpen={deleteModalOpen}
+                onClose={handleDeleteCancel}
+                onConfirm={handleDeleteConfirm}
+                isDeleting={editToDelete ? deletingIds.has(editToDelete.id) : false}
+                editType={editToDelete?.type}
+            />
+
+            {/* Image Viewer Modal */}
+            {viewerImage && (
+                <ImageViewerModal
+                    isOpen={viewerModalOpen}
+                    onClose={handleViewerClose}
+                    originalUrl={viewerImage.originalUrl}
+                    editedUrl={viewerImage.resultUrl}
+                    editType={formatEditType(viewerImage.editType)}
+                    onDownload={() => handleDownload(viewerImage)}
+                />
+            )}
         </Card>
     );
 }

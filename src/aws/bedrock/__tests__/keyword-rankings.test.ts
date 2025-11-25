@@ -16,16 +16,16 @@ import type { GetKeywordRankingsInput } from '../flows/get-keyword-rankings';
 const keywordRankingInputArbitrary = (): fc.Arbitrary<GetKeywordRankingsInput> => {
   return fc.record({
     location: fc.constantFrom(
-      'New York, NY',
-      'Los Angeles, CA',
-      'Chicago, IL',
-      'Houston, TX',
-      'Phoenix, AZ',
-      'Miami, FL',
       'Seattle, WA',
-      'Boston, MA',
-      'Denver, CO',
-      'Austin, TX'
+      'Bellevue, WA',
+      'Tacoma, WA',
+      'Redmond, WA',
+      'Kirkland, WA',
+      'Everett, WA',
+      'Renton, WA',
+      'Kent, WA',
+      'Federal Way, WA',
+      'Spokane, WA'
     ),
     keyword: fc.constantFrom(
       'real estate agent',
@@ -44,17 +44,17 @@ const keywordRankingInputArbitrary = (): fc.Arbitrary<GetKeywordRankingsInput> =
 
 describe('Keyword Rankings Property Tests', () => {
   // Check if required API keys are available
-  const hasApiKeys = process.env.TAVILY_API_KEY && 
-                     process.env.TAVILY_API_KEY !== 'your-tavily-api-key' &&
-                     process.env.AWS_BEDROCK_REGION;
-  
+  const hasApiKeys = process.env.TAVILY_API_KEY &&
+    process.env.TAVILY_API_KEY !== 'your-tavily-api-key' &&
+    process.env.AWS_BEDROCK_REGION;
+
   if (!hasApiKeys) {
     console.warn('\n⚠️  Skipping keyword rankings property tests: Missing API keys');
     console.warn('   Set TAVILY_API_KEY and AWS_BEDROCK_REGION to run these tests\n');
   }
-  
+
   const describeOrSkip = hasApiKeys ? describe : describe.skip;
-  
+
   describeOrSkip('Property 14: Keyword rankings return up to 5 results', () => {
     /**
      * For any keyword ranking request, the system should return up to 5 ranked agents
@@ -68,15 +68,15 @@ describe('Keyword Rankings Property Tests', () => {
           keywordRankingInputArbitrary(),
           async (input) => {
             const output = await getKeywordRankings(input);
-            
+
             // Should have a rankings array
             expect(output).toHaveProperty('rankings');
             expect(Array.isArray(output.rankings)).toBe(true);
-            
+
             // Should return up to 5 results
             expect(output.rankings.length).toBeGreaterThanOrEqual(0);
             expect(output.rankings.length).toBeLessThanOrEqual(5);
-            
+
             return true;
           }
         ),
@@ -94,25 +94,25 @@ describe('Keyword Rankings Property Tests', () => {
           keywordRankingInputArbitrary(),
           async (input) => {
             const output = await getKeywordRankings(input);
-            
+
             // Each ranking should have all required fields
             output.rankings.forEach(ranking => {
               expect(ranking).toHaveProperty('rank');
               expect(ranking).toHaveProperty('agentName');
               expect(ranking).toHaveProperty('agency');
               expect(ranking).toHaveProperty('url');
-              
+
               // Fields should be the correct type
               expect(typeof ranking.rank).toBe('number');
               expect(typeof ranking.agentName).toBe('string');
               expect(typeof ranking.agency).toBe('string');
               expect(typeof ranking.url).toBe('string');
-              
+
               // Agent name and agency should not be empty
               expect(ranking.agentName.trim().length).toBeGreaterThan(0);
               expect(ranking.agency.trim().length).toBeGreaterThan(0);
             });
-            
+
             return true;
           }
         ),
@@ -130,13 +130,13 @@ describe('Keyword Rankings Property Tests', () => {
           keywordRankingInputArbitrary(),
           async (input) => {
             const output = await getKeywordRankings(input);
-            
+
             // Each rank should be between 1 and 5
             output.rankings.forEach(ranking => {
               expect(ranking.rank).toBeGreaterThanOrEqual(1);
               expect(ranking.rank).toBeLessThanOrEqual(5);
             });
-            
+
             return true;
           }
         ),
@@ -154,13 +154,13 @@ describe('Keyword Rankings Property Tests', () => {
           keywordRankingInputArbitrary(),
           async (input) => {
             const output = await getKeywordRankings(input);
-            
+
             // Check for duplicate ranks
             const ranks = output.rankings.map(r => r.rank);
             const uniqueRanks = new Set(ranks);
-            
+
             expect(uniqueRanks.size).toBe(ranks.length);
-            
+
             return true;
           }
         ),
@@ -178,20 +178,20 @@ describe('Keyword Rankings Property Tests', () => {
           keywordRankingInputArbitrary(),
           async (input) => {
             const output = await getKeywordRankings(input);
-            
+
             if (output.rankings.length > 0) {
               // Sort ranks to check if they're sequential
               const sortedRanks = [...output.rankings.map(r => r.rank)].sort((a, b) => a - b);
-              
+
               // First rank should be 1
               expect(sortedRanks[0]).toBe(1);
-              
+
               // Each subsequent rank should be previous + 1
               for (let i = 1; i < sortedRanks.length; i++) {
                 expect(sortedRanks[i]).toBe(sortedRanks[i - 1] + 1);
               }
             }
-            
+
             return true;
           }
         ),
@@ -209,13 +209,13 @@ describe('Keyword Rankings Property Tests', () => {
           keywordRankingInputArbitrary(),
           async (input) => {
             const output = await getKeywordRankings(input);
-            
+
             // Check for duplicate agent names
             const agentNames = output.rankings.map(r => r.agentName.toLowerCase().trim());
             const uniqueAgentNames = new Set(agentNames);
-            
+
             expect(uniqueAgentNames.size).toBe(agentNames.length);
-            
+
             return true;
           }
         ),
@@ -230,12 +230,12 @@ describe('Keyword Rankings Property Tests', () => {
      */
     it('should handle common real estate keywords', async () => {
       const input: GetKeywordRankingsInput = {
-        location: 'New York, NY',
+        location: 'Seattle, WA',
         keyword: 'real estate agent'
       };
 
       const output = await getKeywordRankings(input);
-      
+
       expect(output).toHaveProperty('rankings');
       expect(Array.isArray(output.rankings)).toBe(true);
       expect(output.rankings.length).toBeGreaterThanOrEqual(0);
@@ -252,7 +252,7 @@ describe('Keyword Rankings Property Tests', () => {
       };
 
       const output = await getKeywordRankings(input);
-      
+
       expect(output).toHaveProperty('rankings');
       expect(Array.isArray(output.rankings)).toBe(true);
       expect(output.rankings.length).toBeGreaterThanOrEqual(0);
@@ -269,7 +269,7 @@ describe('Keyword Rankings Property Tests', () => {
       };
 
       const output = await getKeywordRankings(input);
-      
+
       // In small markets, might return fewer than 5 results
       expect(output).toHaveProperty('rankings');
       expect(Array.isArray(output.rankings)).toBe(true);
@@ -287,7 +287,7 @@ describe('Keyword Rankings Property Tests', () => {
       };
 
       const output = await getKeywordRankings(input);
-      
+
       // In large markets, should return up to 5 results
       expect(output).toHaveProperty('rankings');
       expect(Array.isArray(output.rankings)).toBe(true);
@@ -307,7 +307,7 @@ describe('Keyword Rankings Property Tests', () => {
 
       for (const input of testCases) {
         const output = await getKeywordRankings(input);
-        
+
         expect(output).toHaveProperty('rankings');
         expect(Array.isArray(output.rankings)).toBe(true);
         expect(output.rankings.length).toBeGreaterThanOrEqual(0);

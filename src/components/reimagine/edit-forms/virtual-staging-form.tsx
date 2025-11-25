@@ -170,7 +170,7 @@ export function VirtualStagingForm({
                         disabled={!isValid || isProcessing}
                         className="flex-1"
                     >
-                        {isProcessing ? "Processing..." : "Generate Staging"}
+                        {isProcessing ? "Staging..." : "Generate Staging"}
                     </Button>
                 </CardFooter>
             </form>

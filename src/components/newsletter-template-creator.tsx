@@ -135,7 +135,7 @@ export function NewsletterTemplateCreator() {
             formData.append('userBrandInfo', JSON.stringify({
                 name: 'John Doe',
                 contactInfo: 'john@example.com',
-                address: '123 Main St, City, State 12345',
+                address: '123 Main St, Seattle, WA 98101',
                 unsubscribeUrl: 'https://example.com/unsubscribe'
             }));
 

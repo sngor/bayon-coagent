@@ -57,7 +57,7 @@ Analyzes a complex user request and breaks it down into 2-4 specialized sub-task
 ```typescript
 const orchestrator = getWorkflowOrchestrator();
 const tasks = await orchestrator.decomposeRequest(
-  "Analyze Austin market trends and create a client email",
+  "Analyze Seattle market trends and create a client email",
   agentProfile
 );
 // Returns 2-4 tasks assigned to appropriate workers
@@ -140,7 +140,7 @@ Main entry point that executes the complete workflow from request to response.
 
 ```typescript
 const result = await orchestrator.executeCompleteWorkflow(
-  "What are Austin market trends and create a summary email?",
+  "What are Seattle market trends and create a summary email?",
   agentProfile
 );
 
@@ -201,7 +201,7 @@ The orchestrator uses Claude to intelligently decompose requests:
 
 ### Example Decomposition
 
-**Input:** "Analyze Austin luxury market and create a client email"
+**Input:** "Analyze Seattle luxury market and create a client email"
 
 **Output:**
 
@@ -209,9 +209,12 @@ The orchestrator uses Claude to intelligently decompose requests:
 [
   {
     type: "data-analyst",
-    description: "Analyze Austin luxury home market trends",
+    description: "Analyze Seattle luxury home market trends",
     dependencies: [],
-    input: { query: "Austin luxury homes market trends", dataSource: "tavily" },
+    input: {
+      query: "Seattle luxury homes market trends",
+      dataSource: "tavily",
+    },
   },
   {
     type: "content-generator",

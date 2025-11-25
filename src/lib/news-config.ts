@@ -20,6 +20,7 @@ export const NEWS_CONFIG = {
     PREFETCH_DELAY_MS: 1000,
     COMMON_LOCATIONS: [
         '', // General news
+        'Washington',
         'California',
         'New York',
         'Florida',

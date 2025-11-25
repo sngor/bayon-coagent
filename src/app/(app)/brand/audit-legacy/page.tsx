@@ -277,7 +277,7 @@ export default function BrandAuditPage() {
 
     // Memoize keys for DynamoDB queries
     const agentProfilePK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
-    const agentProfileSK = useMemo(() => 'AGENT#main', []);
+    const agentProfileSK = useMemo(() => 'PROFILE', []);
 
     const brandAuditPK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
     const brandAuditSK = useMemo(() => 'AUDIT#main', []);

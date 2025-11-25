@@ -222,12 +222,11 @@ export function EditPreview({
                         {/* Side-by-Side View (Desktop) with optimized images */}
                         <div className="hidden lg:grid lg:grid-cols-2 gap-4 pt-4 border-t">
                             <div className="space-y-2">
-                                <h3 className="font-headline text-sm font-medium">Original</h3>
                                 <div className="relative aspect-video rounded-lg overflow-hidden">
                                     {originalUrl ? (
                                         <OptimizedImage
                                             src={originalUrl}
-                                            alt="Original"
+                                            alt="Before"
                                             fill
                                             sizes="(min-width: 1024px) 50vw, 100vw"
                                             priority
@@ -240,11 +239,10 @@ export function EditPreview({
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <h3 className="font-headline text-sm font-medium">Edited</h3>
                                 <div className="relative aspect-video rounded-lg overflow-hidden">
                                     <OptimizedImage
                                         src={editedUrl}
-                                        alt="Edited"
+                                        alt="After"
                                         fill
                                         sizes="(min-width: 1024px) 50vw, 100vw"
                                         priority

@@ -232,28 +232,7 @@ body {
   }
   body {
     @apply bg-background text-foreground;
-    /* Paper-tone background gradient */
-    background-image: radial-gradient(
-        circle at 20% 30%,
-        hsl(var(--paper-gradient-1)) 0px,
-        transparent 60%
-      ),
-      radial-gradient(
-        circle at 80% 70%,
-        hsl(var(--paper-gradient-2)) 0px,
-        transparent 60%
-      ),
-      radial-gradient(
-        circle at 40% 80%,
-        hsl(var(--paper-gradient-3)) 0px,
-        transparent 60%
-      ),
-      radial-gradient(
-        circle at 60% 20%,
-        hsl(var(--paper-gradient-4)) 0px,
-        transparent 60%
-      );
-    background-attachment: fixed;
+    min-height: 100vh;
   }
 }
 
@@ -2417,4 +2396,12 @@ body {
   .ai-chatbot-context .animate-typewriter-cursor {
     animation: typewriter-cursor 2s step-end infinite;
   }
+}
+
+/* Disable slide-in animations - only disable animation, preserve positioning */
+[data-radix-popper-content-wrapper] > *,
+[role="tooltip"],
+[role="menu"],
+[role="listbox"] {
+  animation: none !important;
 }

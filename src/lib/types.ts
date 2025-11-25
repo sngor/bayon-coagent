@@ -101,6 +101,7 @@ export type KeywordRanking = {
   rank: number;
   agentName: string;
   agencyName: string;
+  url?: string;
   keyword?: string; // Added by the action for display purposes
 }
 
@@ -249,3 +250,131 @@ export type Feedback = {
   createdAt: string;
   updatedAt: string;
 };
+
+// ==================== Client Portal Types ====================
+
+/**
+ * Client Dashboard - Personalized dashboard for agent's clients
+ * Accessed via secured, expiring links (no client authentication required)
+ */
+export type ClientDashboard = {
+  id: string;
+  agentId: string;
+
+  // Client Information
+  clientInfo: {
+    name: string;
+    email: string;
+    phone?: string;
+    propertyInterests?: string;
+    notes?: string;
+  };
+
+  // Dashboard Configuration - which features are enabled
+  config: {
+    cmaEnabled: boolean;
+    propertySearchEnabled: boolean;
+    homeValuationEnabled: boolean;
+    documentsEnabled: boolean;
+  };
+
+  // CMA (Comparative Market Analysis) Data
+  cmaData?: {
+    subjectProperty: {
+      address: string;
+      beds: number;
+      baths: number;
+      sqft: number;
+      yearBuilt: number;
+    };
+    comparableProperties: Array<{
+      address: string;
+      soldPrice: number;
+      soldDate: string;
+      beds: number;
+      baths: number;
+      sqft: number;
+      distance: number; // miles
+    }>;
+    marketTrends: {
+      medianPrice: number;
+      daysOnMarket: number;
+      inventoryLevel: 'low' | 'medium' | 'high';
+    };
+    priceRecommendation: {
+      low: number;
+      mid: number;
+      high: number;
+    };
+    agentNotes?: string;
+  };
+
+  // Branding Configuration
+  branding: {
+    logoUrl?: string;
+    primaryColor: string;
+    secondaryColor?: string;
+    welcomeMessage: string;
+    agentContact: {
+      phone: string;
+      email: string;
+    };
+  };
+
+  // Metadata
+  createdAt: string;
+  updatedAt: string;
+};
+
+/**
+ * Secured Link - Token-based access to client dashboards
+ * No authentication required, just a valid, non-expired token
+ */
+export type SecuredLink = {
+  id: string;
+  token: string; // Unique token for accessing the dashboard
+  dashboardId: string;
+  agentId: string;
+
+  // Expiration and Access Control
+  expiresAt: string; // ISO timestamp
+  isRevoked: boolean;
+
+  // Analytics
+  accessCount: number;
+  lastAccessedAt?: string; // ISO timestamp
+
+  // Metadata
+  createdAt: string;
+};
+
+/**
+ * Dashboard Analytics - Track client interactions with the dashboard
+ */
+export type DashboardAnalytics = {
+  id: string;
+  dashboardId: string;
+  timestamp: string; // ISO timestamp
+
+  // View Information
+  viewType: 'dashboard' | 'cma' | 'property' | 'valuation' | 'document';
+
+  // Property Interactions (if applicable)
+  propertyInteraction?: {
+    propertyId: string;
+    action: 'view' | 'save' | 'inquiry';
+  };
+
+  // Contact Requests (if applicable)
+  contactRequest?: {
+    type: 'general' | 'cma' | 'property' | 'valuation';
+    message?: string;
+  };
+
+  // Session Information
+  sessionId?: string;
+  userAgent?: string;
+  ipAddress?: string;
+};
+
+

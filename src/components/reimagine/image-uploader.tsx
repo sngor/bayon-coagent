@@ -13,7 +13,8 @@
  * Requirements: 1.1, 1.2, 1.3, 1.4, 13.3
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Upload, X, Sparkles, AlertCircle, Image as ImageIcon, RefreshCw, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,9 +35,13 @@ import {
 
 interface ImageUploaderProps {
     userId: string;
-    onUploadComplete: (imageId: string, suggestions: EditSuggestion[], editType: EditType, params: EditParams) => void;
+    onUploadComplete: (imageId: string, suggestions?: EditSuggestion[], editType?: EditType, params?: EditParams) => void;
     onUploadError: (error: string) => void;
     onChangeImage?: () => void; // Optional callback when user wants to change image
+    simpleMode?: boolean; // If true, just upload without edit type selection
+    preloadedImageId?: string; // Pre-loaded image ID for chained edits
+    preloadedImageUrl?: string; // Pre-loaded image URL for display
+    preselectedEditType?: EditType; // Pre-selected edit type for back navigation
 }
 
 export function ImageUploader({
@@ -44,6 +49,10 @@ export function ImageUploader({
     onUploadComplete,
     onUploadError,
     onChangeImage,
+    simpleMode = false,
+    preloadedImageId,
+    preloadedImageUrl,
+    preselectedEditType,
 }: ImageUploaderProps) {
     const [isDragging, setIsDragging] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
@@ -55,9 +64,22 @@ export function ImageUploader({
     const [uploadedImageId, setUploadedImageId] = useState<string | null>(null);
     const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(new Set());
     const [isReanalyzing, setIsReanalyzing] = useState(false);
-    const [selectedEditType, setSelectedEditType] = useState<EditType | null>(null);
+    const [selectedEditType, setSelectedEditType] = useState<EditType | null>(preselectedEditType || null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Initialize with preloaded image if provided
+    useEffect(() => {
+        if (preloadedImageId && preloadedImageUrl) {
+            setUploadedImageId(preloadedImageId);
+            setPreviewUrl(preloadedImageUrl);
+            setSuggestions([]);
+            // Set preselected edit type if provided
+            if (preselectedEditType) {
+                setSelectedEditType(preselectedEditType);
+            }
+        }
+    }, [preloadedImageId, preloadedImageUrl, preselectedEditType]);
 
     // Edit type options
     const editTypes = [
@@ -161,6 +183,11 @@ export function ImageUploader({
                 if (result.error) {
                     setError(result.error);
                 }
+
+                // In simple mode, immediately call onUploadComplete
+                if (simpleMode) {
+                    onUploadComplete(result.imageId);
+                }
             } else {
                 setError(result.error || 'Upload failed. Please try again.');
                 onUploadError(result.error || 'Upload failed. Please try again.');
@@ -257,14 +284,13 @@ export function ImageUploader({
     }, []);
 
     // Clear selection
-    const handleClear = useCallback(() => {
-        // If parent provides onChangeImage callback, use it instead
-        if (onChangeImage) {
-            onChangeImage();
-            return;
+    const handleClear = useCallback((e?: React.MouseEvent) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
         }
 
-        // Otherwise, clear locally
+        // Clear local state
         setSelectedFile(null);
         setPreviewUrl(null);
         setError(null);
@@ -276,6 +302,11 @@ export function ImageUploader({
 
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
+        }
+
+        // Call parent callback if provided
+        if (onChangeImage) {
+            onChangeImage();
         }
     }, [onChangeImage]);
 
@@ -291,7 +322,11 @@ export function ImageUploader({
     // Handle edit form submission
     const handleEditSubmit = useCallback(
         (params: EditParams) => {
-            if (!uploadedImageId || !selectedEditType) return;
+            if (!uploadedImageId || !selectedEditType) {
+                console.error('Missing required data:', { uploadedImageId, selectedEditType });
+                return;
+            }
+            console.log('Submitting edit:', { uploadedImageId, selectedEditType, params, suggestions });
             onUploadComplete(uploadedImageId, suggestions, selectedEditType, params);
         },
         [uploadedImageId, selectedEditType, suggestions, onUploadComplete]
@@ -409,38 +444,52 @@ export function ImageUploader({
 
                         {/* Upload progress */}
                         {isUploading && (
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">Uploading...</span>
-                                    <span className="font-medium">{uploadProgress}%</span>
+                            <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="space-y-3 p-4 bg-primary/5 rounded-lg border border-primary/20"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <motion.div
+                                        animate={{ rotate: 360 }}
+                                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                    >
+                                        <Upload className="h-5 w-5 text-primary" />
+                                    </motion.div>
+                                    <div className="flex-1">
+                                        <div className="flex items-center justify-between text-sm mb-1">
+                                            <span className="font-medium text-primary">Uploading image...</span>
+                                            <span className="font-semibold text-primary">{uploadProgress}%</span>
+                                        </div>
+                                        <Progress value={uploadProgress} className="h-2" />
+                                    </div>
                                 </div>
-                                <Progress value={uploadProgress} />
-                            </div>
+                            </motion.div>
                         )}
 
                         {/* Auto-upload message */}
                         {selectedFile && !uploadedImageId && !isUploading && (
-                            <div className="text-center text-sm text-muted-foreground">
-                                <Upload className="h-4 w-4 mx-auto mb-1" />
-                                Image selected - uploading automatically...
-                            </div>
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="text-center text-sm text-muted-foreground p-3 bg-muted/50 rounded-lg"
+                            >
+                                <motion.div
+                                    animate={{ y: [0, -5, 0] }}
+                                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                                >
+                                    <Upload className="h-5 w-5 mx-auto mb-2 text-primary" />
+                                </motion.div>
+                                <p className="font-medium">Preparing upload...</p>
+                            </motion.div>
                         )}
 
-                        {/* Edit Type Selection - shown after upload */}
-                        {uploadedImageId && !selectedEditType && (
+                        {/* Edit Type Selection - shown after upload (not in simple mode) */}
+                        {uploadedImageId && !selectedEditType && !simpleMode && (
                             <div className="space-y-3 pt-4 border-t">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Sparkles className="h-5 w-5 text-primary" />
-                                        <h3 className="font-headline font-semibold">Choose Edit Type</h3>
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={handleClear}
-                                    >
-                                        Change Image
-                                    </Button>
+                                <div className="flex items-center gap-2">
+                                    <Sparkles className="h-5 w-5 text-primary" />
+                                    <h3 className="font-headline font-semibold">Choose Edit Type</h3>
                                 </div>
                                 <p className="text-sm text-muted-foreground">
                                     Select the transformation you want to apply:
@@ -466,29 +515,20 @@ export function ImageUploader({
                             </div>
                         )}
 
-                        {/* Edit Form - shown after edit type selection */}
-                        {uploadedImageId && selectedEditType && (
+                        {/* Edit Form - shown after edit type selection (not in simple mode) */}
+                        {uploadedImageId && selectedEditType && !simpleMode && (
                             <div className="space-y-3 pt-4 border-t">
                                 <div className="flex items-center justify-between">
                                     <h3 className="font-headline font-semibold">
                                         {editTypes.find((t) => t.id === selectedEditType)?.title}
                                     </h3>
-                                    <div className="flex items-center gap-2">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={handleEditCancel}
-                                        >
-                                            Change Edit Type
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={handleClear}
-                                        >
-                                            Change Image
-                                        </Button>
-                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleEditCancel}
+                                    >
+                                        Change Edit Type
+                                    </Button>
                                 </div>
                                 {selectedEditType === 'virtual-staging' && (
                                     <VirtualStagingForm
@@ -509,6 +549,7 @@ export function ImageUploader({
                                         onSubmit={handleEditSubmit}
                                         onCancel={handleEditCancel}
                                         isProcessing={false}
+                                        imageUrl={previewUrl || undefined}
                                     />
                                 )}
                                 {selectedEditType === 'item-removal' && (
@@ -516,6 +557,7 @@ export function ImageUploader({
                                         onSubmit={handleEditSubmit}
                                         onCancel={handleEditCancel}
                                         isProcessing={false}
+                                        imageUrl={previewUrl || undefined}
                                     />
                                 )}
                                 {selectedEditType === 'virtual-renovation' && (

@@ -61,6 +61,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 try {
                     const currentUser = await cognitoClient.getCurrentUser(currentSession.accessToken);
                     setUser(currentUser);
+
+                    // Set session cookie for server-side authentication
+                    try {
+                        const { setSessionCookieAction } = await import('@/app/actions');
+                        await setSessionCookieAction(
+                            currentSession.accessToken,
+                            currentSession.idToken,
+                            currentSession.refreshToken,
+                            currentSession.expiresAt
+                        );
+                    } catch (cookieError) {
+                        console.error('Failed to set session cookie on load:', cookieError);
+                        // Don't throw - cookie setting shouldn't block session load
+                    }
                 } catch (userError) {
                     console.error('Failed to fetch user:', userError);
                     // Session might be invalid, clear it
@@ -97,6 +111,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
             // Fetch user information
             const currentUser = await cognitoClient.getCurrentUser(newSession.accessToken);
             setUser(currentUser);
+
+            // Set session cookie for server-side authentication
+            try {
+                const { setSessionCookieAction } = await import('@/app/actions');
+                await setSessionCookieAction(
+                    newSession.accessToken,
+                    newSession.idToken,
+                    newSession.refreshToken,
+                    newSession.expiresAt
+                );
+            } catch (cookieError) {
+                console.error('Failed to set session cookie:', cookieError);
+                // Don't throw - cookie setting shouldn't block login
+            }
 
             // Track login session
             try {
@@ -182,6 +210,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
             if (session?.accessToken) {
                 await cognitoClient.signOut(session.accessToken);
+            }
+
+            // Clear session cookie
+            try {
+                const { clearSessionCookieAction } = await import('@/app/actions');
+                await clearSessionCookieAction();
+            } catch (cookieError) {
+                console.error('Failed to clear session cookie:', cookieError);
+                // Don't throw - cookie clearing shouldn't block logout
             }
 
             setSession(null);

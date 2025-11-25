@@ -139,8 +139,8 @@ describe('Alert Settings Server Actions', () => {
             const targetArea: TargetArea = {
                 id: 'test-3',
                 type: 'city',
-                value: 'New York',
-                label: 'NYC',
+                value: 'Seattle',
+                label: 'Seattle',
             };
 
             const result = validateTargetArea(targetArea);

@@ -9,16 +9,16 @@ import {
   // Worker execution
   executeWorkerTask,
   createWorkerTask,
-  
+
   // Direct execution functions
   analyzeData,
   generateContent,
   forecastMarket,
-  
+
   // Type guards
   isSuccessResult,
   isErrorResult,
-  
+
   // Types
   type WorkerTask,
   type WorkerResult,
@@ -29,24 +29,24 @@ import {
  */
 export async function exampleDataAnalysis() {
   console.log('=== Data Analysis Example ===\n');
-  
+
   try {
     // Direct execution (recommended for simple use cases)
     const result = await analyzeData({
-      query: 'What are the average home prices in Austin, TX for luxury properties?',
+      query: 'What are the average home prices in Seattle, WA for luxury properties?',
       dataSource: 'tavily',
       context: {
-        market: 'Austin, TX',
+        market: 'Seattle, WA',
         timeframe: '2024',
         propertyType: 'luxury',
       },
     });
-    
+
     console.log('Summary:', result.summary);
     console.log('Data Points:', result.data.length);
     console.log('Sources:', result.sources.length);
     console.log('Confidence:', result.confidence);
-    
+
     if (result.insights) {
       console.log('\nKey Insights:');
       result.insights.forEach((insight, i) => {
@@ -63,7 +63,7 @@ export async function exampleDataAnalysis() {
  */
 export async function exampleContentGeneration() {
   console.log('\n=== Content Generation Example ===\n');
-  
+
   try {
     const result = await generateContent({
       contentType: 'email',
@@ -80,7 +80,7 @@ export async function exampleContentGeneration() {
       },
       agentProfile: {
         agentName: 'Jane Smith',
-        primaryMarket: 'Austin, TX',
+        primaryMarket: 'Seattle, WA',
         specialization: 'luxury',
         preferredTone: 'warm-consultative',
         corePrinciple: 'Maximize client ROI with data-first strategies',
@@ -88,7 +88,7 @@ export async function exampleContentGeneration() {
       instructions: 'Create a compelling email that highlights the property features and invites the recipient to a private showing',
       targetLength: 250,
     });
-    
+
     console.log('Generated Content:');
     console.log(result.content);
     console.log('\nTone:', result.tone);
@@ -108,7 +108,7 @@ export async function exampleContentGeneration() {
  */
 export async function exampleMarketForecasting() {
   console.log('\n=== Market Forecasting Example ===\n');
-  
+
   try {
     const result = await forecastMarket({
       historicalData: [
@@ -120,30 +120,30 @@ export async function exampleMarketForecasting() {
         { date: '2024-06', value: 475000, metric: 'median_price' },
       ],
       timeframe: '90-day',
-      market: 'Austin, TX',
+      market: 'Seattle, WA',
       propertyType: 'single-family',
     });
-    
+
     console.log('Forecast:');
     console.log('- Trend:', result.forecast.trend);
     console.log('- Confidence:', (result.forecast.confidence * 100).toFixed(1) + '%');
     console.log('- Price Range:', `$${result.forecast.priceRange.low.toLocaleString()} - $${result.forecast.priceRange.high.toLocaleString()}`);
-    
+
     if (result.forecast.percentageChange) {
       console.log('- Expected Change:', result.forecast.percentageChange.expected.toFixed(1) + '%');
     }
-    
+
     console.log('\nKey Factors:');
     result.factors.forEach((factor, i) => {
       console.log(`${i + 1}. ${factor}`);
     });
-    
+
     console.log('\nAnalysis:');
     console.log(result.analysis);
-    
+
     console.log('\nDisclaimer:');
     console.log(result.disclaimer);
-    
+
     if (result.recommendations) {
       console.log('\nRecommendations:');
       result.recommendations.forEach((rec, i) => {
@@ -160,16 +160,16 @@ export async function exampleMarketForecasting() {
  */
 export async function exampleWorkerProtocol() {
   console.log('\n=== Worker Protocol Example ===\n');
-  
+
   // Create a task
   const task = createWorkerTask(
     'data-analyst',
     'Analyze market trends for investment properties',
     {
-      query: 'What are the best investment opportunities in Austin?',
+      query: 'What are the best investment opportunities in Seattle?',
       dataSource: 'tavily',
       context: {
-        market: 'Austin, TX',
+        market: 'Seattle, WA',
         propertyType: 'investment',
       },
     },
@@ -180,24 +180,24 @@ export async function exampleWorkerProtocol() {
       },
     }
   );
-  
+
   console.log('Created task:', task.id);
   console.log('Task type:', task.type);
   console.log('Task status:', task.status);
-  
+
   // Execute the task
   const result = await executeWorkerTask(task);
-  
+
   console.log('\nExecution completed:');
   console.log('- Status:', result.status);
   console.log('- Execution time:', result.metadata.executionTime + 'ms');
   console.log('- Model used:', result.metadata.modelId);
-  
+
   // Check result type
   if (isSuccessResult(result)) {
     console.log('\n✓ Task completed successfully');
     console.log('Output keys:', Object.keys(result.output));
-    
+
     if (result.citations && result.citations.length > 0) {
       console.log('\nCitations:');
       result.citations.forEach((citation, i) => {
@@ -217,47 +217,47 @@ export async function exampleWorkerProtocol() {
  */
 export async function exampleParallelExecution() {
   console.log('\n=== Parallel Execution Example ===\n');
-  
+
   // Create multiple tasks
   const tasks: WorkerTask[] = [
     createWorkerTask('data-analyst', 'Analyze market data', {
-      query: 'Current market trends in Austin',
+      query: 'Current market trends in Seattle',
       dataSource: 'tavily',
     }),
     createWorkerTask('content-generator', 'Generate summary', {
       contentType: 'summary',
-      context: { topic: 'Austin real estate market' },
+      context: { topic: 'Seattle real estate market' },
       agentProfile: {
         agentName: 'John Doe',
-        primaryMarket: 'Austin, TX',
+        primaryMarket: 'Seattle, WA',
         specialization: 'general',
         preferredTone: 'professional',
         corePrinciple: 'Client success first',
       },
     }),
   ];
-  
+
   console.log(`Executing ${tasks.length} tasks in parallel...`);
-  
+
   // Execute all tasks in parallel
   const results = await Promise.all(
     tasks.map(task => executeWorkerTask(task))
   );
-  
+
   console.log('\nResults:');
   results.forEach((result: WorkerResult, i: number) => {
     console.log(`\nTask ${i + 1}:`);
     console.log('- Type:', result.workerType);
     console.log('- Status:', result.status);
     console.log('- Execution time:', result.metadata.executionTime + 'ms');
-    
+
     if (isSuccessResult(result)) {
       console.log('- Output available: ✓');
     } else if (isErrorResult(result)) {
       console.log('- Error:', result.error.message);
     }
   });
-  
+
   // Calculate total execution time
   const totalTime = Math.max(...results.map((r: WorkerResult) => r.metadata.executionTime));
   console.log(`\nTotal parallel execution time: ${totalTime}ms`);
@@ -268,7 +268,7 @@ export async function exampleParallelExecution() {
  */
 export async function exampleErrorHandling() {
   console.log('\n=== Error Handling Example ===\n');
-  
+
   try {
     // This will fail due to invalid input
     const task = createWorkerTask('data-analyst', 'Invalid task', {
@@ -276,15 +276,15 @@ export async function exampleErrorHandling() {
       query: '',
       dataSource: 'invalid' as any,
     });
-    
+
     const result = await executeWorkerTask(task);
-    
+
     if (isErrorResult(result)) {
       console.log('Error caught by worker:');
       console.log('- Type:', result.error.type);
       console.log('- Message:', result.error.message);
       console.log('- Code:', result.error.code);
-      
+
       // Handle different error types
       switch (result.error.type) {
         case 'VALIDATION_ERROR':
@@ -316,14 +316,14 @@ export async function runAllExamples() {
   console.log('╔════════════════════════════════════════════════════════╗');
   console.log('║         Worker Agents Usage Examples                  ║');
   console.log('╚════════════════════════════════════════════════════════╝\n');
-  
+
   await exampleDataAnalysis();
   await exampleContentGeneration();
   await exampleMarketForecasting();
   await exampleWorkerProtocol();
   await exampleParallelExecution();
   await exampleErrorHandling();
-  
+
   console.log('\n╔════════════════════════════════════════════════════════╗');
   console.log('║         All Examples Completed                         ║');
   console.log('╚════════════════════════════════════════════════════════╝\n');

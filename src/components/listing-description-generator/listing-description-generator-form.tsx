@@ -76,6 +76,10 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
   const [keyFeatures, setKeyFeatures] = useState('');
   const [writingStyle, setWritingStyle] = useState('Balanced');
 
+  // Additional fields for Optimize mode
+  const [sellingPoints, setSellingPoints] = useState('');
+  const [emotionalAppeal, setEmotionalAppeal] = useState('Balanced');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -83,17 +87,71 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
     setGeneration('');
 
     try {
-      // TODO: Implement generateListingDescription server action
-      // For now, just show a placeholder message
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
-      setGeneration('Listing description generation feature is under development. This is a placeholder for the generated description that will be tailored to your selected buyer persona.');
-      toast({
-        title: 'Feature Coming Soon',
-        description: 'Listing description generation will be available in a future update.',
-      });
+      let result;
+
+      if (isOptimizeMode) {
+        // Validate required fields
+        if (!propertyDetails || propertyDetails.trim().length < 50) {
+          throw new Error('Original description must be at least 50 characters long.');
+        }
+        if (!buyerPersona) {
+          throw new Error('Please select a target buyer persona.');
+        }
+        if (!emotionalAppeal) {
+          throw new Error('Please select an emotional appeal style.');
+        }
+
+        // Import the action dynamically
+        const { optimizeListingDescriptionAction } = await import('@/app/actions');
+
+        result = await optimizeListingDescriptionAction({
+          originalDescription: propertyDetails.trim(),
+          buyerPersona,
+          sellingPoints: sellingPoints.trim() || '',
+          emotionalAppeal,
+        });
+      } else {
+        // Validate required fields
+        if (!location || location.trim().length < 3) {
+          throw new Error('Please enter a location (at least 3 characters).');
+        }
+        if (!keyFeatures || keyFeatures.trim().length < 10) {
+          throw new Error('Please enter key features (at least 10 characters).');
+        }
+
+        // Import the action dynamically
+        const { generateNewListingDescriptionAction } = await import('@/app/actions');
+
+        result = await generateNewListingDescriptionAction({
+          propertyType,
+          bedrooms,
+          bathrooms,
+          squareFeet: squareFeet.trim(),
+          location: location.trim(),
+          keyFeatures: keyFeatures.trim(),
+          buyerPersona,
+          writingStyle,
+        });
+      }
+
+      if (result.message === 'success' && result.data) {
+        setGeneration(result.data.description);
+        toast({
+          title: '✨ Description Generated!',
+          description: 'Your listing description is ready.',
+        });
+      } else {
+        throw new Error(result.message);
+      }
     } catch (err) {
       console.error('Failed to generate listing description:', err);
-      setError('Could not generate listing description. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Could not generate listing description. Please try again.';
+      setError(errorMessage);
+      toast({
+        variant: 'destructive',
+        title: 'Generation Failed',
+        description: errorMessage,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -265,6 +323,8 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
                   >
                     <Textarea
                       id="sellingPoints"
+                      value={sellingPoints}
+                      onChange={(e) => setSellingPoints(e.target.value)}
                       placeholder="e.g., Recently renovated, Smart home features, Pool"
                       rows={3}
                     />
@@ -275,7 +335,7 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
                     id="emotionalAppeal"
                     hint="Choose the writing style for your listing"
                   >
-                    <Select defaultValue="Balanced">
+                    <Select value={emotionalAppeal} onValueChange={setEmotionalAppeal}>
                       <SelectTrigger id="emotionalAppeal">
                         <SelectValue placeholder="Select appeal style" />
                       </SelectTrigger>
@@ -497,6 +557,8 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
               <StandardLoadingSpinner
                 variant="ai"
                 message="Generating your listing description..."
+                showSubtext={true}
+                featureType="listing-description"
               />
             ) : generation ? (
               <div className="space-y-4">

@@ -62,7 +62,13 @@ export type EntityType =
   | 'OptimalTimesCache'
   | 'Feedback'
   | 'Profile'
-  | 'RolePlaySession';
+  | 'RolePlaySession'
+  | 'ClientDashboard'
+  | 'SecuredLink'
+  | 'DashboardView'
+  | 'PropertyView'
+  | 'DocumentDownload'
+  | 'ContactRequest';
 
 /**
  * Base DynamoDB item structure

@@ -37,49 +37,56 @@ Property Details:
 Market Data and Renovation ROI Research:
 \{{{searchContext}}}
 
-Follow these instructions precisely:
+Analyze the renovation and provide a comprehensive ROI report with the following structure:
 
-1. **ROI Calculation**: Based on the search results containing renovation ROI data, market trends, and comparable renovations:
-   - Calculate the estimated new property value after renovation
-   - Determine the expected value increase
-   - Calculate ROI percentage (value increase / renovation cost * 100)
-   - Assess ROI category (excellent: 80%+, good: 60-79%, fair: 40-59%, poor: <40%)
+1. **roiAnalysis** (required object):
+   - currentValue: Current property value (number)
+   - renovationCost: Renovation cost (number)
+   - estimatedValueIncrease: Expected value increase (number)
+   - newPropertyValue: Estimated value after renovation (number)
+   - roiPercentage: ROI as percentage (number, calculated as: estimatedValueIncrease / renovationCost * 100)
+   - roiCategory: Must be exactly "excellent", "good", "fair", or "poor" (string)
+     - excellent: 80%+, good: 60-79%, fair: 40-59%, poor: <40%
+   - confidenceLevel: Must be exactly "high", "medium", or "low" (string)
 
-2. **Market Analysis**: Analyze how location, market conditions, and property type affect ROI:
-   - Location impact on renovation values
-   - Current market condition effects
-   - Demand level for this renovation type
+2. **marketAnalysis** (required object):
+   - locationImpact: String describing how location affects ROI
+   - marketCondition: String describing current market condition
+   - demandLevel: String describing demand level for this renovation type
+   - regionalFactors: Optional object with any regional market factors
 
-3. **Comparable Renovations**: Extract 3-5 comparable renovations from search results with their costs and ROI.
+3. **comparableRenovations** (required array):
+   - Array of 3-5 comparable renovations
+   - Each with: type (string), cost (number), roi (number), location (optional string)
 
-4. **Key Factors**: Identify the most important factors affecting ROI (renovation type, location, market timing, quality of work, etc.).
+4. **keySuccessFactors** (required array):
+   - Array of strings describing key factors influencing ROI success
 
-5. **Detailed Analysis**: Provide a comprehensive analysis explaining:
-   - Why this ROI estimate is realistic
-   - How market conditions influence the projection
-   - What makes this renovation type valuable
-   - Regional market considerations
+5. **recommendations** (required):
+   - Can be either an array of strings OR an object with:
+     - timing: Optional string
+     - scopeGuidance: Optional string
+     - materialSelections: Optional string
+     - budgetAllocation: Optional object with percentage breakdowns
 
-6. **Recommendations**: Offer specific, actionable advice for:
-   - Maximizing ROI potential
-   - Timing considerations
-   - Quality vs. cost decisions
-   - Market-specific strategies
+6. **riskFactors** (required array):
+   - Array of strings describing potential risks
 
-7. **Risk Assessment**: Identify potential risks or factors that could negatively impact ROI.
-
-8. **Timeline Considerations**: Provide guidance on renovation duration and optimal timing.
+7. **timeline** (required object):
+   - estimatedDuration: String describing renovation duration
+   - optimalStartSeason: Optional string for best timing
+   - keyTimelineFactors: Optional array of timeline considerations
 
 Important Guidelines:
-- Base ROI estimates on actual market data from search results
-- Consider regional variations in renovation values
-- Account for current market conditions (hot/balanced/cool)
+- Use camelCase for all property names (e.g., "roiPercentage" not "roi_percentage")
+- All numbers should be actual numbers, not strings
+- roiCategory must be exactly "excellent", "good", "fair", or "poor" (lowercase)
+- confidenceLevel must be exactly "high", "medium", or "low" (lowercase)
+- Base estimates on actual market data from search results
 - Be realistic about ROI expectations
-- Consider property type differences (single-family vs. condo, etc.)
-- Factor in renovation quality and execution
-- Provide confidence levels based on data availability
+- Return valid JSON matching the exact schema structure
 
-Return a JSON response with all required fields as specified in the schema.`,
+Return a JSON response with all required fields as specified above.`,
 });
 
 const renovationROIFlow = defineFlow(
@@ -131,7 +138,7 @@ const renovationROIFlow = defineFlow(
                 searchContext,
             });
 
-            if (!output?.estimatedNewValue || !output?.roi) {
+            if (!output?.roiAnalysis?.newPropertyValue || !output?.roiAnalysis?.roiPercentage) {
                 throw new Error("Unable to generate renovation ROI analysis. Please provide more specific renovation details.");
             }
 

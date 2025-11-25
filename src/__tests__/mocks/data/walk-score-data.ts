@@ -7,14 +7,14 @@
 
 export const walkScoreMockData = {
     locations: [
-        // Austin locations
+        // Seattle locations
         {
-            address: '123 Main St, Austin, TX 78701',
-            city: 'Austin',
-            state: 'TX',
-            zipCode: '78701',
-            lat: 30.2672,
-            lon: -97.7431,
+            address: '123 Main St, Seattle, WA 98101',
+            city: 'Seattle',
+            state: 'WA',
+            zipCode: '98101',
+            lat: 47.6062,
+            lon: -122.3321,
             walkScore: 89,
             description: 'Very Walkable',
             transitScore: 65,
@@ -22,10 +22,10 @@ export const walkScoreMockData = {
             updated: '2024-01-15'
         },
         {
-            address: '456 Oak Ave, Austin, TX 78702',
-            city: 'Austin',
-            state: 'TX',
-            zipCode: '78702',
+            address: '456 Oak Ave, Seattle, WA 98102',
+            city: 'Seattle',
+            state: 'WA',
+            zipCode: '98102',
             lat: 30.2692,
             lon: -97.7351,
             walkScore: 72,
@@ -35,11 +35,11 @@ export const walkScoreMockData = {
             updated: '2024-01-15'
         },
 
-        // Dallas locations
+        // Bellevue locations
         {
-            address: '500 Main St, Dallas, TX 75201',
-            city: 'Dallas',
-            state: 'TX',
+            address: '500 Main St, Bellevue, WA 98004',
+            city: 'Bellevue',
+            state: 'WA',
             zipCode: '75201',
             lat: 32.7767,
             lon: -96.7970,
@@ -63,11 +63,11 @@ export const walkScoreMockData = {
             updated: '2024-01-15'
         },
 
-        // Houston locations
+        // Tacoma locations
         {
-            address: '800 Houston St, Houston, TX 77001',
-            city: 'Houston',
-            state: 'TX',
+            address: '800 Pacific Ave, Tacoma, WA 98402',
+            city: 'Tacoma',
+            state: 'WA',
             zipCode: '77001',
             lat: 29.7604,
             lon: -95.3698,
@@ -78,9 +78,9 @@ export const walkScoreMockData = {
             updated: '2024-01-15'
         },
         {
-            address: '900 Energy Blvd, Houston, TX 77001',
-            city: 'Houston',
-            state: 'TX',
+            address: '900 Commerce St, Tacoma, WA 98402',
+            city: 'Tacoma',
+            state: 'WA',
             zipCode: '77001',
             lat: 29.7714,
             lon: -95.3798,
@@ -91,11 +91,11 @@ export const walkScoreMockData = {
             updated: '2024-01-15'
         },
 
-        // Plano locations
+        // Redmond locations
         {
-            address: '1000 Excellence Way, Plano, TX 75023',
-            city: 'Plano',
-            state: 'TX',
+            address: '1000 Excellence Way, Redmond, WA 98052',
+            city: 'Redmond',
+            state: 'WA',
             zipCode: '75023',
             lat: 33.0198,
             lon: -96.6989,
@@ -106,9 +106,9 @@ export const walkScoreMockData = {
             updated: '2024-01-15'
         },
         {
-            address: '1100 Shopping Dr, Plano, TX 75023',
-            city: 'Plano',
-            state: 'TX',
+            address: '1100 Shopping Dr, Redmond, WA 98052',
+            city: 'Redmond',
+            state: 'WA',
             zipCode: '75023',
             lat: 33.0298,
             lon: -96.7089,
@@ -134,11 +134,11 @@ export const walkScoreMockData = {
             updated: '2024-01-15'
         },
 
-        // Arlington locations
+        // Kirkland locations
         {
-            address: '1400 Heights Rd, Arlington, TX 76001',
-            city: 'Arlington',
-            state: 'TX',
+            address: '1400 Heights Rd, Kirkland, WA 98033',
+            city: 'Kirkland',
+            state: 'WA',
             zipCode: '76001',
             lat: 32.7357,
             lon: -97.1081,
@@ -149,9 +149,9 @@ export const walkScoreMockData = {
             updated: '2024-01-15'
         },
         {
-            address: '1500 Maverick Way, Arlington, TX 76001',
-            city: 'Arlington',
-            state: 'TX',
+            address: '1500 Waterfront Way, Kirkland, WA 98033',
+            city: 'Kirkland',
+            state: 'WA',
             zipCode: '76001',
             lat: 32.7367,
             lon: -97.1091,

@@ -30,35 +30,46 @@ Property Description: {{{propertyDescription}}}
 Market Data and Comparable Sales:
 {{{searchContext}}}
 
-Follow these instructions precisely:
+Analyze the property and provide a comprehensive valuation report with the following structure:
 
-1. **Property Analysis**: Analyze the property description to extract key features (bedrooms, bathrooms, square footage, lot size, age, condition, location, special features).
+1. **propertyAnalysis** (optional object):
+   - address: The property address if identifiable
+   - features: Object containing bedrooms, bathrooms, squareFootage, lotSize, yearBuilt, propertyType, specialFeatures array
 
-2. **Market Valuation**: Based on the available market data (if any) and your knowledge of real estate markets:
-   - Provide an estimated value in USD
-   - Give a realistic value range (typically ±10-15% of estimate)
-   - Assess confidence level based on data availability and market conditions
+2. **marketValuation** (required object):
+   - estimatedValue: Estimated property value in USD (number)
+   - valueRange: Object with low and high bounds (numbers)
+   - confidenceLevel: Must be exactly "high", "medium", or "low" (string)
+   - lastSaleInfo: Optional object with date and price
 
-3. **Comparable Properties**: If available from search results, extract 3-5 comparable properties. If no search data is available, provide typical comparable properties for the area and property type.
+3. **comparableProperties** (required array):
+   - Array of 3-5 comparable properties
+   - Each with: address (string), price (number), sqft (optional number), beds (optional number), baths (optional number), saleDate (optional string)
 
-4. **Key Factors**: Identify the most important factors affecting the property's value (location, size, condition, market trends, etc.).
+4. **keyFactors** (required array):
+   - Array of strings describing key factors influencing the valuation
 
-5. **Market Analysis**: Provide insights about the local market conditions, trends, and factors affecting property values in the area.
+5. **marketAnalysis** (required object):
+   - marketCondition: String describing current market (e.g., "Seller's Market", "Buyer's Market", "Balanced")
+   - medianPrice: Optional number for area median price
+   - averageDaysOnMarket: Optional number
+   - marketTrends: Array of strings describing market trends
 
-6. **Recommendations**: Offer actionable advice for property owners or potential buyers.
+6. **recommendations** (required array):
+   - Array of actionable recommendations for property owners or buyers
 
-7. **Disclaimer**: Include an appropriate disclaimer about AI valuations not replacing professional appraisals.
+7. **disclaimer** (required string):
+   - Disclaimer about AI valuations not replacing professional appraisals
 
 Important Guidelines:
-- If market data is available, base estimates on actual search results
-- If no market data is available, use general market knowledge and be conservative
+- Use camelCase for all property names (e.g., "estimatedValue" not "estimated_value")
+- confidenceLevel must be exactly "high", "medium", or "low" (lowercase)
+- All numbers should be actual numbers, not strings
+- If market data is limited, set confidenceLevel to "low" or "medium"
 - Be realistic and conservative in valuations
-- Consider typical market conditions for the area
-- Account for property condition and unique features
-- Provide confidence levels based on available data quality
-- If using general knowledge instead of specific market data, set confidence to "low" or "medium"
+- Return valid JSON matching the exact schema structure
 
-Return a JSON response with all required fields as specified in the schema.`,
+Return a JSON response with all required fields as specified above.`,
 });
 
 const propertyValuationFlow = defineFlow(
@@ -109,7 +120,7 @@ const propertyValuationFlow = defineFlow(
                 searchContext,
             });
 
-            if (!output?.estimatedValue) {
+            if (!output?.marketValuation?.estimatedValue) {
                 throw new Error("Unable to generate property valuation. Please provide more specific property details.");
             }
 

@@ -40,6 +40,7 @@ import {
 
 import {
   invalidateSuggestions,
+  cacheSuggestions,
 } from '@/lib/reimagine-cache';
 
 /**
@@ -1026,5 +1027,66 @@ export async function getDownloadUrlAction(
 
     // Return formatted error response
     return formatErrorResponse(error, 'get-download-url');
+  }
+}
+
+/**
+ * Updates the name of an edit
+ * 
+ * @param userId - User ID
+ * @param editId - Edit ID to update
+ * @param name - New name for the edit
+ * @returns Update response indicating success or failure
+ */
+export async function updateEditNameAction(
+  userId: string,
+  editId: string,
+  name: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Validate inputs
+    if (!userId || !editId) {
+      return {
+        success: false,
+        error: 'User ID and Edit ID are required',
+      };
+    }
+
+    // Validate name length
+    if (name && name.length > 100) {
+      return {
+        success: false,
+        error: 'Name must be 100 characters or less',
+      };
+    }
+
+    const repository = getRepository();
+
+    // Get the edit record with proper PK/SK
+    const pk = `USER#${userId}`;
+    const sk = `EDIT#${editId}`;
+
+    console.log('Updating edit name:', { pk, sk, name });
+
+    const editRecord = await repository.getItem<any>(pk, sk);
+
+    if (!editRecord) {
+      console.error('Edit not found:', { pk, sk });
+      return {
+        success: false,
+        error: 'Edit not found',
+      };
+    }
+
+    // Update the name using the update method
+    await repository.update(pk, sk, {
+      name: name || undefined,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating edit name:', error);
+    return formatErrorResponse(error, 'update-edit-name');
   }
 }

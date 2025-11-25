@@ -127,15 +127,19 @@ export default function PropertyValuationPage() {
         const results = `
 AI Property Valuation Report
 
-Estimated Value: ${formatCurrency(state.data.estimatedValue)}
-Value Range: ${formatCurrency(state.data.valueRange.low)} - ${formatCurrency(state.data.valueRange.high)}
-Confidence Level: ${state.data.confidence.toUpperCase()}
+Estimated Value: ${formatCurrency(state.data.marketValuation.estimatedValue)}
+Value Range: ${formatCurrency(state.data.marketValuation.valueRange.low)} - ${formatCurrency(state.data.marketValuation.valueRange.high)}
+Confidence Level: ${state.data.marketValuation.confidenceLevel.toUpperCase()}
 
 Key Factors:
 ${state.data.keyFactors.map(factor => `• ${factor}`).join('\n')}
 
 Market Analysis:
-${state.data.marketAnalysis}
+Market Condition: ${state.data.marketAnalysis.marketCondition}
+${state.data.marketAnalysis.medianPrice ? `Median Price: ${formatCurrency(state.data.marketAnalysis.medianPrice)}` : ''}
+${state.data.marketAnalysis.averageDaysOnMarket ? `Average Days on Market: ${state.data.marketAnalysis.averageDaysOnMarket}` : ''}
+Trends:
+${state.data.marketAnalysis.marketTrends.map(trend => `• ${trend}`).join('\n')}
 
 Recommendations:
 ${state.data.recommendations.map(rec => `• ${rec}`).join('\n')}
@@ -153,11 +157,11 @@ ${state.data.disclaimer}
         const content = `# AI Property Valuation Report
 
 ## Estimated Value
-**${formatCurrency(state.data.estimatedValue)}**
+**${formatCurrency(state.data.marketValuation.estimatedValue)}**
 
-**Value Range:** ${formatCurrency(state.data.valueRange.low)} - ${formatCurrency(state.data.valueRange.high)}
+**Value Range:** ${formatCurrency(state.data.marketValuation.valueRange.low)} - ${formatCurrency(state.data.marketValuation.valueRange.high)}
 
-**Confidence Level:** ${state.data.confidence.toUpperCase()}
+**Confidence Level:** ${state.data.marketValuation.confidenceLevel.toUpperCase()}
 
 ## Key Factors
 ${state.data.keyFactors.map(factor => `- ${factor}`).join('\n')}
@@ -168,7 +172,12 @@ ${state.data.comparableProperties.map(comp =>
         ).join('\n')}
 
 ## Market Analysis
-${state.data.marketAnalysis}
+**Market Condition:** ${state.data.marketAnalysis.marketCondition}
+${state.data.marketAnalysis.medianPrice ? `**Median Price:** ${formatCurrency(state.data.marketAnalysis.medianPrice)}` : ''}
+${state.data.marketAnalysis.averageDaysOnMarket ? `**Average Days on Market:** ${state.data.marketAnalysis.averageDaysOnMarket}` : ''}
+
+**Market Trends:**
+${state.data.marketAnalysis.marketTrends.map(trend => `- ${trend}`).join('\n')}
 
 ## Recommendations
 ${state.data.recommendations.map(rec => `- ${rec}`).join('\n')}
@@ -256,25 +265,25 @@ ${state.data.disclaimer}
                             {/* Estimated Value */}
                             <div className="text-center p-6 bg-primary/5 rounded-lg border">
                                 <div className="text-4xl font-bold text-primary mb-2">
-                                    {formatCurrency(state.data.estimatedValue)}
+                                    {formatCurrency(state.data.marketValuation.estimatedValue)}
                                 </div>
                                 <div className="text-lg text-muted-foreground mb-3">
                                     Estimated Market Value
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                    Range: {formatCurrency(state.data.valueRange.low)} - {formatCurrency(state.data.valueRange.high)}
+                                    Range: {formatCurrency(state.data.marketValuation.valueRange.low)} - {formatCurrency(state.data.marketValuation.valueRange.high)}
                                 </div>
                             </div>
 
                             {/* Confidence Level */}
                             <div className={cn(
                                 "flex items-center gap-2 p-3 rounded-lg border",
-                                getConfidenceColor(state.data.confidence)
+                                getConfidenceColor(state.data.marketValuation.confidenceLevel)
                             )}>
-                                {getConfidenceIcon(state.data.confidence)}
+                                {getConfidenceIcon(state.data.marketValuation.confidenceLevel)}
                                 <div>
                                     <div className="font-medium capitalize">
-                                        {state.data.confidence} Confidence
+                                        {state.data.marketValuation.confidenceLevel} Confidence
                                     </div>
                                     <div className="text-sm">
                                         Based on available market data and comparable properties
@@ -342,8 +351,34 @@ ${state.data.disclaimer}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="prose prose-sm max-w-none">
-                                <p className="text-sm leading-relaxed">{state.data.marketAnalysis}</p>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                    <span className="text-sm font-medium">Market Condition</span>
+                                    <Badge variant="secondary">{state.data.marketAnalysis.marketCondition}</Badge>
+                                </div>
+                                {state.data.marketAnalysis.medianPrice && (
+                                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                        <span className="text-sm font-medium">Median Price</span>
+                                        <span className="text-sm font-semibold">{formatCurrency(state.data.marketAnalysis.medianPrice)}</span>
+                                    </div>
+                                )}
+                                {state.data.marketAnalysis.averageDaysOnMarket && (
+                                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                                        <span className="text-sm font-medium">Average Days on Market</span>
+                                        <span className="text-sm font-semibold">{state.data.marketAnalysis.averageDaysOnMarket} days</span>
+                                    </div>
+                                )}
+                                <div className="space-y-2">
+                                    <h5 className="text-sm font-medium">Market Trends</h5>
+                                    <div className="space-y-2">
+                                        {state.data.marketAnalysis.marketTrends.map((trend, index) => (
+                                            <div key={index} className="flex items-start gap-2">
+                                                <TrendingUp className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                                                <span className="text-sm">{trend}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

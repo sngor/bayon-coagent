@@ -10,8 +10,11 @@ export const GenerateVideoScriptInputSchema = z.object({
 });
 
 export const GenerateVideoScriptOutputSchema = z.object({
-  script: z.string().describe('The generated video script'),
-  duration: z.string().describe('Estimated duration of the video'),
+  script: z.object({
+    title: z.string().describe('The title of the video'),
+    duration: z.string().describe('Estimated duration of the video'),
+    content: z.string().describe('The generated video script content'),
+  }).describe('The video script details'),
 });
 
 export type GenerateVideoScriptInput = z.infer<typeof GenerateVideoScriptInputSchema>;

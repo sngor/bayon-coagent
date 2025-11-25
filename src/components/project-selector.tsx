@@ -15,6 +15,7 @@ import { getProjectsAction, createProjectAction } from '@/app/actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
+import { useUser } from '@/aws/auth';
 import type { Project } from '@/lib/types';
 
 interface ProjectSelectorProps {
@@ -30,24 +31,45 @@ export function ProjectSelector({
     label = 'Save to Project',
     placeholder = 'Select a project (optional)',
 }: ProjectSelectorProps) {
+    const { user } = useUser();
     const [projects, setProjects] = useState<Project[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [newProjectName, setNewProjectName] = useState('');
 
     useEffect(() => {
-        loadProjects();
-    }, []);
+        if (user?.id) {
+            loadProjects();
+        }
+    }, [user?.id]);
 
     const loadProjects = async () => {
+        if (!user?.id) {
+            console.warn('No user ID available for loading projects');
+            setIsLoading(false);
+            return;
+        }
+
         setIsLoading(true);
         try {
-            const result = await getProjectsAction();
+            console.log('Loading projects for user:', user.id);
+            const result = await getProjectsAction(user.id);
+            console.log('Projects result:', result);
+
             if (result.data) {
                 setProjects(result.data);
+                console.log('Loaded projects:', result.data.length);
+            } else {
+                console.warn('No projects data returned:', result);
+                setProjects([]);
             }
         } catch (error) {
             console.error('Failed to load projects:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Failed to load projects. Please try again.',
+            });
         } finally {
             setIsLoading(false);
         }
@@ -59,10 +81,13 @@ export function ProjectSelector({
             return;
         }
 
+        if (!user?.id) {
+            toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to create projects.' });
+            return;
+        }
+
         try {
-            const formData = new FormData();
-            formData.append('name', newProjectName);
-            const result = await createProjectAction(null, formData);
+            const result = await createProjectAction(user.id, newProjectName);
 
             if (result.errors || !result.data) {
                 toast({ variant: 'destructive', title: 'Error', description: result.message });
@@ -87,13 +112,26 @@ export function ProjectSelector({
                     <Select
                         value={value || 'none'}
                         onValueChange={(val) => onChange(val === 'none' ? null : val)}
-                        disabled={isLoading}
+                        disabled={isLoading || !user?.id}
                     >
                         <SelectTrigger className="flex-1">
-                            <SelectValue placeholder={placeholder} />
+                            <SelectValue
+                                placeholder={
+                                    isLoading
+                                        ? "Loading projects..."
+                                        : !user?.id
+                                            ? "Please log in to see projects"
+                                            : placeholder
+                                }
+                            />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="none">No Project</SelectItem>
+                            {projects.length === 0 && !isLoading && user?.id && (
+                                <SelectItem value="empty" disabled>
+                                    No projects yet - create one below
+                                </SelectItem>
+                            )}
                             {projects.map((project) => (
                                 <SelectItem key={project.id} value={project.id}>
                                     {project.name}
@@ -107,6 +145,7 @@ export function ProjectSelector({
                         size="icon"
                         onClick={() => setIsCreateDialogOpen(true)}
                         title="Create new project"
+                        disabled={!user?.id}
                     >
                         <FolderPlus className="h-4 w-4" />
                     </Button>

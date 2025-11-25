@@ -495,7 +495,7 @@ export default function OpenHouseCheckin({
                                 id="propertyAddress"
                                 value={sessionForm.propertyAddress}
                                 onChange={(e) => setSessionForm(prev => ({ ...prev, propertyAddress: e.target.value }))}
-                                placeholder="123 Main St, City, State"
+                                placeholder="123 Main St, Seattle, WA"
                                 disabled={isLoading}
                             />
                         </div>

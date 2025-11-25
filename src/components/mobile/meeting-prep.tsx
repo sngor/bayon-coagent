@@ -609,7 +609,7 @@ export default function MeetingPrep({ userId, onGenerate }: MeetingPrepProps) {
                 propertyRecommendations: [
                     {
                         id: '1',
-                        address: '123 Main St, Anytown, ST 12345',
+                        address: '123 Main St, Seattle, WA 98101',
                         price: Math.floor((request.budget.min + request.budget.max) / 2),
                         size: 2000,
                         beds: 3,

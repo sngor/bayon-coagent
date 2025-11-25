@@ -81,6 +81,14 @@ export const DEFAULT_FEATURES: FeatureToggle[] = [
         icon: 'MessageSquare',
         enabled: true,
         category: 'feature'
+    },
+    {
+        id: 'client-dashboards',
+        name: 'Client Dashboards',
+        description: 'Create personalized dashboards for clients with market reports and property search',
+        icon: 'Users',
+        enabled: true,
+        category: 'hub'
     }
 ];
 

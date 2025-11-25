@@ -265,6 +265,13 @@ const regularNavItems = [
         featureId: 'library'
     },
     {
+        href: '/client-dashboards',
+        icon: Users,
+        filledIcon: FilledIcons.Users,
+        label: 'Clients',
+        featureId: 'client-dashboards'
+    },
+    {
         href: '/training',
         icon: GraduationCap,
         filledIcon: FilledIcons.GraduationCap,

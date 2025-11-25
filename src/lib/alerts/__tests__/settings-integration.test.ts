@@ -52,14 +52,14 @@ describe('Alert Settings Integration', () => {
             const targetArea: TargetArea = {
                 id: 'area-1',
                 type: 'city',
-                value: 'New York',
-                label: 'NYC Area',
+                value: 'Seattle',
+                label: 'Seattle Area',
             };
 
             // Test that target areas are properly structured
             expect(targetArea.type).toBe('city');
             expect(typeof targetArea.value).toBe('string');
-            expect(targetArea.label).toBe('NYC Area');
+            expect(targetArea.label).toBe('Seattle Area');
         });
 
         it('should handle ZIP code target areas', () => {

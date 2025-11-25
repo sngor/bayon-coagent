@@ -84,8 +84,8 @@ export function VirtualRenovationForm({
                             </p>
                             <span
                                 className={`text-sm ${charCount < 10 || charCount > 1000
-                                        ? "text-destructive"
-                                        : "text-muted-foreground"
+                                    ? "text-destructive"
+                                    : "text-muted-foreground"
                                     }`}
                             >
                                 {charCount}/1000
@@ -155,7 +155,7 @@ export function VirtualRenovationForm({
                         disabled={!isValid || isProcessing}
                         className="flex-1"
                     >
-                        {isProcessing ? "Processing..." : "Visualize Renovation"}
+                        {isProcessing ? "Renovating..." : "Visualize Renovation"}
                     </Button>
                 </CardFooter>
             </form>

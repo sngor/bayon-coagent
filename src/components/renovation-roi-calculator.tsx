@@ -78,39 +78,41 @@ export function RenovationROICalculator() {
     const copyResults = () => {
         if (!state.data) return;
 
+        const recommendations = Array.isArray(state.data.recommendations)
+            ? state.data.recommendations.map(rec => `• ${rec}`).join('\n')
+            : `Timing: ${state.data.recommendations.timing || 'N/A'}\nScope: ${state.data.recommendations.scopeGuidance || 'N/A'}`;
+
         const results = `
 Renovation ROI Analysis
 
 Property Details:
-Current Value: ${formatCurrency(state.data.estimatedNewValue - state.data.valueIncrease)}
-Renovation Cost: ${formatCurrency(state.data.estimatedNewValue - state.data.valueIncrease - state.data.valueIncrease + (state.data.valueIncrease / (state.data.roi / 100)))}
+Current Value: ${formatCurrency(state.data.roiAnalysis.currentValue)}
+Renovation Cost: ${formatCurrency(state.data.roiAnalysis.renovationCost)}
 
 ROI Analysis:
-New Estimated Value: ${formatCurrency(state.data.estimatedNewValue)}
-Value Increase: +${formatCurrency(state.data.valueIncrease)}
-Estimated ROI: ${state.data.roi.toFixed(0)}%
-ROI Category: ${state.data.roiCategory.toUpperCase()}
-Confidence: ${state.data.confidence.toUpperCase()}
+New Estimated Value: ${formatCurrency(state.data.roiAnalysis.newPropertyValue)}
+Value Increase: +${formatCurrency(state.data.roiAnalysis.estimatedValueIncrease)}
+Estimated ROI: ${state.data.roiAnalysis.roiPercentage.toFixed(0)}%
+ROI Category: ${state.data.roiAnalysis.roiCategory.toUpperCase()}
+Confidence: ${state.data.roiAnalysis.confidenceLevel.toUpperCase()}
 
-Market Factors:
-${state.data.marketFactors.locationImpact}
-${state.data.marketFactors.marketConditionImpact}
-Demand Level: ${state.data.marketFactors.demandLevel}
+Market Analysis:
+Location Impact: ${state.data.marketAnalysis.locationImpact}
+Market Condition: ${state.data.marketAnalysis.marketCondition}
+Demand Level: ${state.data.marketAnalysis.demandLevel}
 
-AI Analysis:
-${state.data.analysis}
-
-Key Factors:
-${state.data.keyFactors.map(factor => `• ${factor}`).join('\n')}
+Key Success Factors:
+${state.data.keySuccessFactors.map(factor => `• ${factor}`).join('\n')}
 
 Recommendations:
-${state.data.recommendations.map(rec => `• ${rec}`).join('\n')}
+${recommendations}
 
 Timeline:
 Duration: ${state.data.timeline.estimatedDuration}
-Best Timing: ${state.data.timeline.bestTiming}
+Best Timing: ${state.data.timeline.optimalStartSeason || 'N/A'}
 
-${state.data.disclaimer}
+Risk Factors:
+${state.data.riskFactors.map(risk => `• ${risk}`).join('\n')}
         `.trim();
 
         navigator.clipboard.writeText(results);
@@ -370,7 +372,7 @@ ${state.data.disclaimer}
                                 <div className="text-center p-6 bg-primary/5 rounded-lg border">
                                     <div className="text-sm text-muted-foreground mb-1">New Estimated Value</div>
                                     <div className="text-3xl font-bold text-primary">
-                                        {formatCurrency(state.data.estimatedNewValue)}
+                                        {formatCurrency(state.data.roiAnalysis.newPropertyValue)}
                                     </div>
                                 </div>
 
@@ -379,13 +381,13 @@ ${state.data.disclaimer}
                                     <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
                                         <div className="text-sm text-green-600 mb-1">Value Increase</div>
                                         <div className="text-xl font-bold text-green-700">
-                                            +{formatCurrency(state.data.valueIncrease)}
+                                            +{formatCurrency(state.data.roiAnalysis.estimatedValueIncrease)}
                                         </div>
                                     </div>
                                     <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
                                         <div className="text-sm text-blue-600 mb-1">Estimated ROI</div>
                                         <div className="text-xl font-bold text-blue-700">
-                                            {state.data.roi.toFixed(0)}%
+                                            {state.data.roiAnalysis.roiPercentage.toFixed(0)}%
                                         </div>
                                     </div>
                                 </div>
@@ -394,23 +396,23 @@ ${state.data.disclaimer}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className={cn(
                                         "flex items-center gap-2 p-3 rounded-lg border",
-                                        getROIColor(state.data.roiCategory)
+                                        getROIColor(state.data.roiAnalysis.roiCategory)
                                     )}>
-                                        {getROIIcon(state.data.roiCategory)}
+                                        {getROIIcon(state.data.roiAnalysis.roiCategory)}
                                         <div>
                                             <div className="font-medium capitalize">
-                                                {state.data.roiCategory} ROI
+                                                {state.data.roiAnalysis.roiCategory} ROI
                                             </div>
                                         </div>
                                     </div>
                                     <div className={cn(
                                         "flex items-center gap-2 p-3 rounded-lg border",
-                                        getConfidenceColor(state.data.confidence)
+                                        getConfidenceColor(state.data.roiAnalysis.confidenceLevel)
                                     )}>
                                         <Target className="h-4 w-4" />
                                         <div>
                                             <div className="font-medium capitalize">
-                                                {state.data.confidence} Confidence
+                                                {state.data.roiAnalysis.confidenceLevel} Confidence
                                             </div>
                                         </div>
                                     </div>
@@ -418,44 +420,33 @@ ${state.data.disclaimer}
 
                                 <Separator />
 
-                                {/* Market Factors */}
+                                {/* Market Analysis */}
                                 <div className="space-y-4">
-                                    <h4 className="font-headline font-semibold">Market Factors</h4>
+                                    <h4 className="font-headline font-semibold">Market Analysis</h4>
                                     <div className="space-y-3">
                                         <div className="text-sm">
                                             <div className="font-medium text-muted-foreground mb-1">Location Impact</div>
-                                            <div>{state.data.marketFactors.locationImpact}</div>
+                                            <div>{state.data.marketAnalysis.locationImpact}</div>
                                         </div>
                                         <div className="text-sm">
-                                            <div className="font-medium text-muted-foreground mb-1">Market Condition Impact</div>
-                                            <div>{state.data.marketFactors.marketConditionImpact}</div>
+                                            <div className="font-medium text-muted-foreground mb-1">Market Condition</div>
+                                            <div>{state.data.marketAnalysis.marketCondition}</div>
                                         </div>
                                         <div className="text-sm">
                                             <div className="font-medium text-muted-foreground mb-1">Demand Level</div>
-                                            <div>{state.data.marketFactors.demandLevel}</div>
+                                            <div>{state.data.marketAnalysis.demandLevel}</div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <Separator />
 
-                                {/* AI Analysis */}
-                                <div className="space-y-4">
-                                    <h4 className="font-headline font-semibold flex items-center gap-2">
-                                        <Lightbulb className="h-4 w-4" />
-                                        AI Analysis
-                                    </h4>
-                                    <div className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
-                                        {state.data.analysis}
-                                    </div>
-                                </div>
-
-                                {/* Key Factors */}
-                                {state.data.keyFactors.length > 0 && (
+                                {/* Key Success Factors */}
+                                {state.data.keySuccessFactors.length > 0 && (
                                     <div className="space-y-4">
-                                        <h4 className="font-headline font-semibold">Key Factors</h4>
+                                        <h4 className="font-headline font-semibold">Key Success Factors</h4>
                                         <div className="space-y-2">
-                                            {state.data.keyFactors.map((factor, index) => (
+                                            {state.data.keySuccessFactors.map((factor, index) => (
                                                 <div key={index} className="flex items-start gap-2 text-sm">
                                                     <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
                                                     <span>{factor}</span>
@@ -466,9 +457,9 @@ ${state.data.disclaimer}
                                 )}
 
                                 {/* Recommendations */}
-                                {state.data.recommendations.length > 0 && (
-                                    <div className="space-y-4">
-                                        <h4 className="font-headline font-semibold">Recommendations</h4>
+                                <div className="space-y-4">
+                                    <h4 className="font-headline font-semibold">Recommendations</h4>
+                                    {Array.isArray(state.data.recommendations) ? (
                                         <div className="space-y-2">
                                             {state.data.recommendations.map((rec, index) => (
                                                 <Alert key={index}>
@@ -477,8 +468,29 @@ ${state.data.disclaimer}
                                                 </Alert>
                                             ))}
                                         </div>
-                                    </div>
-                                )}
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {state.data.recommendations.timing && (
+                                                <div className="text-sm">
+                                                    <div className="font-medium text-muted-foreground mb-1">Timing</div>
+                                                    <div>{state.data.recommendations.timing}</div>
+                                                </div>
+                                            )}
+                                            {state.data.recommendations.scopeGuidance && (
+                                                <div className="text-sm">
+                                                    <div className="font-medium text-muted-foreground mb-1">Scope Guidance</div>
+                                                    <div>{state.data.recommendations.scopeGuidance}</div>
+                                                </div>
+                                            )}
+                                            {state.data.recommendations.materialSelections && (
+                                                <div className="text-sm">
+                                                    <div className="font-medium text-muted-foreground mb-1">Material Selections</div>
+                                                    <div>{state.data.recommendations.materialSelections}</div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
 
                                 {/* Timeline */}
                                 <div className="space-y-4">
@@ -491,10 +503,12 @@ ${state.data.disclaimer}
                                             <div className="text-sm text-muted-foreground">Estimated Duration</div>
                                             <div className="font-medium">{state.data.timeline.estimatedDuration}</div>
                                         </div>
-                                        <div className="space-y-1">
-                                            <div className="text-sm text-muted-foreground">Best Timing</div>
-                                            <div className="font-medium">{state.data.timeline.bestTiming}</div>
-                                        </div>
+                                        {state.data.timeline.optimalStartSeason && (
+                                            <div className="space-y-1">
+                                                <div className="text-sm text-muted-foreground">Best Timing</div>
+                                                <div className="font-medium">{state.data.timeline.optimalStartSeason}</div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -524,11 +538,11 @@ ${state.data.disclaimer}
                                             {state.data.comparableRenovations.map((comp, index) => (
                                                 <div key={index} className="p-3 border rounded-lg">
                                                     <div className="flex justify-between items-start mb-2">
-                                                        <div className="font-medium">{comp.renovationType}</div>
+                                                        <div className="font-medium">{comp.type}</div>
                                                         <Badge variant="outline">{comp.roi.toFixed(0)}% ROI</Badge>
                                                     </div>
                                                     <div className="text-sm text-muted-foreground">
-                                                        Cost: {formatCurrency(comp.cost)} • Value Added: {formatCurrency(comp.valueAdded)}
+                                                        Cost: {formatCurrency(comp.cost)}
                                                         {comp.location && ` • ${comp.location}`}
                                                     </div>
                                                 </div>
@@ -536,11 +550,6 @@ ${state.data.disclaimer}
                                         </div>
                                     </div>
                                 )}
-
-                                {/* Disclaimer */}
-                                <div className="text-xs text-muted-foreground p-3 bg-muted/50 rounded border">
-                                    {state.data.disclaimer}
-                                </div>
                             </>
                         ) : (
                             <div className="text-center py-8 text-muted-foreground">

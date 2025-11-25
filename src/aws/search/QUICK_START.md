@@ -33,7 +33,7 @@ SERPER_API_KEY=xxxxxxxxxxxxxxxxxxxxx
 ```typescript
 import { search } from "@/aws/search";
 
-const results = await search("real estate agents in San Francisco");
+const results = await search("real estate agents in Seattle");
 
 console.log(results.results);
 // [
@@ -115,7 +115,7 @@ import { search } from "@/aws/search";
 
 async function testSearch() {
   try {
-    const results = await search("real estate agents San Francisco", {
+    const results = await search("real estate agents Seattle", {
       maxResults: 3,
     });
 
@@ -150,8 +150,8 @@ import { runNapAudit } from "@/aws/bedrock/flows";
 
 const audit = await runNapAudit({
   name: "John Doe",
-  address: "123 Main St, San Francisco, CA 94102",
-  phone: "(415) 555-1234",
+  address: "123 Main St, Seattle, WA 98101",
+  phone: "(206) 555-1234",
   agencyName: "Doe Realty",
   website: "https://doerealty.com",
 });
@@ -167,7 +167,7 @@ import { findCompetitors } from "@/aws/bedrock/flows";
 const competitors = await findCompetitors({
   name: "John Doe",
   agencyName: "Doe Realty",
-  address: "San Francisco, CA",
+  address: "Seattle, WA",
 });
 
 console.log(competitors.competitors);
@@ -180,7 +180,7 @@ import { getKeywordRankings } from "@/aws/bedrock/flows";
 
 const rankings = await getKeywordRankings({
   keyword: "luxury real estate",
-  location: "San Francisco, CA",
+  location: "Seattle, WA",
 });
 
 console.log(rankings.rankings);
