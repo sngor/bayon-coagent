@@ -8,8 +8,8 @@ interface AdminContextType {
     isAdmin: boolean;
     isSuperAdmin: boolean;
     role: string;
-    isAdminMode: boolean;
-    toggleAdminMode: () => void;
+    adminMode: 'user' | 'admin' | 'super_admin';
+    toggleAdminMode: (mode: 'user' | 'admin' | 'super_admin') => void;
     isLoading: boolean;
 }
 
@@ -20,7 +20,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     const [isAdmin, setIsAdmin] = useState(false);
     const [isSuperAdmin, setIsSuperAdmin] = useState(false);
     const [role, setRole] = useState<string>('user');
-    const [isAdminMode, setIsAdminMode] = useState(false);
+    const [adminMode, setAdminMode] = useState<'user' | 'admin' | 'super_admin'>('user');
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -50,10 +50,10 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         checkAdminStatus();
     }, [user?.id]);
 
-    const toggleAdminMode = () => {
-        if (isAdmin) {
-            setIsAdminMode(!isAdminMode);
-        }
+    const toggleAdminMode = (mode: 'user' | 'admin' | 'super_admin') => {
+        if (mode === 'super_admin' && !isSuperAdmin) return;
+        if (mode === 'admin' && !isAdmin) return;
+        setAdminMode(mode);
     };
 
     return (
@@ -61,7 +61,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
             isAdmin,
             isSuperAdmin,
             role,
-            isAdminMode,
+            adminMode,
             toggleAdminMode,
             isLoading,
         }}>

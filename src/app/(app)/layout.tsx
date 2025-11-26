@@ -151,14 +151,14 @@ function NavigationItems() {
 }
 
 function AdminModeBadge() {
-  const { isAdminMode, isSuperAdmin } = useAdmin();
+  const { adminMode } = useAdmin();
 
-  if (!isAdminMode) return null;
+  if (adminMode === 'user') return null;
 
   return (
     <Badge variant="outline" className="text-orange-600 border-orange-600 bg-orange-50 dark:bg-orange-950/50 dark:text-orange-400 dark:border-orange-400">
       <Shield className="h-3 w-3 mr-1" />
-      {isSuperAdmin ? 'Super Admin Mode' : 'Admin Mode'}
+      {adminMode === 'super_admin' ? 'Super Admin Mode' : 'Admin Mode'}
     </Badge>
   );
 }
@@ -170,20 +170,14 @@ function UserDropdownContent({ profile, user, userName, getInitials, handleSignO
   getInitials: (name: string) => string;
   handleSignOut: () => void;
 }) {
-  const { isAdmin, isSuperAdmin, isAdminMode, toggleAdminMode } = useAdmin();
+  const { isAdmin, isSuperAdmin, adminMode, toggleAdminMode } = useAdmin();
   const router = useRouter();
 
-  const handleAdminModeToggle = () => {
-    toggleAdminMode();
-
-    // Navigate to appropriate dashboard based on the new mode
-    if (isAdminMode) {
-      // Currently in admin mode, switching to regular mode
-      router.push('/dashboard');
-    } else {
-      // Currently in regular mode, switching to admin mode
-      router.push('/super-admin');
-    }
+  const handleModeSwitch = (mode: 'user' | 'admin' | 'super_admin') => {
+    toggleAdminMode(mode);
+    if (mode === 'user') router.push('/dashboard');
+    else if (mode === 'admin') router.push('/admin');
+    else if (mode === 'super_admin') router.push('/super-admin');
   };
 
   return (
@@ -215,22 +209,35 @@ function UserDropdownContent({ profile, user, userName, getInitials, handleSignO
           <span>Support</span>
         </Link>
       </DropdownMenuItem>
-      {isAdmin && (
+
+      {/* Admin Mode Toggles */}
+      {(isAdmin || isSuperAdmin) && (
         <>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleAdminModeToggle} className="cursor-pointer">
-            {isAdminMode ? (
-              <>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                <span>Exit Super Admin Mode</span>
-              </>
-            ) : (
-              <>
-                <Shield className="mr-2 h-4 w-4" />
-                <span>Enter Super Admin Mode</span>
-              </>
-            )}
-          </DropdownMenuItem>
+
+          {/* Exit Admin Mode */}
+          {adminMode !== 'user' && (
+            <DropdownMenuItem onClick={() => handleModeSwitch('user')} className="cursor-pointer">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              <span>Exit Admin Mode</span>
+            </DropdownMenuItem>
+          )}
+
+          {/* Enter Admin Mode */}
+          {adminMode !== 'admin' && (
+            <DropdownMenuItem onClick={() => handleModeSwitch('admin')} className="cursor-pointer">
+              <Shield className="mr-2 h-4 w-4" />
+              <span>Enter Admin Mode</span>
+            </DropdownMenuItem>
+          )}
+
+          {/* Enter Super Admin Mode */}
+          {isSuperAdmin && adminMode !== 'super_admin' && (
+            <DropdownMenuItem onClick={() => handleModeSwitch('super_admin')} className="cursor-pointer">
+              <Shield className="mr-2 h-4 w-4 text-orange-600" />
+              <span>Enter Super Admin Mode</span>
+            </DropdownMenuItem>
+          )}
         </>
       )}
       <DropdownMenuSeparator />

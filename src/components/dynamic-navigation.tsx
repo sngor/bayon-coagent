@@ -273,8 +273,8 @@ const regularNavItems = [
     },
 ];
 
-// Admin navigation
-const adminNavItems = [
+// Super Admin navigation
+const superAdminNavItems = [
     {
         href: '/super-admin',
         icon: Shield,
@@ -319,6 +319,31 @@ const adminNavItems = [
     },
 ];
 
+// Normal Admin navigation
+const adminNavItems = [
+    {
+        href: '/admin',
+        icon: Shield,
+        filledIcon: FilledIcons.Shield,
+        label: 'Admin Dashboard',
+        customIcon: false
+    },
+    {
+        href: '/admin/team',
+        icon: Users,
+        filledIcon: FilledIcons.Users,
+        label: 'Team Management',
+        customIcon: false
+    },
+    {
+        href: '/admin/settings',
+        icon: Settings,
+        filledIcon: FilledIcons.Settings,
+        label: 'Settings',
+        customIcon: false
+    },
+];
+
 export function DynamicNavigation() {
     const pathname = usePathname();
     const { features } = useFeatureToggles();
@@ -328,18 +353,24 @@ export function DynamicNavigation() {
         features.filter(f => f.enabled).map(f => f.id)
     );
 
-    // Determine if we should show admin navigation based on URL
-    const showAdminSidebar = pathname?.startsWith('/super-admin');
+    // Determine sidebar content based on URL path
+    const isSuperAdminPath = pathname?.startsWith('/super-admin');
+    const isAdminPath = pathname?.startsWith('/admin');
 
-    // Filter navigation items based on feature toggles
-    const navItems = showAdminSidebar
-        ? adminNavItems
-        : regularNavItems.filter(item => {
+    // Select navigation items based on path
+    let navItems;
+    if (isSuperAdminPath) {
+        navItems = superAdminNavItems;
+    } else if (isAdminPath) {
+        navItems = adminNavItems;
+    } else {
+        navItems = regularNavItems.filter(item => {
             // Dashboard has no featureId, always show it
             if (!item.featureId) return true;
             // Check if the feature is enabled
             return enabledFeatures.has(item.featureId);
         });
+    }
 
     return (
         <>
@@ -349,7 +380,7 @@ export function DynamicNavigation() {
             <SidebarMenu>
                 {navItems.map((item) => {
                     // More precise active state logic
-                    const isActive = (item.href === '/super-admin' || item.href === '/dashboard')
+                    const isActive = (item.href === '/super-admin' || item.href === '/dashboard' || item.href === '/admin')
                         ? pathname === item.href // Exact match for dashboards
                         : pathname.startsWith(item.href); // Prefix match for other routes
 

@@ -49,6 +49,21 @@ const pageHeaders = {
         title: 'Admin Setup',
         description: 'Create and manage admin accounts',
         icon: Shield
+    },
+    '/admin': {
+        title: 'Admin Dashboard',
+        description: 'Manage your team and organization',
+        icon: Shield
+    },
+    '/admin/team': {
+        title: 'Team Management',
+        description: 'Manage team members and permissions',
+        icon: Users
+    },
+    '/admin/settings': {
+        title: 'Organization Settings',
+        description: 'Configure organization preferences',
+        icon: Settings
     }
 };
 
