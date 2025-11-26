@@ -24,7 +24,7 @@ interface AuthContextValue {
     refreshSession: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 interface AuthProviderProps {
     children: React.ReactNode;

@@ -341,52 +341,7 @@ export default function DashboardPage() {
                 </div>
             )}
 
-            {/* Profile Complete Celebration Banner */}
-            {agentProfile && completionPercentage === 100 && (
-                <div className="animate-fade-in-up animate-delay-100">
-                    <div className="relative overflow-hidden bg-gradient-to-br from-green-50 via-emerald-50 to-green-100 dark:from-green-950 dark:via-emerald-950 dark:to-green-900 border-green-200 dark:border-green-800 shadow-lg rounded-lg border bg-card text-card-foreground">
-                        <div className="absolute inset-0 bg-gradient-to-r from-green-400/10 to-emerald-400/10" />
-                        <div className="relative flex items-center gap-4 p-6">
-                            <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg">
-                                <CheckCircle2 className="w-7 h-7 text-white" />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="font-bold text-xl text-green-700 dark:text-green-300 mb-2">
-                                    <StaggeredText
-                                        text="🎉 Profile Complete!"
-                                        staggerBy="word"
-                                        delay={200}
-                                        staggerDelay={100}
-                                        animation="bounce"
-                                    />
-                                </h3>
-                                <p className="text-green-600 dark:text-green-400 leading-relaxed">
-                                    <Typewriter
-                                        text="Your profile is now complete and all AI features are unlocked. You're ready to maximize your marketing potential!"
-                                        speed={20}
-                                        delay={1200}
-                                        cursor={false}
-                                    />
-                                </p>
-                            </div>
-                            <div className="flex flex-col sm:flex-row gap-2">
-                                <Button variant="outline" size="sm" asChild className="border-green-300 text-green-700 hover:bg-green-100 dark:border-green-700 dark:text-green-300 dark:hover:bg-green-900 shadow-sm">
-                                    <Link href="/brand/strategy">
-                                        <Sparkles className="w-4 h-4 mr-2" />
-                                        Generate Strategy
-                                    </Link>
-                                </Button>
-                                <Button variant="ghost" size="sm" asChild className="text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900">
-                                    <Link href="/studio/write">
-                                        <PenTool className="w-4 h-4 mr-2" />
-                                        Create Content
-                                    </Link>
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+
 
             {/* Show Profile Completion Button (when banner is dismissed) */}
             {agentProfile && completionPercentage >= 50 && completionPercentage < 100 && isBannerDismissed && (
@@ -436,423 +391,312 @@ export default function DashboardPage() {
                 <div className="tablet:col-span-2 lg:col-span-2 space-y-6">
 
                     {/* Performance Overview */}
-                    <Card className="animate-fade-in-up animate-delay-200 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-gradient-to-br from-primary/10 to-purple-600/10">
-                                    <BarChart3 className="text-primary h-5 w-5" />
-                                </div>
-                                <div>
-                                    <div className="font-bold text-lg">Performance Overview</div>
-                                    <div className="text-sm text-muted-foreground font-normal">Track your progress and key metrics</div>
-                                </div>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {isLoadingProfile ? (
-                                <StandardSkeleton variant="metric" count={2} />
-                            ) : (
-                                <div className="space-y-8">
-                                    {/* Profile Completion */}
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-semibold text-base">Profile Completion</span>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-2xl font-bold text-primary">
-                                                    {completionPercentage}%
-                                                </span>
-                                                {completionPercentage === 100 && (
-                                                    <CheckCircle2 className="w-5 h-5 text-green-500" />
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className="relative">
-                                            <Progress value={completionPercentage} className="h-3 bg-muted/50" />
-                                            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/20 to-purple-600/20 opacity-50" />
-                                        </div>
-                                        <p className="text-sm text-muted-foreground flex items-center gap-2">
-                                            {completionPercentage === 100 ? (
-                                                <>
-                                                    <Sparkles className="w-4 h-4 text-green-500" />
-                                                    Your profile is complete and all features are unlocked!
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Target className="w-4 h-4 text-primary" />
-                                                    {9 - Math.ceil((completionPercentage / 100) * 9)} more fields to complete
-                                                </>
+                    <ContentSection title="Performance Overview" description="Track your progress and key metrics" icon={BarChart3} variant="card">
+                        {isLoadingProfile ? (
+                            <StandardSkeleton variant="metric" count={2} />
+                        ) : (
+                            <div className="space-y-8">
+                                {/* Profile Completion */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-semibold text-base">Profile Completion</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-2xl font-bold text-primary">
+                                                {completionPercentage}%
+                                            </span>
+                                            {completionPercentage === 100 && (
+                                                <CheckCircle2 className="w-5 h-5 text-green-500" />
                                             )}
-                                        </p>
+                                        </div>
                                     </div>
-
-                                    {/* Key Metrics Grid */}
-                                    <DataGrid columns={3} gap="spacious">
-                                        <div className="group relative overflow-hidden text-center p-6 rounded-xl bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 dark:from-blue-950 dark:via-blue-900 dark:to-blue-950 border border-blue-200 dark:border-blue-800 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-blue-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                            <div className="relative">
-                                                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">
-                                                    {planStepsCount}
-                                                </div>
-                                                <div className="text-sm text-blue-600/80 dark:text-blue-400/80 font-medium">
-                                                    Strategy Tasks
-                                                </div>
-                                                <div className="mt-2 w-8 h-1 bg-blue-500 rounded-full mx-auto" />
-                                            </div>
-                                        </div>
-                                        <div className="group relative overflow-hidden text-center p-6 rounded-xl bg-gradient-to-br from-green-50 via-green-100 to-green-50 dark:from-green-950 dark:via-green-900 dark:to-green-950 border border-green-200 dark:border-green-800 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                                            <div className="absolute inset-0 bg-gradient-to-br from-green-400/10 to-green-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                            <div className="relative">
-                                                <div className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
-                                                    {competitorsData.length}
-                                                </div>
-                                                <div className="text-sm text-green-600/80 dark:text-green-400/80 font-medium">
-                                                    Competitors Tracked
-                                                </div>
-                                                <div className="mt-2 w-8 h-1 bg-green-500 rounded-full mx-auto" />
-                                            </div>
-                                        </div>
-                                        <div className="group relative overflow-hidden text-center p-6 rounded-xl bg-gradient-to-br from-purple-50 via-purple-100 to-purple-50 dark:from-purple-950 dark:via-purple-900 dark:to-purple-950 border border-purple-200 dark:border-purple-800 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                                            <div className="absolute inset-0 bg-gradient-to-br from-purple-400/10 to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                            <div className="relative">
-                                                <div className="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">
-                                                    {brandAuditData ? '✓' : '○'}
-                                                </div>
-                                                <div className="text-sm text-purple-600/80 dark:text-purple-400/80 font-medium">
-                                                    Brand Audit
-                                                </div>
-                                                <div className="mt-2 w-8 h-1 bg-purple-500 rounded-full mx-auto" />
-                                            </div>
-                                        </div>
-                                    </DataGrid>
+                                    <div className="relative">
+                                        <Progress value={completionPercentage} className="h-3" />
+                                    </div>
+                                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                        {completionPercentage === 100 ? (
+                                            <>
+                                                <Sparkles className="w-4 h-4 text-green-500" />
+                                                Your profile is complete and all features are unlocked!
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Target className="w-4 h-4 text-primary" />
+                                                {9 - Math.ceil((completionPercentage / 100) * 9)} more fields to complete
+                                            </>
+                                        )}
+                                    </p>
                                 </div>
-                            )}
-                        </CardContent>
-                    </Card>
 
-                    <Card className="animate-fade-in-up animate-delay-300 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <CardTitle className="flex items-center gap-3">
-                                    <div className="p-2 rounded-lg bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900 dark:to-red-900">
-                                        <Target className="text-orange-600 dark:text-orange-400 h-5 w-5" />
+                                {/* Key Metrics Grid */}
+                                <DataGrid columns={3} gap="spacious">
+                                    <StatCard
+                                        title="Strategy Tasks"
+                                        value={planStepsCount}
+                                        icon={BarChart3}
+                                        description="Active tasks in your plan"
+                                        variant="compact"
+                                    />
+                                    <StatCard
+                                        title="Competitors Tracked"
+                                        value={competitorsData.length}
+                                        icon={Users}
+                                        description="Competitors being monitored"
+                                        variant="compact"
+                                    />
+                                    <StatCard
+                                        title="Brand Audit"
+                                        value={brandAuditData ? 'Complete' : 'Pending'}
+                                        icon={Search}
+                                        description="Status of your brand audit"
+                                        variant="compact"
+                                    />
+                                </DataGrid>
+                            </div>
+                        )}
+                    </ContentSection>
+
+                    <ContentSection
+                        title="Priority Actions"
+                        description="High-impact activities to accelerate growth"
+                        icon={Target}
+                        actions={latestPlanData && latestPlanData.length > 0 ? (
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <Button variant="outline" size="sm" asChild className="shadow-sm">
+                                    <Link href="/brand/strategy">
+                                        <BarChart3 className="w-4 h-4 mr-2" />
+                                        View Full Plan
+                                    </Link>
+                                </Button>
+                                <Badge variant="secondary" className="text-xs px-3 py-1">
+                                    <Activity className="w-3 h-3 mr-1" />
+                                    {latestPlanData[0].steps.length} Active Tasks
+                                </Badge>
+                            </div>
+                        ) : undefined}
+                        variant="card"
+                    >
+                        {isPlanLoading || areCompetitorsLoading || isAuditLoading ? (
+                            <StandardSkeleton variant="list" count={2} />
+                        ) : latestPlanData && latestPlanData.length > 0 ? (
+                            <div className="space-y-4">
+                                {latestPlanData[0].steps.slice(0, 3).map((task: MarketingTask, index: number) => (
+                                    <div
+                                        key={index}
+                                        className="group relative overflow-hidden rounded-xl border bg-card hover:bg-accent/5 transition-all duration-300 hover:shadow-md"
+                                    >
+                                        <div className="relative flex items-start gap-4 p-6">
+                                            <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 text-primary font-bold text-sm">
+                                                {index + 1}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-start justify-between gap-3 mb-3">
+                                                    <h4 className="font-headline font-semibold text-base leading-tight group-hover:text-primary transition-colors">
+                                                        {task.task}
+                                                    </h4>
+                                                    <Badge
+                                                        variant={index === 0 ? "default" : "outline"}
+                                                        className="text-xs shrink-0"
+                                                    >
+                                                        <Clock className="w-3 h-3 mr-1" />
+                                                        {index === 0 ? 'This Week' : index === 1 ? 'Next Week' : 'Later'}
+                                                    </Badge>
+                                                </div>
+                                                <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed mb-4">
+                                                    {task.rationale}
+                                                </p>
+                                                <div className="flex items-center gap-3">
+                                                    <Button size="sm" variant="ghost" className="h-8 px-4 text-xs hover:bg-primary/10 hover:text-primary">
+                                                        <CheckCircle2 className="w-3 h-3 mr-2" />
+                                                        Mark Complete
+                                                    </Button>
+                                                    <Button size="sm" variant="ghost" className="h-8 px-4 text-xs hover:bg-secondary">
+                                                        <Calendar className="w-3 h-3 mr-2" />
+                                                        Schedule
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div className="font-bold text-lg">Priority Actions</div>
-                                        <div className="text-sm text-muted-foreground font-normal">High-impact activities to accelerate growth</div>
-                                    </div>
-                                </CardTitle>
-                                {latestPlanData && latestPlanData.length > 0 && (
-                                    <div className="flex flex-col sm:flex-row gap-2">
+                                ))}
+                                {latestPlanData[0].steps.length > 3 && (
+                                    <div className="text-center pt-4">
                                         <Button variant="outline" size="sm" asChild className="shadow-sm">
                                             <Link href="/brand/strategy">
-                                                <BarChart3 className="w-4 h-4 mr-2" />
-                                                View Full Plan
+                                                View {latestPlanData[0].steps.length - 3} more tasks
+                                                <ArrowRight className="w-4 h-4 ml-2" />
                                             </Link>
                                         </Button>
-                                        <Badge variant="secondary" className="text-xs px-3 py-1">
-                                            <Activity className="w-3 h-3 mr-1" />
-                                            {latestPlanData[0].steps.length} Active Tasks
-                                        </Badge>
                                     </div>
                                 )}
                             </div>
-                        </CardHeader>
-                        <CardContent>
-                            {isPlanLoading || areCompetitorsLoading || isAuditLoading ? (
-                                <StandardSkeleton variant="list" count={2} />
-                            ) : latestPlanData && latestPlanData.length > 0 ? (
-                                <div className="space-y-4">
-                                    {latestPlanData[0].steps.slice(0, 3).map((task: MarketingTask, index: number) => (
-                                        <div
-                                            key={index}
-                                            className="group relative overflow-hidden rounded-xl border-2 border-transparent bg-gradient-to-r from-primary/5 via-primary/3 to-transparent hover:border-primary/20 hover:from-primary/10 hover:via-primary/5 hover:to-primary/5 transition-all duration-300 hover:shadow-lg hover:scale-[1.02]"
-                                        >
-                                            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                            <div className="relative flex items-start gap-4 p-6">
-                                                <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 text-white font-bold text-sm shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                                    {index + 1}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-start justify-between gap-3 mb-3">
-                                                        <h4 className="font-headline font-semibold text-base leading-tight group-hover:text-primary transition-colors">
-                                                            {task.task}
-                                                        </h4>
-                                                        <Badge
-                                                            variant={index === 0 ? "default" : "outline"}
-                                                            className={`text-xs shrink-0 ${index === 0 ? 'bg-orange-100 text-orange-800 border-orange-200' : ''}`}
-                                                        >
-                                                            <Clock className="w-3 h-3 mr-1" />
-                                                            {index === 0 ? 'This Week' : index === 1 ? 'Next Week' : 'Later'}
-                                                        </Badge>
-                                                    </div>
-                                                    <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed mb-4">
-                                                        {task.rationale}
-                                                    </p>
-                                                    <div className="flex items-center gap-3">
-                                                        <Button size="sm" variant="ghost" className="h-8 px-4 text-xs hover:bg-primary/10 hover:text-primary">
-                                                            <CheckCircle2 className="w-3 h-3 mr-2" />
-                                                            Mark Complete
-                                                        </Button>
-                                                        <Button size="sm" variant="ghost" className="h-8 px-4 text-xs hover:bg-secondary">
-                                                            <Calendar className="w-3 h-3 mr-2" />
-                                                            Schedule
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {latestPlanData[0].steps.length > 3 && (
-                                        <div className="text-center pt-4">
-                                            <Button variant="outline" size="sm" asChild className="shadow-sm">
-                                                <Link href="/brand/strategy">
-                                                    View {latestPlanData[0].steps.length - 3} more tasks
-                                                    <ArrowRight className="w-4 h-4 ml-2" />
-                                                </Link>
-                                            </Button>
-                                        </div>
-                                    )}
+                        ) : (
+                            <StandardEmptyState
+                                icon={<AISparkleIcon className="h-8 w-8 text-primary" />}
+                                title="No Strategy Yet"
+                                description="Get a personalized game plan built around your strengths and opportunities."
+                                action={{
+                                    label: "Create Your Strategy",
+                                    onClick: () => window.location.href = '/brand/strategy',
+                                    variant: "ai"
+                                }}
+                                variant="compact"
+                            />
+                        )}
+                    </ContentSection>
+
+                    <ContentSection title="Reputation Snapshot" description="Client testimonials and reviews" icon={Star} variant="card">
+                        {isLoadingStats ? (
+                            <StandardSkeleton variant="metric" count={3} className="mb-4 md:mb-6" />
+                        ) : (
+                            <div className="space-y-8">
+                                <DataGrid columns={3} gap="spacious">
+                                    <StatCard
+                                        title="Average Rating"
+                                        value={parsedAverageRating.toFixed(1)}
+                                        icon={Star}
+                                        description="Based on all reviews"
+                                        variant="compact"
+                                    />
+                                    <StatCard
+                                        title="Total Reviews"
+                                        value={totalReviews}
+                                        icon={Award}
+                                        description={totalReviews > 0 ? "Growing steadily" : "No reviews yet"}
+                                        variant="compact"
+                                    />
+                                    <StatCard
+                                        title="This Month"
+                                        value={recentReviewsCount}
+                                        icon={TrendingUp}
+                                        description="New reviews in last 30 days"
+                                        variant="compact"
+                                    />
+                                </DataGrid>
+
+                                {/* Quick Actions for Reviews */}
+                                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                                    <Button size="sm" variant="outline" asChild className="shadow-sm hover:shadow-md transition-shadow">
+                                        <Link href="/brand/audit">
+                                            <Search className="w-4 h-4 mr-2" />
+                                            Import Reviews
+                                        </Link>
+                                    </Button>
+                                    <Button size="sm" variant="outline" asChild className="shadow-sm hover:shadow-md transition-shadow">
+                                        <Link href="/brand/audit">
+                                            <BarChart3 className="w-4 h-4 mr-2" />
+                                            View Analytics
+                                        </Link>
+                                    </Button>
                                 </div>
-                            ) : (
-                                <StandardEmptyState
-                                    icon={<AISparkleIcon className="h-8 w-8 text-primary" />}
-                                    title="No Strategy Yet"
-                                    description="Get a personalized game plan built around your strengths and opportunities."
-                                    action={{
-                                        label: "Create Your Strategy",
-                                        onClick: () => window.location.href = '/brand/strategy',
-                                        variant: "ai"
+                            </div>
+                        )}
+
+                        {/* Reviews Carousel */}
+                        {!isLoadingStats && (
+                            <div className="mt-8 pt-8 border-t">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="font-headline text-base font-semibold">Latest Testimonials</h3>
+                                    <Button variant="ghost" size="sm" asChild className="text-xs">
+                                        <Link href="/brand/audit">
+                                            View All
+                                            <ArrowRight className="w-3 h-3 ml-1" />
+                                        </Link>
+                                    </Button>
+                                </div>
+                                <Carousel
+                                    opts={{
+                                        align: 'start',
                                     }}
-                                    variant="compact"
-                                    className="bg-gradient-to-br from-primary/5 to-purple-600/5"
-                                />
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    <Card className="animate-fade-in-up animate-delay-400 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-gradient-to-br from-yellow-100 to-orange-100 dark:from-yellow-900 dark:to-orange-900">
-                                    <Star className="text-yellow-600 dark:text-yellow-400 h-5 w-5" />
-                                </div>
-                                <div>
-                                    <div className="font-bold text-lg">Reputation Snapshot</div>
-                                    <div className="text-sm text-muted-foreground font-normal">Client testimonials and reviews</div>
-                                </div>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {isLoadingStats ? (
-                                <StandardSkeleton variant="metric" count={3} className="mb-4 md:mb-6" />
-                            ) : (
-                                <div className="space-y-8">
-                                    <DataGrid columns={3} gap="spacious">
-                                        {/* Average Rating Card */}
-                                        <div className="group relative overflow-hidden text-center p-6 rounded-xl bg-gradient-to-br from-yellow-50 via-yellow-100 to-orange-50 dark:from-yellow-950 dark:via-yellow-900 dark:to-orange-950 border border-yellow-200 dark:border-yellow-800 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                                            <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/10 to-orange-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                            <div className="relative">
-                                                <div className="flex items-center justify-center mb-3">
-                                                    <div className="p-2 rounded-full bg-yellow-500/20">
-                                                        <Star className="w-6 h-6 text-yellow-500 fill-current" />
-                                                    </div>
+                                    className="w-full"
+                                >
+                                    <CarouselContent>
+                                        {isLoadingCarousel ? (
+                                            <CarouselItem className="md:basis-full">
+                                                <div className="p-1 h-full">
+                                                    <StandardSkeleton variant="list" count={2} />
                                                 </div>
-                                                <div className="text-3xl font-bold text-yellow-700 dark:text-yellow-300 mb-2">
-                                                    {parsedAverageRating.toFixed(1)}
-                                                </div>
-                                                <div className="text-sm text-yellow-600/80 dark:text-yellow-400/80 font-medium mb-3">
-                                                    Average Rating
-                                                </div>
-                                                <div className="flex items-center justify-center gap-1">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <Star
-                                                            key={i}
-                                                            className={`w-4 h-4 transition-colors duration-200 ${i < Math.floor(parsedAverageRating)
-                                                                ? 'text-yellow-400 fill-current'
-                                                                : 'text-yellow-200 dark:text-yellow-700'
-                                                                }`}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Total Reviews Card */}
-                                        <div className="group relative overflow-hidden text-center p-6 rounded-xl bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-50 dark:from-blue-950 dark:via-blue-900 dark:to-indigo-950 border border-blue-200 dark:border-blue-800 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                                            <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-indigo-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                            <div className="relative">
-                                                <div className="flex items-center justify-center mb-3">
-                                                    <div className="p-2 rounded-full bg-blue-500/20">
-                                                        <Award className="w-6 h-6 text-blue-500" />
-                                                    </div>
-                                                </div>
-                                                <div className="text-3xl font-bold text-blue-700 dark:text-blue-300 mb-2">
-                                                    {totalReviews}
-                                                </div>
-                                                <div className="text-sm text-blue-600/80 dark:text-blue-400/80 font-medium mb-3">
-                                                    Total Reviews
-                                                </div>
-                                                {totalReviews > 0 && (
-                                                    <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 border-blue-200">
-                                                        <TrendingUp className="w-3 h-3 mr-1" />
-                                                        Growing
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Recent Reviews Card */}
-                                        <div className="group relative overflow-hidden text-center p-6 rounded-xl bg-gradient-to-br from-green-50 via-green-100 to-emerald-50 dark:from-green-950 dark:via-green-900 dark:to-emerald-950 border border-green-200 dark:border-green-800 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                                            <div className="absolute inset-0 bg-gradient-to-br from-green-400/10 to-emerald-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                            <div className="relative">
-                                                <div className="flex items-center justify-center mb-3">
-                                                    <div className="p-2 rounded-full bg-green-500/20">
-                                                        <TrendingUp className="w-6 h-6 text-green-500" />
-                                                    </div>
-                                                </div>
-                                                <div className="text-3xl font-bold text-green-700 dark:text-green-300 mb-2">
-                                                    {recentReviewsCount}
-                                                </div>
-                                                <div className="text-sm text-green-600/80 dark:text-green-400/80 font-medium mb-3">
-                                                    This Month
-                                                </div>
-                                                {recentReviewsCount > 0 && (
-                                                    <Badge variant="secondary" className="text-xs bg-green-100 text-green-800 border-green-200">
-                                                        <Activity className="w-3 h-3 mr-1" />
-                                                        Active
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </DataGrid>
-
-                                    {/* Quick Actions for Reviews */}
-                                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                                        <Button size="sm" variant="outline" asChild className="shadow-sm hover:shadow-md transition-shadow">
-                                            <Link href="/brand/audit">
-                                                <Search className="w-4 h-4 mr-2" />
-                                                Import Reviews
-                                            </Link>
-                                        </Button>
-                                        <Button size="sm" variant="outline" asChild className="shadow-sm hover:shadow-md transition-shadow">
-                                            <Link href="/brand/audit">
-                                                <BarChart3 className="w-4 h-4 mr-2" />
-                                                View Analytics
-                                            </Link>
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Reviews Carousel */}
-                            {!isLoadingStats && (
-                                <div>
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h3 className="font-headline text-base font-semibold">Latest Testimonials</h3>
-                                        <Button variant="ghost" size="sm" asChild className="text-xs">
-                                            <Link href="/brand/audit">
-                                                View All
-                                                <ArrowRight className="w-3 h-3 ml-1" />
-                                            </Link>
-                                        </Button>
-                                    </div>
-                                    <Carousel
-                                        opts={{
-                                            align: 'start',
-                                        }}
-                                        className="w-full"
-                                    >
-                                        <CarouselContent>
-                                            {isLoadingCarousel ? (
-                                                <CarouselItem className="md:basis-full">
-                                                    <div className="p-1 h-full">
-                                                        <StandardSkeleton variant="list" count={2} />
-                                                    </div>
-                                                </CarouselItem>
-                                            ) : recentReviews && recentReviews.length > 0 ? (
-                                                recentReviews.map((review) => (
-                                                    <CarouselItem key={review.id} className="md:basis-full lg:basis-1/2">
-                                                        <div className="p-2 h-full">
-                                                            <Link href="/brand/audit">
-                                                                <div className="group relative overflow-hidden h-full flex flex-col p-6 bg-gradient-to-br from-secondary/20 via-secondary/30 to-secondary/20 hover:from-primary/10 hover:via-primary/5 hover:to-purple-600/10 hover:shadow-xl transition-all duration-300 hover:scale-[1.03] rounded-xl border border-secondary/50 hover:border-primary/20">
-                                                                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                                                    <div className="relative flex items-start gap-4 pb-4">
-                                                                        <div className="flex-shrink-0">
-                                                                            {review.avatarUrl ? (
-                                                                                <Image
-                                                                                    src={review.avatarUrl}
-                                                                                    alt={review.author.name}
-                                                                                    width={40}
-                                                                                    height={40}
-                                                                                    className="rounded-full ring-2 ring-primary/20 group-hover:ring-primary/40 transition-all duration-300"
-                                                                                    data-ai-hint="happy person"
-                                                                                />
-                                                                            ) : (
-                                                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-purple-600/20 flex items-center justify-center ring-2 ring-primary/20 group-hover:ring-primary/40 transition-all duration-300">
-                                                                                    <Users className="w-5 h-5 text-primary" />
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex-1 min-w-0">
-                                                                            <p className="font-semibold text-sm group-hover:text-primary transition-colors">{review.author.name || 'Anonymous'}</p>
-                                                                            <div className="flex items-center gap-2 mt-1">
-                                                                                <p className="text-xs text-muted-foreground">{review.source}</p>
-                                                                                <div className="flex items-center">
-                                                                                    {[...Array(5)].map((_, i) => (
-                                                                                        <Star
-                                                                                            key={i}
-                                                                                            className={`w-3 h-3 ${i < review.rating
-                                                                                                ? 'text-yellow-400 fill-current'
-                                                                                                : 'text-gray-200'
-                                                                                                }`}
-                                                                                        />
-                                                                                    ))}
-                                                                                </div>
+                                            </CarouselItem>
+                                        ) : recentReviews && recentReviews.length > 0 ? (
+                                            recentReviews.map((review) => (
+                                                <CarouselItem key={review.id} className="md:basis-full lg:basis-1/2">
+                                                    <div className="p-2 h-full">
+                                                        <Link href="/brand/audit">
+                                                            <div className="group relative overflow-hidden h-full flex flex-col p-6 rounded-xl border bg-card hover:bg-accent/5 transition-all duration-300 hover:shadow-md">
+                                                                <div className="relative flex items-start gap-4 pb-4">
+                                                                    <div className="flex-shrink-0">
+                                                                        {review.avatarUrl ? (
+                                                                            <Image
+                                                                                src={review.avatarUrl}
+                                                                                alt={review.author.name}
+                                                                                width={40}
+                                                                                height={40}
+                                                                                className="rounded-full ring-2 ring-primary/20 group-hover:ring-primary/40 transition-all duration-300"
+                                                                                data-ai-hint="happy person"
+                                                                            />
+                                                                        ) : (
+                                                                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-primary/20 group-hover:ring-primary/40 transition-all duration-300">
+                                                                                <Users className="w-5 h-5 text-primary" />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="font-semibold text-sm group-hover:text-primary transition-colors">{review.author.name || 'Anonymous'}</p>
+                                                                        <div className="flex items-center gap-2 mt-1">
+                                                                            <p className="text-xs text-muted-foreground">{review.source}</p>
+                                                                            <div className="flex items-center">
+                                                                                {[...Array(5)].map((_, i) => (
+                                                                                    <Star
+                                                                                        key={i}
+                                                                                        className={`w-3 h-3 ${i < review.rating
+                                                                                            ? 'text-yellow-400 fill-current'
+                                                                                            : 'text-gray-200'
+                                                                                            }`}
+                                                                                    />
+                                                                                ))}
                                                                             </div>
                                                                         </div>
                                                                     </div>
-                                                                    <div className="relative flex-grow">
-                                                                        <p className="text-sm text-foreground/90 italic line-clamp-3 leading-relaxed">
-                                                                            "{review.comment}"
-                                                                        </p>
-                                                                    </div>
                                                                 </div>
-                                                            </Link>
-                                                        </div>
-                                                    </CarouselItem>
-                                                ))
-                                            ) : (
-                                                <CarouselItem>
-                                                    <div className="p-1 h-full">
-                                                        <StandardEmptyState
-                                                            icon={<MessageSquare className="h-8 w-8 text-primary" />}
-                                                            title="No Reviews Yet"
-                                                            description="Import your reviews from Zillow and other platforms to track your reputation."
-                                                            action={{
-                                                                label: "Import Reviews",
-                                                                onClick: () => window.location.href = '/brand/audit',
-                                                                variant: "default"
-                                                            }}
-                                                            variant="compact"
-                                                            className="bg-secondary/30"
-                                                        />
+                                                                <div className="relative flex-grow">
+                                                                    <p className="text-sm text-foreground/90 italic line-clamp-3 leading-relaxed">
+                                                                        "{review.comment}"
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </Link>
                                                     </div>
                                                 </CarouselItem>
-                                            )}
-                                        </CarouselContent>
-                                        <CarouselPrevious className="hidden sm:flex -left-4" />
-                                        <CarouselNext className="hidden sm:flex -right-4" />
-                                    </Carousel>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                                            ))
+                                        ) : (
+                                            <CarouselItem>
+                                                <div className="p-1 h-full">
+                                                    <StandardEmptyState
+                                                        icon={<MessageSquare className="h-8 w-8 text-primary" />}
+                                                        title="No Reviews Yet"
+                                                        description="Import your reviews from Zillow and other platforms to track your reputation."
+                                                        action={{
+                                                            label: "Import Reviews",
+                                                            onClick: () => window.location.href = '/brand/audit',
+                                                            variant: "default"
+                                                        }}
+                                                        variant="compact"
+                                                    />
+                                                </div>
+                                            </CarouselItem>
+                                        )}
+                                    </CarouselContent>
+                                    <CarouselPrevious className="hidden sm:flex -left-4" />
+                                    <CarouselNext className="hidden sm:flex -right-4" />
+                                </Carousel>
+                            </div>
+                        )}
+                    </ContentSection>
 
                 </div>
 
                 <div className="tablet:col-span-1 lg:col-span-1 space-y-6">
                     {/* Today's Focus */}
-                    <Card className="animate-fade-in-up animate-delay-200 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                    <Card className="animate-fade-in-up animate-delay-200 transition-shadow duration-300">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-3">
                                 <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900">

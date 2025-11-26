@@ -34,7 +34,7 @@ export default function MarketTrendsPage() {
                 title="Market Trends & Predictions"
                 description="Identify potential clients through life event predictions and market trends"
                 icon={TrendingUp}
-                variant="default"
+                variant="card"
             >
                 <LifeEventPredictorForm />
             </ContentSection>

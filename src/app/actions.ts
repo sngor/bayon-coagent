@@ -150,7 +150,9 @@ import {
   getCompetitorKeys,
   getTrainingProgressKeys,
   getNeighborhoodProfileKeys,
+  getOAuthTokenKeys,
 } from '@/aws/dynamodb/keys';
+import { getValidOAuthTokens, storeOAuthTokens } from '@/aws/dynamodb/oauth-tokens';
 import { getAlertDataAccess } from '@/lib/alerts/data-access';
 import type { AlertSettings, TargetArea, NeighborhoodProfile, AlertsResponse } from '@/lib/alerts/types';
 import type { Profile } from '@/lib/types';
@@ -334,6 +336,7 @@ export async function connectGoogleBusinessProfileAction() {
     client_id: process.env.GOOGLE_CLIENT_ID,
     redirect_uri: process.env.GOOGLE_REDIRECT_URI,
     response_type: 'code',
+    // Google Business Profile API scope (requires OAuth verification)
     scope: 'https://www.googleapis.com/auth/business.manage',
     access_type: 'offline',
     prompt: 'consent',
@@ -347,8 +350,27 @@ export async function connectGoogleBusinessProfileAction() {
   redirect(authUrl);
 }
 
+export async function getGoogleConnectionStatusAction(userId: string) {
+  try {
+    const tokens = await getValidOAuthTokens(userId, 'GOOGLE_BUSINESS');
+    return {
+      message: 'success',
+      isConnected: !!tokens,
+      errors: {}
+    };
+  } catch (error) {
+    console.error('Failed to check Google connection status:', error);
+    return {
+      message: 'Failed to check connection status',
+      isConnected: false,
+      errors: {}
+    };
+  }
+}
+
 const tokenSchema = z.object({
   code: z.string().min(1, 'Authorization code is required.'),
+  userId: z.string().min(1, 'User ID is required.'),
 });
 
 export async function exchangeGoogleTokenAction(
@@ -357,6 +379,7 @@ export async function exchangeGoogleTokenAction(
 ) {
   const validatedFields = tokenSchema.safeParse({
     code: formData.get('code'),
+    userId: formData.get('userId'),
   });
 
   if (!validatedFields.success) {
@@ -368,9 +391,20 @@ export async function exchangeGoogleTokenAction(
   }
 
   try {
-    const result = await exchangeGoogleToken(
-      validatedFields.data as ExchangeGoogleTokenInput
-    );
+    const result = await exchangeGoogleToken({
+      code: validatedFields.data.code
+    });
+
+    // Store tokens in DynamoDB
+    const tokenData = {
+      agentProfileId: validatedFields.data.userId,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      expiryDate: result.expiryDate,
+    };
+
+    await storeOAuthTokens(validatedFields.data.userId, tokenData, 'GOOGLE_BUSINESS');
+
     return { message: 'success', data: result, errors: {} };
   } catch (error) {
     const errorMessage =
@@ -4840,7 +4874,7 @@ export async function getCompetitorAlertsAction(
 
     const queryOptions = {
       limit: options?.limit,
-      offset: options?.offset,
+      offset: options?.offset ? Number(options.offset) : undefined,
       sortBy: options?.sortBy as any,
       sortOrder: options?.sortOrder,
     };
@@ -5115,7 +5149,7 @@ export async function getAlertsAction(
 
     const queryOptions = {
       limit: options?.limit,
-      offset: options?.offset,
+      offset: options?.offset ? Number(options.offset) : undefined,
       sortBy: options?.sortBy as any,
       sortOrder: options?.sortOrder,
     };

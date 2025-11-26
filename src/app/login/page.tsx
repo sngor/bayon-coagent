@@ -2,6 +2,7 @@
 'use client';
 
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState, useActionState } from 'react';
@@ -13,12 +14,19 @@ import { Label } from '@/components/ui/label';
 import { emailSignInAction, emailSignUpAction } from '@/app/actions';
 import { useFormStatus } from 'react-dom';
 import { HeroGradientMesh } from '@/components/ui/gradient-mesh';
+import { useToast } from '@/hooks/use-toast';
 
 
 function AuthButton({ children }: { children: React.ReactNode }) {
     const { pending } = useFormStatus();
     return (
-        <Button type="submit" disabled={pending} className="w-full h-12 text-base font-semibold transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
+        <Button
+            type="submit"
+            disabled={pending}
+            variant="premium"
+            size="lg"
+            className="w-full text-base font-bold tracking-wide transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-primary/25"
+        >
             {pending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
             {children}
         </Button>
@@ -28,6 +36,7 @@ function AuthButton({ children }: { children: React.ReactNode }) {
 function SignInForm({ onSwitch, onShowVerify }: { onSwitch: () => void; onShowVerify: () => void }) {
     const [signInState, signInFormAction] = useActionState(emailSignInAction, { message: '', errors: {}, data: null });
     const { signIn } = useAuthMethods();
+    const { toast } = useToast();
     const [error, setError] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
     const [emailTouched, setEmailTouched] = useState(false);
@@ -35,81 +44,109 @@ function SignInForm({ onSwitch, onShowVerify }: { onSwitch: () => void; onShowVe
 
     const handleAuthError = (err: Error) => {
         console.error('Sign in error:', err);
-        setError(err.message || 'An unexpected error occurred.');
+        const errorMessage = err.message || 'An unexpected error occurred.';
+        setError(errorMessage);
+        toast({
+            variant: "destructive",
+            title: "Authentication Error",
+            description: errorMessage,
+        });
     }
 
     useEffect(() => {
         if (signInState.message === 'success' && signInState.data) {
             setError(null);
-            console.log('Attempting sign in with:', signInState.data.email);
+
             signIn(signInState.data.email, signInState.data.password)
+                .then(() => {
+                    toast({
+                        variant: "success",
+                        title: "Welcome back!",
+                        description: "You have successfully signed in.",
+                    });
+                })
                 .catch(handleAuthError);
         } else if (signInState.message && signInState.message !== 'success') {
             setError(signInState.message);
+            toast({
+                variant: "destructive",
+                title: "Sign in failed",
+                description: signInState.message,
+            });
         }
-    }, [signInState, signIn]);
+    }, [signInState, signIn, toast]);
 
     const hasEmailError = emailTouched && signInState.errors && 'email' in signInState.errors && signInState.errors.email;
     const hasPasswordError = passwordTouched && signInState.errors && 'password' in signInState.errors && signInState.errors.password;
 
     return (
-        <div className="grid gap-6 animate-fade-in">
+        <div className="grid gap-8 animate-fade-in p-8 rounded-2xl glass-effect-sm border-border/50 shadow-xl bg-card/40 backdrop-blur-xl">
             <div className="grid gap-3 text-center">
-                <h1 className="font-headline text-display-medium text-gradient-primary">Welcome Back</h1>
-                <p className="text-heading-3 text-muted-foreground">
+                <h1 className="font-display text-4xl font-bold text-gradient-primary tracking-tight">Welcome Back</h1>
+                <p className="text-lg text-muted-foreground font-light">
                     Sign in to grow your business
                 </p>
             </div>
-            <form action={signInFormAction} className="space-y-5">
+            <form action={signInFormAction} className="space-y-6">
                 <div className="grid gap-5">
                     <div className="grid gap-2">
-                        <Label htmlFor="email-signin" className="text-sm font-medium">Email Address</Label>
+                        <Label htmlFor="email-signin" className="text-sm font-medium ml-1">Email Address</Label>
                         <Input
                             id="email-signin"
                             name="email"
                             type="email"
                             placeholder="agent@example.com"
                             required
-                            className={`h-11 transition-all duration-300 ${hasEmailError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                            className={`h-12 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-all duration-300 ${hasEmailError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                             onBlur={() => setEmailTouched(true)}
                         />
                         {hasEmailError && signInState.errors && 'email' in signInState.errors && (
-                            <p className="text-sm text-destructive mt-1 animate-slide-down flex items-center gap-1">
+                            <p className="text-sm text-destructive mt-1 animate-slide-down flex items-center gap-1 ml-1">
                                 <span className="inline-block w-1 h-1 rounded-full bg-destructive"></span>
                                 {signInState.errors.email![0]}
                             </p>
                         )}
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="password-signin" className="text-sm font-medium">Password</Label>
-                        <div className="relative">
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="password-signin" className="text-sm font-medium ml-1">Password</Label>
+                            <Button
+                                type="button"
+                                variant="link"
+                                onClick={onShowVerify}
+                                className="text-xs text-muted-foreground hover:text-primary h-auto p-0"
+                            >
+                                Forgot password?
+                            </Button>
+                        </div>
+                        <div className="relative group">
                             <Input
                                 id="password-signin"
                                 name="password"
                                 type={showPassword ? 'text' : 'password'}
                                 required
-                                className={`h-11 pr-10 transition-all duration-300 ${hasPasswordError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                                className={`h-12 pr-10 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-all duration-300 ${hasPasswordError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                                 onBlur={() => setPasswordTouched(true)}
                             />
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="absolute top-1/2 right-1 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
+                                className="absolute top-1/2 right-1 -translate-y-1/2 h-9 w-9 hover:bg-transparent text-muted-foreground hover:text-foreground transition-colors"
                                 onClick={() => setShowPassword(!showPassword)}
                             >
-                                {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                 <span className="sr-only">Toggle password visibility</span>
                             </Button>
                         </div>
                         {hasPasswordError && signInState.errors && 'password' in signInState.errors && (
-                            <p className="text-sm text-destructive mt-1 animate-slide-down flex items-center gap-1">
+                            <p className="text-sm text-destructive mt-1 animate-slide-down flex items-center gap-1 ml-1">
                                 <span className="inline-block w-1 h-1 rounded-full bg-destructive"></span>
                                 {signInState.errors.password![0]}
                             </p>
                         )}
                     </div>
-                    <AuthButton><span className="text-bold-cta">Sign In</span></AuthButton>
+                    <AuthButton>Sign In</AuthButton>
                 </div>
             </form>
             {error && (
@@ -119,30 +156,23 @@ function SignInForm({ onSwitch, onShowVerify }: { onSwitch: () => void; onShowVe
                     <AlertDescription className="text-sm">{error}</AlertDescription>
                 </Alert>
             )}
-            <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
+
+            <div className="space-y-4">
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-border/60" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background/50 backdrop-blur-sm px-3 text-muted-foreground font-medium">New to the platform?</span>
+                    </div>
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">New to the platform?</span>
-                </div>
-            </div>
-            <Button
-                type="button"
-                variant="outline"
-                onClick={onSwitch}
-                className="w-full h-11 border-2 hover:bg-primary/5 hover:border-primary transition-all duration-300"
-            >
-                Create an Account
-            </Button>
-            <div className="text-center">
                 <Button
                     type="button"
-                    variant="link"
-                    onClick={onShowVerify}
-                    className="text-sm text-muted-foreground hover:text-primary"
+                    variant="outline"
+                    onClick={onSwitch}
+                    className="w-full h-12 border-2 hover:bg-primary/5 hover:border-primary/50 text-base font-medium transition-all duration-300"
                 >
-                    Need to verify your email?
+                    Create an Account
                 </Button>
             </div>
         </div>
@@ -152,6 +182,7 @@ function SignInForm({ onSwitch, onShowVerify }: { onSwitch: () => void; onShowVe
 function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     const [signUpState, signUpFormAction] = useActionState(emailSignUpAction, { message: '', errors: {}, data: null });
     const { signUp, confirmSignUp, resendConfirmationCode } = useAuthMethods();
+    const { toast } = useToast();
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
@@ -165,26 +196,41 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
 
     const handleAuthError = (err: Error) => {
         console.error('Sign up error:', err);
-        setError(err.message || 'An unexpected error occurred.');
+        const errorMessage = err.message || 'An unexpected error occurred.';
+        setError(errorMessage);
+        toast({
+            variant: "destructive",
+            title: "Authentication Error",
+            description: errorMessage,
+        });
     }
 
     useEffect(() => {
         if (signUpState.message === 'success' && signUpState.data) {
             setError(null);
-            console.log('Attempting sign up with:', signUpState.data.email);
+
             setUserEmail(signUpState.data.email);
             signUp(signUpState.data.email, signUpState.data.password)
                 .then((result) => {
                     if (!result.userConfirmed) {
                         setNeedsVerification(true);
                         setSuccess('Account created! Please check your email for a verification code.');
+                        toast({
+                            title: "Account created",
+                            description: "Please check your email for a verification code.",
+                        });
                     }
                 })
                 .catch(handleAuthError);
         } else if (signUpState.message && signUpState.message !== 'success') {
             setError(signUpState.message);
+            toast({
+                variant: "destructive",
+                title: "Sign up failed",
+                description: signUpState.message,
+            });
         }
-    }, [signUpState, signUp]);
+    }, [signUpState, signUp, toast]);
 
     const handleVerification = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -194,6 +240,11 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
         try {
             await confirmSignUp(userEmail, verificationCode);
             setSuccess('Email verified! You can now sign in.');
+            toast({
+                variant: "success",
+                title: "Email verified",
+                description: "You can now sign in.",
+            });
             setTimeout(() => {
                 onSwitch(); // Switch to sign in form
             }, 2000);
@@ -211,6 +262,10 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
         try {
             await resendConfirmationCode(userEmail);
             setSuccess('Verification code resent! Check your email.');
+            toast({
+                title: "Code resent",
+                description: "Check your email for the verification code.",
+            });
         } catch (err) {
             handleAuthError(err as Error);
         } finally {
@@ -224,17 +279,17 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     // Show verification form if needed
     if (needsVerification) {
         return (
-            <div className="grid gap-6 animate-fade-in">
+            <div className="grid gap-8 animate-fade-in p-8 rounded-2xl glass-effect-sm border-border/50 shadow-xl bg-card/40 backdrop-blur-xl">
                 <div className="grid gap-3 text-center">
-                    <h1 className="font-headline text-display-medium text-gradient-primary">Check Your Email</h1>
-                    <p className="text-heading-3 text-muted-foreground">
+                    <h1 className="font-display text-4xl font-bold text-gradient-primary tracking-tight">Check Your Email</h1>
+                    <p className="text-lg text-muted-foreground font-light">
                         We sent a code to <span className="font-semibold text-foreground">{userEmail}</span>
                     </p>
                 </div>
-                <form onSubmit={handleVerification} className="space-y-5">
+                <form onSubmit={handleVerification} className="space-y-6">
                     <div className="grid gap-5">
                         <div className="grid gap-2">
-                            <Label htmlFor="verification-code" className="text-sm font-medium">Verification Code</Label>
+                            <Label htmlFor="verification-code" className="text-sm font-medium ml-1">Verification Code</Label>
                             <Input
                                 id="verification-code"
                                 type="text"
@@ -242,13 +297,13 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                                 value={verificationCode}
                                 onChange={(e) => setVerificationCode(e.target.value)}
                                 required
-                                className="h-11 text-center text-lg tracking-widest"
+                                className="h-14 text-center text-2xl tracking-[0.5em] font-mono bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-all duration-300"
                                 maxLength={6}
                             />
                         </div>
-                        <Button type="submit" disabled={isVerifying} className="w-full h-12">
+                        <Button type="submit" disabled={isVerifying} variant="premium" size="lg" className="w-full shadow-lg hover:shadow-primary/25">
                             {isVerifying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-                            <span className="text-bold-cta">Verify Email</span>
+                            Verify Email
                         </Button>
                     </div>
                 </form>
@@ -273,7 +328,7 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                         variant="link"
                         onClick={handleResendCode}
                         disabled={isResending}
-                        className="text-primary"
+                        className="text-primary hover:text-primary-hover"
                     >
                         {isResending ? 'Sending...' : 'Resend Code'}
                     </Button>
@@ -283,76 +338,76 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     }
 
     return (
-        <div className="grid gap-6 animate-fade-in">
+        <div className="grid gap-8 animate-fade-in p-8 rounded-2xl glass-effect-sm border-border/50 shadow-xl bg-card/40 backdrop-blur-xl">
             <div className="grid gap-3 text-center">
-                <h1 className="font-headline text-display-medium text-gradient-primary">Start Your Journey</h1>
-                <p className="text-heading-3 text-muted-foreground">
+                <h1 className="font-display text-4xl font-bold text-gradient-primary tracking-tight">Start Your Journey</h1>
+                <p className="text-lg text-muted-foreground font-light">
                     Create your account and unlock AI-powered marketing
                 </p>
             </div>
-            <form action={signUpFormAction} className="space-y-5">
+            <form action={signUpFormAction} className="space-y-6">
                 <div className="grid gap-5">
                     <div className="grid gap-2">
-                        <Label htmlFor="email-signup" className="text-sm font-medium">Email Address</Label>
+                        <Label htmlFor="email-signup" className="text-sm font-medium ml-1">Email Address</Label>
                         <Input
                             id="email-signup"
                             name="email"
                             type="email"
                             placeholder="agent@example.com"
                             required
-                            className={`h-11 transition-all duration-300 ${hasEmailError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                            className={`h-12 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-all duration-300 ${hasEmailError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                             onBlur={() => setEmailTouched(true)}
                         />
                         {hasEmailError && signUpState.errors && 'email' in signUpState.errors && (
-                            <p className="text-sm text-destructive mt-1 animate-slide-down flex items-center gap-1">
+                            <p className="text-sm text-destructive mt-1 animate-slide-down flex items-center gap-1 ml-1">
                                 <span className="inline-block w-1 h-1 rounded-full bg-destructive"></span>
                                 {signUpState.errors.email![0]}
                             </p>
                         )}
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="password-signup" className="text-sm font-medium">Password</Label>
-                        <div className="relative">
+                        <Label htmlFor="password-signup" className="text-sm font-medium ml-1">Password</Label>
+                        <div className="relative group">
                             <Input
                                 id="password-signup"
                                 name="password"
                                 type={showPassword ? 'text' : 'password'}
                                 required
-                                className={`h-11 pr-10 transition-all duration-300 ${hasPasswordError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                                className={`h-12 pr-10 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-all duration-300 ${hasPasswordError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                                 onBlur={() => setPasswordTouched(true)}
                             />
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="absolute top-1/2 right-1 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
+                                className="absolute top-1/2 right-1 -translate-y-1/2 h-9 w-9 hover:bg-transparent text-muted-foreground hover:text-foreground transition-colors"
                                 onClick={() => setShowPassword(!showPassword)}
                             >
-                                {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                 <span className="sr-only">Toggle password visibility</span>
                             </Button>
                         </div>
                         {hasPasswordError && signUpState.errors && 'password' in signUpState.errors && (
-                            <p className="text-sm text-destructive mt-1 animate-slide-down flex items-center gap-1">
+                            <p className="text-sm text-destructive mt-1 animate-slide-down flex items-center gap-1 ml-1">
                                 <span className="inline-block w-1 h-1 rounded-full bg-destructive"></span>
                                 {signUpState.errors.password![0]}
                             </p>
                         )}
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-muted-foreground mt-1 ml-1">
                             Must be at least 8 characters with uppercase, lowercase, and numbers
                         </p>
                     </div>
-                    <div className="text-xs text-muted-foreground text-center">
+                    <div className="text-xs text-muted-foreground text-center px-4">
                         By creating an account, you agree to our{' '}
-                        <Link href="/terms" className="text-primary hover:underline">
+                        <Link href="/terms" className="text-primary hover:underline font-medium">
                             Terms of Service
                         </Link>{' '}
                         and{' '}
-                        <Link href="/privacy" className="text-primary hover:underline">
+                        <Link href="/privacy" className="text-primary hover:underline font-medium">
                             Privacy Policy
                         </Link>
                     </div>
-                    <AuthButton><span className="text-bold-cta">Create Account</span></AuthButton>
+                    <AuthButton>Create Account</AuthButton>
                 </div>
             </form>
             {error && (
@@ -362,28 +417,32 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                     <AlertDescription className="text-sm">{error}</AlertDescription>
                 </Alert>
             )}
-            <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
+
+            <div className="space-y-4">
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-border/60" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background/50 backdrop-blur-sm px-3 text-muted-foreground font-medium">Already have an account?</span>
+                    </div>
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Already have an account?</span>
-                </div>
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onSwitch}
+                    className="w-full h-12 border-2 hover:bg-primary/5 hover:border-primary/50 text-base font-medium transition-all duration-300"
+                >
+                    Sign In Instead
+                </Button>
             </div>
-            <Button
-                type="button"
-                variant="outline"
-                onClick={onSwitch}
-                className="w-full h-11 border-2 hover:bg-primary/5 hover:border-primary transition-all duration-300"
-            >
-                Sign In Instead
-            </Button>
         </div>
     )
 }
 
 function VerifyEmailForm({ onBack }: { onBack: () => void }) {
     const { confirmSignUp, resendConfirmationCode } = useAuthMethods();
+    const { toast } = useToast();
     const [email, setEmail] = useState('');
     const [verificationCode, setVerificationCode] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -398,15 +457,17 @@ function VerifyEmailForm({ onBack }: { onBack: () => void }) {
         setError(null);
         setSuccess(null);
 
-        console.log('Sending verification code to:', email);
-
         try {
             await resendConfirmationCode(email);
-            console.log('Verification code sent successfully');
+
             setSuccess('Verification code sent! Check your email.');
-            console.log('Setting step to code');
+            toast({
+                title: "Code sent",
+                description: "Check your email for the verification code.",
+            });
+
             setStep('code');
-            console.log('Step set to:', 'code');
+
         } catch (err) {
             console.error('Error sending verification code:', err);
             setError((err as Error).message);
@@ -415,19 +476,20 @@ function VerifyEmailForm({ onBack }: { onBack: () => void }) {
         }
     };
 
-    console.log('Current step:', step);
-
     const handleVerification = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsVerifying(true);
         setError(null);
 
-        console.log('Verifying email:', email, 'with code:', verificationCode);
-
         try {
             await confirmSignUp(email, verificationCode);
-            console.log('Email verified successfully!');
+
             setSuccess('Email verified! You can now sign in.');
+            toast({
+                variant: "success",
+                title: "Email verified",
+                description: "You can now sign in.",
+            });
             setTimeout(() => {
                 onBack();
             }, 2000);
@@ -441,17 +503,17 @@ function VerifyEmailForm({ onBack }: { onBack: () => void }) {
 
     if (step === 'email') {
         return (
-            <div className="grid gap-6 animate-fade-in">
+            <div className="grid gap-8 animate-fade-in p-8 rounded-2xl glass-effect-sm border-border/50 shadow-xl bg-card/40 backdrop-blur-xl">
                 <div className="grid gap-3 text-center">
-                    <h1 className="font-headline text-display-medium text-gradient-primary">Verify Your Email</h1>
-                    <p className="text-heading-3 text-muted-foreground">
+                    <h1 className="font-display text-4xl font-bold text-gradient-primary tracking-tight">Verify Your Email</h1>
+                    <p className="text-lg text-muted-foreground font-light">
                         Enter your email to receive a verification code
                     </p>
                 </div>
-                <form onSubmit={handleEmailSubmit} className="space-y-5">
+                <form onSubmit={handleEmailSubmit} className="space-y-6">
                     <div className="grid gap-5">
                         <div className="grid gap-2">
-                            <Label htmlFor="verify-email" className="text-sm font-medium">Email Address</Label>
+                            <Label htmlFor="verify-email" className="text-sm font-medium ml-1">Email Address</Label>
                             <Input
                                 id="verify-email"
                                 type="email"
@@ -459,21 +521,20 @@ function VerifyEmailForm({ onBack }: { onBack: () => void }) {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                className="h-11"
+                                className="h-12 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-all duration-300"
                             />
                         </div>
-                        <Button type="submit" disabled={isResending} className="w-full h-12">
+                        <Button type="submit" disabled={isResending} variant="premium" size="lg" className="w-full shadow-lg hover:shadow-primary/25">
                             {isResending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Mail className="mr-2 h-5 w-5" />}
-                            <span className="text-bold-cta">Send Verification Code</span>
+                            Send Verification Code
                         </Button>
                         <Button
                             type="button"
                             onClick={() => {
-                                console.log('Manual step change');
                                 setStep('code');
                             }}
                             variant="outline"
-                            className="w-full"
+                            className="w-full h-12 border-2 hover:bg-primary/5 hover:border-primary/50 text-base font-medium transition-all duration-300"
                         >
                             Already have a code? Enter it here
                         </Button>
@@ -506,17 +567,17 @@ function VerifyEmailForm({ onBack }: { onBack: () => void }) {
     }
 
     return (
-        <div className="grid gap-6 animate-fade-in">
+        <div className="grid gap-8 animate-fade-in p-8 rounded-2xl glass-effect-sm border-border/50 shadow-xl bg-card/40 backdrop-blur-xl">
             <div className="grid gap-3 text-center">
-                <h1 className="font-headline text-display-medium text-gradient-primary">Enter Verification Code</h1>
-                <p className="text-heading-3 text-muted-foreground">
+                <h1 className="font-display text-4xl font-bold text-gradient-primary tracking-tight">Enter Verification Code</h1>
+                <p className="text-lg text-muted-foreground font-light">
                     We sent a code to <span className="font-semibold text-foreground">{email}</span>
                 </p>
             </div>
-            <form onSubmit={handleVerification} className="space-y-5">
+            <form onSubmit={handleVerification} className="space-y-6">
                 <div className="grid gap-5">
                     <div className="grid gap-2">
-                        <Label htmlFor="verification-code-standalone" className="text-sm font-medium">Verification Code</Label>
+                        <Label htmlFor="verification-code-standalone" className="text-sm font-medium ml-1">Verification Code</Label>
                         <Input
                             id="verification-code-standalone"
                             type="text"
@@ -524,11 +585,11 @@ function VerifyEmailForm({ onBack }: { onBack: () => void }) {
                             value={verificationCode}
                             onChange={(e) => setVerificationCode(e.target.value)}
                             required
-                            className="h-11 text-center text-lg tracking-widest"
+                            className="h-14 text-center text-2xl tracking-[0.5em] font-mono bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-all duration-300"
                             maxLength={6}
                         />
                     </div>
-                    <Button type="submit" disabled={isVerifying} className="w-full h-12 text-base font-semibold">
+                    <Button type="submit" disabled={isVerifying} variant="premium" size="lg" className="w-full shadow-lg hover:shadow-primary/25">
                         {isVerifying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
                         Verify Email
                     </Button>
@@ -554,7 +615,7 @@ function VerifyEmailForm({ onBack }: { onBack: () => void }) {
                     type="button"
                     variant="link"
                     onClick={() => setStep('email')}
-                    className="text-primary"
+                    className="text-primary hover:text-primary-hover"
                 >
                     Resend Code
                 </Button>
@@ -599,10 +660,13 @@ export default function LoginPage() {
         return (
             <div className="w-full min-h-screen lg:flex">
                 {/* Left side - Form */}
-                <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-background lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-1/2 lg:overflow-y-auto">
-                    <div className="w-full max-w-md space-y-8">
+                <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-background to-muted/20 lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-1/2 lg:overflow-y-auto relative overflow-hidden">
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+
+                    <div className="w-full max-w-md space-y-8 relative z-10">
                         <div className="flex justify-center mb-8 animate-fade-in">
-                            <Logo className="justify-center" />
+                            <Logo className="justify-center scale-110" />
                         </div>
                         <div className="transition-all duration-500 ease-in-out">
                             {showVerify ? (

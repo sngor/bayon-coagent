@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FormSection } from '@/components/ui/form-section';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { lifeEventPredictorSchema } from '@/ai/schemas/life-event-predictor-schemas';
@@ -48,45 +48,40 @@ export function LifeEventPredictorForm() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="font-playfair">Client Data</CardTitle>
-        <p className="text-sm text-muted-foreground mt-2">
-          Analyze client data to predict their likelihood of moving.
-        </p>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <FormField
-              control={form.control}
-              name="client_data"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Client Data</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Enter client data here..."
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {isLoading ? 'Generating...' : 'Generate'}
-            </Button>
-          </form>
-        </Form>
-        {generation && (
-          <div className="mt-8">
-            <h3 className="font-headline text-lg font-semibold">Generated Life Event Prediction:</h3>
-            <p className="mt-2">{generation}</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <FormSection
+      title="Client Data"
+      description="Analyze client data to predict their likelihood of moving."
+    >
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <FormField
+            control={form.control}
+            name="client_data"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Client Data</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Enter client data here..."
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {isLoading ? 'Generating...' : 'Generate'}
+          </Button>
+        </form>
+      </Form>
+      {generation && (
+        <div className="mt-8">
+          <h3 className="font-headline text-lg font-semibold">Generated Life Event Prediction:</h3>
+          <p className="mt-2">{generation}</p>
+        </div>
+      )}
+    </FormSection>
   );
 }

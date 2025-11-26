@@ -4,7 +4,7 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useUser } from '@/aws/auth';
-import { storeOAuthTokens } from '@/aws/dynamodb';
+
 import { exchangeGoogleTokenAction } from '@/app/actions';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -42,21 +42,10 @@ export function GoogleOAuthCallback() {
         try {
           const formData = new FormData();
           formData.append('code', code);
+          formData.append('userId', user.id);
           const result: State = await exchangeGoogleTokenAction(null, formData);
 
           if (result.message === 'success' && result.data) {
-            setStatus('Saving connection details...');
-
-            const tokenData = {
-              agentProfileId: user.id, // Using user's ID as the agent profile link
-              accessToken: result.data.accessToken,
-              refreshToken: result.data.refreshToken,
-              expiryDate: result.data.expiryDate,
-            };
-
-            // Store tokens in DynamoDB
-            await storeOAuthTokens(user.id, tokenData, 'GOOGLE_BUSINESS');
-
             toast({
               title: "Successfully Connected!",
               description: "Your Google Business Profile is now connected.",

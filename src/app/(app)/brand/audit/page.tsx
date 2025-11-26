@@ -891,7 +891,7 @@ export default function BrandAuditPage() {
                             </CardContent>
                             {!gbpConnected && (
                                 <CardFooter>
-                                    <Link href="/settings" className="w-full">
+                                    <Link href="/settings?tab=integrations" className="w-full">
                                         <Button variant="default" className="w-full bg-green-600 hover:bg-green-700">
                                             Connect Now <ArrowRight className="ml-2 h-4 w-4" />
                                         </Button>

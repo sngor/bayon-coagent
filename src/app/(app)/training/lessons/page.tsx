@@ -223,7 +223,7 @@ export default function TrainingLessonsPage() {
         <div className="space-y-6">
             {/* Enhanced Progress Hero Section */}
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <Card className="relative overflow-hidden border-2 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+                <Card className="relative overflow-hidden">
                     {/* Background Pattern */}
                     <div className="absolute inset-0 opacity-5">
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.1),transparent_50%)]" />
@@ -337,7 +337,7 @@ export default function TrainingLessonsPage() {
 
                     <TabsContent value="marketing" className="mt-8">
                         <div className="animate-in fade-in slide-in-from-left-4 duration-300">
-                            <Card className="border-2 border-blue-200/50 dark:border-blue-800/30">
+                            <Card>
                                 <CardHeader className="space-y-6 bg-gradient-to-br from-blue-50/50 to-transparent dark:from-blue-950/20">
                                     <div className="flex items-start gap-4">
                                         <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
@@ -390,7 +390,7 @@ export default function TrainingLessonsPage() {
 
                     <TabsContent value="closing" className="mt-8">
                         <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                            <Card className="border-2 border-green-200/50 dark:border-green-800/30">
+                            <Card>
                                 <CardHeader className="space-y-6 bg-gradient-to-br from-green-50/50 to-transparent dark:from-green-950/20">
                                     <div className="flex items-start gap-4">
                                         <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
@@ -443,7 +443,7 @@ export default function TrainingLessonsPage() {
 
                     <TabsContent value="professional" className="mt-8">
                         <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                            <Card className="border-2 border-purple-200/50 dark:border-purple-800/30">
+                            <Card>
                                 <CardHeader className="space-y-6 bg-gradient-to-br from-purple-50/50 to-transparent dark:from-purple-950/20">
                                     <div className="flex items-start gap-4">
                                         <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">

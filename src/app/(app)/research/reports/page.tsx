@@ -8,12 +8,17 @@ import { filterBySearch, highlightMatches } from '@/lib/search-utils';
 import {
     Card,
     CardContent,
-    CardDescription,
     CardHeader,
     CardTitle,
     CardFooter,
 } from '@/components/ui/card';
-import { Search, Calendar, FileText, Plus } from 'lucide-react';
+import {
+    PageHeader,
+    DataGrid,
+    EmptySection,
+} from '@/components/ui';
+import { StandardSkeleton } from '@/components/ui/reusable';
+import { Search, Calendar, FileText, Plus, Library } from 'lucide-react';
 import { useUser } from '@/aws/auth';
 import type { ResearchReport } from '@/lib/types';
 import Link from 'next/link';
@@ -58,18 +63,19 @@ export default function ResearchReportsPage() {
 
     return (
         <div className="space-y-8">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="font-headline text-3xl font-bold">Research Reports</h1>
-                    <p className="text-muted-foreground">All your saved research reports in one place</p>
-                </div>
-                <Link href="/research/agent">
-                    <Button>
-                        <Plus className="w-4 h-4 mr-2" />
-                        New Research
-                    </Button>
-                </Link>
-            </div>
+            <PageHeader
+                title="Research Reports"
+                description="All your saved research reports in one place"
+                icon={Library}
+                actions={
+                    <Link href="/research/agent">
+                        <Button>
+                            <Plus className="w-4 h-4 mr-2" />
+                            New Research
+                        </Button>
+                    </Link>
+                }
+            />
 
             {/* Search Input */}
             {!isLoadingReports && savedReports && savedReports.length > 0 && (
@@ -85,38 +91,30 @@ export default function ResearchReportsPage() {
             )}
 
             {isLoadingReports && (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <DataGrid columns={3}>
                     {[1, 2, 3].map((i) => (
-                        <Card key={i} className="animate-pulse">
-                            <CardHeader>
-                                <div className="h-4 bg-muted rounded w-3/4"></div>
-                                <div className="h-3 bg-muted rounded w-1/2"></div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="h-20 bg-muted rounded"></div>
-                            </CardContent>
-                        </Card>
+                        <StandardSkeleton key={i} variant="card" />
                     ))}
-                </div>
+                </DataGrid>
             )}
 
             {/* No search results */}
             {!isLoadingReports && savedReports && savedReports.length > 0 && searchQuery && filteredReports.length === 0 && (
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="text-center py-8">
-                            <Search className="w-8 h-8 text-muted-foreground mx-auto mb-4" />
-                            <p className="text-muted-foreground">No reports found for "{searchQuery}"</p>
-                            <Button variant="ghost" onClick={() => setSearchQuery('')} className="mt-2">
-                                Clear search
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
+                <EmptySection
+                    title={`No reports found for "${searchQuery}"`}
+                    description="Try adjusting your search terms or browse all reports"
+                    icon={Search}
+                    action={{
+                        label: "Clear search",
+                        onClick: () => setSearchQuery(''),
+                        variant: "outline"
+                    }}
+                    variant="default"
+                />
             )}
 
             {!isLoadingReports && filteredReports && filteredReports.length > 0 && (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <DataGrid columns={3}>
                     {filteredReports.map(report => (
                         <Link key={report.id} href={`/research/reports/${report.id}`} passHref>
                             <Card className="h-full flex flex-col hover:shadow-md transition-shadow cursor-pointer">
@@ -140,25 +138,21 @@ export default function ResearchReportsPage() {
                             </Card>
                         </Link>
                     ))}
-                </div>
+                </DataGrid>
             )}
 
             {!isLoadingReports && (!savedReports || savedReports.length === 0) && (
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="text-center py-8">
-                            <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                            <h3 className="font-headline text-lg font-semibold mb-2">No Research Reports Yet</h3>
-                            <p className="text-muted-foreground mb-4">Start your first research project to see reports here.</p>
-                            <Link href="/research/agent">
-                                <Button>
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Create First Report
-                                </Button>
-                            </Link>
-                        </div>
-                    </CardContent>
-                </Card>
+                <EmptySection
+                    title="No Research Reports Yet"
+                    description="Start your first research project to see reports here."
+                    icon={FileText}
+                    action={{
+                        label: "Create First Report",
+                        onClick: () => router.push('/research/agent'),
+                        variant: "default"
+                    }}
+                    variant="default"
+                />
             )}
         </div>
     );

@@ -34,7 +34,7 @@ export function ContentSection({
 
     const variants = {
         default: 'space-y-6',
-        card: 'rounded-lg border bg-card p-6 space-y-6',
+        card: 'rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-6',
         bordered: 'border-l-4 border-primary/20 pl-6 space-y-6',
         minimal: 'space-y-4'
     };

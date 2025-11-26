@@ -8,7 +8,7 @@ import { LucideProps } from 'lucide-react';
  * These complement the standard Lucide icons with industry-specific visuals.
  */
 
-export const HouseKey: React.FC<LucideProps> = (props) => (
+export const HouseKey: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
@@ -26,7 +26,7 @@ export const HouseKey: React.FC<LucideProps> = (props) => (
     </svg>
 );
 
-export const OpenHouse: React.FC<LucideProps> = (props) => (
+export const OpenHouse: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
@@ -44,7 +44,7 @@ export const OpenHouse: React.FC<LucideProps> = (props) => (
     </svg>
 );
 
-export const PropertySearch: React.FC<LucideProps> = (props) => (
+export const PropertySearch: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
@@ -62,7 +62,7 @@ export const PropertySearch: React.FC<LucideProps> = (props) => (
     </svg>
 );
 
-export const Sold: React.FC<LucideProps> = (props) => (
+export const Sold: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
@@ -81,7 +81,7 @@ export const Sold: React.FC<LucideProps> = (props) => (
     </svg>
 );
 
-export const ForSale: React.FC<LucideProps> = (props) => (
+export const ForSale: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
@@ -99,7 +99,7 @@ export const ForSale: React.FC<LucideProps> = (props) => (
     </svg>
 );
 
-export const Neighborhood: React.FC<LucideProps> = (props) => (
+export const Neighborhood: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
@@ -117,7 +117,7 @@ export const Neighborhood: React.FC<LucideProps> = (props) => (
     </svg>
 );
 
-export const Mortgage: React.FC<LucideProps> = (props) => (
+export const Mortgage: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
@@ -135,7 +135,7 @@ export const Mortgage: React.FC<LucideProps> = (props) => (
     </svg>
 );
 
-export const PropertyValue: React.FC<LucideProps> = (props) => (
+export const PropertyValue: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
@@ -153,7 +153,7 @@ export const PropertyValue: React.FC<LucideProps> = (props) => (
     </svg>
 );
 
-export const Listing: React.FC<LucideProps> = (props) => (
+export const Listing: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
@@ -171,7 +171,7 @@ export const Listing: React.FC<LucideProps> = (props) => (
     </svg>
 );
 
-export const VirtualTour: React.FC<LucideProps> = (props) => (
+export const VirtualTour: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
@@ -190,7 +190,7 @@ export const VirtualTour: React.FC<LucideProps> = (props) => (
     </svg>
 );
 
-export const ContentIcon: React.FC<LucideProps> = (props) => (
+export const ContentIcon: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
@@ -209,7 +209,7 @@ export const ContentIcon: React.FC<LucideProps> = (props) => (
     </svg>
 );
 
-export const AISparkleIcon: React.FC<LucideProps> = (props) => (
+export const AISparkleIcon: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
@@ -232,7 +232,7 @@ export const AISparkleIcon: React.FC<LucideProps> = (props) => (
     </svg>
 );
 
-export const SuccessIcon: React.FC<LucideProps> = (props) => (
+export const SuccessIcon: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
@@ -248,7 +248,7 @@ export const SuccessIcon: React.FC<LucideProps> = (props) => (
     </svg>
 );
 
-export const HouseIcon: React.FC<LucideProps> = (props) => (
+export const HouseIcon: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
@@ -265,7 +265,7 @@ export const HouseIcon: React.FC<LucideProps> = (props) => (
     </svg>
 );
 
-export const UsersIcon: React.FC<LucideProps> = (props) => (
+export const UsersIcon: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
