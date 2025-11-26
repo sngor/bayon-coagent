@@ -93,7 +93,52 @@ export function useS3Upload(options: UseS3UploadOptions = {}): UseS3UploadReturn
         // Simulate progress (since we don't have real progress from server action)
         setProgress(30);
 
-        // Create FormData
+        // Try presigned direct-to-S3 upload first to avoid sending large bodies through Server Actions
+        const timestamp = Date.now();
+        const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const key = `users/${userId}/${fileType}/${timestamp}-${sanitizedFileName}`;
+
+        setProgress(60);
+
+        try {
+          const presigned = await (await import('@/app/actions')).getPresignedUploadUrlAction(key, file.type);
+          if (presigned?.success && presigned.url) {
+            // Upload directly to S3 using the presigned PUT URL
+            const uploadResp = await fetch(presigned.url, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': file.type,
+              },
+              body: file,
+            });
+
+            if (!uploadResp.ok) {
+              throw new Error(`Upload failed with status ${uploadResp.status}`);
+            }
+
+            // Get a presigned GET URL so the client can access the object
+            const getUrlResult = await (await import('@/app/actions')).getPresignedUrlAction(key, 60 * 60 * 24);
+            const publicUrl = (getUrlResult && getUrlResult.success && getUrlResult.url) ? getUrlResult.url : undefined;
+
+            setProgress(100);
+
+            if (publicUrl) {
+              setUploadedUrl(publicUrl);
+              onSuccess?.(publicUrl);
+              return publicUrl;
+            }
+
+            // If we couldn't get a GET presigned URL, return the presigned PUT url (less ideal)
+            setUploadedUrl(presigned.url);
+            onSuccess?.(presigned.url);
+            return presigned.url;
+          }
+        } catch (presignErr: any) {
+          // Fall back to server-side upload if presigned upload is not available
+          console.warn('Presigned upload failed, falling back to server upload:', presignErr);
+        }
+
+        // Fallback: create FormData and use server action to upload
         const formData = new FormData();
         formData.append('file', file);
         formData.append('userId', userId);
@@ -101,7 +146,6 @@ export function useS3Upload(options: UseS3UploadOptions = {}): UseS3UploadReturn
 
         setProgress(60);
 
-        // Upload to S3
         const result = await uploadFileToS3Action(formData);
 
         setProgress(100);

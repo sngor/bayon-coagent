@@ -20,6 +20,8 @@ export interface AgentProfile {
   specialization: 'luxury' | 'first-time-buyers' | 'investment' | 'commercial' | 'general';
   preferredTone: 'warm-consultative' | 'direct-data-driven' | 'professional' | 'casual';
   corePrinciple: string;
+  // Optional profile photo URL (stored in S3)
+  photoURL?: string | null;
   createdAt: string;
   updatedAt: string;
 }

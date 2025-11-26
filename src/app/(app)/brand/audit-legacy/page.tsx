@@ -528,7 +528,7 @@ export default function BrandAuditPage() {
                                         label: isAuditDisabled ? "Complete Profile First" : "Run Your First Audit",
                                         onClick: () => {
                                             if (isAuditDisabled) {
-                                                window.location.href = '/profile';
+                                                window.location.href = '/brand/profile';
                                             } else {
                                                 // Trigger the form submission
                                                 const form = document.querySelector('form[data-audit-form]') as HTMLFormElement;

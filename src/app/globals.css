@@ -2398,10 +2398,27 @@ body {
   }
 }
 
-/* Disable slide-in animations - only disable animation, preserve positioning */
+/* Disable slide-in animations and transitions so popovers/tooltips/menus show instantly */
+/* Disable keyframe animations and CSS transitions for Radix popper wrapper,
+   its content and common interactive roles so they appear instantly. */
+[data-radix-popper-content-wrapper],
 [data-radix-popper-content-wrapper] > *,
+[data-radix-popper-content-wrapper] *,
 [role="tooltip"],
 [role="menu"],
 [role="listbox"] {
   animation: none !important;
+  transition: none !important;
+  transition-property: none !important;
+  will-change: auto !important;
+}
+
+/* Also ensure transform changes are applied instantly (override inline transform transitions if any) */
+[data-radix-popper-content-wrapper],
+[data-radix-popper-content-wrapper] > *,
+[data-radix-popper-content-wrapper] * {
+  -webkit-transition: none !important;
+  -moz-transition: none !important;
+  -o-transition: none !important;
+  transition: none !important;
 }

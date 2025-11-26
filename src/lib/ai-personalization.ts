@@ -392,7 +392,7 @@ Return your response as JSON matching this structure:
         title: 'Complete Your Profile',
         description: 'Add your market focus and professional details',
         reason: 'A complete profile helps us provide better recommendations',
-        href: '/profile',
+        href: '/brand/profile',
         priority: 'high',
         estimatedTime: '5 minutes',
       });

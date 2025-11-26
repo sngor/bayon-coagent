@@ -287,6 +287,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     loadProfile();
   }, [user?.id]);
 
+  // Listen for profile updates dispatched elsewhere in the app (e.g. after uploading a new photo)
+  useEffect(() => {
+    const handler = (ev: Event) => {
+      try {
+        const custom = ev as CustomEvent<any>;
+        if (custom?.detail) {
+          setProfile((prev: any) => ({ ...prev, ...custom.detail }));
+        }
+      } catch (err) {
+        console.warn('Failed to apply profile update event', err);
+      }
+    };
+
+    window.addEventListener('profileUpdated', handler as EventListener);
+    return () => window.removeEventListener('profileUpdated', handler as EventListener);
+  }, []);
+
   // Get user display name and initials
   // Try profile name first, then Cognito attributes, then email, then fallback to 'User'
   const userName = profile?.name ||

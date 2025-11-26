@@ -1737,6 +1737,35 @@ export async function getPresignedUrlAction(
   }
 }
 
+/**
+ * Get a presigned upload URL (PUT) so clients can upload directly to S3
+ */
+export async function getPresignedUploadUrlAction(
+  key: string,
+  contentType: string,
+  expiresIn: number = 3600
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    if (!key) {
+      return { success: false, error: 'File key is required' };
+    }
+    if (!contentType) {
+      return { success: false, error: 'Content type is required' };
+    }
+
+    const { getPresignedUploadUrl } = await import('@/aws/s3');
+    const url = await getPresignedUploadUrl(key, contentType, expiresIn);
+
+    return { success: true, url };
+  } catch (error: any) {
+    console.error('Presigned upload URL error:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to generate presigned upload URL'
+    };
+  }
+}
+
 const feedbackSchema = z.object({
   type: z.enum(['bug', 'feature', 'improvement', 'general']),
   message: z.string().min(10, 'Please provide a more detailed message.'),
@@ -3972,6 +4001,21 @@ export async function updateProfilePhotoUrlAction(
         CreatedAt: Date.now(),
         UpdatedAt: Date.now(),
       });
+    }
+
+    // Also attempt to persist the photo URL to the agent profile repository
+    try {
+      const { getAgentProfileRepository } = await import('@/aws/dynamodb/agent-profile-repository');
+      const profileRepo = getAgentProfileRepository();
+
+      // If an agent profile exists for the user, update it with the photoURL
+      const existingAgentProfile = await profileRepo.getProfile(userId);
+      if (existingAgentProfile) {
+        await profileRepo.updateProfile(userId, { photoURL });
+      }
+    } catch (err) {
+      // Non-fatal: log a warning but don't fail the photo update
+      console.warn('Could not update agent profile with photoURL:', err);
     }
 
     return {

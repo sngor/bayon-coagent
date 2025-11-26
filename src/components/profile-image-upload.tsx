@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useId } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Camera, Loader2 } from 'lucide-react';
@@ -52,6 +52,9 @@ export function ProfileImageUpload({
 }: ProfileImageUploadProps) {
     const [imageUrl, setImageUrl] = useState(currentImageUrl);
     const [isHovered, setIsHovered] = useState(false);
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    const reactId = useId();
+    const inputId = userId ? `profile-image-input-${userId}` : `profile-image-input-${reactId}`;
 
     // Update local imageUrl when currentImageUrl prop changes
     useEffect(() => {
@@ -105,7 +108,7 @@ export function ProfileImageUpload({
 
                 {!isUploading && isHovered && (
                     <label
-                        htmlFor="profile-image-input"
+                        htmlFor={inputId}
                         className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full cursor-pointer transition-opacity"
                     >
                         <Camera className="h-8 w-8 text-white" />
@@ -113,23 +116,24 @@ export function ProfileImageUpload({
                 )}
 
                 <input
-                    id="profile-image-input"
+                    id={inputId}
+                    ref={inputRef}
                     type="file"
                     accept="image/jpeg,image/jpg,image/png,image/webp"
                     onChange={handleFileSelect}
-                    className="hidden"
+                    className="sr-only"
                     disabled={isUploading}
                 />
             </div>
 
             <div className="text-center">
-                <label htmlFor="profile-image-input">
+                <label htmlFor={inputId}>
                     <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         disabled={isUploading}
-                        onClick={() => document.getElementById('profile-image-input')?.click()}
+                        onClick={() => inputRef.current?.click()}
                     >
                         {isUploading ? (
                             <>

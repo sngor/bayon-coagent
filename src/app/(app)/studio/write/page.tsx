@@ -1094,10 +1094,10 @@ export default function ContentEnginePage() {
                       key={type.id}
                       value={type.id}
                       className={cn(
-                        "animate-slide-in-left opacity-0",
+                        // Disable entrance animation so items are visible immediately
+                        // Previously used "animate-slide-in-left opacity-0" which hid items
                         `stagger-${index + 1}`
                       )}
-                      style={{ animationFillMode: 'forwards', animationDelay: `${index * 50}ms` }}
                     >
                       <div className="flex items-center gap-2">
                         <Icon className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />

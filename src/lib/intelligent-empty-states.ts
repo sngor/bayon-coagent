@@ -116,7 +116,7 @@ export function generateSmartRecommendations(
             id: 'complete-profile',
             title: 'Complete Your Profile',
             description: 'Fill in required fields to unlock AI-powered features',
-            href: '/profile',
+            href: '/brand/profile',
             priority: 'high',
             estimatedTime: '5 min',
             prerequisitesMet: true,
@@ -182,7 +182,7 @@ export function generateSmartRecommendations(
             id: 'enhance-profile',
             title: 'Enhance Your Profile',
             description: 'Add optional fields to maximize your marketing potential',
-            href: '/profile',
+            href: '/brand/profile',
             priority: 'low',
             estimatedTime: '10 min',
             prerequisitesMet: true,
@@ -235,7 +235,7 @@ export function generateContextualTips(context: UserContext): string[] {
             'The AI will search the web and synthesize findings',
             'Save reports to your knowledge base for future reference',
         ],
-        '/profile': [
+        '/brand/profile': [
             'Required fields are marked with an asterisk (*)',
             'A complete profile enables all AI features',
             'Your information is used to personalize generated content',

@@ -97,7 +97,7 @@ export class UserFlowManager {
         id: 'complete-profile',
         title: 'Complete Your Profile',
         description: 'Fill in required fields to unlock AI-powered features',
-        href: '/profile',
+        href: '/brand/profile',
         priority: 'high',
         icon: 'User',
         estimatedTime: '5 minutes',
@@ -243,13 +243,13 @@ export class UserFlowManager {
         }
         break;
 
-      case '/profile':
+      case '/brand/profile':
         if (this.checkProfilePrerequisites().allMet) {
           steps.push({
             id: 'enhance-profile',
             title: 'Enhance Your Profile',
             description: 'Add optional fields to maximize your marketing potential',
-            href: '/profile',
+            href: '/brand/profile',
             priority: 'low',
             icon: 'Star',
             estimatedTime: '10 minutes',
@@ -290,7 +290,7 @@ export class UserFlowManager {
             this.state.profile?.address &&
             this.state.profile?.phone
           ),
-          actionHref: '/profile',
+          actionHref: '/brand/profile',
           actionLabel: 'Complete Profile',
         });
         break;
@@ -300,7 +300,7 @@ export class UserFlowManager {
           id: 'profile-location',
           description: 'Business address must be in your profile',
           met: !!this.state.profile?.address,
-          actionHref: '/profile',
+          actionHref: '/brand/profile',
           actionLabel: 'Add Address',
         });
         break;
@@ -313,7 +313,7 @@ export class UserFlowManager {
             this.state.profile?.name &&
             this.state.profile?.agencyName
           ),
-          actionHref: '/profile',
+          actionHref: '/brand/profile',
           actionLabel: 'Complete Profile',
         });
         break;
@@ -349,35 +349,35 @@ export class UserFlowManager {
         id: 'profile-name',
         description: 'Full name',
         met: !!this.state.profile?.name,
-        actionHref: '/profile',
+        actionHref: '/brand/profile',
         actionLabel: 'Add Name',
       },
       {
         id: 'profile-agency',
         description: 'Agency name',
         met: !!this.state.profile?.agencyName,
-        actionHref: '/profile',
+        actionHref: '/brand/profile',
         actionLabel: 'Add Agency Name',
       },
       {
         id: 'profile-phone',
         description: 'Phone number',
         met: !!this.state.profile?.phone,
-        actionHref: '/profile',
+        actionHref: '/brand/profile',
         actionLabel: 'Add Phone',
       },
       {
         id: 'profile-address',
         description: 'Business address',
         met: !!this.state.profile?.address,
-        actionHref: '/profile',
+        actionHref: '/brand/profile',
         actionLabel: 'Add Address',
       },
       {
         id: 'profile-bio',
         description: 'Professional bio',
         met: !!this.state.profile?.bio,
-        actionHref: '/profile',
+        actionHref: '/brand/profile',
         actionLabel: 'Add Bio',
       },
     ];
@@ -404,7 +404,7 @@ export class UserFlowManager {
           'Monitor your brand score and review sentiment',
         ],
         relatedLinks: [
-          { label: 'Complete Profile', href: '/profile' },
+          { label: 'Complete Profile', href: '/brand/profile' },
           { label: 'Generate Marketing Plan', href: '/marketing-plan' },
         ],
       },
@@ -432,7 +432,7 @@ export class UserFlowManager {
           'Import reviews to analyze sentiment and identify themes',
         ],
         relatedLinks: [
-          { label: 'Update Profile', href: '/profile' },
+          { label: 'Update Profile', href: '/brand/profile' },
           { label: 'View Competitors', href: '/competitive-analysis' },
         ],
       },
@@ -464,7 +464,7 @@ export class UserFlowManager {
           { label: 'Knowledge Base', href: '/knowledge-base' },
         ],
       },
-      '/profile': {
+      '/brand/profile': {
         title: 'Your Professional Profile',
         description:
           'Complete your profile to unlock AI-powered features and personalize your marketing content.',
@@ -524,7 +524,7 @@ export class UserFlowManager {
         id: 'complete-profile',
         label: 'Complete Profile',
         description: 'Fill in required information',
-        href: '/profile',
+        href: '/brand/profile',
         icon: 'User',
         category: 'profile',
       });
@@ -603,7 +603,7 @@ export class UserFlowManager {
     // Map routes to breadcrumb labels
     const routeLabels: Record<string, string> = {
       '/dashboard': 'Dashboard',
-      '/profile': 'Profile',
+      '/brand/profile': 'Profile',
       '/marketing-plan': 'Marketing Plan',
       '/brand-audit': 'Brand Audit',
       '/competitive-analysis': 'Competitive Analysis',
@@ -686,7 +686,7 @@ export function createUserFlowManager(
 export function getPageTitle(path: string): string {
   const titles: Record<string, string> = {
     '/dashboard': 'Dashboard',
-    '/profile': 'Profile',
+    '/brand/profile': 'Profile',
     '/marketing-plan': 'Marketing Plan',
     '/brand-audit': 'Brand Audit',
     '/competitive-analysis': 'Competitive Analysis',

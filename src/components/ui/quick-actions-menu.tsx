@@ -109,18 +109,18 @@ export function QuickActionsMenu({ actions, className }: QuickActionsMenuProps) 
                                     const Icon = action.icon ? iconMap[action.icon] : null;
                                     return (
                                         <DropdownMenuItem key={action.id} asChild>
-                                            <Link
-                                                href={action.href}
-                                                className="flex items-start gap-3 py-3 cursor-pointer"
-                                                onClick={() => setOpen(false)}
-                                            >
+                                                <Link
+                                                    href={action.href}
+                                                    className="flex items-start gap-3 py-3 cursor-pointer text-popover-foreground"
+                                                    onClick={() => setOpen(false)}
+                                                >
                                                 {Icon && (
                                                     <div className="flex-shrink-0 rounded-full p-1.5 bg-primary/10">
                                                         <Icon className="h-4 w-4 text-primary" />
                                                     </div>
                                                 )}
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium">{action.label}</p>
+                                                    <p className="text-sm font-medium text-popover-foreground">{action.label}</p>
                                                     <p className="text-xs text-muted-foreground">
                                                         {action.description}
                                                     </p>

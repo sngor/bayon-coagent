@@ -36,10 +36,6 @@ const nextConfig: NextConfig = {
     } : false,
   },
 
-  // Server Actions configuration
-  serverActions: {
-    bodySizeLimit: '5mb', // Increase limit for base64 images
-  },
 
   // Enable experimental features for better performance
   experimental: {
@@ -132,6 +128,11 @@ const nextConfig: NextConfig = {
 
   // Enable compression
   compress: true,
+  // Server Actions body size limit (increase to allow file uploads via Server Actions)
+  // Default is 1MB — increase to accommodate images up to 10MB (set to 20MB headroom)
+  serverActions: {
+    bodySizeLimit: '20mb',
+  },
 };
 
 // Configure PWA with Service Worker for offline functionality

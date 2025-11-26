@@ -284,7 +284,7 @@ export default function DashboardPage() {
     return (
         <div className="space-y-6 md:space-y-8">
             {/* Welcome Message for New Users */}
-            {!isLoadingProfile && (!agentProfile?.name || completionPercentage < 50) && (
+            {!isLoadingProfile && completionPercentage < 100 && (
                 <div className="animate-fade-in-up animate-delay-50">
                     <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 shadow-lg rounded-lg border bg-card text-card-foreground">
                         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5 opacity-50" />

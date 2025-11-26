@@ -96,7 +96,7 @@ export default function ClientDashboardsPage() {
                 } else {
                     setDashboards([]);
                     if (result.errors) {
-                        console.error('Failed to fetch dashboards:', result.errors);
+                        console.warn('Failed to fetch dashboards:', JSON.stringify(result.errors));
                         toast({
                             variant: 'destructive',
                             title: 'Error',
@@ -105,7 +105,7 @@ export default function ClientDashboardsPage() {
                     }
                 }
             } catch (error) {
-                console.error('Error fetching dashboards:', error);
+                console.warn('Error fetching dashboards:', error instanceof Error ? error.message : String(error));
                 setDashboards([]);
                 toast({
                     variant: 'destructive',
@@ -129,7 +129,7 @@ export default function ClientDashboardsPage() {
                 setDashboards(result.data);
             }
         } catch (error) {
-            console.error('Error refreshing dashboards:', error);
+            console.warn('Error refreshing dashboards:', error instanceof Error ? error.message : String(error));
         } finally {
             setIsRefreshing(false);
         }

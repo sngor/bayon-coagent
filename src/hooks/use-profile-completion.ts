@@ -116,7 +116,7 @@ export function useProfileCompletion(profile: Partial<Profile> | null | undefine
       nextStep = {
         title: 'Complete Your Profile',
         description: 'Fill in required fields to unlock AI-powered features',
-        href: '/profile',
+        href: '/brand/profile',
         priority: 'high',
       };
     } else if (isComplete) {
@@ -130,7 +130,7 @@ export function useProfileCompletion(profile: Partial<Profile> | null | undefine
       nextStep = {
         title: 'Enhance Your Profile',
         description: 'Add optional fields to maximize your marketing potential',
-        href: '/profile',
+        href: '/brand/profile',
         priority: 'medium',
       };
     }
@@ -180,7 +180,7 @@ export function getSuggestedNextActions(
     suggestions.push({
       title: 'Complete Your Profile',
       description: 'Fill in required fields to unlock AI-powered features',
-      href: '/profile',
+      href: '/brand/profile',
       priority: 'high',
     });
     return suggestions; // Return early - this is blocking
@@ -221,7 +221,7 @@ export function getSuggestedNextActions(
     suggestions.push({
       title: 'Enhance Your Profile',
       description: 'Add optional fields to maximize your marketing potential',
-      href: '/profile',
+      href: '/brand/profile',
       priority: 'medium',
     });
   }
