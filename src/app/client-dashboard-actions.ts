@@ -105,6 +105,11 @@ export type DashboardAnalytics = {
         message: string;
         requestedAt: number;
     }>;
+    valuationRequests: Array<{
+        propertyDescription: string;
+        estimatedValue: number;
+        requestedAt: number;
+    }>;
 };
 
 export type CMAReport = {
@@ -867,6 +872,7 @@ export async function getDashboardAnalytics(
             propertyViews: [],
             documentDownloads: [],
             contactRequests: [],
+            valuationRequests: [],
         };
 
         for (const result of analyticsResults.items) {
@@ -897,6 +903,13 @@ export async function getDashboardAnalytics(
                     type: requestData.type,
                     message: requestData.message,
                     requestedAt: requestData.timestamp,
+                });
+            } else if (result.EntityType === 'ValuationRequest') {
+                const valuationData = result.Data as any;
+                analytics.valuationRequests.push({
+                    propertyDescription: valuationData.propertyDescription,
+                    estimatedValue: valuationData.estimatedValue,
+                    requestedAt: valuationData.timestamp,
                 });
             }
         }
@@ -1459,9 +1472,35 @@ export async function generateValuationForDashboard(
             propertyDescription,
         });
 
-        // Track valuation request in analytics
-        const repository = getRepository();
+        // Generate unique valuation ID
+        const valuationId = `val-${Date.now()}-${uuidv4().substring(0, 8)}`;
         const now = Date.now();
+
+        // Save valuation to DynamoDB
+        // Requirements: 5.3 - Persist valuation for agent review
+        const repository = getRepository();
+        const valuationKeys = {
+            PK: `AGENT#${dashboard.agentId}`,
+            SK: `VALUATION#${valuationId}`,
+        };
+
+        const valuationData = {
+            id: valuationId,
+            agentId: dashboard.agentId,
+            dashboardId: dashboard.id,
+            propertyDescription,
+            ...valuationResult,
+            generatedAt: now,
+        };
+
+        await repository.create(
+            valuationKeys.PK,
+            valuationKeys.SK,
+            'HomeValuation',
+            valuationData
+        );
+
+        // Track valuation request in analytics
         const analyticsKeys = getDashboardAnalyticsKeys(dashboard.id, now.toString());
 
         await repository.create(
@@ -1471,6 +1510,7 @@ export async function generateValuationForDashboard(
             {
                 dashboardId: dashboard.id,
                 propertyDescription,
+                estimatedValue: valuationResult.marketValuation.estimatedValue,
                 timestamp: now,
             }
         );
@@ -1597,6 +1637,65 @@ export async function getValuation(
         };
     } catch (error) {
         const errorMessage = handleError(error, 'Failed to get valuation');
+        return {
+            message: errorMessage,
+            data: null,
+            errors: {},
+        };
+    }
+}
+
+/**
+ * List valuations for a specific dashboard
+ * Requirements: 5.3
+ */
+export async function listValuationsForDashboard(
+    dashboardId: string
+): Promise<{
+    message: string;
+    data: any[] | null;
+    errors: any;
+}> {
+    try {
+        // Get current user (agent)
+        const user = await getCurrentUser();
+        if (!user || !user.id) {
+            return {
+                message: 'Authentication required',
+                data: null,
+                errors: { auth: ['You must be logged in to list valuations'] },
+            };
+        }
+
+        if (!dashboardId) {
+            return {
+                message: 'Dashboard ID is required',
+                data: null,
+                errors: { dashboardId: ['Dashboard ID is required'] },
+            };
+        }
+
+        // Query valuations for this agent
+        const repository = getRepository();
+        const pk = `AGENT#${user.id}`;
+        const result = await repository.queryItems<any>(pk, 'VALUATION#');
+
+        // Filter by dashboardId
+        // Note: In a production app with many valuations, we might want a GSI for this
+        const valuations = result.items
+            .map(item => item.Data)
+            .filter((data: any) => data.dashboardId === dashboardId);
+
+        // Sort by date (newest first)
+        valuations.sort((a: any, b: any) => b.generatedAt - a.generatedAt);
+
+        return {
+            message: 'success',
+            data: valuations,
+            errors: {},
+        };
+    } catch (error) {
+        const errorMessage = handleError(error, 'Failed to list valuations');
         return {
             message: errorMessage,
             data: null,

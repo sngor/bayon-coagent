@@ -144,6 +144,7 @@ import {
   getUserProfileKeys,
   getMarketingPlanKeys,
   getReviewAnalysisKeys,
+  getReviewKeys,
   getProjectKeys,
   getSavedContentKeys,
   getResearchReportKeys,
@@ -2533,6 +2534,87 @@ export async function analyzeMultipleReviewsAction(prevState: any, formData: For
     };
   } catch (error: any) {
     const errorMessage = handleAWSError(error, 'An unexpected error occurred during bulk analysis.');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: {},
+    };
+  }
+}
+
+/**
+ * Get all reviews for an agent
+ */
+export async function getReviewsAction(agentId: string): Promise<{
+  message: string;
+  data: any[] | null;
+  errors: any;
+}> {
+  try {
+    const repository = getRepository();
+    const result = await repository.query(`REVIEW#${agentId}`, 'REVIEW#');
+
+    return {
+      message: 'success',
+      data: result.items || [],
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Get reviews error:', error);
+    return {
+      message: error.message || 'Failed to load reviews',
+      data: null,
+      errors: {},
+    };
+  }
+}
+
+/**
+ * Delete a review by agentId and reviewId
+ */
+const deleteReviewSchema = z.object({
+  agentId: z.string().min(1, 'Agent ID is required'),
+  reviewId: z.string().min(1, 'Review ID is required'),
+});
+
+export async function deleteReviewAction(
+  prevState: any,
+  formData: FormData
+): Promise<{
+  message: string;
+  data: { success: boolean } | null;
+  errors: any;
+}> {
+  const validatedFields = deleteReviewSchema.safeParse({
+    agentId: formData.get('agentId'),
+    reviewId: formData.get('reviewId'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      message: 'Validation failed.',
+      data: null,
+      errors: validatedFields.error.flatten().fieldErrors as Record<string, string[]>,
+    };
+  }
+
+  const { agentId, reviewId } = validatedFields.data;
+
+  try {
+    const repository = getRepository();
+    const keys = getReviewKeys(agentId, reviewId);
+
+    // Delete the review from DynamoDB
+    await repository.delete(keys.PK, keys.SK);
+
+    return {
+      message: 'success',
+      data: { success: true },
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Delete review error:', error);
+    const errorMessage = error.message || 'Failed to delete review';
     return {
       message: errorMessage,
       data: null,

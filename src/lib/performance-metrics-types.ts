@@ -73,4 +73,20 @@ export interface AggregatedMetrics {
         linkedin?: PlatformMetrics;
     };
     dailyBreakdown?: PerformanceMetrics[];
+    conversionRate?: number;
+}
+
+/**
+ * Comparative metrics for comparing two listings
+ */
+export interface ComparativeMetrics {
+    period: TimePeriod;
+    listing1: {
+        listingId: string;
+        metrics: AggregatedMetrics;
+    };
+    listing2: {
+        listingId: string;
+        metrics: AggregatedMetrics;
+    };
 }

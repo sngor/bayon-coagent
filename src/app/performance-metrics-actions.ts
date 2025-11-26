@@ -13,6 +13,7 @@ import {
     TimePeriod,
     Platform,
     AggregatedMetrics,
+    ComparativeMetrics,
 } from '@/lib/performance-metrics-types';
 import {
     getCurrentDate,
@@ -255,6 +256,13 @@ export async function getAggregatedMetrics(
             formatDate(endDate)
         );
 
+        // Calculate conversion rate
+        if (aggregated.totalViews > 0) {
+            aggregated.conversionRate = (aggregated.totalInquiries / aggregated.totalViews) * 100;
+        } else {
+            aggregated.conversionRate = 0;
+        }
+
         return { metrics: aggregated };
     } catch (error: any) {
         console.error('Error getting aggregated metrics:', error);
@@ -349,6 +357,51 @@ export async function getMetricsForDateRange(
         return {
             metrics: [],
             error: error.message || 'Failed to get metrics for date range',
+        };
+    }
+}
+
+/**
+ * Compares metrics for two listings
+ */
+export async function compareListingsMetrics(
+    userId: string,
+    listingId1: string,
+    listingId2: string,
+    period: TimePeriod = 'weekly'
+): Promise<{ metrics: ComparativeMetrics | null; error?: string }> {
+    try {
+        const [result1, result2] = await Promise.all([
+            getAggregatedMetrics(userId, listingId1, period),
+            getAggregatedMetrics(userId, listingId2, period),
+        ]);
+
+        if (result1.error || !result1.metrics) {
+            throw new Error(result1.error || `Failed to get metrics for listing ${listingId1}`);
+        }
+
+        if (result2.error || !result2.metrics) {
+            throw new Error(result2.error || `Failed to get metrics for listing ${listingId2}`);
+        }
+
+        return {
+            metrics: {
+                period,
+                listing1: {
+                    listingId: listingId1,
+                    metrics: result1.metrics,
+                },
+                listing2: {
+                    listingId: listingId2,
+                    metrics: result2.metrics,
+                },
+            },
+        };
+    } catch (error: any) {
+        console.error('Error comparing listings metrics:', error);
+        return {
+            metrics: null,
+            error: error.message || 'Failed to compare listings metrics',
         };
     }
 }

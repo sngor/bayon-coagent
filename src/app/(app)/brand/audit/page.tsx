@@ -58,7 +58,7 @@ import { type OAuthTokenData } from '@/aws/dynamodb';
 import { getOAuthTokensAction } from '@/app/oauth-actions';
 import { useUser } from '@/aws/auth';
 import type { Profile, Review, BrandAudit as BrandAuditType, ReviewAnalysis } from '@/lib/types';
-import { runNapAuditAction, getZillowReviewsAction, analyzeReviewSentimentAction, analyzeMultipleReviewsAction } from '@/app/actions';
+import { runNapAuditAction, getZillowReviewsAction, analyzeReviewSentimentAction, analyzeMultipleReviewsAction, getReviewsAction, deleteReviewAction } from '@/app/actions';
 import { toast } from '@/hooks/use-toast';
 import { JsonLdDisplay } from '@/components/json-ld-display';
 import { useFormStatus } from 'react-dom';
