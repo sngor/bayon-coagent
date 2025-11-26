@@ -29,7 +29,7 @@ const DEFAULT_FAVORITES: FavoriteItem[] = [
         id: 'research-agent',
         title: "Research Market",
         description: "Get AI-powered market insights",
-        href: "/research/agent",
+        href: "/intelligence/agent",
         icon: "Search",
         color: "bg-green-500",
         gradient: "from-green-500 to-green-600",

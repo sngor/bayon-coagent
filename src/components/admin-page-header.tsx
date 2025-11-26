@@ -15,37 +15,37 @@ import {
 } from 'lucide-react';
 
 const pageHeaders = {
-    '/admin': {
-        title: 'Admin Dashboard',
+    '/super-admin': {
+        title: 'Super Admin Dashboard',
         description: 'Manage feedback, users, and system settings',
         icon: LayoutDashboard
     },
-    '/admin/users': {
+    '/super-admin/users': {
         title: 'User Management',
         description: 'View and manage all user accounts',
         icon: Users
     },
-    '/admin/feedback': {
+    '/super-admin/feedback': {
         title: 'Feedback Management',
         description: 'Review and respond to user feedback',
         icon: MessageSquare
     },
-    '/admin/analytics': {
+    '/super-admin/analytics': {
         title: 'System Analytics',
         description: 'Usage metrics, costs, and performance monitoring',
         icon: BarChart3
     },
-    '/admin/health': {
+    '/super-admin/health': {
         title: 'System Health',
         description: 'Monitor AWS services and system status',
         icon: Activity
     },
-    '/admin/features': {
+    '/super-admin/features': {
         title: 'Feature Management',
         description: 'Control feature flags and A/B testing',
         icon: Settings
     },
-    '/admin/setup': {
+    '/super-admin/setup': {
         title: 'Admin Setup',
         description: 'Create and manage admin accounts',
         icon: Shield
@@ -54,7 +54,7 @@ const pageHeaders = {
 
 export function AdminPageHeader() {
     const pathname = usePathname();
-    const header = pageHeaders[pathname as keyof typeof pageHeaders] || pageHeaders['/admin'];
+    const header = pageHeaders[pathname as keyof typeof pageHeaders] || pageHeaders['/super-admin'];
     const IconComponent = header.icon;
     const headerRef = useRef<HTMLDivElement>(null);
     const { setHeaderInfo } = useStickyHeader();

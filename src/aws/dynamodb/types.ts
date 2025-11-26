@@ -48,6 +48,7 @@ export type EntityType =
   | 'ListingSnapshot'
   | 'MarketStats'
   | 'PropertyComparison'
+  | 'FeatureToggle'
   | 'MeetingPrep'
   | 'SyncOperation'
   | 'NotificationPreferences'

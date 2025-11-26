@@ -1,10 +1,12 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { getAdminDashboardStats } from '@/app/admin-actions';
 import {
     Users,
     MessageSquare,
@@ -27,6 +29,27 @@ import {
 } from 'lucide-react';
 
 export default function AdminPage() {
+    const [stats, setStats] = useState({
+        totalUsers: 0,
+        totalFeedback: 0,
+        pendingFeedback: 0,
+        totalAiRequests: 0
+    });
+
+    useEffect(() => {
+        async function loadStats() {
+            try {
+                const result = await getAdminDashboardStats();
+                if (result.message === 'success' && result.data) {
+                    setStats(result.data);
+                }
+            } catch (error) {
+                console.error('Failed to load admin stats', error);
+            }
+        }
+        loadStats();
+    }, []);
+
     return (
         <div className="space-y-8">
             {/* System Status Banner */}
@@ -37,11 +60,11 @@ export default function AdminPage() {
                     </div>
                     <div>
                         <h3 className="font-semibold text-green-900 dark:text-green-100">All Systems Operational</h3>
-                        <p className="text-sm text-green-700 dark:text-green-300">Last checked: 2 minutes ago</p>
+                        <p className="text-sm text-green-700 dark:text-green-300">Last checked: Just now</p>
                     </div>
                 </div>
                 <Button variant="outline" size="sm" asChild className="border-green-300 hover:bg-green-100 dark:border-green-700 dark:hover:bg-green-900/50">
-                    <Link href="/admin/health">
+                    <Link href="/super-admin/health">
                         View Details
                         <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
@@ -59,12 +82,11 @@ export default function AdminPage() {
                         </div>
                     </CardHeader>
                     <CardContent className="relative">
-                        <div className="text-3xl font-bold">0</div>
+                        <div className="text-3xl font-bold">{stats.totalUsers}</div>
                         <div className="flex items-center gap-2 mt-2">
                             <TrendingUp className="h-4 w-4 text-green-600" />
-                            <span className="text-sm text-green-600 font-medium">+0% from last month</span>
+                            <span className="text-sm text-green-600 font-medium">Active users</span>
                         </div>
-                        <Progress value={0} className="mt-3 h-2" />
                     </CardContent>
                 </Card>
 
@@ -77,12 +99,11 @@ export default function AdminPage() {
                         </div>
                     </CardHeader>
                     <CardContent className="relative">
-                        <div className="text-3xl font-bold">0</div>
+                        <div className="text-3xl font-bold">{stats.totalAiRequests}</div>
                         <div className="flex items-center gap-2 mt-2">
                             <DollarSign className="h-4 w-4 text-purple-600" />
-                            <span className="text-sm text-purple-600 font-medium">$0.00 cost</span>
+                            <span className="text-sm text-purple-600 font-medium">Estimated cost</span>
                         </div>
-                        <Progress value={0} className="mt-3 h-2" />
                     </CardContent>
                 </Card>
 
@@ -95,12 +116,13 @@ export default function AdminPage() {
                         </div>
                     </CardHeader>
                     <CardContent className="relative">
-                        <div className="text-3xl font-bold">0</div>
+                        <div className="text-3xl font-bold">{stats.pendingFeedback}</div>
                         <div className="flex items-center gap-2 mt-2">
                             <Clock className="h-4 w-4 text-orange-600" />
-                            <span className="text-sm text-orange-600 font-medium">No items pending</span>
+                            <span className="text-sm text-orange-600 font-medium">
+                                {stats.pendingFeedback > 0 ? 'Items pending review' : 'All caught up'}
+                            </span>
                         </div>
-                        <Progress value={0} className="mt-3 h-2" />
                     </CardContent>
                 </Card>
 
@@ -118,7 +140,6 @@ export default function AdminPage() {
                             <CheckCircle className="h-4 w-4 text-green-600" />
                             <span className="text-sm text-green-600 font-medium">All services online</span>
                         </div>
-                        <Progress value={100} className="mt-3 h-2" />
                     </CardContent>
                 </Card>
             </div>
@@ -143,10 +164,10 @@ export default function AdminPage() {
                                 <MessageSquare className="h-5 w-5 text-orange-600" />
                                 <span className="font-medium">Review Feedback</span>
                             </div>
-                            <Badge variant="secondary">0 pending</Badge>
+                            <Badge variant="secondary">{stats.pendingFeedback} pending</Badge>
                         </div>
                         <Button asChild className="w-full bg-orange-600 hover:bg-orange-700">
-                            <Link href="/admin/feedback">
+                            <Link href="/super-admin/feedback">
                                 Review All Feedback
                                 <ArrowRight className="ml-2 h-4 w-4" />
                             </Link>
@@ -178,7 +199,7 @@ export default function AdminPage() {
                             </div>
                         </div>
                         <Button variant="outline" asChild className="w-full border-blue-300 hover:bg-blue-50 dark:border-blue-700 dark:hover:bg-blue-950/50">
-                            <Link href="/admin/health">
+                            <Link href="/super-admin/health">
                                 View System Health
                                 <ArrowRight className="ml-2 h-4 w-4" />
                             </Link>
@@ -213,16 +234,16 @@ export default function AdminPage() {
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-4 text-sm">
                                 <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/50 rounded-lg">
-                                    <div className="font-bold text-lg">0</div>
+                                    <div className="font-bold text-lg">{stats.totalUsers}</div>
                                     <div className="text-muted-foreground">Total</div>
                                 </div>
                                 <div className="text-center p-3 bg-green-50 dark:bg-green-950/50 rounded-lg">
-                                    <div className="font-bold text-lg">0</div>
+                                    <div className="font-bold text-lg">{stats.totalUsers}</div>
                                     <div className="text-muted-foreground">Active</div>
                                 </div>
                             </div>
                             <Button variant="outline" asChild className="w-full group-hover:bg-blue-50 dark:group-hover:bg-blue-950/50">
-                                <Link href="/admin/users">
+                                <Link href="/super-admin/users">
                                     Manage Users
                                     <ArrowRight className="ml-2 h-4 w-4" />
                                 </Link>
@@ -255,7 +276,7 @@ export default function AdminPage() {
                                 </div>
                             </div>
                             <Button variant="outline" asChild className="w-full group-hover:bg-purple-50 dark:group-hover:bg-purple-950/50">
-                                <Link href="/admin/analytics">
+                                <Link href="/super-admin/analytics">
                                     View Analytics
                                     <ArrowRight className="ml-2 h-4 w-4" />
                                 </Link>
@@ -288,7 +309,7 @@ export default function AdminPage() {
                                 </div>
                             </div>
                             <Button variant="outline" asChild className="w-full group-hover:bg-green-50 dark:group-hover:bg-green-950/50">
-                                <Link href="/admin/features">
+                                <Link href="/super-admin/features">
                                     Manage Features
                                     <ArrowRight className="ml-2 h-4 w-4" />
                                 </Link>
@@ -314,7 +335,7 @@ export default function AdminPage() {
                     </CardHeader>
                     <CardContent>
                         <Button variant="outline" asChild className="w-full">
-                            <Link href="/admin/setup">
+                            <Link href="/super-admin/setup">
                                 Manage Admins
                                 <ArrowRight className="ml-2 h-4 w-4" />
                             </Link>
@@ -336,7 +357,7 @@ export default function AdminPage() {
                     </CardHeader>
                     <CardContent>
                         <Button variant="outline" asChild className="w-full">
-                            <Link href="/admin/feedback">
+                            <Link href="/super-admin/feedback">
                                 View Feedback
                                 <ArrowRight className="ml-2 h-4 w-4" />
                             </Link>

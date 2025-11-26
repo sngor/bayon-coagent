@@ -25,8 +25,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/aws/auth';
-import { getRepository } from '@/aws/dynamodb';
-import { getCompetitorKeys } from '@/aws/dynamodb/keys';
 import { toast } from '@/hooks/use-toast';
 import type { Competitor } from '@/lib/types';
 import { Trash2, Sparkles, Loader2, Search } from 'lucide-react';
@@ -173,6 +171,8 @@ function PopulatedForm({ isEditing }: { isEditing: boolean }) {
   )
 }
 
+import { upsertCompetitorAction, deleteCompetitorAction } from '@/app/actions';
+
 export function CompetitorForm({
   isOpen,
   setIsOpen,
@@ -231,24 +231,36 @@ export function CompetitorForm({
     }
 
     try {
-      const repository = getRepository();
-      const competitorId = competitor?.id || Date.now().toString();
-      const keys = getCompetitorKeys(user.id, competitorId);
-
-      await repository.put({
-        ...keys,
-        EntityType: 'Competitor',
-        Data: values,
-        CreatedAt: competitor?.createdAt ? new Date(competitor.createdAt).getTime() : Date.now(),
-        UpdatedAt: Date.now()
-      });
-
+      const formData = new FormData();
       if (competitor?.id) {
-        toast({ title: 'Competitor Updated', description: `${values.name} has been updated.` });
-      } else {
-        toast({ title: 'Competitor Added', description: `${values.name} has been added to your list.` });
+        formData.append('id', competitor.id);
+        if (competitor.createdAt) {
+          formData.append('createdAt', competitor.createdAt);
+        }
       }
-      setIsOpen(false);
+      formData.append('name', values.name);
+      formData.append('agency', values.agency);
+      formData.append('reviewCount', values.reviewCount.toString());
+      formData.append('avgRating', values.avgRating.toString());
+      formData.append('socialFollowers', values.socialFollowers.toString());
+      formData.append('domainAuthority', values.domainAuthority.toString());
+
+      const result = await upsertCompetitorAction(null, formData);
+
+      if (result.message === 'success') {
+        if (competitor?.id) {
+          toast({ title: 'Competitor Updated', description: `${values.name} has been updated.` });
+        } else {
+          toast({ title: 'Competitor Added', description: `${values.name} has been added to your list.` });
+        }
+        setIsOpen(false);
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Save Failed',
+          description: result.message || 'Could not save competitor details.'
+        });
+      }
     } catch (e) {
       console.error("Error saving competitor: ", e);
       toast({ variant: 'destructive', title: 'Save Failed', description: 'Could not save competitor details.' })
@@ -259,11 +271,18 @@ export function CompetitorForm({
     if (!user || !competitor?.id) return;
 
     try {
-      const repository = getRepository();
-      const keys = getCompetitorKeys(user.id, competitor.id);
-      await repository.delete(keys.PK, keys.SK);
-      toast({ title: "Competitor Removed", description: `${competitor.name} has been removed.` });
-      setIsOpen(false);
+      const result = await deleteCompetitorAction(competitor.id);
+
+      if (result.message === 'success') {
+        toast({ title: "Competitor Removed", description: `${competitor.name} has been removed.` });
+        setIsOpen(false);
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Delete Failed',
+          description: result.message || 'Could not delete competitor.'
+        });
+      }
     } catch (e) {
       console.error("Error deleting competitor: ", e);
       toast({ variant: 'destructive', title: 'Delete Failed', description: 'Could not delete competitor.' })

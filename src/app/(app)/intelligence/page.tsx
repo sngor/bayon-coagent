@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 
 export default function ResearchPage() {
-    redirect('/research/agent');
+    redirect('/intelligence/agent');
 }

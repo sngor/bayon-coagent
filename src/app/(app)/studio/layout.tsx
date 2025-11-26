@@ -6,7 +6,7 @@ import { Wand2, PenTool, Image, Sparkles } from 'lucide-react';
 
 const studioTabs = [
     { id: 'write', label: 'Write', href: '/studio/write', icon: PenTool },
-    { id: 'describe', label: 'Listing', href: '/studio/describe', icon: Sparkles },
+    { id: 'describe', label: 'Listing Generator', href: '/studio/describe', icon: Sparkles },
     { id: 'reimagine', label: 'Reimagine', href: '/studio/reimagine', icon: Image },
 ];
 

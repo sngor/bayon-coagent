@@ -6,11 +6,9 @@ import { Library, FileText, BarChart3, Image, Bookmark, Home, Calendar } from 'l
 
 const libraryTabs = [
     { id: 'content', label: 'Content', href: '/library/content', icon: FileText },
-    { id: 'reports', label: 'Reports', href: '/library/reports', icon: BarChart3 },
-    { id: 'listings', label: 'Listings', href: '/library/listings', icon: Home },
+    { id: 'listings', label: 'My Listings', href: '/library/listings', icon: Home },
     { id: 'media', label: 'Media', href: '/library/media', icon: Image },
     { id: 'templates', label: 'Templates', href: '/library/templates', icon: Bookmark },
-    { id: 'calendar', label: 'Calendar', href: '/library/calendar', icon: Calendar },
 ];
 
 export default function LibraryLayout({
@@ -21,8 +19,8 @@ export default function LibraryLayout({
     return (
         <FeatureGuard featureId="library">
             <HubLayoutWithFavorites
-                title="Content & Knowledge Library"
-                description="Everything you've created, ready when you need it - content, reports, media, and templates"
+                title="My Library"
+                description="Everything you've created, ready when you need it - content, listings, media, and templates"
                 icon={Library}
                 tabs={libraryTabs}
                 tabsVariant="pills"

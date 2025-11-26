@@ -38,7 +38,7 @@ export function FormSection({
                     title={title!}
                     description={description}
                     icon={icon}
-                    variant="compact"
+                    variant="default"
                 />
             )}
             <div className="space-y-4">

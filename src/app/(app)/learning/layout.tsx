@@ -5,9 +5,9 @@ import { FeatureGuard } from '@/components/feature-guard';
 import { GraduationCap, BookOpen, Brain, Target } from 'lucide-react';
 
 const trainingTabs = [
-    { id: 'lessons', label: 'Lessons', href: '/training/lessons', icon: BookOpen },
-    { id: 'ai-plan', label: 'AI Plan', href: '/training/ai-plan', icon: Brain },
-    { id: 'practice', label: 'Practice', href: '/training/practice', icon: Target },
+    { id: 'lessons', label: 'Lessons', href: '/learning/lessons', icon: BookOpen },
+    { id: 'ai-plan', label: 'AI Plan', href: '/learning/ai-plan', icon: Brain },
+    { id: 'practice', label: 'Practice', href: '/learning/practice', icon: Target },
 ];
 
 export default function TrainingLayout({
@@ -18,7 +18,7 @@ export default function TrainingLayout({
     return (
         <FeatureGuard featureId="training">
             <HubLayout
-                title="Training Hub"
+                title="Learning Hub"
                 description="Sharpen your skills with proven strategies and personalized AI coaching"
                 icon={GraduationCap}
                 tabs={trainingTabs}

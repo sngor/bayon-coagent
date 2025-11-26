@@ -160,6 +160,7 @@ import type { Profile } from '@/lib/types';
 import { validateTargetArea } from '@/lib/alerts/validation';
 import { aggregateNeighborhoodData } from '@/lib/alerts/neighborhood-profile-data-aggregation';
 import { v4 as uuidv4 } from 'uuid';
+import { FeatureToggle } from '@/lib/feature-toggles';
 
 const guideSchema = z.object({
   targetMarket: z.string().min(3, 'Target market is required.'),
@@ -1839,15 +1840,33 @@ export async function checkAdminStatusAction(userId: string): Promise<{
 
     const repository = getRepository();
     const profileKeys = getProfileKeys(userId);
+    console.log('Fetching profile for admin check:', profileKeys);
+
     const result = await repository.get(profileKeys.PK, profileKeys.SK);
-    const profileData = (result as any)?.Data;
+    const profileData = result;
+    console.log('Profile data found:', profileData ? 'Yes' : 'No', (profileData as any)?.role);
+
+    // Check for admin role OR specific email override
+    const email = profileData?.email;
+    const isSuperAdminEmail = email === 'ngorlong@gmail.com';
 
     const role = profileData?.role || 'user';
-    const isAdmin = role === 'admin' || role === 'super_admin';
+    const isAdmin = role === 'admin' || role === 'super_admin' || isSuperAdminEmail;
+
+    console.log('Admin check result:', { isAdmin, role, isSuperAdminEmail });
+
+    if (isSuperAdminEmail && role !== 'super_admin') {
+      // Auto-promote to super_admin if not already
+      // We don't await this to avoid slowing down the response
+      repository.put(profileKeys.PK, profileKeys.SK, {
+        ...profileData,
+        role: 'super_admin'
+      }).catch(console.error);
+    }
 
     return {
       isAdmin,
-      role,
+      role: isSuperAdminEmail ? 'super_admin' : role,
       profileData,
     };
   } catch (error: any) {
@@ -1857,6 +1876,43 @@ export async function checkAdminStatusAction(userId: string): Promise<{
       error: error.message,
     };
   }
+}
+
+export async function forceCreateAdminProfile(userId: string, email: string) {
+  const repository = getRepository();
+  const profileKeys = getProfileKeys(userId);
+
+  const adminProfile = {
+    id: userId,
+    email: email,
+    role: 'super_admin',
+    name: 'Admin User',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  // Use put with the full item structure
+  await repository.put({
+    PK: profileKeys.PK,
+    SK: profileKeys.SK,
+    EntityType: 'UserProfile' as any,
+    Data: adminProfile,
+    CreatedAt: Date.now(),
+    UpdatedAt: Date.now()
+  });
+  return { success: true };
+}
+
+export async function verifyAdminProfile(userId: string) {
+  const repository = getRepository();
+  const profileKeys = getProfileKeys(userId);
+  const result = await repository.get(profileKeys.PK, profileKeys.SK);
+  return {
+    found: !!result,
+    data: result,
+    keys: profileKeys,
+    tableName: process.env.DYNAMODB_TABLE_NAME
+  };
 }
 
 export async function fixMyAdminStatusAction(userId: string, userEmail: string): Promise<{
@@ -2072,6 +2128,121 @@ export async function createSuperAdminAction(
   }
 }
 
+export async function createAdminUserAction(
+  prevState: any,
+  formData: FormData
+): Promise<{
+  message: string;
+  data: any;
+  errors: any;
+}> {
+  try {
+    // 1. Verify Super Admin Status
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const currentUser = await getCurrentUserServer();
+
+    if (!currentUser) {
+      return { message: 'Not authenticated', errors: {}, data: null };
+    }
+
+    const adminStatus = await checkAdminStatusAction(currentUser.id);
+    if (adminStatus.role !== 'super_admin') {
+      return { message: 'Unauthorized: Super Admin access required', errors: {}, data: null };
+    }
+
+    // 2. Get form data
+    const email = formData.get('email') as string;
+    const targetRole = formData.get('role') as string; // 'admin' or 'user' or 'super_admin'
+
+    if (!email) {
+      return { message: 'Email is required', errors: { email: ['Email is required'] }, data: null };
+    }
+
+    // 3. Find target user in Cognito
+    const { AdminGetUserCommand, CognitoIdentityProviderClient } = await import('@aws-sdk/client-cognito-identity-provider');
+    const { getAWSConfig } = await import('@/aws/config');
+
+    const config = getAWSConfig();
+    const cognitoClient = new CognitoIdentityProviderClient(config);
+
+    let userId: string;
+    try {
+      const getUserCommand = new AdminGetUserCommand({
+        UserPoolId: process.env.COGNITO_USER_POOL_ID,
+        Username: email,
+      });
+
+      const userResult = await cognitoClient.send(getUserCommand);
+      const userIdAttr = userResult.UserAttributes?.find(attr => attr.Name === 'sub');
+
+      if (!userIdAttr?.Value) {
+        return {
+          message: 'User not found in Cognito',
+          errors: { email: ['User with this email not found'] },
+          data: null,
+        };
+      }
+
+      userId = userIdAttr.Value;
+    } catch (error: any) {
+      if (error.name === 'UserNotFoundException') {
+        return {
+          message: 'User not found',
+          errors: { email: ['User with this email not found'] },
+          data: null,
+        };
+      }
+      throw error;
+    }
+
+    // 4. Update profile
+    const repository = getRepository();
+    const profileKeys = getProfileKeys(userId);
+
+    // Get existing profile or create new one
+    let existingProfile: any = {};
+    try {
+      const result = await repository.get(profileKeys.PK, profileKeys.SK);
+      existingProfile = result || {};
+    } catch (error) {
+      // Profile doesn't exist
+    }
+
+    const updatedProfile = {
+      ...existingProfile,
+      id: userId,
+      email,
+      role: targetRole,
+      updatedAt: new Date().toISOString(),
+      // Add permissions if admin
+      permissions: targetRole === 'admin' || targetRole === 'super_admin' ? Object.values(ADMIN_PERMISSIONS) : [],
+    };
+
+    await repository.put({
+      PK: profileKeys.PK,
+      SK: profileKeys.SK,
+      EntityType: 'UserProfile' as any,
+      Data: updatedProfile,
+      CreatedAt: existingProfile.createdAt || Date.now(),
+      UpdatedAt: Date.now()
+    });
+
+    return {
+      message: 'success',
+      data: { userId, email, role: targetRole },
+      errors: {},
+    };
+
+  } catch (error) {
+    console.error('Error in createAdminUserAction:', error);
+    return {
+      message: 'Failed to update user role',
+      errors: {},
+      data: null,
+    };
+  }
+}
+
 export async function submitFeedbackAction(
   prevState: any,
   formData: FormData
@@ -2162,6 +2333,13 @@ export async function getFeedbackAction(): Promise<{
   errors: any;
 }> {
   try {
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
+    if (!user) return { message: 'Unauthorized', data: [], errors: {} };
+
+    const adminStatus = await checkAdminStatusAction(user.id);
+    if (!adminStatus.isAdmin) return { message: 'Unauthorized', data: [], errors: {} };
+
     const repository = getRepository();
 
     // Query all feedback items using the common partition key
@@ -4059,6 +4237,124 @@ export async function saveCompetitorAction(
   }
 }
 
+const upsertCompetitorSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  agency: z.string().min(2, { message: 'Agency must be at least 2 characters.' }),
+  reviewCount: z.coerce.number().int().nonnegative(),
+  avgRating: z.coerce.number().min(0).max(5),
+  socialFollowers: z.coerce.number().int().nonnegative(),
+  domainAuthority: z.coerce.number().int().min(0).max(100),
+  createdAt: z.string().optional(),
+});
+
+export async function upsertCompetitorAction(
+  prevState: any,
+  formData: FormData
+) {
+  const validatedFields = upsertCompetitorSchema.safeParse({
+    id: formData.get('id'),
+    name: formData.get('name'),
+    agency: formData.get('agency'),
+    reviewCount: formData.get('reviewCount'),
+    avgRating: formData.get('avgRating'),
+    socialFollowers: formData.get('socialFollowers'),
+    domainAuthority: formData.get('domainAuthority'),
+    createdAt: formData.get('createdAt'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      message: 'Validation failed',
+      errors: validatedFields.error.flatten().fieldErrors,
+      data: null,
+    };
+  }
+
+  try {
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: { auth: ['You must be logged in to save competitors'] },
+      };
+    }
+
+    const repository = getRepository();
+    const data = validatedFields.data;
+    const competitorId = data.id || Date.now().toString();
+    const keys = getCompetitorKeys(user.id, competitorId);
+
+    const now = Date.now();
+    const createdAt = data.createdAt ? new Date(data.createdAt).getTime() : now;
+
+    await repository.put({
+      ...keys,
+      EntityType: 'Competitor',
+      Data: {
+        id: competitorId,
+        name: data.name,
+        agency: data.agency,
+        reviewCount: data.reviewCount,
+        avgRating: data.avgRating,
+        socialFollowers: data.socialFollowers,
+        domainAuthority: data.domainAuthority,
+        createdAt: new Date(createdAt).toISOString(),
+        updatedAt: new Date(now).toISOString(),
+      },
+      CreatedAt: createdAt,
+      UpdatedAt: now
+    });
+
+    return {
+      message: 'success',
+      data: { ...data, id: competitorId },
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Upsert competitor error:', error);
+    const errorMessage = handleAWSError(error, 'Failed to save competitor');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: {},
+    };
+  }
+}
+
+export async function deleteCompetitorAction(competitorId: string) {
+  try {
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        errors: ['You must be logged in to delete competitors'],
+      };
+    }
+
+    const repository = getRepository();
+    const keys = getCompetitorKeys(user.id, competitorId);
+    await repository.delete(keys.PK, keys.SK);
+
+    return {
+      message: 'success',
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Delete competitor error:', error);
+    const errorMessage = handleAWSError(error, 'Failed to delete competitor');
+    return {
+      message: errorMessage,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
 /**
  * Save marketing plan
  */
@@ -5745,5 +6041,36 @@ export async function clearSessionCookieAction(): Promise<{ success: boolean }> 
   } catch (error) {
     console.error('Failed to clear session cookie:', error);
     return { success: false };
+  }
+}
+
+export async function getPublicFeaturesAction(): Promise<{
+  message: string;
+  data: FeatureToggle[];
+  errors: any;
+}> {
+  try {
+    const repository = getRepository();
+    // Scan for features
+    const result = await repository.scan({
+      filterExpression: 'begins_with(PK, :pk) AND SK = :sk',
+      expressionAttributeValues: {
+        ':pk': 'FEATURE#',
+        ':sk': 'CONFIG'
+      }
+    });
+
+    return {
+      message: 'success',
+      data: result.items as FeatureToggle[],
+      errors: {}
+    };
+  } catch (error: any) {
+    console.error('Error fetching public features:', error);
+    return {
+      message: 'Failed to fetch features',
+      data: [],
+      errors: { system: error.message }
+    };
   }
 }

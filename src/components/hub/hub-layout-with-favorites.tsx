@@ -90,56 +90,56 @@ const PAGE_METADATA: Record<string, Omit<FavoriteItem, 'addedAt'>> = {
         color: 'bg-red-500',
         gradient: 'from-red-500 to-red-600'
     },
-    '/research/agent': {
+    '/intelligence/agent': {
         id: 'research-agent',
         title: 'Research Agent',
         description: 'AI-powered market research',
-        href: '/research/agent',
+        href: '/intelligence/agent',
         icon: 'Search',
         color: 'bg-green-500',
         gradient: 'from-green-500 to-green-600'
     },
-    '/research/reports': {
+    '/intelligence/reports': {
         id: 'research-reports',
         title: 'Research Reports',
         description: 'View saved research reports',
-        href: '/research/reports',
+        href: '/intelligence/reports',
         icon: 'FileText',
         color: 'bg-teal-500',
         gradient: 'from-teal-500 to-teal-600'
     },
-    '/research/knowledge': {
+    '/intelligence/knowledge': {
         id: 'research-knowledge',
         title: 'Knowledge Base',
         description: 'Access research and news',
-        href: '/research/knowledge',
+        href: '/intelligence/knowledge',
         icon: 'BookOpen',
         color: 'bg-teal-500',
         gradient: 'from-teal-500 to-teal-600'
     },
-    '/market/trends': {
+    '/intelligence/trends': {
         id: 'market-trends',
         title: 'Market Trends',
         description: 'Life event predictions and market trends',
-        href: '/market/trends',
+        href: '/intelligence/trends',
         icon: 'TrendingUp',
         color: 'bg-violet-500',
         gradient: 'from-violet-500 to-violet-600'
     },
-    '/market/opportunities': {
+    '/intelligence/opportunities': {
         id: 'market-opportunities',
         title: 'Market Opportunities',
         description: 'Investment opportunities',
-        href: '/market/opportunities',
+        href: '/intelligence/opportunities',
         icon: 'TrendingUp',
         color: 'bg-green-500',
         gradient: 'from-green-500 to-green-600'
     },
-    '/market/analytics': {
+    '/intelligence/analytics': {
         id: 'market-analytics',
         title: 'Market Analytics',
         description: 'Advanced market analysis',
-        href: '/market/analytics',
+        href: '/intelligence/analytics',
         icon: 'BarChart3',
         color: 'bg-purple-500',
         gradient: 'from-purple-500 to-purple-600'

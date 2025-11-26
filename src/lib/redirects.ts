@@ -10,9 +10,9 @@ export const REDIRECT_MAP: Record<string, string> = {
   '/reimagine': '/studio/reimagine',
 
   // Research Hub
-  '/research-agent': '/research/agent',
-  '/knowledge-base': '/research/knowledge',
-  '/intelligence/research': '/research/agent',
+  '/research-agent': '/intelligence/agent',
+  '/knowledge-base': '/intelligence/knowledge',
+  '/intelligence/research': '/intelligence/agent',
 
   // Market Hub (formerly Intelligence)
   '/intelligence': '/market',

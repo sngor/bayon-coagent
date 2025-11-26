@@ -14,6 +14,7 @@ import {
   QueryCommand,
   BatchGetCommand,
   BatchWriteCommand,
+  ScanCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { getDocumentClient, getTableName } from './client';
 import {
@@ -210,6 +211,40 @@ export class DynamoDBRepository {
 
         return {
           items: (response.Items || []) as DynamoDBItem<T>[],
+          lastEvaluatedKey: response.LastEvaluatedKey as DynamoDBKey | undefined,
+          count: response.Count || 0,
+        };
+      }, this.retryOptions);
+    } catch (error: any) {
+      throw wrapDynamoDBError(error);
+    }
+  }
+
+  /**
+   * Scans the table (use with caution)
+   * @param options Scan options
+   * @returns Scan result
+   */
+  async scan<T>(options: QueryOptions = {}): Promise<QueryResult<T>> {
+    try {
+      return await withRetry(async () => {
+        const client = getDocumentClient();
+
+        const command = new ScanCommand({
+          TableName: this.tableName,
+          FilterExpression: options.filterExpression,
+          ExpressionAttributeNames: options.expressionAttributeNames,
+          ExpressionAttributeValues: options.expressionAttributeValues,
+          Limit: options.limit,
+          ExclusiveStartKey: options.exclusiveStartKey,
+        });
+
+        const response = await client.send(command);
+        const items = (response.Items || []) as DynamoDBItem<T>[];
+        const data = items.map((item) => item.Data);
+
+        return {
+          items: data,
           lastEvaluatedKey: response.LastEvaluatedKey as DynamoDBKey | undefined,
           count: response.Count || 0,
         };

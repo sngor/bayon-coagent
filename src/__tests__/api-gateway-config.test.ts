@@ -68,7 +68,7 @@ describe('API Gateway Configuration', () => {
             expect(endpoints.ai).toBe('http://localhost:3000/api/ai');
             expect(endpoints.integration).toBe('http://localhost:3000/api/integration');
             expect(endpoints.background).toBe('http://localhost:3000/api/background');
-            expect(endpoints.admin).toBe('http://localhost:3000/api/admin');
+            expect(endpoints.admin).toBe('http://localhost:3000/api/super-admin');
         });
     });
 

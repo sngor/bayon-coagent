@@ -25,7 +25,7 @@ import {
     HouseIcon,
     AISparkleIcon,
 } from '@/components/ui/real-estate-icons';
-import { useAdmin } from '@/contexts/admin-context';
+import { useFeatureToggles } from '@/lib/feature-toggles';
 
 // Filled icon variants for active states - matching the exact shapes of outlined icons
 const FilledIcons = {
@@ -215,11 +215,11 @@ const regularNavItems = [
         featureId: null
     },
     {
-        href: '/assistant',
-        icon: MessagesSquare,
-        filledIcon: FilledIcons.MessagesSquare,
-        label: 'Chat',
-        featureId: 'assistant'
+        href: '/brand',
+        icon: Target,
+        filledIcon: FilledIcons.Target,
+        label: 'Brand',
+        featureId: 'brand'
     },
     {
         href: '/studio',
@@ -229,26 +229,12 @@ const regularNavItems = [
         featureId: 'studio'
     },
     {
-        href: '/brand',
-        icon: Target,
-        filledIcon: FilledIcons.Target,
-        label: 'Brand',
-        featureId: 'brand'
-    },
-    {
-        href: '/research',
+        href: '/intelligence',
         icon: AISparkleIcon,
         filledIcon: FilledIcons.AISparkleIcon,
-        label: 'Research',
+        label: 'Intelligence',
         customIcon: true,
         featureId: 'research'
-    },
-    {
-        href: '/market',
-        icon: BarChart3,
-        filledIcon: FilledIcons.BarChart3,
-        label: 'Market',
-        featureId: 'market'
     },
     {
         href: '/tools',
@@ -272,53 +258,60 @@ const regularNavItems = [
         featureId: 'client-dashboards'
     },
     {
-        href: '/training',
+        href: '/learning',
         icon: GraduationCap,
         filledIcon: FilledIcons.GraduationCap,
-        label: 'Training',
+        label: 'Learning',
         featureId: 'training'
+    },
+    {
+        href: '/assistant',
+        icon: MessagesSquare,
+        filledIcon: FilledIcons.MessagesSquare,
+        label: 'Chat',
+        featureId: 'assistant'
     },
 ];
 
 // Admin navigation
 const adminNavItems = [
     {
-        href: '/admin',
+        href: '/super-admin',
         icon: Shield,
         filledIcon: FilledIcons.Shield,
-        label: 'Admin Dashboard',
+        label: 'Super Admin Dashboard',
         customIcon: false
     },
     {
-        href: '/admin/users',
+        href: '/super-admin/users',
         icon: Users,
         filledIcon: FilledIcons.Users,
         label: 'User Management',
         customIcon: false
     },
     {
-        href: '/admin/feedback',
+        href: '/super-admin/feedback',
         icon: MessageSquare,
         filledIcon: FilledIcons.MessageSquare,
         label: 'Feedback',
         customIcon: false
     },
     {
-        href: '/admin/analytics',
+        href: '/super-admin/analytics',
         icon: BarChart3,
         filledIcon: FilledIcons.BarChart3,
         label: 'Analytics',
         customIcon: false
     },
     {
-        href: '/admin/health',
+        href: '/super-admin/health',
         icon: Activity,
         filledIcon: FilledIcons.Activity,
         label: 'System Health',
         customIcon: false
     },
     {
-        href: '/admin/features',
+        href: '/super-admin/features',
         icon: Settings,
         filledIcon: FilledIcons.Settings,
         label: 'Features',
@@ -328,9 +321,25 @@ const adminNavItems = [
 
 export function DynamicNavigation() {
     const pathname = usePathname();
-    const { isAdminMode } = useAdmin();
+    const { features } = useFeatureToggles();
 
-    const navItems = isAdminMode ? adminNavItems : regularNavItems;
+    // Create a map of enabled features for quick lookup
+    const enabledFeatures = new Set(
+        features.filter(f => f.enabled).map(f => f.id)
+    );
+
+    // Determine if we should show admin navigation based on URL
+    const showAdminSidebar = pathname?.startsWith('/super-admin');
+
+    // Filter navigation items based on feature toggles
+    const navItems = showAdminSidebar
+        ? adminNavItems
+        : regularNavItems.filter(item => {
+            // Dashboard has no featureId, always show it
+            if (!item.featureId) return true;
+            // Check if the feature is enabled
+            return enabledFeatures.has(item.featureId);
+        });
 
     return (
         <>
@@ -340,8 +349,8 @@ export function DynamicNavigation() {
             <SidebarMenu>
                 {navItems.map((item) => {
                     // More precise active state logic
-                    const isActive = item.href === '/admin'
-                        ? pathname === '/admin' // Exact match for admin dashboard
+                    const isActive = (item.href === '/super-admin' || item.href === '/dashboard')
+                        ? pathname === item.href // Exact match for dashboards
                         : pathname.startsWith(item.href); // Prefix match for other routes
 
                     return (

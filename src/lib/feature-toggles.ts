@@ -1,4 +1,5 @@
 import React from 'react';
+import { getPublicFeaturesAction } from '@/app/actions';
 
 /**
  * Feature Toggle System
@@ -15,38 +16,33 @@ export interface FeatureToggle {
     enabled: boolean;
     category: 'hub' | 'feature';
     dependencies?: string[]; // Features that depend on this one
+    status?: 'enabled' | 'disabled' | 'beta' | 'development';
+    rollout?: number; // 0-100 percentage
+    users?: number; // Count of users with access
 }
 
 export const DEFAULT_FEATURES: FeatureToggle[] = [
     {
-        id: 'studio',
-        name: 'Studio Hub',
-        description: 'AI content creation - Write, Describe, and Reimagine tools',
-        icon: 'Wand2',
-        enabled: true,
-        category: 'hub'
-    },
-    {
         id: 'brand',
         name: 'Brand Hub',
-        description: 'Brand identity and strategy - Profile, Audit, Competitors, Strategy',
+        description: 'Brand identity and strategy - Profile, Audit, Competitors, Strategy, Calendar',
         icon: 'Target',
         enabled: true,
         category: 'hub'
     },
     {
-        id: 'research',
-        name: 'Research Hub',
-        description: 'AI-powered research and insights - Research Agent, Reports, Knowledge Base',
-        icon: 'Search',
+        id: 'studio',
+        name: 'Studio Hub',
+        description: 'AI content creation - Write, Listing Generator, and Reimagine tools',
+        icon: 'Wand2',
         enabled: true,
         category: 'hub'
     },
     {
-        id: 'market',
-        name: 'Market Hub',
-        description: 'Market intelligence and trends - Insights, Opportunities, Analytics',
-        icon: 'AISparkleIcon',
+        id: 'research',
+        name: 'Intelligence Hub',
+        description: 'AI-powered research and market intelligence - Research, Trends, News, Analytics, Reports',
+        icon: 'Search',
         enabled: true,
         category: 'hub'
     },
@@ -61,15 +57,23 @@ export const DEFAULT_FEATURES: FeatureToggle[] = [
     {
         id: 'library',
         name: 'Library Hub',
-        description: 'Content and knowledge management - Content, Reports, Media, Templates',
+        description: 'Content and knowledge management - Content, My Listings, Media, Templates',
         icon: 'Library',
         enabled: true,
         category: 'hub'
     },
     {
+        id: 'client-dashboards',
+        name: 'Client Dashboards',
+        description: 'Create personalized dashboards for clients with market reports and property search',
+        icon: 'Users',
+        enabled: true,
+        category: 'hub'
+    },
+    {
         id: 'training',
-        name: 'Training Hub',
-        description: 'Learning and development resources',
+        name: 'Learning Hub',
+        description: 'Learning and skill development - Lessons, AI Plan, Practice',
         icon: 'GraduationCap',
         enabled: true,
         category: 'hub'
@@ -81,14 +85,6 @@ export const DEFAULT_FEATURES: FeatureToggle[] = [
         icon: 'MessageSquare',
         enabled: true,
         category: 'feature'
-    },
-    {
-        id: 'client-dashboards',
-        name: 'Client Dashboards',
-        description: 'Create personalized dashboards for clients with market reports and property search',
-        icon: 'Users',
-        enabled: true,
-        category: 'hub'
     }
 ];
 
@@ -221,6 +217,17 @@ export class FeatureToggleManager {
 
         window.dispatchEvent(new CustomEvent('featureToggleReset'));
     }
+
+    public updateFeaturesFromServer(serverFeatures: FeatureToggle[]): void {
+        if (!serverFeatures || serverFeatures.length === 0) return;
+
+        serverFeatures.forEach(feature => {
+            this.features.set(feature.id, feature);
+        });
+        this.saveFeatures();
+
+        window.dispatchEvent(new CustomEvent('featureToggleReset'));
+    }
 }
 
 // Singleton instance
@@ -268,6 +275,13 @@ export function useFeatureToggles() {
     );
 
     React.useEffect(() => {
+        // Sync with server
+        getPublicFeaturesAction().then(result => {
+            if (result.message === 'success' && result.data) {
+                featureToggleManager.updateFeaturesFromServer(result.data);
+            }
+        }).catch(console.error);
+
         const handleChange = () => {
             setFeatures(featureToggleManager.getAllFeatures());
         };

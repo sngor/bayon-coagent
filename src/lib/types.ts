@@ -95,6 +95,7 @@ export type Competitor = {
   socialFollowers: number;
   domainAuthority: number;
   isYou?: boolean;
+  createdAt?: string;
 }
 
 export type KeywordRanking = {

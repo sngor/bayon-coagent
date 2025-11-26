@@ -151,14 +151,14 @@ function NavigationItems() {
 }
 
 function AdminModeBadge() {
-  const { isAdminMode } = useAdmin();
+  const { isAdminMode, isSuperAdmin } = useAdmin();
 
   if (!isAdminMode) return null;
 
   return (
     <Badge variant="outline" className="text-orange-600 border-orange-600 bg-orange-50 dark:bg-orange-950/50 dark:text-orange-400 dark:border-orange-400">
       <Shield className="h-3 w-3 mr-1" />
-      Admin Mode
+      {isSuperAdmin ? 'Super Admin Mode' : 'Admin Mode'}
     </Badge>
   );
 }
@@ -170,7 +170,7 @@ function UserDropdownContent({ profile, user, userName, getInitials, handleSignO
   getInitials: (name: string) => string;
   handleSignOut: () => void;
 }) {
-  const { isAdmin, isAdminMode, toggleAdminMode } = useAdmin();
+  const { isAdmin, isSuperAdmin, isAdminMode, toggleAdminMode } = useAdmin();
   const router = useRouter();
 
   const handleAdminModeToggle = () => {
@@ -182,7 +182,7 @@ function UserDropdownContent({ profile, user, userName, getInitials, handleSignO
       router.push('/dashboard');
     } else {
       // Currently in regular mode, switching to admin mode
-      router.push('/admin');
+      router.push('/super-admin');
     }
   };
 
@@ -222,12 +222,12 @@ function UserDropdownContent({ profile, user, userName, getInitials, handleSignO
             {isAdminMode ? (
               <>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                <span>Exit Admin Mode</span>
+                <span>Exit Super Admin Mode</span>
               </>
             ) : (
               <>
                 <Shield className="mr-2 h-4 w-4" />
-                <span>Enter Admin Mode</span>
+                <span>Enter Super Admin Mode</span>
               </>
             )}
           </DropdownMenuItem>

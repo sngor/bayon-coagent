@@ -180,7 +180,7 @@ export function AdminDebug() {
                         </p>
                         <div className="flex gap-2">
                             <Button
-                                onClick={() => window.location.href = '/admin/feedback'}
+                                onClick={() => window.location.href = '/super-admin/feedback'}
                                 variant="outline"
                                 size="sm"
                             >

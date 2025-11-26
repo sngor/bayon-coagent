@@ -65,7 +65,7 @@ const SERVICES: Service[] = [
     },
     {
         name: 'Admin Service',
-        endpoint: '/v1/admin',
+        endpoint: '/v1/super-admin',
         requiresAuth: true,
         allowedRoles: ['admin'],
     },

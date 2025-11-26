@@ -138,14 +138,6 @@ export function useItem<T = any>(
         setError(null);
 
         try {
-            // Check if we're in the browser
-            if (typeof window !== 'undefined') {
-                throw new Error(
-                    'DynamoDB hooks cannot be used in client components. ' +
-                    'Please use Server Components or Server Actions to fetch data.'
-                );
-            }
-
             const repository = getRepository();
             const result = await repository.get<T>(pk, sk);
 

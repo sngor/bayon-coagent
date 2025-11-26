@@ -26,18 +26,44 @@ import {
     Copy,
     RefreshCw
 } from 'lucide-react';
-import { createSuperAdminAction } from '@/app/actions';
+import { createAdminUserAction } from '@/app/actions';
+import { useAdmin } from '@/contexts/admin-context';
 
-const initialState = {
+interface FormState {
+    message: string;
+    data: any;
+    errors: any;
+}
+
+const initialState: FormState = {
     message: '',
     data: null,
     errors: {},
 };
 
 export default function AdminSetupPage() {
-    const [state, formAction, isPending] = useActionState(createSuperAdminAction, initialState);
+    const { isSuperAdmin, isLoading } = useAdmin();
+    const [state, formAction, isPending] = useActionState(createAdminUserAction, initialState);
     const [showSuccess, setShowSuccess] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+
+    if (isLoading) {
+        return <div className="p-8 text-center">Loading...</div>;
+    }
+
+    if (!isSuperAdmin) {
+        return (
+            <div className="flex flex-col items-center justify-center p-12 space-y-4 text-center">
+                <div className="p-4 bg-red-100 dark:bg-red-900/50 rounded-full">
+                    <Shield className="h-12 w-12 text-red-600 dark:text-red-400" />
+                </div>
+                <h1 className="text-2xl font-bold text-red-600 dark:text-red-400">Access Denied</h1>
+                <p className="text-muted-foreground max-w-md">
+                    You do not have permission to access this page. Super Admin privileges are required.
+                </p>
+            </div>
+        );
+    }
 
     // Mock admin data for UI demonstration
     const adminUsers = [
@@ -110,11 +136,11 @@ export default function AdminSetupPage() {
                         <Card>
                             <CardHeader className="text-center">
                                 <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50">
-                                    <Shield className="h-8 w-8 text-primary" />
+                                    <UserPlus className="h-8 w-8 text-primary" />
                                 </div>
-                                <CardTitle className="text-2xl">Create Super Admin</CardTitle>
+                                <CardTitle className="text-2xl">Create User / Admin</CardTitle>
                                 <CardDescription className="text-base">
-                                    Grant administrative access to manage the Bayon Coagent platform
+                                    Create a new user or grant admin privileges
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -124,17 +150,17 @@ export default function AdminSetupPage() {
                                             <CheckCircle className="h-12 w-12 text-green-500" />
                                         </div>
                                         <div>
-                                            <h3 className="text-xl font-semibold mb-2">Super Admin Created Successfully!</h3>
+                                            <h3 className="text-xl font-semibold mb-2">User Updated Successfully!</h3>
                                             <p className="text-muted-foreground">
-                                                {state.data?.email} now has full administrative access to the platform.
+                                                The user {state.data?.email} has been updated with role: {state.data?.role}.
                                             </p>
                                         </div>
                                         <div className="flex gap-3 justify-center">
-                                            <Button onClick={() => window.location.href = '/admin'}>
+                                            <Button onClick={() => window.location.href = '/super-admin'}>
                                                 Go to Admin Dashboard
                                             </Button>
                                             <Button variant="outline" onClick={() => setShowSuccess(false)}>
-                                                Create Another Admin
+                                                Update Another User
                                             </Button>
                                         </div>
                                     </div>
@@ -153,44 +179,29 @@ export default function AdminSetupPage() {
                                                 id="email"
                                                 name="email"
                                                 type="email"
-                                                placeholder="admin@yourcompany.com"
+                                                placeholder="user@example.com"
                                                 required
                                                 className="h-12"
                                             />
-                                            {state.errors?.email && (
-                                                <p className="text-sm text-destructive">{state.errors.email[0]}</p>
-                                            )}
                                             <p className="text-sm text-muted-foreground">
-                                                This user must already be registered in the application
+                                                The user must already exist in the system (Cognito).
                                             </p>
                                         </div>
 
                                         <div className="space-y-3">
-                                            <Label htmlFor="adminKey" className="text-base font-medium">Super Admin Key</Label>
-                                            <div className="relative">
-                                                <Input
-                                                    id="adminKey"
-                                                    name="adminKey"
-                                                    type={showPassword ? "text" : "password"}
-                                                    placeholder="Enter the super admin key"
-                                                    required
-                                                    className="h-12 pr-12"
-                                                />
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
-                                                    onClick={() => setShowPassword(!showPassword)}
-                                                >
-                                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                                </Button>
-                                            </div>
-                                            {state.errors?.adminKey && (
-                                                <p className="text-sm text-destructive">{state.errors.adminKey[0]}</p>
-                                            )}
+                                            <Label htmlFor="role" className="text-base font-medium">Role</Label>
+                                            <select
+                                                id="role"
+                                                name="role"
+                                                className="flex h-12 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                defaultValue="user"
+                                            >
+                                                <option value="user">User</option>
+                                                <option value="admin">Admin</option>
+                                                <option value="super_admin">Super Admin</option>
+                                            </select>
                                             <p className="text-sm text-muted-foreground">
-                                                Contact your system administrator for the admin key
+                                                Select the role to assign to this user.
                                             </p>
                                         </div>
 
@@ -198,12 +209,12 @@ export default function AdminSetupPage() {
                                             {isPending ? (
                                                 <>
                                                     <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                                                    Creating Super Admin...
+                                                    Updating User...
                                                 </>
                                             ) : (
                                                 <>
                                                     <UserPlus className="mr-2 h-4 w-4" />
-                                                    Create Super Admin
+                                                    Create / Update User
                                                 </>
                                             )}
                                         </Button>

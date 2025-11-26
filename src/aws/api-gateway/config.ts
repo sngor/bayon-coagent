@@ -37,7 +37,7 @@ export function getApiGatewayConfig(): ApiGatewayConfig {
             aiServiceApiUrl: 'http://localhost:3000/api/ai',
             integrationServiceApiUrl: 'http://localhost:3000/api/integration',
             backgroundServiceApiUrl: 'http://localhost:3000/api/background',
-            adminServiceApiUrl: 'http://localhost:3000/api/admin',
+            adminServiceApiUrl: 'http://localhost:3000/api/super-admin',
             region,
             stage: environment,
         };

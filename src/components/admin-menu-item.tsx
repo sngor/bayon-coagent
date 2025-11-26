@@ -39,7 +39,7 @@ export function AdminMenuItem() {
 
     return (
         <DropdownMenuItem asChild>
-            <Link href="/admin" className="cursor-pointer">
+            <Link href="/super-admin" className="cursor-pointer">
                 <Shield className="mr-2 h-4 w-4" />
                 <span>Admin Panel</span>
             </Link>

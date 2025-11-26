@@ -374,6 +374,31 @@ export default function BrandAuditPage() {
         loadOAuthTokens();
     }, [user]);
 
+  // Load reviews
+  useEffect(() => {
+    async function loadReviews() {
+      if (!user?.id) {
+        setIsLoadingReviews(false);
+        return;
+      }
+
+      try {
+        setIsLoadingReviews(true);
+        const result = await getReviewsAction(user.id);
+
+        if (result.message === 'success' && result.data) {
+          setReviews(result.data);
+        }
+      } catch (error) {
+        console.error('Failed to load reviews:', error);
+      } finally {
+        setIsLoadingReviews(false);
+      }
+    }
+
+    loadReviews();
+  }, [user?.id]);
+
     const displayAuditData = auditState.data || savedAuditData?.results || null;
     const fetchedReviews = zillowState.data?.reviews;
     const displayAnalysisData = bulkAnalysisState.data || savedAnalysisData || null;
@@ -441,14 +466,43 @@ export default function BrandAuditPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [auditState]);
 
-    const handleDeleteReview = () => {
+    const handleDeleteReview = async () => {
         if (!reviewToDelete || !user) return;
-        // TODO: Implement delete review functionality with DynamoDB
-        toast({
-            title: 'Review Deleted',
-            description: `The review from ${reviewToDelete.author.name} has been removed.`,
-        });
-        setReviewToDelete(null);
+
+        try {
+            // Create a FormData object to pass to the action
+            const formData = new FormData();
+            formData.append('agentId', user.id);
+            formData.append('reviewId', reviewToDelete.id);
+
+            // Call the delete action
+            const result = await deleteReviewAction(null, formData);
+
+            if (result.message === 'success') {
+                // Remove the review from local state
+                setReviews(prev => prev.filter(r => r.id !== reviewToDelete.id));
+
+                toast({
+                    title: 'Review Deleted',
+                    description: `The review from ${reviewToDelete.author.name} has been removed.`,
+                });
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Failed to Delete',
+                    description: result.message || 'An error occurred while deleting the review.',
+                });
+            }
+        } catch (error) {
+            console.error('Delete review error:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'An unexpected error occurred while deleting the review.',
+            });
+        } finally {
+            setReviewToDelete(null);
+        }
     };
 
     const reviewDistribution = useMemo(() => {
