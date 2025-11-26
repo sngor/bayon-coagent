@@ -223,7 +223,7 @@ export default function ResearchAgentPage() {
     <div className="space-y-6">
       {/* Feature Banner with Tips */}
       <FeatureBanner
-        title="💡 Research Agent Tips"
+        title="Research Agent Tips"
         description="Get the most out of your AI research assistant with these proven strategies"
         variant="tip"
         dismissible={true}

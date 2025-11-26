@@ -12,7 +12,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Send, StopCircle, User, Bot, Sparkles } from 'lucide-react';
+import { Loader2, Send, StopCircle, User, Bot, Sparkles, Mic, MessageSquare, Lightbulb } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
     startRolePlayAction,
@@ -21,6 +21,8 @@ import {
 } from '@/app/actions';
 import { rolePlayScenarios, type RolePlayScenario } from '@/lib/training-data';
 import type { RolePlayMessage } from '@/aws/bedrock/flows/role-play-flow';
+import { VoiceRolePlay } from '@/components/voice-role-play';
+import { CoachingMode } from '@/components/coaching-mode';
 
 export interface AIRolePlayProps {
     moduleId?: string;
@@ -35,6 +37,8 @@ export function AIRolePlay({ moduleId, className }: AIRolePlayProps = {}) {
     const [isAIResponding, setIsAIResponding] = useState(false);
     const [feedback, setFeedback] = useState<string | null>(null);
     const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
+    const [isVoiceMode, setIsVoiceMode] = useState(false);
+    const [isCoachingMode, setIsCoachingMode] = useState(false);
     const { toast } = useToast();
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -220,77 +224,217 @@ export function AIRolePlay({ moduleId, className }: AIRolePlayProps = {}) {
         <div className={className}>
             {!sessionId ? (
                 // Scenario Selection
-                <StandardCard
-                    title={<span className="font-headline">AI Role-Play Practice</span>}
-                    description="Practice real-world scenarios with AI personas to build confidence and improve your skills"
-                >
-                    <div className="space-y-6">
-                        <div className="space-y-2">
-                            <label htmlFor="scenario" className="text-sm font-medium">
-                                Choose a Scenario
-                            </label>
-                            <Select value={selectedScenarioId} onValueChange={setSelectedScenarioId}>
-                                <SelectTrigger id="scenario">
-                                    <SelectValue placeholder="Select a practice scenario..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {availableScenarios.map((scenario) => (
-                                        <SelectItem key={scenario.id} value={scenario.id}>
-                                            <div className="flex items-center gap-2">
-                                                <span>{scenario.title}</span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    ({scenario.difficulty})
-                                                </span>
-                                            </div>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {selectedScenario && (
-                            <div className="space-y-4 p-4 bg-secondary/30 rounded-lg border">
-                                <div>
-                                    <h4 className="font-headline font-semibold text-sm mb-1">Scenario</h4>
-                                    <p className="text-sm text-muted-foreground">
-                                        {selectedScenario.description}
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <h4 className="font-headline font-semibold text-sm mb-1">You'll Practice</h4>
-                                    <ul className="text-sm text-muted-foreground space-y-1">
-                                        {selectedScenario.learningObjectives.map((obj, idx) => (
-                                            <li key={idx}>• {obj}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-
-                                <div>
-                                    <h4 className="font-headline font-semibold text-sm mb-1">
-                                        About {selectedScenario.persona.name}
-                                    </h4>
-                                    <p className="text-sm text-muted-foreground">
-                                        {selectedScenario.persona.background}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                        <strong>Personality:</strong> {selectedScenario.persona.personality}
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
-                        <Button
-                            onClick={handleStartSession}
-                            disabled={!selectedScenarioId}
-                            className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-                            size="lg"
+                <div className="w-full max-w-full space-y-8">
+                    <div className="grid md:grid-cols-2 gap-6">
+                        {/* Left Column: Configuration */}
+                        <StandardCard
+                            title={
+                                <span className="text-2xl font-bold font-headline bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                                    AI Role-Play Studio
+                                </span>
+                            }
+                            description="Master your scripts and objection handling with realistic AI personas"
+                            className="h-full"
                         >
-                            <Sparkles className="mr-2 h-5 w-5" />
-                            Start Practice Session
-                        </Button>
+                            <div className="space-y-6">
+                                {/* Mode Selection */}
+                                <div className="space-y-3">
+                                    <label className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                                        1. Choose Practice Mode
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            onClick={() => setIsVoiceMode(false)}
+                                            className={`p-4 rounded-xl border-2 text-left transition-all duration-200 hover:shadow-md ${!isVoiceMode
+                                                ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                                                : 'border-muted hover:border-primary/50 hover:bg-muted/50'
+                                                }`}
+                                        >
+                                            <MessageSquare className={`h-6 w-6 mb-2 ${!isVoiceMode ? 'text-primary' : 'text-muted-foreground'}`} />
+                                            <div className="font-semibold text-sm">Text Chat</div>
+                                            <div className="text-xs text-muted-foreground mt-1">
+                                                Type and read at your own pace
+                                            </div>
+                                        </button>
+
+                                        <button
+                                            onClick={() => setIsVoiceMode(true)}
+                                            className={`p-4 rounded-xl border-2 text-left transition-all duration-200 hover:shadow-md ${isVoiceMode
+                                                ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                                                : 'border-muted hover:border-primary/50 hover:bg-muted/50'
+                                                }`}
+                                        >
+                                            <Mic className={`h-6 w-6 mb-2 ${isVoiceMode ? 'text-primary' : 'text-muted-foreground'}`} />
+                                            <div className="font-semibold text-sm">Voice Mode</div>
+                                            <div className="text-xs text-muted-foreground mt-1">
+                                                Real-time speech practice
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Coaching Toggle (Voice Only) */}
+                                <div className={`transition-all duration-300 ${isVoiceMode ? 'opacity-100 max-h-32' : 'opacity-50 max-h-0 overflow-hidden'}`}>
+                                    <div
+                                        onClick={() => isVoiceMode && setIsCoachingMode(!isCoachingMode)}
+                                        className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all ${isCoachingMode
+                                            ? 'border-amber-400 bg-amber-50 dark:bg-amber-950/20'
+                                            : 'border-muted hover:border-amber-200'
+                                            }`}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <div className={`p-2 rounded-full ${isCoachingMode ? 'bg-amber-100 text-amber-600' : 'bg-muted text-muted-foreground'}`}>
+                                                <Lightbulb className="h-4 w-4" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <span className={`font-semibold text-sm ${isCoachingMode ? 'text-amber-900 dark:text-amber-100' : ''}`}>
+                                                        Coaching Mode
+                                                    </span>
+                                                    {isCoachingMode && <span className="text-xs font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">ENABLED</span>}
+                                                </div>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Get real-time feedback on your tone, pace, and objection handling techniques.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Scenario Selector */}
+                                <div className="space-y-3">
+                                    <label className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                                        2. Select Scenario
+                                    </label>
+                                    <Select value={selectedScenarioId} onValueChange={setSelectedScenarioId}>
+                                        <SelectTrigger className="h-12">
+                                            <SelectValue placeholder="Choose a scenario..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {availableScenarios.map((scenario) => (
+                                                <SelectItem key={scenario.id} value={scenario.id}>
+                                                    <span className="font-medium">{scenario.title}</span>
+                                                    <span className="ml-2 text-muted-foreground text-xs">
+                                                        ({scenario.difficulty})
+                                                    </span>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <Button
+                                    onClick={isVoiceMode ? () => setSessionId('voice-mode') : handleStartSession}
+                                    disabled={!selectedScenarioId}
+                                    className="w-full h-14 text-base font-bold shadow-lg shadow-primary/20"
+                                    size="lg"
+                                >
+                                    {isVoiceMode ? (
+                                        <>
+                                            <Mic className="mr-2 h-5 w-5" />
+                                            Start Voice Session
+                                        </>
+                                    ) : (
+                                        <>
+                                            <MessageSquare className="mr-2 h-5 w-5" />
+                                            Start Text Session
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        </StandardCard>
+
+                        {/* Right Column: Scenario Preview */}
+                        <div className="space-y-6">
+                            {selectedScenario ? (
+                                <div className="h-full flex flex-col animate-in fade-in slide-in-from-right-4 duration-500">
+                                    <div className="relative flex-1 overflow-hidden rounded-xl border bg-gradient-to-br from-secondary/50 to-background p-6 shadow-sm">
+                                        {/* Persona Header */}
+                                        <div className="flex items-center gap-4 mb-6">
+                                            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+                                                <User className="h-8 w-8 text-white" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-bold font-headline">{selectedScenario.persona.name}</h3>
+                                                <div className="flex gap-2 mt-1">
+                                                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                                        {selectedScenario.difficulty}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Details */}
+                                        <div className="space-y-4">
+                                            <div className="p-4 rounded-lg bg-background/50 border backdrop-blur-sm">
+                                                <h4 className="text-xs font-bold text-muted-foreground uppercase mb-2">Background</h4>
+                                                <p className="text-sm leading-relaxed">
+                                                    "{selectedScenario.persona.background}"
+                                                </p>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div className="p-3 rounded-lg bg-background/50 border">
+                                                    <h4 className="text-xs font-bold text-muted-foreground uppercase mb-1">Personality</h4>
+                                                    <p className="text-sm font-medium">{selectedScenario.persona.personality}</p>
+                                                </div>
+                                                <div className="p-3 rounded-lg bg-background/50 border">
+                                                    <h4 className="text-xs font-bold text-muted-foreground uppercase mb-1">Style</h4>
+                                                    <p className="text-sm font-medium">{selectedScenario.persona.communicationStyle}</p>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <h4 className="text-xs font-bold text-muted-foreground uppercase mb-2">Learning Objectives</h4>
+                                                <ul className="space-y-2">
+                                                    {selectedScenario.learningObjectives.map((obj, idx) => (
+                                                        <li key={idx} className="flex items-start gap-2 text-sm">
+                                                            <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                                                            <span className="text-muted-foreground">{obj}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center p-8 text-center border-2 border-dashed rounded-xl text-muted-foreground bg-muted/20">
+                                    <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                                        <Sparkles className="h-8 w-8 opacity-50" />
+                                    </div>
+                                    <h3 className="font-semibold text-lg mb-2">No Scenario Selected</h3>
+                                    <p className="text-sm max-w-xs">
+                                        Choose a scenario from the list to view the persona details and learning objectives.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </StandardCard>
+                </div>
+            ) : isVoiceMode && selectedScenario ? (
+                // Voice Mode or Coaching Mode
+                isCoachingMode ? (
+                    <CoachingMode
+                        scenario={selectedScenario}
+                        onEnd={() => {
+                            setSessionId(null);
+                            setMessages([]);
+                            setFeedback(null);
+                            setSessionStartTime(null);
+                        }}
+                    />
+                ) : (
+                    <VoiceRolePlay
+                        scenario={selectedScenario}
+                        onEnd={() => {
+                            setSessionId(null);
+                            setMessages([]);
+                            setFeedback(null);
+                            setSessionStartTime(null);
+                        }}
+                    />
+                )
             ) : feedback ? (
                 // Feedback Display
                 <StandardCard
@@ -340,102 +484,134 @@ export function AIRolePlay({ moduleId, className }: AIRolePlayProps = {}) {
                 </StandardCard>
             ) : (
                 // Active Conversation
-                <StandardCard
-                    title={
-                        <div className="flex items-center justify-between">
-                            <span className="font-headline">
-                                Practicing: {selectedScenario?.title}
-                            </span>
-                            <Button
-                                onClick={handleEndSession}
-                                disabled={isAIResponding || messages.length < 2}
-                                variant="outline"
-                                size="sm"
-                            >
-                                <StopCircle className="mr-2 h-4 w-4" />
-                                End Session
-                            </Button>
-                        </div>
-                    }
-                    description={`You're speaking with ${selectedScenario?.persona.name}`}
-                >
-                    <div className="space-y-4">
-                        {/* Messages */}
-                        <ScrollArea className="h-[500px] pr-4" ref={scrollAreaRef}>
-                            <div className="space-y-4">
-                                {messages.map((msg, idx) => (
-                                    <div
-                                        key={idx}
-                                        className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'
-                                            }`}
-                                    >
-                                        {msg.role === 'ai' && (
-                                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                                <Bot className="h-4 w-4 text-primary" />
-                                            </div>
-                                        )}
-                                        <div
-                                            className={`max-w-[80%] rounded-lg p-3 ${msg.role === 'user'
-                                                ? 'bg-primary text-primary-foreground'
-                                                : 'bg-secondary'
-                                                }`}
-                                        >
-                                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                <div className="w-full max-w-full h-[800px] flex flex-col">
+                    <StandardCard
+                        className="flex-1 flex flex-col overflow-hidden"
+                        title={
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="relative">
+                                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md">
+                                            <User className="h-5 w-5 text-white" />
                                         </div>
-                                        {msg.role === 'user' && (
-                                            <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                                                <User className="h-4 w-4" />
-                                            </div>
-                                        )}
+                                        <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-white dark:border-gray-900"></div>
                                     </div>
-                                ))}
-                                {isAIResponding && (
-                                    <div className="flex gap-3 justify-start">
-                                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                            <Bot className="h-4 w-4 text-primary" />
-                                        </div>
-                                        <div className="bg-secondary rounded-lg p-3">
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                        </div>
+                                    <div>
+                                        <h2 className="font-headline text-lg font-bold">
+                                            {selectedScenario?.persona.name}
+                                        </h2>
+                                        <p className="text-xs text-muted-foreground">
+                                            {selectedScenario?.title} • Text Practice
+                                        </p>
                                     </div>
-                                )}
-                                <div ref={messagesEndRef} />
+                                </div>
+                                <Button
+                                    onClick={handleEndSession}
+                                    disabled={isAIResponding || messages.length < 2}
+                                    variant="outline"
+                                    size="sm"
+                                    className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
+                                >
+                                    <StopCircle className="mr-2 h-4 w-4" />
+                                    End Session
+                                </Button>
                             </div>
-                        </ScrollArea>
+                        }
+                    >
+                        <div className="flex flex-col h-full">
+                            {/* Messages Area */}
+                            <ScrollArea className="flex-1 pr-4 -mr-4" ref={scrollAreaRef}>
+                                <div className="space-y-6 py-4 px-2">
+                                    {messages.map((msg, idx) => (
+                                        <div
+                                            key={idx}
+                                            className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'
+                                                } animate-in fade-in slide-in-from-bottom-2 duration-300`}
+                                        >
+                                            {msg.role === 'ai' && (
+                                                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
+                                                    <span className="text-xs font-bold text-white">AI</span>
+                                                </div>
+                                            )}
 
-                        {/* Input */}
-                        <div className="flex gap-2">
-                            <Textarea
-                                value={userInput}
-                                onChange={(e) => setUserInput(e.target.value)}
-                                onKeyPress={handleKeyPress}
-                                placeholder="Type your response... (Press Enter to send, Shift+Enter for new line)"
-                                className="resize-none"
-                                rows={3}
-                                disabled={isAIResponding}
-                            />
-                            <Button
-                                onClick={handleSendMessage}
-                                disabled={!userInput.trim() || isAIResponding}
-                                size="lg"
-                                className="px-6"
-                            >
-                                {isAIResponding ? (
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                ) : (
-                                    <Send className="h-5 w-5" />
-                                )}
-                            </Button>
-                        </div>
+                                            <div
+                                                className={`max-w-[80%] rounded-2xl p-4 shadow-sm ${msg.role === 'user'
+                                                    ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                                                    : 'bg-secondary/50 border border-secondary rounded-tl-sm'
+                                                    }`}
+                                            >
+                                                <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                                                <p className={`text-[10px] mt-1 ${msg.role === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                                                    {new Date(msg.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
 
-                        {/* Tips */}
-                        <div className="text-xs text-muted-foreground bg-secondary/30 p-3 rounded">
-                            <strong>Tips:</strong> Stay in character as a real estate agent. Ask questions,
-                            build rapport, and handle objections professionally. The AI will respond based
-                            on the persona's personality and concerns.
+                                            {msg.role === 'user' && (
+                                                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-sm mt-1">
+                                                    <User className="h-4 w-4 text-primary-foreground" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+
+                                    {isAIResponding && (
+                                        <div className="flex gap-4 justify-start animate-in fade-in duration-300">
+                                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                                <span className="text-xs font-bold text-white">AI</span>
+                                            </div>
+                                            <div className="bg-secondary/50 border border-secondary rounded-2xl rounded-tl-sm p-4 flex items-center gap-1">
+                                                <div className="h-2 w-2 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                                <div className="h-2 w-2 bg-primary/40 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                                <div className="h-2 w-2 bg-primary/40 rounded-full animate-bounce"></div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div ref={messagesEndRef} />
+                                </div>
+                            </ScrollArea>
+
+                            {/* Input Area */}
+                            <div className="mt-4 pt-4 border-t bg-background">
+                                <div className="flex gap-3 items-end">
+                                    <div className="relative flex-1">
+                                        <Textarea
+                                            value={userInput}
+                                            onChange={(e) => setUserInput(e.target.value)}
+                                            onKeyPress={handleKeyPress}
+                                            placeholder="Type your response..."
+                                            className="min-h-[60px] max-h-[120px] resize-none pr-12 py-3 rounded-xl border-muted-foreground/20 focus-visible:ring-primary/20"
+                                            rows={1}
+                                            disabled={isAIResponding}
+                                        />
+                                        <div className="absolute bottom-2 right-2 text-[10px] text-muted-foreground">
+                                            ↵ to send
+                                        </div>
+                                    </div>
+                                    <Button
+                                        onClick={handleSendMessage}
+                                        disabled={!userInput.trim() || isAIResponding}
+                                        size="icon"
+                                        className="h-[60px] w-[60px] rounded-xl shadow-md shrink-0 transition-all hover:scale-105 active:scale-95"
+                                    >
+                                        {isAIResponding ? (
+                                            <Loader2 className="h-6 w-6 animate-spin" />
+                                        ) : (
+                                            <Send className="h-6 w-6 ml-0.5" />
+                                        )}
+                                    </Button>
+                                </div>
+
+                                {/* Context/Tips */}
+                                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground bg-secondary/20 p-2 rounded-lg border border-secondary/20">
+                                    <Lightbulb className="h-3 w-3 text-amber-500 flex-shrink-0" />
+                                    <span className="truncate">
+                                        Tip: Stay in character. Address {selectedScenario?.persona.name}'s concerns about "{selectedScenario?.persona.concerns[0]}".
+                                    </span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </StandardCard>
+                    </StandardCard>
+                </div>
             )}
         </div>
     );

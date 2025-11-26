@@ -10,14 +10,25 @@ import { Button } from '@/components/ui/button';
 import { useUnreadAlertCount } from '@/hooks/use-unread-alert-count';
 import { Badge } from '@/components/ui/badge';
 
+import { useToast } from '@/hooks/use-toast';
+
 export default function MarketAlertsPage() {
     const { unreadCount } = useUnreadAlertCount();
+    const { toast } = useToast();
+
+    const handleGuideClick = () => {
+        toast({
+            title: "Coming Soon",
+            description: "The Alerts Guide is currently being updated. Please check back later.",
+            variant: "default",
+        });
+    };
 
     return (
         <div className="space-y-6">
             {/* Feature Banner */}
             <FeatureBanner
-                title="🔔 Market Alerts & Notifications"
+                title="Market Alerts & Notifications"
                 description="Stay informed about important market changes and opportunities"
                 variant="onboarding"
                 dismissible={true}
@@ -35,7 +46,7 @@ export default function MarketAlertsPage() {
                                 {unreadCount} unread
                             </Badge>
                         )}
-                        <Button variant="outline" size="sm">
+                        <Button onClick={handleGuideClick}>
                             Alerts Guide
                         </Button>
                     </div>

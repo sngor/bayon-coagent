@@ -76,7 +76,7 @@ export const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
                     value={internalValue}
                     onChange={handleChange}
                     placeholder={placeholder}
-                    className={cn('pl-9 pr-9', className)}
+                    className={cn('pl-9 pr-9 shadow-inner bg-muted', className)}
                     {...props}
                 />
                 {internalValue && (

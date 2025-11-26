@@ -1,7 +1,7 @@
 'use client';
 
 import { TrendingUp, BarChart3, PieChart, LineChart, Activity, Target } from 'lucide-react';
-import { PageLayout, ComingSoonGrid, StepList } from '@/components/ui/reusable';
+import { ComingSoonGrid, StepList } from '@/components/ui/reusable';
 
 export default function MarketAnalyticsPage() {
     const analyticsFeatures = [
@@ -68,10 +68,7 @@ export default function MarketAnalyticsPage() {
     ];
 
     return (
-        <PageLayout
-            title="Market Analytics"
-            description="Comprehensive market data analysis and performance tracking"
-        >
+        <div className="space-y-8">
             <ComingSoonGrid cards={analyticsFeatures} />
 
             <StepList
@@ -80,6 +77,6 @@ export default function MarketAnalyticsPage() {
                 steps={analyticsSteps}
                 variant="card"
             />
-        </PageLayout>
+        </div>
     );
 }

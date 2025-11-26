@@ -973,6 +973,7 @@ export interface RolePlayScenario {
   relatedModules: string[];
   persona: {
     name: string;
+    gender: 'male' | 'female';
     background: string;
     personality: string;
     goals: string[];
@@ -996,6 +997,7 @@ export const rolePlayScenarios: RolePlayScenario[] = [
     relatedModules: ['client-communication', 'objection-handling'],
     persona: {
       name: 'Sarah Chen',
+      gender: 'female',
       background: 'A 28-year-old marketing professional looking to buy her first home. She has been saving for years but feels overwhelmed by the process.',
       personality: 'Cautious, detail-oriented, asks lots of questions, wants to understand everything before making decisions.',
       goals: [
@@ -1026,6 +1028,7 @@ export const rolePlayScenarios: RolePlayScenario[] = [
     relatedModules: ['comparative-market-analysis', 'negotiation-strategies'],
     persona: {
       name: 'Robert Wellington',
+      gender: 'male',
       background: 'A successful business owner who bought his luxury home 10 years ago for $2.8M. He believes it\'s worth $4.5M but market data suggests $3.6M.',
       personality: 'Confident, successful, used to getting his way, values expertise but can be stubborn about his opinions.',
       goals: [
@@ -1055,6 +1058,7 @@ export const rolePlayScenarios: RolePlayScenario[] = [
     relatedModules: ['investment-analysis', 'negotiation-strategies'],
     persona: {
       name: 'Maria Rodriguez',
+      gender: 'female',
       background: 'An experienced real estate investor with 12 rental properties. She\'s looking to add 3-4 more properties to her portfolio this year.',
       personality: 'Analytical, numbers-focused, efficient, values time and expertise, direct communicator.',
       goals: [
@@ -1084,6 +1088,7 @@ export const rolePlayScenarios: RolePlayScenario[] = [
     relatedModules: ['client-communication', 'transaction-management'],
     persona: {
       name: 'Frank and Betty Morrison',
+      gender: 'male',
       background: 'Married 45 years, lived in their 4-bedroom home for 30 years. Their children have moved away and they want something smaller and easier to maintain.',
       personality: 'Sentimental about their home, practical about their needs, want to make sure they\'re making the right decision.',
       goals: [
@@ -1114,6 +1119,7 @@ export const rolePlayScenarios: RolePlayScenario[] = [
     relatedModules: ['negotiation-strategies', 'market-trends-analysis'],
     persona: {
       name: 'David Kim',
+      gender: 'male',
       background: 'A software engineer who has been looking for 4 months and lost 3 offers. He\'s getting frustrated and considering giving up or expanding his budget significantly.',
       personality: 'Analytical, getting impatient, starting to doubt the process, wants to understand strategy.',
       goals: [
@@ -1144,6 +1150,7 @@ export const rolePlayScenarios: RolePlayScenario[] = [
     relatedModules: ['client-communication', 'transaction-management'],
     persona: {
       name: 'Jennifer Walsh',
+      gender: 'female',
       background: 'Going through a difficult divorce and needs to sell the family home as part of the settlement. Her ex-husband is being difficult about the process.',
       personality: 'Stressed, emotional, wants to get through this quickly, frustrated with the situation.',
       goals: [
@@ -1158,6 +1165,129 @@ export const rolePlayScenarios: RolePlayScenario[] = [
         'Timeline pressure from divorce proceedings'
       ],
       communicationStyle: 'Sometimes emotional, appreciates professionalism and discretion, needs reassurance about process'
+    }
+  },
+  {
+    id: 'commission-objection',
+    title: 'Commission Negotiation - Objection Handling',
+    description: 'Handle a seller who wants to negotiate your commission down significantly.',
+    difficulty: 'Intermediate',
+    learningObjectives: [
+      'Defend your value proposition confidently',
+      'Handle price objections without being defensive',
+      'Demonstrate ROI of professional services',
+      'Know when to walk away from bad deals'
+    ],
+    relatedModules: ['objection-handling', 'client-communication'],
+    persona: {
+      name: 'Tom Bradley',
+      gender: 'male',
+      background: 'A homeowner who has been contacted by several discount brokers. He wants to list his $450K home but thinks 6% commission is too high.',
+      personality: 'Price-conscious, skeptical of traditional real estate model, has done research on discount brokers.',
+      goals: [
+        'Sell his home for top dollar',
+        'Minimize selling costs',
+        'Understand what he\'s paying for with commission'
+      ],
+      concerns: [
+        'Paying too much in commission',
+        'Whether full-service agents are worth the cost',
+        'Missing out on savings with discount brokers'
+      ],
+      communicationStyle: 'Direct, challenges your value, asks "why should I pay you that much?", wants specific examples'
+    }
+  },
+  {
+    id: 'price-too-high-objection',
+    title: 'Buyer Objection - "The Price is Too High"',
+    description: 'Address a buyer who loves a property but thinks it\'s overpriced.',
+    difficulty: 'Beginner',
+    learningObjectives: [
+      'Use market data to justify pricing',
+      'Help buyers see value beyond price',
+      'Explore creative solutions',
+      'Guide buyers to make informed decisions'
+    ],
+    relatedModules: ['objection-handling', 'negotiation-strategies'],
+    persona: {
+      name: 'Amanda Foster',
+      gender: 'female',
+      background: 'A buyer who found her dream home but thinks it\'s priced $30K too high based on what she\'s seen online.',
+      personality: 'Emotional about the house but trying to be practical, wants to make a smart financial decision.',
+      goals: [
+        'Get the house she loves',
+        'Not overpay in the market',
+        'Make an offer that will be accepted'
+      ],
+      concerns: [
+        'Paying more than the house is worth',
+        'Losing the house to another buyer',
+        'Regretting the purchase later',
+        'What her friends and family will think about the price'
+      ],
+      communicationStyle: 'Expresses strong opinions, needs validation, wants to understand market comparisons'
+    }
+  },
+  {
+    id: 'timing-objection',
+    title: 'Seller Objection - "Not the Right Time"',
+    description: 'Convince a seller that now is actually a good time to sell despite their hesitation.',
+    difficulty: 'Intermediate',
+    learningObjectives: [
+      'Address timing concerns with market data',
+      'Uncover the real objection behind timing',
+      'Create urgency without being pushy',
+      'Help sellers make confident decisions'
+    ],
+    relatedModules: ['objection-handling', 'market-trends-analysis'],
+    persona: {
+      name: 'Linda Patterson',
+      gender: 'female',
+      background: 'A homeowner who has been thinking about selling for 2 years but keeps finding reasons to wait. She\'s worried about market conditions.',
+      personality: 'Indecisive, risk-averse, reads a lot of news about housing market crashes, looks for reasons to delay.',
+      goals: [
+        'Sell eventually when the time is "perfect"',
+        'Not make a mistake by selling at the wrong time',
+        'Get maximum value for her home'
+      ],
+      concerns: [
+        'Market might be better next year',
+        'Interest rates affecting buyer demand',
+        'Economic uncertainty',
+        'Regretting selling too soon'
+      ],
+      communicationStyle: 'Brings up news articles, asks "what if" questions, needs reassurance and data'
+    }
+  },
+  {
+    id: 'already-working-with-agent',
+    title: 'Buyer Objection - "I\'m Already Working with Someone"',
+    description: 'Handle a buyer at an open house who says they\'re already working with another agent.',
+    difficulty: 'Advanced',
+    learningObjectives: [
+      'Respect existing relationships professionally',
+      'Plant seeds for future opportunities',
+      'Differentiate yourself subtly',
+      'Leave door open without being pushy'
+    ],
+    relatedModules: ['objection-handling', 'client-communication'],
+    persona: {
+      name: 'Michael Torres',
+      gender: 'male',
+      background: 'A buyer who has been working with an agent for 2 months but isn\'t completely satisfied. He\'s at your open house and seems interested.',
+      personality: 'Loyal but practical, not fully committed to current agent, open to better service.',
+      goals: [
+        'Find the right home',
+        'Work with an agent who is responsive and knowledgeable',
+        'Not hurt anyone\'s feelings by switching agents'
+      ],
+      concerns: [
+        'Being disloyal to current agent',
+        'Starting over with someone new',
+        'Whether you\'d actually be better',
+        'Awkwardness of switching'
+      ],
+      communicationStyle: 'Polite but guarded, mentions current agent to set boundaries, watches how you respond'
     }
   }
 ];

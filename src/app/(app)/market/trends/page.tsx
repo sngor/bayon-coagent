@@ -8,12 +8,24 @@ import { LifeEventPredictorForm } from '@/components/life-event-predictor/life-e
 import { TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+import { useToast } from '@/hooks/use-toast';
+
 export default function MarketTrendsPage() {
+    const { toast } = useToast();
+
+    const handleGuideClick = () => {
+        toast({
+            title: "Coming Soon",
+            description: "The Trends Guide is currently being updated. Please check back later.",
+            variant: "default",
+        });
+    };
+
     return (
         <div className="space-y-6">
             {/* Feature Banner */}
             <FeatureBanner
-                title="📈 Market Trends & Predictions"
+                title="Market Trends & Predictions"
                 description="Identify potential clients through life event predictions and market trends"
                 variant="onboarding"
                 dismissible={true}
@@ -24,7 +36,7 @@ export default function MarketTrendsPage() {
                     "Combine trend data with your local market knowledge for best results"
                 ]}
                 actions={
-                    <Button variant="outline" size="sm">
+                    <Button onClick={handleGuideClick}>
                         Trends Guide
                     </Button>
                 }

@@ -848,7 +848,7 @@ export default function LibraryPage() {
                                                         <Folder className="h-5 w-5 text-primary" />
                                                     </div>
                                                     <div className="text-left">
-                                                        <div className="font-semibold text-foreground">{project.name}</div>
+                                                        <div className="font-headline font-semibold text-foreground">{project.name}</div>
                                                         <div className="text-sm text-muted-foreground">
                                                             {items.length} {items.length === 1 ? 'item' : 'items'}
                                                             {items.length > 0 && (
@@ -1034,7 +1034,7 @@ export default function LibraryPage() {
                                                     <Folder className="h-6 w-6 text-primary" />
                                                 </div>
                                                 <div>
-                                                    <CardTitle className="text-lg font-semibold group-hover:text-primary transition-colors">{project.name}</CardTitle>
+                                                    <CardTitle className="font-headline text-lg font-semibold group-hover:text-primary transition-colors">{project.name}</CardTitle>
                                                     <CardDescription className="text-sm">
                                                         {items.length} {items.length === 1 ? 'item' : 'items'}
                                                         {items.length > 0 && (

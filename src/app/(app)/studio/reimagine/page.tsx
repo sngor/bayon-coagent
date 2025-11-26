@@ -442,7 +442,7 @@ export default function ReimagineToolkitPage() {
     return (
         <div className="space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full max-w-2xl grid-cols-3">
+                <TabsList>
                     <TabsTrigger value="create">Single Edit</TabsTrigger>
                     <TabsTrigger value="multi-angle">Multi-Angle</TabsTrigger>
                     <TabsTrigger value="history">History</TabsTrigger>

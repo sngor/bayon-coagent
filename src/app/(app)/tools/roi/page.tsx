@@ -4,11 +4,23 @@ import { ContentSection, FeatureBanner } from '@/components/ui';
 import { RenovationROICalculator } from '@/components/renovation-roi-calculator';
 import { Button } from '@/components/ui/button';
 
+import { useToast } from '@/hooks/use-toast';
+
 export default function ROIPage() {
+    const { toast } = useToast();
+
+    const handleGuideClick = () => {
+        toast({
+            title: "Coming Soon",
+            description: "The ROI Guide is currently being updated. Please check back later.",
+            variant: "default",
+        });
+    };
+
     return (
         <div className="space-y-6">
             <FeatureBanner
-                title="📈 ROI Calculator Pro Tips"
+                title="ROI Calculator Pro Tips"
                 description="Help clients make smart renovation decisions with data-driven insights"
                 variant="success"
                 dismissible={true}
@@ -19,19 +31,13 @@ export default function ROIPage() {
                     "Use these calculations to justify listing price increases"
                 ]}
                 actions={
-                    <Button variant="outline" size="sm">
+                    <Button onClick={handleGuideClick}>
                         ROI Guide
                     </Button>
                 }
             />
 
-            <ContentSection
-                title="Renovation ROI Analysis"
-                description="Analyze the potential return on investment for various renovation projects"
-                variant="default"
-            >
-                <RenovationROICalculator />
-            </ContentSection>
+            <RenovationROICalculator />
         </div>
     );
 }

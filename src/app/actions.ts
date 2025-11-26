@@ -3155,6 +3155,52 @@ export async function endRolePlayAction(
 }
 
 /**
+ * Get Gemini API key for Live API usage
+ * This is a server action to securely provide the API key to the client
+ */
+export async function getGeminiApiKeyAction(): Promise<{
+  message: string;
+  data: { apiKey: string } | null;
+  errors?: string[];
+}> {
+  try {
+    // Get current user from Cognito
+    const { getCurrentUserServer } = await import('@/aws/auth/server-auth');
+    const user = await getCurrentUserServer();
+
+    if (!user) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to use this feature'],
+      };
+    }
+
+    const apiKey = process.env.GOOGLE_AI_API_KEY;
+
+    if (!apiKey) {
+      return {
+        message: 'API key not configured',
+        data: null,
+        errors: ['Gemini API key is not configured on the server'],
+      };
+    }
+
+    return {
+      message: 'success',
+      data: { apiKey },
+    };
+  } catch (error: any) {
+    console.error('Get Gemini API key error:', error);
+    return {
+      message: 'Failed to get API key',
+      data: null,
+      errors: [error.message || 'Unknown error occurred'],
+    };
+  }
+}
+
+/**
  * Get past role-play sessions for a user
  */
 export async function getRolePlaySessionsAction(): Promise<{

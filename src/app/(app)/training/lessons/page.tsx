@@ -323,7 +323,7 @@ export default function TrainingLessonsPage() {
             {/* Enhanced Learning Modules */}
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '200ms' }}>
                 <Tabs defaultValue="marketing" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList>
                         <TabsTrigger value="marketing">
                             <span className="whitespace-nowrap">Marketing</span>
                         </TabsTrigger>

@@ -12,8 +12,19 @@ import { Newspaper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NEWS_CONFIG } from '@/lib/news-config';
 
+import { useToast } from '@/hooks/use-toast';
+
 export default function MarketNewsPage() {
+    const { toast } = useToast();
     const [newsLocation, setNewsLocation] = useState('');
+
+    const handleGuideClick = () => {
+        toast({
+            title: "Coming Soon",
+            description: "The News Guide is currently being updated. Please check back later.",
+            variant: "default",
+        });
+    };
 
     // Prefetch news on page load to improve performance
     useEffect(() => {
@@ -35,7 +46,7 @@ export default function MarketNewsPage() {
         <div className="space-y-6">
             {/* Feature Banner */}
             <FeatureBanner
-                title="📰 Stay Ahead with Market News"
+                title="Stay Ahead with Market News"
                 description="Get the latest real estate news and market insights to inform your strategy"
                 variant="onboarding"
                 dismissible={true}
@@ -46,7 +57,7 @@ export default function MarketNewsPage() {
                     "Monitor national trends that may impact your local market"
                 ]}
                 actions={
-                    <Button variant="outline" size="sm">
+                    <Button onClick={handleGuideClick}>
                         News Guide
                     </Button>
                 }
