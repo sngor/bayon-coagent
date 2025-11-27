@@ -248,13 +248,53 @@ export async function getAggregatedMetrics(
             return metricsResults[index] || createEmptyMetrics(listingId, date);
         });
 
-        // Aggregate the metrics
+        // Calculate previous period dates
+        const previousEndDate = new Date(startDate);
+        previousEndDate.setDate(previousEndDate.getDate() - 1);
+        const previousStartDate = getStartDate(period, previousEndDate);
+
+        // Get all dates in previous range
+        const previousDates = getDateRange(previousStartDate, previousEndDate);
+
+        // Fetch metrics for previous dates
+        const previousMetricsPromises = previousDates.map((date) =>
+            repository.getPerformanceMetrics<PerformanceMetrics>(userId, listingId, date)
+        );
+
+        const previousMetricsResults = await Promise.all(previousMetricsPromises);
+
+        // Filter out nulls
+        const previousMetrics: PerformanceMetrics[] = previousDates.map((date, index) => {
+            return previousMetricsResults[index] || createEmptyMetrics(listingId, date);
+        });
+
+        // Aggregate previous metrics
+        const previousAggregated = aggregateMetrics(
+            previousMetrics,
+            period,
+            formatDate(previousStartDate),
+            formatDate(previousEndDate)
+        );
+
+        // Aggregate current metrics
         const aggregated = aggregateMetrics(
             metrics,
             period,
             formatDate(startDate),
             formatDate(endDate)
         );
+
+        // Calculate trends
+        const calculatePercentageChange = (current: number, previous: number): number => {
+            if (previous === 0) return current > 0 ? 100 : 0;
+            return ((current - previous) / previous) * 100;
+        };
+
+        aggregated.trends = {
+            viewsChange: calculatePercentageChange(aggregated.totalViews, previousAggregated.totalViews),
+            sharesChange: calculatePercentageChange(aggregated.totalShares, previousAggregated.totalShares),
+            inquiriesChange: calculatePercentageChange(aggregated.totalInquiries, previousAggregated.totalInquiries),
+        };
 
         // Calculate conversion rate
         if (aggregated.totalViews > 0) {
@@ -402,6 +442,65 @@ export async function compareListingsMetrics(
         return {
             metrics: null,
             error: error.message || 'Failed to compare listings metrics',
+        };
+    }
+}
+
+import { analyzePerformanceMetrics } from '@/aws/bedrock/flows/analyze-performance-metrics';
+import { AnalyzePerformanceMetricsOutput } from '@/ai/schemas/performance-metrics-schemas';
+
+/**
+ * Analyzes performance metrics using AI
+ */
+export async function analyzeMetrics(
+    metrics: AggregatedMetrics,
+    listingDetails?: { address?: string; price?: number }
+): Promise<{ analysis: AnalyzePerformanceMetricsOutput | null; error?: string }> {
+    try {
+        const result = await analyzePerformanceMetrics({
+            metrics: {
+                period: metrics.period,
+                totalViews: metrics.totalViews,
+                totalShares: metrics.totalShares,
+                totalInquiries: metrics.totalInquiries,
+                conversionRate: metrics.conversionRate,
+                byPlatform: metrics.byPlatform,
+            },
+            listingDetails,
+        });
+
+        return { analysis: result };
+    } catch (error: any) {
+        console.error('Error analyzing metrics:', error);
+        return {
+            analysis: null,
+            error: error.message || 'Failed to analyze metrics',
+        };
+    }
+}
+/**
+ * Gets basic listing details for comparison selection
+ */
+export async function getListingsForComparison(
+    userId: string
+): Promise<{ listings: { listingId: string; address: string; price: number; image?: string }[]; error?: string }> {
+    try {
+        const repository = getRepository();
+        const result = await repository.queryListings<any>(userId);
+
+        const listings = result.items.map((item) => ({
+            listingId: item.listingId,
+            address: item.address || 'Unknown Address',
+            price: item.price || 0,
+            image: item.images?.[0] || null,
+        }));
+
+        return { listings };
+    } catch (error: any) {
+        console.error('Error getting listings for comparison:', error);
+        return {
+            listings: [],
+            error: error.message || 'Failed to get listings',
         };
     }
 }

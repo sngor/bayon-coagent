@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { getAdminDashboardStats } from '@/app/admin-actions';
+import { getAdminDashboardStats, getRecentActivityAction } from '@/app/admin-actions';
 import {
     Users,
     MessageSquare,
@@ -33,21 +33,35 @@ export default function AdminPage() {
         totalUsers: 0,
         totalFeedback: 0,
         pendingFeedback: 0,
-        totalAiRequests: 0
+        totalAiRequests: 0,
+        activeFeatures: 0,
+        betaFeatures: 0
     });
+    const [recentActivity, setRecentActivity] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        async function loadStats() {
+        async function loadData() {
             try {
-                const result = await getAdminDashboardStats();
-                if (result.message === 'success' && result.data) {
-                    setStats(result.data);
+                const [statsResult, activityResult] = await Promise.all([
+                    getAdminDashboardStats(),
+                    getRecentActivityAction()
+                ]);
+
+                if (statsResult.message === 'success' && statsResult.data) {
+                    setStats(statsResult.data);
+                }
+
+                if (activityResult.message === 'success' && activityResult.data) {
+                    setRecentActivity(activityResult.data);
                 }
             } catch (error) {
-                console.error('Failed to load admin stats', error);
+                console.error('Failed to load admin data', error);
+            } finally {
+                setLoading(false);
             }
         }
-        loadStats();
+        loadData();
     }, []);
 
     return (
@@ -300,11 +314,11 @@ export default function AdminPage() {
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-4 text-sm">
                                 <div className="text-center p-3 bg-green-50 dark:bg-green-950/50 rounded-lg">
-                                    <div className="font-bold text-lg">8</div>
+                                    <div className="font-bold text-lg">{stats.activeFeatures}</div>
                                     <div className="text-muted-foreground">Active</div>
                                 </div>
                                 <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-950/50 rounded-lg">
-                                    <div className="font-bold text-lg">3</div>
+                                    <div className="font-bold text-lg">{stats.betaFeatures}</div>
                                     <div className="text-muted-foreground">Beta</div>
                                 </div>
                             </div>
@@ -385,16 +399,41 @@ export default function AdminPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-center py-12 text-muted-foreground">
-                        <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-full w-fit mx-auto mb-4">
-                            <Clock className="h-8 w-8 opacity-50" />
+                    {recentActivity.length > 0 ? (
+                        <div className="space-y-4">
+                            {recentActivity.map((activity, index) => (
+                                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                                    <div className="flex items-center gap-4">
+                                        <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-full">
+                                            <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium">{activity.description}</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                {new Date(activity.timestamp).toLocaleString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Button variant="ghost" size="sm" asChild>
+                                        <Link href={`/super-admin/users?search=${activity.user.email}`}>
+                                            View User
+                                        </Link>
+                                    </Button>
+                                </div>
+                            ))}
                         </div>
-                        <h3 className="text-lg font-semibold mb-2">No recent activity</h3>
-                        <p className="text-sm max-w-md mx-auto">
-                            Activity logs will appear here as users interact with the platform.
-                            This includes logins, feature usage, and system events.
-                        </p>
-                    </div>
+                    ) : (
+                        <div className="text-center py-12 text-muted-foreground">
+                            <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-full w-fit mx-auto mb-4">
+                                <Clock className="h-8 w-8 opacity-50" />
+                            </div>
+                            <h3 className="text-lg font-semibold mb-2">No recent activity</h3>
+                            <p className="text-sm max-w-md mx-auto">
+                                Activity logs will appear here as users interact with the platform.
+                                This includes logins, feature usage, and system events.
+                            </p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

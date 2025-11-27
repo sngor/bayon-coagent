@@ -20,42 +20,99 @@ const ACCESS_TOKEN_HEADER = 'x-access-token';
  * for development purposes since the current auth system is client-side only.
  */
 export async function getCurrentUserServer(): Promise<CognitoUser | null> {
+    const cookieStore = await cookies();
+
     try {
-        // Try to get access token from cookie first
-        const cookieStore = await cookies();
         const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
 
         let accessToken: string | null = null;
+        let refreshToken: string | null = null;
+        let sessionData: any = null;
 
+        // Parse session cookie
         if (sessionCookie?.value) {
             try {
-                const sessionData = JSON.parse(sessionCookie.value);
+                sessionData = JSON.parse(sessionCookie.value);
+
+                // Validate required session fields
+                if (!sessionData.accessToken || !sessionData.refreshToken) {
+                    console.warn('⚠️ Server-side auth: Invalid session data structure, clearing cookie');
+                    await clearSessionCookie();
+                    return null;
+                }
+
                 accessToken = sessionData.accessToken;
-            } catch (error) {
-                console.error('Failed to parse session cookie:', error);
+                refreshToken = sessionData.refreshToken;
+            } catch (parseError) {
+                console.error('❌ Failed to parse session cookie, clearing cookie:', parseError);
+                await clearSessionCookie();
+                return null;
             }
         }
 
-        // Fallback to header
+        // Fallback to header (for API requests)
         if (!accessToken) {
             const headersList = await headers();
             accessToken = headersList.get(ACCESS_TOKEN_HEADER);
+
+            if (!accessToken) {
+                console.debug('⚠️ Server-side auth: No access token in cookie or header');
+                return null;
+            }
         }
 
-        if (accessToken) {
+        const client = getCognitoClient();
+
+        try {
             // Validate token with Cognito
-            const client = getCognitoClient();
             const user = await client.getCurrentUser(accessToken);
-            console.log('✅ Server-side auth: Real user authenticated:', user.id);
+            console.log('✅ Server-side auth: User authenticated:', user.id);
             return user;
-        }
+        } catch (validationError) {
+            const errorMessage = validationError instanceof Error ? validationError.message : 'Unknown error';
+            console.warn(`⚠️ Access token validation failed: ${errorMessage}`);
 
-        // No access token found
-        console.warn('⚠️ Server-side auth: No access token found');
-        return null;
+            // If token is invalid/expired and we have a refresh token, try to refresh
+            if (refreshToken) {
+                console.log('🔄 Attempting token refresh...');
+                try {
+                    const newSession = await client.refreshSession(refreshToken);
+
+                    // Update session cookie with new tokens
+                    await setSessionCookie(
+                        newSession.accessToken,
+                        newSession.idToken,
+                        newSession.refreshToken,
+                        newSession.expiresAt
+                    );
+
+                    // Retry getting user with new access token
+                    const user = await client.getCurrentUser(newSession.accessToken);
+                    console.log('✅ Server-side auth: User authenticated after token refresh:', user.id);
+                    return user;
+                } catch (refreshError) {
+                    const refreshErrorMessage = refreshError instanceof Error ? refreshError.message : 'Unknown error';
+                    console.error(`❌ Token refresh failed: ${refreshErrorMessage}`);
+
+                    // Clear invalid session cookie
+                    console.log('🧹 Clearing invalid session cookie');
+                    await clearSessionCookie();
+                    return null;
+                }
+            }
+
+            // No refresh token available, clear session
+            console.warn('⚠️ No refresh token available, clearing session cookie');
+            await clearSessionCookie();
+            return null;
+        }
 
     } catch (error) {
-        console.error('❌ Server authentication failed:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`❌ Server authentication failed: ${errorMessage}`, error);
+
+        // Clear potentially corrupted session
+        await clearSessionCookie();
         return null;
     }
 }

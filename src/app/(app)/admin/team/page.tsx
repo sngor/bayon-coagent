@@ -23,7 +23,15 @@ import {
 } from '@/components/ui/select';
 import { Users, UserPlus, Mail, Shield, Trash2, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { getTeamMembersAction, inviteTeamMemberAction, removeTeamMemberAction, updateTeamMemberRoleAction } from '@/app/admin-actions';
+import {
+    getTeamMembersAction,
+    inviteTeamMemberAction,
+    removeTeamMemberAction,
+    updateTeamMemberRoleAction,
+    getPendingInvitationsAction,
+    cancelInvitationAction
+} from '@/app/admin-actions';
+import { Invitation } from '@/lib/organization-types';
 
 interface TeamMember {
     id: string;
@@ -36,26 +44,35 @@ interface TeamMember {
 
 export default function TeamManagementPage() {
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+    const [pendingInvitations, setPendingInvitations] = useState<Invitation[]>([]);
     const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
 
     useEffect(() => {
-        loadTeamMembers();
+        loadData();
     }, []);
 
-    async function loadTeamMembers() {
+    async function loadData() {
+        setIsLoading(true);
         try {
-            const result = await getTeamMembersAction();
-            if (result.message === 'success' && result.data) {
-                setTeamMembers(result.data);
+            const [membersResult, invitationsResult] = await Promise.all([
+                getTeamMembersAction(),
+                getPendingInvitationsAction()
+            ]);
+
+            if (membersResult.message === 'success' && membersResult.data) {
+                setTeamMembers(membersResult.data);
+            }
+            if (invitationsResult.message === 'success' && invitationsResult.data) {
+                setPendingInvitations(invitationsResult.data);
             }
         } catch (error) {
-            console.error('Failed to load team members:', error);
+            console.error('Failed to load team data:', error);
             toast({
                 title: 'Error',
-                description: 'Failed to load team members',
+                description: 'Failed to load team data',
                 variant: 'destructive',
             });
         } finally {
@@ -75,7 +92,7 @@ export default function TeamManagementPage() {
                 description: `Invitation sent to ${email}`,
             });
             setIsInviteDialogOpen(false);
-            loadTeamMembers();
+            loadData();
         } else {
             toast({
                 title: 'Error',
@@ -95,7 +112,7 @@ export default function TeamManagementPage() {
                 title: 'Member removed',
                 description: 'Team member has been removed',
             });
-            loadTeamMembers();
+            loadData();
         } else {
             toast({
                 title: 'Error',
@@ -113,7 +130,27 @@ export default function TeamManagementPage() {
                 title: 'Role updated',
                 description: 'Team member role has been updated',
             });
-            loadTeamMembers();
+            loadData();
+        } else {
+            toast({
+                title: 'Error',
+                description: result.message,
+                variant: 'destructive',
+            });
+        }
+    }
+
+    async function handleCancelInvitation(invitationId: string) {
+        if (!confirm('Are you sure you want to cancel this invitation?')) return;
+
+        const result = await cancelInvitationAction(invitationId);
+
+        if (result.message === 'success') {
+            toast({
+                title: 'Invitation cancelled',
+                description: 'Invitation has been cancelled',
+            });
+            loadData();
         } else {
             toast({
                 title: 'Error',
@@ -146,65 +183,105 @@ export default function TeamManagementPage() {
                 </Button>
             </div>
 
-            <div className="grid gap-4">
-                {isLoading ? (
-                    <Card>
-                        <CardContent className="pt-6">
-                            <p className="text-center text-muted-foreground">Loading team members...</p>
-                        </CardContent>
-                    </Card>
-                ) : filteredMembers.length === 0 ? (
-                    <Card>
-                        <CardContent className="pt-6">
-                            <p className="text-center text-muted-foreground">No team members found</p>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    filteredMembers.map((member) => (
-                        <Card key={member.id}>
-                            <CardHeader>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <div className="p-2 bg-primary/10 rounded-lg">
-                                            <Users className="h-5 w-5 text-primary" />
+            {/* Pending Invitations */}
+            {pendingInvitations.length > 0 && (
+                <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Pending Invitations</h3>
+                    <div className="grid gap-4">
+                        {pendingInvitations.map((invitation) => (
+                            <Card key={invitation.id}>
+                                <CardHeader className="p-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-2 bg-yellow-500/10 rounded-lg">
+                                                <Mail className="h-5 w-5 text-yellow-600" />
+                                            </div>
+                                            <div>
+                                                <CardTitle className="text-base">{invitation.email}</CardTitle>
+                                                <CardDescription className="flex items-center gap-2 mt-1 text-xs">
+                                                    <Badge variant="outline" className="text-xs">{invitation.role}</Badge>
+                                                    <span>Expires: {new Date(invitation.expiresAt).toLocaleDateString()}</span>
+                                                </CardDescription>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <CardTitle className="text-lg">{member.name}</CardTitle>
-                                            <CardDescription className="flex items-center gap-2 mt-1">
-                                                <Mail className="h-3 w-3" />
-                                                {member.email}
-                                            </CardDescription>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Badge variant={member.status === 'active' ? 'default' : 'secondary'}>
-                                            {member.status}
-                                        </Badge>
-                                        <Select
-                                            value={member.role}
-                                            onValueChange={(value) => handleRoleChange(member.id, value as 'member' | 'admin')}
-                                        >
-                                            <SelectTrigger className="w-32">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="member">Member</SelectItem>
-                                                <SelectItem value="admin">Admin</SelectItem>
-                                            </SelectContent>
-                                        </Select>
                                         <Button
                                             variant="ghost"
-                                            size="icon"
-                                            onClick={() => handleRemoveMember(member.id)}
+                                            size="sm"
+                                            onClick={() => handleCancelInvitation(invitation.id)}
+                                            className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 px-2"
                                         >
-                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                            Cancel
                                         </Button>
                                     </div>
-                                </div>
-                            </CardHeader>
+                                </CardHeader>
+                            </Card>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Team Members</h3>
+                <div className="grid gap-4">
+                    {isLoading ? (
+                        <Card>
+                            <CardContent className="pt-6">
+                                <p className="text-center text-muted-foreground">Loading team members...</p>
+                            </CardContent>
                         </Card>
-                    ))
-                )}
+                    ) : filteredMembers.length === 0 ? (
+                        <Card>
+                            <CardContent className="pt-6">
+                                <p className="text-center text-muted-foreground">No team members found</p>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        filteredMembers.map((member) => (
+                            <Card key={member.id}>
+                                <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-2 bg-primary/10 rounded-lg">
+                                                <Users className="h-5 w-5 text-primary" />
+                                            </div>
+                                            <div>
+                                                <CardTitle className="text-lg">{member.name}</CardTitle>
+                                                <CardDescription className="flex items-center gap-2 mt-1">
+                                                    <Mail className="h-3 w-3" />
+                                                    {member.email}
+                                                </CardDescription>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant={member.status === 'active' ? 'default' : 'secondary'}>
+                                                {member.status}
+                                            </Badge>
+                                            <Select
+                                                value={member.role}
+                                                onValueChange={(value) => handleRoleChange(member.id, value as 'member' | 'admin')}
+                                            >
+                                                <SelectTrigger className="w-32">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="member">Member</SelectItem>
+                                                    <SelectItem value="admin">Admin</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => handleRemoveMember(member.id)}
+                                            >
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                            </Card>
+                        ))
+                    )}
+                </div>
             </div>
 
             {/* Invite Dialog */}

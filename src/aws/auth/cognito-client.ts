@@ -63,9 +63,9 @@ export class CognitoAuthClient {
       endpoint: config.cognito.endpoint,
       credentials: credentials.accessKeyId && credentials.secretAccessKey
         ? {
-            accessKeyId: credentials.accessKeyId,
-            secretAccessKey: credentials.secretAccessKey,
-          }
+          accessKeyId: credentials.accessKeyId,
+          secretAccessKey: credentials.secretAccessKey,
+        }
         : undefined,
     });
 
@@ -185,7 +185,7 @@ export class CognitoAuthClient {
       });
 
       await this.client.send(command);
-      
+
       // Clear the stored session
       this.clearSession();
     } catch (error) {
@@ -214,7 +214,7 @@ export class CognitoAuthClient {
         for (const attr of response.UserAttributes) {
           if (attr.Name && attr.Value) {
             attributes[attr.Name] = attr.Value;
-            
+
             if (attr.Name === 'email') {
               email = attr.Value;
             }
@@ -255,7 +255,7 @@ export class CognitoAuthClient {
         throw new Error('Token refresh failed: No authentication result');
       }
 
-      const { AccessToken, IdToken, ExpiresIn } = response.AuthenticationResult;
+      const { AccessToken, IdToken, RefreshToken: NewRefreshToken, ExpiresIn } = response.AuthenticationResult;
 
       if (!AccessToken || !IdToken) {
         throw new Error('Token refresh failed: Missing tokens');
@@ -264,7 +264,7 @@ export class CognitoAuthClient {
       return {
         accessToken: AccessToken,
         idToken: IdToken,
-        refreshToken, // Refresh token stays the same
+        refreshToken: NewRefreshToken || refreshToken, // Use new refresh token if available, else keep old one
         expiresAt: Date.now() + (ExpiresIn || 3600) * 1000,
       };
     } catch (error) {
@@ -278,7 +278,7 @@ export class CognitoAuthClient {
   async getSession(): Promise<AuthSession | null> {
     try {
       const sessionData = this.getStoredSession();
-      
+
       if (!sessionData) {
         return null;
       }
@@ -378,7 +378,19 @@ export class CognitoAuthClient {
     if (error instanceof Error) {
       // Map common Cognito errors to user-friendly messages
       const message = error.message;
-      
+
+      // Token-related errors (most common in server actions)
+      if (message.includes('Access Token has expired') || message.includes('Token expired')) {
+        return new Error('Your session has expired. Please sign in again.');
+      }
+      if (message.includes('Invalid Access Token') || message.includes('Invalid token')) {
+        return new Error('Your session is invalid. Please sign in again.');
+      }
+      if (message.includes('NotAuthorizedException') && message.includes('Refresh Token')) {
+        return new Error('Your session has expired. Please sign in again.');
+      }
+
+      // User-related errors
       if (message.includes('UserNotFoundException')) {
         return new Error('No account found with this email. Please sign up first.');
       }
@@ -406,10 +418,10 @@ export class CognitoAuthClient {
       if (message.includes('LimitExceededException')) {
         return new Error('Attempt limit exceeded. Please try again later.');
       }
-      
+
       return new Error(`${defaultMessage}: ${message}`);
     }
-    
+
     return new Error(defaultMessage);
   }
 }
@@ -458,11 +470,11 @@ export async function getCurrentUser(userId?: string): Promise<CognitoUser | nul
   try {
     const client = getCognitoClient();
     const session = await client.getSession();
-    
+
     if (!session) {
       return null;
     }
-    
+
     return await client.getCurrentUser(session.accessToken);
   } catch (error) {
     console.error('Failed to get current user:', error);

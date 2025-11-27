@@ -148,6 +148,7 @@ export class DynamoDBRepository {
           Limit: options.limit,
           ExclusiveStartKey: options.exclusiveStartKey,
           ScanIndexForward: options.scanIndexForward ?? true,
+          IndexName: options.indexName,
         });
 
         const response = await client.send(command);
@@ -205,6 +206,7 @@ export class DynamoDBRepository {
           Limit: options.limit,
           ExclusiveStartKey: options.exclusiveStartKey,
           ScanIndexForward: options.scanIndexForward ?? true,
+          IndexName: options.indexName,
         });
 
         const response = await client.send(command);

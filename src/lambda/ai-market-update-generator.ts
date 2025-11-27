@@ -8,7 +8,7 @@ import { SQSHandler, SQSEvent, SQSRecord } from 'aws-lambda';
 import { DynamoDBClient, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { generateMarketUpdate } from '../aws/bedrock/flows/generate-market-update';
-import { AWSXRay } from 'aws-xray-sdk-core';
+import AWSXRay from 'aws-xray-sdk-core';
 import { publishAiJobCompletedEvent } from './utils/eventbridge-client';
 import { invokeIntegrationService, invokeBackgroundService } from './utils/request-signer';
 import { retry } from '../lib/retry-utility';
@@ -47,7 +47,7 @@ async function updateJobStatus(
 ): Promise<void> {
     const now = new Date().toISOString();
 
-    const updateExpression = status === 'completed' || status === 'failed'
+    let updateExpression = status === 'completed' || status === 'failed'
         ? 'SET #status = :status, #updatedAt = :updatedAt, #completedAt = :completedAt'
         : 'SET #status = :status, #updatedAt = :updatedAt';
 
@@ -128,11 +128,8 @@ async function processJob(record: SQSRecord): Promise<void> {
         const result = await retry(
             async () => await generateMarketUpdate({
                 location,
-                marketData,
-                timeframe,
-                tone,
-            }, {
-                userId,
+                timePeriod: timeframe || 'current',
+                audience: 'General Audience',
             }),
             {
                 maxRetries: 3,
@@ -192,7 +189,7 @@ async function processJob(record: SQSRecord): Promise<void> {
             additionalDetails: {
                 jobType: 'market-update',
                 location,
-                updateType,
+                timeframe,
             },
         });
 
@@ -224,7 +221,7 @@ async function processJob(record: SQSRecord): Promise<void> {
 /**
  * Lambda handler for SQS events
  */
-export const handler: SQSHandler = async (event: SQSEvent): Promise<void> {
+export const handler: SQSHandler = async (event: SQSEvent): Promise<void> => {
     console.log(`Processing ${event.Records.length} market update generation jobs`);
 
     // Process jobs in parallel

@@ -55,6 +55,7 @@ import {
     CheckCircle2,
     Clock,
     ExternalLink,
+    ArrowRightLeft,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -236,15 +237,27 @@ export function ListingsContent() {
                                     </span>
                                 </div>
                             </div>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleRefreshSync}
-                                disabled={isLoading}
-                            >
-                                <RefreshCw className={cn('h-4 w-4 mr-2', isLoading && 'animate-spin')} />
-                                Refresh
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    asChild
+                                >
+                                    <a href="/library/listings/compare">
+                                        <ArrowRightLeft className="h-4 w-4 mr-2" />
+                                        Compare
+                                    </a>
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleRefreshSync}
+                                    disabled={isLoading}
+                                >
+                                    <RefreshCw className={cn('h-4 w-4 mr-2', isLoading && 'animate-spin')} />
+                                    Refresh
+                                </Button>
+                            </div>
                         </CardContent>
                     </Card>
                 )}

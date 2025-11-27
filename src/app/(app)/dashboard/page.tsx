@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useMemo, useActionState, useEffect, useState, useTransition, useCallback } from 'react';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
+import { InvitationBanner } from '@/components/invitation-banner';
 import { Typewriter, LoadingDots, SuccessAnimation, StaggeredText, GradientText } from '@/components/ui/text-animations';
 import '@/styles/text-animations.css';
 import {
@@ -283,6 +284,7 @@ export default function DashboardPage() {
 
     return (
         <div className="space-y-6 md:space-y-8">
+            <InvitationBanner />
             {/* Welcome Message for New Users */}
             {!isLoadingProfile && completionPercentage < 100 && (
                 <div className="animate-fade-in-up animate-delay-50">

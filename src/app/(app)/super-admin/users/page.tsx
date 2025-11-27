@@ -69,6 +69,7 @@ export default function AdminUsersPage() {
     const [isEditRoleOpen, setIsEditRoleOpen] = useState(false);
     const [newRole, setNewRole] = useState<string>('user');
     const [isSaving, setIsSaving] = useState(false);
+    const [activeTab, setActiveTab] = useState('all');
     const { toast } = useToast();
 
     useEffect(() => {
@@ -118,11 +119,40 @@ export default function AdminUsersPage() {
         }
     };
 
-    const filteredUsers = users.filter(user =>
-        user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.id?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const getFilteredUsers = () => {
+        let filtered = users;
+
+        // Search filter
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            filtered = filtered.filter(user =>
+                user.email?.toLowerCase().includes(query) ||
+                user.name?.toLowerCase().includes(query) ||
+                user.id?.toLowerCase().includes(query)
+            );
+        }
+
+        // Tab filter
+        switch (activeTab) {
+            case 'active':
+                // Assuming all users in the list are "active" for now unless they have a specific status field
+                // If we had a 'status' field, we'd filter by it. 
+                // For now, let's just show all as active to avoid empty state if status is missing
+                // or filter if status exists
+                filtered = filtered.filter(user => user.status !== 'suspended' && user.status !== 'inactive');
+                break;
+            case 'inactive':
+                filtered = filtered.filter(user => user.status === 'suspended' || user.status === 'inactive');
+                break;
+            case 'premium':
+                filtered = filtered.filter(user => user.role === 'admin' || user.role === 'super_admin'); // Proxy for premium for now
+                break;
+        }
+
+        return filtered;
+    };
+
+    const filteredUsers = getFilteredUsers();
 
     return (
         <div className="space-y-8">
@@ -168,7 +198,7 @@ export default function AdminUsersPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <Tabs defaultValue="all" className="space-y-6">
+                    <Tabs defaultValue="all" className="space-y-6" onValueChange={setActiveTab}>
                         <div className="flex items-center justify-between">
                             <TabsList>
                                 <TabsTrigger value="all">All Users</TabsTrigger>
@@ -195,93 +225,16 @@ export default function AdminUsersPage() {
                         </div>
 
                         <TabsContent value="all" className="space-y-4">
-                            {loading ? (
-                                <div className="text-center py-12">Loading users...</div>
-                            ) : filteredUsers.length === 0 ? (
-                                <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-lg">
-                                    <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-full w-fit mx-auto mb-4">
-                                        <Users className="h-8 w-8 text-gray-400" />
-                                    </div>
-                                    <h3 className="text-lg font-semibold mb-2">No users found</h3>
-                                    <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                                        No users match your search criteria.
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="rounded-md border">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>User</TableHead>
-                                                <TableHead>Role</TableHead>
-                                                <TableHead>Status</TableHead>
-                                                <TableHead>Joined</TableHead>
-                                                <TableHead className="text-right">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {filteredUsers.map((user) => (
-                                                <TableRow key={user.id}>
-                                                    <TableCell>
-                                                        <div className="flex flex-col">
-                                                            <span className="font-medium">{user.name || 'Unknown'}</span>
-                                                            <span className="text-xs text-muted-foreground">{user.email}</span>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant={
-                                                            user.role === 'super_admin' ? 'destructive' :
-                                                                user.role === 'admin' ? 'default' : 'secondary'
-                                                        }>
-                                                            {user.role === 'super_admin' && <Shield className="w-3 h-3 mr-1" />}
-                                                            {user.role || 'user'}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-2">
-                                                            <CheckCircle className="w-4 h-4 text-green-500" />
-                                                            <span className="text-sm">Active</span>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {new Date(user.createdAt).toLocaleDateString()}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                                                    <span className="sr-only">Open menu</span>
-                                                                    <MoreHorizontal className="h-4 w-4" />
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user.id)}>
-                                                                    Copy ID
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuSeparator />
-                                                                <DropdownMenuItem>View Details</DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => handleEditRole(user)}>Edit Role</DropdownMenuItem>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            )}
+                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} />
                         </TabsContent>
-
-                        {/* Other tabs placeholders */}
-                        <TabsContent value="active">
-                            <div className="text-center py-8 text-muted-foreground">Filtered view coming soon</div>
+                        <TabsContent value="active" className="space-y-4">
+                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} />
                         </TabsContent>
-                        <TabsContent value="inactive">
-                            <div className="text-center py-8 text-muted-foreground">Filtered view coming soon</div>
+                        <TabsContent value="inactive" className="space-y-4">
+                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} />
                         </TabsContent>
-                        <TabsContent value="premium">
-                            <div className="text-center py-8 text-muted-foreground">Filtered view coming soon</div>
+                        <TabsContent value="premium" className="space-y-4">
+                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} />
                         </TabsContent>
                     </Tabs>
                 </CardContent>
@@ -399,6 +352,91 @@ export default function AdminUsersPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+        </div>
+    );
+}
+
+function UserTable({ users, loading, onEditRole }: { users: any[], loading: boolean, onEditRole: (user: any) => void }) {
+    if (loading) {
+        return <div className="text-center py-12">Loading users...</div>;
+    }
+
+    if (users.length === 0) {
+        return (
+            <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-lg">
+                <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-full w-fit mx-auto mb-4">
+                    <Users className="h-8 w-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">No users found</h3>
+                <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                    No users match your search criteria.
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="rounded-md border">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Joined</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {users.map((user) => (
+                        <TableRow key={user.id}>
+                            <TableCell>
+                                <div className="flex flex-col">
+                                    <span className="font-medium">{user.name || 'Unknown'}</span>
+                                    <span className="text-xs text-muted-foreground">{user.email}</span>
+                                </div>
+                            </TableCell>
+                            <TableCell>
+                                <Badge variant={
+                                    user.role === 'super_admin' ? 'destructive' :
+                                        user.role === 'admin' ? 'default' : 'secondary'
+                                }>
+                                    {user.role === 'super_admin' && <Shield className="w-3 h-3 mr-1" />}
+                                    {user.role || 'user'}
+                                </Badge>
+                            </TableCell>
+                            <TableCell>
+                                <div className="flex items-center gap-2">
+                                    <CheckCircle className="w-4 h-4 text-green-500" />
+                                    <span className="text-sm">Active</span>
+                                </div>
+                            </TableCell>
+                            <TableCell>
+                                {new Date(user.createdAt).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="text-right">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                            <span className="sr-only">Open menu</span>
+                                            <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user.id)}>
+                                            Copy ID
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem>View Details</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => onEditRole(user)}>Edit Role</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
         </div>
     );
 }

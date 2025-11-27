@@ -137,6 +137,8 @@ export interface QueryOptions {
   expressionAttributeValues?: Record<string, any>;
   /** Expression attribute names for filter */
   expressionAttributeNames?: Record<string, string>;
+  /** Index name for GSI queries */
+  indexName?: string;
 }
 
 /**

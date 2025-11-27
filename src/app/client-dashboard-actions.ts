@@ -3212,3 +3212,188 @@ export async function sendClientInquiry(
         };
     }
 }
+
+/**
+ * Get a specific dashboard by ID
+ * Requirements: 1.1
+ */
+export async function getDashboard(
+    dashboardId: string
+): Promise<{
+    message: string;
+    data: ClientDashboard | null;
+    errors: any;
+}> {
+    try {
+        // Get current user (agent)
+        const user = await getCurrentUser();
+        if (!user || !user.id) {
+            return {
+                message: 'Authentication required',
+                data: null,
+                errors: { auth: ['You must be logged in to view dashboards'] },
+            };
+        }
+
+        if (!dashboardId) {
+            return {
+                message: 'Dashboard ID is required',
+                data: null,
+                errors: { dashboardId: ['Dashboard ID is required'] },
+            };
+        }
+
+        // Get dashboard
+        const repository = getRepository();
+        const keys = getClientDashboardKeys(user.id, dashboardId);
+        const dashboard = await repository.get<ClientDashboard>(keys.PK, keys.SK);
+
+        if (!dashboard) {
+            return {
+                message: 'Dashboard not found',
+                data: null,
+                errors: { dashboardId: ['Dashboard not found'] },
+            };
+        }
+
+        return {
+            message: 'success',
+            data: dashboard,
+            errors: {},
+        };
+    } catch (error) {
+        const errorMessage = handleError(error, 'Failed to get dashboard');
+        return {
+            message: errorMessage,
+            data: null,
+            errors: {},
+        };
+    }
+}
+
+/**
+ * Delete a client dashboard
+ * Requirements: 1.1
+ */
+export async function deleteDashboard(
+    prevState: any,
+    formData: FormData
+): Promise<{
+    message: string;
+    data: { success: boolean } | null;
+    errors: any;
+}> {
+    try {
+        // Get current user (agent)
+        const user = await getCurrentUser();
+        if (!user || !user.id) {
+            return {
+                message: 'Authentication required',
+                data: null,
+                errors: { auth: ['You must be logged in to delete dashboards'] },
+            };
+        }
+
+        const dashboardId = formData.get('dashboardId') as string;
+        if (!dashboardId) {
+            return {
+                message: 'Dashboard ID is required',
+                data: null,
+                errors: { dashboardId: ['Dashboard ID is required'] },
+            };
+        }
+
+        // Verify dashboard exists and belongs to agent
+        const repository = getRepository();
+        const keys = getClientDashboardKeys(user.id, dashboardId);
+        const dashboard = await repository.get<ClientDashboard>(keys.PK, keys.SK);
+
+        if (!dashboard) {
+            return {
+                message: 'Dashboard not found',
+                data: null,
+                errors: { dashboardId: ['Dashboard not found'] },
+            };
+        }
+
+        // Delete dashboard
+        await repository.delete(keys.PK, keys.SK);
+
+        // Find and delete associated links
+        // Query GSI1 for links associated with this dashboard
+        // PK: AGENT#<agentId>, SK: DASHBOARD#<dashboardId>
+        const linkGsiPk = `AGENT#${user.id}`;
+        const linkGsiSk = `DASHBOARD#${dashboardId}`;
+
+        const linksResult = await repository.query<SecuredLink>(
+            linkGsiPk,
+            linkGsiSk,
+            { indexName: 'GSI1' }
+        );
+
+        // Delete each link
+        for (const link of linksResult.items) {
+            const linkKeys = getSecuredLinkKeys(link.token);
+            await repository.delete(linkKeys.PK, linkKeys.SK);
+        }
+
+        return {
+            message: 'success',
+            data: { success: true },
+            errors: {},
+        };
+    } catch (error) {
+        const errorMessage = handleError(error, 'Failed to delete dashboard');
+        return {
+            message: errorMessage,
+            data: null,
+            errors: {},
+        };
+    }
+}
+
+/**
+ * List all secured links for the current agent
+ * Requirements: 2.1
+ */
+export async function listAllAgentLinks(): Promise<{
+    message: string;
+    data: SecuredLink[] | null;
+    errors: any;
+}> {
+    try {
+        // Get current user (agent)
+        const user = await getCurrentUser();
+        if (!user || !user.id) {
+            return {
+                message: 'Authentication required',
+                data: null,
+                errors: { auth: ['You must be logged in to list links'] },
+            };
+        }
+
+        // Query GSI1 for all links for this agent
+        // PK: AGENT#<agentId>, SK: DASHBOARD# (begins_with)
+        const repository = getRepository();
+        const pk = `AGENT#${user.id}`;
+
+        const results = await repository.query<SecuredLink>(
+            pk,
+            'DASHBOARD#',
+            { indexName: 'GSI1' }
+        );
+
+        return {
+            message: 'success',
+            data: results.items,
+            errors: {},
+        };
+    } catch (error) {
+        const errorMessage = handleError(error, 'Failed to list links');
+        return {
+            message: errorMessage,
+            data: null,
+            errors: {},
+        };
+    }
+}

@@ -11,10 +11,11 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, Loader2, Eye, EyeOff, Sparkles, TrendingUp, Zap, Target, Star, Award, Users, CheckCircle2, Mail } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { emailSignInAction, emailSignUpAction } from '@/app/actions';
+import { emailSignInAction, emailSignUpAction, acceptInvitationByTokenAction, joinOrganizationByTokenAction } from '@/app/actions';
 import { useFormStatus } from 'react-dom';
 import { HeroGradientMesh } from '@/components/ui/gradient-mesh';
 import { useToast } from '@/hooks/use-toast';
+import { useSearchParams } from 'next/navigation';
 
 
 function AuthButton({ children }: { children: React.ReactNode }) {
@@ -41,6 +42,8 @@ function SignInForm({ onSwitch, onShowVerify }: { onSwitch: () => void; onShowVe
     const [showPassword, setShowPassword] = useState(false);
     const [emailTouched, setEmailTouched] = useState(false);
     const [passwordTouched, setPasswordTouched] = useState(false);
+    const searchParams = useSearchParams();
+    const inviteToken = searchParams.get('invite');
 
     const handleAuthError = (err: Error) => {
         console.error('Sign in error:', err);
@@ -58,7 +61,29 @@ function SignInForm({ onSwitch, onShowVerify }: { onSwitch: () => void; onShowVe
             setError(null);
 
             signIn(signInState.data.email, signInState.data.password)
-                .then(() => {
+                .then(async () => {
+                    // Check for invite token and accept if present
+                    if (inviteToken) {
+                        try {
+                            const result = await joinOrganizationByTokenAction(inviteToken);
+                            if (result.message === 'success') {
+                                toast({
+                                    variant: "success",
+                                    title: "Invitation Accepted",
+                                    description: "You have successfully joined the organization.",
+                                });
+                            } else {
+                                toast({
+                                    variant: "destructive",
+                                    title: "Invitation Failed",
+                                    description: result.message || "Failed to accept invitation.",
+                                });
+                            }
+                        } catch (err) {
+                            console.error("Error accepting invitation:", err);
+                        }
+                    }
+
                     toast({
                         variant: "success",
                         title: "Welcome back!",
@@ -183,6 +208,9 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     const [signUpState, signUpFormAction] = useActionState(emailSignUpAction, { message: '', errors: {}, data: null });
     const { signUp, confirmSignUp, resendConfirmationCode } = useAuthMethods();
     const { toast } = useToast();
+    const searchParams = useSearchParams();
+    const inviteToken = searchParams.get('invite');
+
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
@@ -193,6 +221,30 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     const [verificationCode, setVerificationCode] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
     const [isResending, setIsResending] = useState(false);
+    const [invitationData, setInvitationData] = useState<{ organizationName: string; organizationId: string } | null>(null);
+
+    // Validate invitation token on mount
+    useEffect(() => {
+        const validateToken = async () => {
+            if (inviteToken) {
+                const result = await acceptInvitationByTokenAction(inviteToken);
+                if (result.message === 'success' && result.data) {
+                    setInvitationData(result.data);
+                    toast({
+                        title: "Invitation Found",
+                        description: `You've been invited to join ${result.data.organizationName}. Create an account to accept.`,
+                    });
+                } else {
+                    toast({
+                        variant: "destructive",
+                        title: "Invalid Invitation",
+                        description: result.message || "The invitation link is invalid or expired.",
+                    });
+                }
+            }
+        };
+        validateToken();
+    }, [inviteToken, toast]);
 
     const handleAuthError = (err: Error) => {
         console.error('Sign up error:', err);
@@ -239,7 +291,19 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
 
         try {
             await confirmSignUp(userEmail, verificationCode);
-            setSuccess('Email verified! You can now sign in.');
+
+            // If there was an invitation, we need to accept it now that the user is verified
+            // However, we need the user to be authenticated first.
+            // Typically, after confirmation, the user needs to sign in.
+            // We can store the invite token in local storage or handle it after sign in.
+            if (inviteToken) {
+                // For now, we'll rely on the user signing in. 
+                // Ideally, we'd auto-sign in or have a post-confirmation flow.
+                // Let's store it in localStorage to be picked up after login if needed,
+                // or just redirect to login with the param preserved.
+            }
+
+            setSuccess('Account verified successfully! You can now sign in.');
             toast({
                 variant: "success",
                 title: "Email verified",
@@ -407,8 +471,12 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                             Privacy Policy
                         </Link>
                     </div>
-                    <AuthButton>Create Account</AuthButton>
+                    <AuthButton>
+                        {invitationData ? 'Join Organization' : 'Create Account'}
+                    </AuthButton>
                 </div>
+                {/* Hidden input to pass invite token to server action if we update it to handle invites directly */}
+                {inviteToken && <input type="hidden" name="inviteToken" value={inviteToken} />}
             </form>
             {error && (
                 <Alert variant="destructive" className="animate-slide-down border-destructive/50 bg-destructive/10">

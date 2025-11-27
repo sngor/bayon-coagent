@@ -24,6 +24,7 @@ import {
     Share2,
     MessageSquare,
     TrendingUp,
+    TrendingDown,
     Facebook,
     Instagram,
     Linkedin,
@@ -36,6 +37,15 @@ import { getAggregatedMetrics } from '@/app/performance-metrics-actions';
 import { AggregatedMetrics, TimePeriod } from '@/lib/performance-metrics-types';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import {
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+} from 'recharts';
 
 interface ListingMetricsDisplayProps {
     userId: string;
@@ -54,6 +64,8 @@ export function ListingMetricsDisplay({
     const [error, setError] = useState<string | null>(null);
     const [isLive, setIsLive] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [analysis, setAnalysis] = useState<any | null>(null);
 
     useEffect(() => {
         loadMetrics();
@@ -133,6 +145,35 @@ export function ListingMetricsDisplay({
         }
     };
 
+    const handleAnalyze = async () => {
+        if (!metrics) return;
+        setIsAnalyzing(true);
+        try {
+            const { analyzeMetrics } = await import('@/app/performance-metrics-actions');
+            const result = await analyzeMetrics(metrics);
+            if (result.analysis) {
+                setAnalysis(result.analysis);
+            }
+        } catch (err) {
+            console.error('Failed to analyze metrics:', err);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
+
+    const [chartData, setChartData] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (metrics?.dailyBreakdown) {
+            setChartData(metrics.dailyBreakdown.map(day => ({
+                date: day.date,
+                views: day.views,
+                shares: day.shares,
+                inquiries: day.inquiries,
+            })));
+        }
+    }, [metrics]);
+
     if (loading) {
         return (
             <Card className={className}>
@@ -209,6 +250,20 @@ export function ListingMetricsDisplay({
                             </Label>
                         </div>
 
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleAnalyze}
+                            disabled={isAnalyzing}
+                        >
+                            {isAnalyzing ? (
+                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                                <Activity className="h-4 w-4 mr-2" />
+                            )}
+                            Analyze with AI
+                        </Button>
+
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm" disabled={isExporting}>
@@ -242,6 +297,30 @@ export function ListingMetricsDisplay({
             </CardHeader>
             <CardContent>
                 <div className="space-y-6">
+                    {/* AI Analysis Result */}
+                    {analysis && (
+                        <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="font-semibold flex items-center gap-2">
+                                    <Activity className="h-4 w-4 text-blue-600" />
+                                    AI Analysis
+                                </h3>
+                                <Badge variant={analysis.sentiment === 'positive' ? 'default' : analysis.sentiment === 'negative' ? 'destructive' : 'secondary'}>
+                                    {analysis.sentiment.toUpperCase()}
+                                </Badge>
+                            </div>
+                            <p className="text-sm mb-3">{analysis.analysis}</p>
+                            <div>
+                                <h4 className="text-xs font-semibold uppercase text-muted-foreground mb-1">Recommendations</h4>
+                                <ul className="list-disc list-inside text-sm space-y-1">
+                                    {analysis.recommendations.map((rec: string, i: number) => (
+                                        <li key={i}>{rec}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Overall Metrics */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div className="flex items-center space-x-3 p-4 border rounded-lg">
@@ -250,7 +329,15 @@ export function ListingMetricsDisplay({
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground">Views</p>
-                                <p className="text-2xl font-bold">{metrics.totalViews}</p>
+                                <div className="flex items-baseline gap-2">
+                                    <p className="text-2xl font-bold">{metrics.totalViews}</p>
+                                    {metrics.trends?.viewsChange !== undefined && (
+                                        <span className={`text-xs flex items-center ${metrics.trends.viewsChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {metrics.trends.viewsChange >= 0 ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
+                                            {Math.abs(metrics.trends.viewsChange).toFixed(0)}%
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -260,7 +347,15 @@ export function ListingMetricsDisplay({
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground">Shares</p>
-                                <p className="text-2xl font-bold">{metrics.totalShares}</p>
+                                <div className="flex items-baseline gap-2">
+                                    <p className="text-2xl font-bold">{metrics.totalShares}</p>
+                                    {metrics.trends?.sharesChange !== undefined && (
+                                        <span className={`text-xs flex items-center ${metrics.trends.sharesChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {metrics.trends.sharesChange >= 0 ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
+                                            {Math.abs(metrics.trends.sharesChange).toFixed(0)}%
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -270,7 +365,15 @@ export function ListingMetricsDisplay({
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground">Inquiries</p>
-                                <p className="text-2xl font-bold">{metrics.totalInquiries}</p>
+                                <div className="flex items-baseline gap-2">
+                                    <p className="text-2xl font-bold">{metrics.totalInquiries}</p>
+                                    {metrics.trends?.inquiriesChange !== undefined && (
+                                        <span className={`text-xs flex items-center ${metrics.trends.inquiriesChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {metrics.trends.inquiriesChange >= 0 ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
+                                            {Math.abs(metrics.trends.inquiriesChange).toFixed(0)}%
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -286,6 +389,36 @@ export function ListingMetricsDisplay({
                             </div>
                         </div>
                     </div>
+
+                    {/* Chart Visualization */}
+                    {period !== 'daily' && chartData.length > 0 && (
+                        <div className="h-[300px] w-full mt-6">
+                            <h3 className="font-headline text-sm font-medium mb-4">Engagement Trends</h3>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                        </linearGradient>
+                                        <linearGradient id="colorShares" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8} />
+                                            <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <XAxis dataKey="date" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                        labelStyle={{ color: '#6b7280', marginBottom: '4px' }}
+                                    />
+                                    <Area type="monotone" dataKey="views" stroke="#3b82f6" fillOpacity={1} fill="url(#colorViews)" strokeWidth={2} />
+                                    <Area type="monotone" dataKey="shares" stroke="#22c55e" fillOpacity={1} fill="url(#colorShares)" strokeWidth={2} />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    )}
 
                     {/* Platform Breakdown */}
                     {Object.keys(metrics.byPlatform).length > 0 && (

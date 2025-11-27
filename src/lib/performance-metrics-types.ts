@@ -74,6 +74,11 @@ export interface AggregatedMetrics {
     };
     dailyBreakdown?: PerformanceMetrics[];
     conversionRate?: number;
+    trends?: {
+        viewsChange: number;
+        sharesChange: number;
+        inquiriesChange: number;
+    };
 }
 
 /**

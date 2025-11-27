@@ -1,6 +1,6 @@
 'use server';
 
-import { setSessionCookie as setServerSessionCookie, clearSessionCookie } from '@/aws/auth/server-auth';
+import { setSessionCookie as setServerSessionCookie, clearSessionCookie, getCurrentUserServer } from '@/aws/auth/server-auth';
 
 // AWS Bedrock flows (migrated from Genkit)
 import {
@@ -6289,5 +6289,87 @@ export async function acceptInvitationByTokenAction(token: string): Promise<{
       message: 'Failed to validate invitation',
       errors: { system: error.message }
     };
+  }
+}
+
+export async function joinOrganizationByTokenAction(token: string): Promise<{
+  message: string;
+  errors: any;
+}> {
+  try {
+    const currentUser = await getCurrentUserServer();
+    if (!currentUser) {
+      return { message: 'Not authenticated', errors: {} };
+    }
+
+    const repository = getRepository();
+
+    // Query invitation by token
+    const queryKeys = getInvitationByTokenQueryKeys(token);
+    const result = await repository.query<Invitation>(
+      queryKeys.GSI2PK,
+      queryKeys.GSI2SKPrefix
+    );
+
+    if (result.items.length === 0) {
+      return { message: 'Invalid invitation token', errors: {} };
+    }
+
+    const invitation = result.items[0];
+
+    if (invitation.status !== 'pending') {
+      return { message: 'Invitation is no longer valid', errors: {} };
+    }
+
+    if (isInvitationExpired(invitation)) {
+      return { message: 'Invitation has expired', errors: {} };
+    }
+
+    // Verify email matches
+    if (invitation.email.toLowerCase() !== currentUser.email.toLowerCase()) {
+      return { message: 'This invitation was sent to a different email address.', errors: {} };
+    }
+
+    const now = new Date().toISOString();
+    const invKeys = getInvitationKeys(invitation.organizationId, invitation.id);
+
+    // 1. Update invitation status
+    await repository.update(invKeys.PK, invKeys.SK, {
+      status: 'accepted' as any,
+      acceptedAt: now,
+    });
+
+    // 2. Add user to team
+    const memberKeys = getTeamMemberKeys(invitation.organizationId, currentUser.id);
+    const teamMember: TeamMember = {
+      userId: currentUser.id,
+      organizationId: invitation.organizationId,
+      role: invitation.role,
+      status: 'active',
+      joinedAt: now,
+      updatedAt: now,
+    };
+
+    await repository.put({
+      PK: memberKeys.PK,
+      SK: memberKeys.SK,
+      EntityType: 'TeamMember',
+      Data: teamMember,
+      CreatedAt: Date.now(),
+      UpdatedAt: Date.now(),
+      GSI1PK: memberKeys.GSI1PK,
+      GSI1SK: memberKeys.GSI1SK,
+    });
+
+    // 3. Update user profile
+    const profileKeys = getProfileKeys(currentUser.id);
+    await repository.update(profileKeys.PK, profileKeys.SK, {
+      organizationId: invitation.organizationId,
+    });
+
+    return { message: 'success', errors: {} };
+  } catch (error: any) {
+    console.error('Error joining organization:', error);
+    return { message: 'Failed to join organization', errors: { system: error.message } };
   }
 }

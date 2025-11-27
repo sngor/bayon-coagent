@@ -45,10 +45,10 @@ import {
     type CMAReport,
     type DashboardDocument,
     listValuationsForDashboard,
+    getDashboard,
 } from '@/app/client-dashboard-actions';
 import type { PropertyValuationOutput } from '@/aws/bedrock/flows/property-valuation';
-import { getRepository } from '@/aws/dynamodb/repository';
-import { getClientDashboardKeys } from '@/aws/dynamodb/keys';
+
 import {
     Select,
     SelectContent,
@@ -165,11 +165,10 @@ export default function DashboardBuilderPage() {
         const fetchDashboard = async () => {
             setIsLoading(true);
             try {
-                const repository = getRepository();
-                const keys = getClientDashboardKeys(user.id, dashboardId);
-                const data = await repository.get<ClientDashboard>(keys.PK, keys.SK);
+                const result = await getDashboard(dashboardId);
 
-                if (data) {
+                if (result.message === 'success' && result.data) {
+                    const data = result.data;
                     setDashboard(data);
                     // Populate form fields
                     setClientName(data.clientInfo.name);

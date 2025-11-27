@@ -25,6 +25,7 @@ import {
     getUserOrganizationsQueryKeys
 } from '@/aws/dynamodb/organization-keys';
 import { getProfileKeys } from '@/aws/dynamodb/keys';
+import { sendInvitationEmail } from '@/lib/email-service';
 
 export async function getUsersListAction(
     limit: number = 50,
@@ -88,8 +89,19 @@ export async function getAdminDashboardStats() {
         const totalFeedback = feedbackResult.count;
         const pendingFeedback = feedbackResult.items.filter((item: any) => item.status === 'submitted').length;
 
-        // 3. AI Requests (Mock for now)
+        // 3. AI Requests (Mock for now as we don't track this yet)
         const totalAiRequests = 0;
+
+        // 4. Feature Count
+        const featuresResult = await repository.scan({
+            filterExpression: 'begins_with(PK, :pk) AND SK = :sk',
+            expressionAttributeValues: {
+                ':pk': 'FEATURE#',
+                ':sk': 'CONFIG'
+            }
+        });
+        const activeFeatures = featuresResult.items.filter((f: any) => f.status === 'enabled').length;
+        const betaFeatures = featuresResult.items.filter((f: any) => f.status === 'beta').length;
 
         return {
             message: 'success',
@@ -97,7 +109,9 @@ export async function getAdminDashboardStats() {
                 totalUsers,
                 totalFeedback,
                 pendingFeedback,
-                totalAiRequests
+                totalAiRequests,
+                activeFeatures,
+                betaFeatures
             },
             errors: {}
         };
@@ -106,6 +120,58 @@ export async function getAdminDashboardStats() {
         return {
             message: 'Failed to fetch stats',
             data: null,
+            errors: { system: error.message }
+        };
+    }
+}
+
+export async function getRecentActivityAction(limit: number = 5): Promise<{
+    message: string;
+    data: any[];
+    errors: any;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) return { message: 'Not authenticated', data: [], errors: {} };
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) return { message: 'Unauthorized', data: [], errors: {} };
+
+        const repository = getRepository();
+
+        // For now, we'll just show the most recent users as "activity"
+        // In a real system, we'd have an ActivityLog table
+        const usersResult = await repository.scan({
+            limit,
+            filterExpression: 'SK = :sk',
+            expressionAttributeValues: { ':sk': 'PROFILE' }
+        });
+
+        // Sort by createdAt descending (client-side since scan doesn't sort)
+        const recentUsers = usersResult.items
+            .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, limit)
+            .map((user: any) => ({
+                id: user.id,
+                type: 'user_signup',
+                description: `New user joined: ${user.email}`,
+                timestamp: user.createdAt,
+                user: {
+                    name: user.name,
+                    email: user.email
+                }
+            }));
+
+        return {
+            message: 'success',
+            data: recentUsers,
+            errors: {}
+        };
+    } catch (error: any) {
+        console.error('Error fetching recent activity:', error);
+        return {
+            message: 'Failed to fetch activity',
+            data: [],
             errors: { system: error.message }
         };
     }
@@ -310,18 +376,34 @@ export async function getOrganizationSettingsAction(): Promise<{
         const adminStatus = await checkAdminStatusAction(currentUser.id);
         if (!adminStatus.isAdmin) return { message: 'Unauthorized', data: null, errors: {} };
 
-        // For now, return mock data
-        const mockSettings = {
-            name: 'My Organization',
-            description: 'A real estate organization',
-            website: 'https://example.com',
-            allowMemberInvites: true,
-            requireApproval: false,
+        const repository = getRepository();
+
+        // Get user's organization ID
+        const profileKeys = getProfileKeys(currentUser.id);
+        const profile = await repository.get<any>(profileKeys.PK, profileKeys.SK);
+
+        if (!profile?.organizationId) {
+            return { message: 'No organization found', data: null, errors: {} };
+        }
+
+        const orgKeys = getOrganizationKeys(profile.organizationId);
+        const organization = await repository.get<Organization>(orgKeys.PK, orgKeys.SK);
+
+        if (!organization) {
+            return { message: 'Organization not found', data: null, errors: {} };
+        }
+
+        const settings = {
+            name: organization.name,
+            description: organization.description,
+            website: organization.website,
+            allowMemberInvites: organization.settings?.allowMemberInvites ?? true,
+            requireApproval: organization.settings?.requireApproval ?? false,
         };
 
         return {
             message: 'success',
-            data: mockSettings,
+            data: settings,
             errors: {},
         };
     } catch (error: any) {
@@ -334,7 +416,13 @@ export async function getOrganizationSettingsAction(): Promise<{
     }
 }
 
-export async function updateOrganizationSettingsAction(settings: any): Promise<{
+export async function updateOrganizationSettingsAction(settings: {
+    name: string;
+    description: string;
+    website: string;
+    allowMemberInvites: boolean;
+    requireApproval: boolean;
+}): Promise<{
     message: string;
     errors: any;
 }> {
@@ -345,9 +433,30 @@ export async function updateOrganizationSettingsAction(settings: any): Promise<{
         const adminStatus = await checkAdminStatusAction(currentUser.id);
         if (!adminStatus.isAdmin) return { message: 'Unauthorized', errors: {} };
 
-        // TODO: Implement actual settings update logic
-        console.log('Updating organization settings:', settings);
+        const repository = getRepository();
 
+        // Get user's organization ID
+        const profileKeys = getProfileKeys(currentUser.id);
+        const profile = await repository.get<any>(profileKeys.PK, profileKeys.SK);
+
+        if (!profile?.organizationId) {
+            return { message: 'No organization found', errors: {} };
+        }
+
+        const orgKeys = getOrganizationKeys(profile.organizationId);
+
+        // Update organization details
+        await repository.update(orgKeys.PK, orgKeys.SK, {
+            name: settings.name,
+            description: settings.description,
+            website: settings.website,
+            settings: {
+                allowMemberInvites: settings.allowMemberInvites,
+                requireApproval: settings.requireApproval
+            }
+        });
+
+        revalidatePath('/admin/settings');
         return { message: 'success', errors: {} };
     } catch (error: any) {
         console.error('Error updating organization settings:', error);
@@ -455,9 +564,9 @@ export async function getOrganizationAction(organizationId: string): Promise<{
     }
 }
 
-export async function getOrganizationMembersAction(organizationId: string): Promise<{
+export async function getOrganizationMembersAction(organizationId?: string): Promise<{
     message: string;
-    data: TeamMember[];
+    data: any[];
     errors: any;
 }> {
     try {
@@ -468,14 +577,39 @@ export async function getOrganizationMembersAction(organizationId: string): Prom
         if (!adminStatus.isAdmin) return { message: 'Unauthorized', data: [], errors: {} };
 
         const repository = getRepository();
-        const queryKeys = getOrganizationMembersQueryKeys(organizationId);
+
+        let targetOrgId = organizationId;
+        if (!targetOrgId) {
+            const profileKeys = getProfileKeys(currentUser.id);
+            const profile = await repository.get<any>(profileKeys.PK, profileKeys.SK);
+            targetOrgId = profile?.organizationId;
+        }
+
+        if (!targetOrgId) {
+            return { message: 'No organization found', data: [], errors: {} };
+        }
+
+        const queryKeys = getOrganizationMembersQueryKeys(targetOrgId);
 
         const result = await repository.query<TeamMember>(
             queryKeys.PK,
             queryKeys.SKPrefix
         );
 
-        return { message: 'success', data: result.items, errors: {} };
+        // Fetch user profiles for each member
+        const members = result.items;
+        const membersWithDetails = await Promise.all(members.map(async (member) => {
+            const profileKeys = getProfileKeys(member.userId);
+            const profile = await repository.get<any>(profileKeys.PK, profileKeys.SK);
+            return {
+                ...member,
+                id: member.userId, // Map userId to id for frontend compatibility
+                name: profile?.name || 'Unknown',
+                email: profile?.email || 'Unknown',
+            };
+        }));
+
+        return { message: 'success', data: membersWithDetails, errors: {} };
     } catch (error: any) {
         console.error('Error fetching organization members:', error);
         return { message: 'Failed to fetch members', data: [], errors: { system: error.message } };
@@ -559,7 +693,23 @@ export async function inviteTeamMemberAction(
             GSI2SK: keys.GSI2SK,
         });
 
-        // TODO: Send invitation email
+        // Fetch organization details for email
+        const orgKeys = getOrganizationKeys(organizationId);
+        const organization = await repository.get<Organization>(orgKeys.PK, orgKeys.SK);
+        const organizationName = organization?.name || 'Organization';
+
+        // Send invitation email
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const invitationLink = `${appUrl}/login?invite=${token}`;
+
+        await sendInvitationEmail({
+            to: email,
+            inviterName: profile.name || 'An admin',
+            organizationName,
+            invitationLink,
+            role
+        });
+
         console.log(`Invitation created for ${email} with token ${token}`);
 
         revalidatePath('/admin/team');
@@ -640,3 +790,103 @@ export async function cancelInvitationAction(invitationId: string): Promise<{
         return { message: 'Failed to cancel invitation', errors: { system: error.message } };
     }
 }
+
+export async function removeTeamMemberAction(memberId: string): Promise<{
+    message: string;
+    errors: any;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) return { message: 'Not authenticated', errors: {} };
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) return { message: 'Unauthorized', errors: {} };
+
+        const repository = getRepository();
+
+        // Get user's organization
+        const profileKeys = getProfileKeys(currentUser.id);
+        const profile = await repository.get<any>(profileKeys.PK, profileKeys.SK);
+
+        if (!profile?.organizationId) {
+            return { message: 'No organization found', errors: {} };
+        }
+
+        const memberKeys = getTeamMemberKeys(profile.organizationId, memberId);
+
+        // Verify member exists
+        const member = await repository.get<TeamMember>(memberKeys.PK, memberKeys.SK);
+        if (!member) {
+            return { message: 'Member not found', errors: {} };
+        }
+
+        if (member.userId === currentUser.id) {
+            return { message: 'Cannot remove yourself.', errors: {} };
+        }
+
+        if (member.role === 'owner') {
+            return { message: 'Cannot remove the organization owner.', errors: {} };
+        }
+
+        // Remove member record
+        await repository.delete(memberKeys.PK, memberKeys.SK);
+
+        // Update user profile to remove organizationId
+        const targetProfileKeys = getProfileKeys(memberId);
+        await repository.update(targetProfileKeys.PK, targetProfileKeys.SK, {
+            organizationId: null as any
+        });
+
+        revalidatePath('/admin/team');
+        return { message: 'success', errors: {} };
+    } catch (error: any) {
+        console.error('Error removing team member:', error);
+        return { message: 'Failed to remove team member', errors: { system: error.message } };
+    }
+}
+
+export async function updateTeamMemberRoleAction(memberId: string, role: 'member' | 'admin'): Promise<{
+    message: string;
+    errors: any;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) return { message: 'Not authenticated', errors: {} };
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) return { message: 'Unauthorized', errors: {} };
+
+        const repository = getRepository();
+
+        // Get user's organization
+        const profileKeys = getProfileKeys(currentUser.id);
+        const profile = await repository.get<any>(profileKeys.PK, profileKeys.SK);
+
+        if (!profile?.organizationId) {
+            return { message: 'No organization found', errors: {} };
+        }
+
+        const memberKeys = getTeamMemberKeys(profile.organizationId, memberId);
+
+        // Verify member exists
+        const member = await repository.get<TeamMember>(memberKeys.PK, memberKeys.SK);
+        if (!member) {
+            return { message: 'Member not found', errors: {} };
+        }
+
+        if (member.role === 'owner') {
+            return { message: 'Cannot change role of the organization owner.', errors: {} };
+        }
+
+        // Update role
+        await repository.update(memberKeys.PK, memberKeys.SK, { role });
+
+        revalidatePath('/admin/team');
+        return { message: 'success', errors: {} };
+    } catch (error: any) {
+        console.error('Error updating team member role:', error);
+        return { message: 'Failed to update role', errors: { system: error.message } };
+    }
+}
+
+export const getTeamMembersAction = getOrganizationMembersAction;
