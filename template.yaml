@@ -26,6 +26,15 @@ Globals:
     MemorySize: 1024
     Runtime: nodejs22.x
     Tracing: Active
+    AutoPublishAlias: live
+    DeploymentPreference:
+      Type: Linear10PercentEvery1Minute
+      Alarms:
+        - !Ref LambdaErrorAlarm
+        - !Ref LambdaThrottleAlarm
+      Hooks:
+        PreTraffic: !Ref PreTrafficHookFunction
+        PostTraffic: !Ref PostTrafficHookFunction
     Environment:
       Variables:
         NODE_ENV: !Ref Environment
@@ -520,6 +529,31 @@ Resources:
                   - !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IntegrationServiceApi}/*
                   - !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${BackgroundServiceApi}/*
                   - !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AdminServiceApi}/*
+        - PolicyName: CodeDeployAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codedeploy:PutLifecycleEventHookExecutionStatus
+                Resource: "*"
+        - PolicyName: CloudWatchMetricsAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudwatch:GetMetricStatistics
+                  - cloudwatch:DescribeAlarms
+                Resource: "*"
+        - PolicyName: LambdaInvokeAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: "*"
 
   # ==========================================
   # API Gateway for Service Boundaries
@@ -1067,30 +1101,7 @@ Resources:
           ThrottlingRateLimit: !If [IsProduction, 200, 20]
           ThrottlingBurstLimit: !If [IsProduction, 400, 40]
 
-  AdminServiceApiDeployment:
-    Type: AWS::ApiGateway::Deployment
-    DependsOn:
-      - AdminServiceHealthMethod
-    Properties:
-      RestApiId: !Ref AdminServiceApi
-      Description: !Sub Admin Service API deployment for ${Environment}
-
-  AdminServiceApiStage:
-    Type: AWS::ApiGateway::Stage
-    Properties:
-      RestApiId: !Ref AdminServiceApi
-      DeploymentId: !Ref AdminServiceApiDeployment
-      StageName: v1
-      Description: !Sub Admin Service API stage for ${Environment}
-      TracingEnabled: true
-      MethodSettings:
-        - ResourcePath: "/*"
-          HttpMethod: "*"
-          LoggingLevel: INFO
-          DataTraceEnabled: !If [IsProduction, false, true]
-          MetricsEnabled: true
-          ThrottlingRateLimit: !If [IsProduction, 100, 10]
-          ThrottlingBurstLimit: !If [IsProduction, 200, 20]
+  # Admin Service API Deployment and Stage are defined later after all resources are created
 
   # ==========================================
   # Health Check Endpoints for All Services
@@ -1431,12 +1442,40 @@ Resources:
       IdentitySource: method.request.header.Authorization
       RestApiId: !Ref BackgroundServiceApi
 
+  # Admin Authorizer Lambda Function
+  AdminAuthorizerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-admin-authorizer-${Environment}
+      CodeUri: src/lambda/
+      Handler: admin-authorizer.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 256
+      Role: !GetAtt CognitoAuthorizerRole.Arn
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: AdminAuthorizer
+
+  # Lambda Permission for Admin Service API Gateway to invoke admin authorizer
+  AdminAuthorizerAdminServicePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AdminAuthorizerFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AdminServiceApi}/authorizers/*
+
   AdminServiceCognitoAuthorizer:
     Type: AWS::ApiGateway::Authorizer
     Properties:
-      Name: !Sub bayon-coagent-admin-cognito-authorizer-${Environment}
+      Name: !Sub bayon-coagent-admin-authorizer-${Environment}
       Type: TOKEN
-      AuthorizerUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CognitoAuthorizerFunction.Arn}/invocations
+      AuthorizerUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminAuthorizerFunction.Arn}/invocations
       AuthorizerCredentials: !GetAtt ApiGatewayAuthorizerRole.Arn
       AuthorizerResultTtlInSeconds: 300
       IdentitySource: method.request.header.Authorization
@@ -2985,6 +3024,100 @@ Resources:
         Function: SyncSocialAnalytics
 
   # ==========================================
+  # Stripe Subscription Handler Lambda
+  # ==========================================
+  StripeSubscriptionHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-stripe-subscription-handler-${Environment}
+      CodeUri: src/lambda/
+      Handler: stripe-subscription-handler.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 512
+      Role: !GetAtt ApplicationRole.Arn
+      Events:
+        StripeSubscriptionCreated:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: aws.partner/stripe.com/ed_test_61ThQU3sr9KLkWPGq16ThPlt3iSQLw25fKzPmC3uK2lk
+            Pattern:
+              source:
+                - aws.partner/stripe.com
+              detail-type:
+                - Stripe Event
+              detail:
+                type:
+                  - customer.subscription.created
+                  - customer.subscription.updated
+                  - customer.subscription.deleted
+                  - invoice.payment_succeeded
+                  - invoice.payment_failed
+            RetryPolicy:
+              MaximumRetryAttempts: 3
+            DeadLetterConfig:
+              Arn: !GetAtt StripeEventDLQ.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+          STRIPE_SECRET_KEY: "{{resolve:secretsmanager:bayon-stripe-secret:SecretString:secret_key}}"
+          NODE_ENV: !Ref Environment
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: StripeSubscriptionHandler
+
+  # Dead Letter Queue for failed Stripe events
+  StripeEventDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub bayon-stripe-events-dlq-${Environment}
+      MessageRetentionPeriod: 1209600
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+
+  # CloudWatch Alarm for Stripe DLQ
+  StripeEventDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub bayon-stripe-events-dlq-alarm-${Environment}
+      AlarmDescription: Alert when Stripe events fail and land in DLQ
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt StripeEventDLQ.QueueName
+      TreatMissingData: notBreaching
+      AlarmActions: !If
+        - HasAlarmEmail
+        - - !Ref AlarmTopic
+        - !Ref AWS::NoValue
+
+  # Stripe Secret in Secrets Manager
+  StripeSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub bayon-stripe-secret-${Environment}
+      Description: Stripe API secret key
+      SecretString: !Sub |
+        {
+          "secret_key": "sk_test_placeholder"
+        }
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+
+  # ==========================================
   # AI Processing Service Lambda Functions
   # ==========================================
 
@@ -3191,6 +3324,548 @@ Resources:
         Function: MarketUpdateGenerator
 
   # ==========================================
+  # Admin Service Lambda Functions
+  # ==========================================
+
+  # IAM Role for Admin Service Lambda Functions
+  AdminServiceLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub bayon-coagent-admin-service-lambda-${Environment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: AdminServiceCognitoAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:ListUsers
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:AdminUpdateUserAttributes
+                  - cognito-idp:AdminDeleteUser
+                Resource: !GetAtt UserPool.Arn
+        - PolicyName: AdminServiceDynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt DynamoDBTable.Arn
+                  - !Sub ${DynamoDBTable.Arn}/index/*
+        - PolicyName: AdminServiceCloudWatchAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudwatch:GetMetricStatistics
+                  - cloudwatch:ListMetrics
+                  - cloudwatch:DescribeAlarms
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogStreams
+                  - logs:FilterLogEvents
+                Resource: "*"
+        - PolicyName: AdminServiceLambdaAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:ListFunctions
+                  - lambda:GetFunction
+                  - lambda:GetFunctionConfiguration
+                Resource: "*"
+        - PolicyName: AdminServiceDynamoDBDescribe
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:DescribeTable
+                Resource: !GetAtt DynamoDBTable.Arn
+
+  # Admin User Management Lambda
+  AdminUserManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-admin-user-management-${Environment}
+      CodeUri: src/lambda/
+      Handler: admin-user-management.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 512
+      Role: !GetAtt AdminServiceLambdaRole.Arn
+      ReservedConcurrentExecutions: 10
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: AdminService
+        Function: UserManagement
+
+  # Admin System Configuration Lambda
+  AdminSystemConfigFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-admin-system-config-${Environment}
+      CodeUri: src/lambda/
+      Handler: admin-system-config.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 512
+      Role: !GetAtt AdminServiceLambdaRole.Arn
+      ReservedConcurrentExecutions: 10
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: AdminService
+        Function: SystemConfig
+
+  # Admin Monitoring Dashboard Lambda
+  AdminMonitoringDashboardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-admin-monitoring-dashboard-${Environment}
+      CodeUri: src/lambda/
+      Handler: admin-monitoring-dashboard.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 512
+      Role: !GetAtt AdminServiceLambdaRole.Arn
+      ReservedConcurrentExecutions: 10
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: AdminService
+        Function: MonitoringDashboard
+
+  # Admin Audit Log Query Lambda
+  AdminAuditLogQueryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-admin-audit-log-query-${Environment}
+      CodeUri: src/lambda/
+      Handler: admin-audit-log-query.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 512
+      Role: !GetAtt AdminServiceLambdaRole.Arn
+      ReservedConcurrentExecutions: 10
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: AdminService
+        Function: AuditLogQuery
+
+  # ==========================================
+  # Admin Service API Gateway Resources
+  # ==========================================
+
+  # /users resource
+  AdminServiceUsersResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ParentId: !GetAtt AdminServiceApi.RootResourceId
+      PathPart: users
+
+  # GET /users - List users
+  AdminServiceListUsersMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ResourceId: !Ref AdminServiceUsersResource
+      HttpMethod: GET
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref AdminServiceCognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminUserManagementFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /users/{username} resource
+  AdminServiceUserIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ParentId: !Ref AdminServiceUsersResource
+      PathPart: "{username}"
+
+  # GET /users/{username} - Get user
+  AdminServiceGetUserMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ResourceId: !Ref AdminServiceUserIdResource
+      HttpMethod: GET
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref AdminServiceCognitoAuthorizer
+      RequestParameters:
+        method.request.path.username: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminUserManagementFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # PUT /users/{username} - Update user
+  AdminServiceUpdateUserMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ResourceId: !Ref AdminServiceUserIdResource
+      HttpMethod: PUT
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref AdminServiceCognitoAuthorizer
+      RequestParameters:
+        method.request.path.username: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminUserManagementFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # DELETE /users/{username} - Delete user
+  AdminServiceDeleteUserMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ResourceId: !Ref AdminServiceUserIdResource
+      HttpMethod: DELETE
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref AdminServiceCognitoAuthorizer
+      RequestParameters:
+        method.request.path.username: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminUserManagementFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /config resource
+  AdminServiceConfigResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ParentId: !GetAtt AdminServiceApi.RootResourceId
+      PathPart: config
+
+  # GET /config - Get configuration
+  AdminServiceGetConfigMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ResourceId: !Ref AdminServiceConfigResource
+      HttpMethod: GET
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref AdminServiceCognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminSystemConfigFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # PUT /config - Update configuration
+  AdminServiceUpdateConfigMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ResourceId: !Ref AdminServiceConfigResource
+      HttpMethod: PUT
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref AdminServiceCognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminSystemConfigFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /config/history resource
+  AdminServiceConfigHistoryResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ParentId: !Ref AdminServiceConfigResource
+      PathPart: history
+
+  # GET /config/history - Get configuration history
+  AdminServiceGetConfigHistoryMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ResourceId: !Ref AdminServiceConfigHistoryResource
+      HttpMethod: GET
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref AdminServiceCognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminSystemConfigFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /dashboard resource
+  AdminServiceDashboardResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ParentId: !GetAtt AdminServiceApi.RootResourceId
+      PathPart: dashboard
+
+  # /dashboard/overview resource
+  AdminServiceDashboardOverviewResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ParentId: !Ref AdminServiceDashboardResource
+      PathPart: overview
+
+  # GET /dashboard/overview - Get dashboard overview
+  AdminServiceGetDashboardOverviewMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ResourceId: !Ref AdminServiceDashboardOverviewResource
+      HttpMethod: GET
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref AdminServiceCognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminMonitoringDashboardFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /dashboard/metrics resource
+  AdminServiceDashboardMetricsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ParentId: !Ref AdminServiceDashboardResource
+      PathPart: metrics
+
+  # GET /dashboard/metrics - Get metrics
+  AdminServiceGetMetricsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ResourceId: !Ref AdminServiceDashboardMetricsResource
+      HttpMethod: GET
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref AdminServiceCognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminMonitoringDashboardFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /dashboard/services resource
+  AdminServiceDashboardServicesResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ParentId: !Ref AdminServiceDashboardResource
+      PathPart: services
+
+  # GET /dashboard/services - Get services
+  AdminServiceGetServicesMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ResourceId: !Ref AdminServiceDashboardServicesResource
+      HttpMethod: GET
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref AdminServiceCognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminMonitoringDashboardFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /dashboard/errors resource
+  AdminServiceDashboardErrorsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ParentId: !Ref AdminServiceDashboardResource
+      PathPart: errors
+
+  # GET /dashboard/errors - Get errors
+  AdminServiceGetErrorsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ResourceId: !Ref AdminServiceDashboardErrorsResource
+      HttpMethod: GET
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref AdminServiceCognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminMonitoringDashboardFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /audit-logs resource
+  AdminServiceAuditLogsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ParentId: !GetAtt AdminServiceApi.RootResourceId
+      PathPart: audit-logs
+
+  # GET /audit-logs - Query audit logs
+  AdminServiceQueryAuditLogsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ResourceId: !Ref AdminServiceAuditLogsResource
+      HttpMethod: GET
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref AdminServiceCognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminAuditLogQueryFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /audit-logs/streams resource
+  AdminServiceAuditLogsStreamsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ParentId: !Ref AdminServiceAuditLogsResource
+      PathPart: streams
+
+  # GET /audit-logs/streams - Get log streams
+  AdminServiceGetLogStreamsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ResourceId: !Ref AdminServiceAuditLogsStreamsResource
+      HttpMethod: GET
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref AdminServiceCognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminAuditLogQueryFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # Lambda Permissions for API Gateway to invoke Admin Service functions
+  AdminUserManagementLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AdminUserManagementFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AdminServiceApi}/*
+
+  AdminSystemConfigLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AdminSystemConfigFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AdminServiceApi}/*
+
+  AdminMonitoringDashboardLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AdminMonitoringDashboardFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AdminServiceApi}/*
+
+  AdminAuditLogQueryLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AdminAuditLogQueryFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AdminServiceApi}/*
+
+  # Update Admin Service API Gateway Deployment to include new methods
+  AdminServiceApiDeploymentUpdate:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - AdminServiceHealthMethod
+      - AdminServiceListUsersMethod
+      - AdminServiceGetUserMethod
+      - AdminServiceUpdateUserMethod
+      - AdminServiceDeleteUserMethod
+      - AdminServiceGetConfigMethod
+      - AdminServiceUpdateConfigMethod
+      - AdminServiceGetConfigHistoryMethod
+      - AdminServiceGetDashboardOverviewMethod
+      - AdminServiceGetMetricsMethod
+      - AdminServiceGetServicesMethod
+      - AdminServiceGetErrorsMethod
+      - AdminServiceQueryAuditLogsMethod
+      - AdminServiceGetLogStreamsMethod
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      Description: !Sub Admin Service API deployment for ${Environment} with all endpoints
+
+  # Update Admin Service API Stage
+  AdminServiceApiStageUpdate:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      DeploymentId: !Ref AdminServiceApiDeploymentUpdate
+      StageName: v1
+      Description: !Sub Admin Service API stage for ${Environment}
+      TracingEnabled: true
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+          DataTraceEnabled: !If [IsProduction, false, true]
+          MetricsEnabled: true
+          ThrottlingRateLimit: 10
+          ThrottlingBurstLimit: 20
+
+  # ==========================================
   # CloudWatch Monitoring
   # ==========================================
   AlarmTopic:
@@ -3205,6 +3880,83 @@ Resources:
         - Endpoint: !Ref AlarmEmail
           Protocol: email
 
+  # ==========================================
+  # Deployment Alarms for Automatic Rollback
+  # ==========================================
+  LambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${Environment}-lambda-deployment-errors
+      AlarmDescription: Alert when Lambda function errors exceed threshold during deployment
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  LambdaThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${Environment}-lambda-deployment-throttles
+      AlarmDescription: Alert when Lambda function throttles exceed threshold during deployment
+      MetricName: Throttles
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 3
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  # ==========================================
+  # Traffic Hook Functions for Deployment Validation
+  # ==========================================
+  PreTrafficHookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-pre-traffic-hook-${Environment}
+      CodeUri: src/lambda/
+      Handler: deployment-hooks/pre-traffic.handler
+      Runtime: nodejs22.x
+      Timeout: 60
+      MemorySize: 256
+      Role: !GetAtt ApplicationRole.Arn
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      DeploymentPreference:
+        Enabled: false
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Purpose: DeploymentValidation
+
+  PostTrafficHookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-post-traffic-hook-${Environment}
+      CodeUri: src/lambda/
+      Handler: deployment-hooks/post-traffic.handler
+      Runtime: nodejs22.x
+      Timeout: 60
+      MemorySize: 256
+      Role: !GetAtt ApplicationRole.Arn
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      DeploymentPreference:
+        Enabled: false
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Purpose: DeploymentValidation
+
+  # ==========================================
+  # Service-Specific Alarms
+  # ==========================================
   AuthFailureAlarm:
     Type: AWS::CloudWatch::Alarm
     Condition: HasAlarmEmail
@@ -4171,3 +4923,22 @@ Outputs:
     Value: !GetAtt EventBridgeDLQ.Arn
     Export:
       Name: !Sub ${Environment}-EventBridgeDLQArn
+
+  # Stripe Integration Outputs
+  StripeSubscriptionHandlerFunctionArn:
+    Description: Stripe Subscription Handler Lambda Function ARN
+    Value: !GetAtt StripeSubscriptionHandlerFunction.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-StripeSubscriptionHandlerFunctionArn
+
+  StripeEventDLQUrl:
+    Description: Stripe Event Dead Letter Queue URL
+    Value: !Ref StripeEventDLQ
+    Export:
+      Name: !Sub ${AWS::StackName}-StripeEventDLQUrl
+
+  StripeSecretArn:
+    Description: Stripe Secret ARN in Secrets Manager
+    Value: !Ref StripeSecret
+    Export:
+      Name: !Sub ${AWS::StackName}-StripeSecretArn

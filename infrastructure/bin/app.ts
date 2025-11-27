@@ -6,6 +6,7 @@ import { DynamoDBStack } from '../lib/dynamodb-stack';
 import { S3Stack } from '../lib/s3-stack';
 import { MonitoringStack } from '../lib/monitoring-stack';
 import { IAMStack } from '../lib/iam-stack';
+import { StripeEventBridgeStack } from '../lib/stripe-eventbridge-stack';
 
 const app = new cdk.App();
 
@@ -17,11 +18,11 @@ const isProd = environment === 'production';
 const envConfig = {
   development: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
-    region: process.env.CDK_DEFAULT_REGION || 'us-east-1',
+    region: process.env.CDK_DEFAULT_REGION || 'us-west-2',
   },
   production: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
-    region: process.env.CDK_DEFAULT_REGION || 'us-east-1',
+    region: process.env.CDK_DEFAULT_REGION || 'us-west-2',
   },
 };
 
@@ -89,6 +90,16 @@ const monitoringStack = new MonitoringStack(app, `${stackPrefix}-Monitoring`, {
   storageBucket: s3Stack.storageBucket,
 });
 
+// Create Stripe EventBridge Stack
+const stripeStack = new StripeEventBridgeStack(app, `${stackPrefix}-Stripe`, {
+  env,
+  description: `Stripe EventBridge integration for Bayon CoAgent (${environment})`,
+  stackName: `${stackPrefix}-Stripe`,
+  tags,
+  environment,
+  dynamoDBTableName: dynamoDBStack.table.tableName,
+});
+
 // Add dependencies
 iamStack.addDependency(cognitoStack);
 iamStack.addDependency(dynamoDBStack);
@@ -96,5 +107,6 @@ iamStack.addDependency(s3Stack);
 monitoringStack.addDependency(cognitoStack);
 monitoringStack.addDependency(dynamoDBStack);
 monitoringStack.addDependency(s3Stack);
+stripeStack.addDependency(dynamoDBStack);
 
 app.synth();

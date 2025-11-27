@@ -74,6 +74,7 @@ export type EntityType =
   | 'HomeValuation'
   | 'ValuationRequest'
   | 'DashboardDocument'
+  | 'DashboardAccessLog'
   | 'Organization'
   | 'TeamMember'
   | 'Invitation';

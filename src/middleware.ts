@@ -3,14 +3,25 @@
  * 
  * Lightweight middleware that works in Edge Runtime without X-Ray dependencies.
  * X-Ray tracing is handled at the API route level instead.
+ * 
+ * This middleware also handles:
+ * - Dashboard link authorization and validation
+ * - Rate limiting for dashboard access
+ * - Security headers
+ * - Request correlation tracking
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  validateDashboardLinkMiddleware,
+  extractTokenFromRequest,
+  addSecurityHeaders
+} from './middleware/validate-dashboard-link';
 
 /**
  * Main middleware function
  */
-export default function middleware(request: NextRequest): NextResponse {
+export default async function middleware(request: NextRequest): Promise<NextResponse> {
   // Skip processing for static assets
   if (
     request.nextUrl.pathname.startsWith('/_next/') ||
@@ -21,6 +32,36 @@ export default function middleware(request: NextRequest): NextResponse {
     return NextResponse.next();
   }
 
+  // Handle dashboard link authorization for /d/[token] routes
+  if (request.nextUrl.pathname.startsWith('/d/')) {
+    const token = extractTokenFromRequest(request);
+
+    if (token) {
+      // Validate the dashboard link
+      const authResponse = await validateDashboardLinkMiddleware(request, token);
+
+      // If validation failed, return the error response
+      if (authResponse) {
+        return addSecurityHeaders(authResponse);
+      }
+    } else {
+      // No token found - return unauthorized
+      const errorResponse = new NextResponse(
+        JSON.stringify({
+          error: 'Unauthorized',
+          message: 'Dashboard access token is required',
+        }),
+        {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      return addSecurityHeaders(errorResponse);
+    }
+  }
+
   const response = NextResponse.next();
 
   // Add correlation ID for request tracking
@@ -28,11 +69,7 @@ export default function middleware(request: NextRequest): NextResponse {
   response.headers.set('X-Correlation-Id', correlationId);
 
   // Add security headers
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('X-XSS-Protection', '1; mode=block');
-
-  return response;
+  return addSecurityHeaders(response);
 }
 
 /**

@@ -16,6 +16,9 @@ import { useFormStatus } from 'react-dom';
 import { HeroGradientMesh } from '@/components/ui/gradient-mesh';
 import { useToast } from '@/hooks/use-toast';
 import { useSearchParams } from 'next/navigation';
+import { StripePricing } from '@/components/stripe-pricing';
+import { StripePaymentForm } from '@/components/stripe-payment-form';
+import { SUBSCRIPTION_PLANS, SubscriptionPlan } from '@/lib/stripe-config';
 
 
 function AuthButton({ children }: { children: React.ReactNode }) {
@@ -218,10 +221,15 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     const [passwordTouched, setPasswordTouched] = useState(false);
     const [needsVerification, setNeedsVerification] = useState(false);
     const [userEmail, setUserEmail] = useState('');
+    const [userPassword, setUserPassword] = useState('');
     const [verificationCode, setVerificationCode] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
     const [isResending, setIsResending] = useState(false);
     const [invitationData, setInvitationData] = useState<{ organizationName: string; organizationId: string } | null>(null);
+    const [signupStep, setSignupStep] = useState<'account' | 'plan' | 'payment' | 'verify'>('account');
+    const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | undefined>();
+    const [clientSecret, setClientSecret] = useState<string | null>(null);
+    const [userId, setUserId] = useState<string | null>(null);
 
     // Validate invitation token on mount
     useEffect(() => {
@@ -262,14 +270,15 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
             setError(null);
 
             setUserEmail(signUpState.data.email);
+            setUserPassword(signUpState.data.password);
             signUp(signUpState.data.email, signUpState.data.password)
                 .then((result) => {
                     if (!result.userConfirmed) {
-                        setNeedsVerification(true);
-                        setSuccess('Account created! Please check your email for a verification code.');
+                        setUserId(result.userSub);
+                        setSignupStep('plan');
                         toast({
                             title: "Account created",
-                            description: "Please check your email for a verification code.",
+                            description: "Now choose your plan to continue.",
                         });
                     }
                 })
@@ -292,31 +301,59 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
         try {
             await confirmSignUp(userEmail, verificationCode);
 
-            // If there was an invitation, we need to accept it now that the user is verified
-            // However, we need the user to be authenticated first.
-            // Typically, after confirmation, the user needs to sign in.
-            // We can store the invite token in local storage or handle it after sign in.
-            if (inviteToken) {
-                // For now, we'll rely on the user signing in. 
-                // Ideally, we'd auto-sign in or have a post-confirmation flow.
-                // Let's store it in localStorage to be picked up after login if needed,
-                // or just redirect to login with the param preserved.
-            }
-
-            setSuccess('Account verified successfully! You can now sign in.');
+            setSuccess('Account verified successfully! Redirecting to dashboard...');
             toast({
                 variant: "success",
                 title: "Email verified",
-                description: "You can now sign in.",
+                description: "Your account is now active!",
             });
+
+            // Auto sign in after verification
             setTimeout(() => {
-                onSwitch(); // Switch to sign in form
+                window.location.href = '/dashboard';
             }, 2000);
         } catch (err) {
             handleAuthError(err as Error);
         } finally {
             setIsVerifying(false);
         }
+    };
+
+    const handlePlanSelection = async (plan: SubscriptionPlan) => {
+        setSelectedPlan(plan);
+        setError(null);
+
+        try {
+            const response = await fetch('/api/stripe/create-subscription', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: userEmail,
+                    priceId: SUBSCRIPTION_PLANS[plan].priceId,
+                    userId: userId,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.clientSecret) {
+                setClientSecret(data.clientSecret);
+                setSignupStep('payment');
+            } else {
+                throw new Error('Failed to create subscription');
+            }
+        } catch (err) {
+            handleAuthError(err as Error);
+        }
+    };
+
+    const handlePaymentSuccess = () => {
+        setSignupStep('verify');
+        setSuccess('Payment successful! Please verify your email to complete signup.');
+        toast({
+            title: "Payment successful",
+            description: "Check your email for a verification code.",
+        });
     };
 
     const handleResendCode = async () => {
@@ -340,8 +377,49 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     const hasEmailError = emailTouched && signUpState.errors && 'email' in signUpState.errors && signUpState.errors.email;
     const hasPasswordError = passwordTouched && signUpState.errors && 'password' in signUpState.errors && signUpState.errors.password;
 
+    // Show plan selection
+    if (signupStep === 'plan') {
+        return (
+            <div className="grid gap-8 animate-fade-in p-8 rounded-2xl glass-effect-sm border-border/50 shadow-xl bg-card/40 backdrop-blur-xl">
+                <div className="grid gap-3 text-center">
+                    <h1 className="font-display text-4xl font-bold text-gradient-primary tracking-tight">Choose Your Plan</h1>
+                    <p className="text-lg text-muted-foreground font-light">
+                        Select the plan that fits your needs
+                    </p>
+                </div>
+                <StripePricing onSelectPlan={handlePlanSelection} selectedPlan={selectedPlan} />
+                {error && (
+                    <Alert variant="destructive" className="animate-slide-down border-destructive/50 bg-destructive/10">
+                        <Terminal className="h-4 w-4" />
+                        <AlertTitle className="font-semibold">Error</AlertTitle>
+                        <AlertDescription className="text-sm">{error}</AlertDescription>
+                    </Alert>
+                )}
+            </div>
+        );
+    }
+
+    // Show payment form
+    if (signupStep === 'payment' && clientSecret) {
+        return (
+            <div className="grid gap-8 animate-fade-in p-8 rounded-2xl glass-effect-sm border-border/50 shadow-xl bg-card/40 backdrop-blur-xl">
+                <div className="grid gap-3 text-center">
+                    <h1 className="font-display text-4xl font-bold text-gradient-primary tracking-tight">Complete Payment</h1>
+                    <p className="text-lg text-muted-foreground font-light">
+                        Enter your payment details to activate your subscription
+                    </p>
+                </div>
+                <StripePaymentForm
+                    clientSecret={clientSecret}
+                    onSuccess={handlePaymentSuccess}
+                    onBack={() => setSignupStep('plan')}
+                />
+            </div>
+        );
+    }
+
     // Show verification form if needed
-    if (needsVerification) {
+    if (signupStep === 'verify') {
         return (
             <div className="grid gap-8 animate-fade-in p-8 rounded-2xl glass-effect-sm border-border/50 shadow-xl bg-card/40 backdrop-blur-xl">
                 <div className="grid gap-3 text-center">
@@ -421,6 +499,7 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                             required
                             className={`h-12 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-all duration-300 ${hasEmailError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                             onBlur={() => setEmailTouched(true)}
+                            onChange={(e) => setUserEmail(e.target.value)}
                         />
                         {hasEmailError && signUpState.errors && 'email' in signUpState.errors && (
                             <p className="text-sm text-destructive mt-1 animate-slide-down flex items-center gap-1 ml-1">
@@ -439,6 +518,7 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                                 required
                                 className={`h-12 pr-10 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-all duration-300 ${hasPasswordError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                                 onBlur={() => setPasswordTouched(true)}
+                                onChange={(e) => setUserPassword(e.target.value)}
                             />
                             <Button
                                 type="button"

@@ -965,3 +965,78 @@ export async function resetCircuitBreaker(
         };
     }
 }
+
+/**
+ * Publish content to a specific channel (used by Lambda for direct publishing)
+ * 
+ * This is a simplified version for Lambda to use directly without needing
+ * the full listing context.
+ */
+export async function publishContentToChannel(params: {
+    userId: string;
+    content: string;
+    mediaUrls?: string[];
+    channel: PublishChannel;
+    metadata?: Record<string, any>;
+}): Promise<{
+    success: boolean;
+    postId?: string;
+    postUrl?: string;
+    error?: string;
+}> {
+    try {
+        const { userId, content, mediaUrls, channel, metadata } = params;
+
+        // Get OAuth connection for the channel
+        const oauthManager = getOAuthConnectionManager();
+        const connection = await oauthManager.getConnection(userId, channel.type as Platform);
+
+        if (!connection) {
+            return {
+                success: false,
+                error: `No ${channel.type} connection found for user`,
+            };
+        }
+
+        // Import enhanced publishing service
+        const { createEnhancedPublishingService } = await import('@/services/enhanced-publishing-service');
+        const enhancedPublisher = createEnhancedPublishingService();
+
+        // Create a simplified post object
+        const post: SocialPost = {
+            listingId: metadata?.contentId || 'scheduled-content',
+            content,
+            images: mediaUrls || [],
+            hashtags: metadata?.hashtags || [],
+            platform: channel.type as Platform,
+        };
+
+        // Publish using enhanced service
+        const result = await enhancedPublisher.publishToPlatform(
+            post,
+            channel.type as Platform,
+            connection,
+            userId
+        );
+
+        return {
+            success: result.success,
+            postId: result.postId,
+            postUrl: result.postUrl,
+            error: result.error,
+        };
+
+    } catch (error) {
+        const { logger } = await import('@/aws/logging/logger');
+        logger.error('Failed to publish content to channel', error as Error, {
+            userId: params.userId,
+            channelType: params.channel.type,
+            operation: 'publish_content_to_channel'
+        });
+
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to publish to channel',
+        };
+    }
+}

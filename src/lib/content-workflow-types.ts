@@ -129,6 +129,11 @@ export interface ScheduledContent {
         aiModel?: string;
         generatedAt?: Date;
         tags?: string[];
+        mediaUrls?: string[];
+        hashtags?: string[];
+        htmlContent?: string;
+        plainTextContent?: string;
+        recipients?: string[];
     };
     publishResults?: PublishResult[];
     retryCount?: number;

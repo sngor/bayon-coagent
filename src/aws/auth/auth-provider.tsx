@@ -17,7 +17,7 @@ interface AuthContextValue {
     isLoading: boolean;
     error: Error | null;
     signIn: (email: string, password: string) => Promise<void>;
-    signUp: (email: string, password: string) => Promise<{ userConfirmed: boolean }>;
+    signUp: (email: string, password: string) => Promise<{ userConfirmed: boolean; userSub: string }>;
     confirmSignUp: (email: string, code: string) => Promise<void>;
     resendConfirmationCode: (email: string) => Promise<void>;
     signOut: () => Promise<void>;
@@ -153,8 +153,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
             const result = await cognitoClient.signUp(email, password);
 
-            // Return whether user needs to confirm email
-            return { userConfirmed: result.userConfirmed };
+            // Return whether user needs to confirm email and user ID
+            return { userConfirmed: result.userConfirmed, userSub: result.userSub };
         } catch (err) {
             const error = err instanceof Error ? err : new Error('Failed to sign up');
             setError(error);

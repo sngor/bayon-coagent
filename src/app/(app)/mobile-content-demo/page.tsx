@@ -1,3 +1,5 @@
+'use client';
+
 import { ContentManagement } from '@/components/mobile/content-management';
 import { OfflineStatusIndicator } from '@/components/mobile/offline-status-indicator';
 

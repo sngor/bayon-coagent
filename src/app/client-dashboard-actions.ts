@@ -15,6 +15,27 @@ import { getCurrentUser } from '@/aws/auth/cognito-client';
 import { sendEmail } from '@/aws/ses/client';
 import { getConfig } from '@/aws/config';
 import { uploadFile, getPresignedUrl, deleteFile } from '@/aws/s3/client';
+import {
+    clientPortalLogger,
+    clientPortalMetrics,
+    logDashboardView,
+    logLinkValidation,
+    logPropertySearch,
+    logValuationRequest,
+    logDocumentDownload as logDocDownload,
+    logContactRequest,
+    logDashboardCreation,
+    logLinkGeneration,
+    logCMAReportCreation,
+    logError,
+    monitorOperation,
+} from '@/aws/logging';
+import {
+    dashboardCache,
+    analyticsCache,
+    getDashboardCacheKey,
+    getAnalyticsCacheKey,
+} from '@/lib/client-dashboard/cache';
 
 // ==================== Types ====================
 
@@ -373,9 +394,10 @@ export async function createDashboard(
     data: ClientDashboard | null;
     errors: any;
 }> {
+    let user: any = null;
     try {
         // Get current user (agent)
-        const user = await getCurrentUser();
+        user = await getCurrentUser();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -447,12 +469,18 @@ export async function createDashboard(
             dashboard
         );
 
+        // Log dashboard creation
+        logDashboardCreation(dashboardId, user.id, {
+            clientEmail: dashboard.clientInfo.email,
+        });
+
         return {
             message: 'success',
             data: dashboard,
             errors: {},
         };
     } catch (error) {
+        logError('createDashboard', error as Error, { agentId: user?.id });
         const errorMessage = handleError(error, 'Failed to create dashboard');
         return {
             message: errorMessage,
@@ -597,9 +625,10 @@ export async function generateSecuredLink(
     data: { link: string; expiresAt: number } | null;
     errors: any;
 }> {
+    let user: any = null;
     try {
         // Get current user (agent)
-        const user = await getCurrentUser();
+        user = await getCurrentUser();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -668,12 +697,16 @@ export async function generateSecuredLink(
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
         const link = `${baseUrl}/d/${token}`;
 
+        // Log link generation
+        logLinkGeneration(dashboardId, user.id, expiresAt);
+
         return {
             message: 'success',
             data: { link, expiresAt },
             errors: {},
         };
     } catch (error) {
+        logError('generateSecuredLink', error as Error, { agentId: user?.id });
         const errorMessage = handleError(error, 'Failed to generate link');
         return {
             message: errorMessage,
@@ -861,57 +894,66 @@ export async function getDashboardAnalytics(
             };
         }
 
-        // Query all analytics events for this dashboard
-        const pk = `DASHBOARD#${dashboardId}`;
-        const analyticsResults = await repository.queryItems<any>(pk, 'VIEW#');
+        // Try to get analytics from cache first (1-minute TTL for real-time updates)
+        const cacheKey = getAnalyticsCacheKey(dashboardId, 'full');
+        let analytics = analyticsCache.get(cacheKey);
 
-        // Aggregate analytics data
-        const analytics: DashboardAnalytics = {
-            dashboardId,
-            views: 0,
-            propertyViews: [],
-            documentDownloads: [],
-            contactRequests: [],
-            valuationRequests: [],
-        };
+        if (!analytics) {
+            // Cache miss - fetch from DynamoDB
+            const pk = `DASHBOARD#${dashboardId}`;
+            const analyticsResults = await repository.queryItems<any>(pk, 'VIEW#');
 
-        for (const result of analyticsResults.items) {
-            if (result.EntityType === 'DashboardView') {
-                analytics.views++;
-                const viewData = result.Data as any;
-                if (viewData.timestamp) {
-                    analytics.lastViewedAt = Math.max(
-                        analytics.lastViewedAt || 0,
-                        viewData.timestamp
-                    );
+            // Aggregate analytics data
+            analytics = {
+                dashboardId,
+                views: 0,
+                propertyViews: [],
+                documentDownloads: [],
+                contactRequests: [],
+                valuationRequests: [],
+            };
+
+            for (const result of analyticsResults.items) {
+                if (result.EntityType === 'DashboardView') {
+                    analytics.views++;
+                    const viewData = result.Data as any;
+                    if (viewData.timestamp) {
+                        analytics.lastViewedAt = Math.max(
+                            analytics.lastViewedAt || 0,
+                            viewData.timestamp
+                        );
+                    }
+                } else if (result.EntityType === 'PropertyView') {
+                    const viewData = result.Data as any;
+                    analytics.propertyViews.push({
+                        propertyId: viewData.propertyId,
+                        viewedAt: viewData.timestamp,
+                    });
+                } else if (result.EntityType === 'DocumentDownload') {
+                    const downloadData = result.Data as any;
+                    analytics.documentDownloads.push({
+                        documentId: downloadData.documentId,
+                        downloadedAt: downloadData.timestamp,
+                    });
+                } else if (result.EntityType === 'ContactRequest') {
+                    const requestData = result.Data as any;
+                    analytics.contactRequests.push({
+                        type: requestData.type,
+                        message: requestData.message,
+                        requestedAt: requestData.timestamp,
+                    });
+                } else if (result.EntityType === 'ValuationRequest') {
+                    const valuationData = result.Data as any;
+                    analytics.valuationRequests.push({
+                        propertyDescription: valuationData.propertyDescription,
+                        estimatedValue: valuationData.estimatedValue,
+                        requestedAt: valuationData.timestamp,
+                    });
                 }
-            } else if (result.EntityType === 'PropertyView') {
-                const viewData = result.Data as any;
-                analytics.propertyViews.push({
-                    propertyId: viewData.propertyId,
-                    viewedAt: viewData.timestamp,
-                });
-            } else if (result.EntityType === 'DocumentDownload') {
-                const downloadData = result.Data as any;
-                analytics.documentDownloads.push({
-                    documentId: downloadData.documentId,
-                    downloadedAt: downloadData.timestamp,
-                });
-            } else if (result.EntityType === 'ContactRequest') {
-                const requestData = result.Data as any;
-                analytics.contactRequests.push({
-                    type: requestData.type,
-                    message: requestData.message,
-                    requestedAt: requestData.timestamp,
-                });
-            } else if (result.EntityType === 'ValuationRequest') {
-                const valuationData = result.Data as any;
-                analytics.valuationRequests.push({
-                    propertyDescription: valuationData.propertyDescription,
-                    estimatedValue: valuationData.estimatedValue,
-                    requestedAt: valuationData.timestamp,
-                });
             }
+
+            // Store in cache
+            analyticsCache.set(cacheKey, analytics);
         }
 
         return {
@@ -976,6 +1018,8 @@ export async function validateDashboardLink(
 
         // Check if link has been revoked
         if (link.revoked) {
+            logLinkValidation(token, false, 'Link revoked');
+            await clientPortalMetrics.trackLinkValidation(false);
             return {
                 message: 'Link revoked',
                 data: null,
@@ -986,6 +1030,8 @@ export async function validateDashboardLink(
         // Check if link has expired
         const now = Date.now();
         if (link.expiresAt < now) {
+            logLinkValidation(token, false, 'Link expired');
+            await clientPortalMetrics.trackLinkValidation(false);
             return {
                 message: 'Link expired',
                 data: null,
@@ -993,19 +1039,28 @@ export async function validateDashboardLink(
             };
         }
 
-        // Get the dashboard data
-        const dashboardKeys = getClientDashboardKeys(link.agentId, link.dashboardId);
-        const dashboard = await repository.get<ClientDashboard>(
-            dashboardKeys.PK,
-            dashboardKeys.SK
-        );
+        // Try to get dashboard from cache first (5-minute TTL)
+        const cacheKey = getDashboardCacheKey(link.dashboardId);
+        let dashboard = dashboardCache.get(cacheKey);
 
         if (!dashboard) {
-            return {
-                message: 'Dashboard not found',
-                data: null,
-                errors: { dashboard: ['The dashboard associated with this link no longer exists'] },
-            };
+            // Cache miss - fetch from DynamoDB
+            const dashboardKeys = getClientDashboardKeys(link.agentId, link.dashboardId);
+            dashboard = await repository.get<ClientDashboard>(
+                dashboardKeys.PK,
+                dashboardKeys.SK
+            );
+
+            if (!dashboard) {
+                return {
+                    message: 'Dashboard not found',
+                    data: null,
+                    errors: { dashboard: ['The dashboard associated with this link no longer exists'] },
+                };
+            }
+
+            // Store in cache
+            dashboardCache.set(cacheKey, dashboard);
         }
 
         // Track link access - increment access count and update last accessed timestamp
@@ -1041,6 +1096,12 @@ export async function validateDashboardLink(
             ...updatedLink,
         };
 
+        // Log successful validation and dashboard view
+        logLinkValidation(token, true);
+        logDashboardView(link.dashboardId, token);
+        await clientPortalMetrics.trackLinkValidation(true);
+        await clientPortalMetrics.trackDashboardView(link.dashboardId);
+
         return {
             message: 'success',
             data: {
@@ -1050,6 +1111,7 @@ export async function validateDashboardLink(
             errors: {},
         };
     } catch (error) {
+        logError('validateDashboardLink', error as Error, { token: token?.substring(0, 8) });
         const errorMessage = handleError(error, 'Failed to validate link');
         return {
             message: errorMessage,
@@ -1079,9 +1141,10 @@ export async function createCMAReport(
     data: CMAReport | null;
     errors: any;
 }> {
+    let user: any = null;
     try {
         // Get current user (agent)
-        const user = await getCurrentUser();
+        user = await getCurrentUser();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -1150,12 +1213,16 @@ export async function createCMAReport(
             cmaReport
         );
 
+        // Log CMA report creation
+        logCMAReportCreation('', user.id); // Dashboard ID not available at this point
+
         return {
             message: 'success',
             data: cmaReport,
             errors: {},
         };
     } catch (error) {
+        logError('createCMAReport', error as Error, { agentId: user?.id });
         const errorMessage = handleError(error, 'Failed to create CMA report');
         return {
             message: errorMessage,
@@ -1426,6 +1493,7 @@ export async function generateValuationForDashboard(
     data: any | null;
     errors: any;
 }> {
+    let dashboard: any = null;
     try {
         if (!token) {
             return {
@@ -1454,7 +1522,7 @@ export async function generateValuationForDashboard(
             };
         }
 
-        const { dashboard } = validationResult.data;
+        dashboard = validationResult.data.dashboard;
 
         // Check if home valuation is enabled for this dashboard
         if (!dashboard.dashboardConfig.enableHomeValuation) {
@@ -1515,12 +1583,21 @@ export async function generateValuationForDashboard(
             }
         );
 
+        // Log valuation request
+        const duration = Date.now() - now;
+        logValuationRequest(dashboard.id, propertyDescription, true, duration);
+        await clientPortalMetrics.trackValuationRequest(dashboard.id, true);
+        await clientPortalMetrics.trackOperationDuration('valuation_request', duration);
+
         return {
             message: 'success',
             data: valuationResult,
             errors: {},
         };
     } catch (error) {
+        logError('generateValuationForDashboard', error as Error, { token: token?.substring(0, 8) });
+        await clientPortalMetrics.trackValuationRequest(dashboard?.id || 'unknown', false);
+        await clientPortalMetrics.trackError('valuation_request');
         const errorMessage = handleError(error, 'Failed to generate valuation');
         return {
             message: errorMessage,
@@ -1791,7 +1868,19 @@ export async function searchPropertiesForDashboard(
         const { getPropertySearchService } = await import('@/lib/client-dashboard/property-search');
         const searchService = getPropertySearchService();
 
+        const startTime = Date.now();
         const searchResult = await searchService.searchProperties(agentId, criteria);
+        const duration = Date.now() - startTime;
+
+        // Log property search
+        logPropertySearch(
+            dashboard.id,
+            criteria,
+            searchResult.total,
+            duration
+        );
+        await clientPortalMetrics.trackPropertySearch(dashboard.id, searchResult.total);
+        await clientPortalMetrics.trackOperationDuration('property_search', duration);
 
         return {
             message: 'success',
@@ -1800,6 +1889,8 @@ export async function searchPropertiesForDashboard(
         };
 
     } catch (error) {
+        logError('searchPropertiesForDashboard', error as Error, { token: token?.substring(0, 8) });
+        await clientPortalMetrics.trackError('property_search');
         const errorMessage = handleError(error, 'Failed to search properties');
         return {
             message: errorMessage,
@@ -2497,6 +2588,10 @@ export async function getDocumentDownloadUrl(
         // Generate presigned URL with 1-hour expiration (3600 seconds)
         const url = await getPresignedUrl(document.s3Key, 3600);
 
+        // Log document download
+        logDocDownload(dashboardId, documentId, document.fileName);
+        await clientPortalMetrics.trackDocumentDownload(dashboardId);
+
         return {
             message: 'success',
             data: {
@@ -2506,6 +2601,8 @@ export async function getDocumentDownloadUrl(
             errors: {},
         };
     } catch (error) {
+        logError('getDocumentDownloadUrl', error as Error, { token: token?.substring(0, 8), documentId });
+        await clientPortalMetrics.trackError('document_download');
         const errorMessage = handleError(error, 'Failed to get document download URL');
         return {
             message: errorMessage,
@@ -3198,12 +3295,18 @@ export async function sendClientInquiry(
             // The inquiry is still tracked in analytics
         }
 
+        // Log contact request
+        logContactRequest(dashboardId, dashboard.agentId, inquiryData.type);
+        await clientPortalMetrics.trackContactRequest(dashboardId, inquiryData.type);
+
         return {
             message: 'success',
             data: { success: true },
             errors: {},
         };
     } catch (error) {
+        logError('sendClientInquiry', error as Error, { token: token?.substring(0, 8) });
+        await clientPortalMetrics.trackError('contact_request');
         const errorMessage = handleError(error, 'Failed to send inquiry');
         return {
             message: errorMessage,

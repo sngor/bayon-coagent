@@ -1,14 +1,41 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Phone, Mail, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ClientDashboard, SecuredLink, listDashboardDocumentsForClient, type DashboardDocument } from '@/app/client-dashboard-actions';
-import { CMAReport } from './cma-report';
-import { PropertySearch } from './property-search';
-import { HomeValuation } from './home-valuation';
-import { DocumentViewer } from './document-viewer';
-import { ContactForm } from './contact-form';
+import {
+    CMAReportSkeleton,
+    PropertySearchSkeleton,
+    HomeValuationSkeleton,
+    DocumentViewerSkeleton,
+} from './loading-skeletons';
+
+// Dynamic imports for heavy components with loading skeletons
+const CMAReport = dynamic(() => import('./cma-report').then(mod => ({ default: mod.CMAReport })), {
+    loading: () => <CMAReportSkeleton />,
+    ssr: false,
+});
+
+const PropertySearch = dynamic(() => import('./property-search').then(mod => ({ default: mod.PropertySearch })), {
+    loading: () => <PropertySearchSkeleton />,
+    ssr: false,
+});
+
+const HomeValuation = dynamic(() => import('./home-valuation').then(mod => ({ default: mod.HomeValuation })), {
+    loading: () => <HomeValuationSkeleton />,
+    ssr: false,
+});
+
+const DocumentViewer = dynamic(() => import('./document-viewer').then(mod => ({ default: mod.DocumentViewer })), {
+    loading: () => <DocumentViewerSkeleton />,
+    ssr: false,
+});
+
+const ContactForm = dynamic(() => import('./contact-form').then(mod => ({ default: mod.ContactForm })), {
+    ssr: false,
+});
 
 interface ClientDashboardViewProps {
     dashboard: ClientDashboard;
@@ -70,15 +97,18 @@ export function ClientDashboardView({ dashboard, link, token }: ClientDashboardV
                         {/* Logo and Agent Info */}
                         <div className="flex items-center gap-4">
                             {branding.logoUrl && (
-                                <div className="flex-shrink-0">
+                                <div
+                                    className="flex-shrink-0 h-12 w-12 sm:h-16 sm:w-16 rounded-lg overflow-hidden shadow-md"
+                                    style={{
+                                        borderColor: branding.primaryColor,
+                                        borderWidth: '2px',
+                                    }}
+                                >
                                     <img
                                         src={branding.logoUrl}
                                         alt="Agent Logo"
-                                        className="h-12 w-12 sm:h-16 sm:w-16 rounded-lg object-cover shadow-md"
-                                        style={{
-                                            borderColor: branding.primaryColor,
-                                            borderWidth: '2px',
-                                        }}
+                                        className="h-full w-full object-cover"
+                                        loading="eager"
                                     />
                                 </div>
                             )}
@@ -242,11 +272,14 @@ export function ClientDashboardView({ dashboard, link, token }: ClientDashboardV
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             {branding.logoUrl && (
-                                <img
-                                    src={branding.logoUrl}
-                                    alt="Agent Logo"
-                                    className="h-10 w-10 rounded-lg object-cover"
-                                />
+                                <div className="h-10 w-10 rounded-lg overflow-hidden">
+                                    <img
+                                        src={branding.logoUrl}
+                                        alt="Agent Logo"
+                                        className="h-full w-full object-cover"
+                                        loading="lazy"
+                                    />
+                                </div>
                             )}
                             <div className="text-center sm:text-left">
                                 <p className="text-sm font-medium text-gray-900 dark:text-white">

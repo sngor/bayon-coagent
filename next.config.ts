@@ -133,6 +133,72 @@ const nextConfig: NextConfig = {
   serverActions: {
     bodySizeLimit: '20mb',
   },
+
+  // Security headers
+  // Requirements: 10.1, 10.2, 10.3 (Data Security and Protection)
+  async headers() {
+    return [
+      {
+        // Apply security headers to all routes
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on',
+          },
+          {
+            // HSTS - Force HTTPS for 1 year, include subdomains, allow preloading
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains; preload',
+          },
+          {
+            // Prevent clickjacking attacks
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            // Prevent MIME type sniffing
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            // Enable XSS protection in older browsers
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+          {
+            // Control referrer information
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            // Restrict browser features
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+          },
+          {
+            // Content Security Policy - Enhanced for security
+            // Note: In production, tighten 'unsafe-inline' and 'unsafe-eval' restrictions
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' data: https://fonts.gstatic.com",
+              "img-src 'self' data: https: blob:",
+              "connect-src 'self' https://*.amazonaws.com https://api.stripe.com",
+              "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'none'",
+              "upgrade-insecure-requests",
+            ].join('; '),
+          },
+        ],
+      },
+    ];
+  },
 };
 
 // Configure PWA with Service Worker for offline functionality

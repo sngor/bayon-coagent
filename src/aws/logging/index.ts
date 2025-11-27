@@ -70,11 +70,6 @@ export {
 } from './alerts';
 
 export {
-  EditType,
-  OperationType,
-  OperationMetrics,
-  BedrockMetrics,
-  StorageMetrics,
   getMetricsClient,
   resetMetricsClient,
   trackOperation,
@@ -82,8 +77,15 @@ export {
   trackStorageOperation,
 } from './reimagine-metrics';
 
+export type {
+  EditType,
+  OperationType,
+  OperationMetrics,
+  BedrockMetrics,
+  StorageMetrics,
+} from './reimagine-metrics';
+
 export {
-  InsightsQuery,
   allQueries,
   queryTemplates,
   prepareQuery,
@@ -105,10 +107,31 @@ export {
   analyzeServiceHealth,
 } from './cloudwatch-insights-queries';
 
+export type { InsightsQuery } from './cloudwatch-insights-queries';
+
 export {
   InsightsClient,
-  QueryExecutionOptions,
-  QueryResult,
   getInsightsClient,
   resetInsightsClient,
 } from './insights-client';
+
+export type { QueryExecutionOptions, QueryResult } from './insights-client';
+
+export {
+  clientPortalLogger,
+  clientPortalMetrics,
+  clientPortalAlarms,
+  logDashboardView,
+  logLinkValidation,
+  logPropertySearch,
+  logValuationRequest,
+  logDocumentDownload,
+  logContactRequest,
+  logDashboardCreation,
+  logLinkGeneration,
+  logCMAReportCreation,
+  logError,
+  monitorOperation,
+  calculateErrorRate,
+  isResponseTimeAcceptable,
+} from './client-portal-monitoring';

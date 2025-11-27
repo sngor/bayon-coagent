@@ -126,7 +126,7 @@ export class ExecutionLogger {
    */
   logSuccess(tokenUsage?: TokenUsage): void {
     const executionTimeMs = Date.now() - this.startTime;
-    
+
     const logEntry: FlowExecutionLog = {
       timestamp: new Date().toISOString(),
       flowName: this.flowName,
@@ -161,21 +161,21 @@ export class ExecutionLogger {
    */
   logError(error: Error, errorCode?: string, statusCode?: number): void {
     const executionTimeMs = Date.now() - this.startTime;
-    
+
     const executionError: ExecutionError = {
       type: error.name,
       message: error.message,
       retryCount: this.retryCount,
     };
-    
+
     // Only add code and statusCode if they exist
     const code = errorCode || (error as any).code;
     const status = statusCode || (error as any).statusCode;
-    
+
     if (code) {
       executionError.code = code;
     }
-    
+
     if (status) {
       executionError.statusCode = status;
     }
@@ -226,6 +226,25 @@ export class ExecutionLogger {
     bedrockLogger.debug('Flow execution metrics', {
       metrics: logEntry,
     } as LogContext);
+
+    // Store log for cost tracking (async, don't wait)
+    this.storeForCostTracking(logEntry).catch(error => {
+      bedrockLogger.error('Failed to store log for cost tracking', error);
+    });
+  }
+
+  /**
+   * Store log for cost tracking
+   */
+  private async storeForCostTracking(logEntry: FlowExecutionLog): Promise<void> {
+    try {
+      // Dynamically import to avoid circular dependencies
+      const { storeExecutionLog } = await import('./cost-storage');
+      await storeExecutionLog(logEntry, this.metadata.userId);
+    } catch (error) {
+      // Silently fail - cost tracking shouldn't break main flow
+      console.error('Cost tracking storage failed:', error);
+    }
   }
 }
 
@@ -252,7 +271,7 @@ export function extractTokenUsage(responseMetadata: any): TokenUsage | undefined
       output: responseMetadata.usage.outputTokens || 0,
     };
   }
-  
+
   return undefined;
 }
 

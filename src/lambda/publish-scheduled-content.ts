@@ -278,7 +278,7 @@ export const handler = async (event: LambdaEvent, context: LambdaContext): Promi
                         await publishContentPublishedEvent({
                             contentId: scheduledItem.id,
                             userId: scheduledItem.userId,
-                            contentType: scheduledItem.category || 'general',
+                            contentType: scheduledItem.contentType || 'general',
                             platform: channel.type,
                             publishedAt: new Date().toISOString(),
                             traceId: process.env._X_AMZN_TRACE_ID,
@@ -688,43 +688,76 @@ async function publishScheduledContentWithService(
     });
 
     try {
-        // Import and use the enhanced publishing service
-        // Note: In Lambda environment, we need to handle the import differently
-        const { publishScheduledContent } = await import('../app/social-publishing-actions');
+        // Import the publishing function for individual channels
+        const { publishContentToChannel } = await import('../app/social-publishing-actions');
 
-        const result = await publishScheduledContent(scheduledContent.id);
+        let successfulChannels = 0;
+        let failedChannels = 0;
+        const errors: string[] = [];
 
-        if (result.success && result.results) {
-            const successfulChannels = result.results.filter(r => r.status === 'success').length;
-            const failedChannels = result.results.filter(r => r.status === 'failed').length;
+        // Publish to each channel
+        for (const channel of scheduledContent.channels) {
+            try {
+                logger.debug('Publishing to channel via service', {
+                    channelType: channel.type,
+                    accountId: channel.accountId
+                });
 
-            logger.info('Enhanced publishing service completed', {
-                success: result.success,
-                successfulChannels,
-                failedChannels,
-                totalChannels
-            });
+                const result = await publishContentToChannel({
+                    userId: scheduledContent.userId,
+                    content: scheduledContent.content,
+                    mediaUrls: scheduledContent.metadata?.mediaUrls,
+                    channel,
+                    metadata: {
+                        contentId: scheduledContent.contentId,
+                        scheduleId: scheduledContent.id,
+                        hashtags: scheduledContent.metadata?.hashtags,
+                    }
+                });
 
-            return {
-                success: result.success,
-                error: result.success ? undefined : result.message,
-                successfulChannels,
-                failedChannels,
-                totalChannels
-            };
-        } else {
-            logger.error('Enhanced publishing service failed', undefined, {
-                message: result.message
-            });
+                if (result.success) {
+                    successfulChannels++;
+                    logger.debug('Channel publishing succeeded via service', {
+                        channelType: channel.type,
+                        postId: result.postId
+                    });
+                } else {
+                    failedChannels++;
+                    const error = result.error || 'Unknown error';
+                    errors.push(`${channel.type}: ${error}`);
+                    logger.warn('Channel publishing failed via service', {
+                        channelType: channel.type,
+                        error
+                    });
+                }
 
-            return {
-                success: false,
-                error: result.message,
-                successfulChannels: 0,
-                failedChannels: totalChannels,
-                totalChannels
-            };
+            } catch (error) {
+                failedChannels++;
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                errors.push(`${channel.type}: ${errorMessage}`);
+                logger.error('Channel publishing error via service', error as Error, {
+                    channelType: channel.type
+                });
+            }
         }
+
+        const success = successfulChannels > 0;
+        const error = errors.length > 0 ? errors.join('; ') : undefined;
+
+        logger.info('Enhanced publishing service completed', {
+            success,
+            successfulChannels,
+            failedChannels,
+            totalChannels
+        });
+
+        return {
+            success,
+            error,
+            successfulChannels,
+            failedChannels,
+            totalChannels
+        };
 
     } catch (error) {
         logger.error('Failed to use enhanced publishing service, falling back to direct publishing', error as Error);
@@ -851,110 +884,170 @@ async function publishToChannelDirect(
 }
 
 /**
- * Direct social media publishing
+ * Direct social media publishing using Integration Service
  */
 async function publishToSocialMediaDirect(
     channel: PublishChannel,
     scheduledContent: ScheduledContent,
     logger: Logger
 ): Promise<boolean> {
-    // In a real implementation, this would use the Integration Service
-    // to handle OAuth and platform-specific publishing
-    // Example of using signed requests for cross-service communication:
-    /*
     try {
-        const result = await invokeIntegrationService<{ success: boolean }>(
+        logger.debug('Publishing to social media channel via Integration Service', {
+            channelType: channel.type,
+            accountId: channel.accountId,
+            contentLength: scheduledContent.content.length
+        });
+
+        // Use the Integration Service for cross-service communication
+        // This handles OAuth tokens, platform-specific formatting, and API calls
+        const result = await invokeIntegrationService<{
+            success: boolean;
+            postId?: string;
+            error?: string;
+        }>(
             `/social/publish/${channel.type}`,
             'POST',
             {
+                userId: scheduledContent.userId,
                 accountId: channel.accountId,
                 content: scheduledContent.content,
-                mediaUrls: scheduledContent.mediaUrls,
-                scheduledFor: scheduledContent.publishTime,
+                mediaUrls: scheduledContent.metadata?.mediaUrls || [],
+                hashtags: scheduledContent.metadata?.hashtags || [],
+                scheduledFor: scheduledContent.publishTime.toISOString(),
+                contentId: scheduledContent.contentId,
+                scheduleId: scheduledContent.id,
             }
         );
-        return result.success;
+
+        if (result.success) {
+            logger.debug('Social media publishing succeeded via Integration Service', {
+                channelType: channel.type,
+                postId: result.postId
+            });
+            return true;
+        } else {
+            logger.warn('Social media publishing failed via Integration Service', {
+                channelType: channel.type,
+                error: result.error
+            });
+            return false;
+        }
+
     } catch (error) {
-        logger.error('Failed to publish via Integration Service', error as Error);
+        logger.error('Failed to publish via Integration Service', error as Error, {
+            channelType: channel.type,
+            accountId: channel.accountId
+        });
+
+        // If Integration Service is unavailable, log and return false
+        // Don't simulate success - real failures should be tracked
         return false;
     }
-    */
-
-    logger.debug('Publishing to social media channel', {
-        channelType: channel.type,
-        accountId: channel.accountId,
-        contentLength: scheduledContent.content.length
-    });
-
-    // Simulate network delay and processing
-    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
-
-    // Simulate realistic success rates based on platform reliability
-    const successRates = {
-        [PublishChannelType.FACEBOOK]: 0.92,
-        [PublishChannelType.INSTAGRAM]: 0.90,
-        [PublishChannelType.LINKEDIN]: 0.95,
-        [PublishChannelType.TWITTER]: 0.88
-    };
-
-    const successRate = (successRates as any)[channel.type] || 0.85;
-    const success = Math.random() < successRate;
-
-    if (!success) {
-        // Simulate common API errors
-        const errors = [
-            'Rate limit exceeded',
-            'Invalid access token',
-            'Content violates platform policies',
-            'Network timeout',
-            'Platform temporarily unavailable'
-        ];
-        const error = errors[Math.floor(Math.random() * errors.length)];
-        logger.warn('Social media publishing failed', {
-            channelType: channel.type,
-            error
-        });
-    }
-
-    return success;
 }
 
 /**
- * Direct blog publishing
+ * Direct blog publishing using AI Service
  */
 async function publishToBlogDirect(
     scheduledContent: ScheduledContent,
     logger: Logger
 ): Promise<boolean> {
-    logger.debug('Publishing to blog', {
-        contentType: scheduledContent.contentType,
-        contentLength: scheduledContent.content.length
-    });
+    try {
+        logger.debug('Publishing to blog via AI Service', {
+            contentType: scheduledContent.contentType,
+            contentLength: scheduledContent.content.length
+        });
 
-    // Simulate blog publishing process
-    await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300));
+        // Use the AI Service to publish blog content
+        // This would integrate with the blog management system
+        const result = await invokeAiService<{
+            success: boolean;
+            postId?: string;
+            error?: string;
+        }>(
+            '/blog/publish',
+            'POST',
+            {
+                userId: scheduledContent.userId,
+                title: scheduledContent.title,
+                content: scheduledContent.content,
+                contentType: scheduledContent.contentType,
+                publishedAt: scheduledContent.publishTime.toISOString(),
+                contentId: scheduledContent.contentId,
+                scheduleId: scheduledContent.id,
+                metadata: scheduledContent.metadata,
+            }
+        );
 
-    // Blog publishing typically has higher success rates
-    return Math.random() < 0.96;
+        if (result.success) {
+            logger.debug('Blog publishing succeeded', {
+                postId: result.postId
+            });
+            return true;
+        } else {
+            logger.warn('Blog publishing failed', {
+                error: result.error
+            });
+            return false;
+        }
+
+    } catch (error) {
+        logger.error('Failed to publish blog via AI Service', error as Error);
+        return false;
+    }
 }
 
 /**
- * Direct newsletter publishing
+ * Direct newsletter publishing using Integration Service
  */
 async function publishToNewsletterDirect(
     scheduledContent: ScheduledContent,
     logger: Logger
 ): Promise<boolean> {
-    logger.debug('Publishing to newsletter', {
-        contentType: scheduledContent.contentType,
-        contentLength: scheduledContent.content.length
-    });
+    try {
+        logger.debug('Publishing to newsletter via Integration Service', {
+            contentType: scheduledContent.contentType,
+            contentLength: scheduledContent.content.length
+        });
 
-    // Simulate newsletter publishing process
-    await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 500));
+        // Use the Integration Service to send newsletter
+        // This would integrate with email service providers (SendGrid, Mailchimp, etc.)
+        const result = await invokeIntegrationService<{
+            success: boolean;
+            campaignId?: string;
+            error?: string;
+        }>(
+            '/newsletter/send',
+            'POST',
+            {
+                userId: scheduledContent.userId,
+                subject: scheduledContent.title,
+                content: scheduledContent.content,
+                htmlContent: scheduledContent.metadata?.htmlContent,
+                plainTextContent: scheduledContent.metadata?.plainTextContent,
+                scheduledFor: scheduledContent.publishTime.toISOString(),
+                contentId: scheduledContent.contentId,
+                scheduleId: scheduledContent.id,
+                recipients: scheduledContent.metadata?.recipients || [],
+            }
+        );
 
-    // Newsletter publishing typically has high success rates
-    return Math.random() < 0.98;
+        if (result.success) {
+            logger.debug('Newsletter publishing succeeded', {
+                campaignId: result.campaignId
+            });
+            return true;
+        } else {
+            logger.warn('Newsletter publishing failed', {
+                error: result.error
+            });
+            return false;
+        }
+
+    } catch (error) {
+        logger.error('Failed to publish newsletter via Integration Service', error as Error);
+        return false;
+    }
 }
 
 /**
