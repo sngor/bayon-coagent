@@ -219,7 +219,7 @@ function UserDropdownContent({ profile, user, userName, getInitials, handleSignO
           {adminMode !== 'user' && (
             <DropdownMenuItem onClick={() => handleModeSwitch('user')} className="cursor-pointer">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              <span>Exit Admin Mode</span>
+              <span>{adminMode === 'super_admin' ? 'Exit Super Admin Mode' : 'Exit Admin Mode'}</span>
             </DropdownMenuItem>
           )}
 

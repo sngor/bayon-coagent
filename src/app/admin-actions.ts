@@ -6,6 +6,25 @@ import { getCurrentUserServer } from '@/aws/auth/server-auth';
 import { DynamoDBKey } from '@/aws/dynamodb/types';
 import { FeatureToggle } from '@/lib/feature-toggles';
 import { revalidatePath } from 'next/cache';
+import {
+    Organization,
+    TeamMember,
+    Invitation,
+    generateInvitationToken,
+    getInvitationExpirationDate,
+    isInvitationExpired
+} from '@/lib/organization-types';
+import {
+    getOrganizationKeys,
+    getTeamMemberKeys,
+    getInvitationKeys,
+    getOrganizationMembersQueryKeys,
+    getOrganizationInvitationsQueryKeys,
+    getInvitationsByEmailQueryKeys,
+    getInvitationByTokenQueryKeys,
+    getUserOrganizationsQueryKeys
+} from '@/aws/dynamodb/organization-keys';
+import { getProfileKeys } from '@/aws/dynamodb/keys';
 
 export async function getUsersListAction(
     limit: number = 50,
@@ -272,5 +291,352 @@ export async function deleteFeatureAction(featureId: string): Promise<{
     } catch (error: any) {
         console.error('Error deleting feature:', error);
         return { message: 'Failed to delete feature', errors: { system: error.message } };
+    }
+}
+
+// ============================================
+// Admin Mode Actions (Team & Organization)
+// ============================================
+
+export async function getOrganizationSettingsAction(): Promise<{
+    message: string;
+    data: any;
+    errors: any;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) return { message: 'Not authenticated', data: null, errors: {} };
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) return { message: 'Unauthorized', data: null, errors: {} };
+
+        // For now, return mock data
+        const mockSettings = {
+            name: 'My Organization',
+            description: 'A real estate organization',
+            website: 'https://example.com',
+            allowMemberInvites: true,
+            requireApproval: false,
+        };
+
+        return {
+            message: 'success',
+            data: mockSettings,
+            errors: {},
+        };
+    } catch (error: any) {
+        console.error('Error fetching organization settings:', error);
+        return {
+            message: 'Failed to fetch settings',
+            data: null,
+            errors: { system: error.message },
+        };
+    }
+}
+
+export async function updateOrganizationSettingsAction(settings: any): Promise<{
+    message: string;
+    errors: any;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) return { message: 'Not authenticated', errors: {} };
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) return { message: 'Unauthorized', errors: {} };
+
+        // TODO: Implement actual settings update logic
+        console.log('Updating organization settings:', settings);
+
+        return { message: 'success', errors: {} };
+    } catch (error: any) {
+        console.error('Error updating organization settings:', error);
+        return { message: 'Failed to update settings', errors: { system: error.message } };
+    }
+}
+
+// ============================================
+// Organization Management
+// ============================================
+
+export async function createOrganizationAction(data: {
+    name: string;
+    description: string;
+    website: string;
+}): Promise<{
+    message: string;
+    data?: Organization;
+    errors: any;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) return { message: 'Not authenticated', errors: {} };
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) return { message: 'Unauthorized', errors: {} };
+
+        const repository = getRepository();
+        const organizationId = `org_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+        const organization: Organization = {
+            id: organizationId,
+            name: data.name,
+            description: data.description,
+            website: data.website,
+            ownerId: currentUser.id,
+            settings: {
+                allowMemberInvites: true,
+                requireApproval: false,
+            },
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+
+        const keys = getOrganizationKeys(organizationId);
+        await repository.create(keys.PK, keys.SK, 'Organization', organization);
+
+        // Create team member record for owner
+        const teamMember: TeamMember = {
+            userId: currentUser.id,
+            organizationId,
+            role: 'owner',
+            status: 'active',
+            joinedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+
+        const memberKeys = getTeamMemberKeys(organizationId, currentUser.id);
+        await repository.create(
+            memberKeys.PK,
+            memberKeys.SK,
+            'TeamMember',
+            teamMember,
+            {
+                GSI1PK: memberKeys.GSI1PK,
+                GSI1SK: memberKeys.GSI1SK,
+            }
+        );
+
+        // Update user profile with organizationId
+        const profileKeys = getProfileKeys(currentUser.id);
+        await repository.update(profileKeys.PK, profileKeys.SK, {
+            organizationId,
+        });
+
+        revalidatePath('/admin');
+        return { message: 'success', data: organization, errors: {} };
+    } catch (error: any) {
+        console.error('Error creating organization:', error);
+        return { message: 'Failed to create organization', errors: { system: error.message } };
+    }
+}
+
+export async function getOrganizationAction(organizationId: string): Promise<{
+    message: string;
+    data?: Organization;
+    errors: any;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) return { message: 'Not authenticated', errors: {} };
+
+        const repository = getRepository();
+        const keys = getOrganizationKeys(organizationId);
+        const organization = await repository.get<Organization>(keys.PK, keys.SK);
+
+        if (!organization) {
+            return { message: 'Organization not found', errors: {} };
+        }
+
+        return { message: 'success', data: organization, errors: {} };
+    } catch (error: any) {
+        console.error('Error fetching organization:', error);
+        return { message: 'Failed to fetch organization', errors: { system: error.message } };
+    }
+}
+
+export async function getOrganizationMembersAction(organizationId: string): Promise<{
+    message: string;
+    data: TeamMember[];
+    errors: any;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) return { message: 'Not authenticated', data: [], errors: {} };
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) return { message: 'Unauthorized', data: [], errors: {} };
+
+        const repository = getRepository();
+        const queryKeys = getOrganizationMembersQueryKeys(organizationId);
+
+        const result = await repository.query<TeamMember>(
+            queryKeys.PK,
+            queryKeys.SKPrefix
+        );
+
+        return { message: 'success', data: result.items, errors: {} };
+    } catch (error: any) {
+        console.error('Error fetching organization members:', error);
+        return { message: 'Failed to fetch members', data: [], errors: { system: error.message } };
+    }
+}
+
+// ============================================
+// Invitation Management (Updated)
+// ============================================
+
+export async function inviteTeamMemberAction(
+    email: string,
+    role: 'member' | 'admin'
+): Promise<{
+    message: string;
+    data?: Invitation;
+    errors: any;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) return { message: 'Not authenticated', errors: {} };
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) return { message: 'Unauthorized', errors: {} };
+
+        // Get user's organization
+        const profileKeys = getProfileKeys(currentUser.id);
+        const profile = await getRepository().get<any>(profileKeys.PK, profileKeys.SK);
+
+        if (!profile?.organizationId) {
+            return { message: 'No organization found. Please create an organization first.', errors: {} };
+        }
+
+        const organizationId = profile.organizationId;
+        const repository = getRepository();
+
+        // Check if user already has pending invitation
+        const existingInvites = await repository.query<Invitation>(
+            `EMAIL#${email.toLowerCase()}`,
+            'INVITE#',
+            { filterExpression: '#status = :pending', expressionAttributeNames: { '#status': 'status' }, expressionAttributeValues: { ':pending': 'pending' } }
+        );
+
+        if (existingInvites.items.length > 0) {
+            return { message: 'User already has a pending invitation', errors: {} };
+        }
+
+        // Check if user is already a member
+        // TODO: Query by email to find userId, then check team membership
+
+        // Create invitation
+        const invitationId = `inv_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        const token = generateInvitationToken();
+
+        const invitation: Invitation = {
+            id: invitationId,
+            organizationId,
+            email: email.toLowerCase(),
+            role,
+            status: 'pending',
+            invitedBy: currentUser.id,
+            token,
+            expiresAt: getInvitationExpirationDate(),
+            createdAt: new Date().toISOString(),
+        };
+
+        const keys = getInvitationKeys(organizationId, invitationId, email, token);
+
+        // Use put directly since we need GSI2 support
+        const now = Date.now();
+        await repository.put({
+            PK: keys.PK,
+            SK: keys.SK,
+            EntityType: 'Invitation',
+            Data: invitation,
+            CreatedAt: now,
+            UpdatedAt: now,
+            GSI1PK: keys.GSI1PK,
+            GSI1SK: keys.GSI1SK,
+            GSI2PK: keys.GSI2PK,
+            GSI2SK: keys.GSI2SK,
+        });
+
+        // TODO: Send invitation email
+        console.log(`Invitation created for ${email} with token ${token}`);
+
+        revalidatePath('/admin/team');
+        return { message: 'success', data: invitation, errors: {} };
+    } catch (error: any) {
+        console.error('Error inviting team member:', error);
+        return { message: 'Failed to send invitation', errors: { system: error.message } };
+    }
+}
+
+export async function getPendingInvitationsAction(): Promise<{
+    message: string;
+    data: Invitation[];
+    errors: any;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) return { message: 'Not authenticated', data: [], errors: {} };
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) return { message: 'Unauthorized', data: [], errors: {} };
+
+        // Get user's organization
+        const profileKeys = getProfileKeys(currentUser.id);
+        const profile = await getRepository().get<any>(profileKeys.PK, profileKeys.SK);
+
+        if (!profile?.organizationId) {
+            return { message: 'success', data: [], errors: {} };
+        }
+
+        const repository = getRepository();
+        const queryKeys = getOrganizationInvitationsQueryKeys(profile.organizationId);
+
+        const result = await repository.query<Invitation>(
+            queryKeys.PK,
+            queryKeys.SKPrefix
+        );
+
+        // Filter for pending invitations only
+        const pendingInvitations = result.items.filter(inv => inv.status === 'pending' && !isInvitationExpired(inv));
+
+        return { message: 'success', data: pendingInvitations, errors: {} };
+    } catch (error: any) {
+        console.error('Error fetching pending invitations:', error);
+        return { message: 'Failed to fetch invitations', data: [], errors: { system: error.message } };
+    }
+}
+
+export async function cancelInvitationAction(invitationId: string): Promise<{
+    message: string;
+    errors: any;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) return { message: 'Not authenticated', errors: {} };
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) return { message: 'Unauthorized', errors: {} };
+
+        // Get user's organization
+        const profileKeys = getProfileKeys(currentUser.id);
+        const profile = await getRepository().get<any>(profileKeys.PK, profileKeys.SK);
+
+        if (!profile?.organizationId) {
+            return { message: 'No organization found', errors: {} };
+        }
+
+        const repository = getRepository();
+        const keys = getInvitationKeys(profile.organizationId, invitationId);
+
+        // Update invitation status to cancelled
+        await repository.update(keys.PK, keys.SK, { status: 'cancelled' as any });
+
+        revalidatePath('/admin/team');
+        return { message: 'success', errors: {} };
+    } catch (error: any) {
+        console.error('Error cancelling invitation:', error);
+        return { message: 'Failed to cancel invitation', errors: { system: error.message } };
     }
 }

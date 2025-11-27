@@ -6074,3 +6074,220 @@ export async function getPublicFeaturesAction(): Promise<{
     };
   }
 }
+
+// ============================================
+// User Invitation Actions
+// ============================================
+
+import {
+  Invitation,
+  TeamMember,
+  isInvitationExpired
+} from '@/lib/organization-types';
+import {
+  getInvitationsByEmailQueryKeys,
+  getInvitationByTokenQueryKeys,
+  getInvitationKeys,
+  getTeamMemberKeys,
+  getOrganizationKeys
+} from '@/aws/dynamodb/organization-keys';
+
+export async function getUserInvitationsAction(): Promise<{
+  message: string;
+  data: Invitation[];
+  errors: any;
+}> {
+  try {
+    const currentUser = await getCurrentUserServer();
+    if (!currentUser?.email) {
+      return { message: 'Not authenticated', data: [], errors: {} };
+    }
+
+    const repository = getRepository();
+    const queryKeys = getInvitationsByEmailQueryKeys(currentUser.email);
+
+    // Query invitations by email using GSI1
+    const result = await repository.query<Invitation>(
+      queryKeys.GSI1PK,
+      queryKeys.GSI1SKPrefix
+    );
+
+    // Filter for pending and non-expired invitations
+    const validInvitations = result.items.filter(
+      inv => inv.status === 'pending' && !isInvitationExpired(inv)
+    );
+
+    return { message: 'success', data: validInvitations, errors: {} };
+  } catch (error: any) {
+    console.error('Error fetching user invitations:', error);
+    return {
+      message: 'Failed to fetch invitations',
+      data: [],
+      errors: { system: error.message }
+    };
+  }
+}
+
+export async function acceptInvitationAction(invitationId: string): Promise<{
+  message: string;
+  errors: any;
+}> {
+  try {
+    const currentUser = await getCurrentUserServer();
+    if (!currentUser) {
+      return { message: 'Not authenticated', errors: {} };
+    }
+
+    const repository = getRepository();
+
+    // Get the invitation - we need to find it first
+    const queryKeys = getInvitationsByEmailQueryKeys(currentUser.email!);
+    const invitations = await repository.query<Invitation>(
+      queryKeys.GSI1PK,
+      queryKeys.GSI1SKPrefix
+    );
+
+    const invitation = invitations.items.find(inv => inv.id === invitationId);
+
+    if (!invitation) {
+      return { message: 'Invitation not found', errors: {} };
+    }
+
+    if (invitation.status !== 'pending') {
+      return { message: 'Invitation is no longer valid', errors: {} };
+    }
+
+    if (isInvitationExpired(invitation)) {
+      return { message: 'Invitation has expired', errors: {} };
+    }
+
+    // Update invitation status
+    const invKeys = getInvitationKeys(invitation.organizationId, invitationId);
+    await repository.update(invKeys.PK, invKeys.SK, {
+      status: 'accepted' as any,
+      acceptedAt: new Date().toISOString(),
+    });
+
+    // Create team member record
+    const teamMember: TeamMember = {
+      userId: currentUser.id,
+      organizationId: invitation.organizationId,
+      role: invitation.role === 'admin' ? 'admin' : 'member',
+      status: 'active',
+      joinedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const memberKeys = getTeamMemberKeys(invitation.organizationId, currentUser.id);
+    await repository.create(
+      memberKeys.PK,
+      memberKeys.SK,
+      'TeamMember',
+      teamMember,
+      {
+        GSI1PK: memberKeys.GSI1PK,
+        GSI1SK: memberKeys.GSI1SK,
+      }
+    );
+
+    // Update user profile with organizationId
+    const profileKeys = getProfileKeys(currentUser.id);
+    await repository.update(profileKeys.PK, profileKeys.SK, {
+      organizationId: invitation.organizationId,
+    });
+
+    return { message: 'success', errors: {} };
+  } catch (error: any) {
+    console.error('Error accepting invitation:', error);
+    return { message: 'Failed to accept invitation', errors: { system: error.message } };
+  }
+}
+
+export async function rejectInvitationAction(invitationId: string): Promise<{
+  message: string;
+  errors: any;
+}> {
+  try {
+    const currentUser = await getCurrentUserServer();
+    if (!currentUser?.email) {
+      return { message: 'Not authenticated', errors: {} };
+    }
+
+    const repository = getRepository();
+
+    // Get the invitation
+    const queryKeys = getInvitationsByEmailQueryKeys(currentUser.email);
+    const invitations = await repository.query<Invitation>(
+      queryKeys.GSI1PK,
+      queryKeys.GSI1SKPrefix
+    );
+
+    const invitation = invitations.items.find(inv => inv.id === invitationId);
+
+    if (!invitation) {
+      return { message: 'Invitation not found', errors: {} };
+    }
+
+    // Update invitation status
+    const invKeys = getInvitationKeys(invitation.organizationId, invitationId);
+    await repository.update(invKeys.PK, invKeys.SK, {
+      status: 'rejected' as any,
+      rejectedAt: new Date().toISOString(),
+    });
+
+    return { message: 'success', errors: {} };
+  } catch (error: any) {
+    console.error('Error rejecting invitation:', error);
+    return { message: 'Failed to reject invitation', errors: { system: error.message } };
+  }
+}
+
+export async function acceptInvitationByTokenAction(token: string): Promise<{
+  message: string;
+  data?: { organizationId: string; organizationName: string };
+  errors: any;
+}> {
+  try {
+    const repository = getRepository();
+
+    // Query invitation by token using GSI2
+    const queryKeys = getInvitationByTokenQueryKeys(token);
+    const result = await repository.query<Invitation>(
+      queryKeys.GSI2PK,
+      queryKeys.GSI2SKPrefix
+    );
+
+    if (result.items.length === 0) {
+      return { message: 'Invalid invitation token', errors: {} };
+    }
+
+    const invitation = result.items[0];
+
+    if (invitation.status !== 'pending') {
+      return { message: 'Invitation is no longer valid', errors: {} };
+    }
+
+    if (isInvitationExpired(invitation)) {
+      return { message: 'Invitation has expired', errors: {} };
+    }
+
+    // Get organization details
+    const orgKeys = getOrganizationKeys(invitation.organizationId);
+    const organization = await repository.get<any>(orgKeys.PK, orgKeys.SK);
+
+    return {
+      message: 'success',
+      data: {
+        organizationId: invitation.organizationId,
+        organizationName: organization?.name || 'Unknown Organization',
+      },
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Error validating invitation token:', error);
+    return {
+      message: 'Failed to validate invitation',
+      errors: { system: error.message }
+    };
+  }
+}

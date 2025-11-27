@@ -73,7 +73,10 @@ export type EntityType =
   | 'CMAReport'
   | 'HomeValuation'
   | 'ValuationRequest'
-  | 'DashboardDocument';
+  | 'DashboardDocument'
+  | 'Organization'
+  | 'TeamMember'
+  | 'Invitation';
 
 /**
  * Base DynamoDB item structure
