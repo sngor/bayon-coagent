@@ -54,6 +54,9 @@ export type ClientDashboard = {
         enablePropertySearch: boolean;
         enableHomeValuation: boolean;
         enableDocuments: boolean;
+        enableCalculators?: boolean;
+        enableMilestones?: boolean;
+        enableVendors?: boolean;
     };
     branding: {
         logoUrl?: string;
@@ -95,6 +98,22 @@ export type ClientDashboard = {
         agentNotes?: string;
     };
     requiresAuth?: boolean; // Flag to indicate if dashboard requires authentication
+    milestones?: Array<{
+        id: string;
+        title: string;
+        status: 'pending' | 'in_progress' | 'completed';
+        date?: string;
+        description?: string;
+    }>;
+    vendors?: Array<{
+        id: string;
+        name: string;
+        category: string;
+        phone?: string;
+        email?: string;
+        website?: string;
+        notes?: string;
+    }>;
     createdAt: number;
     updatedAt: number;
 };
@@ -559,6 +578,9 @@ export async function updateDashboard(
                 enablePropertySearch: formData.get('enablePropertySearch') === 'true',
                 enableHomeValuation: formData.get('enableHomeValuation') === 'true',
                 enableDocuments: formData.get('enableDocuments') === 'true',
+                enableCalculators: formData.get('enableCalculators') === 'true',
+                enableMilestones: formData.get('enableMilestones') === 'true',
+                enableVendors: formData.get('enableVendors') === 'true',
             };
         }
 
@@ -583,6 +605,26 @@ export async function updateDashboard(
                 updates.cmaData = JSON.parse(cmaDataStr);
             } catch (e) {
                 console.error('Failed to parse CMA data:', e);
+            }
+        }
+
+        // Update Milestones if provided
+        const milestonesStr = formData.get('milestones') as string;
+        if (milestonesStr) {
+            try {
+                updates.milestones = JSON.parse(milestonesStr);
+            } catch (e) {
+                console.error('Failed to parse milestones:', e);
+            }
+        }
+
+        // Update Vendors if provided
+        const vendorsStr = formData.get('vendors') as string;
+        if (vendorsStr) {
+            try {
+                updates.vendors = JSON.parse(vendorsStr);
+            } catch (e) {
+                console.error('Failed to parse vendors:', e);
             }
         }
 
@@ -3501,6 +3543,65 @@ export async function listAllAgentLinks(): Promise<{
         };
     }
 }
+/**
+ * List all secured links for a specific dashboard
+ * Requirements: 2.1
+ */
+export async function listDashboardLinks(
+    dashboardId: string
+): Promise<{
+    message: string;
+    data: SecuredLink[] | null;
+    errors: any;
+}> {
+    try {
+        // Get current user (agent)
+        const user = await getCurrentUser();
+        if (!user || !user.id) {
+            return {
+                message: 'Authentication required',
+                data: null,
+                errors: { auth: ['You must be logged in to list links'] },
+            };
+        }
+
+        if (!dashboardId) {
+            return {
+                message: 'Dashboard ID is required',
+                data: null,
+                errors: { dashboardId: ['Dashboard ID is required'] },
+            };
+        }
+
+        // Query GSI1 for links associated with this dashboard
+        // PK: AGENT#<agentId>, SK: DASHBOARD#<dashboardId>
+        const repository = getRepository();
+        const linkGsiPk = `AGENT#${user.id}`;
+        const linkGsiSk = `DASHBOARD#${dashboardId}`;
+
+        const results = await repository.query<SecuredLink>(
+            linkGsiPk,
+            linkGsiSk,
+            { indexName: 'GSI1' }
+        );
+
+        // Sort by creation date (newest first)
+        const links = results.items.sort((a, b) => b.createdAt - a.createdAt);
+
+        return {
+            message: 'success',
+            data: links,
+            errors: {},
+        };
+    } catch (error) {
+        const errorMessage = handleError(error, 'Failed to list dashboard links');
+        return {
+            message: errorMessage,
+            data: null,
+            errors: {},
+        };
+    }
+}
 
 // ==================== Link to Account Conversion ====================
 
@@ -3624,10 +3725,10 @@ export async function convertLinkToAccount(
         const config = getConfig();
         const invitationUrl = `${config.appUrl}/portal/setup-password?token=${invitation.token}`;
 
-        await sendEmail({
-            to: email,
-            subject: 'Create Your Account - Client Portal',
-            html: `
+        await sendEmail(
+            email,
+            'Create Your Account - Client Portal',
+            `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2 style="color: ${dashboard.branding.primaryColor};">Create Your Account</h2>
                     <p>Hello ${dashboard.clientInfo.name},</p>
@@ -3651,20 +3752,8 @@ export async function convertLinkToAccount(
                     </p>
                 </div>
             `,
-            text: `
-                Create Your Account
-                
-                Hello ${dashboard.clientInfo.name},
-                
-                Your agent has created a personalized portal for you. To access it anytime, please create your account by setting a password.
-                
-                Create your account here: ${invitationUrl}
-                
-                This invitation link will expire in 7 days.
-                
-                If you have any questions, contact your agent at ${dashboard.branding.agentContact.email} or ${dashboard.branding.agentContact.phone}.
-            `,
-        });
+            config.ses.fromEmail
+        );
 
         // Log the conversion
         clientPortalLogger.info('Link converted to account', {

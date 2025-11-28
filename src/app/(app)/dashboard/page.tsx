@@ -7,6 +7,7 @@ import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { InvitationBanner } from '@/components/invitation-banner';
 import { Typewriter, LoadingDots, SuccessAnimation, StaggeredText, GradientText } from '@/components/ui/text-animations';
+import { CardGradientMesh } from '@/components/ui/gradient-mesh';
 import '@/styles/text-animations.css';
 import {
     ContentSection,
@@ -288,48 +289,49 @@ export default function DashboardPage() {
             {/* Welcome Message for New Users */}
             {!isLoadingProfile && completionPercentage < 100 && (
                 <div className="animate-fade-in-up animate-delay-50">
-                    <div className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 shadow-lg rounded-lg border bg-card text-card-foreground">
-                        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-purple-500/5 opacity-50" />
-                        <div className="relative flex items-start gap-4 p-6">
-                            <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-lg">
-                                <Zap className="w-7 h-7 text-white" />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="font-bold text-xl mb-3">
-                                    <StaggeredText
-                                        text="Welcome to Bayon Coagent! 🎉"
-                                        staggerBy="word"
-                                        delay={300}
-                                        staggerDelay={150}
-                                        animation="slideUp"
-                                        className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent"
-                                    />
-                                </h3>
-                                <p className="text-muted-foreground mb-6 text-base leading-relaxed">
-                                    <Typewriter
-                                        text="Let's get you set up for success. Complete your profile to unlock personalized strategies and AI-powered tools."
-                                        speed={25}
-                                        delay={2000}
-                                        cursor={false}
-                                    />
-                                </p>
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    <Button asChild size="lg" className="shadow-md">
-                                        <Link href="/brand/profile">
-                                            <Target className="w-5 h-5 mr-2" />
-                                            Complete Your Profile
-                                        </Link>
-                                    </Button>
-                                    <Button variant="outline" size="lg" asChild>
-                                        <Link href="/assistant">
-                                            <MessageSquare className="w-5 h-5 mr-2" />
-                                            Get Help
-                                        </Link>
-                                    </Button>
+                    <Card className="relative overflow-hidden border-primary/20 shadow-lg bg-background/50">
+                        <CardGradientMesh>
+                            <div className="relative flex items-start gap-4 p-6 z-10">
+                                <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-lg">
+                                    <Zap className="w-7 h-7 text-white" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-bold text-xl mb-3">
+                                        <StaggeredText
+                                            text="Welcome to Bayon Coagent! 🎉"
+                                            staggerBy="word"
+                                            delay={300}
+                                            staggerDelay={150}
+                                            animation="slideUp"
+                                            className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent"
+                                        />
+                                    </h3>
+                                    <p className="text-muted-foreground mb-6 text-base leading-relaxed">
+                                        <Typewriter
+                                            text="Let's get you set up for success. Complete your profile to unlock personalized strategies and AI-powered tools."
+                                            speed={25}
+                                            delay={2000}
+                                            cursor={false}
+                                        />
+                                    </p>
+                                    <div className="flex flex-col sm:flex-row gap-3">
+                                        <Button asChild size="lg" className="shadow-md">
+                                            <Link href="/brand/profile">
+                                                <Target className="w-5 h-5 mr-2" />
+                                                Complete Your Profile
+                                            </Link>
+                                        </Button>
+                                        <Button variant="outline" size="lg" asChild className="bg-background/50 backdrop-blur-sm">
+                                            <Link href="/assistant">
+                                                <MessageSquare className="w-5 h-5 mr-2" />
+                                                Get Help
+                                            </Link>
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
+                        </CardGradientMesh>
+                    </Card>
                 </div>
             )}
 
@@ -698,54 +700,56 @@ export default function DashboardPage() {
 
                 <div className="tablet:col-span-1 lg:col-span-1 space-y-6">
                     {/* Today's Focus */}
-                    <Card className="animate-fade-in-up animate-delay-200 transition-shadow duration-300">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900">
-                                    <Calendar className="text-indigo-600 dark:text-indigo-400 h-5 w-5" />
-                                </div>
-                                <div>
-                                    <div className="font-bold text-lg">Today's Focus</div>
-                                    <div className="text-sm text-muted-foreground font-normal">Most important tasks</div>
-                                </div>
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {isLoadingProfile ? (
-                                <StandardSkeleton variant="list" count={2} />
-                            ) : suggestedSteps.length > 0 ? (
-                                <div className="space-y-4">
-                                    {suggestedSteps.slice(0, 3).map((step, index) => (
-                                        <div key={index} className="group relative overflow-hidden rounded-xl border bg-gradient-to-r from-secondary/20 to-secondary/10 hover:from-primary/10 hover:to-purple-600/10 hover:border-primary/20 transition-all duration-300 hover:shadow-md">
-                                            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                            <div className="relative flex items-start gap-4 p-4">
-                                                <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-primary/20 to-purple-600/20 flex items-center justify-center mt-0.5 group-hover:scale-110 transition-transform duration-300">
-                                                    <div className="w-3 h-3 rounded-full bg-gradient-to-br from-primary to-purple-600" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-semibold text-sm leading-tight group-hover:text-primary transition-colors">{step.title}</p>
-                                                    <p className="text-xs text-muted-foreground mt-2 line-clamp-2 leading-relaxed">{step.description}</p>
+                    <Card className="animate-fade-in-up animate-delay-200 transition-shadow duration-300 overflow-hidden bg-background/50 border-primary/20">
+                        <CardGradientMesh>
+                            <CardHeader className="relative z-10">
+                                <CardTitle className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900">
+                                        <Calendar className="text-indigo-600 dark:text-indigo-400 h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <div className="font-bold text-lg">Today's Focus</div>
+                                        <div className="text-sm text-muted-foreground font-normal">Most important tasks</div>
+                                    </div>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="relative z-10">
+                                {isLoadingProfile ? (
+                                    <StandardSkeleton variant="list" count={2} />
+                                ) : suggestedSteps.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {suggestedSteps.slice(0, 3).map((step, index) => (
+                                            <div key={index} className="group relative overflow-hidden rounded-xl border bg-gradient-to-r from-secondary/20 to-secondary/10 hover:from-primary/10 hover:to-purple-600/10 hover:border-primary/20 transition-all duration-300 hover:shadow-md">
+                                                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                                <div className="relative flex items-start gap-4 p-4">
+                                                    <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-gradient-to-br from-primary/20 to-purple-600/20 flex items-center justify-center mt-0.5 group-hover:scale-110 transition-transform duration-300">
+                                                        <div className="w-3 h-3 rounded-full bg-gradient-to-br from-primary to-purple-600" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-semibold text-sm leading-tight group-hover:text-primary transition-colors">{step.title}</p>
+                                                        <p className="text-xs text-muted-foreground mt-2 line-clamp-2 leading-relaxed">{step.description}</p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
-                                    <Button size="sm" variant="default" className="w-full mt-4 shadow-sm" asChild>
-                                        <Link href={suggestedSteps[0]?.href || '/brand/profile'}>
-                                            <Target className="w-4 h-4 mr-2" />
-                                            Start First Task
-                                        </Link>
-                                    </Button>
-                                </div>
-                            ) : (
-                                <StandardEmptyState
-                                    icon={<CheckCircle2 className="h-8 w-8 text-green-500" />}
-                                    title="All Caught Up!"
-                                    description="You're doing great. Check back later for new suggestions."
-                                    variant="compact"
-                                    className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800"
-                                />
-                            )}
-                        </CardContent>
+                                        ))}
+                                        <Button size="sm" variant="default" className="w-full mt-4 shadow-sm" asChild>
+                                            <Link href={suggestedSteps[0]?.href || '/brand/profile'}>
+                                                <Target className="w-4 h-4 mr-2" />
+                                                Start First Task
+                                            </Link>
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <StandardEmptyState
+                                        icon={<CheckCircle2 className="h-8 w-8 text-green-500" />}
+                                        title="All Caught Up!"
+                                        description="You're doing great. Check back later for new suggestions."
+                                        variant="compact"
+                                        className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950 border-green-200 dark:border-green-800"
+                                    />
+                                )}
+                            </CardContent>
+                        </CardGradientMesh>
                     </Card>
 
                     {/* Suggested Next Steps */}

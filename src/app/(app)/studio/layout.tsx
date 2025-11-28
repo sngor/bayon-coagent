@@ -2,12 +2,13 @@
 
 import { HubLayoutWithFavorites } from '@/components/hub/hub-layout-with-favorites';
 import { FeatureGuard } from '@/components/feature-guard';
-import { Wand2, PenTool, Image, Sparkles } from 'lucide-react';
+import { Wand2, PenTool, Image, Sparkles, Gift } from 'lucide-react';
 
 const studioTabs = [
     { id: 'write', label: 'Write', href: '/studio/write', icon: PenTool },
     { id: 'describe', label: 'Listing Generator', href: '/studio/describe', icon: Sparkles },
     { id: 'reimagine', label: 'Reimagine', href: '/studio/reimagine', icon: Image },
+    { id: 'holiday-cards', label: 'Holiday Cards', href: '/studio/holiday-cards', icon: Gift },
 ];
 
 export default function StudioLayout({ children }: { children: React.ReactNode }) {

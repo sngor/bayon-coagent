@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardGradientMesh } from '@/components/ui/gradient-mesh';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -189,31 +190,33 @@ export default function TeamManagementPage() {
                     <h3 className="text-lg font-semibold">Pending Invitations</h3>
                     <div className="grid gap-4">
                         {pendingInvitations.map((invitation) => (
-                            <Card key={invitation.id}>
-                                <CardHeader className="p-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
-                                            <div className="p-2 bg-yellow-500/10 rounded-lg">
-                                                <Mail className="h-5 w-5 text-yellow-600" />
+                            <Card key={invitation.id} className="overflow-hidden bg-background/50 border-primary/20">
+                                <CardGradientMesh>
+                                    <CardHeader className="p-4 relative z-10">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className="p-2 bg-yellow-500/10 rounded-lg">
+                                                    <Mail className="h-5 w-5 text-yellow-600" />
+                                                </div>
+                                                <div>
+                                                    <CardTitle className="text-base">{invitation.email}</CardTitle>
+                                                    <CardDescription className="flex items-center gap-2 mt-1 text-xs">
+                                                        <Badge variant="outline" className="text-xs">{invitation.role}</Badge>
+                                                        <span>Expires: {new Date(invitation.expiresAt).toLocaleDateString()}</span>
+                                                    </CardDescription>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <CardTitle className="text-base">{invitation.email}</CardTitle>
-                                                <CardDescription className="flex items-center gap-2 mt-1 text-xs">
-                                                    <Badge variant="outline" className="text-xs">{invitation.role}</Badge>
-                                                    <span>Expires: {new Date(invitation.expiresAt).toLocaleDateString()}</span>
-                                                </CardDescription>
-                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleCancelInvitation(invitation.id)}
+                                                className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 px-2"
+                                            >
+                                                Cancel
+                                            </Button>
                                         </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => handleCancelInvitation(invitation.id)}
-                                            className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 px-2"
-                                        >
-                                            Cancel
-                                        </Button>
-                                    </div>
-                                </CardHeader>
+                                    </CardHeader>
+                                </CardGradientMesh>
                             </Card>
                         ))}
                     </div>
@@ -224,60 +227,66 @@ export default function TeamManagementPage() {
                 <h3 className="text-lg font-semibold">Team Members</h3>
                 <div className="grid gap-4">
                     {isLoading ? (
-                        <Card>
-                            <CardContent className="pt-6">
-                                <p className="text-center text-muted-foreground">Loading team members...</p>
-                            </CardContent>
+                        <Card className="overflow-hidden bg-background/50 border-primary/20">
+                            <CardGradientMesh>
+                                <CardContent className="pt-6 relative z-10">
+                                    <p className="text-center text-muted-foreground">Loading team members...</p>
+                                </CardContent>
+                            </CardGradientMesh>
                         </Card>
                     ) : filteredMembers.length === 0 ? (
-                        <Card>
-                            <CardContent className="pt-6">
-                                <p className="text-center text-muted-foreground">No team members found</p>
-                            </CardContent>
+                        <Card className="overflow-hidden bg-background/50 border-primary/20">
+                            <CardGradientMesh>
+                                <CardContent className="pt-6 relative z-10">
+                                    <p className="text-center text-muted-foreground">No team members found</p>
+                                </CardContent>
+                            </CardGradientMesh>
                         </Card>
                     ) : (
                         filteredMembers.map((member) => (
-                            <Card key={member.id}>
-                                <CardHeader>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
-                                            <div className="p-2 bg-primary/10 rounded-lg">
-                                                <Users className="h-5 w-5 text-primary" />
+                            <Card key={member.id} className="overflow-hidden bg-background/50 border-primary/20">
+                                <CardGradientMesh>
+                                    <CardHeader className="relative z-10">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className="p-2 bg-primary/10 rounded-lg">
+                                                    <Users className="h-5 w-5 text-primary" />
+                                                </div>
+                                                <div>
+                                                    <CardTitle className="text-lg">{member.name}</CardTitle>
+                                                    <CardDescription className="flex items-center gap-2 mt-1">
+                                                        <Mail className="h-3 w-3" />
+                                                        {member.email}
+                                                    </CardDescription>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <CardTitle className="text-lg">{member.name}</CardTitle>
-                                                <CardDescription className="flex items-center gap-2 mt-1">
-                                                    <Mail className="h-3 w-3" />
-                                                    {member.email}
-                                                </CardDescription>
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant={member.status === 'active' ? 'default' : 'secondary'}>
+                                                    {member.status}
+                                                </Badge>
+                                                <Select
+                                                    value={member.role}
+                                                    onValueChange={(value) => handleRoleChange(member.id, value as 'member' | 'admin')}
+                                                >
+                                                    <SelectTrigger className="w-32">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="member">Member</SelectItem>
+                                                        <SelectItem value="admin">Admin</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleRemoveMember(member.id)}
+                                                >
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                </Button>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant={member.status === 'active' ? 'default' : 'secondary'}>
-                                                {member.status}
-                                            </Badge>
-                                            <Select
-                                                value={member.role}
-                                                onValueChange={(value) => handleRoleChange(member.id, value as 'member' | 'admin')}
-                                            >
-                                                <SelectTrigger className="w-32">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="member">Member</SelectItem>
-                                                    <SelectItem value="admin">Admin</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => handleRemoveMember(member.id)}
-                                            >
-                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </CardHeader>
+                                    </CardHeader>
+                                </CardGradientMesh>
                             </Card>
                         ))
                     )}

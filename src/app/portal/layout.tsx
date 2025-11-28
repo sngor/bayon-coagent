@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { SubtleGradientMesh } from '@/components/ui/gradient-mesh';
 
 /**
  * Client Portal Layout
@@ -9,7 +10,9 @@ import { ReactNode } from 'react';
 export default function PortalLayout({ children }: { children: ReactNode }) {
     return (
         <div className="min-h-screen">
-            {children}
+            <SubtleGradientMesh className="min-h-screen">
+                {children}
+            </SubtleGradientMesh>
         </div>
     );
 }

@@ -19,6 +19,8 @@ export interface FeatureToggle {
     status?: 'enabled' | 'disabled' | 'beta' | 'development';
     rollout?: number; // 0-100 percentage
     users?: number; // Count of users with access
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export const DEFAULT_FEATURES: FeatureToggle[] = [

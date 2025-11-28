@@ -1,0 +1,386 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardGradientMesh } from '@/components/ui/gradient-mesh';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import { FileText, Upload, Trash2, Search, Download, Loader2, Database } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { getTeamsAction } from '@/app/admin-actions';
+import {
+    getDocumentsAction,
+    uploadDocumentAction,
+    deleteDocumentAction,
+    getDownloadUrlAction,
+    type Document
+} from '@/app/knowledge-actions';
+import { useUser } from '@/aws/auth';
+
+export default function TeamKnowledgeBasePage() {
+    const { user } = useUser();
+    const [teams, setTeams] = useState<any[]>([]);
+    const [selectedTeamId, setSelectedTeamId] = useState<string>('');
+    const [documents, setDocuments] = useState<Document[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [uploading, setUploading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        loadTeams();
+    }, []);
+
+    useEffect(() => {
+        if (selectedTeamId && user) {
+            loadDocuments(selectedTeamId);
+        }
+    }, [selectedTeamId, user]);
+
+    async function loadTeams() {
+        try {
+            const sessionStr = localStorage.getItem('cognito_session');
+            let accessToken: string | undefined;
+            if (sessionStr) {
+                const session = JSON.parse(sessionStr);
+                accessToken = session.accessToken;
+            }
+
+            const result = await getTeamsAction(accessToken);
+            if (result.message === 'success' && result.data.length > 0) {
+                setTeams(result.data);
+                setSelectedTeamId(result.data[0].id);
+            } else {
+                setLoading(false);
+            }
+        } catch (error) {
+            console.error('Failed to load teams:', error);
+            setLoading(false);
+        }
+    }
+
+    async function loadDocuments(teamId: string) {
+        if (!user) return;
+        setLoading(true);
+        try {
+            const result = await getDocumentsAction(user.id, {
+                scope: 'team',
+                teamId: teamId
+            });
+
+            if (result.documents) {
+                setDocuments(result.documents);
+            } else if (result.error) {
+                toast({
+                    title: "Error",
+                    description: result.error,
+                    variant: "destructive"
+                });
+            }
+        } catch (error) {
+            console.error('Failed to load documents:', error);
+            toast({
+                title: "Error",
+                description: "Failed to load documents",
+                variant: "destructive"
+            });
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault();
+        if (!user || !selectedTeamId || !fileInputRef.current?.files?.length) return;
+
+        const file = fileInputRef.current.files[0];
+        setUploading(true);
+
+        try {
+            const result = await uploadDocumentAction(user.id, file, {
+                scope: 'team',
+                teamId: selectedTeamId
+            });
+
+            if (result.success) {
+                toast({
+                    title: "Success",
+                    description: "Document uploaded successfully",
+                });
+                setIsUploadDialogOpen(false);
+                loadDocuments(selectedTeamId);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+            } else {
+                toast({
+                    title: "Error",
+                    description: result.error || "Failed to upload document",
+                    variant: "destructive"
+                });
+            }
+        } catch (error) {
+            console.error('Upload failed:', error);
+            toast({
+                title: "Error",
+                description: "Failed to upload document",
+                variant: "destructive"
+            });
+        } finally {
+            setUploading(false);
+        }
+    }
+
+    async function handleDelete(documentId: string) {
+        if (!user || !selectedTeamId || !confirm('Are you sure you want to delete this document?')) return;
+
+        try {
+            const result = await deleteDocumentAction(user.id, documentId, {
+                scope: 'team',
+                teamId: selectedTeamId
+            });
+
+            if (result.success) {
+                toast({
+                    title: "Success",
+                    description: "Document deleted successfully",
+                });
+                // Optimistic update
+                setDocuments(docs => docs.filter(d => d.documentId !== documentId));
+            } else {
+                toast({
+                    title: "Error",
+                    description: result.error || "Failed to delete document",
+                    variant: "destructive"
+                });
+            }
+        } catch (error) {
+            console.error('Delete failed:', error);
+            toast({
+                title: "Error",
+                description: "Failed to delete document",
+                variant: "destructive"
+            });
+        }
+    }
+
+    async function handleDownload(documentId: string) {
+        if (!user || !selectedTeamId) return;
+
+        try {
+            // For team docs, we need to pass the correct partition key logic or let the action handle it
+            // The action expects userId, but for team docs it might need to know it's a team doc
+            // Actually getDownloadUrlAction currently takes userId and documentId.
+            // I need to update getDownloadUrlAction to support team docs too or pass the partition key as userId.
+
+            // Construct partition key manually for now as per my knowledge-actions change
+            const partitionKey = `TEAM#${selectedTeamId}`;
+
+            const result = await getDownloadUrlAction(partitionKey, documentId);
+
+            if (result.url) {
+                window.open(result.url, '_blank');
+            } else {
+                toast({
+                    title: "Error",
+                    description: result.error || "Failed to get download URL",
+                    variant: "destructive"
+                });
+            }
+        } catch (error) {
+            console.error('Download failed:', error);
+        }
+    }
+
+    const filteredDocuments = documents.filter(doc =>
+        doc.fileName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        doc.status.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Team Knowledge Base</h2>
+                    <p className="text-muted-foreground">
+                        Manage documents available to your team's AI agents.
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    {teams.length > 1 && (
+                        <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
+                            <SelectTrigger className="w-[200px]">
+                                <SelectValue placeholder="Select Team" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {teams.map(team => (
+                                    <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                    <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button>
+                                <Upload className="mr-2 h-4 w-4" />
+                                Upload Document
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Upload Team Document</DialogTitle>
+                                <DialogDescription>
+                                    Upload PDF, DOCX, or TXT files to be indexed for your team's AI.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <form onSubmit={handleUpload} className="space-y-4">
+                                <div className="grid w-full max-w-sm items-center gap-1.5">
+                                    <Label htmlFor="document">Document</Label>
+                                    <Input
+                                        ref={fileInputRef}
+                                        id="document"
+                                        type="file"
+                                        accept=".pdf,.docx,.txt,.md"
+                                        required
+                                    />
+                                </div>
+                                <DialogFooter>
+                                    <Button type="button" variant="outline" onClick={() => setIsUploadDialogOpen(false)}>
+                                        Cancel
+                                    </Button>
+                                    <Button type="submit" disabled={uploading}>
+                                        {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Upload
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+            </div>
+
+            <Card className="overflow-hidden bg-background/50 border-primary/20">
+                <CardGradientMesh>
+                    <CardHeader className="relative z-10">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg font-medium">Documents</CardTitle>
+                            <div className="relative w-64">
+                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search documents..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="pl-8"
+                                />
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="relative z-10">
+                        {loading ? (
+                            <div className="flex justify-center py-8">
+                                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                            </div>
+                        ) : filteredDocuments.length === 0 ? (
+                            <div className="text-center py-12 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-lg bg-background/50">
+                                <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-full w-fit mx-auto mb-4">
+                                    <Database className="h-8 w-8 text-gray-400" />
+                                </div>
+                                <h3 className="text-lg font-semibold mb-2">No documents found</h3>
+                                <p className="text-muted-foreground mb-4">
+                                    Upload documents to share knowledge with your team's AI.
+                                </p>
+                                <Button variant="outline" onClick={() => setIsUploadDialogOpen(true)}>
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    Upload First Document
+                                </Button>
+                            </div>
+                        ) : (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Type</TableHead>
+                                        <TableHead>Size</TableHead>
+                                        <TableHead>Uploaded</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredDocuments.map((doc) => (
+                                        <TableRow key={doc.documentId}>
+                                            <TableCell className="font-medium">
+                                                <div className="flex items-center gap-2">
+                                                    <FileText className="h-4 w-4 text-muted-foreground" />
+                                                    {doc.fileName}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="uppercase text-xs">{doc.fileType}</TableCell>
+                                            <TableCell className="text-xs">{(doc.fileSize / 1024).toFixed(1)} KB</TableCell>
+                                            <TableCell className="text-xs text-muted-foreground">
+                                                {new Date(doc.uploadDate).toLocaleDateString()}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${doc.status === 'indexed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                                    doc.status === 'processing' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                                                        doc.status === 'failed' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                                            'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                                                    }`}>
+                                                    {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleDownload(doc.documentId)}
+                                                    >
+                                                        <Download className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-destructive hover:text-destructive"
+                                                        onClick={() => handleDelete(doc.documentId)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        )}
+                    </CardContent>
+                </CardGradientMesh>
+            </Card>
+        </div>
+    );
+}

@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { SectionHeader, SectionHeaderProps } from './section-header';
+import { CardGradientMesh } from './gradient-mesh';
 
 export interface ContentSectionProps {
     title?: string;
@@ -34,7 +35,7 @@ export function ContentSection({
 
     const variants = {
         default: 'space-y-6',
-        card: 'rounded-lg border bg-card text-card-foreground shadow-sm p-6 space-y-6',
+        card: 'rounded-lg border bg-background/50 border-primary/20 text-card-foreground shadow-sm overflow-hidden relative',
         bordered: 'border-l-4 border-primary/20 pl-6 space-y-6',
         minimal: 'space-y-4'
     };
@@ -51,12 +52,8 @@ export function ContentSection({
         spacious: 'space-y-6'
     };
 
-    return (
-        <section className={cn(
-            variants[variant],
-            spacingClasses[spacing],
-            className
-        )}>
+    const content = (
+        <>
             {hasHeader && (
                 <SectionHeader
                     title={title!}
@@ -73,6 +70,24 @@ export function ContentSection({
             )}>
                 {children}
             </div>
+        </>
+    );
+
+    return (
+        <section className={cn(
+            variants[variant],
+            spacingClasses[spacing],
+            className
+        )}>
+            {variant === 'card' ? (
+                <CardGradientMesh>
+                    <div className="p-6 space-y-6">
+                        {content}
+                    </div>
+                </CardGradientMesh>
+            ) : (
+                content
+            )}
         </section>
     );
 }

@@ -64,6 +64,7 @@ import { FeedbackButton } from '@/components/feedback-button';
 import { DynamicNavigation } from '@/components/dynamic-navigation';
 import { useFeatureToggle } from '@/lib/feature-toggles';
 import { NotificationCenter } from '@/lib/notifications/components';
+import { SubtleGradientMesh } from '@/components/ui/gradient-mesh';
 
 const allNavItems = [
   { href: '/dashboard', icon: HouseIcon, label: 'Dashboard', customIcon: true, featureId: null },
@@ -395,92 +396,94 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <AdminProvider>
         <AccessibilityProvider>
           <StickyHeaderProvider>
-            <SidebarProvider>
-              <Sidebar collapsible="icon">
-                <SidebarHeader>
-                  <div className="flex items-center justify-between gap-2">
-                    <Logo />
-                  </div>
-                </SidebarHeader>
-                <SidebarContent>
-                  <DynamicNavigation />
-                </SidebarContent>
-                <SidebarFooter>
-                  <div className="space-y-3">
-                    {/* Feedback Button */}
-                    <div className="px-1">
-                      <FeedbackButton />
+            <SubtleGradientMesh>
+              <SidebarProvider>
+                <Sidebar collapsible="icon">
+                  <SidebarHeader>
+                    <div className="flex items-center justify-between gap-2">
+                      <Logo />
                     </div>
-                  </div>
-                </SidebarFooter>
-              </Sidebar>
-              <SidebarInset>
-                <header className={`sticky top-0 z-10 flex h-20 items-center justify-between px-6 -mx-6 bg-transparent backdrop-blur-xl transition-all duration-200 ${isScrolled ? 'border-b border-border/20' : ''}`}>
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    {isMounted && (
-                      <>
-                        <div className="md:hidden">
-                          <SidebarTrigger>
-                            <PanelLeft />
-                          </SidebarTrigger>
-                        </div>
-                        <div className="hidden md:block">
-                          <SidebarToggle tooltip="Toggle Sidebar" />
-                        </div>
-                      </>
-                    )}
-                    {/* Sticky Page Title */}
-                    <StickyHeaderTitle />
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {/* Admin Mode Badge */}
-                    <AdminModeBadge />
-                    {/* Notifications Center - Temporarily disabled due to infinite loop */}
-                    {false && user && (
-                      <NotificationCenter
-                        userId={user.id}
-                        className="h-9 w-9 rounded-full hover:bg-accent"
-                      />
-                    )}
-
-                    {/* User Menu */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="flex items-center gap-3 h-10 px-2 pr-3 rounded-full hover:bg-accent transition-colors"
-                        >
-                          <Avatar className="h-8 w-8 ring-2 ring-background shadow-sm">
-                            <AvatarImage src={profile?.photoURL} alt={userName} />
-                            <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-primary/20 to-primary/10 text-primary">
-                              {getInitials(userName)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="hidden sm:flex flex-col items-start min-w-0">
-                            <span className="text-sm font-medium leading-tight truncate max-w-[120px] button-text-hover">
-                              {firstName}
-                            </span>
-                            <span className="text-xs text-muted-foreground leading-tight mt-0.5">
-                              Agent
-                            </span>
+                  </SidebarHeader>
+                  <SidebarContent>
+                    <DynamicNavigation />
+                  </SidebarContent>
+                  <SidebarFooter>
+                    <div className="space-y-3">
+                      {/* Feedback Button */}
+                      <div className="px-1">
+                        <FeedbackButton />
+                      </div>
+                    </div>
+                  </SidebarFooter>
+                </Sidebar>
+                <SidebarInset>
+                  <header className={`sticky top-0 z-10 flex h-20 items-center justify-between px-6 -mx-6 bg-transparent backdrop-blur-xl transition-all duration-200 ${isScrolled ? 'border-b border-border/20' : ''}`}>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {isMounted && (
+                        <>
+                          <div className="md:hidden">
+                            <SidebarTrigger>
+                              <PanelLeft />
+                            </SidebarTrigger>
                           </div>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <UserDropdownContent
-                        profile={profile}
-                        user={user}
-                        userName={userName}
-                        getInitials={getInitials}
-                        handleSignOut={handleSignOut}
-                      />
-                    </DropdownMenu>
-                  </div>
-                </header>
-                <main className="p-4 md:p-8 lg:p-10">
-                  <PageTransition>{children}</PageTransition>
-                </main>
-              </SidebarInset>
-            </SidebarProvider>
+                          <div className="hidden md:block">
+                            <SidebarToggle tooltip="Toggle Sidebar" />
+                          </div>
+                        </>
+                      )}
+                      {/* Sticky Page Title */}
+                      <StickyHeaderTitle />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {/* Admin Mode Badge */}
+                      <AdminModeBadge />
+                      {/* Notifications Center - Temporarily disabled due to infinite loop */}
+                      {false && user && (
+                        <NotificationCenter
+                          userId={user.id}
+                          className="h-9 w-9 rounded-full hover:bg-accent"
+                        />
+                      )}
+
+                      {/* User Menu */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="flex items-center gap-3 h-10 px-2 pr-3 rounded-full hover:bg-accent transition-colors"
+                          >
+                            <Avatar className="h-8 w-8 ring-2 ring-background shadow-sm">
+                              <AvatarImage src={profile?.photoURL} alt={userName} />
+                              <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-primary/20 to-primary/10 text-primary">
+                                {getInitials(userName)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="hidden sm:flex flex-col items-start min-w-0">
+                              <span className="text-sm font-medium leading-tight truncate max-w-[120px] button-text-hover">
+                                {firstName}
+                              </span>
+                              <span className="text-xs text-muted-foreground leading-tight mt-0.5">
+                                Agent
+                              </span>
+                            </div>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <UserDropdownContent
+                          profile={profile}
+                          user={user}
+                          userName={userName}
+                          getInitials={getInitials}
+                          handleSignOut={handleSignOut}
+                        />
+                      </DropdownMenu>
+                    </div>
+                  </header>
+                  <main className="p-4 md:p-8 lg:p-10">
+                    <PageTransition>{children}</PageTransition>
+                  </main>
+                </SidebarInset>
+              </SidebarProvider>
+            </SubtleGradientMesh>
           </StickyHeaderProvider>
         </AccessibilityProvider>
       </AdminProvider>

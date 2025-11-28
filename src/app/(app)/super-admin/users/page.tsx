@@ -71,6 +71,12 @@ export default function AdminUsersPage() {
     const [newTeamId, setNewTeamId] = useState<string>('');
     const [isSaving, setIsSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('all');
+    const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+    const [newUserEmail, setNewUserEmail] = useState('');
+    const [newUserName, setNewUserName] = useState('');
+    const [newUserRole, setNewUserRole] = useState<string>('agent');
+    const [newUserTeamId, setNewUserTeamId] = useState<string>('');
+    const [isAddingUser, setIsAddingUser] = useState(false);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -298,6 +304,52 @@ export default function AdminUsersPage() {
         }
     };
 
+    const handleAddUser = async () => {
+        if (!newUserEmail || !newUserName) {
+            toast({ title: "Error", description: "Email and Name are required", variant: "destructive" });
+            return;
+        }
+
+        setIsAddingUser(true);
+        try {
+            const sessionStr = localStorage.getItem('cognito_session');
+            let accessToken: string | undefined;
+            if (sessionStr) {
+                const session = JSON.parse(sessionStr);
+                accessToken = session.accessToken;
+            }
+
+            const { createUserAction } = await import('@/app/admin-actions');
+            const result = await createUserAction(
+                newUserEmail,
+                newUserName,
+                newUserRole as 'agent' | 'admin' | 'super_admin',
+                newUserTeamId || undefined,
+                accessToken
+            );
+
+            if (result.message === 'success') {
+                toast({
+                    title: "User created",
+                    description: `User ${newUserEmail} created successfully. Temp password: ${result.data.tempPassword}`,
+                    duration: 10000,
+                });
+                // Refresh users
+                // Ideally we would just add to the list, but we need the ID and other fields
+                // For now, let's just reload the page or re-fetch
+                window.location.reload();
+            } else {
+                toast({ title: "Error", description: result.message, variant: "destructive" });
+            }
+        } catch (error) {
+            console.error('Failed to create user:', error);
+            toast({ title: "Error", description: "Failed to create user", variant: "destructive" });
+        } finally {
+            setIsAddingUser(false);
+            setIsAddUserOpen(false);
+        }
+    };
+
     const filteredUsers = useMemo(() => {
         let filtered = users;
 
@@ -428,7 +480,7 @@ export default function AdminUsersPage() {
                                 <Download className="h-4 w-4 mr-2" />
                                 Export
                             </Button>
-                            <Button size="sm">
+                            <Button size="sm" onClick={() => setIsAddUserOpen(true)}>
                                 <UserPlus className="h-4 w-4 mr-2" />
                                 Add User
                             </Button>
@@ -604,6 +656,80 @@ export default function AdminUsersPage() {
                         <Button variant="outline" onClick={() => setIsEditRoleOpen(false)}>Cancel</Button>
                         <Button onClick={saveRole} disabled={isSaving}>
                             {isSaving ? "Saving..." : "Save Changes"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Add New User</DialogTitle>
+                        <DialogDescription>
+                            Create a new user account. They will receive an email with login instructions.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="email" className="text-right">
+                                Email
+                            </Label>
+                            <Input
+                                id="email"
+                                value={newUserEmail}
+                                onChange={(e) => setNewUserEmail(e.target.value)}
+                                className="col-span-3"
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="name" className="text-right">
+                                Name
+                            </Label>
+                            <Input
+                                id="name"
+                                value={newUserName}
+                                onChange={(e) => setNewUserName(e.target.value)}
+                                className="col-span-3"
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="role" className="text-right">
+                                Role
+                            </Label>
+                            <Select value={newUserRole} onValueChange={setNewUserRole}>
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select a role" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="agent">Agent</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                    <SelectItem value="super_admin">Super Admin</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="team" className="text-right">
+                                Team
+                            </Label>
+                            <Select value={newUserTeamId || "none"} onValueChange={(value) => setNewUserTeamId(value === "none" ? "" : value)}>
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select a team (optional)" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">No Team</SelectItem>
+                                    {teams.map((team) => (
+                                        <SelectItem key={team.id} value={team.id}>
+                                            {team.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsAddUserOpen(false)}>Cancel</Button>
+                        <Button onClick={handleAddUser} disabled={isAddingUser}>
+                            {isAddingUser ? "Creating..." : "Create User"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

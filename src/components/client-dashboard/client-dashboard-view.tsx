@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { Phone, Mail, MessageSquare } from 'lucide-react';
+import { Phone, Mail, MessageSquare, CheckCircle2, Clock, ExternalLink, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MortgageCalculator } from '@/components/mortgage-calculator';
+import { RenovationROICalculator } from '@/components/renovation-roi-calculator';
 import { ClientDashboard, SecuredLink, listDashboardDocumentsForClient, type DashboardDocument } from '@/app/client-dashboard-actions';
 import {
     CMAReportSkeleton,
@@ -262,11 +265,174 @@ export function ClientDashboardView({ dashboard, link, token }: ClientDashboardV
                         </DashboardSection>
                     )}
 
+                    {/* Transaction Milestones Section */}
+                    {dashboardConfig.enableMilestones && dashboard.milestones && (
+                        <DashboardSection
+                            title="Transaction Milestones"
+                            description="Track the progress of your real estate journey"
+                            primaryColor={branding.primaryColor}
+                            isEmpty={dashboard.milestones.length === 0}
+                            emptyMessage="No milestones have been set yet."
+                        >
+                            <div className="space-y-6">
+                                {dashboard.milestones.map((milestone, index) => (
+                                    <div key={milestone.id} className="relative flex gap-4">
+                                        {/* Timeline Line */}
+                                        {index !== dashboard.milestones!.length - 1 && (
+                                            <div
+                                                className="absolute left-[15px] top-8 bottom-[-24px] w-0.5 bg-gray-200 dark:bg-gray-700"
+                                                aria-hidden="true"
+                                            />
+                                        )}
+
+                                        {/* Status Icon */}
+                                        <div className="flex-shrink-0 mt-1">
+                                            {milestone.status === 'completed' ? (
+                                                <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+                                                    <CheckCircle2 className="h-5 w-5" />
+                                                </div>
+                                            ) : milestone.status === 'in_progress' ? (
+                                                <div
+                                                    className="h-8 w-8 rounded-full flex items-center justify-center text-white"
+                                                    style={{ backgroundColor: branding.primaryColor }}
+                                                >
+                                                    <Clock className="h-5 w-5 animate-pulse" />
+                                                </div>
+                                            ) : (
+                                                <div className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400">
+                                                    <div className="h-3 w-3 rounded-full bg-current" />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Content */}
+                                        <div className="flex-1 pt-1.5 pb-2">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
+                                                <h4 className={`font-semibold ${milestone.status === 'completed' ? 'text-gray-900 dark:text-white' :
+                                                        milestone.status === 'in_progress' ? 'text-gray-900 dark:text-white' :
+                                                            'text-gray-500 dark:text-gray-400'
+                                                    }`}>
+                                                    {milestone.title}
+                                                </h4>
+                                                {milestone.date && (
+                                                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                                                        {new Date(milestone.date).toLocaleDateString(undefined, {
+                                                            year: 'numeric',
+                                                            month: 'long',
+                                                            day: 'numeric'
+                                                        })}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {milestone.description && (
+                                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                    {milestone.description}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </DashboardSection>
+                    )}
+
+                    {/* Financial Calculators Section */}
+                    {dashboardConfig.enableCalculators && (
+                        <DashboardSection
+                            title="Financial Tools"
+                            description="Plan your finances with our integrated calculators"
+                            primaryColor={branding.primaryColor}
+                        >
+                            <Tabs defaultValue="mortgage" className="w-full">
+                                <TabsList className="grid w-full grid-cols-2 mb-6">
+                                    <TabsTrigger value="mortgage">Mortgage Calculator</TabsTrigger>
+                                    <TabsTrigger value="roi">Renovation ROI</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="mortgage">
+                                    <div className="mt-4">
+                                        <MortgageCalculator />
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="roi">
+                                    <div className="mt-4">
+                                        <RenovationROICalculator />
+                                    </div>
+                                </TabsContent>
+                            </Tabs>
+                        </DashboardSection>
+                    )}
+
+                    {/* Trusted Vendors Section */}
+                    {dashboardConfig.enableVendors && dashboard.vendors && (
+                        <DashboardSection
+                            title="Trusted Vendors"
+                            description="Recommended service providers for your needs"
+                            primaryColor={branding.primaryColor}
+                            isEmpty={dashboard.vendors.length === 0}
+                            emptyMessage="No vendors have been recommended yet."
+                        >
+                            <div className="grid gap-6 md:grid-cols-2">
+                                {dashboard.vendors.map((vendor) => (
+                                    <div
+                                        key={vendor.id}
+                                        className="border border-gray-200 dark:border-gray-800 rounded-lg p-5 hover:shadow-md transition-shadow bg-gray-50/50 dark:bg-gray-800/50"
+                                    >
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div>
+                                                <h4 className="font-semibold text-gray-900 dark:text-white">
+                                                    {vendor.name}
+                                                </h4>
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 mt-1">
+                                                    {vendor.category}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2 text-sm">
+                                            {vendor.phone && (
+                                                <a
+                                                    href={`tel:${vendor.phone}`}
+                                                    className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                                >
+                                                    <Phone className="h-4 w-4" />
+                                                    {vendor.phone}
+                                                </a>
+                                            )}
+                                            {vendor.email && (
+                                                <a
+                                                    href={`mailto:${vendor.email}`}
+                                                    className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                                >
+                                                    <Mail className="h-4 w-4" />
+                                                    {vendor.email}
+                                                </a>
+                                            )}
+                                            {vendor.website && (
+                                                <a
+                                                    href={vendor.website.startsWith('http') ? vendor.website : `https://${vendor.website}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                                >
+                                                    <ExternalLink className="h-4 w-4" />
+                                                    Visit Website
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </DashboardSection>
+                    )}
+
                     {/* No Features Enabled Message */}
                     {!dashboardConfig.enableCMA &&
                         !dashboardConfig.enablePropertySearch &&
                         !dashboardConfig.enableHomeValuation &&
-                        !dashboardConfig.enableDocuments && (
+                        !dashboardConfig.enableDocuments &&
+                        !dashboardConfig.enableCalculators &&
+                        !dashboardConfig.enableMilestones &&
+                        !dashboardConfig.enableVendors && (
                             <div className="text-center py-12">
                                 <p className="text-gray-600 dark:text-gray-400 text-lg">
                                     Your agent is setting up your dashboard. Check back soon!

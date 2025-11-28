@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils';
 import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react';
 import { Card, CardContent } from './card';
+import { CardGradientMesh } from './gradient-mesh';
 
 export interface StatCardProps {
     title: string;
@@ -100,40 +101,42 @@ export function StatCard({
     const TrendIcon = getTrendIcon(trend?.direction);
 
     return (
-        <Card className={cn('transition-all duration-200 hover:shadow-md', className)}>
-            <CardContent className={styles.container}>
-                <div className={styles.header}>
-                    <h3 className={styles.title}>{title}</h3>
-                    {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
-                </div>
-
-                <div className="space-y-2">
-                    <div className={styles.value}>
-                        {formatValue(value)}
+        <Card className={cn('transition-all duration-200 hover:shadow-md overflow-hidden bg-background/50 border-primary/20', className)}>
+            <CardGradientMesh>
+                <CardContent className={cn(styles.container, "relative z-10")}>
+                    <div className={styles.header}>
+                        <h3 className={styles.title}>{title}</h3>
+                        {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
                     </div>
 
-                    {trend && (
-                        <div className={cn(styles.trend, getTrendColor(trend.direction))}>
-                            {TrendIcon && <TrendIcon className="h-3 w-3" />}
-                            <span className="font-medium">
-                                {trend.direction === 'up' ? '+' : trend.direction === 'down' ? '-' : ''}
-                                {Math.abs(trend.value)}%
-                            </span>
-                            {trend.label && (
-                                <span className="text-muted-foreground">
-                                    {trend.label}
-                                </span>
-                            )}
+                    <div className="space-y-2">
+                        <div className={styles.value}>
+                            {formatValue(value)}
                         </div>
-                    )}
 
-                    {description && (
-                        <p className={styles.description}>
-                            {description}
-                        </p>
-                    )}
-                </div>
-            </CardContent>
+                        {trend && (
+                            <div className={cn(styles.trend, getTrendColor(trend.direction))}>
+                                {TrendIcon && <TrendIcon className="h-3 w-3" />}
+                                <span className="font-medium">
+                                    {trend.direction === 'up' ? '+' : trend.direction === 'down' ? '-' : ''}
+                                    {Math.abs(trend.value)}%
+                                </span>
+                                {trend.label && (
+                                    <span className="text-muted-foreground">
+                                        {trend.label}
+                                    </span>
+                                )}
+                            </div>
+                        )}
+
+                        {description && (
+                            <p className={styles.description}>
+                                {description}
+                            </p>
+                        )}
+                    </div>
+                </CardContent>
+            </CardGradientMesh>
         </Card>
     );
 }

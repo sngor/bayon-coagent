@@ -47,6 +47,22 @@ export interface Document {
     lastAccessed?: string;
     accessCount?: number;
     errorMessage?: string;
+    scope?: 'personal' | 'team';
+    teamId?: string;
+}
+
+import { getCurrentUserServer } from '@/aws/auth/server-auth';
+import { checkAdminStatusAction } from '@/app/actions';
+import { getRepository } from '@/aws/dynamodb/repository';
+
+async function verifyTeamAdmin(userId: string, teamId: string): Promise<boolean> {
+    const adminStatus = await checkAdminStatusAction(userId);
+    if (adminStatus.role === 'super_admin') return true;
+
+    // Check if user is admin of the specific team
+    const repository = getRepository();
+    const teamConfig = await repository.get<any>(`TEAM#${teamId}`, 'CONFIG');
+    return teamConfig?.adminId === userId;
 }
 
 /**
@@ -54,13 +70,33 @@ export interface Document {
  */
 export async function uploadDocumentAction(
     userId: string,
-    file: File
+    file: File,
+    options?: { scope?: 'personal' | 'team', teamId?: string }
 ): Promise<{ success: boolean; documentId?: string; error?: string }> {
     try {
+        const scope = options?.scope || 'personal';
+        const teamId = options?.teamId;
+
+        // Verify team permissions if uploading to team
+        if (scope === 'team') {
+            if (!teamId) return { success: false, error: 'Team ID required for team documents' };
+            const currentUser = await getCurrentUserServer();
+            if (!currentUser || currentUser.id !== userId) {
+                return { success: false, error: 'Unauthorized' };
+            }
+            const isAdmin = await verifyTeamAdmin(userId, teamId);
+            if (!isAdmin) {
+                return { success: false, error: 'Only team admins can upload team documents' };
+            }
+        }
+
+        // Determine partition key (userId or TEAM#teamId)
+        const partitionKey = scope === 'team' ? `TEAM#${teamId}` : userId;
+
         // Generate unique document ID
         const documentId = uuidv4();
         const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
-        const s3Key = `${userId}/${documentId}/original.${fileExtension}`;
+        const s3Key = `${scope === 'team' ? `teams/${teamId}` : userId}/${documentId}/original.${fileExtension}`;
 
         // Convert File to Buffer
         const arrayBuffer = await file.arrayBuffer();
@@ -76,6 +112,8 @@ export async function uploadDocumentAction(
                 userId,
                 documentId,
                 originalFileName: file.name,
+                scope,
+                teamId: teamId || '',
             },
         });
 
@@ -83,8 +121,10 @@ export async function uploadDocumentAction(
 
         // Create DynamoDB record
         const document: Document = {
-            userId,
+            userId: partitionKey, // Use partition key as userId for storage
             documentId,
+            scope,
+            teamId,
             fileName: file.name,
             fileType: fileExtension,
             fileSize: file.size,
@@ -127,6 +167,8 @@ export async function getDocumentsAction(
         search?: string;
         limit?: number;
         lastKey?: Record<string, any>;
+        scope?: 'personal' | 'team';
+        teamId?: string;
     }
 ): Promise<{
     documents: Document[];
@@ -134,11 +176,14 @@ export async function getDocumentsAction(
     error?: string;
 }> {
     try {
+        const scope = filters?.scope || 'personal';
+        const partitionKey = scope === 'team' && filters?.teamId ? `TEAM#${filters.teamId}` : userId;
+
         const queryParams: any = {
             TableName: DYNAMODB_TABLE,
             KeyConditionExpression: 'userId = :userId',
             ExpressionAttributeValues: {
-                ':userId': userId,
+                ':userId': partitionKey,
             },
             ScanIndexForward: false, // Sort by newest first
         };
@@ -279,11 +324,29 @@ export async function updateDocumentMetadataAction(
  */
 export async function deleteDocumentAction(
     userId: string,
-    documentId: string
+    documentId: string,
+    options?: { scope?: 'personal' | 'team', teamId?: string }
 ): Promise<{ success: boolean; error?: string }> {
     try {
+        const scope = options?.scope || 'personal';
+        const teamId = options?.teamId;
+        const partitionKey = scope === 'team' && teamId ? `TEAM#${teamId}` : userId;
+
+        // Verify team permissions if deleting team doc
+        if (scope === 'team') {
+            if (!teamId) return { success: false, error: 'Team ID required' };
+            const currentUser = await getCurrentUserServer();
+            if (!currentUser || currentUser.id !== userId) {
+                return { success: false, error: 'Unauthorized' };
+            }
+            const isAdmin = await verifyTeamAdmin(userId, teamId);
+            if (!isAdmin) {
+                return { success: false, error: 'Only team admins can delete team documents' };
+            }
+        }
+
         // Get document to find S3 key
-        const { document } = await getDocumentDetailsAction(userId, documentId);
+        const { document } = await getDocumentDetailsAction(partitionKey, documentId);
         if (!document) {
             return { success: false, error: 'Document not found' };
         }
@@ -292,7 +355,7 @@ export async function deleteDocumentAction(
         const command = new UpdateCommand({
             TableName: DYNAMODB_TABLE,
             Key: {
-                userId,
+                userId: partitionKey,
                 documentId,
             },
             UpdateExpression: 'SET deletedAt = :deletedAt, #status = :status',

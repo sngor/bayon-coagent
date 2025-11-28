@@ -46,6 +46,8 @@ import {
     type DashboardDocument,
     listValuationsForDashboard,
     getDashboard,
+    listDashboardLinks,
+    deleteDashboard,
 } from '@/app/client-dashboard-actions';
 import type { PropertyValuationOutput } from '@/aws/bedrock/flows/property-valuation';
 
@@ -64,6 +66,16 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function DashboardBuilderPage() {
@@ -84,6 +96,8 @@ export default function DashboardBuilderPage() {
     const [expirationDays, setExpirationDays] = useState<number>(30);
     const [cmaReport, setCmaReport] = useState<CMAReport | null>(null);
     const [isSavingCMA, setIsSavingCMA] = useState(false);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Document management state
     const [documents, setDocuments] = useState<DashboardDocument[]>([]);
@@ -105,6 +119,9 @@ export default function DashboardBuilderPage() {
     const [enablePropertySearch, setEnablePropertySearch] = useState(true);
     const [enableHomeValuation, setEnableHomeValuation] = useState(true);
     const [enableDocuments, setEnableDocuments] = useState(true);
+    const [enableCalculators, setEnableCalculators] = useState(false);
+    const [enableMilestones, setEnableMilestones] = useState(false);
+    const [enableVendors, setEnableVendors] = useState(false);
     const [logoUrl, setLogoUrl] = useState('');
     const [logoS3Key, setLogoS3Key] = useState('');
     const [primaryColor, setPrimaryColor] = useState('#3b82f6');
@@ -134,6 +151,26 @@ export default function DashboardBuilderPage() {
     const [priceMid, setPriceMid] = useState<number>(0);
     const [priceHigh, setPriceHigh] = useState<number>(0);
     const [agentNotes, setAgentNotes] = useState('');
+
+    // Milestones state
+    const [milestones, setMilestones] = useState<Array<{
+        id: string;
+        title: string;
+        status: 'pending' | 'in_progress' | 'completed';
+        date?: string;
+        description?: string;
+    }>>([]);
+
+    // Vendors state
+    const [vendors, setVendors] = useState<Array<{
+        id: string;
+        name: string;
+        category: string;
+        phone?: string;
+        email?: string;
+        website?: string;
+        notes?: string;
+    }>>([]);
 
     // S3 upload hook
     const { upload, isUploading, uploadedUrl, reset: resetUpload } = useS3Upload({
@@ -165,10 +202,13 @@ export default function DashboardBuilderPage() {
         const fetchDashboard = async () => {
             setIsLoading(true);
             try {
-                const result = await getDashboard(dashboardId);
+                const [dashboardResult, linksResult] = await Promise.all([
+                    getDashboard(dashboardId),
+                    listDashboardLinks(dashboardId)
+                ]);
 
-                if (result.message === 'success' && result.data) {
-                    const data = result.data;
+                if (dashboardResult.message === 'success' && dashboardResult.data) {
+                    const data = dashboardResult.data;
                     setDashboard(data);
                     // Populate form fields
                     setClientName(data.clientInfo.name);
@@ -180,12 +220,19 @@ export default function DashboardBuilderPage() {
                     setEnablePropertySearch(data.dashboardConfig.enablePropertySearch);
                     setEnableHomeValuation(data.dashboardConfig.enableHomeValuation);
                     setEnableDocuments(data.dashboardConfig.enableDocuments);
+                    setEnableCalculators(data.dashboardConfig.enableCalculators || false);
+                    setEnableMilestones(data.dashboardConfig.enableMilestones || false);
+                    setEnableVendors(data.dashboardConfig.enableVendors || false);
                     setLogoUrl(data.branding.logoUrl || '');
                     setLogoS3Key(data.branding.logoS3Key || '');
                     setPrimaryColor(data.branding.primaryColor);
                     setWelcomeMessage(data.branding.welcomeMessage);
                     setAgentPhone(data.branding.agentContact.phone);
                     setAgentEmail(data.branding.agentContact.email);
+
+                    // Load milestones and vendors
+                    if (data.milestones) setMilestones(data.milestones);
+                    if (data.vendors) setVendors(data.vendors);
 
                     // Load CMA data if exists (populate form fields)
                     if (data.cmaData) {
@@ -216,7 +263,26 @@ export default function DashboardBuilderPage() {
                         description: 'Dashboard not found',
                     });
                     router.push('/client-dashboards');
+                    return;
                 }
+
+                // Handle links
+                if (linksResult.message === 'success' && linksResult.data) {
+                    // Find the most recent active link
+                    const activeLink = linksResult.data
+                        .filter(l => !l.revoked && l.expiresAt > Date.now())
+                        .sort((a, b) => b.createdAt - a.createdAt)[0];
+
+                    if (activeLink) {
+                        const baseUrl = window.location.origin;
+                        const fullUrl = `${baseUrl}/d/${activeLink.token}`;
+                        setCurrentLink({
+                            link: fullUrl,
+                            expiresAt: activeLink.expiresAt
+                        });
+                    }
+                }
+
             } catch (error) {
                 console.error('Error fetching dashboard:', error);
                 toast({
@@ -293,13 +359,19 @@ export default function DashboardBuilderPage() {
             formData.append('enableCMA', enableCMA.toString());
             formData.append('enablePropertySearch', enablePropertySearch.toString());
             formData.append('enableHomeValuation', enableHomeValuation.toString());
+            formData.append('enableHomeValuation', enableHomeValuation.toString());
             formData.append('enableDocuments', enableDocuments.toString());
+            formData.append('enableCalculators', enableCalculators.toString());
+            formData.append('enableMilestones', enableMilestones.toString());
+            formData.append('enableVendors', enableVendors.toString());
             formData.append('logoUrl', logoUrl);
             formData.append('logoS3Key', logoS3Key);
             formData.append('primaryColor', primaryColor);
             formData.append('welcomeMessage', welcomeMessage);
             formData.append('agentPhone', agentPhone);
             formData.append('agentEmail', agentEmail);
+            formData.append('milestones', JSON.stringify(milestones));
+            formData.append('vendors', JSON.stringify(vendors));
 
             const result = await updateDashboard(null, formData);
 
@@ -325,6 +397,44 @@ export default function DashboardBuilderPage() {
             });
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    // Handle delete dashboard
+    const handleDeleteDashboard = async () => {
+        if (!user || !dashboardId) return;
+
+        setIsDeleting(true);
+        try {
+            const formData = new FormData();
+            formData.append('dashboardId', dashboardId);
+
+            const result = await deleteDashboard(null, formData);
+
+            if (result.message === 'success') {
+                toast({
+                    title: 'Success',
+                    description: 'Dashboard deleted successfully',
+                });
+                router.push('/client-dashboards');
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: result.message || 'Failed to delete dashboard',
+                });
+                setIsDeleting(false);
+                setShowDeleteDialog(false);
+            }
+        } catch (error) {
+            console.error('Error deleting dashboard:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Failed to delete dashboard',
+            });
+            setIsDeleting(false);
+            setShowDeleteDialog(false);
         }
     };
 
@@ -559,6 +669,49 @@ export default function DashboardBuilderPage() {
         }
     };
 
+    // Milestone handlers
+    const handleAddMilestone = () => {
+        setMilestones([
+            ...milestones,
+            {
+                id: crypto.randomUUID(),
+                title: 'New Milestone',
+                status: 'pending',
+                date: new Date().toISOString().split('T')[0],
+            }
+        ]);
+    };
+
+    const handleRemoveMilestone = (id: string) => {
+        setMilestones(milestones.filter(m => m.id !== id));
+    };
+
+    const handleUpdateMilestone = (id: string, field: string, value: any) => {
+        setMilestones(milestones.map(m => m.id === id ? { ...m, [field]: value } : m));
+    };
+
+    // Vendor handlers
+    const handleAddVendor = () => {
+        setVendors([
+            ...vendors,
+            {
+                id: crypto.randomUUID(),
+                name: '',
+                category: 'General',
+                phone: '',
+                email: '',
+            }
+        ]);
+    };
+
+    const handleRemoveVendor = (id: string) => {
+        setVendors(vendors.filter(v => v.id !== id));
+    };
+
+    const handleUpdateVendor = (id: string, field: string, value: any) => {
+        setVendors(vendors.map(v => v.id === id ? { ...v, [field]: value } : v));
+    };
+
     // Handle drag and drop
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
@@ -726,6 +879,14 @@ export default function DashboardBuilderPage() {
                     <Save className="h-4 w-4 mr-2" />
                     {isSaving ? 'Saving...' : 'Save Changes'}
                 </Button>
+                <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => setShowDeleteDialog(true)}
+                    title="Delete Dashboard"
+                >
+                    <Trash2 className="h-4 w-4" />
+                </Button>
             </div>
 
             {/* Client Information Section */}
@@ -855,8 +1016,210 @@ export default function DashboardBuilderPage() {
                             onCheckedChange={setEnableDocuments}
                         />
                     </div>
+                    <Separator />
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <Label htmlFor="enableCalculators">Financial Calculators</Label>
+                            <p className="text-sm text-muted-foreground">
+                                Show mortgage and ROI calculators
+                            </p>
+                        </div>
+                        <Switch
+                            id="enableCalculators"
+                            checked={enableCalculators}
+                            onCheckedChange={setEnableCalculators}
+                        />
+                    </div>
+                    <Separator />
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <Label htmlFor="enableMilestones">Transaction Milestones</Label>
+                            <p className="text-sm text-muted-foreground">
+                                Track deal progress with client
+                            </p>
+                        </div>
+                        <Switch
+                            id="enableMilestones"
+                            checked={enableMilestones}
+                            onCheckedChange={setEnableMilestones}
+                        />
+                    </div>
+                    <Separator />
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <Label htmlFor="enableVendors">Trusted Vendors</Label>
+                            <p className="text-sm text-muted-foreground">
+                                Share your recommended service providers
+                            </p>
+                        </div>
+                        <Switch
+                            id="enableVendors"
+                            checked={enableVendors}
+                            onCheckedChange={setEnableVendors}
+                        />
+                    </div>
                 </CardContent>
             </Card>
+
+            {/* Transaction Milestones Section */}
+            {enableMilestones && (
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Transaction Milestones</CardTitle>
+                                <CardDescription>
+                                    Track key dates and progress
+                                </CardDescription>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={handleAddMilestone}>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Milestone
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {milestones.length === 0 ? (
+                            <div className="text-center py-8 text-muted-foreground">
+                                No milestones added yet.
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {milestones.map((milestone, index) => (
+                                    <div key={milestone.id} className="flex gap-4 items-start border p-4 rounded-lg">
+                                        <div className="flex-1 grid gap-4 md:grid-cols-2">
+                                            <div className="space-y-2">
+                                                <Label>Title</Label>
+                                                <Input
+                                                    value={milestone.title}
+                                                    onChange={(e) => handleUpdateMilestone(milestone.id, 'title', e.target.value)}
+                                                    placeholder="e.g. Inspection"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Date</Label>
+                                                <Input
+                                                    type="date"
+                                                    value={milestone.date}
+                                                    onChange={(e) => handleUpdateMilestone(milestone.id, 'date', e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Status</Label>
+                                                <Select
+                                                    value={milestone.status}
+                                                    onValueChange={(value) => handleUpdateMilestone(milestone.id, 'status', value)}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="pending">Pending</SelectItem>
+                                                        <SelectItem value="in_progress">In Progress</SelectItem>
+                                                        <SelectItem value="completed">Completed</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Description (Optional)</Label>
+                                                <Input
+                                                    value={milestone.description || ''}
+                                                    onChange={(e) => handleUpdateMilestone(milestone.id, 'description', e.target.value)}
+                                                    placeholder="Details..."
+                                                />
+                                            </div>
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleRemoveMilestone(milestone.id)}
+                                            className="text-destructive"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Trusted Vendors Section */}
+            {enableVendors && (
+                <Card>
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>Trusted Vendors</CardTitle>
+                                <CardDescription>
+                                    Share recommended service providers
+                                </CardDescription>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={handleAddVendor}>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Vendor
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {vendors.length === 0 ? (
+                            <div className="text-center py-8 text-muted-foreground">
+                                No vendors added yet.
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {vendors.map((vendor, index) => (
+                                    <div key={vendor.id} className="flex gap-4 items-start border p-4 rounded-lg">
+                                        <div className="flex-1 grid gap-4 md:grid-cols-2">
+                                            <div className="space-y-2">
+                                                <Label>Name</Label>
+                                                <Input
+                                                    value={vendor.name}
+                                                    onChange={(e) => handleUpdateVendor(vendor.id, 'name', e.target.value)}
+                                                    placeholder="Company Name"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Category</Label>
+                                                <Input
+                                                    value={vendor.category}
+                                                    onChange={(e) => handleUpdateVendor(vendor.id, 'category', e.target.value)}
+                                                    placeholder="e.g. Inspector, Mover"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Phone</Label>
+                                                <Input
+                                                    value={vendor.phone || ''}
+                                                    onChange={(e) => handleUpdateVendor(vendor.id, 'phone', e.target.value)}
+                                                    placeholder="(555) 123-4567"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Email</Label>
+                                                <Input
+                                                    value={vendor.email || ''}
+                                                    onChange={(e) => handleUpdateVendor(vendor.id, 'email', e.target.value)}
+                                                    placeholder="contact@example.com"
+                                                />
+                                            </div>
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => handleRemoveVendor(vendor.id)}
+                                            className="text-destructive"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
 
 
 
@@ -1762,25 +2125,25 @@ export default function DashboardBuilderPage() {
                                             <div>
                                                 <p className="text-sm text-muted-foreground mb-1">Median Price</p>
                                                 <p className="text-xl font-bold">
-                                                    ${cmaReport.marketTrends.medianPrice.toLocaleString()}
+                                                    ${medianPrice.toLocaleString()}
                                                 </p>
                                             </div>
                                             <div>
                                                 <p className="text-sm text-muted-foreground mb-1">Days on Market</p>
-                                                <p className="text-xl font-bold">{cmaReport.marketTrends.daysOnMarket}</p>
+                                                <p className="text-xl font-bold">{daysOnMarket}</p>
                                             </div>
                                             <div>
                                                 <p className="text-sm text-muted-foreground mb-1">Inventory Level</p>
                                                 <Badge
                                                     variant={
-                                                        cmaReport.marketTrends.inventoryLevel === 'low'
+                                                        inventoryLevel === 'low'
                                                             ? 'destructive'
-                                                            : cmaReport.marketTrends.inventoryLevel === 'high'
+                                                            : inventoryLevel === 'high'
                                                                 ? 'default'
                                                                 : 'secondary'
                                                     }
                                                 >
-                                                    {cmaReport.marketTrends.inventoryLevel.toUpperCase()}
+                                                    {inventoryLevel.toUpperCase()}
                                                 </Badge>
                                             </div>
                                         </div>
@@ -1789,12 +2152,12 @@ export default function DashboardBuilderPage() {
                             </div>
 
                             {/* Agent Notes */}
-                            {cmaReport.agentNotes && (
+                            {agentNotes && (
                                 <div>
                                     <h3 className="text-lg font-semibold mb-3">Agent Commentary</h3>
                                     <Card>
                                         <CardContent className="pt-6">
-                                            <p className="text-sm whitespace-pre-wrap">{cmaReport.agentNotes}</p>
+                                            <p className="text-sm whitespace-pre-wrap">{agentNotes}</p>
                                         </CardContent>
                                     </Card>
                                 </div>
@@ -1806,6 +2169,30 @@ export default function DashboardBuilderPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog >
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Dashboard</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this dashboard? This action cannot be undone and will revoke all active links.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleDeleteDashboard();
+                            }}
+                            disabled={isDeleting}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {isDeleting ? 'Deleting...' : 'Delete'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div >
     );
 }

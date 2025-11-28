@@ -39,6 +39,7 @@ import { StandardLoadingSpinner } from '@/components/standard';
 import { STICKY_POSITIONS } from '@/lib/utils';
 import { FeaturedTestimonialSelector } from '@/components/featured-testimonial-selector';
 import type { Testimonial } from '@/lib/types';
+import { CardGradientMesh } from '@/components/ui/gradient-mesh';
 
 const initialBioState = {
     message: '',
@@ -255,57 +256,59 @@ function ProfileForm({ profile, onInputChange, onSave, isSaving, isLoading, bioF
                 </CardContent>
             </Card>
             {/* Main Profile Information Card */}
-            <Card>
-                <CardHeader className="pb-6">
-                    <CardTitle className="font-headline">
-                        <GradientText text="Profile Information" />
-                    </CardTitle>
-                    <CardDescription>
-                        <Typewriter
-                            text="Build the professional profile that gets you found and trusted online"
-                            speed={30}
-                            delay={500}
-                            cursor={false}
-                        />
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-8 pt-0">
-                    <BasicInfoSection profile={profile} onInputChange={onInputChange} />
-                    <div className="py-2">
-                        <Separator />
-                    </div>
-                    <ProfessionalDetailsSection profile={profile} onInputChange={onInputChange} />
-                    <div className="py-2">
-                        <Separator />
-                    </div>
-                    <BioSection profile={profile} onInputChange={onInputChange} bioFormAction={bioFormAction} />
-                    <div className="py-2">
-                        <Separator />
-                    </div>
-                    <ContactSection profile={profile} onInputChange={onInputChange} />
-                    <div className="py-2">
-                        <Separator />
-                    </div>
-                    <SocialLinksSection profile={profile} onInputChange={onInputChange} />
-                </CardContent>
-                <CardFooter className="flex justify-between items-center pt-6">
-                    <p className="text-sm text-muted-foreground">
-                        <span className="text-destructive">*</span> Required fields
-                    </p>
-                    <Button onClick={onSave} disabled={isSaving || isLoading} size="lg">
-                        {isSaving ? (
-                            <>
-                                <LoadingDots className="mr-2 text-white" size="sm" />
-                                <span className="generating-text">Saving</span>
-                            </>
-                        ) : (
-                            <>
-                                <Save className="mr-2 h-4 w-4" />
-                                <span className="button-text-hover">Save Changes</span>
-                            </>
-                        )}
-                    </Button>
-                </CardFooter>
+            <Card className="overflow-hidden">
+                <CardGradientMesh>
+                    <CardHeader className="pb-6 relative z-10">
+                        <CardTitle className="font-headline">
+                            <GradientText text="Profile Information" />
+                        </CardTitle>
+                        <CardDescription>
+                            <Typewriter
+                                text="Build the professional profile that gets you found and trusted online"
+                                speed={30}
+                                delay={500}
+                                cursor={false}
+                            />
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-8 pt-0 relative z-10">
+                        <BasicInfoSection profile={profile} onInputChange={onInputChange} />
+                        <div className="py-2">
+                            <Separator />
+                        </div>
+                        <ProfessionalDetailsSection profile={profile} onInputChange={onInputChange} />
+                        <div className="py-2">
+                            <Separator />
+                        </div>
+                        <BioSection profile={profile} onInputChange={onInputChange} bioFormAction={bioFormAction} />
+                        <div className="py-2">
+                            <Separator />
+                        </div>
+                        <ContactSection profile={profile} onInputChange={onInputChange} />
+                        <div className="py-2">
+                            <Separator />
+                        </div>
+                        <SocialLinksSection profile={profile} onInputChange={onInputChange} />
+                    </CardContent>
+                    <CardFooter className="flex justify-between items-center pt-6 relative z-10">
+                        <p className="text-sm text-muted-foreground">
+                            <span className="text-destructive">*</span> Required fields
+                        </p>
+                        <Button onClick={onSave} disabled={isSaving || isLoading} size="lg" className="shadow-md">
+                            {isSaving ? (
+                                <>
+                                    <LoadingDots className="mr-2 text-white" size="sm" />
+                                    <span className="generating-text">Saving</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="mr-2 h-4 w-4" />
+                                    <span className="button-text-hover">Save Changes</span>
+                                </>
+                            )}
+                        </Button>
+                    </CardFooter>
+                </CardGradientMesh>
             </Card>
         </div>
     );

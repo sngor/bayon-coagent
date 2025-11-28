@@ -94,7 +94,8 @@ export type EntityType =
   | 'Testimonial'
   | 'TestimonialRequest'
   | 'SEOAnalysis'
-  | 'SavedKeyword';
+  | 'SavedKeyword'
+  | 'ClientInvitation';
 
 /**
  * Base DynamoDB item structure

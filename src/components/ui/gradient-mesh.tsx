@@ -13,6 +13,7 @@ import {
 
 interface GradientMeshProps extends GradientMeshConfig {
     children?: React.ReactNode;
+    containerClassName?: string;
 }
 
 /**
@@ -34,13 +35,14 @@ export function GradientMesh({
     opacity,
     animate = true,
     className,
+    containerClassName,
     children,
 }: GradientMeshProps) {
     const config: GradientMeshConfig = { blur, opacity, animate, className };
     const meshVars = generateGradientMeshVars(config);
 
     return (
-        <div className="relative">
+        <div className={cn("relative", containerClassName)}>
             {/* Gradient mesh background */}
             <div
                 className={cn(getGradientMeshClasses(config))}
@@ -76,7 +78,7 @@ export function GradientMesh({
  * A subtle gradient mesh for page backgrounds.
  * Uses minimal opacity for a refined look.
  */
-export function SubtleGradientMesh({ children }: { children?: React.ReactNode }) {
+export function SubtleGradientMesh({ children, className }: { children?: React.ReactNode, className?: string }) {
     const subtleOrbs: GradientOrb[] = [
         {
             id: 'subtle-1',
@@ -101,7 +103,7 @@ export function SubtleGradientMesh({ children }: { children?: React.ReactNode })
     ];
 
     return (
-        <GradientMesh orbs={subtleOrbs} blur="3xl" animate>
+        <GradientMesh orbs={subtleOrbs} blur="3xl" animate containerClassName={className}>
             {children}
         </GradientMesh>
     );

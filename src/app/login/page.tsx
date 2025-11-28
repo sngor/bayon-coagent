@@ -8,12 +8,12 @@ import { Button } from '@/components/ui/button';
 import { useEffect, useState, useActionState } from 'react';
 import { useUser, useAuthMethods } from '@/aws/auth/use-user';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Terminal, Loader2, Eye, EyeOff, Sparkles, TrendingUp, Zap, Target, Star, Award, Users, CheckCircle2, Mail } from 'lucide-react';
+import { Terminal, Loader2, Eye, EyeOff, Sparkles, TrendingUp, Zap, Target, CheckCircle2, Mail, LayoutDashboard, Bot, BarChart3 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { emailSignInAction, emailSignUpAction, acceptInvitationByTokenAction, joinOrganizationByTokenAction } from '@/app/actions';
 import { useFormStatus } from 'react-dom';
-import { HeroGradientMesh } from '@/components/ui/gradient-mesh';
+import { HeroGradientMesh, SubtleGradientMesh } from '@/components/ui/gradient-mesh';
 import { useToast } from '@/hooks/use-toast';
 import { useSearchParams } from 'next/navigation';
 import { StripePricing } from '@/components/stripe-pricing';
@@ -108,24 +108,24 @@ function SignInForm({ onSwitch, onShowVerify }: { onSwitch: () => void; onShowVe
     const hasPasswordError = passwordTouched && signInState.errors && 'password' in signInState.errors && signInState.errors.password;
 
     return (
-        <div className="grid gap-8 animate-fade-in p-8 rounded-2xl glass-effect-sm border-border/50 shadow-xl bg-card/40 backdrop-blur-xl">
-            <div className="grid gap-3 text-center">
-                <h1 className="font-display text-4xl font-bold text-gradient-primary tracking-tight">Welcome Back</h1>
-                <p className="text-lg text-muted-foreground font-light">
+        <div className="grid gap-8 animate-fade-in p-10 rounded-3xl glass-effect-sm border border-border/50 shadow-2xl bg-card/50 backdrop-blur-2xl">
+            <div className="grid gap-4 text-center">
+                <h1 className="font-display text-5xl font-bold text-gradient-primary tracking-tight">Welcome Back</h1>
+                <p className="text-xl text-muted-foreground font-light">
                     Sign in to grow your business
                 </p>
             </div>
             <form action={signInFormAction} className="space-y-6">
                 <div className="grid gap-5">
                     <div className="grid gap-2">
-                        <Label htmlFor="email-signin" className="text-sm font-medium ml-1">Email Address</Label>
+                        <Label htmlFor="email-signin" className="text-base font-semibold ml-1">Email Address</Label>
                         <Input
                             id="email-signin"
                             name="email"
                             type="email"
                             placeholder="agent@example.com"
                             required
-                            className={`h-12 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-all duration-300 ${hasEmailError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                            className={`h-14 text-base bg-muted/40 border border-border/30 focus:bg-background/80 focus:border-primary/60 transition-all duration-300 rounded-xl shadow-sm hover:border-border/50 ${hasEmailError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                             onBlur={() => setEmailTouched(true)}
                         />
                         {hasEmailError && signInState.errors && 'email' in signInState.errors && (
@@ -137,7 +137,7 @@ function SignInForm({ onSwitch, onShowVerify }: { onSwitch: () => void; onShowVe
                     </div>
                     <div className="grid gap-2">
                         <div className="flex items-center justify-between">
-                            <Label htmlFor="password-signin" className="text-sm font-medium ml-1">Password</Label>
+                            <Label htmlFor="password-signin" className="text-base font-semibold ml-1">Password</Label>
                             <Button
                                 type="button"
                                 variant="link"
@@ -153,14 +153,14 @@ function SignInForm({ onSwitch, onShowVerify }: { onSwitch: () => void; onShowVe
                                 name="password"
                                 type={showPassword ? 'text' : 'password'}
                                 required
-                                className={`h-12 pr-10 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-all duration-300 ${hasPasswordError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                                className={`h-14 text-base pr-12 bg-muted/40 border border-border/30 focus:bg-background/80 focus:border-primary/60 transition-all duration-300 rounded-xl shadow-sm hover:border-border/50 ${hasPasswordError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                                 onBlur={() => setPasswordTouched(true)}
                             />
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="absolute top-1/2 right-1 -translate-y-1/2 h-9 w-9 hover:bg-transparent text-muted-foreground hover:text-foreground transition-colors"
+                                className="absolute top-1/2 right-2 -translate-y-1/2 h-10 w-10 hover:bg-muted/20 text-muted-foreground hover:text-foreground transition-colors rounded-lg"
                                 onClick={() => setShowPassword(!showPassword)}
                             >
                                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -198,7 +198,7 @@ function SignInForm({ onSwitch, onShowVerify }: { onSwitch: () => void; onShowVe
                     type="button"
                     variant="outline"
                     onClick={onSwitch}
-                    className="w-full h-12 border-2 hover:bg-primary/5 hover:border-primary/50 text-base font-medium transition-all duration-300"
+                    className="w-full h-14 text-base border-2 hover:bg-primary/5 hover:border-primary/50 font-semibold transition-all duration-300 rounded-xl shadow-sm hover:shadow-md"
                 >
                     Create an Account
                 </Button>
@@ -209,7 +209,7 @@ function SignInForm({ onSwitch, onShowVerify }: { onSwitch: () => void; onShowVe
 
 function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     const [signUpState, signUpFormAction] = useActionState(emailSignUpAction, { message: '', errors: {}, data: null });
-    const { signUp, confirmSignUp, resendConfirmationCode } = useAuthMethods();
+    const { signUp, confirmSignUp, resendConfirmationCode, signIn } = useAuthMethods();
     const { toast } = useToast();
     const searchParams = useSearchParams();
     const inviteToken = searchParams.get('invite');
@@ -527,10 +527,10 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     }
 
     return (
-        <div className="grid gap-8 animate-fade-in p-8 rounded-2xl glass-effect-sm border-border/50 shadow-xl bg-card/40 backdrop-blur-xl">
-            <div className="grid gap-3 text-center">
-                <h1 className="font-display text-4xl font-bold text-gradient-primary tracking-tight">Start Your Journey</h1>
-                <p className="text-lg text-muted-foreground font-light">
+        <div className="grid gap-8 animate-fade-in p-10 rounded-3xl glass-effect-sm border border-border/50 shadow-2xl bg-card/50 backdrop-blur-2xl">
+            <div className="grid gap-4 text-center">
+                <h1 className="font-display text-5xl font-bold text-gradient-primary tracking-tight">Start Your Journey</h1>
+                <p className="text-xl text-muted-foreground font-light">
                     Create your account and unlock AI-powered marketing
                 </p>
             </div>
@@ -538,37 +538,37 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                 <div className="grid gap-5">
                     <div className="grid grid-cols-2 gap-3">
                         <div className="grid gap-2">
-                            <Label htmlFor="givenName-signup" className="text-sm font-medium ml-1">First Name</Label>
+                            <Label htmlFor="givenName-signup" className="text-base font-semibold ml-1">First Name</Label>
                             <Input
                                 id="givenName-signup"
                                 name="givenName"
                                 type="text"
                                 placeholder="John"
                                 required
-                                className="h-12 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-all duration-300"
+                                className="h-14 text-base bg-muted/40 border border-border/30 focus:bg-background/80 focus:border-primary/60 transition-all duration-300 rounded-xl shadow-sm hover:border-border/50"
                             />
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="familyName-signup" className="text-sm font-medium ml-1">Last Name</Label>
+                            <Label htmlFor="familyName-signup" className="text-base font-semibold ml-1">Last Name</Label>
                             <Input
                                 id="familyName-signup"
                                 name="familyName"
                                 type="text"
                                 placeholder="Doe"
                                 required
-                                className="h-12 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-all duration-300"
+                                className="h-14 text-base bg-muted/40 border border-border/30 focus:bg-background/80 focus:border-primary/60 transition-all duration-300 rounded-xl shadow-sm hover:border-border/50"
                             />
                         </div>
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="email-signup" className="text-sm font-medium ml-1">Email Address</Label>
+                        <Label htmlFor="email-signup" className="text-base font-semibold ml-1">Email Address</Label>
                         <Input
                             id="email-signup"
                             name="email"
                             type="email"
                             placeholder="agent@example.com"
                             required
-                            className={`h-12 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-all duration-300 ${hasEmailError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                            className={`h-14 text-base bg-muted/40 border border-border/30 focus:bg-background/80 focus:border-primary/60 transition-all duration-300 rounded-xl shadow-sm hover:border-border/50 ${hasEmailError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                             onBlur={() => setEmailTouched(true)}
                             onChange={(e) => setUserEmail(e.target.value)}
                         />
@@ -580,14 +580,14 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                         )}
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="password-signup" className="text-sm font-medium ml-1">Password</Label>
+                        <Label htmlFor="password-signup" className="text-base font-semibold ml-1">Password</Label>
                         <div className="relative group">
                             <Input
                                 id="password-signup"
                                 name="password"
                                 type={showPassword ? 'text' : 'password'}
                                 required
-                                className={`h-12 pr-10 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-all duration-300 ${hasPasswordError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                                className={`h-14 text-base pr-12 bg-muted/40 border border-border/30 focus:bg-background/80 focus:border-primary/60 transition-all duration-300 rounded-xl shadow-sm hover:border-border/50 ${hasPasswordError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                                 onBlur={() => setPasswordTouched(true)}
                                 onChange={(e) => setUserPassword(e.target.value)}
                             />
@@ -595,7 +595,7 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="absolute top-1/2 right-1 -translate-y-1/2 h-9 w-9 hover:bg-transparent text-muted-foreground hover:text-foreground transition-colors"
+                                className="absolute top-1/2 right-2 -translate-y-1/2 h-10 w-10 hover:bg-muted/20 text-muted-foreground hover:text-foreground transition-colors rounded-lg"
                                 onClick={() => setShowPassword(!showPassword)}
                             >
                                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -879,24 +879,26 @@ export default function LoginPage() {
         return (
             <div className="w-full min-h-screen lg:flex">
                 {/* Left side - Form */}
-                <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-background to-muted/20 lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-1/2 lg:overflow-y-auto relative overflow-hidden">
-                    {/* Background Pattern */}
-                    <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+                <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-background lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-1/2 lg:overflow-y-auto relative overflow-hidden">
+                    <SubtleGradientMesh>
+                        {/* Background Pattern */}
+                        <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
 
-                    <div className="w-full max-w-md space-y-8 relative z-10">
-                        <div className="flex justify-center mb-8 animate-fade-in">
-                            <Logo className="justify-center scale-110" />
+                        <div className="w-full max-w-2xl space-y-8 relative z-10 p-6">
+                            <div className="flex justify-center mb-8 animate-fade-in">
+                                <Logo className="justify-center scale-110" />
+                            </div>
+                            <div className="transition-all duration-500 ease-in-out">
+                                {showVerify ? (
+                                    <VerifyEmailForm onBack={() => setShowVerify(false)} />
+                                ) : isSignUp ? (
+                                    <SignUpForm onSwitch={handleSwitch} />
+                                ) : (
+                                    <SignInForm onSwitch={handleSwitch} onShowVerify={handleShowVerify} />
+                                )}
+                            </div>
                         </div>
-                        <div className="transition-all duration-500 ease-in-out">
-                            {showVerify ? (
-                                <VerifyEmailForm onBack={() => setShowVerify(false)} />
-                            ) : isSignUp ? (
-                                <SignUpForm onSwitch={handleSwitch} />
-                            ) : (
-                                <SignInForm onSwitch={handleSwitch} onShowVerify={handleShowVerify} />
-                            )}
-                        </div>
-                    </div>
+                    </SubtleGradientMesh>
                 </div>
 
                 {/* Right side - Hero */}
@@ -919,142 +921,81 @@ export default function LoginPage() {
                             </div>
 
                             {/* Feature highlights */}
-                            <div className="space-y-6 animate-fade-in-up animate-delay-200">
-                                <div className="flex items-start gap-4 group">
-                                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-300">
+                            <div className="space-y-4 animate-fade-in-up animate-delay-200">
+                                <div className="flex items-start gap-4 p-4 rounded-2xl transition-all duration-300 hover:bg-white/5 hover:backdrop-blur-sm border border-transparent hover:border-white/10 group cursor-default">
+                                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300 shadow-sm">
                                         <TrendingUp className="w-6 h-6 text-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="font-headline text-heading-3 text-foreground mb-1">Brand Intelligence</h3>
-                                        <p className="text-base text-muted-foreground">
+                                        <h3 className="font-headline text-heading-3 text-foreground mb-1 group-hover:text-primary transition-colors">Brand Intelligence</h3>
+                                        <p className="text-base text-muted-foreground leading-relaxed">
                                             Monitor your online presence and track competitor strategies in real-time.
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="flex items-start gap-4 group">
-                                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-300">
+                                <div className="flex items-start gap-4 p-4 rounded-2xl transition-all duration-300 hover:bg-white/5 hover:backdrop-blur-sm border border-transparent hover:border-white/10 group cursor-default">
+                                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300 shadow-sm">
                                         <Zap className="w-6 h-6 text-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="font-headline text-heading-3 text-foreground mb-1">Content Generation</h3>
-                                        <p className="text-base text-muted-foreground">
+                                        <h3 className="font-headline text-heading-3 text-foreground mb-1 group-hover:text-primary transition-colors">Content Generation</h3>
+                                        <p className="text-base text-muted-foreground leading-relaxed">
                                             Create compelling blog posts, social media content, and marketing materials instantly.
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="flex items-start gap-4 group">
-                                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-300">
+                                <div className="flex items-start gap-4 p-4 rounded-2xl transition-all duration-300 hover:bg-white/5 hover:backdrop-blur-sm border border-transparent hover:border-white/10 group cursor-default">
+                                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300 shadow-sm">
                                         <Target className="w-6 h-6 text-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="font-headline text-heading-3 text-foreground mb-1">Strategic Planning</h3>
-                                        <p className="text-base text-muted-foreground">
+                                        <h3 className="font-headline text-heading-3 text-foreground mb-1 group-hover:text-primary transition-colors">Strategic Planning</h3>
+                                        <p className="text-base text-muted-foreground leading-relaxed">
                                             Get personalized marketing plans tailored to your market and goals.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-start gap-4 p-4 rounded-2xl transition-all duration-300 hover:bg-white/5 hover:backdrop-blur-sm border border-transparent hover:border-white/10 group cursor-default">
+                                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300 shadow-sm">
+                                        <LayoutDashboard className="w-6 h-6 text-primary" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-headline text-heading-3 text-foreground mb-1 group-hover:text-primary transition-colors">Client Dashboards</h3>
+                                        <p className="text-base text-muted-foreground leading-relaxed">
+                                            Create stunning, personalized dashboards for your clients with property analytics and insights.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-start gap-4 p-4 rounded-2xl transition-all duration-300 hover:bg-white/5 hover:backdrop-blur-sm border border-transparent hover:border-white/10 group cursor-default">
+                                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300 shadow-sm">
+                                        <Bot className="w-6 h-6 text-primary" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-headline text-heading-3 text-foreground mb-1 group-hover:text-primary transition-colors">AI Assistant</h3>
+                                        <p className="text-base text-muted-foreground leading-relaxed">
+                                            Get intelligent answers and insights with our conversational AI assistant.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-start gap-4 p-4 rounded-2xl transition-all duration-300 hover:bg-white/5 hover:backdrop-blur-sm border border-transparent hover:border-white/10 group cursor-default">
+                                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 group-hover:scale-110 transition-all duration-300 shadow-sm">
+                                        <BarChart3 className="w-6 h-6 text-primary" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-headline text-heading-3 text-foreground mb-1 group-hover:text-primary transition-colors">Market Intelligence</h3>
+                                        <p className="text-base text-muted-foreground leading-relaxed">
+                                            Access real-time market data, trends, and opportunities to stay ahead of the competition.
                                         </p>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Social Proof - Testimonials */}
-                            <div className="space-y-6 pt-8 border-t border-border/50 animate-fade-in-up animate-delay-300">
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex -space-x-2">
-                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-500 border-2 border-background flex items-center justify-center text-white text-xs font-semibold">
-                                                JD
-                                            </div>
-                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 border-2 border-background flex items-center justify-center text-white text-xs font-semibold">
-                                                SM
-                                            </div>
-                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-primary border-2 border-background flex items-center justify-center text-white text-xs font-semibold">
-                                                RK
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            {[...Array(5)].map((_, i) => (
-                                                <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <blockquote className="text-sm text-muted-foreground italic leading-relaxed">
-                                        "This platform transformed how I approach marketing. The AI-generated content saves me hours every week, and my engagement has tripled."
-                                    </blockquote>
-                                    <div className="flex items-center gap-2">
-                                        <div className="text-sm">
-                                            <p className="font-semibold text-foreground">Sarah Mitchell</p>
-                                            <p className="text-xs text-muted-foreground">Top Producer, Luxury Homes</p>
-                                        </div>
-                                    </div>
-                                </div>
 
-                                {/* Trust Indicators */}
-                                <div className="grid grid-cols-3 gap-4 pt-4">
-                                    <div className="text-center space-y-1">
-                                        <div className="flex justify-center">
-                                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                                <Users className="w-5 h-5 text-primary" />
-                                            </div>
-                                        </div>
-                                        <p className="text-metric-small text-primary">500+</p>
-                                        <p className="text-xs text-muted-foreground font-medium">Active Agents</p>
-                                    </div>
-                                    <div className="text-center space-y-1">
-                                        <div className="flex justify-center">
-                                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                                <Award className="w-5 h-5 text-primary" />
-                                            </div>
-                                        </div>
-                                        <p className="text-metric-small text-primary">10K+</p>
-                                        <p className="text-xs text-muted-foreground font-medium">Content Created</p>
-                                    </div>
-                                    <div className="text-center space-y-1">
-                                        <div className="flex justify-center">
-                                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                                <CheckCircle2 className="w-5 h-5 text-primary" />
-                                            </div>
-                                        </div>
-                                        <p className="text-metric-small text-primary">98%</p>
-                                        <p className="text-xs text-muted-foreground font-medium">Satisfaction</p>
-                                    </div>
-                                </div>
-
-                                {/* Additional testimonial */}
-                                <div className="space-y-3 pt-4 border-t border-border/30">
-                                    <div className="flex items-center gap-1">
-                                        {[...Array(5)].map((_, i) => (
-                                            <Star key={i} className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
-                                        ))}
-                                    </div>
-                                    <blockquote className="text-sm text-muted-foreground italic leading-relaxed">
-                                        "The brand audit feature helped me identify and fix inconsistencies across 15 platforms. My online presence has never been stronger."
-                                    </blockquote>
-                                    <div className="text-sm">
-                                        <p className="font-semibold text-foreground">James Rodriguez</p>
-                                        <p className="text-xs text-muted-foreground">Broker Associate</p>
-                                    </div>
-                                </div>
-
-                                {/* Platform benefits summary */}
-                                <div className="pt-4 space-y-2">
-                                    <p className="text-xs font-semibold text-foreground uppercase tracking-wide">Why Agents Choose Us</p>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
-                                            <span>AI-powered content in seconds</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
-                                            <span>Real-time brand monitoring</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
-                                            <span>Personalized marketing strategies</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </HeroGradientMesh>
                 </div>
