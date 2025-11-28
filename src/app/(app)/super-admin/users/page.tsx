@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsList as TabsList, AnimatedTabsTrigger as TabsTrigger } from '@/components/ui/animated-tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { getUsersListAction } from '@/app/admin-actions';
 import {
@@ -58,16 +58,17 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { createAdminUserAction } from '@/app/actions';
 import { useToast } from "@/hooks/use-toast"
 
 export default function AdminUsersPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState<any[]>([]);
+    const [teams, setTeams] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedUser, setSelectedUser] = useState<any>(null);
     const [isEditRoleOpen, setIsEditRoleOpen] = useState(false);
-    const [newRole, setNewRole] = useState<string>('user');
+    const [newRole, setNewRole] = useState<string>('agent');
+    const [newTeamId, setNewTeamId] = useState<string>('');
     const [isSaving, setIsSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('all');
     const { toast } = useToast();
@@ -75,51 +76,229 @@ export default function AdminUsersPage() {
     useEffect(() => {
         async function loadUsers() {
             try {
+                console.log('[AdminUsersPage] Loading users...');
+
+                // First, ensure session cookie is set from localStorage
+                const sessionStr = localStorage.getItem('cognito_session');
+                console.log('[AdminUsersPage] Session from localStorage:', sessionStr ? 'EXISTS' : 'NULL');
+                if (sessionStr) {
+                    try {
+                        const session = JSON.parse(sessionStr);
+                        if (session.accessToken && session.idToken && session.refreshToken && session.expiresAt) {
+                            console.log('[AdminUsersPage] Setting session cookie from localStorage...');
+                            const { setSessionCookieAction } = await import('@/app/actions');
+                            const cookieResult = await setSessionCookieAction(
+                                session.accessToken,
+                                session.idToken,
+                                session.refreshToken,
+                                session.expiresAt
+                            );
+                            console.log('[AdminUsersPage] Session cookie result:', cookieResult);
+
+                            if (!cookieResult.success) {
+                                throw new Error(cookieResult.error || 'Failed to set cookie');
+                            }
+
+                            // Small delay to ensure cookie is propagated
+                            await new Promise(resolve => setTimeout(resolve, 100));
+
+                            // Pass access token directly to bypass cookie issues
+                            const result = await getUsersListAction(session.accessToken);
+                            console.log('[AdminUsersPage] Result:', result);
+
+                            if (result.message === 'success') {
+                                console.log(`[AdminUsersPage] Loaded ${result.data.length} users`);
+                                setUsers(result.data || []);
+
+                                // Load teams
+                                try {
+                                    console.log('[AdminUsersPage] Loading teams...');
+                                    const { getTeamsAction } = await import('@/app/admin-actions');
+                                    const teamsResult = await getTeamsAction(session.accessToken);
+                                    console.log('[AdminUsersPage] Teams result:', teamsResult);
+                                    if (teamsResult.message === 'success') {
+                                        console.log(`[AdminUsersPage] Loaded ${teamsResult.data.length} teams`);
+                                        setTeams(teamsResult.data);
+                                    } else {
+                                        console.error('[AdminUsersPage] Failed to load teams:', teamsResult.message);
+                                    }
+                                } catch (teamsError) {
+                                    console.error('[AdminUsersPage] Exception loading teams:', teamsError);
+                                }
+                            } else {
+                                console.error('[AdminUsersPage] Failed to load users:', result.message);
+                                toast({
+                                    title: "Error",
+                                    description: result.message || "Failed to load users",
+                                    variant: "destructive"
+                                });
+                            }
+                            return; // Exit early since we handled it
+                        }
+                    } catch (sessionError) {
+                        console.error('[AdminUsersPage] Failed to parse/set session:', sessionError);
+                    }
+                }
+
+                // Fallback: try without access token (will fail with helpful message)
                 const result = await getUsersListAction();
+                console.log('[AdminUsersPage] Result:', result);
+
                 if (result.message === 'success') {
-                    setUsers(result.data);
+                    console.log(`[AdminUsersPage] Loaded ${result.data.length} users`);
+                    setUsers(result.data || []);
+
+                    // Load teams
+                    try {
+                        const sessionStr = localStorage.getItem('cognito_session');
+                        let accessToken: string | undefined;
+                        if (sessionStr) {
+                            const session = JSON.parse(sessionStr);
+                            accessToken = session.accessToken;
+                        }
+
+                        const { getTeamsAction } = await import('@/app/admin-actions');
+                        const teamsResult = await getTeamsAction(accessToken);
+                        if (teamsResult.message === 'success') {
+                            setTeams(teamsResult.data);
+                        }
+                    } catch (teamsError) {
+                        console.error('[AdminUsersPage] Failed to load teams:', teamsError);
+                    }
+                } else {
+                    console.error('[AdminUsersPage] Failed to load users:', result.message);
+
+                    // If authentication error, show helpful message
+                    if (result.message.includes('Not authenticated') || result.message.includes('log out')) {
+                        toast({
+                            title: "Session Refresh Required",
+                            description: "Please log out and log back in to refresh your session, then try again.",
+                            variant: "destructive",
+                            duration: 10000,
+                        });
+                    } else {
+                        toast({
+                            title: "Error",
+                            description: result.message || "Failed to load users",
+                            variant: "destructive"
+                        });
+                    }
                 }
             } catch (error) {
-                console.error('Failed to load users', error);
+                console.error('[AdminUsersPage] Exception loading users:', error);
                 toast({ title: "Error", description: "Failed to load users", variant: "destructive" });
             } finally {
                 setLoading(false);
             }
         }
         loadUsers();
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleEditRole = (user: any) => {
         setSelectedUser(user);
-        setNewRole(user.role || 'user');
+        setNewRole(user.role || 'agent');
+        setNewTeamId(user.teamId || '');
         setIsEditRoleOpen(true);
+    };
+
+    const handleDisableUser = async (user: any, disable: boolean) => {
+        const action = disable ? 'disable' : 'enable';
+        if (!confirm(`Are you sure you want to ${action} ${user.email}?`)) return;
+
+        try {
+            const sessionStr = localStorage.getItem('cognito_session');
+            let accessToken: string | undefined;
+            if (sessionStr) {
+                const session = JSON.parse(sessionStr);
+                accessToken = session.accessToken;
+            }
+
+            const { disableUserAction } = await import('@/app/admin-actions');
+            const result = await disableUserAction(user.id, disable, accessToken);
+
+            if (result.message === 'success') {
+                toast({
+                    title: `User ${action}d`,
+                    description: `${user.email} has been ${action}d`
+                });
+                // Update local state
+                setUsers(users.map(u => u.id === user.id ? {
+                    ...u,
+                    status: disable ? 'disabled' : 'active',
+                    cognitoStatus: disable ? 'DISABLED' : 'CONFIRMED'
+                } : u));
+            } else {
+                toast({ title: "Error", description: result.message, variant: "destructive" });
+            }
+        } catch (error) {
+            console.error(`Failed to ${action} user:`, error);
+            toast({ title: "Error", description: `Failed to ${action} user`, variant: "destructive" });
+        }
     };
 
     const saveRole = async () => {
         if (!selectedUser) return;
         setIsSaving(true);
         try {
-            const formData = new FormData();
-            formData.append('email', selectedUser.email);
-            formData.append('role', newRole);
+            // Get access token from localStorage
+            const sessionStr = localStorage.getItem('cognito_session');
+            let accessToken: string | undefined;
+            if (sessionStr) {
+                try {
+                    const session = JSON.parse(sessionStr);
+                    accessToken = session.accessToken;
+                } catch (e) {
+                    console.error('Failed to parse session:', e);
+                }
+            }
 
-            const result = await createAdminUserAction(null, formData);
+            const { updateUserRoleAction } = await import('@/app/admin-actions');
+
+            // Get team name from team ID
+            const team = teams.find(t => t.id === newTeamId);
+            const teamName = team ? team.name : undefined;
+
+            console.log('[saveRole] Saving user:', selectedUser.id);
+            console.log('[saveRole] New role:', newRole);
+            console.log('[saveRole] New team ID:', newTeamId);
+            console.log('[saveRole] Team found:', team);
+            console.log('[saveRole] Team name to send:', teamName);
+
+            const result = await updateUserRoleAction(
+                selectedUser.id,
+                newRole as 'agent' | 'admin' | 'super_admin',
+                teamName,
+                accessToken
+            );
+
+            console.log('[saveRole] Result:', result);
+
             if (result.message === 'success') {
-                toast({ title: "Role updated", description: `User ${selectedUser.email} is now ${newRole}` });
+                toast({
+                    title: "User updated",
+                    description: `${selectedUser.email} updated successfully`
+                });
                 // Update local state
-                setUsers(users.map(u => u.id === selectedUser.id ? { ...u, role: newRole } : u));
+                const team = teams.find(t => t.id === newTeamId);
+                setUsers(users.map(u => u.id === selectedUser.id ? {
+                    ...u,
+                    role: newRole,
+                    teamId: newTeamId,
+                    teamName: team ? team.name : undefined
+                } : u));
                 setIsEditRoleOpen(false);
             } else {
                 toast({ title: "Error", description: result.message, variant: "destructive" });
             }
         } catch (error) {
+            console.error('Failed to update role:', error);
             toast({ title: "Error", description: "Failed to update role", variant: "destructive" });
         } finally {
             setIsSaving(false);
         }
     };
 
-    const getFilteredUsers = () => {
+    const filteredUsers = useMemo(() => {
         let filtered = users;
 
         // Search filter
@@ -128,31 +307,35 @@ export default function AdminUsersPage() {
             filtered = filtered.filter(user =>
                 user.email?.toLowerCase().includes(query) ||
                 user.name?.toLowerCase().includes(query) ||
-                user.id?.toLowerCase().includes(query)
+                user.id?.toLowerCase().includes(query) ||
+                user.role?.toLowerCase().includes(query)
             );
         }
 
         // Tab filter
         switch (activeTab) {
+            case 'all':
+                // Show all users including admins
+                break;
             case 'active':
-                // Assuming all users in the list are "active" for now unless they have a specific status field
-                // If we had a 'status' field, we'd filter by it. 
-                // For now, let's just show all as active to avoid empty state if status is missing
-                // or filter if status exists
-                filtered = filtered.filter(user => user.status !== 'suspended' && user.status !== 'inactive');
+                // Show regular active agents (non-admin)
+                filtered = filtered.filter(user =>
+                    user.role === 'agent' &&
+                    user.status !== 'suspended' &&
+                    user.status !== 'inactive'
+                );
                 break;
             case 'inactive':
                 filtered = filtered.filter(user => user.status === 'suspended' || user.status === 'inactive');
                 break;
             case 'premium':
-                filtered = filtered.filter(user => user.role === 'admin' || user.role === 'super_admin'); // Proxy for premium for now
+                // Show admin and super_admin accounts
+                filtered = filtered.filter(user => user.role === 'admin' || user.role === 'super_admin');
                 break;
         }
 
         return filtered;
-    };
-
-    const filteredUsers = getFilteredUsers();
+    }, [users, searchQuery, activeTab]);
 
     return (
         <div className="space-y-8">
@@ -167,14 +350,69 @@ export default function AdminUsersPage() {
                         </div>
                     </CardHeader>
                     <CardContent className="relative">
-                        <div className="text-3xl font-bold">{users.length}</div>
+                        <div className="text-3xl font-bold">{loading ? '...' : users.length}</div>
                         <div className="flex items-center gap-2 mt-2">
-                            <TrendingUp className="h-4 w-4 text-green-600" />
-                            <span className="text-sm text-green-600 font-medium">Updated just now</span>
+                            <Activity className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                                {users.filter(u => u.role === 'admin' || u.role === 'super_admin').length} admins
+                            </span>
                         </div>
                     </CardContent>
                 </Card>
-                {/* Other stats cards kept static for now as they require more complex queries */}
+                <Card className="relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20" />
+                    <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Agents</CardTitle>
+                        <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
+                            <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                        </div>
+                    </CardHeader>
+                    <CardContent className="relative">
+                        <div className="text-3xl font-bold">
+                            {loading ? '...' : users.filter(u => u.role === 'agent').length}
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                            <Activity className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">Agent accounts</span>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20" />
+                    <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Admins</CardTitle>
+                        <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg">
+                            <Shield className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        </div>
+                    </CardHeader>
+                    <CardContent className="relative">
+                        <div className="text-3xl font-bold">
+                            {loading ? '...' : users.filter(u => u.role === 'admin').length}
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                            <Activity className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">Admin accounts</span>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/20 dark:to-rose-950/20" />
+                    <CardHeader className="relative flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Super Admins</CardTitle>
+                        <div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-lg">
+                            <Crown className="h-4 w-4 text-red-600 dark:text-red-400" />
+                        </div>
+                    </CardHeader>
+                    <CardContent className="relative">
+                        <div className="text-3xl font-bold">
+                            {loading ? '...' : users.filter(u => u.role === 'super_admin').length}
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                            <Activity className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">Super admin accounts</span>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
             {/* User Management Interface */}
@@ -201,10 +439,10 @@ export default function AdminUsersPage() {
                     <Tabs defaultValue="all" className="space-y-6" onValueChange={setActiveTab}>
                         <div className="flex items-center justify-between">
                             <TabsList>
-                                <TabsTrigger value="all">All Users</TabsTrigger>
-                                <TabsTrigger value="active">Active</TabsTrigger>
+                                <TabsTrigger value="all">All Users ({users.length})</TabsTrigger>
+                                <TabsTrigger value="active">Agents</TabsTrigger>
+                                <TabsTrigger value="premium">Admins ({users.filter(u => u.role === 'admin' || u.role === 'super_admin').length})</TabsTrigger>
                                 <TabsTrigger value="inactive">Inactive</TabsTrigger>
-                                <TabsTrigger value="premium">Premium</TabsTrigger>
                             </TabsList>
 
                             <div className="flex items-center gap-2">
@@ -225,16 +463,16 @@ export default function AdminUsersPage() {
                         </div>
 
                         <TabsContent value="all" className="space-y-4">
-                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} />
+                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} onDisableUser={handleDisableUser} />
                         </TabsContent>
                         <TabsContent value="active" className="space-y-4">
-                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} />
+                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} onDisableUser={handleDisableUser} />
                         </TabsContent>
                         <TabsContent value="inactive" className="space-y-4">
-                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} />
+                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} onDisableUser={handleDisableUser} />
                         </TabsContent>
                         <TabsContent value="premium" className="space-y-4">
-                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} />
+                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} onDisableUser={handleDisableUser} />
                         </TabsContent>
                     </Tabs>
                 </CardContent>
@@ -322,9 +560,9 @@ export default function AdminUsersPage() {
             <Dialog open={isEditRoleOpen} onOpenChange={setIsEditRoleOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Edit User Role</DialogTitle>
+                        <DialogTitle>Edit User</DialogTitle>
                         <DialogDescription>
-                            Change the role for {selectedUser?.email}. This will affect their permissions.
+                            Update role and team assignment for {selectedUser?.email}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
@@ -337,9 +575,27 @@ export default function AdminUsersPage() {
                                     <SelectValue placeholder="Select a role" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="user">User</SelectItem>
+                                    <SelectItem value="agent">Agent</SelectItem>
                                     <SelectItem value="admin">Admin</SelectItem>
                                     <SelectItem value="super_admin">Super Admin</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="team" className="text-right">
+                                Team
+                            </Label>
+                            <Select value={newTeamId || "none"} onValueChange={(value) => setNewTeamId(value === "none" ? "" : value)}>
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select a team (optional)" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">No Team</SelectItem>
+                                    {teams.map((team) => (
+                                        <SelectItem key={team.id} value={team.id}>
+                                            {team.name}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -356,7 +612,12 @@ export default function AdminUsersPage() {
     );
 }
 
-function UserTable({ users, loading, onEditRole }: { users: any[], loading: boolean, onEditRole: (user: any) => void }) {
+function UserTable({ users, loading, onEditRole, onDisableUser }: {
+    users: any[],
+    loading: boolean,
+    onEditRole: (user: any) => void,
+    onDisableUser: (user: any, disable: boolean) => void
+}) {
     if (loading) {
         return <div className="text-center py-12">Loading users...</div>;
     }
@@ -382,6 +643,7 @@ function UserTable({ users, loading, onEditRole }: { users: any[], loading: bool
                     <TableRow>
                         <TableHead>User</TableHead>
                         <TableHead>Role</TableHead>
+                        <TableHead>Team</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Joined</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -389,11 +651,18 @@ function UserTable({ users, loading, onEditRole }: { users: any[], loading: bool
                 </TableHeader>
                 <TableBody>
                     {users.map((user) => (
-                        <TableRow key={user.id}>
+                        <TableRow key={user.id} className={user.role === 'super_admin' || user.role === 'admin' ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''}>
                             <TableCell>
-                                <div className="flex flex-col">
-                                    <span className="font-medium">{user.name || 'Unknown'}</span>
-                                    <span className="text-xs text-muted-foreground">{user.email}</span>
+                                <div className="flex items-center gap-2">
+                                    {(user.role === 'super_admin' || user.role === 'admin') && (
+                                        <div className="p-1.5 bg-blue-100 dark:bg-blue-900/50 rounded">
+                                            <Shield className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                    )}
+                                    <div className="flex flex-col">
+                                        <span className="font-medium">{user.name || 'Unknown'}</span>
+                                        <span className="text-xs text-muted-foreground">{user.email}</span>
+                                    </div>
                                 </div>
                             </TableCell>
                             <TableCell>
@@ -401,15 +670,32 @@ function UserTable({ users, loading, onEditRole }: { users: any[], loading: bool
                                     user.role === 'super_admin' ? 'destructive' :
                                         user.role === 'admin' ? 'default' : 'secondary'
                                 }>
-                                    {user.role === 'super_admin' && <Shield className="w-3 h-3 mr-1" />}
-                                    {user.role || 'user'}
+                                    {user.role === 'super_admin' && <Crown className="w-3 h-3 mr-1" />}
+                                    {user.role === 'admin' && <Shield className="w-3 h-3 mr-1" />}
+                                    {user.role === 'super_admin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'Agent'}
                                 </Badge>
                             </TableCell>
                             <TableCell>
-                                <div className="flex items-center gap-2">
-                                    <CheckCircle className="w-4 h-4 text-green-500" />
-                                    <span className="text-sm">Active</span>
-                                </div>
+                                {user.teamName ? (
+                                    <Badge variant="outline" className="font-normal">
+                                        {user.teamName}
+                                    </Badge>
+                                ) : (
+                                    <span className="text-xs text-muted-foreground">No team</span>
+                                )}
+                            </TableCell>
+                            <TableCell>
+                                {user.status === 'disabled' || user.cognitoStatus === 'DISABLED' ? (
+                                    <div className="flex items-center gap-2">
+                                        <XCircle className="w-4 h-4 text-red-500" />
+                                        <span className="text-sm text-red-600">Disabled</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle className="w-4 h-4 text-green-500" />
+                                        <span className="text-sm">Active</span>
+                                    </div>
+                                )}
                             </TableCell>
                             <TableCell>
                                 {new Date(user.createdAt).toLocaleDateString()}
@@ -429,7 +715,23 @@ function UserTable({ users, loading, onEditRole }: { users: any[], loading: bool
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem>View Details</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onEditRole(user)}>Edit Role</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => onEditRole(user)}>Edit User</DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        {user.status === 'disabled' || user.cognitoStatus === 'DISABLED' ? (
+                                            <DropdownMenuItem
+                                                onClick={() => onDisableUser(user, false)}
+                                                className="text-green-600"
+                                            >
+                                                Enable User
+                                            </DropdownMenuItem>
+                                        ) : (
+                                            <DropdownMenuItem
+                                                onClick={() => onDisableUser(user, true)}
+                                                className="text-red-600"
+                                            >
+                                                Disable User
+                                            </DropdownMenuItem>
+                                        )}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>

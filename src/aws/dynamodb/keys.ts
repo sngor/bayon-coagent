@@ -915,3 +915,61 @@ export function getDocumentDownloadLogKeys(
     SK: `DOWNLOAD#${timestamp}#${dashboardId}`,
   };
 }
+
+// ==================== Testimonial & SEO Features Keys ====================
+
+/**
+ * Generates keys for Testimonial
+ * Pattern: PK: USER#<userId>, SK: TESTIMONIAL#<testimonialId>
+ */
+export function getTestimonialKeys(
+  userId: string,
+  testimonialId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `TESTIMONIAL#${testimonialId}`,
+  };
+}
+
+/**
+ * Generates keys for TestimonialRequest
+ * Pattern: PK: USER#<userId>, SK: REQUEST#<requestId>
+ */
+export function getTestimonialRequestKeys(
+  userId: string,
+  requestId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `REQUEST#${requestId}`,
+  };
+}
+
+/**
+ * Generates keys for SEOAnalysis
+ * Pattern: PK: USER#<userId>, SK: SEO#<analysisId>
+ */
+export function getSEOAnalysisKeys(
+  userId: string,
+  analysisId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `SEO#${analysisId}`,
+  };
+}
+
+/**
+ * Generates keys for SavedKeyword
+ * Pattern: PK: USER#<userId>, SK: KEYWORD#<keywordId>
+ */
+export function getSavedKeywordKeys(
+  userId: string,
+  keywordId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `KEYWORD#${keywordId}`,
+  };
+}

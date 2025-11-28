@@ -55,7 +55,7 @@ export function isTabletViewport(): boolean {
  */
 export function getInputType(fieldName: string): string {
   const lowerName = fieldName.toLowerCase();
-  
+
   if (lowerName.includes('email')) return INPUT_TYPES.email;
   if (lowerName.includes('phone') || lowerName.includes('tel')) return INPUT_TYPES.phone;
   if (lowerName.includes('url') || lowerName.includes('website')) return INPUT_TYPES.url;
@@ -63,15 +63,15 @@ export function getInputType(fieldName: string): string {
   if (lowerName.includes('date')) return INPUT_TYPES.date;
   if (lowerName.includes('time')) return INPUT_TYPES.time;
   if (
-    lowerName.includes('number') || 
-    lowerName.includes('years') || 
+    lowerName.includes('number') ||
+    lowerName.includes('years') ||
     lowerName.includes('experience') ||
     lowerName.includes('age') ||
     lowerName.includes('count') ||
     lowerName.includes('quantity') ||
     lowerName.includes('amount')
   ) return INPUT_TYPES.number;
-  
+
   return 'text';
 }
 
@@ -137,7 +137,7 @@ export function auditMobileResponsiveness(): {
   // Check interactive elements for touch target size
   const interactiveElements = document.querySelectorAll('button, a, input, select, textarea');
   let smallTargets = 0;
-  
+
   interactiveElements.forEach((el) => {
     if (!meetsMinTouchTarget(el as HTMLElement)) {
       smallTargets++;
@@ -151,7 +151,7 @@ export function auditMobileResponsiveness(): {
   // Check for appropriate input types
   const inputs = document.querySelectorAll('input[type="text"]');
   let missingTypes = 0;
-  
+
   inputs.forEach((input) => {
     const name = input.getAttribute('name') || input.getAttribute('id') || '';
     const suggestedType = getInputType(name);
@@ -169,4 +169,44 @@ export function auditMobileResponsiveness(): {
     warnings,
     passed: issues.length === 0,
   };
+}
+
+/**
+ * Gesture-related utilities
+ * 
+ * For comprehensive gesture handling, use the GestureHandler class from @/lib/gesture-handler
+ * or the React hooks from @/hooks/use-gesture-handler
+ */
+
+/**
+ * Check if device supports touch events
+ */
+export function supportsTouchEvents(): boolean {
+  if (typeof window === 'undefined') return false;
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+}
+
+/**
+ * Check if device supports pointer events
+ */
+export function supportsPointerEvents(): boolean {
+  if (typeof window === 'undefined') return false;
+  return 'onpointerdown' in window;
+}
+
+/**
+ * Check if device supports haptic feedback
+ */
+export function supportsHapticFeedback(): boolean {
+  if (typeof window === 'undefined') return false;
+  return 'vibrate' in navigator;
+}
+
+/**
+ * Provide haptic feedback if supported
+ */
+export function triggerHapticFeedback(pattern: number | number[] = 50): void {
+  if (supportsHapticFeedback()) {
+    navigator.vibrate(pattern);
+  }
 }

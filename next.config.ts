@@ -52,6 +52,11 @@ const nextConfig: NextConfig = {
     ],
     // Enable optimized CSS loading
     optimizeCss: true,
+    // Server Actions body size limit (increase to allow file uploads)
+    // Default is 1MB — increase to accommodate images up to 10MB (set to 20MB headroom)
+    serverActions: {
+      bodySizeLimit: '20mb',
+    },
   },
 
   // Turbopack configuration (moved from experimental.turbo)
@@ -128,15 +133,13 @@ const nextConfig: NextConfig = {
 
   // Enable compression
   compress: true,
-  // Server Actions body size limit (increase to allow file uploads via Server Actions)
-  // Default is 1MB — increase to accommodate images up to 10MB (set to 20MB headroom)
-  serverActions: {
-    bodySizeLimit: '20mb',
-  },
 
   // Security headers
   // Requirements: 10.1, 10.2, 10.3 (Data Security and Protection)
   async headers() {
+    // Skip CSP in development to avoid blocking Stripe and other third-party scripts
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
     return [
       {
         // Apply security headers to all routes
@@ -176,17 +179,18 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
           },
-          {
+          // Only apply CSP in production
+          ...(!isDevelopment ? [{
             // Content Security Policy - Enhanced for security
             // Note: In production, tighten 'unsafe-inline' and 'unsafe-eval' restrictions
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://js.stripe.com/clover/",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' data: https://fonts.gstatic.com",
               "img-src 'self' data: https: blob:",
-              "connect-src 'self' https://*.amazonaws.com https://api.stripe.com",
+              "connect-src 'self' https://*.amazonaws.com https://api.stripe.com https://*.stripe.com",
               "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
               "object-src 'none'",
               "base-uri 'self'",
@@ -194,7 +198,7 @@ const nextConfig: NextConfig = {
               "frame-ancestors 'none'",
               "upgrade-insecure-requests",
             ].join('; '),
-          },
+          }] : []),
         ],
       },
     ];

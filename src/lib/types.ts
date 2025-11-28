@@ -378,4 +378,84 @@ export type DashboardAnalytics = {
   ipAddress?: string;
 };
 
+// ==================== Testimonial & SEO Features Types ====================
+
+/**
+ * Testimonial - Client testimonial with optional photo
+ */
+export type Testimonial = {
+  id: string; // Unique identifier
+  userId: string; // Agent's user ID
+  clientName: string; // Client's full name
+  testimonialText: string; // The testimonial content
+  dateReceived: string; // ISO 8601 timestamp
+  clientPhotoUrl?: string; // S3 URL for client photo
+  isFeatured: boolean; // Display on profile page
+  displayOrder?: number; // Order for featured testimonials
+  tags: string[]; // Categories (e.g., "buyer", "seller", "luxury")
+  requestId?: string; // Link to testimonial request if applicable
+  createdAt: number; // Unix timestamp
+  updatedAt: number; // Unix timestamp
+};
+
+/**
+ * TestimonialRequest - Request sent to client for testimonial
+ */
+export type TestimonialRequest = {
+  id: string; // Unique identifier
+  userId: string; // Agent's user ID
+  clientName: string; // Client's full name
+  clientEmail: string; // Client's email address
+  status: 'pending' | 'submitted' | 'expired';
+  submissionLink: string; // Unique URL for client submission
+  sentAt: string; // ISO 8601 timestamp
+  reminderSentAt?: string; // ISO 8601 timestamp for reminder
+  submittedAt?: string; // ISO 8601 timestamp when submitted
+  expiresAt: string; // ISO 8601 timestamp (30 days from sent)
+  createdAt: number; // Unix timestamp
+  updatedAt: number; // Unix timestamp
+};
+
+/**
+ * SEOAnalysis - SEO analysis results for content
+ */
+export type SEOAnalysis = {
+  id: string; // Unique identifier
+  userId: string; // Agent's user ID
+  contentId: string; // Reference to blog post or content
+  contentType: 'blog-post' | 'market-update' | 'neighborhood-guide';
+  score: number; // 0-100 SEO score
+  recommendations: SEORecommendation[];
+  analyzedAt: string; // ISO 8601 timestamp
+  previousScore?: number; // Previous score for tracking
+  createdAt: number; // Unix timestamp
+  updatedAt: number; // Unix timestamp
+};
+
+/**
+ * SEORecommendation - Individual SEO recommendation
+ */
+export type SEORecommendation = {
+  priority: 'high' | 'medium' | 'low';
+  category: 'title' | 'headings' | 'keywords' | 'readability' | 'meta' | 'length';
+  message: string; // Human-readable recommendation
+  currentValue?: string; // Current state
+  suggestedValue?: string; // Suggested improvement
+};
+
+/**
+ * SavedKeyword - Saved keyword for SEO targeting
+ */
+export type SavedKeyword = {
+  id: string; // Unique identifier
+  userId: string; // Agent's user ID
+  keyword: string; // The keyword phrase
+  searchVolume: number; // Estimated monthly searches
+  competition: 'low' | 'medium' | 'high';
+  location: string; // Geographic area (from profile)
+  addedAt: string; // ISO 8601 timestamp
+  createdAt: number; // Unix timestamp
+  updatedAt: number; // Unix timestamp
+};
+
 

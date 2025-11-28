@@ -75,18 +75,39 @@ export class CognitoAuthClient {
   /**
    * Register a new user with email and password
    */
-  async signUp(email: string, password: string): Promise<SignUpResult> {
+  async signUp(
+    email: string,
+    password: string,
+    givenName?: string,
+    familyName?: string
+  ): Promise<SignUpResult> {
     try {
+      const userAttributes = [
+        {
+          Name: 'email',
+          Value: email,
+        },
+      ];
+
+      // Add name attributes if provided
+      if (givenName) {
+        userAttributes.push({
+          Name: 'given_name',
+          Value: givenName,
+        });
+      }
+      if (familyName) {
+        userAttributes.push({
+          Name: 'family_name',
+          Value: familyName,
+        });
+      }
+
       const command = new SignUpCommand({
         ClientId: this.clientId,
         Username: email,
         Password: password,
-        UserAttributes: [
-          {
-            Name: 'email',
-            Value: email,
-          },
-        ],
+        UserAttributes: userAttributes,
       });
 
       const response: SignUpCommandOutput = await this.client.send(command);

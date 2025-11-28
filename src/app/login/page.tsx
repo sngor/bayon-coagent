@@ -271,10 +271,24 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
 
             setUserEmail(signUpState.data.email);
             setUserPassword(signUpState.data.password);
-            signUp(signUpState.data.email, signUpState.data.password)
+            signUp(
+                signUpState.data.email,
+                signUpState.data.password,
+                signUpState.data.givenName,
+                signUpState.data.familyName
+            )
                 .then((result) => {
-                    if (!result.userConfirmed) {
-                        setUserId(result.userSub);
+                    setUserId(result.userSub);
+
+                    if (result.userConfirmed) {
+                        // User is auto-confirmed (Cognito setting), proceed to plan selection
+                        setSignupStep('plan');
+                        toast({
+                            title: "Account created",
+                            description: "Now choose your plan to continue.",
+                        });
+                    } else {
+                        // User needs email verification, proceed to plan selection
                         setSignupStep('plan');
                         toast({
                             title: "Account created",
@@ -323,6 +337,34 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
         setSelectedPlan(plan);
         setError(null);
 
+        // Skip payment in development mode
+        if (process.env.NODE_ENV === 'development') {
+            toast({
+                title: "Plan selected",
+                description: `${SUBSCRIPTION_PLANS[plan].name} plan selected. Payment skipped in development.`,
+            });
+
+            // In development, skip to verification or auto-sign in
+            if (userEmail && userPassword) {
+                try {
+                    await signIn(userEmail, userPassword);
+                    toast({
+                        variant: "success",
+                        title: "Welcome!",
+                        description: "Your account is ready.",
+                    });
+                    window.location.href = '/dashboard';
+                } catch (err) {
+                    // If auto-sign in fails, show verification step
+                    setSignupStep('verify');
+                }
+            } else {
+                setSignupStep('verify');
+            }
+            return;
+        }
+
+        // Production: proceed with payment
         try {
             const response = await fetch('/api/stripe/create-subscription', {
                 method: 'POST',
@@ -386,6 +428,11 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                     <p className="text-lg text-muted-foreground font-light">
                         Select the plan that fits your needs
                     </p>
+                    {process.env.NODE_ENV === 'development' && (
+                        <p className="text-sm text-amber-600 dark:text-amber-400">
+                            Development Mode: Payment will be skipped
+                        </p>
+                    )}
                 </div>
                 <StripePricing onSelectPlan={handlePlanSelection} selectedPlan={selectedPlan} />
                 {error && (
@@ -489,6 +536,30 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
             </div>
             <form action={signUpFormAction} className="space-y-6">
                 <div className="grid gap-5">
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="grid gap-2">
+                            <Label htmlFor="givenName-signup" className="text-sm font-medium ml-1">First Name</Label>
+                            <Input
+                                id="givenName-signup"
+                                name="givenName"
+                                type="text"
+                                placeholder="John"
+                                required
+                                className="h-12 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-all duration-300"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="familyName-signup" className="text-sm font-medium ml-1">Last Name</Label>
+                            <Input
+                                id="familyName-signup"
+                                name="familyName"
+                                type="text"
+                                placeholder="Doe"
+                                required
+                                className="h-12 bg-muted/30 border-transparent focus:bg-background focus:border-primary/50 transition-all duration-300"
+                            />
+                        </div>
+                    </div>
                     <div className="grid gap-2">
                         <Label htmlFor="email-signup" className="text-sm font-medium ml-1">Email Address</Label>
                         <Input

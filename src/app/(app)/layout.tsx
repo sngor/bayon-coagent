@@ -63,6 +63,7 @@ import { SessionLoading } from '@/components/session-loading';
 import { FeedbackButton } from '@/components/feedback-button';
 import { DynamicNavigation } from '@/components/dynamic-navigation';
 import { useFeatureToggle } from '@/lib/feature-toggles';
+import { NotificationCenter } from '@/lib/notifications/components';
 
 const allNavItems = [
   { href: '/dashboard', icon: HouseIcon, label: 'Dashboard', customIcon: true, featureId: null },
@@ -172,6 +173,9 @@ function UserDropdownContent({ profile, user, userName, getInitials, handleSignO
 }) {
   const { isAdmin, isSuperAdmin, adminMode, toggleAdminMode } = useAdmin();
   const router = useRouter();
+
+  // Debug logging
+  console.log('[UserDropdownContent] Admin status:', { isAdmin, isSuperAdmin, adminMode, userId: user?.id });
 
   const handleModeSwitch = (mode: 'user' | 'admin' | 'super_admin') => {
     toggleAdminMode(mode);
@@ -431,20 +435,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <div className="flex items-center gap-3">
                     {/* Admin Mode Badge */}
                     <AdminModeBadge />
-                    {/* Notifications Button */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 rounded-full hover:bg-accent relative"
-                      asChild
-                    >
-                      <Link href="/notifications">
-                        <Bell className="h-5 w-5" />
-                        {/* Notification Badge - uncomment when you have unread notifications */}
-                        {/* <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-background" /> */}
-                        <span className="sr-only">Notifications</span>
-                      </Link>
-                    </Button>
+                    {/* Notifications Center - Temporarily disabled due to infinite loop */}
+                    {false && user && (
+                      <NotificationCenter
+                        userId={user.id}
+                        className="h-9 w-9 rounded-full hover:bg-accent"
+                      />
+                    )}
 
                     {/* User Menu */}
                     <DropdownMenu>

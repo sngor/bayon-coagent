@@ -11,6 +11,7 @@ import {
     HomeValuationSkeleton,
     DocumentViewerSkeleton,
 } from './loading-skeletons';
+import { CreateAccountBanner } from './create-account-banner';
 
 // Dynamic imports for heavy components with loading skeletons
 const CMAReport = dynamic(() => import('./cma-report').then(mod => ({ default: mod.CMAReport })), {
@@ -171,6 +172,15 @@ export function ClientDashboardView({ dashboard, link, token }: ClientDashboardV
                         Your personalized dashboard with everything you need for your real estate journey.
                     </p>
                 </div>
+
+                {/* Create Account Banner - Only shown if dashboard doesn't require auth */}
+                {!dashboard.requiresAuth && (
+                    <CreateAccountBanner
+                        token={token}
+                        primaryColor={branding.primaryColor}
+                        clientName={clientInfo.name.split(' ')[0]}
+                    />
+                )}
 
                 {/* Dashboard Sections - Conditional based on enabled features */}
                 <div className="space-y-6">

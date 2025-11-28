@@ -13,7 +13,12 @@ import { Loader2 } from 'lucide-react';
 import { STRIPE_CONFIG } from '@/lib/stripe-config';
 import { useToast } from '@/hooks/use-toast';
 
-const stripePromise = loadStripe(STRIPE_CONFIG.publishableKey);
+const stripePromise = STRIPE_CONFIG.publishableKey
+    ? loadStripe(STRIPE_CONFIG.publishableKey).catch((error) => {
+        console.error('Failed to load Stripe:', error);
+        return null;
+    })
+    : Promise.resolve(null);
 
 interface PaymentFormProps {
     clientSecret: string;
@@ -98,6 +103,58 @@ function PaymentForm({ clientSecret, onSuccess, onBack }: PaymentFormProps) {
 }
 
 export function StripePaymentForm({ clientSecret, onSuccess, onBack }: PaymentFormProps) {
+    const [stripeError, setStripeError] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (!STRIPE_CONFIG.publishableKey) {
+            setStripeError('Stripe is not configured. Please add your Stripe publishable key.');
+            setIsLoading(false);
+            return;
+        }
+
+        stripePromise
+            .then((stripe) => {
+                if (!stripe) {
+                    setStripeError('Failed to load Stripe. Please check your internet connection.');
+                }
+                setIsLoading(false);
+            })
+            .catch((error) => {
+                console.error('Stripe loading error:', error);
+                setStripeError('Failed to load Stripe payment system.');
+                setIsLoading(false);
+            });
+    }, []);
+
+    if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center justify-center p-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            </div>
+        );
+    }
+
+    if (stripeError) {
+        return (
+            <div className="space-y-6">
+                <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+                    <p className="text-sm text-destructive">{stripeError}</p>
+                </div>
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onBack}
+                    className="w-full"
+                >
+                    Back
+                </Button>
+            </div>
+        );
+    }
+
     const options = {
         clientSecret,
         appearance: {

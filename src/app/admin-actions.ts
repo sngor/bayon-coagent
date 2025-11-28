@@ -28,7 +28,8 @@ import { getProfileKeys } from '@/aws/dynamodb/keys';
 import { sendInvitationEmail } from '@/lib/email-service';
 
 export async function getUsersListAction(
-    limit: number = 50,
+    accessToken?: string,
+    limit: number = 60,
     lastEvaluatedKey?: DynamoDBKey
 ): Promise<{
     message: string;
@@ -37,30 +38,167 @@ export async function getUsersListAction(
     errors: any;
 }> {
     try {
-        // 1. Check Admin
-        const currentUser = await getCurrentUserServer();
-        if (!currentUser) return { message: 'Not authenticated', data: [], errors: {} };
+        // 1. Check Admin - try server session first, then fallback to provided token
+        let currentUser = await getCurrentUserServer();
+
+        // If no server session but access token provided, validate it directly
+        if (!currentUser && accessToken) {
+            console.log('[getUsersListAction] No server session, using provided access token...');
+            const { getCognitoClient } = await import('@/aws/auth/cognito-client');
+            const client = getCognitoClient();
+            try {
+                currentUser = await client.getCurrentUser(accessToken);
+                console.log('[getUsersListAction] User authenticated via access token:', currentUser.id);
+            } catch (error) {
+                console.error('[getUsersListAction] Failed to validate access token:', error);
+            }
+        }
+
+        if (!currentUser) {
+            console.error('[getUsersListAction] No authentication found');
+            return {
+                message: 'Not authenticated. Please refresh the page.',
+                data: [],
+                errors: { auth: 'No valid authentication' }
+            };
+        }
 
         const adminStatus = await checkAdminStatusAction(currentUser.id);
-        if (!adminStatus.isAdmin) return { message: 'Unauthorized', data: [], errors: {} };
+        if (!adminStatus.isAdmin) {
+            return { message: 'Unauthorized: Admin access required', data: [], errors: {} };
+        }
 
-        // 2. Scan for profiles
+        // 2. Get users from Cognito (source of truth for all registered users)
+        const { CognitoIdentityProviderClient, ListUsersCommand } = await import('@aws-sdk/client-cognito-identity-provider');
+        const { getConfig, getAWSCredentials } = await import('@/aws/config');
+
+        const config = getConfig();
+        const credentials = getAWSCredentials();
+
+        // Build client config
+        const clientConfig: any = { region: config.region };
+        if (credentials.accessKeyId && credentials.secretAccessKey) {
+            clientConfig.credentials = credentials;
+        }
+
+        const cognitoClient = new CognitoIdentityProviderClient(clientConfig);
+
+        const listUsersCommand = new ListUsersCommand({
+            UserPoolId: config.cognito.userPoolId,
+            Limit: Math.min(limit, 60), // Cognito max is 60
+        });
+
+        const cognitoResponse = await cognitoClient.send(listUsersCommand);
+        const cognitoUsers = cognitoResponse.Users || [];
+
+        console.log(`[getUsersListAction] Found ${cognitoUsers.length} users in Cognito`);
+
+        // 3. Get profiles from DynamoDB
         const repository = getRepository();
-
-        // Scan for items where SK = 'PROFILE'
-        const result = await repository.scan({
-            limit,
-            exclusiveStartKey: lastEvaluatedKey,
+        const profilesResult = await repository.scan({
             filterExpression: 'SK = :sk',
             expressionAttributeValues: {
                 ':sk': 'PROFILE'
             }
         });
 
+        // Create a map of userId -> profile
+        const profilesMap = new Map();
+        profilesResult.items.forEach((profile: any) => {
+            if (profile.id) {
+                profilesMap.set(profile.id, profile);
+            }
+        });
+
+        console.log(`[getUsersListAction] Found ${profilesResult.items.length} profiles in DynamoDB`);
+
+        // Get all teams to map team IDs to names
+        const teamsResult = await repository.scan({
+            filterExpression: 'begins_with(PK, :pk) AND SK = :sk',
+            expressionAttributeValues: {
+                ':pk': 'TEAM#',
+                ':sk': 'CONFIG'
+            }
+        });
+        const teamsMap = new Map();
+        teamsResult.items.forEach((team: any) => {
+            if (team.id) {
+                teamsMap.set(team.id, team.name);
+            }
+        });
+
+        // 4. Merge Cognito users with DynamoDB profiles
+        const mergedUsers = cognitoUsers.map((cognitoUser: any) => {
+            const userId = cognitoUser.Username;
+            const email = cognitoUser.Attributes?.find((attr: any) => attr.Name === 'email')?.Value || '';
+            const emailVerified = cognitoUser.Attributes?.find((attr: any) => attr.Name === 'email_verified')?.Value === 'true';
+            const profile = profilesMap.get(userId);
+
+            const teamId = profile?.teamId;
+            const teamName = teamId ? teamsMap.get(teamId) : undefined;
+
+            return {
+                id: userId,
+                email: email,
+                emailVerified: emailVerified,
+                name: profile?.name || email.split('@')[0] || 'Unknown',
+                role: profile?.role || 'agent',
+                teamId: teamId,
+                teamName: teamName,
+                status: cognitoUser.UserStatus === 'CONFIRMED' ? 'active' : 'pending',
+                createdAt: profile?.createdAt || cognitoUser.UserCreateDate?.toISOString() || new Date().toISOString(),
+                updatedAt: profile?.updatedAt || cognitoUser.UserLastModifiedDate?.toISOString() || new Date().toISOString(),
+                hasProfile: !!profile,
+                cognitoStatus: cognitoUser.UserStatus,
+            };
+        });
+
+        // Filter users based on admin role
+        let filteredUsers = mergedUsers;
+
+        // If regular admin (not super_admin), only show users from their teams
+        if (adminStatus.role === 'admin') {
+            console.log('[getUsersListAction] Filtering for admin:', currentUser.id);
+
+            // Get teams where this admin is the team admin
+            const teamsResult = await repository.scan({
+                filterExpression: 'begins_with(PK, :pk) AND SK = :sk AND adminId = :adminId',
+                expressionAttributeValues: {
+                    ':pk': 'TEAM#',
+                    ':sk': 'CONFIG',
+                    ':adminId': currentUser.id
+                }
+            });
+
+            const adminTeamIds = teamsResult.items.map((team: any) => team.id);
+            console.log('[getUsersListAction] Admin team IDs:', adminTeamIds);
+            console.log('[getUsersListAction] Admin team names:', teamsResult.items.map((t: any) => t.name));
+
+            // Filter users to only those in admin's teams
+            filteredUsers = mergedUsers.filter(user => {
+                const isInTeam = user.teamId && adminTeamIds.includes(user.teamId);
+                if (isInTeam) {
+                    console.log('[getUsersListAction] Including user:', user.email, 'in team:', user.teamName);
+                }
+                return isInTeam;
+            });
+
+            console.log('[getUsersListAction] Filtered to', filteredUsers.length, 'users in admin teams');
+        }
+
+        // Log role distribution for debugging
+        const roleCount = filteredUsers.reduce((acc: any, user: any) => {
+            const role = user.role || 'user';
+            acc[role] = (acc[role] || 0) + 1;
+            return acc;
+        }, {});
+        console.log('[getUsersListAction] Role distribution:', roleCount);
+        console.log('[getUsersListAction] Users with profiles:', filteredUsers.filter(u => u.hasProfile).length);
+
         return {
             message: 'success',
-            data: result.items,
-            lastEvaluatedKey: result.lastEvaluatedKey,
+            data: filteredUsers, // Returns filtered users based on admin role
+            lastEvaluatedKey: undefined, // Cognito pagination works differently
             errors: {},
         };
     } catch (error: any) {
@@ -70,6 +208,417 @@ export async function getUsersListAction(
             data: [],
             errors: { system: error.message },
         };
+    }
+}
+
+// ============================================
+// Team Management Actions
+// ============================================
+
+export async function createTeamAction(
+    teamName: string,
+    teamAdminId: string,
+    accessToken?: string
+): Promise<{
+    message: string;
+    data?: any;
+    errors: any;
+}> {
+    try {
+        let currentUser = await getCurrentUserServer();
+
+        if (!currentUser && accessToken) {
+            const { getCognitoClient } = await import('@/aws/auth/cognito-client');
+            const client = getCognitoClient();
+            try {
+                currentUser = await client.getCurrentUser(accessToken);
+            } catch (error) {
+                console.error('[createTeamAction] Failed to validate access token:', error);
+            }
+        }
+
+        if (!currentUser) {
+            return { message: 'Not authenticated', errors: {} };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (adminStatus.role !== 'super_admin') {
+            return { message: 'Unauthorized: Super Admin access required', errors: {} };
+        }
+
+        const repository = getRepository();
+        const teamId = `team_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+        const team = {
+            id: teamId,
+            name: teamName,
+            adminId: teamAdminId,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+
+        await repository.create(`TEAM#${teamId}`, 'CONFIG', 'Team', team);
+
+        revalidatePath('/super-admin/teams');
+        return { message: 'success', data: team, errors: {} };
+    } catch (error: any) {
+        console.error('Error creating team:', error);
+        return { message: 'Failed to create team', errors: { system: error.message } };
+    }
+}
+
+export async function getTeamsAction(
+    accessToken?: string
+): Promise<{
+    message: string;
+    data: any[];
+    errors: any;
+}> {
+    try {
+        let currentUser = await getCurrentUserServer();
+
+        if (!currentUser && accessToken) {
+            const { getCognitoClient } = await import('@/aws/auth/cognito-client');
+            const client = getCognitoClient();
+            try {
+                currentUser = await client.getCurrentUser(accessToken);
+            } catch (error) {
+                console.error('[getTeamsAction] Failed to validate access token:', error);
+            }
+        }
+
+        if (!currentUser) {
+            return { message: 'Not authenticated', data: [], errors: {} };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { message: 'Unauthorized', data: [], errors: {} };
+        }
+
+        const repository = getRepository();
+
+        // If super admin, get all teams
+        if (adminStatus.role === 'super_admin') {
+            const result = await repository.scan({
+                filterExpression: 'begins_with(PK, :pk) AND SK = :sk',
+                expressionAttributeValues: {
+                    ':pk': 'TEAM#',
+                    ':sk': 'CONFIG'
+                }
+            });
+            return { message: 'success', data: result.items, errors: {} };
+        }
+
+        // If regular admin, get only their teams
+        const result = await repository.scan({
+            filterExpression: 'begins_with(PK, :pk) AND SK = :sk AND adminId = :adminId',
+            expressionAttributeValues: {
+                ':pk': 'TEAM#',
+                ':sk': 'CONFIG',
+                ':adminId': currentUser.id
+            }
+        });
+
+        return { message: 'success', data: result.items, errors: {} };
+    } catch (error: any) {
+        console.error('Error fetching teams:', error);
+        return { message: 'Failed to fetch teams', data: [], errors: { system: error.message } };
+    }
+}
+
+export async function updateTeamAction(
+    teamId: string,
+    teamName: string,
+    teamAdminId: string,
+    accessToken?: string
+): Promise<{
+    message: string;
+    errors: any;
+}> {
+    try {
+        let currentUser = await getCurrentUserServer();
+
+        if (!currentUser && accessToken) {
+            const { getCognitoClient } = await import('@/aws/auth/cognito-client');
+            const client = getCognitoClient();
+            try {
+                currentUser = await client.getCurrentUser(accessToken);
+            } catch (error) {
+                console.error('[updateTeamAction] Failed to validate access token:', error);
+            }
+        }
+
+        if (!currentUser) {
+            return { message: 'Not authenticated', errors: {} };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (adminStatus.role !== 'super_admin') {
+            return { message: 'Unauthorized: Super Admin access required', errors: {} };
+        }
+
+        const repository = getRepository();
+        await repository.update(`TEAM#${teamId}`, 'CONFIG', {
+            name: teamName,
+            adminId: teamAdminId,
+            updatedAt: new Date().toISOString(),
+        });
+
+        revalidatePath('/super-admin/teams');
+        return { message: 'success', errors: {} };
+    } catch (error: any) {
+        console.error('Error updating team:', error);
+        return { message: 'Failed to update team', errors: { system: error.message } };
+    }
+}
+
+export async function deleteTeamAction(
+    teamId: string,
+    accessToken?: string
+): Promise<{
+    message: string;
+    errors: any;
+}> {
+    try {
+        let currentUser = await getCurrentUserServer();
+
+        if (!currentUser && accessToken) {
+            const { getCognitoClient } = await import('@/aws/auth/cognito-client');
+            const client = getCognitoClient();
+            try {
+                currentUser = await client.getCurrentUser(accessToken);
+            } catch (error) {
+                console.error('[deleteTeamAction] Failed to validate access token:', error);
+            }
+        }
+
+        if (!currentUser) {
+            return { message: 'Not authenticated', errors: {} };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (adminStatus.role !== 'super_admin') {
+            return { message: 'Unauthorized: Super Admin access required', errors: {} };
+        }
+
+        const repository = getRepository();
+        await repository.delete(`TEAM#${teamId}`, 'CONFIG');
+
+        revalidatePath('/super-admin/teams');
+        return { message: 'success', errors: {} };
+    } catch (error: any) {
+        console.error('Error deleting team:', error);
+        return { message: 'Failed to delete team', errors: { system: error.message } };
+    }
+}
+
+export async function disableUserAction(
+    userId: string,
+    disable: boolean,
+    accessToken?: string
+): Promise<{
+    message: string;
+    errors: any;
+}> {
+    try {
+        let currentUser = await getCurrentUserServer();
+
+        if (!currentUser && accessToken) {
+            const { getCognitoClient } = await import('@/aws/auth/cognito-client');
+            const client = getCognitoClient();
+            try {
+                currentUser = await client.getCurrentUser(accessToken);
+            } catch (error) {
+                console.error('[disableUserAction] Failed to validate access token:', error);
+            }
+        }
+
+        if (!currentUser) {
+            return { message: 'Not authenticated', errors: {} };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (adminStatus.role !== 'super_admin') {
+            return { message: 'Unauthorized: Super Admin access required', errors: {} };
+        }
+
+        // Disable/Enable user in Cognito
+        const { CognitoIdentityProviderClient, AdminDisableUserCommand, AdminEnableUserCommand } = await import('@aws-sdk/client-cognito-identity-provider');
+        const { getConfig, getAWSCredentials } = await import('@/aws/config');
+
+        const config = getConfig();
+        const credentials = getAWSCredentials();
+
+        const clientConfig: any = { region: config.region };
+        if (credentials.accessKeyId && credentials.secretAccessKey) {
+            clientConfig.credentials = credentials;
+        }
+
+        const cognitoClient = new CognitoIdentityProviderClient(clientConfig);
+
+        if (disable) {
+            const command = new AdminDisableUserCommand({
+                UserPoolId: config.cognito.userPoolId,
+                Username: userId,
+            });
+            await cognitoClient.send(command);
+        } else {
+            const command = new AdminEnableUserCommand({
+                UserPoolId: config.cognito.userPoolId,
+                Username: userId,
+            });
+            await cognitoClient.send(command);
+        }
+
+        revalidatePath('/super-admin/users');
+        return { message: 'success', errors: {} };
+    } catch (error: any) {
+        console.error('Error disabling/enabling user:', error);
+        return { message: 'Failed to update user status', errors: { system: error.message } };
+    }
+}
+
+export async function updateUserRoleAction(
+    userId: string,
+    newRole: 'agent' | 'admin' | 'super_admin',
+    teamName?: string,
+    accessToken?: string
+): Promise<{
+    message: string;
+    errors: any;
+}> {
+    try {
+        // 1. Check Admin - must be super_admin to update roles
+        let currentUser = await getCurrentUserServer();
+
+        if (!currentUser && accessToken) {
+            const { getCognitoClient } = await import('@/aws/auth/cognito-client');
+            const client = getCognitoClient();
+            try {
+                currentUser = await client.getCurrentUser(accessToken);
+            } catch (error) {
+                console.error('[updateUserRoleAction] Failed to validate access token:', error);
+            }
+        }
+
+        if (!currentUser) {
+            return { message: 'Not authenticated', errors: {} };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (adminStatus.role !== 'super_admin') {
+            return { message: 'Unauthorized: Super Admin access required', errors: {} };
+        }
+
+        // 2. Update the user's profile in DynamoDB
+        const repository = getRepository();
+        const profileKeys = getProfileKeys(userId);
+
+        // Check if profile exists
+        const existingProfile = await repository.get<any>(profileKeys.PK, profileKeys.SK);
+
+        if (existingProfile) {
+            // Update existing profile
+            console.log('[updateUserRoleAction] Updating profile for user:', userId);
+            console.log('[updateUserRoleAction] Team name provided:', teamName);
+
+            // Find team ID from team name
+            let teamId: string | undefined;
+            if (teamName) {
+                // Get all teams and find the matching one in code (DynamoDB filter isn't working)
+                const allTeamsResult = await repository.scan({
+                    filterExpression: 'begins_with(PK, :pk) AND SK = :sk',
+                    expressionAttributeValues: {
+                        ':pk': 'TEAM#',
+                        ':sk': 'CONFIG'
+                    }
+                });
+                console.log('[updateUserRoleAction] All teams in DB:', allTeamsResult.items.map((t: any) => ({ id: t.id, name: t.name })));
+
+                // Find team by name in the results
+                const matchingTeam = allTeamsResult.items.find((t: any) => t.name === teamName);
+                if (matchingTeam) {
+                    teamId = (matchingTeam as any).id;
+                    console.log('[updateUserRoleAction] Team ID found:', teamId);
+                } else {
+                    console.error('[updateUserRoleAction] No team found with name:', teamName);
+                    console.error('[updateUserRoleAction] Available team names:', allTeamsResult.items.map((t: any) => t.name));
+                }
+            }
+
+            const updates: any = {
+                role: newRole,
+                updatedAt: new Date().toISOString(),
+            };
+            if (teamName !== undefined) {
+                updates.teamId = teamId || null;
+                console.log('[updateUserRoleAction] Setting teamId to:', updates.teamId);
+            }
+            console.log('[updateUserRoleAction] Updates to apply:', updates);
+            await repository.update(profileKeys.PK, profileKeys.SK, updates);
+            console.log('[updateUserRoleAction] Profile updated successfully');
+        } else {
+            // Create profile if it doesn't exist (for users who haven't logged in yet)
+            // Get user email from Cognito
+            const { CognitoIdentityProviderClient, AdminGetUserCommand } = await import('@aws-sdk/client-cognito-identity-provider');
+            const { getConfig, getAWSCredentials } = await import('@/aws/config');
+
+            const config = getConfig();
+            const credentials = getAWSCredentials();
+
+            const clientConfig: any = { region: config.region };
+            if (credentials.accessKeyId && credentials.secretAccessKey) {
+                clientConfig.credentials = credentials;
+            }
+
+            const cognitoClient = new CognitoIdentityProviderClient(clientConfig);
+
+            try {
+                const getUserCommand = new AdminGetUserCommand({
+                    UserPoolId: config.cognito.userPoolId,
+                    Username: userId,
+                });
+
+                const userResponse = await cognitoClient.send(getUserCommand);
+                const email = userResponse.UserAttributes?.find(attr => attr.Name === 'email')?.Value || '';
+
+                // Create new profile
+                // Find team ID from team name
+                let teamId: string | undefined;
+                if (teamName) {
+                    const allTeamsResult = await repository.scan({
+                        filterExpression: 'begins_with(PK, :pk) AND SK = :sk',
+                        expressionAttributeValues: {
+                            ':pk': 'TEAM#',
+                            ':sk': 'CONFIG'
+                        }
+                    });
+                    const matchingTeam = allTeamsResult.items.find((t: any) => t.name === teamName);
+                    if (matchingTeam) {
+                        teamId = (matchingTeam as any).id;
+                    }
+                }
+
+                await repository.create(profileKeys.PK, profileKeys.SK, 'UserProfile', {
+                    id: userId,
+                    email: email,
+                    role: newRole,
+                    teamId: teamId || null,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                });
+            } catch (error) {
+                console.error('[updateUserRoleAction] Failed to get user from Cognito:', error);
+                return { message: 'Failed to get user information', errors: { system: error } };
+            }
+        }
+
+        revalidatePath('/super-admin/users');
+        return { message: 'success', errors: {} };
+    } catch (error: any) {
+        console.error('Error updating user role:', error);
+        return { message: 'Failed to update role', errors: { system: error.message } };
     }
 }
 

@@ -290,6 +290,13 @@ const superAdminNavItems = [
         customIcon: false
     },
     {
+        href: '/super-admin/teams',
+        icon: Users,
+        filledIcon: FilledIcons.Users,
+        label: 'Teams',
+        customIcon: false
+    },
+    {
         href: '/super-admin/feedback',
         icon: MessageSquare,
         filledIcon: FilledIcons.MessageSquare,
@@ -326,6 +333,13 @@ const adminNavItems = [
         icon: Shield,
         filledIcon: FilledIcons.Shield,
         label: 'Admin Dashboard',
+        customIcon: false
+    },
+    {
+        href: '/admin/users',
+        icon: Users,
+        filledIcon: FilledIcons.Users,
+        label: 'Team Members',
         customIcon: false
     },
     {

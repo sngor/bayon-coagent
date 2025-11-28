@@ -20,6 +20,44 @@ global.fetch = jest.fn().mockResolvedValue({
     text: jest.fn().mockResolvedValue(''),
 }) as any;
 
+// Polyfill for structuredClone (Node.js 17+)
+if (typeof global.structuredClone === 'undefined') {
+    global.structuredClone = (obj: any) => {
+        // Handle primitives and null
+        if (obj === null || typeof obj !== 'object') {
+            return obj;
+        }
+
+        // Handle Date
+        if (obj instanceof Date) {
+            return new Date(obj.getTime());
+        }
+
+        // Handle Array
+        if (Array.isArray(obj)) {
+            return obj.map((item: any) => global.structuredClone(item));
+        }
+
+        // Handle Object
+        const clonedObj: any = {};
+        for (const key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                clonedObj[key] = global.structuredClone(obj[key]);
+            }
+        }
+        return clonedObj;
+    };
+}
+
+// Polyfill for AbortSignal.timeout (Node.js 17.3+)
+if (typeof AbortSignal.timeout === 'undefined') {
+    (AbortSignal as any).timeout = (ms: number) => {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), ms);
+        return controller.signal;
+    };
+}
+
 // Mock performance API for animation tests
 let mockTime = 0;
 global.performance = {

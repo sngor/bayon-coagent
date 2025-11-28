@@ -21,6 +21,7 @@ import type { UsageLimit } from '@/components/ui/usage-tracking';
 import { SocialMediaConnections } from '@/components/social-media-connections';
 import { MLSConnection } from '@/components/mls-connection';
 import { FeatureToggles } from '@/components/feature-toggles';
+import { NotificationSettings } from '@/lib/notifications/components';
 
 function formatTimestamp(timestamp: number): string {
     const now = Date.now();
@@ -534,31 +535,8 @@ export default function SettingsPage() {
                             </DataGrid>
                         </FormSection>
 
-                        <FormSection title="Notifications" description="Manage your notification preferences" icon={Bell} variant="card">
-                            <DataGrid columns={1}>
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label>Content Generation Complete</Label>
-                                        <p className="text-sm text-muted-foreground">Get notified when AI content is ready</p>
-                                    </div>
-                                    <Switch defaultChecked />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label>Weekly Activity Summary</Label>
-                                        <p className="text-sm text-muted-foreground">Receive a weekly digest of your activity</p>
-                                    </div>
-                                    <Switch defaultChecked />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div className="space-y-0.5">
-                                        <Label>Marketing Tips</Label>
-                                        <p className="text-sm text-muted-foreground">Get tips and best practices</p>
-                                    </div>
-                                    <Switch />
-                                </div>
-                            </DataGrid>
-                        </FormSection>
+                        {/* Notification Settings - Full notification system */}
+                        {user && <NotificationSettings userId={user.id} />}
                     </TabsContent>
 
                     <TabsContent value="integrations" className="space-y-6">

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,358 +9,402 @@ import {
     Move,
     ZoomIn,
     ZoomOut,
-    Clock,
+    Timer,
     ArrowLeft,
     ArrowRight,
     ArrowUp,
-    ArrowDown,
-    RotateCcw
+    ArrowDown
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { TOUCH_FRIENDLY_CLASSES } from '@/lib/mobile-optimization';
 import {
-    useMobileGestures,
+    useGestureHandler,
     useSwipeGesture,
     usePinchGesture,
     useLongPressGesture,
-    SwipeGesture,
-    PinchGesture,
-    LongPressGesture
+    useMobileGestures,
+    type SwipeGesture,
+    type PinchGesture,
+    type LongPressGesture
 } from '@/hooks/use-gesture-handler';
+import { cn } from '@/lib/utils';
+import { TOUCH_FRIENDLY_CLASSES } from '@/lib/mobile-optimization';
 
 interface GestureEvent {
-    id: string;
-    type: 'swipe' | 'pinch' | 'long-press';
-    details: string;
+    type: string;
     timestamp: number;
+    details: string;
 }
 
-export default function GestureDemo() {
+export function GestureDemo() {
     const [events, setEvents] = useState<GestureEvent[]>([]);
     const [scale, setScale] = useState(1);
-    const [position, setPosition] = useState({ x: 0, y: 0 });
+    const [isLongPressing, setIsLongPressing] = useState(false);
 
-    const addEvent = (type: GestureEvent['type'], details: string) => {
-        const event: GestureEvent = {
-            id: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-            type,
-            details,
-            timestamp: Date.now(),
-        };
-
-        setEvents(prev => [event, ...prev.slice(0, 9)]); // Keep last 10 events
+    const addEvent = (type: string, details: string) => {
+        setEvents(prev => [
+            { type, timestamp: Date.now(), details },
+            ...prev.slice(0, 9) // Keep last 10 events
+        ]);
     };
 
     const clearEvents = () => {
         setEvents([]);
         setScale(1);
-        setPosition({ x: 0, y: 0 });
-    };
-
-    // Combined gesture handling
-    const { ref: combinedRef } = useMobileGestures<HTMLDivElement>({
-        onSwipeLeft: () => {
-            addEvent('swipe', 'Swiped Left');
-            setPosition(prev => ({ ...prev, x: prev.x - 20 }));
-        },
-        onSwipeRight: () => {
-            addEvent('swipe', 'Swiped Right');
-            setPosition(prev => ({ ...prev, x: prev.x + 20 }));
-        },
-        onSwipeUp: () => {
-            addEvent('swipe', 'Swiped Up');
-            setPosition(prev => ({ ...prev, y: prev.y - 20 }));
-        },
-        onSwipeDown: () => {
-            addEvent('swipe', 'Swiped Down');
-            setPosition(prev => ({ ...prev, y: prev.y + 20 }));
-        },
-        onPinchIn: (scaleValue) => {
-            addEvent('pinch', `Pinched In (${scaleValue.toFixed(2)}x)`);
-            setScale(prev => Math.max(0.5, prev * scaleValue));
-        },
-        onPinchOut: (scaleValue) => {
-            addEvent('pinch', `Pinched Out (${scaleValue.toFixed(2)}x)`);
-            setScale(prev => Math.min(3, prev * scaleValue));
-        },
-        onLongPress: (x, y) => {
-            addEvent('long-press', `Long Press at (${Math.round(x)}, ${Math.round(y)})`);
-        },
-    });
-
-    // Individual gesture handlers for demonstration
-    const { ref: swipeRef } = useSwipeGesture<HTMLDivElement>((gesture: SwipeGesture) => {
-        addEvent('swipe', `${gesture.direction.toUpperCase()} - ${Math.round(gesture.distance)}px in ${gesture.duration}ms`);
-    });
-
-    const { ref: pinchRef } = usePinchGesture<HTMLDivElement>({
-        onPinchStart: (gesture: PinchGesture) => {
-            addEvent('pinch', `Pinch Started at (${Math.round(gesture.centerX)}, ${Math.round(gesture.centerY)})`);
-        },
-        onPinch: (gesture: PinchGesture) => {
-            addEvent('pinch', `Pinching: ${gesture.scale.toFixed(2)}x scale`);
-        },
-        onPinchEnd: (gesture: PinchGesture) => {
-            addEvent('pinch', `Pinch Ended: Final scale ${gesture.scale.toFixed(2)}x`);
-        },
-    });
-
-    const { ref: longPressRef } = useLongPressGesture<HTMLDivElement>({
-        onLongPressStart: (gesture: LongPressGesture) => {
-            addEvent('long-press', `Long Press Started at (${Math.round(gesture.x)}, ${Math.round(gesture.y)})`);
-        },
-        onLongPress: (gesture: LongPressGesture) => {
-            addEvent('long-press', `Long Press: ${gesture.duration}ms duration`);
-        },
-        onLongPressEnd: (gesture: LongPressGesture) => {
-            addEvent('long-press', `Long Press Ended after ${gesture.duration}ms`);
-        },
-    });
-
-    const getEventIcon = (type: GestureEvent['type']) => {
-        switch (type) {
-            case 'swipe':
-                return <Move className="w-4 h-4" />;
-            case 'pinch':
-                return <ZoomIn className="w-4 h-4" />;
-            case 'long-press':
-                return <Clock className="w-4 h-4" />;
-            default:
-                return <Hand className="w-4 h-4" />;
-        }
-    };
-
-    const getEventColor = (type: GestureEvent['type']) => {
-        switch (type) {
-            case 'swipe':
-                return 'bg-blue-100 text-blue-800 border-blue-200';
-            case 'pinch':
-                return 'bg-green-100 text-green-800 border-green-200';
-            case 'long-press':
-                return 'bg-purple-100 text-purple-800 border-purple-200';
-            default:
-                return 'bg-gray-100 text-gray-800 border-gray-200';
-        }
+        setIsLongPressing(false);
     };
 
     return (
-        <div className="w-full max-w-4xl mx-auto space-y-6 p-4">
+        <div className="space-y-6 p-4 max-w-4xl mx-auto">
             <div className="text-center space-y-2">
-                <h1 className="font-headline text-2xl font-bold">Mobile Gesture Demo</h1>
+                <h1 className="text-3xl font-headline font-bold">Gesture Handling Demo</h1>
                 <p className="text-muted-foreground">
-                    Test swipe, pinch, and long-press gestures on the interactive areas below
+                    Try swipe, pinch, and long-press gestures on the cards below
                 </p>
             </div>
 
-            {/* Combined Gesture Area */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Hand className="w-5 h-5" />
-                        Combined Gesture Area
-                    </CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                        Try swiping, pinching, or long-pressing on this area
-                    </p>
-                </CardHeader>
-                <CardContent>
-                    <div
-                        ref={combinedRef}
-                        className={cn(
-                            "relative h-48 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border-2 border-dashed border-blue-200",
-                            "flex items-center justify-center cursor-pointer select-none",
-                            "transition-transform duration-200 ease-out"
-                        )}
-                        style={{
-                            transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-                        } as React.CSSProperties}
-                    >
-                        <div className="text-center space-y-2">
-                            <Hand className="w-12 h-12 mx-auto text-blue-500" />
-                            <p className="text-sm font-medium">Interactive Gesture Area</p>
-                            <p className="text-xs text-muted-foreground">
-                                Scale: {scale.toFixed(2)}x | Position: ({position.x}, {position.y})
-                            </p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+            <div className="grid gap-6 md:grid-cols-2">
+                {/* Swipe Demo */}
+                <SwipeDemo onEvent={addEvent} />
 
-            {/* Individual Gesture Areas */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Swipe Only */}
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                            <Move className="w-4 h-4" />
-                            Swipe Only
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div
-                            ref={swipeRef}
-                            className="h-32 bg-blue-50 rounded-lg border border-blue-200 flex items-center justify-center cursor-pointer select-none"
-                        >
-                            <div className="text-center space-y-1">
-                                <div className="flex items-center justify-center gap-1">
-                                    <ArrowLeft className="w-4 h-4" />
-                                    <ArrowUp className="w-4 h-4" />
-                                    <ArrowDown className="w-4 h-4" />
-                                    <ArrowRight className="w-4 h-4" />
-                                </div>
-                                <p className="text-xs text-muted-foreground">Swipe here</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                {/* Pinch Demo */}
+                <PinchDemo scale={scale} setScale={setScale} onEvent={addEvent} />
 
-                {/* Pinch Only */}
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                            <ZoomIn className="w-4 h-4" />
-                            Pinch Only
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div
-                            ref={pinchRef}
-                            className="h-32 bg-green-50 rounded-lg border border-green-200 flex items-center justify-center cursor-pointer select-none"
-                        >
-                            <div className="text-center space-y-1">
-                                <div className="flex items-center justify-center gap-1">
-                                    <ZoomOut className="w-4 h-4" />
-                                    <ZoomIn className="w-4 h-4" />
-                                </div>
-                                <p className="text-xs text-muted-foreground">Pinch here</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                {/* Long Press Demo */}
+                <LongPressDemo
+                    isLongPressing={isLongPressing}
+                    setIsLongPressing={setIsLongPressing}
+                    onEvent={addEvent}
+                />
 
-                {/* Long Press Only */}
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                            <Clock className="w-4 h-4" />
-                            Long Press Only
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div
-                            ref={longPressRef}
-                            className="h-32 bg-purple-50 rounded-lg border border-purple-200 flex items-center justify-center cursor-pointer select-none"
-                        >
-                            <div className="text-center space-y-1">
-                                <Clock className="w-6 h-6 mx-auto" />
-                                <p className="text-xs text-muted-foreground">Hold here</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                {/* Combined Gestures Demo */}
+                <CombinedGesturesDemo onEvent={addEvent} />
             </div>
 
             {/* Event Log */}
             <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="flex items-center gap-2">
-                            <Hand className="w-5 h-5" />
-                            Gesture Events
-                        </CardTitle>
-                        <Button
-                            onClick={clearEvents}
-                            variant="outline"
-                            size="sm"
-                            className={TOUCH_FRIENDLY_CLASSES.button}
-                        >
-                            <RotateCcw className="w-4 h-4 mr-2" />
-                            Clear
-                        </Button>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Event Log</CardTitle>
+                        <CardDescription>Recent gesture events</CardDescription>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                        Recent gesture events will appear here
-                    </p>
+                    <Button
+                        onClick={clearEvents}
+                        variant="outline"
+                        size="sm"
+                        className={TOUCH_FRIENDLY_CLASSES.button}
+                    >
+                        Clear
+                    </Button>
                 </CardHeader>
                 <CardContent>
                     {events.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                            <Hand className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                            <p>No gestures detected yet</p>
-                            <p className="text-sm">Try interacting with the areas above</p>
-                        </div>
+                        <p className="text-sm text-muted-foreground text-center py-8">
+                            No events yet. Try interacting with the cards above!
+                        </p>
                     ) : (
                         <div className="space-y-2 max-h-64 overflow-y-auto">
-                            {events.map((event) => (
+                            {events.map((event, index) => (
                                 <div
-                                    key={event.id}
-                                    className={cn(
-                                        "flex items-center gap-3 p-3 rounded-lg border",
-                                        getEventColor(event.type)
-                                    )}
+                                    key={`${event.timestamp}-${index}`}
+                                    className="flex items-start gap-3 p-2 rounded-lg bg-muted/50 text-sm"
                                 >
-                                    {getEventIcon(event.type)}
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium truncate">{event.details}</p>
-                                        <p className="text-xs opacity-75">
-                                            {new Date(event.timestamp).toLocaleTimeString()}
-                                        </p>
-                                    </div>
-                                    <Badge variant="outline" className="text-xs">
+                                    <Badge variant="secondary" className="shrink-0">
                                         {event.type}
                                     </Badge>
+                                    <span className="text-muted-foreground flex-1">
+                                        {event.details}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground shrink-0">
+                                        {new Date(event.timestamp).toLocaleTimeString()}
+                                    </span>
                                 </div>
                             ))}
                         </div>
                     )}
                 </CardContent>
             </Card>
-
-            {/* Instructions */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>How to Test Gestures</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                        <div className="space-y-2">
-                            <h4 className="font-headline font-medium flex items-center gap-2">
-                                <Move className="w-4 h-4" />
-                                Swipe Gestures
-                            </h4>
-                            <ul className="space-y-1 text-muted-foreground">
-                                <li>• Swipe left, right, up, or down</li>
-                                <li>• Minimum 50px distance</li>
-                                <li>• Quick motion required</li>
-                            </ul>
-                        </div>
-
-                        <div className="space-y-2">
-                            <h4 className="font-headline font-medium flex items-center gap-2">
-                                <ZoomIn className="w-4 h-4" />
-                                Pinch Gestures
-                            </h4>
-                            <ul className="space-y-1 text-muted-foreground">
-                                <li>• Use two fingers</li>
-                                <li>• Pinch in to zoom out</li>
-                                <li>• Pinch out to zoom in</li>
-                            </ul>
-                        </div>
-
-                        <div className="space-y-2">
-                            <h4 className="font-headline font-medium flex items-center gap-2">
-                                <Clock className="w-4 h-4" />
-                                Long Press
-                            </h4>
-                            <ul className="space-y-1 text-muted-foreground">
-                                <li>• Hold for 500ms</li>
-                                <li>• Don't move finger</li>
-                                <li>• Feel haptic feedback</li>
-                            </ul>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
         </div>
+    );
+}
+
+function SwipeDemo({ onEvent }: { onEvent: (type: string, details: string) => void }) {
+    const [lastSwipe, setLastSwipe] = useState<string | null>(null);
+
+    const { ref } = useSwipeGesture<HTMLDivElement>(
+        (gesture: SwipeGesture) => {
+            setLastSwipe(gesture.direction);
+            onEvent(
+                'Swipe',
+                `Direction: ${gesture.direction}, Distance: ${Math.round(gesture.distance)}px, Velocity: ${gesture.velocity.toFixed(2)}px/ms`
+            );
+            setTimeout(() => setLastSwipe(null), 1000);
+        },
+        {
+            swipeThreshold: 50,
+            swipeVelocityThreshold: 0.3,
+            hapticFeedback: true,
+            visualFeedback: true,
+        }
+    );
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Move className="w-5 h-5" />
+                    Swipe Gestures
+                </CardTitle>
+                <CardDescription>
+                    Swipe in any direction
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div
+                    ref={ref}
+                    className={cn(
+                        "relative h-48 rounded-lg border-2 border-dashed border-muted-foreground/25",
+                        "flex items-center justify-center",
+                        "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20",
+                        "touch-pan-y select-none cursor-move",
+                        "transition-all duration-200",
+                        lastSwipe && "scale-95"
+                    )}
+                >
+                    <div className="text-center space-y-2">
+                        <Hand className="w-12 h-12 mx-auto text-muted-foreground" />
+                        <p className="text-sm font-medium">Swipe Here</p>
+                        {lastSwipe && (
+                            <div className="flex items-center justify-center gap-2">
+                                {lastSwipe === 'left' && <ArrowLeft className="w-5 h-5 text-blue-600" />}
+                                {lastSwipe === 'right' && <ArrowRight className="w-5 h-5 text-blue-600" />}
+                                {lastSwipe === 'up' && <ArrowUp className="w-5 h-5 text-blue-600" />}
+                                {lastSwipe === 'down' && <ArrowDown className="w-5 h-5 text-blue-600" />}
+                                <Badge variant="default">{lastSwipe}</Badge>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+function PinchDemo({
+    scale,
+    setScale,
+    onEvent
+}: {
+    scale: number;
+    setScale: (scale: number) => void;
+    onEvent: (type: string, details: string) => void;
+}) {
+    const { ref } = usePinchGesture<HTMLDivElement>(
+        {
+            onPinch: (gesture: PinchGesture) => {
+                setScale(gesture.scale);
+            },
+            onPinchEnd: (gesture: PinchGesture) => {
+                onEvent(
+                    'Pinch',
+                    `Scale: ${gesture.scale.toFixed(2)}x, Distance: ${Math.round(gesture.currentDistance)}px`
+                );
+            },
+        },
+        {
+            pinchThreshold: 0.1,
+            hapticFeedback: true,
+            visualFeedback: false, // Disable default visual feedback
+        }
+    );
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    {scale > 1 ? <ZoomIn className="w-5 h-5" /> : <ZoomOut className="w-5 h-5" />}
+                    Pinch Gestures
+                </CardTitle>
+                <CardDescription>
+                    Use two fingers to zoom
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div
+                    ref={ref}
+                    className={cn(
+                        "relative h-48 rounded-lg border-2 border-dashed border-muted-foreground/25",
+                        "flex items-center justify-center overflow-hidden",
+                        "bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20",
+                        "touch-pan-y select-none"
+                    )}
+                >
+                    <div
+                        className="text-center space-y-2 transition-transform duration-100"
+                        style={{ transform: `scale(${scale})` }}
+                    >
+                        <Hand className="w-12 h-12 mx-auto text-muted-foreground" />
+                        <p className="text-sm font-medium">Pinch to Zoom</p>
+                        <Badge variant="secondary">
+                            {scale.toFixed(2)}x
+                        </Badge>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+function LongPressDemo({
+    isLongPressing,
+    setIsLongPressing,
+    onEvent
+}: {
+    isLongPressing: boolean;
+    setIsLongPressing: (value: boolean) => void;
+    onEvent: (type: string, details: string) => void;
+}) {
+    const { ref } = useLongPressGesture<HTMLDivElement>(
+        {
+            onLongPressStart: (gesture: LongPressGesture) => {
+                setIsLongPressing(true);
+                onEvent(
+                    'Long Press Start',
+                    `Position: (${Math.round(gesture.x)}, ${Math.round(gesture.y)})`
+                );
+            },
+            onLongPressEnd: (gesture: LongPressGesture) => {
+                setIsLongPressing(false);
+                onEvent(
+                    'Long Press End',
+                    `Duration: ${gesture.duration}ms`
+                );
+            },
+        },
+        {
+            longPressDelay: 500,
+            longPressMoveThreshold: 10,
+            hapticFeedback: true,
+            visualFeedback: true,
+        }
+    );
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Timer className="w-5 h-5" />
+                    Long Press Gestures
+                </CardTitle>
+                <CardDescription>
+                    Press and hold for 500ms
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div
+                    ref={ref}
+                    className={cn(
+                        "relative h-48 rounded-lg border-2 border-dashed border-muted-foreground/25",
+                        "flex items-center justify-center",
+                        "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20",
+                        "touch-pan-y select-none cursor-pointer",
+                        "transition-all duration-200",
+                        isLongPressing && "scale-95 bg-green-100 dark:bg-green-900/30"
+                    )}
+                >
+                    <div className="text-center space-y-2">
+                        <Hand className="w-12 h-12 mx-auto text-muted-foreground" />
+                        <p className="text-sm font-medium">Press & Hold</p>
+                        {isLongPressing && (
+                            <Badge variant="default" className="bg-green-600">
+                                Pressing...
+                            </Badge>
+                        )}
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+function CombinedGesturesDemo({ onEvent }: { onEvent: (type: string, details: string) => void }) {
+    const [lastGesture, setLastGesture] = useState<string | null>(null);
+
+    const { ref } = useMobileGestures<HTMLDivElement>(
+        {
+            onSwipeLeft: () => {
+                setLastGesture('← Swipe Left');
+                onEvent('Combined', 'Swipe Left detected');
+                setTimeout(() => setLastGesture(null), 1000);
+            },
+            onSwipeRight: () => {
+                setLastGesture('Swipe Right →');
+                onEvent('Combined', 'Swipe Right detected');
+                setTimeout(() => setLastGesture(null), 1000);
+            },
+            onSwipeUp: () => {
+                setLastGesture('↑ Swipe Up');
+                onEvent('Combined', 'Swipe Up detected');
+                setTimeout(() => setLastGesture(null), 1000);
+            },
+            onSwipeDown: () => {
+                setLastGesture('↓ Swipe Down');
+                onEvent('Combined', 'Swipe Down detected');
+                setTimeout(() => setLastGesture(null), 1000);
+            },
+            onPinchIn: (scale) => {
+                setLastGesture(`Pinch In ${scale.toFixed(2)}x`);
+                onEvent('Combined', `Pinch In: ${scale.toFixed(2)}x`);
+                setTimeout(() => setLastGesture(null), 1000);
+            },
+            onPinchOut: (scale) => {
+                setLastGesture(`Pinch Out ${scale.toFixed(2)}x`);
+                onEvent('Combined', `Pinch Out: ${scale.toFixed(2)}x`);
+                setTimeout(() => setLastGesture(null), 1000);
+            },
+            onLongPress: (x, y) => {
+                setLastGesture(`Long Press at (${Math.round(x)}, ${Math.round(y)})`);
+                onEvent('Combined', `Long Press at (${Math.round(x)}, ${Math.round(y)})`);
+                setTimeout(() => setLastGesture(null), 1000);
+            },
+        },
+        {
+            hapticFeedback: true,
+            visualFeedback: true,
+        }
+    );
+
+    return (
+        <Card className="md:col-span-2">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Hand className="w-5 h-5" />
+                    All Gestures Combined
+                </CardTitle>
+                <CardDescription>
+                    Try any gesture: swipe, pinch, or long press
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div
+                    ref={ref}
+                    className={cn(
+                        "relative h-48 rounded-lg border-2 border-dashed border-muted-foreground/25",
+                        "flex items-center justify-center",
+                        "bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20",
+                        "touch-pan-y select-none cursor-move",
+                        "transition-all duration-200"
+                    )}
+                >
+                    <div className="text-center space-y-2">
+                        <Hand className="w-12 h-12 mx-auto text-muted-foreground" />
+                        <p className="text-sm font-medium">Try Any Gesture</p>
+                        {lastGesture && (
+                            <Badge variant="default" className="text-base px-4 py-2">
+                                {lastGesture}
+                            </Badge>
+                        )}
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
     );
 }

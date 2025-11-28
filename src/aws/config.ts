@@ -13,6 +13,12 @@ export interface CognitoConfig {
   endpoint?: string;
 }
 
+export interface ClientCognitoConfig {
+  userPoolId: string;
+  clientId: string;
+  endpoint?: string;
+}
+
 export interface DynamoDBConfig {
   tableName: string;
   endpoint?: string;
@@ -82,7 +88,9 @@ export type ValidBedrockModel = typeof VALID_BEDROCK_MODELS[number];
 export interface AWSConfig {
   region: string;
   environment: Environment;
+  appUrl: string;
   cognito: CognitoConfig;
+  clientCognito: ClientCognitoConfig;
   dynamodb: DynamoDBConfig;
   s3: S3Config;
   bedrock: BedrockConfig;
@@ -129,10 +137,17 @@ export function getAWSConfig(): AWSConfig {
   return {
     region,
     environment,
+    appUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
 
     cognito: {
       userPoolId: process.env.COGNITO_USER_POOL_ID || '',
       clientId: process.env.COGNITO_CLIENT_ID || '',
+      endpoint: isLocal ? 'http://localhost:4566' : undefined,
+    },
+
+    clientCognito: {
+      userPoolId: process.env.CLIENT_COGNITO_USER_POOL_ID || process.env.COGNITO_USER_POOL_ID || '',
+      clientId: process.env.CLIENT_COGNITO_CLIENT_ID || process.env.COGNITO_CLIENT_ID || '',
       endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
 

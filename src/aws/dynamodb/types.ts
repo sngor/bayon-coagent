@@ -48,6 +48,11 @@ export type EntityType =
   | 'ListingSnapshot'
   | 'MarketStats'
   | 'PropertyComparison'
+  | 'Team'
+  | 'TeamMember'
+  | 'Organization'
+  | 'Invitation'
+  | 'FeatureToggle'
   | 'FeatureToggle'
   | 'MeetingPrep'
   | 'SyncOperation'
@@ -77,7 +82,19 @@ export type EntityType =
   | 'DashboardAccessLog'
   | 'Organization'
   | 'TeamMember'
-  | 'Invitation';
+  | 'Invitation'
+  | 'Notification'
+  | 'NotificationPreferences'
+  | 'DeliveryRecord'
+  | 'NotificationJob'
+  | 'NotificationEvent'
+  | 'RateLimitCounter'
+  | 'RateLimitMetrics'
+  | 'RateLimitAlert'
+  | 'Testimonial'
+  | 'TestimonialRequest'
+  | 'SEOAnalysis'
+  | 'SavedKeyword';
 
 /**
  * Base DynamoDB item structure

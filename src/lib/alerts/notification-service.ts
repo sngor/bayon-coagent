@@ -33,6 +33,11 @@ import {
     EmailTemplate,
 } from './notification-types';
 import { alertDataAccess } from './data-access';
+import { RateLimiter, rateLimiter } from './rate-limiter';
+import { RateLimitMonitor, createRateLimitMonitor } from './rate-limit-monitor';
+import { preferencesCache, templateCache } from './notification-cache';
+import { batchProcessor, NotificationBatchProcessor } from './notification-batch-processor';
+import { queryOptimizer, performanceMonitor } from './db-optimization';
 
 /**
  * Notification Service class
@@ -41,10 +46,16 @@ import { alertDataAccess } from './data-access';
 export class NotificationService {
     private repository: DynamoDBRepository;
     private defaultFromEmail: string;
+    private rateLimiter: RateLimiter;
+    private rateLimitMonitor: RateLimitMonitor;
+    private batchProcessor: NotificationBatchProcessor;
 
     constructor() {
         this.repository = new DynamoDBRepository();
         this.defaultFromEmail = process.env.SES_FROM_EMAIL || 'noreply@bayoncoagent.com';
+        this.rateLimiter = rateLimiter;
+        this.rateLimitMonitor = createRateLimitMonitor(this.rateLimiter);
+        this.batchProcessor = batchProcessor;
     }
 
     // ==================== Notification Preferences ====================
@@ -53,6 +64,12 @@ export class NotificationService {
      * Gets notification preferences for a user
      */
     async getNotificationPreferences(userId: string): Promise<NotificationPreferences> {
+        // Check cache first
+        const cached = preferencesCache.getUserPreferences(userId);
+        if (cached) {
+            return cached;
+        }
+
         try {
             const result = await this.repository.get<NotificationPreferences>(
                 `USER#${userId}`,
@@ -60,11 +77,13 @@ export class NotificationService {
             );
 
             if (result) {
+                // Cache the result
+                preferencesCache.setUserPreferences(userId, result);
                 return result;
             }
 
             // Return default preferences if none exist
-            return {
+            const defaultPrefs: NotificationPreferences = {
                 userId,
                 emailNotifications: true,
                 frequency: 'real-time',
@@ -78,9 +97,13 @@ export class NotificationService {
                 ],
                 updatedAt: new Date().toISOString(),
             };
+
+            // Cache default preferences
+            preferencesCache.setUserPreferences(userId, defaultPrefs);
+            return defaultPrefs;
         } catch (error) {
             // Return default preferences on error
-            return {
+            const defaultPrefs: NotificationPreferences = {
                 userId,
                 emailNotifications: true,
                 frequency: 'real-time',
@@ -94,6 +117,10 @@ export class NotificationService {
                 ],
                 updatedAt: new Date().toISOString(),
             };
+
+            // Cache default preferences
+            preferencesCache.setUserPreferences(userId, defaultPrefs);
+            return defaultPrefs;
         }
     }
 
@@ -120,6 +147,9 @@ export class NotificationService {
             CreatedAt: Date.now(),
             UpdatedAt: Date.now(),
         });
+
+        // Invalidate cache
+        preferencesCache.invalidateUserPreferences(userId);
     }
 
     // ==================== Email Templates ====================
@@ -191,6 +221,21 @@ export class NotificationService {
                 return { success: true }; // Not an error, just disabled for this type
             }
 
+            // Check rate limits
+            const rateLimitResult = await this.rateLimiter.checkRateLimit(userId, alert.priority);
+            if (!rateLimitResult.allowed) {
+                // Queue for later delivery
+                await this.queueNotification(userId, [alert.id], 'real-time');
+
+                // Record metrics
+                await this.rateLimitMonitor.recordMetrics(userId, 'user', 'minute', rateLimitResult);
+
+                return {
+                    success: false,
+                    error: `Rate limit exceeded: ${rateLimitResult.reason}. Notification queued for later delivery.`
+                };
+            }
+
             // Check if we're in quiet hours
             if (this.isInQuietHours(preferences)) {
                 // Queue for later delivery
@@ -220,6 +265,13 @@ export class NotificationService {
                 this.defaultFromEmail,
                 true
             );
+
+            // Record successful notification for rate limiting
+            await this.rateLimiter.recordNotification(userId);
+
+            // Record metrics
+            const updatedRateLimitResult = await this.rateLimiter.checkRateLimit(userId, alert.priority);
+            await this.rateLimitMonitor.recordMetrics(userId, 'user', 'minute', updatedRateLimitResult);
 
             // Log the notification event
             await this.logNotificationEvent(userId, 'email_sent', alert.id, messageId);
@@ -348,6 +400,176 @@ export class NotificationService {
         }
     }
 
+    // ==================== Rate Limiting Methods ====================
+
+    /**
+     * Gets rate limit status for a user
+     */
+    async getRateLimitStatus(userId: string) {
+        return this.rateLimiter.getRateLimitStatus(userId);
+    }
+
+    /**
+     * Gets rate limit metrics
+     */
+    async getRateLimitMetrics(
+        userId: string | undefined,
+        scope: 'user' | 'system',
+        startTime: string,
+        endTime: string
+    ) {
+        return this.rateLimitMonitor.getMetrics(userId, scope, startTime, endTime);
+    }
+
+    /**
+     * Gets aggregated rate limit statistics
+     */
+    async getRateLimitStats(
+        userId: string | undefined,
+        scope: 'user' | 'system',
+        window: 'minute' | 'hour' | 'day',
+        hours: number = 24
+    ) {
+        return this.rateLimitMonitor.getAggregatedStats(userId, scope, window, hours);
+    }
+
+    /**
+     * Gets recent rate limit alerts
+     */
+    async getRateLimitAlerts(limit: number = 50) {
+        return this.rateLimitMonitor.getRecentAlerts(limit);
+    }
+
+    /**
+     * Resets rate limits for a user (admin function)
+     */
+    async resetUserRateLimits(userId: string) {
+        return this.rateLimiter.resetUserLimits(userId);
+    }
+
+    // ==================== Performance Optimization Methods ====================
+
+    /**
+     * Batch loads preferences for multiple users
+     */
+    async batchLoadPreferences(userIds: string[]) {
+        const startTime = Date.now();
+        const result = await queryOptimizer.batchLoadPreferencesOptimized(userIds);
+        performanceMonitor.recordQueryTime('batchLoadPreferences', Date.now() - startTime);
+        return result;
+    }
+
+    /**
+     * Batch loads alerts
+     */
+    async batchLoadAlerts(alertIds: string[], userId: string) {
+        return this.batchProcessor.batchLoadAlerts(alertIds, userId);
+    }
+
+    /**
+     * Batch creates notification events
+     */
+    async batchCreateEvents(
+        events: Array<{
+            userId: string;
+            type: 'email_sent' | 'email_failed' | 'email_bounced' | 'email_complained';
+            alertId?: string;
+            messageId?: string;
+            details?: Record<string, any>;
+        }>
+    ) {
+        return this.batchProcessor.batchCreateEvents(events);
+    }
+
+    /**
+     * Gets cache statistics
+     */
+    getCacheStats() {
+        return {
+            preferences: preferencesCache.getStats(),
+            templates: templateCache.getStats(),
+        };
+    }
+
+    /**
+     * Clears all caches
+     */
+    clearCaches() {
+        preferencesCache.clear();
+        templateCache.clear();
+    }
+
+    /**
+     * Invalidates cache for a specific user
+     */
+    invalidateUserCache(userId: string) {
+        preferencesCache.invalidateUserPreferences(userId);
+    }
+
+    /**
+     * Gets performance metrics
+     */
+    getPerformanceMetrics() {
+        return performanceMonitor.getAllStats();
+    }
+
+    /**
+     * Resets performance metrics
+     */
+    resetPerformanceMetrics() {
+        performanceMonitor.reset();
+    }
+
+    /**
+     * Queries notification events with optimization
+     */
+    async queryNotificationEvents(
+        userId: string,
+        options: {
+            limit?: number;
+            startDate?: string;
+            endDate?: string;
+            eventType?: string;
+        } = {}
+    ) {
+        const startTime = Date.now();
+        const result = await queryOptimizer.queryNotificationEvents(userId, options);
+        performanceMonitor.recordQueryTime('queryNotificationEvents', Date.now() - startTime);
+        return result;
+    }
+
+    /**
+     * Queries notification jobs with optimization
+     */
+    async queryNotificationJobs(
+        userId: string,
+        options: {
+            status?: 'pending' | 'processing' | 'completed' | 'failed';
+            limit?: number;
+        } = {}
+    ) {
+        const startTime = Date.now();
+        const result = await queryOptimizer.queryNotificationJobs(userId, options);
+        performanceMonitor.recordQueryTime('queryNotificationJobs', Date.now() - startTime);
+        return result;
+    }
+
+    /**
+     * Counts notifications efficiently
+     */
+    async countNotifications(
+        userId: string,
+        options: {
+            startDate?: string;
+            endDate?: string;
+        } = {}
+    ) {
+        const startTime = Date.now();
+        const result = await queryOptimizer.countNotifications(userId, options);
+        performanceMonitor.recordQueryTime('countNotifications', Date.now() - startTime);
+        return result;
+    }
+
     // ==================== Helper Methods ====================
 
     /**
@@ -388,7 +610,7 @@ export class NotificationService {
         await this.repository.put({
             PK: `USER#${userId}`,
             SK: `NOTIFICATION_JOB#${job.id}`,
-            EntityType: 'NotificationJob',
+            EntityType: 'NotificationJob' as any,
             Data: job,
             CreatedAt: Date.now(),
             UpdatedAt: Date.now(),
@@ -400,10 +622,10 @@ export class NotificationService {
      */
     private async getUserProfile(userId: string): Promise<{ name?: string; email?: string }> {
         try {
-            const profile = await this.repository.get(`USER#${userId}`, 'PROFILE');
+            const profile = await this.repository.get<any>(`USER#${userId}`, 'PROFILE');
             return {
-                name: profile?.Data?.name,
-                email: profile?.Data?.email,
+                name: profile?.name,
+                email: profile?.email,
             };
         } catch (error) {
             return {};
@@ -434,7 +656,7 @@ export class NotificationService {
         await this.repository.put({
             PK: `USER#${userId}`,
             SK: `NOTIFICATION_EVENT#${event.timestamp}#${event.id}`,
-            EntityType: 'NotificationEvent',
+            EntityType: 'NotificationEvent' as any,
             Data: event,
             CreatedAt: Date.now(),
             UpdatedAt: Date.now(),

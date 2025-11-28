@@ -2201,6 +2201,159 @@ Resources:
       QueueName: !Sub bayon-coagent-notification-processor-dlq-${Environment}
       MessageRetentionPeriod: 1209600 # 14 days
 
+  # Notification Digest Generator Lambda (Daily and Weekly digests)
+  NotificationDigestGeneratorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-notification-digest-generator-${Environment}
+      CodeUri: src/lambda/
+      Handler: notification-digest-generator.handler
+      Timeout: 300
+      MemorySize: 512
+      Environment:
+        Variables:
+          FROM_EMAIL: !Sub noreply@bayoncoagent.com
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoDBTable
+        - SESCrudPolicy:
+            IdentityName: "*"
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendBulkTemplatedEmail
+              Resource: "*"
+      Events:
+        # Daily digest at 9 AM UTC
+        DailyDigestSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 9 * * ? *)
+            Input: !Sub |
+              {
+                "source": "aws.events",
+                "detail-type": "Scheduled Event",
+                "detail": {
+                  "frequency": "daily"
+                }
+              }
+        # Weekly digest on Mondays at 9 AM UTC
+        WeeklyDigestSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 9 ? * MON *)
+            Input: !Sub |
+              {
+                "source": "aws.events",
+                "detail-type": "Scheduled Event",
+                "detail": {
+                  "frequency": "weekly"
+                }
+              }
+      DeadLetterQueue:
+        Type: SQS
+        TargetArn: !GetAtt NotificationProcessorDLQ.Arn
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: NotificationDigestGenerator
+
+  # Notification Retry Processor Lambda (Retry failed deliveries)
+  NotificationRetryProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-notification-retry-processor-${Environment}
+      CodeUri: src/lambda/
+      Handler: notification-retry-processor.handler
+      Timeout: 300
+      MemorySize: 512
+      Environment:
+        Variables:
+          NOTIFICATION_DLQ_URL: !Ref NotificationProcessorDLQ
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoDBTable
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt NotificationProcessorDLQ.QueueName
+        - SESCrudPolicy:
+            IdentityName: "*"
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+              Resource: "*"
+      Events:
+        # Retry failed deliveries every 30 minutes
+        RetrySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: rate(30 minutes)
+            Input: !Sub |
+              {
+                "source": "aws.events",
+                "detail-type": "Scheduled Event",
+                "detail": {
+                  "maxAge": 24,
+                  "maxAttempts": 6
+                }
+              }
+      DeadLetterQueue:
+        Type: SQS
+        TargetArn: !GetAtt NotificationProcessorDLQ.Arn
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: NotificationRetryProcessor
+
+  # Notification Cleanup and Maintenance Lambda
+  NotificationCleanupMaintenanceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-notification-cleanup-maintenance-${Environment}
+      CodeUri: src/lambda/
+      Handler: notification-cleanup-maintenance.handler
+      Timeout: 900
+      MemorySize: 512
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoDBTable
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:Scan
+                - dynamodb:Query
+                - dynamodb:BatchWriteItem
+              Resource:
+                - !GetAtt DynamoDBTable.Arn
+      Events:
+        # Run cleanup daily at 2 AM UTC
+        CleanupSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 2 * * ? *)
+            Input: !Sub |
+              {
+                "source": "aws.events",
+                "detail-type": "Scheduled Event",
+                "detail": {
+                  "tasks": ["all"],
+                  "dryRun": false
+                }
+              }
+      DeadLetterQueue:
+        Type: SQS
+        TargetArn: !GetAtt NotificationProcessorDLQ.Arn
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: NotificationCleanupMaintenance
+        Application: BayonCoAgent
+        Function: NotificationCleanupMaintenance
+
   # ==========================================
   # AI Processing Service SQS Queues
   # ==========================================
@@ -4118,6 +4271,66 @@ Resources:
         - !Ref AlarmTopic
       TreatMissingData: notBreaching
 
+  NotificationDigestGeneratorErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-notification-digest-generator-errors
+      AlarmDescription: Alert when notification digest generator has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref NotificationDigestGeneratorFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  NotificationRetryProcessorErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-notification-retry-processor-errors
+      AlarmDescription: Alert when notification retry processor has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref NotificationRetryProcessorFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  NotificationCleanupMaintenanceErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-notification-cleanup-maintenance-errors
+      AlarmDescription: Alert when notification cleanup maintenance has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !GetAtt NotificationCleanupMaintenanceFunction.Arn
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
   # Content Workflow Lambda Alarms
   CalculateOptimalTimesErrorAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -4726,6 +4939,24 @@ Outputs:
     Value: !GetAtt NotificationProcessorFunction.Arn
     Export:
       Name: !Sub ${Environment}-NotificationProcessorFunctionArn
+
+  NotificationDigestGeneratorFunctionArn:
+    Description: Notification Digest Generator Lambda Function ARN
+    Value: !GetAtt NotificationDigestGeneratorFunction.Arn
+    Export:
+      Name: !Sub ${Environment}-NotificationDigestGeneratorFunctionArn
+
+  NotificationRetryProcessorFunctionArn:
+    Description: Notification Retry Processor Lambda Function ARN
+    Value: !GetAtt NotificationRetryProcessorFunction.Arn
+    Export:
+      Name: !Sub ${Environment}-NotificationRetryProcessorFunctionArn
+
+  NotificationCleanupMaintenanceFunctionArn:
+    Description: Notification Cleanup Maintenance Lambda Function ARN
+    Value: !GetAtt NotificationCleanupMaintenanceFunction.Arn
+    Export:
+      Name: !Sub ${Environment}-NotificationCleanupMaintenanceFunctionArn
 
   # Content Workflow Lambda Function Outputs
   CalculateOptimalTimesFunctionArn:

@@ -94,6 +94,7 @@ export type ClientDashboard = {
         };
         agentNotes?: string;
     };
+    requiresAuth?: boolean; // Flag to indicate if dashboard requires authentication
     createdAt: number;
     updatedAt: number;
 };
@@ -3493,6 +3494,270 @@ export async function listAllAgentLinks(): Promise<{
         };
     } catch (error) {
         const errorMessage = handleError(error, 'Failed to list links');
+        return {
+            message: errorMessage,
+            data: null,
+            errors: {},
+        };
+    }
+}
+
+// ==================== Link to Account Conversion ====================
+
+/**
+ * Check if a client account already exists for the email associated with a dashboard
+ * Requirements: 1.1, 2.1
+ */
+export async function checkClientAccountExists(
+    token: string
+): Promise<{
+    message: string;
+    data: { exists: boolean; email: string } | null;
+    errors: any;
+}> {
+    try {
+        // Validate the token first
+        const validation = await validateDashboardLink(token);
+        if (validation.message !== 'success' || !validation.data) {
+            return {
+                message: 'Invalid or expired link',
+                data: null,
+                errors: validation.errors,
+            };
+        }
+
+        const { dashboard } = validation.data;
+        const email = dashboard.clientInfo.email;
+
+        // Check if a Cognito account exists for this email
+        const { getClientAuthClient } = await import('@/aws/auth/client-auth');
+        const clientAuth = getClientAuthClient();
+        const existingClient = await clientAuth.getClientByEmail(email);
+
+        return {
+            message: 'success',
+            data: {
+                exists: existingClient !== null,
+                email,
+            },
+            errors: {},
+        };
+    } catch (error) {
+        logError('checkClientAccountExists', error as Error, { token: token?.substring(0, 8) });
+        const errorMessage = handleError(error, 'Failed to check account status');
+        return {
+            message: errorMessage,
+            data: null,
+            errors: {},
+        };
+    }
+}
+
+/**
+ * Convert a secured link to an authenticated account
+ * Creates a Cognito user account and sends invitation to set password
+ * Requirements: 1.1, 2.1
+ */
+export async function convertLinkToAccount(
+    token: string
+): Promise<{
+    message: string;
+    data: { invitationToken: string; email: string } | null;
+    errors: any;
+}> {
+    try {
+        // Validate the token first
+        const validation = await validateDashboardLink(token);
+        if (validation.message !== 'success' || !validation.data) {
+            return {
+                message: 'Invalid or expired link',
+                data: null,
+                errors: validation.errors,
+            };
+        }
+
+        const { dashboard, link } = validation.data;
+        const email = dashboard.clientInfo.email;
+
+        // Check if account already exists
+        const { getClientAuthClient, createClientInvitation } = await import('@/aws/auth/client-auth');
+        const clientAuth = getClientAuthClient();
+        const existingClient = await clientAuth.getClientByEmail(email);
+
+        if (existingClient) {
+            return {
+                message: 'Account already exists',
+                data: null,
+                errors: { email: ['An account already exists for this email. Please sign in instead.'] },
+            };
+        }
+
+        // Create Cognito account
+        await clientAuth.createClientAccount(email, dashboard.agentId, dashboard.id);
+
+        // Generate invitation token
+        const invitation = createClientInvitation(dashboard.id, email, dashboard.agentId);
+
+        // Store invitation in DynamoDB
+        const repository = getRepository();
+        const invitationPK = `AGENT#${dashboard.agentId}`;
+        const invitationSK = `INVITATION#${invitation.token}`;
+
+        await repository.create(
+            invitationPK,
+            invitationSK,
+            'ClientInvitation',
+            {
+                token: invitation.token,
+                clientId: dashboard.id,
+                email: invitation.email,
+                agentId: dashboard.agentId,
+                expiresAt: invitation.expiresAt,
+                createdAt: invitation.createdAt,
+                status: 'pending',
+                convertedFromLink: true, // Flag to indicate this was converted from a link
+                originalToken: token, // Store original link token for reference
+            }
+        );
+
+        // Send invitation email
+        const config = getConfig();
+        const invitationUrl = `${config.appUrl}/portal/setup-password?token=${invitation.token}`;
+
+        await sendEmail({
+            to: email,
+            subject: 'Create Your Account - Client Portal',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: ${dashboard.branding.primaryColor};">Create Your Account</h2>
+                    <p>Hello ${dashboard.clientInfo.name},</p>
+                    <p>Your agent has created a personalized portal for you. To access it anytime, please create your account by setting a password.</p>
+                    <p style="margin: 30px 0;">
+                        <a href="${invitationUrl}" 
+                           style="background-color: ${dashboard.branding.primaryColor}; 
+                                  color: white; 
+                                  padding: 12px 24px; 
+                                  text-decoration: none; 
+                                  border-radius: 5px;
+                                  display: inline-block;">
+                            Create Account
+                        </a>
+                    </p>
+                    <p style="color: #666; font-size: 14px;">
+                        This invitation link will expire in 7 days.
+                    </p>
+                    <p style="color: #666; font-size: 14px;">
+                        If you have any questions, contact your agent at ${dashboard.branding.agentContact.email} or ${dashboard.branding.agentContact.phone}.
+                    </p>
+                </div>
+            `,
+            text: `
+                Create Your Account
+                
+                Hello ${dashboard.clientInfo.name},
+                
+                Your agent has created a personalized portal for you. To access it anytime, please create your account by setting a password.
+                
+                Create your account here: ${invitationUrl}
+                
+                This invitation link will expire in 7 days.
+                
+                If you have any questions, contact your agent at ${dashboard.branding.agentContact.email} or ${dashboard.branding.agentContact.phone}.
+            `,
+        });
+
+        // Log the conversion
+        clientPortalLogger.info('Link converted to account', {
+            dashboardId: dashboard.id,
+            agentId: dashboard.agentId,
+            email,
+            originalToken: token.substring(0, 8),
+        });
+
+        return {
+            message: 'success',
+            data: {
+                invitationToken: invitation.token,
+                email,
+            },
+            errors: {},
+        };
+    } catch (error) {
+        logError('convertLinkToAccount', error as Error, { token: token?.substring(0, 8) });
+        const errorMessage = handleError(error, 'Failed to convert link to account');
+        return {
+            message: errorMessage,
+            data: null,
+            errors: {},
+        };
+    }
+}
+
+/**
+ * Migrate dashboard access from token-based to auth-based
+ * Updates the dashboard to mark it as requiring authentication
+ * Requirements: 1.1, 2.1
+ */
+export async function migrateDashboardToAuth(
+    dashboardId: string,
+    agentId: string
+): Promise<{
+    message: string;
+    data: { dashboard: ClientDashboard } | null;
+    errors: any;
+}> {
+    try {
+        const repository = getRepository();
+        const dashboardKeys = getClientDashboardKeys(agentId, dashboardId);
+
+        // Get the dashboard
+        const dashboard = await repository.get<ClientDashboard>(
+            dashboardKeys.PK,
+            dashboardKeys.SK
+        );
+
+        if (!dashboard) {
+            return {
+                message: 'Dashboard not found',
+                data: null,
+                errors: { dashboard: ['Dashboard not found'] },
+            };
+        }
+
+        // Update dashboard to mark it as requiring authentication
+        const updates: Partial<ClientDashboard> = {
+            requiresAuth: true,
+            updatedAt: Date.now(),
+        };
+
+        await repository.update<ClientDashboard>(
+            dashboardKeys.PK,
+            dashboardKeys.SK,
+            updates
+        );
+
+        // Clear cache
+        const cacheKey = getDashboardCacheKey(dashboardId);
+        dashboardCache.delete(cacheKey);
+
+        const updatedDashboard = {
+            ...dashboard,
+            ...updates,
+        };
+
+        clientPortalLogger.info('Dashboard migrated to auth', {
+            dashboardId,
+            agentId,
+        });
+
+        return {
+            message: 'success',
+            data: { dashboard: updatedDashboard },
+            errors: {},
+        };
+    } catch (error) {
+        logError('migrateDashboardToAuth', error as Error, { dashboardId, agentId });
+        const errorMessage = handleError(error, 'Failed to migrate dashboard');
         return {
             message: errorMessage,
             data: null,

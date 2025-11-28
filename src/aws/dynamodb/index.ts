@@ -51,6 +51,10 @@ export {
   getUserItemPrefix,
   extractUserIdFromPK,
   extractEntityIdFromSK,
+  getTestimonialKeys,
+  getTestimonialRequestKeys,
+  getSEOAnalysisKeys,
+  getSavedKeywordKeys,
 } from './keys';
 
 // Error handling

@@ -1824,7 +1824,8 @@ export async function checkAdminStatusAction(userId: string): Promise<{
     }
 
     // TEMPORARY OVERRIDE: Grant admin access to your specific user ID
-    if (userId === '24589458-5041-7041-a202-29ac2fd374b5') {
+    // This ensures admin access even if the database role isn't set yet
+    if (userId === '28619310-e041-70fe-03bd-897627fb5a4d') {
       return {
         isAdmin: true,
         role: 'super_admin',
@@ -1858,8 +1859,7 @@ export async function checkAdminStatusAction(userId: string): Promise<{
     if (isSuperAdminEmail && role !== 'super_admin') {
       // Auto-promote to super_admin if not already
       // We don't await this to avoid slowing down the response
-      repository.put(profileKeys.PK, profileKeys.SK, {
-        ...profileData,
+      repository.update(profileKeys.PK, profileKeys.SK, {
         role: 'super_admin'
       }).catch(console.error);
     }
@@ -2554,6 +2554,8 @@ export async function emailSignInAction(prevState: any, formData: FormData) {
 const emailSignUpSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
   password: z.string().min(6, 'Password must be at least 6 characters.'),
+  givenName: z.string().min(1, 'First name is required.'),
+  familyName: z.string().min(1, 'Last name is required.'),
 });
 
 export async function emailSignUpAction(prevState: any, formData: FormData) {

@@ -18,3 +18,12 @@ export {
   fileExists,
   copyFile,
 } from './client';
+
+export {
+  getTestimonialPhotoKey,
+  getTestimonialFolderPrefix,
+  uploadTestimonialPhoto,
+  deleteTestimonialPhoto,
+  deleteAllTestimonialPhotos,
+  testimonialPhotoExists,
+} from './testimonial-storage';

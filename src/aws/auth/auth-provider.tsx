@@ -17,7 +17,7 @@ interface AuthContextValue {
     isLoading: boolean;
     error: Error | null;
     signIn: (email: string, password: string) => Promise<void>;
-    signUp: (email: string, password: string) => Promise<{ userConfirmed: boolean; userSub: string }>;
+    signUp: (email: string, password: string, givenName?: string, familyName?: string) => Promise<{ userConfirmed: boolean; userSub: string }>;
     confirmSignUp: (email: string, code: string) => Promise<void>;
     resendConfirmationCode: (email: string) => Promise<void>;
     signOut: () => Promise<void>;
@@ -146,12 +146,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     /**
      * Sign up with email and password
      */
-    const signUp = useCallback(async (email: string, password: string) => {
+    const signUp = useCallback(async (
+        email: string,
+        password: string,
+        givenName?: string,
+        familyName?: string
+    ) => {
         try {
             setIsLoading(true);
             setError(null);
 
-            const result = await cognitoClient.signUp(email, password);
+            const result = await cognitoClient.signUp(email, password, givenName, familyName);
 
             // Return whether user needs to confirm email and user ID
             return { userConfirmed: result.userConfirmed, userSub: result.userSub };

@@ -4,7 +4,7 @@
         "module": "CommonJS",
         "moduleResolution": "node",
         "outDir": "./dist",
-        "rootDir": ".",
+        "rootDir": "..",
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
@@ -13,10 +13,10 @@
         "declaration": false,
         "sourceMap": false,
         "removeComments": true,
-        "baseUrl": ".",
+        "baseUrl": "..",
         "paths": {
             "@/*": [
-                "../*"
+                "./*"
             ]
         }
     },
@@ -30,7 +30,11 @@
         "price-reduction-processor.ts",
         "publish-scheduled-content.ts",
         "sync-social-analytics.ts",
-        "calculate-optimal-times.ts"
+        "calculate-optimal-times.ts",
+        "notification-processor.ts",
+        "notification-digest-generator.ts",
+        "notification-retry-processor.ts",
+        "notification-cleanup-maintenance.ts"
     ],
     "exclude": [
         "node_modules",

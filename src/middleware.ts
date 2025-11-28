@@ -62,6 +62,30 @@ export default async function middleware(request: NextRequest): Promise<NextResp
     }
   }
 
+  // Handle authenticated portal routes (/portal/*)
+  // These routes require client authentication
+  if (request.nextUrl.pathname.startsWith('/portal/')) {
+    // Allow public portal routes (login, setup-password, forgot-password)
+    const publicRoutes = ['/portal/login', '/portal/setup-password', '/portal/forgot-password'];
+    const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
+
+    if (!isPublicRoute) {
+      // Check for client session
+      const sessionCookie = request.cookies.get('client_portal_session');
+
+      if (!sessionCookie) {
+        // No session, redirect to login with return URL
+        const loginUrl = new URL('/portal/login', request.url);
+        loginUrl.searchParams.set('redirect', request.nextUrl.pathname);
+        return NextResponse.redirect(loginUrl);
+      }
+
+      // Session exists - validate it
+      // Note: Full validation happens in the page component
+      // Here we just check if the cookie exists
+    }
+  }
+
   const response = NextResponse.next();
 
   // Add correlation ID for request tracking
