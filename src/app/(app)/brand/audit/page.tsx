@@ -65,6 +65,8 @@ import { useFormStatus } from 'react-dom';
 import { FirstTimeUseEmptyState } from '@/components/ui/empty-states';
 import { Celebration } from '@/components/ui/celebration';
 import { AIOperationProgress, useAIOperation } from '@/components/ui/ai-operation-progress';
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
 
 
 type AuditResult = {
@@ -89,7 +91,7 @@ const initialAuditState: InitialAuditState = {
 };
 
 type ZillowReview = {
-    authorName: string;
+    author: string;
     rating: number;
     comment: string;
     date: string;
@@ -97,7 +99,7 @@ type ZillowReview = {
 
 type ZillowReviewState = {
     message: string;
-    data: { reviews: ZillowReview[] } | null;
+    data: any;
     errors: any;
 };
 
@@ -230,7 +232,7 @@ function FetchedReviewCard({ review }: { review: ZillowReview }) {
             <CardHeader>
                 <div className="flex justify-between items-start">
                     <div>
-                        <p className="font-semibold">{review.authorName}</p>
+                        <p className="font-semibold">{review.author}</p>
                         <p className="text-sm text-muted-foreground">{new Date(review.date).toLocaleDateString()}</p>
                     </div>
                 </div>
@@ -285,9 +287,18 @@ const isDifferent = (val1?: string, val2?: string) => {
 export default function BrandAuditPage() {
     const { user, isUserLoading } = useUser();
 
-    const [auditState, auditFormAction] = useActionState(runNapAuditAction, initialAuditState);
-    const [zillowState, zillowFormAction] = useActionState(getZillowReviewsAction, initialZillowReviewState);
-    const [bulkAnalysisState, bulkAnalysisFormAction] = useActionState(analyzeMultipleReviewsAction, initialBulkAnalysisState);
+    const [auditState, auditFormAction] = useActionState(
+        (state: InitialAuditState, payload: FormData) => runNapAuditAction(state, payload),
+        initialAuditState
+    );
+    const [zillowState, zillowFormAction] = useActionState(
+        (state: ZillowReviewState, payload: FormData) => getZillowReviewsAction(state, payload),
+        initialZillowReviewState
+    );
+    const [bulkAnalysisState, bulkAnalysisFormAction] = useActionState(
+        (state: BulkAnalysisState, payload: FormData) => analyzeMultipleReviewsAction(state, payload),
+        initialBulkAnalysisState
+    );
 
     const [reviewToDelete, setReviewToDelete] = useState<Review | null>(null);
     const [showCelebration, setShowCelebration] = useState(false);
@@ -374,30 +385,30 @@ export default function BrandAuditPage() {
         loadOAuthTokens();
     }, [user]);
 
-  // Load reviews
-  useEffect(() => {
-    async function loadReviews() {
-      if (!user?.id) {
-        setIsLoadingReviews(false);
-        return;
-      }
+    // Load reviews
+    useEffect(() => {
+        async function loadReviews() {
+            if (!user?.id) {
+                setIsLoadingReviews(false);
+                return;
+            }
 
-      try {
-        setIsLoadingReviews(true);
-        const result = await getReviewsAction(user.id);
+            try {
+                setIsLoadingReviews(true);
+                const result = await getReviewsAction(user.id);
 
-        if (result.message === 'success' && result.data) {
-          setReviews(result.data);
+                if (result.message === 'success' && result.data) {
+                    setReviews(result.data);
+                }
+            } catch (error) {
+                console.error('Failed to load reviews:', error);
+            } finally {
+                setIsLoadingReviews(false);
+            }
         }
-      } catch (error) {
-        console.error('Failed to load reviews:', error);
-      } finally {
-        setIsLoadingReviews(false);
-      }
-    }
 
-    loadReviews();
-  }, [user?.id]);
+        loadReviews();
+    }, [user?.id]);
 
     const displayAuditData = auditState.data || savedAuditData?.results || null;
     const fetchedReviews = zillowState.data?.reviews;
@@ -591,7 +602,13 @@ export default function BrandAuditPage() {
                             {/* Score Explanation */}
                             <div className="space-y-6">
                                 <div>
-                                    <h3 className="text-2xl font-bold font-headline mb-2">Your Brand Score</h3>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h3 className="text-2xl font-bold font-headline">Your Brand Score</h3>
+                                        {(() => {
+                                            const pageConfig = getPageConfig('/brand/audit');
+                                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                                        })()}
+                                    </div>
                                     <p className="text-muted-foreground">
                                         Your Brand Score is a comprehensive measure of your online authority and consistency.
                                         A higher score means a stronger digital presence, making it easier for clients to find and trust you.

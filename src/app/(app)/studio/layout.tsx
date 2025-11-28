@@ -8,7 +8,7 @@ const studioTabs = [
     { id: 'write', label: 'Write', href: '/studio/write', icon: PenTool },
     { id: 'describe', label: 'Listing Generator', href: '/studio/describe', icon: Sparkles },
     { id: 'reimagine', label: 'Reimagine', href: '/studio/reimagine', icon: Image },
-    { id: 'holiday-cards', label: 'Holiday Cards', href: '/studio/holiday-cards', icon: Gift },
+    { id: 'post-cards', label: 'Post Cards', href: '/studio/post-cards', icon: Gift },
 ];
 
 export default function StudioLayout({ children }: { children: React.ReactNode }) {

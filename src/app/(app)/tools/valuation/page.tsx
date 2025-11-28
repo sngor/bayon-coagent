@@ -27,6 +27,9 @@ import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
 import { cn } from '@/lib/utils';
 
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
+
 type ValuationInitialState = {
     message: string;
     data: PropertyValuationOutput | null;
@@ -200,8 +203,17 @@ ${state.data.disclaimer}
 
     return (
         <div className="space-y-8">
+
             <StandardCard
-                title={<span className="font-headline">AI Property Valuation</span>}
+                title={
+                    <div className="flex items-center justify-between w-full">
+                        <span className="font-headline">Property Valuation</span>
+                        {(() => {
+                            const pageConfig = getPageConfig('/tools/valuation');
+                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                        })()}
+                    </div>
+                }
                 description="Get an instant, AI-powered market valuation based on a property description or address."
             >
                 <form action={formAction} className="space-y-4">

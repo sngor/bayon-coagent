@@ -55,10 +55,13 @@ import { showSuccessToast, showErrorToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Celebration } from '@/components/ui/celebration';
+import { PageHeader } from '@/components/page-header';
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
 
 type GeneratePlanState = {
   message: string;
-  data: { id: string; steps: any[]; createdAt: string } | null;
+  data: { id: string; plan: any[]; createdAt: string } | null;
   errors: any;
 };
 
@@ -99,10 +102,14 @@ export default function MarketingPlanPage() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
 
-  const [state, formAction] = useActionState(generateMarketingPlanAction, initialPlanState);
+  const [state, formAction] = useActionState<GeneratePlanState, FormData>(
+    (state, payload) => generateMarketingPlanAction(state, payload),
+    initialPlanState
+  );
 
   // AI Operation Progress tracking
-  const marketingPlanOperation = useAIOperation();
+  // AI Operation Progress tracking
+  const marketingPlanOperation = useAIOperation('generate-marketing-plan');
 
   // Generation steps for progress indicator
   const generationSteps = [
@@ -135,17 +142,16 @@ export default function MarketingPlanPage() {
   useEffect(() => {
     if (isGenerating) {
       // Start AI operation tracking
-      marketingPlanOperation.start('generate-marketing-plan', {
-        totalSteps: generationSteps.length,
-        estimatedDuration: generationSteps.length * 2000,
-      });
+      // Start AI operation tracking
+      marketingPlanOperation.start();
 
       const stepInterval = setInterval(() => {
         setGenerationStep((prev) => {
           if (prev < generationSteps.length - 1) {
             const nextStep = prev + 1;
             // Update operation progress
-            marketingPlanOperation.updateStep(nextStep, generationSteps[nextStep]);
+            const progress = ((nextStep + 1) / generationSteps.length) * 100;
+            marketingPlanOperation.updateProgress(progress, generationSteps[nextStep]);
             return nextStep;
           }
           return prev;
@@ -235,6 +241,16 @@ export default function MarketingPlanPage() {
       <div className="space-y-8">
         <Card className="text-center">
           <CardHeader>
+            <div className="flex items-center justify-between mb-6 text-left">
+              <div>
+                <h1 className="text-2xl font-bold font-headline">Marketing Strategy</h1>
+                <p className="text-muted-foreground">AI-generated marketing plans</p>
+              </div>
+              {(() => {
+                const pageConfig = getPageConfig('/brand/strategy');
+                return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+              })()}
+            </div>
             <CardTitle className="font-headline text-3xl">Ready to Grow Your Brand?</CardTitle>
             <CardDescription>
               Get a personalized game plan based on your unique market position. We'll analyze your brand audit and competitors to create a 3-step strategy that addresses your biggest opportunities.
@@ -280,7 +296,7 @@ export default function MarketingPlanPage() {
             </CardHeader>
             <CardContent>
               <ul className="space-y-4">
-                {(displayPlan as any).steps?.map((item: any, index: number) => (
+                {(displayPlan as any).plan?.map((item: any, index: number) => (
                   <li
                     key={index}
                     className={cn(
@@ -409,8 +425,6 @@ export default function MarketingPlanPage() {
         <AIOperationProgress
           operationName="generate-marketing-plan"
           tracker={marketingPlanOperation.tracker}
-          title="Creating Your Marketing Plan"
-          description="Our AI is analyzing your data to create a personalized strategy..."
         />
       )}
 

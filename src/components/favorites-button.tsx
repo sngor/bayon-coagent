@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Star } from 'lucide-react';
+import { Pin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useFavorites, type FavoriteItem } from '@/hooks/use-favorites';
@@ -39,7 +39,7 @@ export function FavoritesButton({
             toggleFavorite(item);
 
             toast({
-                title: favorited ? "Removed from favorites" : "Added to favorites",
+                title: favorited ? "Unpinned" : "Pinned",
                 description: favorited
                     ? `${item.title} removed from quick actions`
                     : `${item.title} added to quick actions`,
@@ -48,7 +48,7 @@ export function FavoritesButton({
             toast({
                 variant: "destructive",
                 title: "Error",
-                description: "Failed to update favorites. Please try again.",
+                description: "Failed to update pins. Please try again.",
             });
         } finally {
             setIsToggling(false);
@@ -63,12 +63,12 @@ export function FavoritesButton({
             disabled={isLoading || isToggling}
             className={cn(
                 "transition-colors duration-150",
-                favorited && "text-yellow-500 hover:text-yellow-600",
+                favorited && "text-primary hover:text-primary/80",
                 className
             )}
-            title={favorited ? "Remove from favorites" : "Add to favorites"}
+            title={favorited ? "Unpin page" : "Pin page"}
         >
-            <Star
+            <Pin
                 className={cn(
                     "h-4 w-4 transition-colors duration-150",
                     favorited && "fill-current",
@@ -77,7 +77,7 @@ export function FavoritesButton({
             />
             {showText && (
                 <span className="ml-2">
-                    {favorited ? "Starred" : "Star"}
+                    {favorited ? "Pinned" : "Pin"}
                 </span>
             )}
         </Button>

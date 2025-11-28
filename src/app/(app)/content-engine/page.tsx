@@ -5,7 +5,7 @@ import { useActionState, useState, useTransition, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
-import { PageHeader } from '@/components/page-header';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -697,10 +697,16 @@ export default function ContentEnginePage() {
 
   return (
     <div className="space-y-6 fade-in">
-      <PageHeader
-        title="Co-Marketing Studio"
-        description="Use generative AI to create hyper-local content, social posts, and video scripts."
-      />
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold font-headline">Co-Marketing Studio</h1>
+              <p className="text-muted-foreground">Use generative AI to create hyper-local content, social posts, and video scripts.</p>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
 
       {/* Info Banner */}
       <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-purple-600/5">

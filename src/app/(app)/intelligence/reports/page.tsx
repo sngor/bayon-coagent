@@ -21,6 +21,8 @@ import { StandardSkeleton } from '@/components/ui/reusable';
 import { Search, Calendar, FileText, Plus, Library } from 'lucide-react';
 import { useUser } from '@/aws/auth';
 import type { ResearchReport } from '@/lib/types';
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
 import Link from 'next/link';
 
 export default function ResearchReportsPage() {
@@ -63,32 +65,41 @@ export default function ResearchReportsPage() {
 
     return (
         <div className="space-y-8">
-            <PageHeader
-                title="Research Reports"
-                description="All your saved research reports in one place"
-                icon={Library}
-                actions={
-                    <Link href="/research/agent">
-                        <Button>
-                            <Plus className="w-4 h-4 mr-2" />
-                            New Research
-                        </Button>
-                    </Link>
-                }
-            />
-
-            {/* Search Input */}
-            {!isLoadingReports && savedReports && savedReports.length > 0 && (
-                <div className="max-w-md">
-                    <SearchInput
-                        value={searchQuery}
-                        onChange={setSearchQuery}
-                        onClear={() => setSearchQuery('')}
-                        placeholder="Search reports..."
-                        aria-label="Search research reports"
-                    />
-                </div>
-            )}
+            <Card className="mb-6">
+                <CardHeader className="pb-0">
+                    <div className="flex items-center justify-between mb-6">
+                        <div>
+                            <h1 className="text-2xl font-bold font-headline">Research Reports</h1>
+                            <p className="text-muted-foreground">All your saved research reports in one place</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Link href="/research/agent">
+                                <Button>
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    New Research
+                                </Button>
+                            </Link>
+                            {(() => {
+                                const pageConfig = getPageConfig('/intelligence/reports');
+                                return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                            })()}
+                        </div>
+                    </div>
+                </CardHeader>
+                {!isLoadingReports && savedReports && savedReports.length > 0 && (
+                    <CardContent className="pt-6">
+                        <div className="max-w-md">
+                            <SearchInput
+                                value={searchQuery}
+                                onChange={setSearchQuery}
+                                onClear={() => setSearchQuery('')}
+                                placeholder="Search reports..."
+                                aria-label="Search research reports"
+                            />
+                        </div>
+                    </CardContent>
+                )}
+            </Card>
 
             {isLoadingReports && (
                 <DataGrid columns={3}>

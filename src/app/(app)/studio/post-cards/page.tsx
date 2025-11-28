@@ -6,16 +6,24 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Loader2, Sparkles, Download, Share2 } from 'lucide-react';
-import { generateHolidayCardAction } from '@/app/holiday-card-actions';
+import { generatePostCardAction } from '@/app/post-card-actions';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 
-export default function HolidayCardsPage() {
+export default function PostCardsPage() {
     const { toast } = useToast();
     const [prompt, setPrompt] = useState('');
     const [recipient, setRecipient] = useState('');
     const [style, setStyle] = useState('');
+    const [cardType, setCardType] = useState('Holiday Card');
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<string | null>(null);
 
@@ -33,24 +41,25 @@ export default function HolidayCardsPage() {
         setGeneratedImage(null);
 
         try {
-            const result = await generateHolidayCardAction({
+            const result = await generatePostCardAction({
                 prompt,
                 recipient,
                 style,
+                cardType,
             });
 
             if (result.success && result.imageUrl) {
                 setGeneratedImage(result.imageUrl);
                 toast({
                     title: 'Success',
-                    description: 'Holiday card generated successfully!',
+                    description: 'Post card generated successfully!',
                     variant: 'default',
                     className: "bg-green-600 text-white border-none",
                 });
             } else {
                 toast({
                     title: 'Error',
-                    description: result.error || 'Failed to generate holiday card',
+                    description: result.error || 'Failed to generate post card',
                     variant: 'destructive',
                 });
             }
@@ -71,7 +80,7 @@ export default function HolidayCardsPage() {
 
         const link = document.createElement('a');
         link.href = generatedImage;
-        link.download = 'holiday-card.png';
+        link.download = 'post-card.png';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -83,12 +92,29 @@ export default function HolidayCardsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-3xl font-bold font-headline">Holiday Card Studio</CardTitle>
+                        <CardTitle className="text-3xl font-bold font-headline">Post Card Studio</CardTitle>
                         <CardDescription>
-                            Create personalized holiday cards with AI-powered image generation
+                            Create personalized real estate post cards with AI-powered image generation
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="cardType">Card Type</Label>
+                            <Select value={cardType} onValueChange={setCardType}>
+                                <SelectTrigger id="cardType">
+                                    <SelectValue placeholder="Select card type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Holiday Card">Holiday Card</SelectItem>
+                                    <SelectItem value="Just Listed">Just Listed</SelectItem>
+                                    <SelectItem value="Just Sold">Just Sold</SelectItem>
+                                    <SelectItem value="Open House">Open House</SelectItem>
+                                    <SelectItem value="Market Update">Market Update</SelectItem>
+                                    <SelectItem value="Client Appreciation">Client Appreciation</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
                         <div className="space-y-2">
                             <Label htmlFor="recipient">Recipient (Optional)</Label>
                             <Input
@@ -113,7 +139,7 @@ export default function HolidayCardsPage() {
                             <Label htmlFor="prompt">Description</Label>
                             <Textarea
                                 id="prompt"
-                                placeholder="Describe the scene, e.g. A cozy living room with a fireplace and a Christmas tree..."
+                                placeholder="Describe the scene, e.g. A modern home exterior with a 'Sold' sign..."
                                 className="h-32"
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
@@ -155,7 +181,7 @@ export default function HolidayCardsPage() {
                                 <div className="relative w-full h-full min-h-[300px]">
                                     <Image
                                         src={generatedImage}
-                                        alt="Generated Holiday Card"
+                                        alt="Generated Post Card"
                                         fill
                                         className="object-contain rounded-md"
                                         unoptimized

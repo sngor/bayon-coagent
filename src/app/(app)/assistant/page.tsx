@@ -9,6 +9,9 @@
 import { useState, useEffect } from 'react';
 import { StandardPageLayout } from '@/components/standard';
 import { ChatInterface, AgentProfilePreview } from '@/components/bayon-assistant';
+
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -289,6 +292,20 @@ export default function AssistantPage() {
 
     return (
         <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="font-headline text-2xl">AI Assistant</CardTitle>
+                            <CardDescription>Chat with your AI assistant</CardDescription>
+                        </div>
+                        {(() => {
+                            const pageConfig = getPageConfig('/assistant');
+                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                        })()}
+                    </div>
+                </CardHeader>
+            </Card>
             {/* Profile Setup Alert */}
             {!profile && (
                 <GlassCard blur="lg" tint="light" className="border-l-4 border-l-primary animate-fade-in">

@@ -9,7 +9,7 @@ import {
     Users,
     Settings,
     X,
-    Star,
+    Pin,
     Zap,
     BarChart3,
     Target,
@@ -65,7 +65,7 @@ const iconMap = {
 };
 
 // Available pages that can be added to favorites
-const AVAILABLE_PAGES = [
+export const AVAILABLE_PAGES = [
     {
         id: 'dashboard',
         title: 'Dashboard',
@@ -160,7 +160,7 @@ const AVAILABLE_PAGES = [
         id: 'research-agent',
         title: 'Research Agent',
         description: 'AI-powered market research',
-        href: '/research/agent',
+        href: '/research-agent',
         icon: 'Search',
         color: 'bg-green-500',
         gradient: 'from-green-500 to-green-600',
@@ -170,7 +170,7 @@ const AVAILABLE_PAGES = [
         id: 'research-knowledge',
         title: 'Knowledge Base',
         description: 'Access research and news',
-        href: '/research/knowledge',
+        href: '/knowledge-base',
         icon: 'BookOpen',
         color: 'bg-teal-500',
         gradient: 'from-teal-500 to-teal-600',
@@ -180,7 +180,7 @@ const AVAILABLE_PAGES = [
         id: 'market-insights',
         title: 'Market Trends',
         description: 'Life event predictions and market trends',
-        href: '/market/trends',
+        href: '/intelligence/trends',
         icon: 'TrendingUp',
         color: 'bg-violet-500',
         gradient: 'from-violet-500 to-violet-600',
@@ -228,6 +228,10 @@ const AVAILABLE_PAGES = [
     }
 ];
 
+export function getPageConfig(path: string) {
+    return AVAILABLE_PAGES.find(page => page.href === path);
+}
+
 export function DashboardQuickActions() {
     const { favorites, isLoading, toggleFavorite } = useFavorites();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -249,12 +253,12 @@ export function DashboardQuickActions() {
         // Show feedback and close dialog
         if (wasAlreadyFavorited) {
             toast({
-                title: "Removed from favorites",
+                title: "Unpinned",
                 description: `${page.title} removed from quick actions`,
             });
         } else {
             toast({
-                title: "Added to favorites",
+                title: "Pinned",
                 description: `${page.title} added to quick actions`,
             });
             setIsDialogOpen(false);
@@ -266,7 +270,7 @@ export function DashboardQuickActions() {
         if (favorite) {
             toggleFavorite(favorite);
             toast({
-                title: "Removed from favorites",
+                title: "Unpinned",
                 description: `${favorite.title} removed from quick actions`,
             });
         }
@@ -358,7 +362,7 @@ export function DashboardQuickActions() {
                                                             <div className="text-xs text-muted-foreground truncate">{page.description}</div>
                                                         </div>
                                                         {isFavorited && (
-                                                            <Star className="w-4 h-4 text-yellow-500 fill-current flex-shrink-0" />
+                                                            <Pin className="w-4 h-4 text-primary fill-current flex-shrink-0" />
                                                         )}
                                                     </button>
                                                 );
@@ -424,7 +428,7 @@ export function DashboardQuickActions() {
                                     e.preventDefault();
                                     handleRemoveFavorite(action.id);
                                 }}
-                                title="Remove from favorites"
+                                title="Unpin page"
                             >
                                 <X className="w-3 h-3" />
                             </Button>

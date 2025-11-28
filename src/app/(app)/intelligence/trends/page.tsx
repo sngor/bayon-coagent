@@ -9,6 +9,10 @@ import { TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 import { useToast } from '@/hooks/use-toast';
+import { PageHeader } from '@/components/page-header';
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 
 export default function MarketTrendsPage() {
     const { toast } = useToast();
@@ -23,6 +27,24 @@ export default function MarketTrendsPage() {
 
     return (
         <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="font-headline text-2xl">Market Trends</CardTitle>
+                            <CardDescription>Life event predictions and market trends</CardDescription>
+                        </div>
+                        {(() => {
+                            const pageConfig = getPageConfig('/intelligence/trends');
+                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                        })()}
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <LifeEventPredictorForm />
+                </CardContent>
+            </Card>
+
             {/* Feature Banner */}
             <FeatureBanner
                 title="Market Trends & Predictions"
@@ -41,15 +63,6 @@ export default function MarketTrendsPage() {
                     </Button>
                 }
             />
-
-            <ContentSection
-                title="Market Trends & Predictions"
-                description="Identify potential clients through life event predictions and market trends"
-                icon={TrendingUp}
-                variant="card"
-            >
-                <LifeEventPredictorForm />
-            </ContentSection>
         </div>
     );
 }

@@ -4,6 +4,8 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { StandardEmptyState } from '@/components/standard/empty-state';
 import { useUser } from '@/aws/auth';
@@ -156,33 +158,43 @@ export default function KnowledgeBasePage() {
 
     return (
         <div className="animate-fade-in-up space-y-8">
-            <PageHeader
-                title="Knowledge Base"
-                description="A centralized library of all your saved AI-generated research reports."
-            />
-
-            {/* Search and Filter Controls */}
-            {!isLoading && reports && reports.length > 0 && (
-                <div className="space-y-4">
-                    <div className="max-w-md">
-                        <SearchInput
-                            value={searchQuery}
-                            onChange={setSearchQuery}
-                            onClear={() => setSearchQuery('')}
-                            placeholder="Search reports by topic..."
-                            aria-label="Search research reports"
-                        />
+            <Card className="mb-6">
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="font-headline text-2xl">Knowledge Base</CardTitle>
+                            <CardDescription>A centralized library of all your saved AI-generated research reports.</CardDescription>
+                        </div>
+                        {(() => {
+                            const pageConfig = getPageConfig('/knowledge-base');
+                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                        })()}
                     </div>
+                </CardHeader>
+                {!isLoading && reports && reports.length > 0 && (
+                    <CardContent className="pt-6">
+                        <div className="space-y-4">
+                            <div className="max-w-md">
+                                <SearchInput
+                                    value={searchQuery}
+                                    onChange={setSearchQuery}
+                                    onClear={() => setSearchQuery('')}
+                                    placeholder="Search reports by topic..."
+                                    aria-label="Search research reports"
+                                />
+                            </div>
 
-                    {/* Filter Controls */}
-                    <FilterControls
-                        filterGroups={filterGroups}
-                        selectedFilters={selectedFilters}
-                        onFilterChange={handleFilterChange}
-                        onClearAll={handleClearAll}
-                    />
-                </div>
-            )}
+                            {/* Filter Controls */}
+                            <FilterControls
+                                filterGroups={filterGroups}
+                                selectedFilters={selectedFilters}
+                                onFilterChange={handleFilterChange}
+                                onClearAll={handleClearAll}
+                            />
+                        </div>
+                    </CardContent>
+                )}
+            </Card>
 
             {isLoading && <ReportListSkeleton />}
 

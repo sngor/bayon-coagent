@@ -6,6 +6,10 @@ import { Button } from '@/components/ui/button';
 
 import { useToast } from '@/hooks/use-toast';
 
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+
 export default function MortgageCalculatorPage() {
     const { toast } = useToast();
 
@@ -21,6 +25,20 @@ export default function MortgageCalculatorPage() {
 
     return (
         <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="font-headline text-2xl">Mortgage Calculator</CardTitle>
+                            <CardDescription>Calculate payments and rates</CardDescription>
+                        </div>
+                        {(() => {
+                            const pageConfig = getPageConfig('/tools/calculator');
+                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                        })()}
+                    </div>
+                </CardHeader>
+            </Card>
             <FeatureBanner
                 title="Mortgage Calculator Best Practices"
                 description="Help clients understand their buying power and monthly commitments"

@@ -6,6 +6,10 @@ import { Button } from '@/components/ui/button';
 
 import { useToast } from '@/hooks/use-toast';
 
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+
 export default function ROIPage() {
     const { toast } = useToast();
 
@@ -19,6 +23,20 @@ export default function ROIPage() {
 
     return (
         <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="font-headline text-2xl">ROI Calculator</CardTitle>
+                            <CardDescription>Analyze investment returns</CardDescription>
+                        </div>
+                        {(() => {
+                            const pageConfig = getPageConfig('/tools/roi');
+                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                        })()}
+                    </div>
+                </CardHeader>
+            </Card>
             <FeatureBanner
                 title="ROI Calculator Pro Tips"
                 description="Help clients make smart renovation decisions with data-driven insights"

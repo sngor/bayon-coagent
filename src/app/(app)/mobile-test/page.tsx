@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { PageHeader } from '@/components/page-header';
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -41,10 +41,16 @@ export default function MobileTestPage() {
 
     return (
         <div className="space-y-8 animate-fade-in-up">
-            <PageHeader
-                title="Mobile Optimization Test"
-                description="Testing mobile responsiveness, touch targets, and keyboard types"
-            />
+            <Card className="mb-6">
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-2xl font-bold font-headline">Mobile Optimization Test</h1>
+                            <p className="text-muted-foreground">Testing mobile responsiveness, touch targets, and keyboard types</p>
+                        </div>
+                    </div>
+                </CardHeader>
+            </Card>
 
             {/* Audit Results */}
             <Card>

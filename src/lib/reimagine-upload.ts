@@ -31,6 +31,8 @@ import {
   cacheSuggestions,
 } from '@/lib/reimagine-cache';
 
+import { validateConfig } from '@/aws/config';
+
 /**
  * Core upload logic that handles image upload and analysis
  */
@@ -38,6 +40,15 @@ export async function handleImageUpload(
   formData: FormData
 ): Promise<UploadResponse> {
   try {
+    // Validate AWS configuration
+    const configValidation = validateConfig();
+    if (!configValidation.valid) {
+      return {
+        success: false,
+        error: `Configuration error: ${configValidation.errors.join(', ')}`,
+      };
+    }
+
     // Get user ID from form data
     const userId = formData.get('userId') as string;
     if (!userId) {

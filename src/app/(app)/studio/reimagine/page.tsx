@@ -53,6 +53,9 @@ import type {
     EditParams,
 } from '@/ai/schemas/reimagine-schemas';
 import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/page-header';
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
 
 // Workflow states - simplified to 3 states
 type WorkflowState =
@@ -442,11 +445,27 @@ export default function ReimagineToolkitPage() {
     return (
         <div className="space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList>
-                    <TabsTrigger value="create">Single Edit</TabsTrigger>
-                    <TabsTrigger value="multi-angle">Multi-Angle</TabsTrigger>
-                    <TabsTrigger value="history">History</TabsTrigger>
-                </TabsList>
+                <Card className="mb-6">
+                    <CardHeader className="pb-0">
+                        <div className="flex items-center justify-between mb-6">
+                            <div>
+                                <h1 className="text-2xl font-bold font-headline">Reimagine Image Toolkit</h1>
+                                <p className="text-muted-foreground">Transform property photos with AI</p>
+                            </div>
+                            {(() => {
+                                const pageConfig = getPageConfig('/studio/reimagine');
+                                return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                            })()}
+                        </div>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                        <TabsList>
+                            <TabsTrigger value="create">Single Edit</TabsTrigger>
+                            <TabsTrigger value="multi-angle">Multi-Angle</TabsTrigger>
+                            <TabsTrigger value="history">History</TabsTrigger>
+                        </TabsList>
+                    </CardContent>
+                </Card>
 
                 {/* Create Tab */}
                 <TabsContent value="create" className="mt-6">

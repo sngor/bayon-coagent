@@ -3,19 +3,20 @@
 import { generateImageWithGemini } from '@/lib/gemini-image';
 import { z } from 'zod';
 
-const GenerateHolidayCardSchema = z.object({
+const GeneratePostCardSchema = z.object({
     prompt: z.string().min(1, 'Prompt is required'),
     style: z.string().optional(),
     recipient: z.string().optional(),
+    cardType: z.string().default('Holiday Card'),
 });
 
-export type GenerateHolidayCardInput = z.infer<typeof GenerateHolidayCardSchema>;
+export type GeneratePostCardInput = z.infer<typeof GeneratePostCardSchema>;
 
-export async function generateHolidayCardAction(input: GenerateHolidayCardInput) {
+export async function generatePostCardAction(input: GeneratePostCardInput) {
     try {
-        const validatedInput = GenerateHolidayCardSchema.parse(input);
+        const validatedInput = GeneratePostCardSchema.parse(input);
 
-        let fullPrompt = `A festive holiday card`;
+        let fullPrompt = `A professional real estate ${validatedInput.cardType}`;
 
         if (validatedInput.recipient) {
             fullPrompt += ` for ${validatedInput.recipient}`;
@@ -27,7 +28,7 @@ export async function generateHolidayCardAction(input: GenerateHolidayCardInput)
             fullPrompt += `. Style: ${validatedInput.style}`;
         }
 
-        fullPrompt += `. High quality, professional holiday card design, festive atmosphere, clear text if any.`;
+        fullPrompt += `. High quality, professional design, clear text if any.`;
 
         const result = await generateImageWithGemini({
             prompt: fullPrompt,
@@ -40,10 +41,10 @@ export async function generateHolidayCardAction(input: GenerateHolidayCardInput)
             imageUrl: result.imageUrl,
         };
     } catch (error) {
-        console.error('Error generating holiday card:', error);
+        console.error('Error generating post card:', error);
         return {
             success: false,
-            error: error instanceof Error ? error.message : 'Failed to generate holiday card',
+            error: error instanceof Error ? error.message : 'Failed to generate post card',
         };
     }
 }

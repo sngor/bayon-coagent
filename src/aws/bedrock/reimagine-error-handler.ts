@@ -108,10 +108,13 @@ export class ValidationError extends ReimagineError {
  */
 export class StorageError extends ReimagineError {
   constructor(operation: string, originalError?: unknown) {
+    const isDev = process.env.NODE_ENV === 'development';
+    const errorMessage = originalError instanceof Error ? originalError.message : String(originalError);
+
     super(
       `Storage error: ${operation}`,
       'STORAGE',
-      'File storage service is temporarily unavailable. Please try again.',
+      isDev ? `Storage Error: ${errorMessage}` : 'File storage service is temporarily unavailable. Please try again.',
       [
         'Try again in a few moments',
         'Check your internet connection',
@@ -127,10 +130,13 @@ export class StorageError extends ReimagineError {
  */
 export class DatabaseError extends ReimagineError {
   constructor(operation: string, originalError?: unknown) {
+    const isDev = process.env.NODE_ENV === 'development';
+    const errorMessage = originalError instanceof Error ? originalError.message : String(originalError);
+
     super(
       `Database error: ${operation}`,
       'DATABASE',
-      'Database service is temporarily unavailable. Please try again.',
+      isDev ? `Database Error: ${errorMessage}` : 'Database service is temporarily unavailable. Please try again.',
       [
         'Try again in a few moments',
         'If the issue persists, contact support',
@@ -179,7 +185,7 @@ export function classifyError(error: unknown, operation: string): ReimagineError
   const statusCode = err?.statusCode || err?.$metadata?.httpStatusCode;
 
   // Classify by error type
-  
+
   // Throttling errors
   if (
     code === 'ThrottlingException' ||
@@ -396,7 +402,7 @@ export async function withRetry<T>(
   config: Partial<RetryConfig> = {}
 ): Promise<T> {
   const logger = createLogger({ service: 'reimagine', operation: operationType });
-  
+
   const retryConfig: RetryConfig = {
     ...DEFAULT_RETRY_CONFIG,
     ...OPERATION_RETRY_CONFIGS[operationType],

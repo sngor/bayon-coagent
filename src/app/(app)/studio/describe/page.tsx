@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ListingDescriptionGeneratorForm } from '@/components/listing-description-generator/listing-description-generator-form';
 import { StandardPageLayout } from '@/components/standard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -14,6 +14,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Home, Sparkles } from 'lucide-react';
+import { PageHeader } from '@/components/page-header';
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
 
 export default function ListingDescriptionGeneratorPage() {
   const [activeMode, setActiveMode] = useState('generate');
@@ -37,6 +40,18 @@ export default function ListingDescriptionGeneratorPage() {
     <div className="space-y-8">
       {/* Mode Selector */}
       <Card>
+        <CardHeader className="pb-0">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-bold font-headline">Listing Descriptions</h1>
+              <p className="text-muted-foreground">Generate and optimize listing descriptions</p>
+            </div>
+            {(() => {
+              const pageConfig = getPageConfig('/studio/describe');
+              return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+            })()}
+          </div>
+        </CardHeader>
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
             <Label htmlFor="description-mode" className="text-sm font-medium whitespace-nowrap">

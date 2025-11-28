@@ -102,6 +102,9 @@ import { SchedulingModal } from '@/components/scheduling-modal';
 import { TemplateSaveModal } from '@/components/template-save-modal';
 import { ProjectSelector } from '@/components/project-selector';
 import { ContentCategory, TemplateConfiguration } from '@/lib/content-workflow-types';
+import { PageHeader } from '@/components/page-header';
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
 
 // #region State & Button Components
 type GuideInitialState = {
@@ -687,7 +690,8 @@ export default function ContentEnginePage() {
       [ContentCategory.NEIGHBORHOOD_GUIDE]: 'Neighborhood Guide',
       [ContentCategory.SOCIAL_MEDIA]: 'Social Media Post',
       [ContentCategory.LISTING_DESCRIPTION]: 'Listing Description',
-      [ContentCategory.EMAIL_NEWSLETTER]: 'Email Newsletter'
+      [ContentCategory.NEWSLETTER]: 'Email Newsletter',
+      [ContentCategory.EMAIL_TEMPLATE]: 'Email Template'
     };
 
     setTemplateSaveDialogInfo({
@@ -830,7 +834,7 @@ export default function ContentEnginePage() {
           [ContentCategory.EMAIL_TEMPLATE]: 'email'
         };
 
-        const targetTab = tabMapping[contentType];
+        const targetTab = tabMapping[contentType as ContentCategory];
         if (targetTab) {
           setActiveTab(targetTab);
         }
@@ -1074,9 +1078,20 @@ export default function ContentEnginePage() {
 
   return (
     <div className="space-y-8">
-
       {/* Content Type Selector */}
       <Card className="animate-slide-in-top">
+        <CardHeader className="pb-0">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-bold font-headline">Write Content</h1>
+              <p className="text-muted-foreground">Create blog posts and articles</p>
+            </div>
+            {(() => {
+              const pageConfig = getPageConfig('/studio/write');
+              return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+            })()}
+          </div>
+        </CardHeader>
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
             <Label htmlFor="content-type" className="text-sm font-medium whitespace-nowrap">

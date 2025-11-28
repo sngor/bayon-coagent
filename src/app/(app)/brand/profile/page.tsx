@@ -40,6 +40,8 @@ import { STICKY_POSITIONS } from '@/lib/utils';
 import { FeaturedTestimonialSelector } from '@/components/featured-testimonial-selector';
 import type { Testimonial } from '@/lib/types';
 import { CardGradientMesh } from '@/components/ui/gradient-mesh';
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
 
 const initialBioState = {
     message: '',
@@ -259,8 +261,12 @@ function ProfileForm({ profile, onInputChange, onSave, isSaving, isLoading, bioF
             <Card className="overflow-hidden">
                 <CardGradientMesh>
                     <CardHeader className="pb-6 relative z-10">
-                        <CardTitle className="font-headline">
+                        <CardTitle className="font-headline flex items-center justify-between">
                             <GradientText text="Profile Information" />
+                            {(() => {
+                                const pageConfig = getPageConfig('/brand/profile');
+                                return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                            })()}
                         </CardTitle>
                         <CardDescription>
                             <Typewriter

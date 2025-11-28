@@ -63,6 +63,10 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { PageHeader } from '@/components/page-header';
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
+
 
 
 
@@ -760,100 +764,308 @@ export default function LibraryPage() {
 
     return (
         <div className="space-y-6" key={refreshKey}>
-            <div className="flex items-center justify-between gap-4">
-                <div className="flex-1">
-                    {!isLoading && savedContent && savedContent.length > 0 && (
-                        <SearchInput
-                            value={searchQuery}
-                            onChange={setSearchQuery}
-                            placeholder="Search content by name, type, or keywords..."
-                        />
-                    )}
-                </div>
-                <div className="flex items-center gap-2">
-                    {(projects && projects.length > 0) && (
-                        <div className="flex items-center border rounded-lg">
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="font-headline text-2xl">Content Library</CardTitle>
+                            <CardDescription>Manage your created content</CardDescription>
+                        </div>
+                        {(() => {
+                            const pageConfig = getPageConfig('/library/content');
+                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                        })()}
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1">
+                            {!isLoading && savedContent && savedContent.length > 0 && (
+                                <SearchInput
+                                    value={searchQuery}
+                                    onChange={setSearchQuery}
+                                    placeholder="Search content by name, type, or keywords..."
+                                />
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {(projects && projects.length > 0) && (
+                                <div className="flex items-center border rounded-lg">
+                                    <Button
+                                        variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                                        size="sm"
+                                        onClick={() => setViewMode('list')}
+                                        className="rounded-r-none"
+                                    >
+                                        <LayoutList className="h-4 w-4" />
+                                        <span className="sr-only">List view</span>
+                                    </Button>
+                                    <Button
+                                        variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                                        size="sm"
+                                        onClick={() => setViewMode('grid')}
+                                        className="rounded-l-none"
+                                    >
+                                        <LayoutGrid className="h-4 w-4" />
+                                        <span className="sr-only">Grid view</span>
+                                    </Button>
+                                </div>
+                            )}
                             <Button
-                                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                                onClick={async () => {
+                                    setIsRefreshing(true);
+                                    try {
+                                        await Promise.all([refreshContent(true), refreshProjects(undefined, true)]);
+                                        toast({ title: 'Refreshed', description: 'Library data updated.' });
+                                    } finally {
+                                        setIsRefreshing(false);
+                                    }
+                                }}
+                                variant="outline"
                                 size="sm"
-                                onClick={() => setViewMode('list')}
-                                className="rounded-r-none"
+                                disabled={isLoading || isRefreshing}
                             >
-                                <LayoutList className="h-4 w-4" />
-                                <span className="sr-only">List view</span>
+                                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                                <span className="sr-only">Refresh</span>
                             </Button>
-                            <Button
-                                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-                                size="sm"
-                                onClick={() => setViewMode('grid')}
-                                className="rounded-l-none"
-                            >
-                                <LayoutGrid className="h-4 w-4" />
-                                <span className="sr-only">Grid view</span>
+                            <Button onClick={() => setIsCreateProjectOpen(true)} variant="default">
+                                <FolderPlus className="mr-2 h-4 w-4" />
+                                New Project
                             </Button>
                         </div>
-                    )}
-                    <Button
-                        onClick={async () => {
-                            setIsRefreshing(true);
-                            try {
-                                await Promise.all([refreshContent(true), refreshProjects(undefined, true)]);
-                                toast({ title: 'Refreshed', description: 'Library data updated.' });
-                            } finally {
-                                setIsRefreshing(false);
-                            }
-                        }}
-                        variant="outline"
-                        size="sm"
-                        disabled={isLoading || isRefreshing}
-                    >
-                        <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                        <span className="sr-only">Refresh</span>
-                    </Button>
-                    <Button onClick={() => setIsCreateProjectOpen(true)} variant="default">
-                        <FolderPlus className="mr-2 h-4 w-4" />
-                        New Project
-                    </Button>
-                </div>
-            </div>
+                    </div >
+                </CardContent >
+            </Card >
 
-            {isLoading && <StandardSkeleton variant="list" count={3} />}
+            {isLoading && <StandardSkeleton variant="list" count={3} />
+            }
 
             {/* Search Results Indicator */}
-            {!isLoading && searchQuery && (
-                <div className="text-sm text-muted-foreground mb-4">
-                    {(() => {
-                        const totalResults = Object.values(contentByProject).flat().length;
-                        const projectsWithResults = projectList.length;
-                        return totalResults > 0
-                            ? `Found ${totalResults} item${totalResults === 1 ? '' : 's'} in ${projectsWithResults} project${projectsWithResults === 1 ? '' : 's'} matching "${searchQuery}"`
-                            : `No results found for "${searchQuery}"`;
-                    })()}
-                </div>
-            )}
+            {
+                !isLoading && searchQuery && (
+                    <div className="text-sm text-muted-foreground mb-4">
+                        {(() => {
+                            const totalResults = Object.values(contentByProject).flat().length;
+                            const projectsWithResults = projectList.length;
+                            return totalResults > 0
+                                ? `Found ${totalResults} item${totalResults === 1 ? '' : 's'} in ${projectsWithResults} project${projectsWithResults === 1 ? '' : 's'} matching "${searchQuery}"`
+                                : `No results found for "${searchQuery}"`;
+                        })()}
+                    </div>
+                )
+            }
 
-            {!isLoading && (projects && projects.length > 0) && viewMode === 'list' && (
-                <AlertDialog>
-                    <Accordion type="multiple" className="w-full space-y-4" value={openProjects} onValueChange={setOpenProjects}>
-                        {projectList.map(project => {
-                            const items = contentByProject[project.id] || [];
+            {
+                !isLoading && (projects && projects.length > 0) && viewMode === 'list' && (
+                    <AlertDialog>
+                        <Accordion type="multiple" className="w-full space-y-4" value={openProjects} onValueChange={setOpenProjects}>
+                            {projectList.map(project => {
+                                const items = contentByProject[project.id] || [];
 
-                            return (
-                                <AccordionItem value={project.id} key={project.id} className="border border-border/50 rounded-xl bg-card shadow-sm hover:shadow-md transition-shadow">
-                                    <div key={`trigger-${project.id}`} className="bg-gradient-to-r from-muted/50 to-muted/30 px-6 py-4 border-b border-border/30 rounded-t-xl">
-                                        <div className="flex items-center justify-between w-full">
-                                            <AccordionTrigger className="hover:no-underline text-lg font-semibold group flex-1 mr-2">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                                                        <Folder className="h-5 w-5 text-primary" />
+                                return (
+                                    <AccordionItem value={project.id} key={project.id} className="border border-border/50 rounded-xl bg-card shadow-sm hover:shadow-md transition-shadow">
+                                        <div key={`trigger-${project.id}`} className="bg-gradient-to-r from-muted/50 to-muted/30 px-6 py-4 border-b border-border/30 rounded-t-xl">
+                                            <div className="flex items-center justify-between w-full">
+                                                <AccordionTrigger className="hover:no-underline text-lg font-semibold group flex-1 mr-2">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                                                            <Folder className="h-5 w-5 text-primary" />
+                                                        </div>
+                                                        <div className="text-left">
+                                                            <div className="font-headline font-semibold text-foreground">{project.name}</div>
+                                                            <div className="text-sm text-muted-foreground">
+                                                                {items.length} {items.length === 1 ? 'item' : 'items'}
+                                                                {items.length > 0 && (
+                                                                    <span className="ml-2">
+                                                                        • Last updated {formatDate(Math.max(...items.map(item => {
+                                                                            if (typeof item.createdAt === 'object' && 'seconds' in item.createdAt) {
+                                                                                return item.createdAt.seconds * 1000;
+                                                                            }
+                                                                            return new Date(item.createdAt).getTime();
+                                                                        })))}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div className="text-left">
-                                                        <div className="font-headline font-semibold text-foreground">{project.name}</div>
-                                                        <div className="text-sm text-muted-foreground">
+                                                </AccordionTrigger>
+                                                {project.id !== 'uncategorized' && (
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-accent/50">
+                                                                <MoreVertical className="h-4 w-4" />
+                                                                <span className="sr-only">Project options</span>
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem
+                                                                className="text-destructive focus:text-destructive"
+                                                                onClick={() => setProjectToDelete(project)}
+                                                            >
+                                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                                Delete Project
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <AccordionContent key={`content-${project.id}`} className="px-6 pb-6 space-y-3">
+                                            {items.length === 0 ? (
+                                                <div className="text-center py-12 text-muted-foreground bg-muted/20 rounded-lg border-2 border-dashed border-muted-foreground/20">
+                                                    <div className="p-3 rounded-full bg-muted/50 w-fit mx-auto mb-4">
+                                                        <Library className="h-6 w-6" />
+                                                    </div>
+                                                    <p className="font-medium">No content in this project yet</p>
+                                                    <p className="text-sm mt-1">Create content in Studio and save it to this project</p>
+                                                </div>
+                                            ) : (
+                                                items.map(item => (
+                                                    <Card
+                                                        key={item.id}
+                                                        className="group hover:shadow-md transition-all duration-200 border-border/50 hover:border-border bg-background/50 hover:bg-background cursor-pointer"
+                                                        onClick={() => setItemToView(item)}
+                                                    >
+                                                        <CardHeader className="pb-3">
+                                                            <div className="flex items-start justify-between gap-4">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center gap-3 mb-2">
+                                                                        <Badge variant="secondary" className="text-xs font-medium">
+                                                                            {item.type}
+                                                                        </Badge>
+                                                                        <span className="text-xs text-muted-foreground">
+                                                                            {formatDate(item.createdAt)}
+                                                                        </span>
+                                                                    </div>
+                                                                    <CardTitle className="text-base font-semibold leading-tight mb-2 group-hover:text-primary transition-colors">
+                                                                        {item.name || item.type}
+                                                                    </CardTitle>
+                                                                    <CardDescription className="text-sm line-clamp-2 text-muted-foreground">
+                                                                        {item.content.replace(/[#*`]/g, '').substring(0, 120)}
+                                                                        {item.content.length > 120 && '...'}
+                                                                    </CardDescription>
+                                                                </div>
+                                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            copyToClipboard(item.content);
+                                                                        }}
+                                                                        className="h-8 px-2 hover:bg-primary/10 hover:text-primary"
+                                                                        title="Copy content"
+                                                                    >
+                                                                        <Copy className="w-4 h-4" />
+                                                                        <span className="sr-only">Copy</span>
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setItemToMove(item);
+                                                                        }}
+                                                                        className="h-8 px-2 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950"
+                                                                        title="Move to project"
+                                                                    >
+                                                                        <FolderOpen className="w-4 h-4" />
+                                                                        <span className="sr-only">Move</span>
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setItemToView(item);
+                                                                        }}
+                                                                        className="h-8 px-2 hover:bg-accent"
+                                                                        title="View & Edit"
+                                                                    >
+                                                                        <FileText className="h-4 w-4" />
+                                                                        <span className="sr-only">View</span>
+                                                                    </Button>
+                                                                    <DropdownMenu>
+                                                                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                                                            <Button variant="ghost" size="sm" className="h-8 px-2 hover:bg-accent">
+                                                                                <MoreVertical className="w-4 h-4" />
+                                                                                <span className="sr-only">More options</span>
+                                                                            </Button>
+                                                                        </DropdownMenuTrigger>
+                                                                        <DropdownMenuContent align="end">
+                                                                            <DropdownMenuItem onSelect={() => setItemToView(item)}>
+                                                                                <FileText className="mr-2 h-4 w-4" />
+                                                                                View & Edit
+                                                                            </DropdownMenuItem>
+                                                                            <DropdownMenuItem onSelect={() => setItemToRename(item)}>
+                                                                                <Pencil className="mr-2 h-4 w-4" />
+                                                                                Rename
+                                                                            </DropdownMenuItem>
+                                                                            <DropdownMenuItem onSelect={() => setItemToMove(item)}>
+                                                                                <FolderOpen className="mr-2 h-4 w-4" />
+                                                                                Move to Project
+                                                                            </DropdownMenuItem>
+                                                                            <DropdownMenuSeparator />
+                                                                            <AlertDialogTrigger asChild>
+                                                                                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setItemToDelete(item)}>
+                                                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                                                    Delete
+                                                                                </DropdownMenuItem>
+                                                                            </AlertDialogTrigger>
+                                                                        </DropdownMenuContent>
+                                                                    </DropdownMenu>
+                                                                </div>
+                                                            </div>
+                                                        </CardHeader>
+                                                    </Card>
+                                                ))
+                                            )}
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                )
+                            })}
+                        </Accordion>
+
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the saved content item.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Delete
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )
+            }
+
+            {
+                !isLoading && (projects && projects.length > 0) && viewMode === 'grid' && (
+                    <AlertDialog>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {projectList.map(project => {
+                                const items = contentByProject[project.id] || [];
+
+                                return (
+                                    <Card key={project.id} className="flex flex-col hover:shadow-lg transition-all duration-200 border-border/50 hover:border-border group">
+                                        <CardHeader className="pb-4">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-3 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 group-hover:from-primary/20 group-hover:to-primary/10 transition-colors">
+                                                        <Folder className="h-6 w-6 text-primary" />
+                                                    </div>
+                                                    <div>
+                                                        <CardTitle className="font-headline text-lg font-semibold group-hover:text-primary transition-colors">{project.name}</CardTitle>
+                                                        <CardDescription className="text-sm">
                                                             {items.length} {items.length === 1 ? 'item' : 'items'}
                                                             {items.length > 0 && (
-                                                                <span className="ml-2">
-                                                                    • Last updated {formatDate(Math.max(...items.map(item => {
+                                                                <span className="block text-xs mt-1">
+                                                                    Updated {formatDate(Math.max(...items.map(item => {
                                                                         if (typeof item.createdAt === 'object' && 'seconds' in item.createdAt) {
                                                                             return item.createdAt.seconds * 1000;
                                                                         }
@@ -861,304 +1073,119 @@ export default function LibraryPage() {
                                                                     })))}
                                                                 </span>
                                                             )}
-                                                        </div>
+                                                        </CardDescription>
                                                     </div>
                                                 </div>
-                                            </AccordionTrigger>
-                                            {project.id !== 'uncategorized' && (
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-accent/50">
-                                                            <MoreVertical className="h-4 w-4" />
-                                                            <span className="sr-only">Project options</span>
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem
-                                                            className="text-destructive focus:text-destructive"
-                                                            onClick={() => setProjectToDelete(project)}
-                                                        >
-                                                            <Trash2 className="mr-2 h-4 w-4" />
-                                                            Delete Project
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <AccordionContent key={`content-${project.id}`} className="px-6 pb-6 space-y-3">
-                                        {items.length === 0 ? (
-                                            <div className="text-center py-12 text-muted-foreground bg-muted/20 rounded-lg border-2 border-dashed border-muted-foreground/20">
-                                                <div className="p-3 rounded-full bg-muted/50 w-fit mx-auto mb-4">
-                                                    <Library className="h-6 w-6" />
-                                                </div>
-                                                <p className="font-medium">No content in this project yet</p>
-                                                <p className="text-sm mt-1">Create content in Studio and save it to this project</p>
-                                            </div>
-                                        ) : (
-                                            items.map(item => (
-                                                <Card
-                                                    key={item.id}
-                                                    className="group hover:shadow-md transition-all duration-200 border-border/50 hover:border-border bg-background/50 hover:bg-background cursor-pointer"
-                                                    onClick={() => setItemToView(item)}
-                                                >
-                                                    <CardHeader className="pb-3">
-                                                        <div className="flex items-start justify-between gap-4">
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center gap-3 mb-2">
-                                                                    <Badge variant="secondary" className="text-xs font-medium">
-                                                                        {item.type}
-                                                                    </Badge>
-                                                                    <span className="text-xs text-muted-foreground">
-                                                                        {formatDate(item.createdAt)}
-                                                                    </span>
-                                                                </div>
-                                                                <CardTitle className="text-base font-semibold leading-tight mb-2 group-hover:text-primary transition-colors">
-                                                                    {item.name || item.type}
-                                                                </CardTitle>
-                                                                <CardDescription className="text-sm line-clamp-2 text-muted-foreground">
-                                                                    {item.content.replace(/[#*`]/g, '').substring(0, 120)}
-                                                                    {item.content.length > 120 && '...'}
-                                                                </CardDescription>
-                                                            </div>
-                                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        copyToClipboard(item.content);
-                                                                    }}
-                                                                    className="h-8 px-2 hover:bg-primary/10 hover:text-primary"
-                                                                    title="Copy content"
-                                                                >
-                                                                    <Copy className="w-4 h-4" />
-                                                                    <span className="sr-only">Copy</span>
-                                                                </Button>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setItemToMove(item);
-                                                                    }}
-                                                                    className="h-8 px-2 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950"
-                                                                    title="Move to project"
-                                                                >
-                                                                    <FolderOpen className="w-4 h-4" />
-                                                                    <span className="sr-only">Move</span>
-                                                                </Button>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setItemToView(item);
-                                                                    }}
-                                                                    className="h-8 px-2 hover:bg-accent"
-                                                                    title="View & Edit"
-                                                                >
-                                                                    <FileText className="h-4 w-4" />
-                                                                    <span className="sr-only">View</span>
-                                                                </Button>
-                                                                <DropdownMenu>
-                                                                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                                                        <Button variant="ghost" size="sm" className="h-8 px-2 hover:bg-accent">
-                                                                            <MoreVertical className="w-4 h-4" />
-                                                                            <span className="sr-only">More options</span>
-                                                                        </Button>
-                                                                    </DropdownMenuTrigger>
-                                                                    <DropdownMenuContent align="end">
-                                                                        <DropdownMenuItem onSelect={() => setItemToView(item)}>
-                                                                            <FileText className="mr-2 h-4 w-4" />
-                                                                            View & Edit
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem onSelect={() => setItemToRename(item)}>
-                                                                            <Pencil className="mr-2 h-4 w-4" />
-                                                                            Rename
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem onSelect={() => setItemToMove(item)}>
-                                                                            <FolderOpen className="mr-2 h-4 w-4" />
-                                                                            Move to Project
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuSeparator />
-                                                                        <AlertDialogTrigger asChild>
-                                                                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setItemToDelete(item)}>
-                                                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                                                Delete
-                                                                            </DropdownMenuItem>
-                                                                        </AlertDialogTrigger>
-                                                                    </DropdownMenuContent>
-                                                                </DropdownMenu>
-                                                            </div>
-                                                        </div>
-                                                    </CardHeader>
-                                                </Card>
-                                            ))
-                                        )}
-                                    </AccordionContent>
-                                </AccordionItem>
-                            )
-                        })}
-                    </Accordion>
-
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the saved content item.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                Delete
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            )}
-
-            {!isLoading && (projects && projects.length > 0) && viewMode === 'grid' && (
-                <AlertDialog>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {projectList.map(project => {
-                            const items = contentByProject[project.id] || [];
-
-                            return (
-                                <Card key={project.id} className="flex flex-col hover:shadow-lg transition-all duration-200 border-border/50 hover:border-border group">
-                                    <CardHeader className="pb-4">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-3 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 group-hover:from-primary/20 group-hover:to-primary/10 transition-colors">
-                                                    <Folder className="h-6 w-6 text-primary" />
-                                                </div>
-                                                <div>
-                                                    <CardTitle className="font-headline text-lg font-semibold group-hover:text-primary transition-colors">{project.name}</CardTitle>
-                                                    <CardDescription className="text-sm">
-                                                        {items.length} {items.length === 1 ? 'item' : 'items'}
-                                                        {items.length > 0 && (
-                                                            <span className="block text-xs mt-1">
-                                                                Updated {formatDate(Math.max(...items.map(item => {
-                                                                    if (typeof item.createdAt === 'object' && 'seconds' in item.createdAt) {
-                                                                        return item.createdAt.seconds * 1000;
-                                                                    }
-                                                                    return new Date(item.createdAt).getTime();
-                                                                })))}
-                                                            </span>
-                                                        )}
-                                                    </CardDescription>
-                                                </div>
-                                            </div>
-                                            {project.id !== 'uncategorized' && (
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <MoreVertical className="h-4 w-4" />
-                                                            <span className="sr-only">Project options</span>
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem
-                                                            className="text-destructive focus:text-destructive"
-                                                            onClick={() => setProjectToDelete(project)}
-                                                        >
-                                                            <Trash2 className="mr-2 h-4 w-4" />
-                                                            Delete Project
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            )}
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="flex-1">
-                                        {items.length === 0 ? (
-                                            <div className="text-center py-8 text-muted-foreground text-sm">
-                                                <p>No content yet</p>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-2">
-                                                {items.slice(0, 3).map(item => (
-                                                    <div key={item.id} className="flex items-start gap-2 p-2 rounded-lg hover:bg-muted/50 cursor-pointer group">
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium truncate">{item.name || item.type}</p>
-                                                            <p className="text-xs text-muted-foreground">{item.type}</p>
-                                                        </div>
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100">
-                                                                    <MoreVertical className="h-3 w-3" />
-                                                                    <span className="sr-only">Options</span>
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem onClick={() => copyToClipboard(item.content)}>
-                                                                    <Copy className="mr-2 h-4 w-4" />
-                                                                    Copy
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem onSelect={() => setItemToRename(item)}>
-                                                                    <Pencil className="mr-2 h-4 w-4" />
-                                                                    Rename
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem onSelect={() => setItemToMove(item)}>
-                                                                    <FolderOpen className="mr-2 h-4 w-4" />
-                                                                    Move to Project
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuSeparator />
-                                                                <AlertDialogTrigger asChild>
-                                                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setItemToDelete(item)}>
-                                                                        <Trash2 className="mr-2 h-4 w-4" />
-                                                                        Delete
-                                                                    </DropdownMenuItem>
-                                                                </AlertDialogTrigger>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </div>
-                                                ))}
-                                                {items.length > 3 && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="w-full text-xs"
-                                                        onClick={() => {
-                                                            setViewMode('list');
-                                                            setOpenProjects([project.id]);
-                                                        }}
-                                                    >
-                                                        View all {items.length} items
-                                                    </Button>
+                                                {project.id !== 'uncategorized' && (
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <MoreVertical className="h-4 w-4" />
+                                                                <span className="sr-only">Project options</span>
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem
+                                                                className="text-destructive focus:text-destructive"
+                                                                onClick={() => setProjectToDelete(project)}
+                                                            >
+                                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                                Delete Project
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
                                                 )}
                                             </div>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
-                    </div>
+                                        </CardHeader>
+                                        <CardContent className="flex-1">
+                                            {items.length === 0 ? (
+                                                <div className="text-center py-8 text-muted-foreground text-sm">
+                                                    <p>No content yet</p>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-2">
+                                                    {items.slice(0, 3).map(item => (
+                                                        <div key={item.id} className="flex items-start gap-2 p-2 rounded-lg hover:bg-muted/50 cursor-pointer group">
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-sm font-medium truncate">{item.name || item.type}</p>
+                                                                <p className="text-xs text-muted-foreground">{item.type}</p>
+                                                            </div>
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100">
+                                                                        <MoreVertical className="h-3 w-3" />
+                                                                        <span className="sr-only">Options</span>
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end">
+                                                                    <DropdownMenuItem onClick={() => copyToClipboard(item.content)}>
+                                                                        <Copy className="mr-2 h-4 w-4" />
+                                                                        Copy
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem onSelect={() => setItemToRename(item)}>
+                                                                        <Pencil className="mr-2 h-4 w-4" />
+                                                                        Rename
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem onSelect={() => setItemToMove(item)}>
+                                                                        <FolderOpen className="mr-2 h-4 w-4" />
+                                                                        Move to Project
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuSeparator />
+                                                                    <AlertDialogTrigger asChild>
+                                                                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => setItemToDelete(item)}>
+                                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                                            Delete
+                                                                        </DropdownMenuItem>
+                                                                    </AlertDialogTrigger>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        </div>
+                                                    ))}
+                                                    {items.length > 3 && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="w-full text-xs"
+                                                            onClick={() => {
+                                                                setViewMode('list');
+                                                                setOpenProjects([project.id]);
+                                                            }}
+                                                        >
+                                                            View all {items.length} items
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })}
+                        </div>
 
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <div className="flex items-start gap-4">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-red-500">
-                                    <Trash2 className="h-5 w-5" />
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <div className="flex items-start gap-4">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-red-500">
+                                        <Trash2 className="h-5 w-5" />
+                                    </div>
+                                    <div className="flex-1 space-y-2">
+                                        <AlertDialogTitle>Delete Content?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete the saved content item.
+                                        </AlertDialogDescription>
+                                    </div>
                                 </div>
-                                <div className="flex-1 space-y-2">
-                                    <AlertDialogTitle>Delete Content?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This action cannot be undone. This will permanently delete the saved content item.
-                                    </AlertDialogDescription>
-                                </div>
-                            </div>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDeleteItem} className="bg-red-600 hover:bg-red-700 focus:ring-red-600 text-white">
-                                Delete
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            )}
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteItem} className="bg-red-600 hover:bg-red-700 focus:ring-red-600 text-white">
+                                    Delete
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )
+            }
 
             {/* Delete Project Confirmation Modal */}
             <AlertDialog open={!!projectToDelete} onOpenChange={(open) => !open && setProjectToDelete(null)}>
@@ -1186,38 +1213,42 @@ export default function LibraryPage() {
             </AlertDialog>
 
             {/* Empty state for no search results */}
-            {!isLoading && searchQuery && Object.values(contentByProject).flat().length === 0 && (
-                <IntelligentEmptyState
-                    icon={Library}
-                    title="No Results Found"
-                    description={`No content matches "${searchQuery}". Try different keywords or check your spelling.`}
-                    actions={[
-                        {
-                            label: "Clear Search",
-                            onClick: () => setSearchQuery(''),
-                            variant: "outline"
-                        },
-                    ]}
-                    variant="card"
-                />
-            )}
+            {
+                !isLoading && searchQuery && Object.values(contentByProject).flat().length === 0 && (
+                    <IntelligentEmptyState
+                        icon={Library}
+                        title="No Results Found"
+                        description={`No content matches "${searchQuery}". Try different keywords or check your spelling.`}
+                        actions={[
+                            {
+                                label: "Clear Search",
+                                onClick: () => setSearchQuery(''),
+                                variant: "outline"
+                            },
+                        ]}
+                        variant="card"
+                    />
+                )
+            }
 
             {/* Empty state for no content at all */}
-            {!isLoading && !searchQuery && (!projects || projects.length === 0) && (!savedContent || savedContent.length === 0) && (
-                <IntelligentEmptyState
-                    icon={Library}
-                    title="Your Library is Empty"
-                    description="You haven't saved any content yet. Start creating content in the Studio to build your library of AI-generated marketing materials."
-                    actions={[
-                        {
-                            label: "Go to Studio",
-                            onClick: () => router.push('/studio/write'),
-                            icon: FolderPlus,
-                        },
-                    ]}
-                    variant="card"
-                />
-            )}
+            {
+                !isLoading && !searchQuery && (!projects || projects.length === 0) && (!savedContent || savedContent.length === 0) && (
+                    <IntelligentEmptyState
+                        icon={Library}
+                        title="Your Library is Empty"
+                        description="You haven't saved any content yet. Start creating content in the Studio to build your library of AI-generated marketing materials."
+                        actions={[
+                            {
+                                label: "Go to Studio",
+                                onClick: () => router.push('/studio/write'),
+                                icon: FolderPlus,
+                            },
+                        ]}
+                        variant="card"
+                    />
+                )
+            }
             <CreateProjectDialog
                 isOpen={isCreateProjectOpen}
                 setIsOpen={setIsCreateProjectOpen}
@@ -1268,6 +1299,6 @@ export default function LibraryPage() {
                     await refreshContent();
                 }}
             />
-        </div>
+        </div >
     );
 }

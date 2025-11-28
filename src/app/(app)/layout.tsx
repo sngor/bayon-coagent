@@ -478,7 +478,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       </DropdownMenu>
                     </div>
                   </header>
-                  <main className="p-4 md:p-8 lg:p-10">
+                  <main className="flex-1 w-full p-4 md:p-6">
                     <PageTransition>{children}</PageTransition>
                   </main>
                 </SidebarInset>

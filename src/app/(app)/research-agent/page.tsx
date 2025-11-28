@@ -29,6 +29,8 @@ import { saveResearchReportAction } from '@/app/actions';
 import type { ResearchReport } from '@/lib/types';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
 
 type ResearchInitialState = {
   message: string;
@@ -135,12 +137,13 @@ export default function ResearchAgentPage() {
 
   useEffect(() => {
     if (state.message === 'success' && state.data && user?.id && !isSaving) {
+      const reportData = state.data;
       const saveReport = async () => {
         setIsSaving(true);
         try {
           const result = await saveResearchReportAction(
             lastTopic || "Untitled Report",
-            state.data.report
+            reportData.report
           );
 
           if (result.message === 'Report saved successfully') {
@@ -224,13 +227,18 @@ export default function ResearchAgentPage() {
 
   return (
     <div className="animate-fade-in-up space-y-8">
-      <PageHeader
-        title="AI Research Agent"
-        description="Delegate deep-dive research. Your AI agent will compile a comprehensive report that you can save to your knowledge base."
-      />
-
       <Card>
         <CardHeader>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-bold font-headline">AI Research Agent</h1>
+              <p className="text-muted-foreground">Delegate deep-dive research. Your AI agent will compile a comprehensive report that you can save to your knowledge base.</p>
+            </div>
+            {(() => {
+              const pageConfig = getPageConfig('/research-agent');
+              return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+            })()}
+          </div>
           <CardTitle className="font-headline">New Research Task</CardTitle>
           <CardDescription>
             Enter a topic, and the AI agent will perform iterative web searches to compile a comprehensive report with citations.

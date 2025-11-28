@@ -49,6 +49,8 @@ import { findCompetitorsAction, getKeywordRankingsAction, saveCompetitorAction }
 import { toast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
 
 // Chart configuration for review volume visualization
 const chartConfig = {
@@ -261,7 +263,15 @@ export default function CompetitiveAnalysisPage() {
     <div className="space-y-8">
       <div className="space-y-8">
         <StandardCard
-          title={<span className="font-headline">AI Competitor Discovery</span>}
+          title={
+            <div className="flex items-center justify-between w-full">
+              <span className="font-headline">AI Competitor Discovery</span>
+              {(() => {
+                const pageConfig = getPageConfig('/brand/competitors');
+                return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+              })()}
+            </div>
+          }
           description="Use AI to automatically discover top competitors in your market based on your profile."
         >
           <form action={findFormAction} className="space-y-4">
