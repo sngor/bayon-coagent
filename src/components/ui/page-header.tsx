@@ -28,7 +28,7 @@ export function PageHeader({
             iconWrapper: 'flex-shrink-0 mt-1',
             icon: 'h-8 w-8 text-primary',
             textWrapper: 'min-w-0 flex-1',
-            title: 'font-headline text-3xl md:text-4xl font-bold text-foreground',
+            title: 'font-headline text-3xl md:text-4xl font-bold text-primary',
             description: 'mt-2 text-lg text-muted-foreground',
             actions: 'flex-shrink-0'
         },
@@ -39,7 +39,7 @@ export function PageHeader({
             iconWrapper: 'flex-shrink-0 mt-1',
             icon: 'h-8 w-8 text-primary',
             textWrapper: 'min-w-0 flex-1',
-            title: 'font-headline text-3xl md:text-4xl font-bold text-foreground',
+            title: 'font-headline text-3xl md:text-4xl font-bold text-primary',
             description: 'mt-2 text-lg text-muted-foreground',
             actions: 'flex-shrink-0'
         },
@@ -50,7 +50,7 @@ export function PageHeader({
             iconWrapper: 'flex-shrink-0',
             icon: 'h-6 w-6 text-primary',
             textWrapper: 'min-w-0 flex-1',
-            title: 'font-headline text-xl md:text-2xl font-semibold text-foreground',
+            title: 'font-headline text-xl md:text-2xl font-semibold text-primary',
             description: 'text-sm text-muted-foreground',
             actions: 'flex-shrink-0'
         }

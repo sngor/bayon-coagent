@@ -1,5 +1,7 @@
 import { Metadata } from "next";
-import { Shield, Lock, Eye, Database, Globe, UserCheck, Brain, Server } from "lucide-react";
+import Link from "next/link";
+import { Shield, Lock, Eye, Database, Globe, UserCheck, Brain, Server, ArrowLeft, FileText } from "lucide-react";
+import { SubtleGradientMesh } from "@/components/ui/gradient-mesh";
 
 export const metadata: Metadata = {
     title: "Privacy Policy | Bayon Coagent",
@@ -8,188 +10,286 @@ export const metadata: Metadata = {
 
 export default function PrivacyPolicyPage() {
     return (
-        <div className="container max-w-4xl py-12 px-4">
-            <div className="mb-12">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium mb-6">
-                    <Shield className="h-4 w-4" />
-                    Your Privacy Matters
-                </div>
-                <h1 className="text-5xl font-bold mb-4 font-headline">Privacy Policy</h1>
-                <p className="text-lg text-muted-foreground">
-                    Last updated: {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-                </p>
-            </div>
-
-            <div className="prose prose-slate dark:prose-invert max-w-none space-y-8">
-                <section className="bg-muted/30 rounded-lg p-6 border">
-                    <h2 className="font-headline text-2xl font-semibold mb-4 flex items-center gap-2">
-                        <Eye className="h-6 w-6 text-primary" />
-                        1. Introduction
-                    </h2>
-                    <p className="text-base leading-relaxed">
-                        Welcome to Bayon Coagent ("we," "our," or "us"). We respect your privacy and are committed to protecting your personal data.
-                        This privacy policy explains how we collect, use, disclose, and safeguard your information when you use our AI-powered
-                        success platform for real estate agents.
-                    </p>
-                </section>
-
-                <section>
-                    <h2 className="font-headline text-2xl font-semibold mb-4 flex items-center gap-2">
-                        <Database className="h-6 w-6 text-primary" />
-                        2. Information We Collect
-                    </h2>
-
-                    <h3 className="font-headline text-xl font-semibold mb-3 mt-6">2.1 Information You Provide</h3>
-                    <ul className="list-disc pl-6 space-y-2">
-                        <li><strong>Account Information:</strong> Name, email address, phone number, business name, and professional details</li>
-                        <li><strong>Profile Data:</strong> Professional bio, service areas, specializations, certifications, and brand information</li>
-                        <li><strong>Content:</strong> Blog posts, social media content, listing descriptions, and other materials you create</li>
-                        <li><strong>Business Information:</strong> Google Business Profile data, Zillow reviews, and competitor information</li>
-                        <li><strong>Payment Information:</strong> Billing details processed securely through our payment processor</li>
-                    </ul>
-
-                    <h3 className="font-headline text-xl font-semibold mb-3 mt-6">2.2 Automatically Collected Information</h3>
-                    <ul className="list-disc pl-6 space-y-2">
-                        <li><strong>Usage Data:</strong> Features used, content generated, time spent, and interaction patterns</li>
-                        <li><strong>Device Information:</strong> Browser type, operating system, IP address, and device identifiers</li>
-                        <li><strong>Log Data:</strong> Access times, pages viewed, and system activity</li>
-                    </ul>
-                </section>
-
-                <section>
-                    <h2 className="font-headline text-2xl font-semibold mb-4">3. How We Use Your Information</h2>
-                    <p className="mb-4">We use your information to:</p>
-                    <ul className="list-disc pl-6 space-y-2">
-                        <li>Provide, maintain, and improve our AI-powered platform</li>
-                        <li>Generate personalized content and marketing strategies</li>
-                        <li>Conduct market research and competitor analysis</li>
-                        <li>Process your transactions and manage your account</li>
-                        <li>Send you service updates, security alerts, and support messages</li>
-                        <li>Respond to your requests and provide customer support</li>
-                        <li>Analyze usage patterns to enhance user experience</li>
-                        <li>Comply with legal obligations and enforce our terms</li>
-                    </ul>
-                </section>
-
-                <section className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-6 border border-purple-200 dark:border-purple-900">
-                    <h2 className="font-headline text-2xl font-semibold mb-4 flex items-center gap-2">
-                        <Brain className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                        4. AI and Data Processing
-                    </h2>
-                    <p className="mb-4 text-base">
-                        Our platform uses AWS Bedrock with Claude AI to generate content and insights. When you use our AI features:
-                    </p>
-                    <ul className="list-disc pl-6 space-y-2">
-                        <li>Your prompts and generated content are processed by AWS Bedrock</li>
-                        <li>AWS does not use your data to train their models</li>
-                        <li>All AI processing occurs within our secure AWS infrastructure</li>
-                        <li>Generated content belongs to you and is stored securely in your account</li>
-                    </ul>
-                </section>
-
-                <section className="bg-green-50 dark:bg-green-950/20 rounded-lg p-6 border border-green-200 dark:border-green-900">
-                    <h2 className="font-headline text-2xl font-semibold mb-4 flex items-center gap-2">
-                        <Lock className="h-6 w-6 text-green-600 dark:text-green-400" />
-                        5. Data Storage and Security
-                    </h2>
-                    <p className="mb-4 text-base">
-                        We implement industry-standard security measures to protect your data:
-                    </p>
-                    <ul className="list-disc pl-6 space-y-2">
-                        <li><strong>Encryption:</strong> Data is encrypted in transit (TLS) and at rest (AES-256)</li>
-                        <li><strong>AWS Infrastructure:</strong> Hosted on AWS with enterprise-grade security</li>
-                        <li><strong>Authentication:</strong> AWS Cognito with JWT tokens and secure session management</li>
-                        <li><strong>Access Controls:</strong> Role-based access and principle of least privilege</li>
-                        <li><strong>Monitoring:</strong> AWS CloudWatch for security monitoring and alerting</li>
-                    </ul>
-                </section>
-
-                <section>
-                    <h2 className="font-headline text-2xl font-semibold mb-4 flex items-center gap-2">
-                        <Server className="h-6 w-6 text-primary" />
-                        6. Data Sharing and Disclosure
-                    </h2>
-                    <p className="mb-4">We do not sell your personal data. We may share your information with:</p>
-                    <ul className="list-disc pl-6 space-y-2">
-                        <li><strong>Service Providers:</strong> AWS, payment processors, and analytics providers who assist in operating our platform</li>
-                        <li><strong>Third-Party Integrations:</strong> Google Business Profile, Zillow (only with your explicit consent)</li>
-                        <li><strong>Legal Requirements:</strong> When required by law or to protect our rights</li>
-                        <li><strong>Business Transfers:</strong> In connection with a merger, acquisition, or sale of assets</li>
-                    </ul>
-                </section>
-
-                <section className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-6 border border-blue-200 dark:border-blue-900">
-                    <h2 className="font-headline text-2xl font-semibold mb-4 flex items-center gap-2">
-                        <UserCheck className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                        7. Your Rights and Choices
-                    </h2>
-                    <p className="mb-4 text-base">You have the right to:</p>
-                    <ul className="list-disc pl-6 space-y-2">
-                        <li><strong>Access:</strong> Request a copy of your personal data</li>
-                        <li><strong>Correction:</strong> Update or correct inaccurate information</li>
-                        <li><strong>Deletion:</strong> Request deletion of your account and data</li>
-                        <li><strong>Export:</strong> Download your content and data</li>
-                        <li><strong>Opt-Out:</strong> Unsubscribe from marketing communications</li>
-                        <li><strong>Restrict Processing:</strong> Limit how we use your data</li>
-                    </ul>
-                    <p className="mt-4 text-base">
-                        To exercise these rights, contact us at <a href="mailto:contact@bayoncoagent.com" className="text-primary hover:underline font-medium">contact@bayoncoagent.com</a>
-                    </p>
-                </section>
-
-                <section>
-                    <h2 className="font-headline text-2xl font-semibold mb-4">8. Cookies and Tracking</h2>
-                    <p className="mb-4">
-                        We use cookies and similar technologies to enhance your experience. You can control cookies through your browser settings.
-                    </p>
-                </section>
-
-                <section>
-                    <h2 className="font-headline text-2xl font-semibold mb-4">9. Data Retention</h2>
-                    <p>
-                        We retain your data for as long as your account is active or as needed to provide services.
-                        After account deletion, we may retain certain data for legal compliance, dispute resolution, and legitimate business purposes.
-                    </p>
-                </section>
-
-                <section>
-                    <h2 className="font-headline text-2xl font-semibold mb-4">10. Children's Privacy</h2>
-                    <p>
-                        Our platform is not intended for users under 18. We do not knowingly collect data from children.
-                    </p>
-                </section>
-
-                <section>
-                    <h2 className="font-headline text-2xl font-semibold mb-4">11. International Data Transfers</h2>
-                    <p>
-                        Your data may be transferred to and processed in countries other than your own.
-                        We ensure appropriate safeguards are in place for international transfers.
-                    </p>
-                </section>
-
-                <section>
-                    <h2 className="font-headline text-2xl font-semibold mb-4">12. Changes to This Policy</h2>
-                    <p>
-                        We may update this privacy policy periodically. We will notify you of significant changes via email or platform notification.
-                    </p>
-                </section>
-
-                <section className="bg-muted/30 rounded-lg p-6 border">
-                    <h2 className="font-headline text-2xl font-semibold mb-4 flex items-center gap-2">
-                        <Globe className="h-6 w-6 text-primary" />
-                        13. Contact Us
-                    </h2>
-                    <p className="text-base mb-4">
-                        If you have questions about this privacy policy or our data practices, we're here to help:
-                    </p>
-                    <div className="bg-background rounded-md p-4 border">
-                        <p className="text-sm text-muted-foreground mb-2">Email us at:</p>
-                        <a href="mailto:contact@bayoncoagent.com" className="text-lg font-semibold text-primary hover:underline">
-                            contact@bayoncoagent.com
-                        </a>
+        <div className="min-h-screen relative">
+            <SubtleGradientMesh>
+                {/* Header */}
+                <div className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+                    <div className="container max-w-6xl py-4 px-4">
+                        <div className="flex items-center justify-between">
+                            <Link
+                                href="/login"
+                                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+                            >
+                                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                                Back to Login
+                            </Link>
+                        </div>
                     </div>
-                </section>
-            </div>
+                </div>
+
+                <div className="container max-w-4xl py-16 px-4 mx-auto">
+                    {/* Hero Section */}
+                    <div className="mb-16 text-center mx-auto">
+                        <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-semibold mb-8 shadow-sm">
+                            <Shield className="h-4 w-4" />
+                            Your Privacy Matters
+                        </div>
+                        <h1 className="text-6xl font-bold mb-6 font-headline text-gradient-primary">Privacy Policy</h1>
+                        <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-4">
+                            Your trust is everything. Here's exactly how we protect your data and respect your privacy.
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                            Last updated: {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                        </p>
+                    </div>
+
+                    {/* Table of Contents */}
+                    <div className="mb-12 p-6 rounded-2xl bg-card/50 backdrop-blur-sm border border-border/50 shadow-lg">
+                        <h2 className="font-headline text-xl font-semibold mb-4">Quick Navigation</h2>
+                        <div className="grid md:grid-cols-2 gap-3 text-sm">
+                            {[
+                                "Introduction", "Information We Collect", "How We Use Your Information",
+                                "AI and Data Processing", "Data Storage and Security", "Data Sharing and Disclosure",
+                                "Your Rights and Choices", "Contact Us"
+                            ].map((item, index) => (
+                                <a
+                                    key={index}
+                                    href={`#section-${index + 1}`}
+                                    className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors py-1"
+                                >
+                                    <span className="text-xs text-primary/60">{index + 1}.</span>
+                                    {item}
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Content Sections */}
+                    <div className="prose prose-slate dark:prose-invert max-w-none space-y-8">
+                        <section id="section-1" className="scroll-mt-24 p-8 rounded-2xl bg-gradient-to-br from-primary/5 to-accent-start/5 border border-primary/10 shadow-sm">
+                            <h2 className="font-headline text-3xl font-semibold mb-6 flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-primary/10">
+                                    <Eye className="h-6 w-6 text-primary" />
+                                </div>
+                                Introduction
+                            </h2>
+                            <p className="text-base leading-relaxed text-foreground/90">
+                                Welcome to Bayon Coagent. We built this platform to help you work smarter with AI—not to collect unnecessary data.
+                                This policy explains exactly what information we collect, why we need it, and how we protect it. We believe privacy
+                                should be simple and transparent, so we've written this in plain language.
+                            </p>
+                        </section>
+
+                        <section id="section-2" className="scroll-mt-24">
+                            <h2 className="font-headline text-3xl font-semibold mb-6 flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-primary/10">
+                                    <Database className="h-6 w-6 text-primary" />
+                                </div>
+                                Information We Collect
+                            </h2>
+
+                            <div className="space-y-6">
+                                <div className="p-6 rounded-xl bg-card/50 backdrop-blur-sm border border-border/50">
+                                    <h3 className="font-headline text-xl font-semibold mb-4">Information You Provide</h3>
+                                    <ul className="list-none space-y-3">
+                                        <li className="flex items-start gap-3">
+                                            <span className="text-primary mt-1">•</span>
+                                            <div><strong>Account Information:</strong> Name, email address, phone number, and professional details</div>
+                                        </li>
+                                        <li className="flex items-start gap-3">
+                                            <span className="text-primary mt-1">•</span>
+                                            <div><strong>Profile Data:</strong> Professional bio, specializations, and business information</div>
+                                        </li>
+                                        <li className="flex items-start gap-3">
+                                            <span className="text-primary mt-1">•</span>
+                                            <div><strong>Content:</strong> Documents, materials, and content you create or upload</div>
+                                        </li>
+                                        <li className="flex items-start gap-3">
+                                            <span className="text-primary mt-1">•</span>
+                                            <div><strong>Payment Information:</strong> Billing details processed securely through our payment processor</div>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                <div className="p-6 rounded-xl bg-card/50 backdrop-blur-sm border border-border/50">
+                                    <h3 className="font-headline text-xl font-semibold mb-4">Automatically Collected Information</h3>
+                                    <ul className="list-none space-y-3">
+                                        <li className="flex items-start gap-3">
+                                            <span className="text-primary mt-1">•</span>
+                                            <div><strong>Usage Data:</strong> Features used, content generated, time spent, and interaction patterns</div>
+                                        </li>
+                                        <li className="flex items-start gap-3">
+                                            <span className="text-primary mt-1">•</span>
+                                            <div><strong>Device Information:</strong> Browser type, operating system, IP address, and device identifiers</div>
+                                        </li>
+                                        <li className="flex items-start gap-3">
+                                            <span className="text-primary mt-1">•</span>
+                                            <div><strong>Log Data:</strong> Access times, pages viewed, and system activity</div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section id="section-3" className="scroll-mt-24">
+                            <h2 className="font-headline text-3xl font-semibold mb-6">How We Use Your Information</h2>
+                            <div className="p-6 rounded-xl bg-card/50 backdrop-blur-sm border border-border/50">
+                                <p className="mb-4 text-base">We use your information to:</p>
+                                <ul className="grid md:grid-cols-2 gap-3">
+                                    {[
+                                        "Provide and improve our AI-powered platform",
+                                        "Generate personalized content and insights",
+                                        "Process your transactions and manage your account",
+                                        "Send you service updates and support messages",
+                                        "Respond to your requests and provide support",
+                                        "Analyze usage patterns to enhance experience",
+                                        "Comply with legal obligations",
+                                        "Ensure platform security and prevent fraud"
+                                    ].map((item, i) => (
+                                        <li key={i} className="flex items-start gap-2">
+                                            <Shield className="h-4 w-4 text-primary mt-1 flex-shrink-0" />
+                                            <span className="text-sm">{item}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </section>
+
+                        <section id="section-4" className="scroll-mt-24 p-8 rounded-2xl bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 shadow-sm">
+                            <h2 className="font-headline text-3xl font-semibold mb-6 flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-purple-500/10">
+                                    <Brain className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                                </div>
+                                AI and Data Processing
+                            </h2>
+                            <p className="mb-4 text-base leading-relaxed">
+                                We use Google's Gemini AI to power our intelligent features. Here's what happens with your data:
+                            </p>
+                            <ul className="space-y-3">
+                                {[
+                                    "Your prompts and generated content are processed by Google's AI services",
+                                    "Google does not use your data to train their models",
+                                    "All AI processing occurs within secure cloud infrastructure",
+                                    "Generated content belongs to you and is stored securely in your account"
+                                ].map((item, i) => (
+                                    <li key={i} className="flex items-start gap-3">
+                                        <Brain className="h-5 w-5 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
+                                        <span className="text-base">{item}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </section>
+
+                        <section id="section-5" className="scroll-mt-24 p-8 rounded-2xl bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 shadow-sm">
+                            <h2 className="font-headline text-3xl font-semibold mb-6 flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-green-500/10">
+                                    <Lock className="h-6 w-6 text-green-600 dark:text-green-400" />
+                                </div>
+                                Data Storage and Security
+                            </h2>
+                            <p className="mb-6 text-base leading-relaxed">
+                                Security isn't just a checkbox for us—it's fundamental to everything we build. Here's how we protect your information:
+                            </p>
+                            <div className="grid md:grid-cols-2 gap-4">
+                                {[
+                                    { label: "Encryption", desc: "Data encrypted in transit (TLS) and at rest (AES-256)" },
+                                    { label: "Cloud Infrastructure", desc: "Hosted on enterprise-grade cloud services" },
+                                    { label: "Authentication", desc: "Secure session management with JWT tokens" },
+                                    { label: "Access Controls", desc: "Role-based access and least privilege" },
+                                ].map((item, i) => (
+                                    <div key={i} className="p-4 rounded-lg bg-background/50 border border-green-500/10">
+                                        <strong className="text-green-600 dark:text-green-400">{item.label}:</strong>
+                                        <p className="text-sm mt-1 text-muted-foreground">{item.desc}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+
+                        <section id="section-6" className="scroll-mt-24">
+                            <h2 className="font-headline text-3xl font-semibold mb-6 flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-primary/10">
+                                    <Server className="h-6 w-6 text-primary" />
+                                </div>
+                                Data Sharing and Disclosure
+                            </h2>
+                            <div className="p-6 rounded-xl bg-card/50 backdrop-blur-sm border border-border/50">
+                                <p className="mb-4 font-semibold text-lg">Let's be clear: We will never sell your data. Period.</p>
+                                <p className="mb-4">We only share your information when absolutely necessary:</p>
+                                <ul className="space-y-3">
+                                    {[
+                                        { label: "Service Providers", desc: "Cloud services, payment processors, and analytics providers" },
+                                        { label: "Third-Party Integrations", desc: "Only with your explicit consent" },
+                                        { label: "Legal Requirements", desc: "When required by law or to protect our rights" },
+                                        { label: "Business Transfers", desc: "In connection with a merger, acquisition, or sale of assets" }
+                                    ].map((item, i) => (
+                                        <li key={i} className="flex items-start gap-3">
+                                            <span className="text-primary mt-1">•</span>
+                                            <div>
+                                                <strong>{item.label}:</strong> {item.desc}
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </section>
+
+                        <section id="section-7" className="scroll-mt-24 p-8 rounded-2xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 shadow-sm">
+                            <h2 className="font-headline text-3xl font-semibold mb-6 flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-blue-500/10">
+                                    <UserCheck className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                Your Rights and Choices
+                            </h2>
+                            <p className="mb-6 text-base">Your data is yours. Here's what you can do with it:</p>
+                            <div className="grid md:grid-cols-2 gap-4">
+                                {[
+                                    { label: "Access", desc: "Request a copy of your personal data" },
+                                    { label: "Correction", desc: "Update or correct inaccurate information" },
+                                    { label: "Deletion", desc: "Request deletion of your account and data" },
+                                    { label: "Export", desc: "Download your content and data" },
+                                    { label: "Opt-Out", desc: "Unsubscribe from marketing communications" },
+                                    { label: "Restrict Processing", desc: "Limit how we use your data" },
+                                ].map((item, i) => (
+                                    <div key={i} className="p-4 rounded-lg bg-background/50 border border-blue-500/10">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <UserCheck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                            <strong className="text-blue-600 dark:text-blue-400">{item.label}</strong>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">{item.desc}</p>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="mt-6 p-4 rounded-lg bg-background/50 border border-blue-500/10">
+                                <p className="text-base">
+                                    To exercise these rights, contact us at{" "}
+                                    <a href="mailto:contact@bayoncoagent.com" className="text-primary hover:underline font-semibold">
+                                        contact@bayoncoagent.com
+                                    </a>
+                                </p>
+                            </div>
+                        </section>
+
+                        <section id="section-8" className="scroll-mt-24 p-8 rounded-2xl bg-gradient-to-br from-primary/5 to-accent-start/5 border border-primary/10 shadow-sm">
+                            <h2 className="font-headline text-3xl font-semibold mb-6 flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-primary/10">
+                                    <Globe className="h-6 w-6 text-primary" />
+                                </div>
+                                Contact Us
+                            </h2>
+                            <p className="text-base mb-6 leading-relaxed">
+                                Questions? Concerns? We're real people who care about your privacy. Reach out anytime:
+                            </p>
+                            <div className="p-6 rounded-xl bg-background/80 backdrop-blur-sm border border-border shadow-md">
+                                <p className="text-sm text-muted-foreground mb-3">Email us at:</p>
+                                <a href="mailto:contact@bayoncoagent.com" className="text-2xl font-bold text-primary hover:underline inline-flex items-center gap-2">
+                                    contact@bayoncoagent.com
+                                </a>
+                            </div>
+                        </section>
+                    </div>
+
+                </div>
+            </SubtleGradientMesh>
         </div>
     );
 }

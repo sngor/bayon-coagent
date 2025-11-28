@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { emailSignInAction, emailSignUpAction, acceptInvitationByTokenAction, joinOrganizationByTokenAction } from '@/app/actions';
 import { useFormStatus } from 'react-dom';
-import { HeroGradientMesh, SubtleGradientMesh } from '@/components/ui/gradient-mesh';
+import { HeroGradientMesh, SubtleGradientMesh, GradientMesh } from '@/components/ui/gradient-mesh';
 import { useToast } from '@/hooks/use-toast';
 import { useSearchParams } from 'next/navigation';
 import { StripePricing } from '@/components/stripe-pricing';
@@ -112,7 +112,7 @@ function SignInForm({ onSwitch, onShowVerify }: { onSwitch: () => void; onShowVe
             <div className="grid gap-4 text-center">
                 <h1 className="font-display text-5xl font-bold text-gradient-primary tracking-tight">Welcome Back</h1>
                 <p className="text-xl text-muted-foreground font-light">
-                    Sign in to grow your business
+                    Continue working smarter with your AI-powered workspace
                 </p>
             </div>
             <form action={signInFormAction} className="space-y-6">
@@ -136,17 +136,7 @@ function SignInForm({ onSwitch, onShowVerify }: { onSwitch: () => void; onShowVe
                         )}
                     </div>
                     <div className="grid gap-2">
-                        <div className="flex items-center justify-between">
-                            <Label htmlFor="password-signin" className="text-base font-semibold ml-1">Password</Label>
-                            <Button
-                                type="button"
-                                variant="link"
-                                onClick={onShowVerify}
-                                className="text-xs text-muted-foreground hover:text-primary h-auto p-0"
-                            >
-                                Forgot password?
-                            </Button>
-                        </div>
+                        <Label htmlFor="password-signin" className="text-base font-semibold ml-1">Password</Label>
                         <div className="relative group">
                             <Input
                                 id="password-signin"
@@ -165,6 +155,16 @@ function SignInForm({ onSwitch, onShowVerify }: { onSwitch: () => void; onShowVe
                             >
                                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                 <span className="sr-only">Toggle password visibility</span>
+                            </Button>
+                        </div>
+                        <div className="flex justify-end mt-1">
+                            <Button
+                                type="button"
+                                variant="link"
+                                onClick={onShowVerify}
+                                className="text-xs text-muted-foreground hover:text-primary h-auto p-0"
+                            >
+                                Forgot password?
                             </Button>
                         </div>
                         {hasPasswordError && signInState.errors && 'password' in signInState.errors && (
@@ -529,9 +529,9 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     return (
         <div className="grid gap-8 animate-fade-in p-10 rounded-3xl glass-effect-sm border border-border/50 shadow-2xl bg-card/50 backdrop-blur-2xl">
             <div className="grid gap-4 text-center">
-                <h1 className="font-display text-5xl font-bold text-gradient-primary tracking-tight">Start Your Journey</h1>
+                <h1 className="font-display text-5xl font-bold text-gradient-primary tracking-tight">Work Smarter with AI</h1>
                 <p className="text-xl text-muted-foreground font-light">
-                    Create your account and unlock AI-powered marketing
+                    Join professionals who amplify their capabilities with intelligent AI assistance
                 </p>
             </div>
             <form action={signUpFormAction} className="space-y-6">
@@ -879,26 +879,64 @@ export default function LoginPage() {
         return (
             <div className="w-full min-h-screen lg:flex">
                 {/* Left side - Form */}
-                <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-background lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-1/2 lg:overflow-y-auto relative overflow-hidden">
-                    <SubtleGradientMesh>
-                        {/* Background Pattern */}
-                        <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+                <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 lg:fixed lg:left-0 lg:top-0 lg:h-screen lg:w-1/2 lg:overflow-y-auto relative overflow-hidden">
+                    {/* Gradient Mesh Background */}
+                    <GradientMesh
+                        containerClassName="w-full h-full absolute inset-0"
+                        orbs={[
+                            {
+                                id: 'login-1',
+                                color: 'hsl(var(--primary))',
+                                size: 800,
+                                x: 20,
+                                y: 20,
+                                blur: 100,
+                                opacity: 0.2,
+                                animationDuration: 45,
+                            },
+                            {
+                                id: 'login-2',
+                                color: 'hsl(var(--accent-start))',
+                                size: 700,
+                                x: 80,
+                                y: 80,
+                                blur: 100,
+                                opacity: 0.15,
+                                animationDuration: 50,
+                            },
+                            {
+                                id: 'login-3',
+                                color: 'hsl(var(--accent-mid))',
+                                size: 600,
+                                x: 50,
+                                y: 50,
+                                blur: 120,
+                                opacity: 0.1,
+                                animationDuration: 60,
+                            },
+                        ]}
+                        blur="2xl"
+                        animate
+                    />
 
-                        <div className="w-full max-w-2xl space-y-8 relative z-10 p-6">
-                            <div className="flex justify-center mb-8 animate-fade-in">
-                                <Logo className="justify-center scale-110" />
-                            </div>
-                            <div className="transition-all duration-500 ease-in-out">
-                                {showVerify ? (
-                                    <VerifyEmailForm onBack={() => setShowVerify(false)} />
-                                ) : isSignUp ? (
-                                    <SignUpForm onSwitch={handleSwitch} />
-                                ) : (
-                                    <SignInForm onSwitch={handleSwitch} onShowVerify={handleShowVerify} />
-                                )}
-                            </div>
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '32px 32px' }}></div>
+
+                    {/* Centered Login Container */}
+                    <div className="w-full max-w-2xl space-y-8 relative z-10">
+                        <div className="flex justify-center mb-8 animate-fade-in">
+                            <Logo className="justify-center scale-110" />
                         </div>
-                    </SubtleGradientMesh>
+                        <div className="transition-all duration-500 ease-in-out">
+                            {showVerify ? (
+                                <VerifyEmailForm onBack={() => setShowVerify(false)} />
+                            ) : isSignUp ? (
+                                <SignUpForm onSwitch={handleSwitch} />
+                            ) : (
+                                <SignInForm onSwitch={handleSwitch} onShowVerify={handleShowVerify} />
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Right side - Hero */}
@@ -910,13 +948,13 @@ export default function LoginPage() {
                             <div className="space-y-6 animate-fade-in-up">
                                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary font-bold text-sm uppercase tracking-wide">
                                     <Sparkles className="w-4 h-4" />
-                                    AI-Powered Marketing Platform
+                                    Your AI Coagent
                                 </div>
-                                <h1 className="font-headline text-display-hero text-gradient-primary">
-                                    Transform Your Real Estate Marketing
+                                <h1 className="font-headline text-display-hero bg-gradient-to-r from-primary via-indigo-500 to-primary bg-[length:200%_auto] animate-shimmer bg-clip-text text-transparent">
+                                    Your Intelligent Workspace.
                                 </h1>
                                 <p className="text-heading-2 text-muted-foreground leading-relaxed">
-                                    Harness the power of AI to build your brand, track your market, and create winning content that converts.
+                                    The AI-powered platform that augments your capabilities with intelligent insights, analysis, and assistance.
                                 </p>
                             </div>
 
@@ -927,9 +965,9 @@ export default function LoginPage() {
                                         <TrendingUp className="w-6 h-6 text-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="font-headline text-heading-3 text-foreground mb-1 group-hover:text-primary transition-colors">Brand Intelligence</h3>
+                                        <h3 className="font-headline text-heading-3 text-foreground mb-1 group-hover:text-primary transition-colors">Intelligent Monitoring</h3>
                                         <p className="text-base text-muted-foreground leading-relaxed">
-                                            Monitor your online presence and track competitor strategies in real-time.
+                                            AI-powered tracking and analysis that keeps you informed and ahead of changes in real-time.
                                         </p>
                                     </div>
                                 </div>
@@ -939,9 +977,9 @@ export default function LoginPage() {
                                         <Zap className="w-6 h-6 text-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="font-headline text-heading-3 text-foreground mb-1 group-hover:text-primary transition-colors">Content Generation</h3>
+                                        <h3 className="font-headline text-heading-3 text-foreground mb-1 group-hover:text-primary transition-colors">AI Content Creation</h3>
                                         <p className="text-base text-muted-foreground leading-relaxed">
-                                            Create compelling blog posts, social media content, and marketing materials instantly.
+                                            Generate high-quality content, documents, and creative assets instantly with advanced AI models.
                                         </p>
                                     </div>
                                 </div>
@@ -951,9 +989,9 @@ export default function LoginPage() {
                                         <Target className="w-6 h-6 text-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="font-headline text-heading-3 text-foreground mb-1 group-hover:text-primary transition-colors">Strategic Planning</h3>
+                                        <h3 className="font-headline text-heading-3 text-foreground mb-1 group-hover:text-primary transition-colors">Strategic Insights</h3>
                                         <p className="text-base text-muted-foreground leading-relaxed">
-                                            Get personalized marketing plans tailored to your market and goals.
+                                            Get data-driven recommendations and strategic guidance powered by advanced AI intelligence.
                                         </p>
                                     </div>
                                 </div>
@@ -963,9 +1001,9 @@ export default function LoginPage() {
                                         <LayoutDashboard className="w-6 h-6 text-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="font-headline text-heading-3 text-foreground mb-1 group-hover:text-primary transition-colors">Client Dashboards</h3>
+                                        <h3 className="font-headline text-heading-3 text-foreground mb-1 group-hover:text-primary transition-colors">Data Visualization</h3>
                                         <p className="text-base text-muted-foreground leading-relaxed">
-                                            Create stunning, personalized dashboards for your clients with property analytics and insights.
+                                            Transform complex data into stunning, interactive dashboards with AI-powered analytics and insights.
                                         </p>
                                     </div>
                                 </div>
@@ -975,9 +1013,9 @@ export default function LoginPage() {
                                         <Bot className="w-6 h-6 text-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="font-headline text-heading-3 text-foreground mb-1 group-hover:text-primary transition-colors">AI Assistant</h3>
+                                        <h3 className="font-headline text-heading-3 text-foreground mb-1 group-hover:text-primary transition-colors">Conversational AI</h3>
                                         <p className="text-base text-muted-foreground leading-relaxed">
-                                            Get intelligent answers and insights with our conversational AI assistant.
+                                            Interact naturally with advanced AI that understands context and provides intelligent assistance 24/7.
                                         </p>
                                     </div>
                                 </div>
@@ -987,9 +1025,9 @@ export default function LoginPage() {
                                         <BarChart3 className="w-6 h-6 text-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="font-headline text-heading-3 text-foreground mb-1 group-hover:text-primary transition-colors">Market Intelligence</h3>
+                                        <h3 className="font-headline text-heading-3 text-foreground mb-1 group-hover:text-primary transition-colors">Predictive Analytics</h3>
                                         <p className="text-base text-muted-foreground leading-relaxed">
-                                            Access real-time market data, trends, and opportunities to stay ahead of the competition.
+                                            Uncover patterns and opportunities with AI-powered predictive analytics and trend forecasting.
                                         </p>
                                     </div>
                                 </div>

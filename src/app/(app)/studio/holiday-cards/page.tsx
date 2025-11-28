@@ -77,26 +77,15 @@ export default function HolidayCardsPage() {
         document.body.removeChild(link);
     };
 
-    return (
-        <div className="max-w-4xl mx-auto space-y-8">
-            <div className="text-center space-y-2">
-                <div className="flex items-center justify-center gap-3">
-                    <h1 className="text-3xl font-bold font-headline">Holiday Card Studio</h1>
-                    <span className="px-3 py-1 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-full text-xs font-semibold text-purple-600 dark:text-purple-400">
-                        Gemini 3.0 Pro Image
-                    </span>
-                </div>
-                <p className="text-muted-foreground">
-                    Create personalized holiday cards with state-of-the-art AI • Up to 4K resolution • Advanced thinking mode
-                </p>
-            </div>
 
+    return (
+        <div className="w-full space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Card Details</CardTitle>
+                        <CardTitle className="text-3xl font-bold font-headline">Holiday Card Studio</CardTitle>
                         <CardDescription>
-                            Describe the perfect holiday card you want to create
+                            Create personalized holiday cards with AI-powered image generation
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
