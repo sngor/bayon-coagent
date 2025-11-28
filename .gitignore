@@ -55,3 +55,5 @@ infrastructure/bin/*.d.ts
 infrastructure/.env
 infrastructure/.env.*
 !infrastructure/.env.example
+
+.env.local.bak
