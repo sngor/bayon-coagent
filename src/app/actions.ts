@@ -6375,3 +6375,229 @@ export async function joinOrganizationByTokenAction(token: string): Promise<{
     return { message: 'Failed to join organization', errors: { system: error.message } };
   }
 }
+
+// ==================== Testimonial Management Actions ====================
+
+/**
+ * Updates featured testimonials for a user
+ * Sets isFeatured and displayOrder for the provided testimonials
+ */
+export async function updateFeaturedTestimonialsAction(
+  userId: string,
+  featuredTestimonials: { id: string; displayOrder: number }[]
+): Promise<{ message: string; errors: any }> {
+  try {
+    const { updateTestimonial } = await import('@/aws/dynamodb/testimonial-repository');
+    const { queryTestimonials } = await import('@/aws/dynamodb/testimonial-repository');
+
+    // Get all testimonials for the user
+    const result = await queryTestimonials(userId);
+    const allTestimonials = result.items;
+
+    // Create a map of featured testimonial IDs for quick lookup
+    const featuredMap = new Map(
+      featuredTestimonials.map((t) => [t.id, t.displayOrder])
+    );
+
+    // Update all testimonials
+    await Promise.all(
+      allTestimonials.map(async (testimonial) => {
+        const isFeatured = featuredMap.has(testimonial.id);
+        const displayOrder = isFeatured ? featuredMap.get(testimonial.id) : undefined;
+
+        // Only update if values changed
+        if (
+          testimonial.isFeatured !== isFeatured ||
+          testimonial.displayOrder !== displayOrder
+        ) {
+          await updateTestimonial(userId, testimonial.id, {
+            isFeatured,
+            displayOrder,
+          });
+        }
+      })
+    );
+
+    return {
+      message: 'Featured testimonials updated successfully',
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Failed to update featured testimonials:', error);
+    return {
+      message: 'Failed to update featured testimonials',
+      errors: { system: error.message },
+    };
+  }
+}
+
+/**
+ * Gets featured testimonials for a user
+ * Returns up to 6 testimonials sorted by displayOrder
+ */
+export async function getFeaturedTestimonialsAction(
+  userId: string
+): Promise<{ message: string; data: any; errors: any }> {
+  try {
+    const { queryFeaturedTestimonials } = await import(
+      '@/aws/dynamodb/testimonial-repository'
+    );
+
+    const result = await queryFeaturedTestimonials(userId, 6);
+
+    return {
+      message: 'success',
+      data: result.items,
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Failed to get featured testimonials:', error);
+    return {
+      message: 'Failed to get featured testimonials',
+      data: [],
+      errors: { system: error.message },
+    };
+  }
+}
+
+/**
+ * Gets all testimonials for a user
+ */
+export async function getTestimonialsAction(
+  userId: string
+): Promise<{ message: string; data: any; errors: any }> {
+  try {
+    const { queryTestimonials } = await import('@/aws/dynamodb/testimonial-repository');
+
+    const result = await queryTestimonials(userId);
+
+    return {
+      message: 'success',
+      data: result.items,
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Failed to get testimonials:', error);
+    return {
+      message: 'Failed to get testimonials',
+      data: [],
+      errors: { system: error.message },
+    };
+  }
+}
+
+/**
+ * Generates social proof content from testimonials
+ */
+export async function generateSocialProofAction(
+  userId: string,
+  testimonialIds: string[],
+  format: 'instagram' | 'facebook' | 'linkedin'
+): Promise<{
+  message: string;
+  data: { content: string; contentId?: string } | null;
+  errors?: string[];
+}> {
+  try {
+    if (!userId || typeof userId !== 'string') {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: ['You must be logged in to generate social proof content'],
+      };
+    }
+
+    if (!testimonialIds || !Array.isArray(testimonialIds) || testimonialIds.length === 0) {
+      return {
+        message: 'Invalid testimonials',
+        data: null,
+        errors: ['At least one testimonial must be selected'],
+      };
+    }
+
+    if (!['instagram', 'facebook', 'linkedin'].includes(format)) {
+      return {
+        message: 'Invalid format',
+        data: null,
+        errors: ['Format must be instagram, facebook, or linkedin'],
+      };
+    }
+
+    // Import dependencies
+    const { getTestimonial } = await import('@/aws/dynamodb/testimonial-repository');
+    const { getAgentProfile } = await import('@/aws/dynamodb/agent-profile-repository');
+    const { generateSocialProof } = await import('@/aws/bedrock/flows/generate-social-proof');
+
+    // Fetch the testimonials
+    const testimonials = await Promise.all(
+      testimonialIds.map(async (id) => {
+        const testimonial = await getTestimonial(userId, id);
+        if (!testimonial) {
+          throw new Error(`Testimonial ${id} not found`);
+        }
+        return testimonial;
+      })
+    );
+
+    // Get agent profile for name
+    const profile = await getAgentProfile(userId);
+    const agentName = profile?.name || 'Agent';
+
+    // Generate social proof content
+    const result = await generateSocialProof({
+      testimonials: testimonials.map(t => ({
+        clientName: t.clientName,
+        testimonialText: t.testimonialText,
+        dateReceived: t.dateReceived,
+        clientPhotoUrl: t.clientPhotoUrl,
+      })),
+      format,
+      agentName,
+    });
+
+    // Save to Library Content section
+    const contentName = `${format.charAt(0).toUpperCase() + format.slice(1)} Social Proof - ${new Date().toLocaleDateString()}`;
+
+    // Format the content with hashtags for saving
+    const fullContent = `${result.content}\n\n${result.hashtags.map(tag => `#${tag}`).join(' ')}`;
+
+    // Add image suggestions as a note if present
+    const contentWithSuggestions = result.imageSuggestions.length > 0
+      ? `${fullContent}\n\n---\n\n**Image Suggestions:**\n${result.imageSuggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}`
+      : fullContent;
+
+    const saveResult = await saveContentAction(
+      userId,
+      contentWithSuggestions,
+      'social-proof',
+      contentName,
+      null, // No project ID
+      null  // No header image
+    );
+
+    if (saveResult.errors && saveResult.errors.length > 0) {
+      console.error('Failed to save social proof content:', saveResult.errors);
+      // Still return the generated content even if save fails
+      return {
+        message: 'Social proof generated but failed to save to library',
+        data: { content: result.content },
+        errors: saveResult.errors,
+      };
+    }
+
+    return {
+      message: 'Social proof content generated and saved successfully',
+      data: {
+        content: result.content,
+        contentId: saveResult.data?.id,
+      },
+    };
+  } catch (error: any) {
+    console.error('Failed to generate social proof:', error);
+    return {
+      message: 'Failed to generate social proof content',
+      data: null,
+      errors: [error.message || 'An unexpected error occurred'],
+    };
+  }
+}

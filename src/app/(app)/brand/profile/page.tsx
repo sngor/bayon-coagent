@@ -29,7 +29,7 @@ import { JsonLdDisplay } from '@/components/json-ld-display';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
 import { generateBioAction, saveContentAction, updateProfilePhotoUrlAction } from '@/app/actions';
-import { Save, User, Building2, Award, Phone, Share2 } from 'lucide-react';
+import { Save, User, Building2, Award, Phone, Share2, Star } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsList as TabsList, AnimatedTabsTrigger as TabsTrigger } from '@/components/ui/animated-tabs';
 
@@ -37,6 +37,8 @@ import { ProfileCompletionChecklist } from '@/components/profile-completion-bann
 import { ProfileImageUpload } from '@/components/profile-image-upload';
 import { StandardLoadingSpinner } from '@/components/standard';
 import { STICKY_POSITIONS } from '@/lib/utils';
+import { FeaturedTestimonialSelector } from '@/components/featured-testimonial-selector';
+import type { Testimonial } from '@/lib/types';
 
 const initialBioState = {
     message: '',
@@ -314,7 +316,9 @@ export default function ProfilePage() {
     const [profile, setProfile] = useState<Partial<Profile>>({});
     const [isSaving, setIsSaving] = useState(false);
     const [isChecklistSticky, setIsChecklistSticky] = useState(false);
-    
+    const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+    const [isLoadingTestimonials, setIsLoadingTestimonials] = useState(false);
+
     const handleImageUpdate = async (url: string) => {
         setProfile((prev) => ({ ...prev, photoURL: url }));
 
@@ -452,6 +456,29 @@ export default function ProfilePage() {
         }
     }, [bioState]);
 
+    // Load testimonials
+    useEffect(() => {
+        const loadTestimonials = async () => {
+            if (!user?.id) return;
+
+            setIsLoadingTestimonials(true);
+            try {
+                const { getTestimonialsAction } = await import('@/app/actions');
+                const result = await getTestimonialsAction(user.id);
+
+                if (result.message === 'success' && result.data) {
+                    setTestimonials(result.data);
+                }
+            } catch (error) {
+                console.error('Failed to load testimonials:', error);
+            } finally {
+                setIsLoadingTestimonials(false);
+            }
+        };
+
+        loadTestimonials();
+    }, [user?.id]);
+
 
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -545,6 +572,51 @@ export default function ProfilePage() {
         }
     };
 
+    const handleSaveFeaturedTestimonials = async (featured: Testimonial[]) => {
+        if (!user?.id) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Not logged in.',
+            });
+            return;
+        }
+
+        try {
+            const { updateFeaturedTestimonialsAction } = await import('@/app/actions');
+            const featuredData = featured.map((t, index) => ({
+                id: t.id,
+                displayOrder: index,
+            }));
+
+            const result = await updateFeaturedTestimonialsAction(user.id, featuredData);
+
+            if (result.message === 'Featured testimonials updated successfully') {
+                // Reload testimonials to reflect changes
+                const { getTestimonialsAction } = await import('@/app/actions');
+                const testimonialsResult = await getTestimonialsAction(user.id);
+
+                if (testimonialsResult.message === 'success' && testimonialsResult.data) {
+                    setTestimonials(testimonialsResult.data);
+                }
+
+                toast({
+                    title: 'Featured Testimonials Updated!',
+                    description: 'Your featured testimonials have been saved.',
+                });
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (error: any) {
+            console.error('Failed to save featured testimonials:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Save Failed',
+                description: error.message || 'Could not save featured testimonials.',
+            });
+        }
+    };
+
     const generateAgentSchema = (p: Partial<Profile>) => ({
         '@context': 'https://schema.org',
         '@type': 'RealEstateAgent',
@@ -584,6 +656,10 @@ export default function ProfilePage() {
                     <TabsTrigger value="profile">
                         <span className="whitespace-nowrap">Your Profile</span>
                     </TabsTrigger>
+                    <TabsTrigger value="testimonials">
+                        <Star className="h-4 w-4 mr-2" />
+                        <span className="whitespace-nowrap">Featured Testimonials</span>
+                    </TabsTrigger>
                     <TabsTrigger value="schema">
                         <span className="whitespace-nowrap">Schema</span>
                     </TabsTrigger>
@@ -610,13 +686,26 @@ export default function ProfilePage() {
                             </div>
                             <div className="lg:col-span-1">
                                 <div className={`sticky ${STICKY_POSITIONS.BELOW_TOPBAR} z-10 self-start transition-all duration-300 ease-in-out ${isChecklistSticky
-                                        ? 'backdrop-blur-md bg-background/80 border border-border/50 shadow-lg shadow-primary/10 ring-1 ring-white/5 rounded-lg p-1'
-                                        : ''
+                                    ? 'backdrop-blur-md bg-background/80 border border-border/50 shadow-lg shadow-primary/10 ring-1 ring-white/5 rounded-lg p-1'
+                                    : ''
                                     }`}>
                                     <ProfileCompletionChecklist profile={profile} />
                                 </div>
                             </div>
                         </DataGrid>
+                    )}
+                </TabsContent>
+                <TabsContent value="testimonials" className="mt-8">
+                    {isLoadingTestimonials ? (
+                        <div className="flex items-center justify-center py-12">
+                            <StandardLoadingSpinner size="lg" className="mr-3" />
+                            <span className="text-muted-foreground">Loading testimonials...</span>
+                        </div>
+                    ) : (
+                        <FeaturedTestimonialSelector
+                            testimonials={testimonials}
+                            onSave={handleSaveFeaturedTestimonials}
+                        />
                     )}
                 </TabsContent>
                 <TabsContent value="schema" className="mt-8">

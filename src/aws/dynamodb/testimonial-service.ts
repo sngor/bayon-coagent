@@ -87,6 +87,7 @@ export {
     createTestimonial,
     getTestimonial,
     updateTestimonial,
+    deleteTestimonial,
     queryTestimonials,
     queryFeaturedTestimonials,
 };

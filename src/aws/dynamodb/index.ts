@@ -112,3 +112,16 @@ export {
   type ValidationError as AgentProfileValidationError,
   type PerformanceMetrics,
 } from './agent-profile-repository';
+
+// Testimonial Request Repository
+export {
+  createTestimonialRequest,
+  getTestimonialRequest,
+  getTestimonialRequestByToken,
+  updateTestimonialRequest,
+  updateTestimonialRequestStatus,
+  deleteTestimonialRequest,
+  queryTestimonialRequests,
+  queryPendingRequestsOlderThan,
+  checkAndUpdateExpiredRequest,
+} from './testimonial-request-repository';
