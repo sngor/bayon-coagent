@@ -1745,9 +1745,15 @@ export async function uploadFileToS3Action(
     return { success: true, url };
   } catch (error: any) {
     console.error('S3 upload error:', error);
+
+    let errorMessage = error.message || 'Failed to upload file to S3';
+    if (errorMessage.includes('bucket you are attempting to access must be addressed using the specified endpoint')) {
+      errorMessage += ' (Hint: The S3 bucket is in a different region than configured. Please set S3_REGION environment variable.)';
+    }
+
     return {
       success: false,
-      error: error.message || 'Failed to upload file to S3'
+      error: errorMessage
     };
   }
 }
@@ -6605,3 +6611,4 @@ export async function generateSocialProofAction(
     };
   }
 }
+// Force rebuild Fri Nov 28 04:23:25 PST 2025

@@ -30,19 +30,21 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { FileText, Upload, Trash2, Search, Download, Loader2, Database } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FileText, Upload, Trash2, Search, Download, Loader2, Database, Link as LinkIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getTeamsAction } from '@/app/admin-actions';
 import {
     getDocumentsAction,
     uploadDocumentAction,
+    addLinkResourceAction,
     deleteDocumentAction,
     getDownloadUrlAction,
     type Document
 } from '@/app/knowledge-actions';
 import { useUser } from '@/aws/auth';
 
-export default function TeamKnowledgeBasePage() {
+export default function ResourcesPage() {
     const { user } = useUser();
     const [teams, setTeams] = useState<any[]>([]);
     const [selectedTeamId, setSelectedTeamId] = useState<string>('');
@@ -53,6 +55,8 @@ export default function TeamKnowledgeBasePage() {
     const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { toast } = useToast();
+    const [linkUrl, setLinkUrl] = useState('');
+    const [linkTitle, setLinkTitle] = useState('');
 
     useEffect(() => {
         loadTeams();
@@ -113,6 +117,45 @@ export default function TeamKnowledgeBasePage() {
             });
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function handleAddLink(e: React.FormEvent) {
+        e.preventDefault();
+        if (!user || !selectedTeamId || !linkUrl || !linkTitle) return;
+
+        setUploading(true);
+        try {
+            const result = await addLinkResourceAction(user.id, linkUrl, linkTitle, {
+                scope: 'team',
+                teamId: selectedTeamId
+            });
+
+            if (result.success) {
+                toast({
+                    title: "Success",
+                    description: "Link added successfully",
+                });
+                setIsUploadDialogOpen(false);
+                setLinkUrl('');
+                setLinkTitle('');
+                loadDocuments(selectedTeamId);
+            } else {
+                toast({
+                    title: "Error",
+                    description: result.error || "Failed to add link",
+                    variant: "destructive"
+                });
+            }
+        } catch (error) {
+            console.error('Add link failed:', error);
+            toast({
+                title: "Error",
+                description: "Failed to add link",
+                variant: "destructive"
+            });
+        } finally {
+            setUploading(false);
         }
     }
 
@@ -193,11 +236,6 @@ export default function TeamKnowledgeBasePage() {
         if (!user || !selectedTeamId) return;
 
         try {
-            // For team docs, we need to pass the correct partition key logic or let the action handle it
-            // The action expects userId, but for team docs it might need to know it's a team doc
-            // Actually getDownloadUrlAction currently takes userId and documentId.
-            // I need to update getDownloadUrlAction to support team docs too or pass the partition key as userId.
-
             // Construct partition key manually for now as per my knowledge-actions change
             const partitionKey = `TEAM#${selectedTeamId}`;
 
@@ -224,11 +262,12 @@ export default function TeamKnowledgeBasePage() {
 
     return (
         <div className="space-y-6">
+            {/* ... (existing header) */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Team Knowledge Base</h2>
+                    <h2 className="text-2xl font-bold tracking-tight">Resources</h2>
                     <p className="text-muted-foreground">
-                        Manage documents available to your team's AI agents.
+                        Manage documents and knowledge resources available to your team's AI agents.
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -248,37 +287,80 @@ export default function TeamKnowledgeBasePage() {
                         <DialogTrigger asChild>
                             <Button>
                                 <Upload className="mr-2 h-4 w-4" />
-                                Upload Document
+                                <span>Add Resource</span>
                             </Button>
                         </DialogTrigger>
                         <DialogContent>
                             <DialogHeader>
-                                <DialogTitle>Upload Team Document</DialogTitle>
+                                <DialogTitle>Add Resource</DialogTitle>
                                 <DialogDescription>
-                                    Upload PDF, DOCX, or TXT files to be indexed for your team's AI.
+                                    Upload a document or add a link to be indexed for your team's AI.
                                 </DialogDescription>
                             </DialogHeader>
-                            <form onSubmit={handleUpload} className="space-y-4">
-                                <div className="grid w-full max-w-sm items-center gap-1.5">
-                                    <Label htmlFor="document">Document</Label>
-                                    <Input
-                                        ref={fileInputRef}
-                                        id="document"
-                                        type="file"
-                                        accept=".pdf,.docx,.txt,.md"
-                                        required
-                                    />
-                                </div>
-                                <DialogFooter>
-                                    <Button type="button" variant="outline" onClick={() => setIsUploadDialogOpen(false)}>
-                                        Cancel
-                                    </Button>
-                                    <Button type="submit" disabled={uploading}>
-                                        {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Upload
-                                    </Button>
-                                </DialogFooter>
-                            </form>
+                            <Tabs defaultValue="file" className="w-full">
+                                <TabsList className="grid w-full grid-cols-2">
+                                    <TabsTrigger value="file">Upload File</TabsTrigger>
+                                    <TabsTrigger value="link">Add Link</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="file">
+                                    <form onSubmit={handleUpload} className="space-y-4 mt-4">
+                                        <div className="grid w-full max-w-sm items-center gap-1.5">
+                                            <Label htmlFor="document">Document</Label>
+                                            <Input
+                                                ref={fileInputRef}
+                                                id="document"
+                                                type="file"
+                                                accept=".pdf,.docx,.txt,.md"
+                                                required
+                                            />
+                                        </div>
+                                        <DialogFooter>
+                                            <Button type="button" variant="outline" onClick={() => setIsUploadDialogOpen(false)}>
+                                                Cancel
+                                            </Button>
+                                            <Button type="submit" disabled={uploading}>
+                                                {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                Upload
+                                            </Button>
+                                        </DialogFooter>
+                                    </form>
+                                </TabsContent>
+                                <TabsContent value="link">
+                                    <form onSubmit={handleAddLink} className="space-y-4 mt-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="url">URL</Label>
+                                            <Input
+                                                id="url"
+                                                type="url"
+                                                placeholder="https://youtube.com/..."
+                                                value={linkUrl}
+                                                onChange={(e) => setLinkUrl(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="title">Title</Label>
+                                            <Input
+                                                id="title"
+                                                type="text"
+                                                placeholder="Resource Title"
+                                                value={linkTitle}
+                                                onChange={(e) => setLinkTitle(e.target.value)}
+                                                required
+                                            />
+                                        </div>
+                                        <DialogFooter>
+                                            <Button type="button" variant="outline" onClick={() => setIsUploadDialogOpen(false)}>
+                                                Cancel
+                                            </Button>
+                                            <Button type="submit" disabled={uploading}>
+                                                {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                Add Link
+                                            </Button>
+                                        </DialogFooter>
+                                    </form>
+                                </TabsContent>
+                            </Tabs>
                         </DialogContent>
                     </Dialog>
                 </div>
@@ -292,7 +374,7 @@ export default function TeamKnowledgeBasePage() {
                             <div className="relative w-64">
                                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
-                                    placeholder="Search documents..."
+                                    placeholder="Search resources..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="pl-8"
@@ -310,13 +392,13 @@ export default function TeamKnowledgeBasePage() {
                                 <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-full w-fit mx-auto mb-4">
                                     <Database className="h-8 w-8 text-gray-400" />
                                 </div>
-                                <h3 className="text-lg font-semibold mb-2">No documents found</h3>
+                                <h3 className="text-lg font-semibold mb-2">No resources found</h3>
                                 <p className="text-muted-foreground mb-4">
-                                    Upload documents to share knowledge with your team's AI.
+                                    Upload documents or add links to share knowledge with your team's AI.
                                 </p>
                                 <Button variant="outline" onClick={() => setIsUploadDialogOpen(true)}>
                                     <Upload className="mr-2 h-4 w-4" />
-                                    Upload First Document
+                                    Add First Resource
                                 </Button>
                             </div>
                         ) : (
@@ -326,7 +408,7 @@ export default function TeamKnowledgeBasePage() {
                                         <TableHead>Name</TableHead>
                                         <TableHead>Type</TableHead>
                                         <TableHead>Size</TableHead>
-                                        <TableHead>Uploaded</TableHead>
+                                        <TableHead>Added</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
@@ -336,12 +418,24 @@ export default function TeamKnowledgeBasePage() {
                                         <TableRow key={doc.documentId}>
                                             <TableCell className="font-medium">
                                                 <div className="flex items-center gap-2">
-                                                    <FileText className="h-4 w-4 text-muted-foreground" />
-                                                    {doc.fileName}
+                                                    {doc.fileType === 'link' ? (
+                                                        <LinkIcon className="h-4 w-4 text-blue-500" />
+                                                    ) : (
+                                                        <FileText className="h-4 w-4 text-muted-foreground" />
+                                                    )}
+                                                    {doc.fileType === 'link' ? (
+                                                        <a href={doc.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                                                            {doc.fileName}
+                                                        </a>
+                                                    ) : (
+                                                        doc.fileName
+                                                    )}
                                                 </div>
                                             </TableCell>
                                             <TableCell className="uppercase text-xs">{doc.fileType}</TableCell>
-                                            <TableCell className="text-xs">{(doc.fileSize / 1024).toFixed(1)} KB</TableCell>
+                                            <TableCell className="text-xs">
+                                                {doc.fileType === 'link' ? '-' : `${(doc.fileSize / 1024).toFixed(1)} KB`}
+                                            </TableCell>
                                             <TableCell className="text-xs text-muted-foreground">
                                                 {new Date(doc.uploadDate).toLocaleDateString()}
                                             </TableCell>
@@ -356,13 +450,26 @@ export default function TeamKnowledgeBasePage() {
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => handleDownload(doc.documentId)}
-                                                    >
-                                                        <Download className="h-4 w-4" />
-                                                    </Button>
+                                                    {doc.fileType !== 'link' && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => handleDownload(doc.documentId)}
+                                                        >
+                                                            <Download className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                    {doc.fileType === 'link' && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            asChild
+                                                        >
+                                                            <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                                                                <LinkIcon className="h-4 w-4" />
+                                                            </a>
+                                                        </Button>
+                                                    )}
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"

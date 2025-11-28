@@ -2,7 +2,7 @@
 'use client';
 
 import { Suspense } from 'react';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/ui/page-header';
 import { Loader2 } from 'lucide-react';
 import { GoogleOAuthCallback } from '@/components/google-oauth-callback';
 

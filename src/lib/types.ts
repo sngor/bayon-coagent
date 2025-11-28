@@ -21,6 +21,7 @@ export type Profile = {
   googleBusinessProfileId?: string;
   domainAuthority?: number;
   zillowEmail?: string;
+  teamId?: string;
 };
 
 export type Review = {

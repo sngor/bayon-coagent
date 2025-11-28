@@ -224,6 +224,7 @@ export default function TeamsPage() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Team Name</TableHead>
+                                        <TableHead>Members</TableHead>
                                         <TableHead>Team Admin</TableHead>
                                         <TableHead>Created</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
@@ -238,6 +239,12 @@ export default function TeamsPage() {
                                                         <Users className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                                                     </div>
                                                     <span className="font-medium">{team.name}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <Users className="w-4 h-4 text-muted-foreground" />
+                                                    <span>{team.memberCount || 0} Agents</span>
                                                 </div>
                                             </TableCell>
                                             <TableCell>

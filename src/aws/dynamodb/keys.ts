@@ -800,6 +800,22 @@ export function getROIKeys(
 }
 
 /**
+ * Generates keys for Announcement
+ * Pattern: PK: TEAM#<teamId>, SK: ANNOUNCEMENT#<timestamp>#<announcementId>
+ * If teamId is 'GLOBAL', it's a system-wide announcement.
+ */
+export function getAnnouncementKeys(
+  teamId: string,
+  announcementId: string,
+  timestamp: string
+): DynamoDBKey {
+  return {
+    PK: `TEAM#${teamId}`,
+    SK: `ANNOUNCEMENT#${timestamp}#${announcementId}`,
+  };
+}
+
+/**
  * Generates keys for optimal times cache
  * Pattern: PK: USER#<userId>, SK: OPTIMAL#<channel>#<contentType>
  */

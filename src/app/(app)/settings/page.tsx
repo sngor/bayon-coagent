@@ -22,6 +22,8 @@ import { SocialMediaConnections } from '@/components/social-media-connections';
 import { MLSConnection } from '@/components/mls-connection';
 import { FeatureToggles } from '@/components/feature-toggles';
 import { NotificationSettings } from '@/lib/notifications/components';
+import { ProfileImageUpload } from '@/components/profile-image-upload';
+import { updateProfilePhotoUrlAction } from '@/app/actions';
 
 function formatTimestamp(timestamp: number): string {
     const now = Date.now();
@@ -140,6 +142,7 @@ export default function SettingsPage() {
 
     // Profile form state
     const [fullName, setFullName] = useState('');
+    const [profilePhotoUrl, setProfilePhotoUrl] = useState('');
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
     const [isSavingProfile, setIsSavingProfile] = useState(false);
 
@@ -277,6 +280,7 @@ export default function SettingsPage() {
                 const result = await getProfileAction(user.id);
                 if (result.data?.Data) {
                     setFullName(result.data.Data.name || '');
+                    setProfilePhotoUrl(result.data.Data.photoURL || '');
                 }
             } catch (error) {
                 console.error('Failed to load profile:', error);
@@ -432,6 +436,48 @@ export default function SettingsPage() {
                     </TabsList>
 
                     <TabsContent value="account" className="space-y-6">
+                        <FormSection title="Profile Photo" description="Update your profile picture" icon={User} variant="card">
+                            <div className="flex justify-center py-4">
+                                <ProfileImageUpload
+                                    userId={user?.id || ''}
+                                    currentImageUrl={profilePhotoUrl}
+                                    userName={fullName}
+                                    onImageUpdate={async (url: string) => {
+                                        setProfilePhotoUrl(url);
+                                        if (user?.id) {
+                                            try {
+                                                const result = await updateProfilePhotoUrlAction(user.id, url);
+                                                if (result.message === 'Profile photo updated successfully') {
+                                                    const { getCache } = await import('@/aws/dynamodb/hooks/cache');
+                                                    const cache = getCache();
+                                                    cache.invalidatePartition(`USER#${user.id}`);
+                                                    toast({
+                                                        title: 'Profile Photo Updated!',
+                                                        description: 'Your profile photo has been uploaded successfully.',
+                                                    });
+                                                    try {
+                                                        window.dispatchEvent(new CustomEvent('profileUpdated', { detail: { photoURL: url } }));
+                                                    } catch (err) {
+                                                        console.warn('Could not dispatch profileUpdated event', err);
+                                                    }
+                                                } else {
+                                                    throw new Error(result.errors?.[0] || 'Update failed');
+                                                }
+                                            } catch (error) {
+                                                console.error('Failed to update profile photo:', error);
+                                                toast({
+                                                    variant: 'destructive',
+                                                    title: 'Update Failed',
+                                                    description: 'Could not update profile photo.',
+                                                });
+                                            }
+                                        }
+                                    }}
+                                    size="xl"
+                                />
+                            </div>
+                        </FormSection>
+
                         <FormSection title="Account Information" description="Your account details and profile settings" icon={User} variant="card">
                             <DataGrid columns={1}>
                                 <div className="space-y-2">

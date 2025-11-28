@@ -36,7 +36,8 @@ export interface Document {
     fileName: string;
     fileType: string;
     fileSize: number;
-    s3Key: string;
+    s3Key?: string;
+    url?: string;
     uploadDate: string;
     status: 'pending' | 'processing' | 'indexed' | 'failed';
     title?: string;
@@ -153,6 +154,74 @@ export async function uploadDocumentAction(
         return {
             success: false,
             error: error instanceof Error ? error.message : 'Upload failed',
+        };
+    }
+}
+
+/**
+ * Add a link resource
+ */
+export async function addLinkResourceAction(
+    userId: string,
+    url: string,
+    title: string,
+    options?: { scope?: 'personal' | 'team', teamId?: string }
+): Promise<{ success: boolean; documentId?: string; error?: string }> {
+    try {
+        const scope = options?.scope || 'personal';
+        const teamId = options?.teamId;
+
+        // Verify team permissions if uploading to team
+        if (scope === 'team') {
+            if (!teamId) return { success: false, error: 'Team ID required for team documents' };
+            const currentUser = await getCurrentUserServer();
+            if (!currentUser || currentUser.id !== userId) {
+                return { success: false, error: 'Unauthorized' };
+            }
+            const isAdmin = await verifyTeamAdmin(userId, teamId);
+            if (!isAdmin) {
+                return { success: false, error: 'Only team admins can add team resources' };
+            }
+        }
+
+        // Determine partition key (userId or TEAM#teamId)
+        const partitionKey = scope === 'team' ? `TEAM#${teamId}` : userId;
+
+        // Generate unique document ID
+        const documentId = uuidv4();
+
+        // Create DynamoDB record
+        const document: Document = {
+            userId: partitionKey,
+            documentId,
+            scope,
+            teamId,
+            fileName: title, // Use title as fileName for consistency in display
+            title: title,
+            fileType: 'link',
+            fileSize: 0,
+            url: url,
+            uploadDate: new Date().toISOString(),
+            status: 'indexed', // Links are instantly available
+            accessCount: 0,
+        };
+
+        const putCommand = new PutCommand({
+            TableName: DYNAMODB_TABLE,
+            Item: document,
+        });
+
+        await docClient.send(putCommand);
+
+        return {
+            success: true,
+            documentId,
+        };
+    } catch (error) {
+        console.error('Add link error:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to add link',
         };
     }
 }

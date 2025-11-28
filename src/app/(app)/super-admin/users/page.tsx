@@ -32,7 +32,8 @@ import {
     MoreHorizontal,
     Shield,
     CheckCircle,
-    XCircle
+    XCircle,
+    LogIn
 } from 'lucide-react';
 import {
     DropdownMenu,
@@ -75,8 +76,32 @@ export default function AdminUsersPage() {
     const [newUserEmail, setNewUserEmail] = useState('');
     const [newUserName, setNewUserName] = useState('');
     const [newUserRole, setNewUserRole] = useState<string>('agent');
-    const [newUserTeamId, setNewUserTeamId] = useState<string>('');
+    const [newUserTeamId, setNewUserTeamId] = useState("");
     const [isAddingUser, setIsAddingUser] = useState(false);
+
+    const handleImpersonate = async (user: any) => {
+        if (!confirm(`Are you sure you want to login as ${user.email}?`)) return;
+
+        try {
+            const { impersonateUserAction } = await import('@/app/admin-actions');
+            const result = await impersonateUserAction(user.id);
+
+            if (result.message === 'success') {
+                toast({
+                    title: "Impersonation Started",
+                    description: `You are now logged in as ${user.email}`
+                });
+                // Redirect to dashboard
+                window.location.href = '/dashboard';
+            } else {
+                toast({ title: "Error", description: result.message, variant: "destructive" });
+            }
+        } catch (error) {
+            console.error('Failed to impersonate:', error);
+            toast({ title: "Error", description: "Failed to start impersonation", variant: "destructive" });
+        }
+    };
+
     const { toast } = useToast();
 
     useEffect(() => {
@@ -515,16 +540,16 @@ export default function AdminUsersPage() {
                         </div>
 
                         <TabsContent value="all" className="space-y-4">
-                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} onDisableUser={handleDisableUser} />
+                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} onDisableUser={handleDisableUser} onImpersonate={handleImpersonate} />
                         </TabsContent>
                         <TabsContent value="active" className="space-y-4">
-                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} onDisableUser={handleDisableUser} />
+                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} onDisableUser={handleDisableUser} onImpersonate={handleImpersonate} />
                         </TabsContent>
                         <TabsContent value="inactive" className="space-y-4">
-                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} onDisableUser={handleDisableUser} />
+                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} onDisableUser={handleDisableUser} onImpersonate={handleImpersonate} />
                         </TabsContent>
                         <TabsContent value="premium" className="space-y-4">
-                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} onDisableUser={handleDisableUser} />
+                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} onDisableUser={handleDisableUser} onImpersonate={handleImpersonate} />
                         </TabsContent>
                     </Tabs>
                 </CardContent>
@@ -738,11 +763,12 @@ export default function AdminUsersPage() {
     );
 }
 
-function UserTable({ users, loading, onEditRole, onDisableUser }: {
+function UserTable({ users, loading, onEditRole, onDisableUser, onImpersonate }: {
     users: any[],
     loading: boolean,
     onEditRole: (user: any) => void,
-    onDisableUser: (user: any, disable: boolean) => void
+    onDisableUser: (user: any, disable: boolean) => void,
+    onImpersonate: (user: any) => void
 }) {
     if (loading) {
         return <div className="text-center py-12">Loading users...</div>;
@@ -838,6 +864,11 @@ function UserTable({ users, loading, onEditRole, onDisableUser }: {
                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                         <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user.id)}>
                                             Copy ID
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onClick={() => onImpersonate(user)} className="text-amber-600">
+                                            <LogIn className="mr-2 h-4 w-4" />
+                                            Login as User
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem>View Details</DropdownMenuItem>

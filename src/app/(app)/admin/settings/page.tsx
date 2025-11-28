@@ -10,7 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { getOrganizationSettingsAction, updateOrganizationSettingsAction } from '@/app/admin-actions';
-import { Building2, Save } from 'lucide-react';
+import { Building2, Save, Palette } from 'lucide-react';
+import { ProfileImageUpload } from '@/components/profile-image-upload';
 
 interface OrganizationSettings {
     name: string;
@@ -18,6 +19,8 @@ interface OrganizationSettings {
     website: string;
     allowMemberInvites: boolean;
     requireApproval: boolean;
+    logo?: string;
+    brandColor?: string;
 }
 
 export default function AdminSettingsPage() {
@@ -27,6 +30,8 @@ export default function AdminSettingsPage() {
         website: '',
         allowMemberInvites: true,
         requireApproval: false,
+        logo: '',
+        brandColor: '#0f172a',
     });
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -135,6 +140,71 @@ export default function AdminSettingsPage() {
                                 onChange={(e) => setSettings({ ...settings, website: e.target.value })}
                                 placeholder="https://example.com"
                             />
+                        </div>
+                    </CardContent>
+                </CardGradientMesh>
+            </Card>
+
+            <Card className="overflow-hidden bg-background/50 border-primary/20">
+                <CardGradientMesh>
+                    <CardHeader className="relative z-10">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded-lg">
+                                <Palette className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                                <CardTitle>Branding & Appearance</CardTitle>
+                                <CardDescription>Customize the look and feel of your portal</CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-6 relative z-10">
+                        <div className="space-y-4">
+                            <Label>Team Logo</Label>
+                            <div className="flex items-center gap-6">
+                                <ProfileImageUpload
+                                    userId="organization-logo"
+                                    currentImageUrl={settings.logo}
+                                    onImageUpdate={(url) => setSettings({ ...settings, logo: url })}
+                                    size="lg"
+                                    userName={settings.name || 'Organization'}
+                                />
+                                <div className="text-sm text-muted-foreground">
+                                    <p>Upload your organization's logo.</p>
+                                    <p>Recommended size: 512x512px.</p>
+                                    <p>Supported formats: PNG, JPG, WebP.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="brandColor">Primary Brand Color</Label>
+                            <div className="flex items-center gap-3">
+                                <div className="relative">
+                                    <Input
+                                        id="brandColorPicker"
+                                        type="color"
+                                        value={settings.brandColor || '#0f172a'}
+                                        onChange={(e) => setSettings({ ...settings, brandColor: e.target.value })}
+                                        className="h-10 w-14 p-1 cursor-pointer"
+                                    />
+                                </div>
+                                <Input
+                                    id="brandColor"
+                                    type="text"
+                                    value={settings.brandColor || '#0f172a'}
+                                    onChange={(e) => setSettings({ ...settings, brandColor: e.target.value })}
+                                    placeholder="#0f172a"
+                                    className="font-mono w-32"
+                                />
+                                <div
+                                    className="h-10 w-10 rounded-md border border-border"
+                                    style={{ backgroundColor: settings.brandColor || '#0f172a' }}
+                                />
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                                This color will be used for buttons, links, and other accents.
+                            </p>
                         </div>
                     </CardContent>
                 </CardGradientMesh>

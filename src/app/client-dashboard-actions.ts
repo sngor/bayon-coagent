@@ -11,7 +11,7 @@ import {
     getDashboardDocumentKeys,
     getDocumentDownloadLogKeys,
 } from '@/aws/dynamodb/keys';
-import { getCurrentUser } from '@/aws/auth/cognito-client';
+import { getCurrentUserServer } from '@/aws/auth/server-auth';
 import { sendEmail } from '@/aws/ses/client';
 import { getConfig } from '@/aws/config';
 import { uploadFile, getPresignedUrl, deleteFile } from '@/aws/s3/client';
@@ -417,7 +417,7 @@ export async function createDashboard(
     let user: any = null;
     try {
         // Get current user (agent)
-        user = await getCurrentUser();
+        user = await getCurrentUserServer();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -524,7 +524,7 @@ export async function updateDashboard(
 }> {
     try {
         // Get current user (agent)
-        const user = await getCurrentUser();
+        const user = await getCurrentUserServer();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -671,7 +671,7 @@ export async function generateSecuredLink(
     let user: any = null;
     try {
         // Get current user (agent)
-        user = await getCurrentUser();
+        user = await getCurrentUserServer();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -773,7 +773,7 @@ export async function revokeLink(
 }> {
     try {
         // Get current user (agent)
-        const user = await getCurrentUser();
+        const user = await getCurrentUserServer();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -861,7 +861,7 @@ export async function listDashboards(): Promise<{
 }> {
     try {
         // Get current user (agent)
-        const user = await getCurrentUser();
+        const user = await getCurrentUserServer();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -907,7 +907,7 @@ export async function getDashboardAnalytics(
 }> {
     try {
         // Get current user (agent)
-        const user = await getCurrentUser();
+        const user = await getCurrentUserServer();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -1187,7 +1187,7 @@ export async function createCMAReport(
     let user: any = null;
     try {
         // Get current user (agent)
-        user = await getCurrentUser();
+        user = await getCurrentUserServer();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -1296,7 +1296,7 @@ export async function updateCMAReport(
 }> {
     try {
         // Get current user (agent)
-        const user = await getCurrentUser();
+        const user = await getCurrentUserServer();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -1417,7 +1417,7 @@ export async function attachCMAToDashboard(
 }> {
     try {
         // Get current user (agent)
-        const user = await getCurrentUser();
+        const user = await getCurrentUserServer();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -1707,7 +1707,7 @@ export async function getValuation(
 }> {
     try {
         // Get current user (agent)
-        const user = await getCurrentUser();
+        const user = await getCurrentUserServer();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -1778,7 +1778,7 @@ export async function listValuationsForDashboard(
 }> {
     try {
         // Get current user (agent)
-        const user = await getCurrentUser();
+        const user = await getCurrentUserServer();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -2284,7 +2284,7 @@ export async function uploadDocumentToDashboard(
 }> {
     try {
         // Get current user (agent)
-        const user = await getCurrentUser();
+        const user = await getCurrentUserServer();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -2397,7 +2397,7 @@ export async function removeDocumentFromDashboard(
 }> {
     try {
         // Get current user (agent)
-        const user = await getCurrentUser();
+        const user = await getCurrentUserServer();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -2484,7 +2484,7 @@ export async function listDashboardDocuments(
 }> {
     try {
         // Get current user (agent)
-        const user = await getCurrentUser();
+        const user = await getCurrentUserServer();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -3372,7 +3372,7 @@ export async function getDashboard(
 }> {
     try {
         // Get current user (agent)
-        const user = await getCurrentUser();
+        const user = await getCurrentUserServer();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -3431,7 +3431,7 @@ export async function deleteDashboard(
 }> {
     try {
         // Get current user (agent)
-        const user = await getCurrentUser();
+        const user = await getCurrentUserServer();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -3509,7 +3509,7 @@ export async function listAllAgentLinks(): Promise<{
 }> {
     try {
         // Get current user (agent)
-        const user = await getCurrentUser();
+        const user = await getCurrentUserServer();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',
@@ -3556,7 +3556,7 @@ export async function listDashboardLinks(
 }> {
     try {
         // Get current user (agent)
-        const user = await getCurrentUser();
+        const user = await getCurrentUserServer();
         if (!user || !user.id) {
             return {
                 message: 'Authentication required',

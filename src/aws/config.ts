@@ -26,6 +26,7 @@ export interface DynamoDBConfig {
 
 export interface S3Config {
   bucketName: string;
+  region: string;
   endpoint?: string;
 }
 
@@ -158,6 +159,7 @@ export function getAWSConfig(): AWSConfig {
 
     s3: {
       bucketName: process.env.S3_BUCKET_NAME || 'bayon-coagent-storage',
+      region: process.env.S3_REGION || region,
       endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
 

@@ -65,6 +65,7 @@ import { DynamicNavigation } from '@/components/dynamic-navigation';
 import { useFeatureToggle } from '@/lib/feature-toggles';
 import { NotificationCenter } from '@/lib/notifications/components';
 import { SubtleGradientMesh } from '@/components/ui/gradient-mesh';
+import { ImpersonationBanner } from '@/components/impersonation-banner';
 
 const allNavItems = [
   { href: '/dashboard', icon: HouseIcon, label: 'Dashboard', customIcon: true, featureId: null },
@@ -91,7 +92,7 @@ function StickyHeaderTitle() {
 
   return (
     <div className="animate-in fade-in slide-in-from-left-2 duration-200">
-      <h2 className="text-lg font-semibold font-headline truncate whitespace-nowrap">
+      <h2 className="text-lg font-semibold font-headline text-foreground truncate whitespace-nowrap">
         {headerInfo.title}
       </h2>
     </div>
@@ -417,6 +418,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   </SidebarFooter>
                 </Sidebar>
                 <SidebarInset>
+                  <ImpersonationBanner />
                   <header className={`sticky top-0 z-10 flex h-20 items-center justify-between px-6 -mx-6 bg-transparent backdrop-blur-xl transition-all duration-200 ${isScrolled ? 'border-b border-border/20' : ''}`}>
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       {isMounted && (

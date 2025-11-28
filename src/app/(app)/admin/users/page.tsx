@@ -53,7 +53,7 @@ export default function AdminUsersPage() {
                     accessToken = session.accessToken;
                 }
 
-                const result = await getUsersListAction(accessToken);
+                const result = await getUsersListAction(accessToken, undefined, undefined, { filterByTeam: true });
 
                 if (result.message === 'success') {
                     setUsers(result.data || []);

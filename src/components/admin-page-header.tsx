@@ -11,7 +11,8 @@ import {
     BarChart3,
     Activity,
     Settings,
-    Shield
+    Shield,
+    FileText
 } from 'lucide-react';
 
 const pageHeaders = {
@@ -64,6 +65,11 @@ const pageHeaders = {
         title: 'Organization Settings',
         description: 'Configure organization preferences',
         icon: Settings
+    },
+    '/super-admin/audit-logs': {
+        title: 'Audit Logs',
+        description: 'View and filter system audit logs',
+        icon: FileText
     }
 };
 

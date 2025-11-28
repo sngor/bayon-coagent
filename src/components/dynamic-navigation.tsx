@@ -20,6 +20,7 @@ import {
     Target,
     Wand2,
     Calculator,
+    FileText,
 } from 'lucide-react';
 import {
     HouseIcon,
@@ -202,6 +203,20 @@ const FilledIcons = {
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
         </svg>
     ),
+    FileText: ({ ...props }) => (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            {...props}
+        >
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+            <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="2" fill="none" />
+            <line x1="16" y1="13" x2="8" y2="13" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
+            <line x1="16" y1="17" x2="8" y2="17" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
+            <line x1="10" y1="9" x2="8" y2="9" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
+        </svg>
+    ),
 };
 
 // Regular user navigation
@@ -324,6 +339,13 @@ const superAdminNavItems = [
         label: 'Features',
         customIcon: false
     },
+    {
+        href: '/super-admin/audit-logs',
+        icon: FileText,
+        filledIcon: FilledIcons.FileText,
+        label: 'Audit Logs',
+        customIcon: false
+    },
 ];
 
 // Normal Admin navigation
@@ -342,18 +364,19 @@ const adminNavItems = [
         label: 'Team Members',
         customIcon: false
     },
-    {
-        href: '/admin/team',
-        icon: Users,
-        filledIcon: FilledIcons.Users,
-        label: 'Team Management',
-        customIcon: false
-    },
+
     {
         href: '/admin/settings',
         icon: Settings,
         filledIcon: FilledIcons.Settings,
         label: 'Settings',
+        customIcon: false
+    },
+    {
+        href: '/admin/resources',
+        icon: Library,
+        filledIcon: FilledIcons.Library,
+        label: 'Resources',
         customIcon: false
     },
 ];

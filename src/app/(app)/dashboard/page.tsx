@@ -52,7 +52,9 @@ import {
     AlertCircle,
     BarChart3,
     Activity,
-    Sparkles
+
+    Sparkles,
+    Megaphone
 } from 'lucide-react';
 import {
     ContentIcon,
@@ -84,6 +86,7 @@ export default function DashboardPage() {
         latestPlan: MarketingPlan | null;
         brandAudit: BrandAudit | null;
         competitors: CompetitorType[];
+        announcements: any[];
     } | null>(null);
     const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
     const [dashboardError, setDashboardError] = useState<string | null>(null);
@@ -113,6 +116,7 @@ export default function DashboardPage() {
                     latestPlan: result.data.latestPlan,
                     brandAudit: result.data.brandAudit,
                     competitors: result.data.competitors,
+                    announcements: result.data.announcements || [],
                 });
             } else {
                 setDashboardError(result.error || 'Failed to load dashboard');
@@ -699,6 +703,44 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="tablet:col-span-1 lg:col-span-1 space-y-6">
+                    {/* Team Announcements */}
+                    {dashboardData?.announcements && dashboardData.announcements.length > 0 && (
+                        <Card className="animate-fade-in-up animate-delay-150 transition-shadow duration-300 overflow-hidden bg-background/50 border-primary/20">
+                            <CardGradientMesh>
+                                <CardHeader className="relative z-10 pb-2">
+                                    <CardTitle className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900 dark:to-red-900">
+                                            <Megaphone className="text-orange-600 dark:text-orange-400 h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <div className="font-bold text-lg">Announcements</div>
+                                            <div className="text-sm text-muted-foreground font-normal">Latest updates</div>
+                                        </div>
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="relative z-10">
+                                    <div className="space-y-4">
+                                        {dashboardData.announcements.map((announcement: any) => (
+                                            <div key={announcement.id} className="p-4 rounded-lg bg-background/60 border border-border/50">
+                                                <div className="flex items-start justify-between gap-2 mb-2">
+                                                    <h4 className="font-semibold text-sm">{announcement.title}</h4>
+                                                    <Badge variant={announcement.priority === 'high' ? 'destructive' : 'secondary'} className="text-xs">
+                                                        {announcement.priority}
+                                                    </Badge>
+                                                </div>
+                                                <p className="text-sm text-muted-foreground mb-2 whitespace-pre-wrap">{announcement.message}</p>
+                                                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                                    <span>{announcement.senderName}</span>
+                                                    <span>{new Date(announcement.createdAt).toLocaleDateString()}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </CardGradientMesh>
+                        </Card>
+                    )}
+
                     {/* Today's Focus */}
                     <Card className="animate-fade-in-up animate-delay-200 transition-shadow duration-300 overflow-hidden bg-background/50 border-primary/20">
                         <CardGradientMesh>

@@ -62,12 +62,12 @@ export async function getCurrentUserServer(): Promise<CognitoUser | null> {
         }
 
         const client = getCognitoClient();
+        let user: CognitoUser | null = null;
 
         try {
             // Validate token with Cognito
-            const user = await client.getCurrentUser(accessToken);
+            user = await client.getCurrentUser(accessToken);
             console.log('✅ Server-side auth: User authenticated:', user.id);
-            return user;
         } catch (validationError) {
             const errorMessage = validationError instanceof Error ? validationError.message : 'Unknown error';
             console.warn(`⚠️ Access token validation failed: ${errorMessage}`);
@@ -87,9 +87,8 @@ export async function getCurrentUserServer(): Promise<CognitoUser | null> {
                     );
 
                     // Retry getting user with new access token
-                    const user = await client.getCurrentUser(newSession.accessToken);
+                    user = await client.getCurrentUser(newSession.accessToken);
                     console.log('✅ Server-side auth: User authenticated after token refresh:', user.id);
-                    return user;
                 } catch (refreshError) {
                     const refreshErrorMessage = refreshError instanceof Error ? refreshError.message : 'Unknown error';
                     console.error(`❌ Token refresh failed: ${refreshErrorMessage}`);
@@ -99,13 +98,63 @@ export async function getCurrentUserServer(): Promise<CognitoUser | null> {
                     await clearSessionCookie();
                     return null;
                 }
+            } else {
+                // No refresh token available, clear session
+                console.warn('⚠️ No refresh token available, clearing session cookie');
+                await clearSessionCookie();
+                return null;
             }
-
-            // No refresh token available, clear session
-            console.warn('⚠️ No refresh token available, clearing session cookie');
-            await clearSessionCookie();
-            return null;
         }
+
+        // --- Impersonation Logic ---
+        if (user) {
+            const impersonationCookie = cookieStore.get('bayon-impersonation-target');
+            if (impersonationCookie?.value) {
+                const targetUserId = impersonationCookie.value;
+                console.log(`🕵️ Impersonation request detected. Admin: ${user.id}, Target: ${targetUserId}`);
+
+                // Verify the *real* user is an admin/super_admin
+                // We need to import checkAdminStatusAction dynamically to avoid circular deps if possible,
+                // or just use the DynamoDB repository directly.
+                // Using repository directly is safer here to avoid circular imports with actions.ts
+                try {
+                    const { getRepository } = await import('@/aws/dynamodb/repository');
+                    const { getProfileKeys } = await import('@/aws/dynamodb/keys');
+
+                    const profileKeys = getProfileKeys(user.id);
+                    const repository = getRepository();
+                    const adminProfile = await repository.get<any>(profileKeys.PK, profileKeys.SK);
+
+                    if (adminProfile && (adminProfile.role === 'admin' || adminProfile.role === 'super_admin')) {
+                        console.log(`✅ Impersonation authorized. Switching context to ${targetUserId}`);
+
+                        // Return the target user as the "current user"
+                        // Note: We can't get the target's real email/attributes from Cognito without their token,
+                        // but we can return the ID which is what most DB lookups use.
+                        // If we need email, we could fetch it from their DynamoDB profile.
+
+                        const targetProfileKeys = getProfileKeys(targetUserId);
+                        const targetProfile = await repository.get<any>(targetProfileKeys.PK, targetProfileKeys.SK);
+
+                        return {
+                            id: targetUserId,
+                            email: targetProfile?.email || '',
+                            emailVerified: true, // Assume true for impersonation
+                            attributes: {}, // Cannot get attributes without token
+                            // Add a flag so UI knows we are impersonating (optional, but helpful if we extend the type)
+                        };
+                    } else {
+                        console.warn(`⛔ Impersonation denied. User ${user.id} is not an admin.`);
+                        // Optionally clear the cookie if they are not allowed
+                        // cookieStore.delete('bayon-impersonation-target'); 
+                    }
+                } catch (err) {
+                    console.error('❌ Error verifying admin status for impersonation:', err);
+                }
+            }
+        }
+
+        return user;
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';

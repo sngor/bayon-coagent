@@ -6,6 +6,7 @@ import { getCurrentUserServer } from '@/aws/auth/server-auth';
 import { DynamoDBKey } from '@/aws/dynamodb/types';
 import { FeatureToggle } from '@/lib/feature-toggles';
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 import {
     Organization,
     TeamMember,
@@ -24,13 +25,14 @@ import {
     getInvitationByTokenQueryKeys,
     getUserOrganizationsQueryKeys
 } from '@/aws/dynamodb/organization-keys';
-import { getProfileKeys } from '@/aws/dynamodb/keys';
+import { getProfileKeys, getAnnouncementKeys } from '@/aws/dynamodb/keys';
 import { sendInvitationEmail } from '@/lib/email-service';
 
 export async function getUsersListAction(
     accessToken?: string,
     limit: number = 60,
-    lastEvaluatedKey?: DynamoDBKey
+    lastEvaluatedKey?: DynamoDBKey,
+    options?: { filterByTeam?: boolean }
 ): Promise<{
     message: string;
     data: any[];
@@ -157,8 +159,10 @@ export async function getUsersListAction(
         // Filter users based on admin role
         let filteredUsers = mergedUsers;
 
-        // If regular admin (not super_admin), only show users from their teams
-        if (adminStatus.role === 'admin') {
+        // If regular admin (not super_admin) OR explicit filter requested, only show users from their teams
+        const shouldFilterByTeam = options?.filterByTeam || adminStatus.role === 'admin';
+
+        if (shouldFilterByTeam) {
             console.log('[getUsersListAction] Filtering for admin:', currentUser.id);
 
             // Get teams where this admin is the team admin
@@ -300,6 +304,7 @@ export async function getTeamsAction(
         const repository = getRepository();
 
         // If super admin, get all teams
+        let teams = [];
         if (adminStatus.role === 'super_admin') {
             const result = await repository.scan({
                 filterExpression: 'begins_with(PK, :pk) AND SK = :sk',
@@ -308,20 +313,41 @@ export async function getTeamsAction(
                     ':sk': 'CONFIG'
                 }
             });
-            return { message: 'success', data: result.items, errors: {} };
+            teams = result.items;
+        } else {
+            // If regular admin, get only their teams
+            const result = await repository.scan({
+                filterExpression: 'begins_with(PK, :pk) AND SK = :sk AND adminId = :adminId',
+                expressionAttributeValues: {
+                    ':pk': 'TEAM#',
+                    ':sk': 'CONFIG',
+                    ':adminId': currentUser.id
+                }
+            });
+            teams = result.items;
         }
 
-        // If regular admin, get only their teams
-        const result = await repository.scan({
-            filterExpression: 'begins_with(PK, :pk) AND SK = :sk AND adminId = :adminId',
+        // Get member counts
+        const profilesResult = await repository.scan({
+            filterExpression: 'SK = :sk',
             expressionAttributeValues: {
-                ':pk': 'TEAM#',
-                ':sk': 'CONFIG',
-                ':adminId': currentUser.id
+                ':sk': 'PROFILE'
             }
         });
 
-        return { message: 'success', data: result.items, errors: {} };
+        const memberCounts = new Map<string, number>();
+        profilesResult.items.forEach((profile: any) => {
+            if (profile.teamId) {
+                memberCounts.set(profile.teamId, (memberCounts.get(profile.teamId) || 0) + 1);
+            }
+        });
+
+        const teamsWithCounts = teams.map((team: any) => ({
+            ...team,
+            memberCount: memberCounts.get(team.id) || 0
+        }));
+
+        return { message: 'success', data: teamsWithCounts, errors: {} };
     } catch (error: any) {
         console.error('Error fetching teams:', error);
         return { message: 'Failed to fetch teams', data: [], errors: { system: error.message } };
@@ -653,46 +679,103 @@ export async function updateUserRoleAction(
     }
 }
 
-export async function getAdminDashboardStats() {
+export async function getAdminDashboardStats(options?: { filterByTeam?: boolean }) {
     try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) return { message: 'Not authenticated', data: null, errors: {} };
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) return { message: 'Unauthorized', data: null, errors: {} };
+
         const repository = getRepository();
+        let stats: any = {};
 
-        // 1. Users Count
-        const usersResult = await repository.scan({
-            filterExpression: 'SK = :sk',
-            expressionAttributeValues: { ':sk': 'PROFILE' }
-        });
-        const totalUsers = usersResult.count;
+        const shouldFilterByTeam = options?.filterByTeam || adminStatus.role === 'admin';
 
-        // 2. Feedback Count
-        const feedbackResult = await repository.query('FEEDBACK', undefined, { limit: 1000 });
-        const totalFeedback = feedbackResult.count;
-        const pendingFeedback = feedbackResult.items.filter((item: any) => item.status === 'submitted').length;
+        if (!shouldFilterByTeam && adminStatus.role === 'super_admin') {
+            // 1. Users Count
+            const usersResult = await repository.scan({
+                filterExpression: 'SK = :sk',
+                expressionAttributeValues: { ':sk': 'PROFILE' }
+            });
+            stats.totalUsers = usersResult.count;
 
-        // 3. AI Requests (Mock for now as we don't track this yet)
-        const totalAiRequests = 0;
+            // 2. Feedback Count
+            const feedbackResult = await repository.query('FEEDBACK', undefined, { limit: 1000 });
+            stats.totalFeedback = feedbackResult.count;
+            stats.pendingFeedback = feedbackResult.items.filter((item: any) => item.status === 'submitted').length;
 
-        // 4. Feature Count
-        const featuresResult = await repository.scan({
-            filterExpression: 'begins_with(PK, :pk) AND SK = :sk',
-            expressionAttributeValues: {
-                ':pk': 'FEATURE#',
-                ':sk': 'CONFIG'
+            // 3. AI Requests & Costs
+            // Scan for execution logs (Note: In a high-scale system, this should use a GSI or aggregated metrics table)
+            const logsResult = await repository.scan({
+                filterExpression: '#type = :type',
+                expressionAttributeNames: {
+                    '#type': 'type'
+                },
+                expressionAttributeValues: {
+                    ':type': 'execution-log'
+                }
+            });
+
+            const logs = logsResult.items as any[];
+            stats.totalAiRequests = logs.length;
+
+            // Calculate total cost
+            let totalCost = 0;
+            try {
+                const { calculateExecutionCost } = await import('@/aws/bedrock/cost-tracker');
+                for (const log of logs) {
+                    if (log.tokenUsage && log.modelId) {
+                        try {
+                            const cost = calculateExecutionCost(log.tokenUsage, log.modelId);
+                            totalCost += cost.totalCost;
+                        } catch (e) {
+                            // Ignore errors for unknown models etc
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to calculate AI costs:', error);
             }
-        });
-        const activeFeatures = featuresResult.items.filter((f: any) => f.status === 'enabled').length;
-        const betaFeatures = featuresResult.items.filter((f: any) => f.status === 'beta').length;
+            stats.totalAiCosts = totalCost;
+
+            // 4. Feature Count
+            const featuresResult = await repository.scan({
+                filterExpression: 'begins_with(PK, :pk) AND SK = :sk',
+                expressionAttributeValues: {
+                    ':pk': 'FEATURE#',
+                    ':sk': 'CONFIG'
+                }
+            });
+            stats.activeFeatures = featuresResult.items.filter((f: any) => f.status === 'enabled').length;
+            stats.betaFeatures = featuresResult.items.filter((f: any) => f.status === 'beta').length;
+
+            // 5. Teams Count
+            const teamsResult = await repository.scan({
+                filterExpression: 'begins_with(PK, :pk) AND SK = :sk',
+                expressionAttributeValues: {
+                    ':pk': 'TEAM#',
+                    ':sk': 'CONFIG'
+                }
+            });
+            stats.totalTeams = teamsResult.count;
+
+            stats.pendingInvitations = 0;
+            stats.systemStatus = 'Healthy';
+        } else {
+            // Regular Admin Stats (or forced team filter)
+            const usersList = await getUsersListAction(undefined, undefined, undefined, { filterByTeam: true });
+            stats.totalUsers = usersList.message === 'success' ? usersList.data.length : 0;
+
+            const invitations = await getPendingInvitationsAction();
+            stats.pendingInvitations = invitations.message === 'success' && invitations.data ? invitations.data.length : 0;
+
+            stats.systemStatus = 'Healthy';
+        }
 
         return {
             message: 'success',
-            data: {
-                totalUsers,
-                totalFeedback,
-                pendingFeedback,
-                totalAiRequests,
-                activeFeatures,
-                betaFeatures
-            },
+            data: stats,
             errors: {}
         };
     } catch (error: any) {
@@ -705,7 +788,10 @@ export async function getAdminDashboardStats() {
     }
 }
 
-export async function getRecentActivityAction(limit: number = 5): Promise<{
+export async function getRecentActivityAction(
+    limit: number = 5,
+    options?: { filterByTeam?: boolean }
+): Promise<{
     message: string;
     data: any[];
     errors: any;
@@ -719,16 +805,41 @@ export async function getRecentActivityAction(limit: number = 5): Promise<{
 
         const repository = getRepository();
 
-        // For now, we'll just show the most recent users as "activity"
-        // In a real system, we'd have an ActivityLog table
-        const usersResult = await repository.scan({
-            limit,
-            filterExpression: 'SK = :sk',
-            expressionAttributeValues: { ':sk': 'PROFILE' }
-        });
+        let users = [];
+
+        const shouldFilterByTeam = options?.filterByTeam || adminStatus.role === 'admin';
+
+        if (!shouldFilterByTeam && adminStatus.role === 'super_admin') {
+            const usersResult = await repository.scan({
+                limit,
+                filterExpression: 'SK = :sk',
+                expressionAttributeValues: { ':sk': 'PROFILE' }
+            });
+            users = usersResult.items;
+        } else {
+            // For regular admin, get their teams first
+            const teamsResult = await repository.scan({
+                filterExpression: 'begins_with(PK, :pk) AND SK = :sk AND adminId = :adminId',
+                expressionAttributeValues: {
+                    ':pk': 'TEAM#',
+                    ':sk': 'CONFIG',
+                    ':adminId': currentUser.id
+                }
+            });
+            const adminTeamIds = teamsResult.items.map((t: any) => t.id);
+
+            // Then scan users and filter by team
+            // Note: In a real app with many users, we should query by GSI or index
+            const usersResult = await repository.scan({
+                filterExpression: 'SK = :sk',
+                expressionAttributeValues: { ':sk': 'PROFILE' }
+            });
+
+            users = usersResult.items.filter((u: any) => u.teamId && adminTeamIds.includes(u.teamId));
+        }
 
         // Sort by createdAt descending (client-side since scan doesn't sort)
-        const recentUsers = usersResult.items
+        const recentUsers = users
             .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             .slice(0, limit)
             .map((user: any) => ({
@@ -1072,6 +1183,8 @@ export async function getOrganizationSettingsAction(): Promise<{
             website: 'https://bayon.coagent.com',
             allowMemberInvites: true,
             requireApproval: false,
+            logo: '',
+            brandColor: '#0f172a',
         };
 
         return { message: 'success', data: settings, errors: {} };
@@ -1121,7 +1234,7 @@ export async function getTeamMembersAction(): Promise<{
         // Reuse getUsersListAction logic but filtered for this admin's team
         // For simplicity, we'll just call getUsersListAction and filter
         // In a real optimized scenario, we'd query the team members directly
-        const usersResult = await getUsersListAction();
+        const usersResult = await getUsersListAction(undefined, undefined, undefined, { filterByTeam: true });
 
         if (usersResult.message !== 'success') {
             return { message: usersResult.message, errors: usersResult.errors };
@@ -1241,15 +1354,7 @@ export async function getPendingInvitationsAction(): Promise<{
 
         // Fetch pending invitations
         // Mock data for now
-        const invitations = [
-            {
-                id: 'inv_1',
-                email: 'pending@example.com',
-                role: 'member',
-                status: 'pending',
-                expiresAt: getInvitationExpirationDate(),
-            }
-        ];
+        const invitations: any[] = [];
 
         return { message: 'success', data: invitations, errors: {} };
     } catch (error: any) {
@@ -1277,5 +1382,343 @@ export async function cancelInvitationAction(invitationId: string): Promise<{
     } catch (error: any) {
         console.error('Error cancelling invitation:', error);
         return { message: 'Failed to cancel invitation', errors: { system: error.message } };
+    }
+}
+
+// ============================================
+// Announcement Actions
+// ============================================
+
+export async function createAnnouncementAction(
+    title: string,
+    message: string,
+    priority: 'low' | 'medium' | 'high',
+    teamId?: string
+): Promise<{
+    message: string;
+    data?: any;
+    errors: any;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) return { message: 'Not authenticated', errors: {} };
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) return { message: 'Unauthorized', errors: {} };
+
+        const repository = getRepository();
+        const announcementId = Math.random().toString(36).substring(2, 15);
+        const timestamp = new Date().toISOString();
+
+        let targetTeamId = teamId;
+
+        if (adminStatus.role === 'admin') {
+            // Get admin's teams
+            const teamsResult = await repository.scan({
+                filterExpression: 'begins_with(PK, :pk) AND SK = :sk AND adminId = :adminId',
+                expressionAttributeValues: {
+                    ':pk': 'TEAM#',
+                    ':sk': 'CONFIG',
+                    ':adminId': currentUser.id
+                }
+            });
+            const adminTeamIds = teamsResult.items.map((t: any) => t.id);
+
+            if (teamId) {
+                if (!adminTeamIds.includes(teamId)) {
+                    return { message: 'Unauthorized: You can only post to your teams', errors: {} };
+                }
+            } else {
+                if (adminTeamIds.length > 0) {
+                    targetTeamId = adminTeamIds[0]; // Default to first team
+                } else {
+                    return { message: 'No team found for this admin', errors: {} };
+                }
+            }
+        } else if (adminStatus.role === 'super_admin') {
+            if (!targetTeamId) {
+                targetTeamId = 'GLOBAL';
+            }
+        }
+
+        if (!targetTeamId) {
+            return { message: 'Target team is required', errors: {} };
+        }
+
+        const keys = getAnnouncementKeys(targetTeamId, announcementId, timestamp);
+
+        // Get sender profile for name
+        const profileKeys = getProfileKeys(currentUser.id);
+        const profile = await repository.get<any>(profileKeys.PK, profileKeys.SK);
+        const senderName = profile?.name || currentUser.email || 'Admin';
+
+        const announcement = {
+            id: announcementId,
+            title,
+            message,
+            priority,
+            senderId: currentUser.id,
+            senderName,
+            teamId: targetTeamId,
+            createdAt: timestamp,
+            type: 'Announcement' as const
+        };
+
+        await repository.create(keys.PK, keys.SK, 'Announcement', announcement);
+
+        return { message: 'success', data: announcement, errors: {} };
+    } catch (error: any) {
+        console.error('Error creating announcement:', error);
+        return { message: 'Failed to create announcement', errors: { system: error.message } };
+    }
+}
+
+export async function getAnnouncementsAction(
+    limit: number = 10,
+    teamId?: string
+): Promise<{
+    message: string;
+    data: any[];
+    errors: any;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) return { message: 'Not authenticated', data: [], errors: {} };
+
+        const repository = getRepository();
+
+        // For now, let's just fetch announcements for a specific team or GLOBAL
+        const targetTeamId = teamId || 'GLOBAL';
+
+        // Query by PK = TEAM#<teamId> and SK begins_with ANNOUNCEMENT#
+        const result = await repository.query(
+            `TEAM#${targetTeamId}`,
+            'ANNOUNCEMENT#',
+            {
+                limit,
+                scanIndexForward: false, // Newest first
+            }
+        );
+
+        return { message: 'success', data: result.items, errors: {} };
+    } catch (error: any) {
+        console.error('Error fetching announcements:', error);
+        return { message: 'Failed to fetch announcements', data: [], errors: { system: error.message } };
+    }
+}
+
+export async function getAuditLogsAction(
+    params: {
+        adminUserId?: string;
+        action?: string;
+        resourceType?: string;
+        resourceId?: string;
+        startTime?: string;
+        endTime?: string;
+        limit?: number;
+        nextToken?: string;
+    }
+): Promise<{
+    message: string;
+    data: {
+        logs: any[];
+        nextToken?: string;
+        searchedLogStreams?: number;
+    };
+    errors: any;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) return { message: 'Not authenticated', data: { logs: [] }, errors: {} };
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (adminStatus.role !== 'super_admin') {
+            return { message: 'Unauthorized: Super Admin access required', data: { logs: [] }, errors: {} };
+        }
+
+        const { CloudWatchLogsClient, FilterLogEventsCommand } = await import('@aws-sdk/client-cloudwatch-logs');
+        const { getConfig, getAWSCredentials } = await import('@/aws/config');
+
+        const config = getConfig();
+        const credentials = getAWSCredentials();
+
+        const clientConfig: any = { region: config.region };
+        if (credentials.accessKeyId && credentials.secretAccessKey) {
+            clientConfig.credentials = credentials;
+        }
+
+        const logsClient = new CloudWatchLogsClient(clientConfig);
+        const AUDIT_LOG_GROUP = '/aws/bayon-coagent/admin-audit';
+
+        const endTime = params.endTime ? new Date(params.endTime).getTime() : Date.now();
+        const startTime = params.startTime
+            ? new Date(params.startTime).getTime()
+            : endTime - 24 * 60 * 60 * 1000; // Default: last 24 hours
+
+        // Build filter pattern
+        const filterPatterns: string[] = [];
+
+        if (params.adminUserId) {
+            filterPatterns.push(`{ $.adminUserId = "${params.adminUserId}" }`);
+        }
+
+        if (params.action) {
+            filterPatterns.push(`{ $.action = "${params.action}" }`);
+        }
+
+        if (params.resourceType) {
+            filterPatterns.push(`{ $.resourceType = "${params.resourceType}" }`);
+        }
+
+        if (params.resourceId) {
+            filterPatterns.push(`{ $.resourceId = "${params.resourceId}" }`);
+        }
+
+        const filterPattern = filterPatterns.length > 0 ? filterPatterns.join(' && ') : undefined;
+
+        const command = new FilterLogEventsCommand({
+            logGroupName: AUDIT_LOG_GROUP,
+            startTime,
+            endTime,
+            filterPattern,
+            limit: params.limit || 100,
+            nextToken: params.nextToken,
+        });
+
+        try {
+            const response = await logsClient.send(command);
+
+            const logs = response.events?.map(event => {
+                try {
+                    return {
+                        timestamp: event.timestamp ? new Date(event.timestamp).toISOString() : undefined,
+                        message: event.message ? JSON.parse(event.message) : undefined,
+                        logStreamName: event.logStreamName,
+                    };
+                } catch (error) {
+                    return {
+                        timestamp: event.timestamp ? new Date(event.timestamp).toISOString() : undefined,
+                        message: event.message,
+                        logStreamName: event.logStreamName,
+                    };
+                }
+            }) || [];
+
+            return {
+                message: 'success',
+                data: {
+                    logs,
+                    nextToken: response.nextToken,
+                    searchedLogStreams: response.searchedLogStreams?.length || 0,
+                },
+                errors: {}
+            };
+        } catch (error: any) {
+            if (error.name === 'ResourceNotFoundException') {
+                return {
+                    message: 'No audit logs found (log group does not exist yet)',
+                    data: {
+                        logs: [],
+                        nextToken: undefined,
+                        searchedLogStreams: 0,
+                    },
+                    errors: {}
+                };
+            }
+            throw error;
+        }
+    } catch (error: any) {
+        console.error('Error fetching audit logs:', error);
+        return {
+            message: 'Failed to fetch audit logs',
+            data: { logs: [] },
+            errors: { system: error.message }
+        };
+    }
+}
+
+// ============================================
+// Impersonation Actions
+// ============================================
+
+export async function impersonateUserAction(userId: string): Promise<{ message: string; errors: any }> {
+    try {
+        // Verify the *real* user is an admin
+        const cookieStore = await cookies();
+        const sessionCookie = cookieStore.get('bayon-session');
+
+        if (!sessionCookie?.value) {
+            return { message: 'Not authenticated', errors: {} };
+        }
+
+        let session;
+        try {
+            session = JSON.parse(sessionCookie.value);
+        } catch (e) {
+            return { message: 'Invalid session', errors: {} };
+        }
+
+        // Get the real user directly from Cognito using the access token
+        // This bypasses any impersonation logic in getCurrentUserServer
+        const { getCognitoClient } = await import('@/aws/auth/cognito-client');
+        const client = getCognitoClient();
+
+        let realUser;
+        try {
+            realUser = await client.getCurrentUser(session.accessToken);
+        } catch (e) {
+            return { message: 'Session expired or invalid', errors: {} };
+        }
+
+        const adminStatus = await checkAdminStatusAction(realUser.id);
+        if (!adminStatus.isAdmin) {
+            return { message: 'Unauthorized: Only admins can impersonate', errors: {} };
+        }
+
+        // Set the impersonation cookie
+        cookieStore.set('bayon-impersonation-target', userId, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+        });
+
+        console.log(`[impersonateUserAction] Admin ${realUser.id} is now impersonating ${userId}`);
+        return { message: 'success', errors: {} };
+    } catch (error: any) {
+        console.error('Error starting impersonation:', error);
+        return { message: 'Failed to start impersonation', errors: { system: error.message } };
+    }
+}
+
+export async function stopImpersonationAction(): Promise<{ message: string; errors: any }> {
+    try {
+        const cookieStore = await cookies();
+        cookieStore.delete('bayon-impersonation-target');
+        return { message: 'success', errors: {} };
+    } catch (error: any) {
+        console.error('Error stopping impersonation:', error);
+        return { message: 'Failed to stop impersonation', errors: { system: error.message } };
+    }
+}
+
+export async function getImpersonationStatusAction(): Promise<{
+    isImpersonating: boolean;
+    targetUserId?: string;
+}> {
+    try {
+        const cookieStore = await cookies();
+        const impersonationCookie = cookieStore.get('bayon-impersonation-target');
+
+        if (!impersonationCookie?.value) {
+            return { isImpersonating: false };
+        }
+
+        return {
+            isImpersonating: true,
+            targetUserId: impersonationCookie.value
+        };
+    } catch (error) {
+        return { isImpersonating: false };
     }
 }

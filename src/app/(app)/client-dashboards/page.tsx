@@ -51,6 +51,8 @@ import {
     type SecuredLink
 } from '@/app/client-dashboard-actions';
 import { formatDistanceToNow } from 'date-fns';
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
 
 // Helper function to format dates
 function formatDate(timestamp: number): string {
@@ -292,6 +294,24 @@ export default function ClientDashboardsPage() {
 
     return (
         <div className="space-y-6">
+            {/* Page Header with Pin Button */}
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="text-2xl font-bold font-headline">Client Dashboards</CardTitle>
+                            <CardDescription>
+                                Create and manage personalized client portals
+                            </CardDescription>
+                        </div>
+                        {(() => {
+                            const pageConfig = getPageConfig('/client-dashboards');
+                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                        })()}
+                    </div>
+                </CardHeader>
+            </Card>
+
             {/* Header with search and create button */}
             <div className="flex items-center justify-between gap-4">
                 <div className="flex-1 max-w-md">

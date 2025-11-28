@@ -17,6 +17,8 @@ import { Loader2, Sparkles, Download, Share2 } from 'lucide-react';
 import { generatePostCardAction } from '@/app/post-card-actions';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
 
 export default function PostCardsPage() {
     const { toast } = useToast();
@@ -92,10 +94,18 @@ export default function PostCardsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-3xl font-bold font-headline">Post Card Studio</CardTitle>
-                        <CardDescription>
-                            Create personalized real estate post cards with AI-powered image generation
-                        </CardDescription>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="text-2xl font-bold font-headline">Post Card Studio</CardTitle>
+                                <CardDescription>
+                                    Create personalized real estate post cards with AI-powered image generation
+                                </CardDescription>
+                            </div>
+                            {(() => {
+                                const pageConfig = getPageConfig('/studio/post-cards');
+                                return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                            })()}
+                        </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">

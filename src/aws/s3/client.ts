@@ -23,6 +23,8 @@ import {
   type GetObjectCommandInput,
   type DeleteObjectCommandInput,
   type ListObjectsV2CommandInput,
+  CopyObjectCommand,
+  GetBucketLocationCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { getConfig, getAWSCredentials } from '../config';
@@ -43,10 +45,10 @@ export function getS3Client(): S3Client {
     const credentials = getAWSCredentials();
 
     s3Client = new S3Client({
-      region: config.region,
+      region: config.s3.region,
       endpoint: config.s3.endpoint,
       credentials: credentials.accessKeyId && credentials.secretAccessKey
-        ? credentials
+        ? { accessKeyId: credentials.accessKeyId, secretAccessKey: credentials.secretAccessKey }
         : undefined,
       forcePathStyle: config.environment === 'local', // Required for LocalStack
     });
@@ -61,6 +63,36 @@ export function getS3Client(): S3Client {
  */
 export function resetS3Client(): void {
   s3Client = null;
+}
+
+/**
+ * Attempts to detect the correct region for a bucket
+ */
+async function detectBucketRegion(bucketName: string): Promise<string | null> {
+  try {
+    // Try with us-east-1 client (global endpoint)
+    const config = getConfig();
+    const credentials = getAWSCredentials();
+
+    const globalClient = new S3Client({
+      region: 'us-east-1',
+      credentials: credentials.accessKeyId && credentials.secretAccessKey
+        ? { accessKeyId: credentials.accessKeyId, secretAccessKey: credentials.secretAccessKey }
+        : undefined
+    });
+
+    const command = new GetBucketLocationCommand({ Bucket: bucketName });
+    const response = await globalClient.send(command);
+
+    // LocationConstraint is empty for us-east-1, 'EU' for eu-west-1 (legacy), or the region string
+    let region = response.LocationConstraint || 'us-east-1';
+    if (region === 'EU') region = 'eu-west-1';
+
+    return region;
+  } catch (error) {
+    console.warn('Failed to detect bucket region:', error);
+    return null;
+  }
 }
 
 /**
@@ -105,13 +137,43 @@ export async function uploadFile(
     Metadata: metadata,
   });
 
-  await client.send(command);
+  try {
+    await client.send(command);
+  } catch (error: any) {
+    // Check for region error
+    if (error.name === 'PermanentRedirect' ||
+      error.message?.includes('addressed using the specified endpoint') ||
+      error.$metadata?.httpStatusCode === 301) {
+
+      console.log('S3 region mismatch detected. Attempting to auto-correct...');
+      const detectedRegion = await detectBucketRegion(config.s3.bucketName);
+
+      if (detectedRegion && detectedRegion !== config.s3.region) {
+        console.log(`Auto-detected correct region: ${detectedRegion}. Retrying upload...`);
+
+        // Update config and reset client
+        config.s3.region = detectedRegion;
+        resetS3Client();
+
+        // Retry with new client
+        const newClient = getS3Client();
+        await newClient.send(command);
+
+        // Return the S3 URL with correct region
+        if (config.s3.endpoint) {
+          return `${config.s3.endpoint}/${config.s3.bucketName}/${key}`;
+        }
+        return `https://${config.s3.bucketName}.s3.${detectedRegion}.amazonaws.com/${key}`;
+      }
+    }
+    throw error;
+  }
 
   // Return the S3 URL
   if (config.s3.endpoint) {
     return `${config.s3.endpoint}/${config.s3.bucketName}/${key}`;
   }
-  return `https://${config.s3.bucketName}.s3.${config.region}.amazonaws.com/${key}`;
+  return `https://${config.s3.bucketName}.s3.${config.s3.region}.amazonaws.com/${key}`;
 }
 
 /**
@@ -186,7 +248,39 @@ async function uploadFileMultipart(
       return `${config.s3.endpoint}/${config.s3.bucketName}/${key}`;
     }
     return `https://${config.s3.bucketName}.s3.${config.region}.amazonaws.com/${key}`;
-  } catch (error) {
+  } catch (error: any) {
+    // Check for region error in multipart upload
+    if (error.name === 'PermanentRedirect' ||
+      error.message?.includes('addressed using the specified endpoint') ||
+      error.$metadata?.httpStatusCode === 301) {
+
+      // Abort the failed upload
+      try {
+        const abortCommand = new AbortMultipartUploadCommand({
+          Bucket: config.s3.bucketName,
+          Key: key,
+          UploadId,
+        });
+        await client.send(abortCommand);
+      } catch (e) {
+        // Ignore abort errors
+      }
+
+      console.log('S3 region mismatch detected in multipart upload. Attempting to auto-correct...');
+      const detectedRegion = await detectBucketRegion(config.s3.bucketName);
+
+      if (detectedRegion && detectedRegion !== config.s3.region) {
+        console.log(`Auto-detected correct region: ${detectedRegion}. Retrying multipart upload...`);
+
+        // Update config and reset client
+        config.s3.region = detectedRegion;
+        resetS3Client();
+
+        // Retry the entire function
+        return uploadFileMultipart(key, buffer, contentType, metadata);
+      }
+    }
+
     // Abort multipart upload on error
     const abortCommand = new AbortMultipartUploadCommand({
       Bucket: config.s3.bucketName,
@@ -436,7 +530,7 @@ export async function copyFile(
   const config = getConfig();
   const client = getS3Client();
 
-  const command = new PutObjectCommand({
+  const command = new CopyObjectCommand({
     Bucket: config.s3.bucketName,
     Key: destinationKey,
     CopySource: `${config.s3.bucketName}/${sourceKey}`,

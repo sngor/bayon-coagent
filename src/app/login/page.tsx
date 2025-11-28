@@ -1,10 +1,10 @@
-
 'use client';
 
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
+import { SessionLoading } from '@/components/session-loading';
 import { useEffect, useState, useActionState } from 'react';
 import { useUser, useAuthMethods } from '@/aws/auth/use-user';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -865,14 +865,7 @@ export default function LoginPage() {
     };
 
     if (isUserLoading) {
-        return (
-            <div className="flex h-screen w-full items-center justify-center bg-background">
-                <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <p className="text-muted-foreground">Loading Session...</p>
-                </div>
-            </div>
-        );
+        return <SessionLoading />;
     }
 
     if (!user) {

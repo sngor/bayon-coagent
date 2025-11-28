@@ -119,6 +119,16 @@ export const AVAILABLE_PAGES = [
         category: 'Studio'
     },
     {
+        id: 'studio-post-cards',
+        title: 'Post Card Studio',
+        description: 'Create personalized real estate post cards',
+        href: '/studio/post-cards',
+        icon: 'Image',
+        color: 'bg-purple-500',
+        gradient: 'from-purple-500 to-purple-600',
+        category: 'Studio'
+    },
+    {
         id: 'brand-profile',
         title: 'Brand Profile',
         description: 'Manage your professional profile',
@@ -237,6 +247,26 @@ export const AVAILABLE_PAGES = [
         color: 'bg-amber-500',
         gradient: 'from-amber-500 to-amber-600',
         category: 'Library'
+    },
+    {
+        id: 'client-dashboards',
+        title: 'Client Dashboards',
+        description: 'Manage client portals and engagement',
+        href: '/client-dashboards',
+        icon: 'Users',
+        color: 'bg-sky-500',
+        gradient: 'from-sky-500 to-sky-600',
+        category: 'Client Management'
+    },
+    {
+        id: 'learning-lessons',
+        title: 'Learning Center',
+        description: 'Training modules and courses',
+        href: '/learning/lessons',
+        icon: 'BookOpen',
+        color: 'bg-indigo-500',
+        gradient: 'from-indigo-500 to-indigo-600',
+        category: 'Learning'
     }
 ];
 

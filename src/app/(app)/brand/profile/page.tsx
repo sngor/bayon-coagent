@@ -28,13 +28,12 @@ import type { Profile } from '@/lib/types';
 import { JsonLdDisplay } from '@/components/json-ld-display';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
-import { generateBioAction, saveContentAction, updateProfilePhotoUrlAction } from '@/app/actions';
-import { Save, User, Building2, Award, Phone, Share2, Star } from 'lucide-react';
+import { generateBioAction, saveContentAction } from '@/app/actions';
+import { Save, User, Building2, Award, Phone, Share2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsList as TabsList, AnimatedTabsTrigger as TabsTrigger } from '@/components/ui/animated-tabs';
 
 import { ProfileCompletionChecklist } from '@/components/profile-completion-banner';
-import { ProfileImageUpload } from '@/components/profile-image-upload';
 import { StandardLoadingSpinner } from '@/components/standard';
 import { STICKY_POSITIONS } from '@/lib/utils';
 import { FeaturedTestimonialSelector } from '@/components/featured-testimonial-selector';
@@ -240,23 +239,9 @@ function SocialLinksSection({ profile, onInputChange }: { profile: Partial<Profi
     );
 }
 
-function ProfileForm({ profile, onInputChange, onSave, isSaving, isLoading, bioFormAction, userId, onImageUpdate }: { profile: Partial<Profile>, onInputChange: any, onSave: any, isSaving: boolean, isLoading: boolean, bioFormAction: any, userId?: string, onImageUpdate?: (url: string) => void }) {
+function ProfileForm({ profile, onInputChange, onSave, isSaving, isLoading, bioFormAction }: { profile: Partial<Profile>, onInputChange: any, onSave: any, isSaving: boolean, isLoading: boolean, bioFormAction: any }) {
     return (
         <div className="space-y-8">
-            {/* Profile Photo Card */}
-            <Card>
-                <CardContent className="pt-6">
-                    <div className="flex justify-center">
-                        <ProfileImageUpload
-                            userId={userId || ''}
-                            currentImageUrl={profile.photoURL}
-                            userName={profile.name}
-                            onImageUpdate={onImageUpdate}
-                            size="xl"
-                        />
-                    </div>
-                </CardContent>
-            </Card>
             {/* Main Profile Information Card */}
             <Card className="overflow-hidden">
                 <CardGradientMesh>
@@ -327,43 +312,6 @@ export default function ProfilePage() {
     const [isChecklistSticky, setIsChecklistSticky] = useState(false);
     const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
     const [isLoadingTestimonials, setIsLoadingTestimonials] = useState(false);
-
-    const handleImageUpdate = async (url: string) => {
-        setProfile((prev) => ({ ...prev, photoURL: url }));
-
-        if (user?.id) {
-            try {
-                const result = await updateProfilePhotoUrlAction(user.id, url);
-
-                if (result.message === 'Profile photo updated successfully') {
-                    // Invalidate cache to force refresh of profile data throughout the app
-                    const { getCache } = await import('@/aws/dynamodb/hooks/cache');
-                    const cache = getCache();
-                    cache.invalidatePartition(`USER#${user.id}`);
-
-                    toast({
-                        title: 'Profile Photo Updated!',
-                        description: 'Your profile photo has been uploaded to S3.',
-                    });
-                    try {
-                        // Notify other parts of the app (topbar) that the profile changed
-                        window.dispatchEvent(new CustomEvent('profileUpdated', { detail: { photoURL: url } }));
-                    } catch (err) {
-                        console.warn('Could not dispatch profileUpdated event', err);
-                    }
-                } else {
-                    throw new Error(result.errors?.[0] || 'Update failed');
-                }
-            } catch (error) {
-                console.error('Failed to update profile photo:', error);
-                toast({
-                    variant: 'destructive',
-                    title: 'Update Failed',
-                    description: 'Could not update profile photo.',
-                });
-            }
-        }
-    };
 
     const [bioState, bioFormAction] = useActionState(generateBioAction, initialBioState);
 
@@ -666,7 +614,6 @@ export default function ProfilePage() {
                         <span className="whitespace-nowrap">Your Profile</span>
                     </TabsTrigger>
                     <TabsTrigger value="testimonials">
-                        <Star className="h-4 w-4 mr-2" />
                         <span className="whitespace-nowrap">Featured Testimonials</span>
                     </TabsTrigger>
                     <TabsTrigger value="schema">
@@ -689,8 +636,6 @@ export default function ProfilePage() {
                                     isSaving={isSaving}
                                     isLoading={isLoading}
                                     bioFormAction={bioFormAction}
-                                    userId={user?.id}
-                                    onImageUpdate={handleImageUpdate}
                                 />
                             </div>
                             <div className="lg:col-span-1">
