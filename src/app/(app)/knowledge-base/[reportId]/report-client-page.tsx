@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { PageHeader } from '@/components/page-header';
+
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useUser } from '@/aws/auth/use-user';
 import { useItem } from '@/aws/dynamodb/hooks/use-item';
@@ -41,11 +41,10 @@ export default function ReportClientPage({ reportId }: { reportId: string }) {
     const reportContentRef = useRef<HTMLDivElement>(null);
     const [isDownloading, setIsDownloading] = React.useState(false);
 
-    const { data: report, isLoading } = useItem<ResearchReport>({
-        userId: user?.userId,
-        sk: `REPORT#${reportId}`,
-        enabled: !!user && !!reportId,
-    });
+    const { data: report, isLoading } = useItem<ResearchReport>(
+        user ? `USER#${user.id}` : null,
+        `REPORT#${reportId}`
+    );
 
     const handleDownload = async () => {
         if (!reportContentRef.current || !report) return;
@@ -123,10 +122,12 @@ export default function ReportClientPage({ reportId }: { reportId: string }) {
 
             {report && (
                 <>
-                    <PageHeader
-                        title={report.topic}
-                        description={`Generated on ${new Date(report.createdAt).toLocaleDateString()}`}
-                    />
+                    <Card className="mb-6">
+                        <CardHeader>
+                            <CardTitle className="text-2xl font-bold font-headline">{report.topic}</CardTitle>
+                            <p className="text-muted-foreground">{`Generated on ${new Date(report.createdAt).toLocaleDateString()}`}</p>
+                        </CardHeader>
+                    </Card>
 
                     <div className="flex flex-wrap gap-2">
                         <Button variant="outline" onClick={handleCopy}>
@@ -166,10 +167,12 @@ export default function ReportClientPage({ reportId }: { reportId: string }) {
             )}
 
             {!isLoading && !report && (
-                <PageHeader
-                    title="Report Not Found"
-                    description="The requested research report could not be found."
-                />
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-2xl font-bold font-headline">Report Not Found</CardTitle>
+                        <p className="text-muted-foreground">The requested research report could not be found.</p>
+                    </CardHeader>
+                </Card>
             )}
         </div>
     )

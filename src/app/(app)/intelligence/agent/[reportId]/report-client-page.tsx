@@ -1,7 +1,7 @@
 
 'use client';
 
-import { PageHeader } from '@/components/page-header';
+
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useUser } from '@/aws/auth/use-user';
 import { useItem } from '@/aws/dynamodb/hooks/use-item';
@@ -34,11 +34,10 @@ function ReportSkeleton() {
 
 export default function ReportClientPage({ reportId }: { reportId: string }) {
     const { user } = useUser();
-    const { data: report, isLoading } = useItem<ResearchReport>({
-        userId: user?.userId,
-        sk: `REPORT#${reportId}`,
-        enabled: !!user && !!reportId,
-    });
+    const { data: report, isLoading } = useItem<ResearchReport>(
+        user ? `USER#${user.id}` : null,
+        `REPORT#${reportId}`
+    );
 
     return (
         <div className="space-y-8 fade-in">
@@ -53,12 +52,11 @@ export default function ReportClientPage({ reportId }: { reportId: string }) {
 
             {report && (
                 <>
-                    <PageHeader
-                        title={report.topic}
-                        description={`Generated on ${new Date(report.createdAt).toLocaleDateString()}`}
-                    />
-
                     <Card>
+                        <CardHeader>
+                            <CardTitle className="text-2xl font-bold font-headline">{report.topic}</CardTitle>
+                            <p className="text-muted-foreground">{`Generated on ${new Date(report.createdAt).toLocaleDateString()}`}</p>
+                        </CardHeader>
                         <CardContent className="pt-6">
                             <div
                                 className="prose prose-lg max-w-none text-foreground prose-headings:font-headline prose-h2:text-2xl prose-h3:text-xl dark:prose-invert"
@@ -84,10 +82,12 @@ export default function ReportClientPage({ reportId }: { reportId: string }) {
             )}
 
             {!isLoading && !report && (
-                <PageHeader
-                    title="Report Not Found"
-                    description="The requested research report could not be found."
-                />
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-2xl font-bold font-headline">Report Not Found</CardTitle>
+                        <p className="text-muted-foreground">The requested research report could not be found.</p>
+                    </CardHeader>
+                </Card>
             )}
         </div>
     )

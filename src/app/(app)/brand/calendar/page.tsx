@@ -5,7 +5,7 @@ import { useUser } from '@/aws/auth';
 import { ContentCalendar } from '@/components/content-calendar';
 import { BulkSchedulingModal } from '@/components/bulk-scheduling-modal';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -69,7 +69,8 @@ import {
     getOptimalTimesAction,
     getConnectedChannelsAction
 } from '@/app/content-workflow-actions';
-
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageConfig } from '@/components/dashboard-quick-actions';
 // Mock available channels for bulk scheduling
 const mockAvailableChannels: PublishChannel[] = [
     {
@@ -632,18 +633,29 @@ export default function LibraryCalendarPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle className="font-headline text-2xl">Content Calendar</CardTitle>
+                            <CardDescription>
+                                Schedule and manage your content across all channels
+                                {isMultiSelectMode && selectedItems.size > 0 && (
+                                    <span className="ml-2">
+                                        • {selectedItems.size} item{selectedItems.size !== 1 ? 's' : ''} selected
+                                    </span>
+                                )}
+                            </CardDescription>
+                        </div>
+                        {(() => {
+                            const pageConfig = getPageConfig('/brand/calendar');
+                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                        })()}
+                    </div>
+                </CardHeader>
+            </Card>
             <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold">Content Calendar</h1>
-                    <p className="text-muted-foreground">
-                        Schedule and manage your content across all channels
-                        {isMultiSelectMode && selectedItems.size > 0 && (
-                            <span className="ml-2">
-                                • {selectedItems.size} item{selectedItems.size !== 1 ? 's' : ''} selected
-                            </span>
-                        )}
-                    </p>
-                </div>
+                <div /> {/* Spacer to push actions to the right */}
                 <div className="flex gap-2">
                     {/* Multi-select controls */}
                     {isMultiSelectMode && (
@@ -938,8 +950,8 @@ export default function LibraryCalendarPage() {
                         <Card
                             key={item.id}
                             className={`hover:shadow-md transition-all ${isMultiSelectMode && selectedItems.has(item.id)
-                                    ? 'ring-2 ring-blue-500 bg-blue-50'
-                                    : ''
+                                ? 'ring-2 ring-blue-500 bg-blue-50'
+                                : ''
                                 }`}
                         >
                             <CardContent className="p-6">

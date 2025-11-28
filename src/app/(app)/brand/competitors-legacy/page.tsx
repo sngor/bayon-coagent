@@ -11,7 +11,7 @@ import {
   YAxis,
   LabelList,
 } from 'recharts';
-import { PageHeader } from '@/components/page-header';
+
 import {
   Card,
   CardContent,
@@ -238,10 +238,16 @@ export default function CompetitiveAnalysisPage() {
 
   return (
     <div className="space-y-8 fade-in">
-      <PageHeader
-        title="Competitive Analysis"
-        description="Track and compare your market position against your top competitors."
-      />
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold font-headline">Competitive Analysis</h1>
+              <p className="text-muted-foreground">Track and compare your market position against your top competitors.</p>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
 
       <Card>
         <CardHeader>

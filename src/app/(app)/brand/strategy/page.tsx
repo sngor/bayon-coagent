@@ -55,7 +55,7 @@ import { showSuccessToast, showErrorToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Celebration } from '@/components/ui/celebration';
-import { PageHeader } from '@/components/page-header';
+
 import { FavoritesButton } from '@/components/favorites-button';
 import { getPageConfig } from '@/components/dashboard-quick-actions';
 
@@ -243,18 +243,20 @@ export default function MarketingPlanPage() {
           <CardHeader>
             <div className="flex items-center justify-between mb-6 text-left">
               <div>
-                <h1 className="text-2xl font-bold font-headline">Marketing Strategy</h1>
-                <p className="text-muted-foreground">AI-generated marketing plans</p>
+                <CardTitle className="font-headline text-2xl">Marketing Strategy</CardTitle>
+                <CardDescription>AI-generated marketing plans</CardDescription>
               </div>
               {(() => {
                 const pageConfig = getPageConfig('/brand/strategy');
                 return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
               })()}
             </div>
-            <CardTitle className="font-headline text-3xl">Ready to Grow Your Brand?</CardTitle>
-            <CardDescription>
-              Get a personalized game plan based on your unique market position. We'll analyze your brand audit and competitors to create a 3-step strategy that addresses your biggest opportunities.
-            </CardDescription>
+            <div className="text-center">
+              <h2 className="font-headline text-3xl font-bold">Ready to Grow Your Brand?</h2>
+              <p className="text-muted-foreground mt-2">
+                Get a personalized game plan based on your unique market position. We'll analyze your brand audit and competitors to create a 3-step strategy that addresses your biggest opportunities.
+              </p>
+            </div>
           </CardHeader>
           <CardContent>
             <form action={handleFormSubmit}>

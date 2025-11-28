@@ -24,7 +24,8 @@ import {
     DollarSign,
     Building,
     MessageSquare,
-    Plus
+    Plus,
+    Calendar as CalendarIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DataGrid } from '@/components/ui';
@@ -61,7 +62,8 @@ const iconMap = {
     DollarSign,
     Building,
     MessageSquare,
-    Zap
+    Zap,
+    Calendar: CalendarIcon
 };
 
 // Available pages that can be added to favorites
@@ -154,6 +156,16 @@ export const AVAILABLE_PAGES = [
         icon: 'Target',
         color: 'bg-red-500',
         gradient: 'from-red-500 to-red-600',
+        category: 'Brand'
+    },
+    {
+        id: 'brand-calendar',
+        title: 'Content Calendar',
+        description: 'Schedule and manage content',
+        href: '/brand/calendar',
+        icon: 'Calendar',
+        color: 'bg-orange-500',
+        gradient: 'from-orange-500 to-orange-600',
         category: 'Brand'
     },
     {

@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState, useEffect, useTransition, useActionState } from 'react';
-import { PageHeader } from '@/components/page-header';
+
 import {
     Card,
     CardContent,
@@ -427,10 +427,16 @@ export default function BrandAuditPage() {
 
     return (
         <div className="animate-fade-in-up space-y-8">
-            <PageHeader
-                title="Brand Audit"
-                description="A unified view of your online presence, authority, and reputation."
-            />
+            <Card className="mb-6">
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-2xl font-bold font-headline">Brand Audit</h1>
+                            <p className="text-muted-foreground">A unified view of your online presence, authority, and reputation.</p>
+                        </div>
+                    </div>
+                </CardHeader>
+            </Card>
 
             {/* Prominent Brand Score Hero Section */}
             <EnhancedCard
