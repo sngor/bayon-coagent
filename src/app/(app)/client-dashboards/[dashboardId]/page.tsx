@@ -28,6 +28,9 @@ import {
     Plus,
     Trash2,
     Eye,
+    Sparkles,
+    MessageSquare,
+    RefreshCw,
 } from 'lucide-react';
 import {
     updateDashboard,
@@ -49,6 +52,7 @@ import {
     listDashboardLinks,
     deleteDashboard,
 } from '@/app/client-dashboard-actions';
+import { generateClientNudges, type ClientNudge } from '@/app/client-nudge-actions';
 import type { PropertyValuationOutput } from '@/aws/bedrock/flows/property-valuation';
 
 import {
@@ -98,6 +102,10 @@ export default function DashboardBuilderPage() {
     const [isSavingCMA, setIsSavingCMA] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Nudges state
+    const [nudges, setNudges] = useState<ClientNudge[]>([]);
+    const [isLoadingNudges, setIsLoadingNudges] = useState(false);
 
     // Document management state
     const [documents, setDocuments] = useState<DashboardDocument[]>([]);
@@ -297,6 +305,57 @@ export default function DashboardBuilderPage() {
 
         fetchDashboard();
     }, [user, dashboardId, router]);
+
+    // Fetch analytics and generate nudges
+    useEffect(() => {
+        if (dashboardId && dashboard) {
+            const loadData = async () => {
+                try {
+                    const analyticsResult = await getDashboardAnalytics(dashboardId);
+                    if (analyticsResult.data) {
+                        setAnalytics(analyticsResult.data);
+
+                        // Generate nudges
+                        setIsLoadingNudges(true);
+                        const nudgesResult = await generateClientNudges(dashboard, analyticsResult.data);
+                        if (nudgesResult.data) {
+                            setNudges(nudgesResult.data);
+                        }
+                        setIsLoadingNudges(false);
+                    }
+                } catch (error) {
+                    console.error('Error loading analytics/nudges:', error);
+                }
+            };
+            loadData();
+        }
+    }, [dashboardId, dashboard]);
+
+    // Handle generate nudges manually
+    const handleGenerateNudges = async () => {
+        if (!dashboard || !analytics) return;
+
+        setIsLoadingNudges(true);
+        try {
+            const result = await generateClientNudges(dashboard, analytics);
+            if (result.message === 'success' && result.data) {
+                setNudges(result.data);
+                toast({
+                    title: 'Success',
+                    description: 'Nudges refreshed successfully',
+                });
+            }
+        } catch (error) {
+            console.error('Error generating nudges:', error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Failed to generate nudges',
+            });
+        } finally {
+            setIsLoadingNudges(false);
+        }
+    };
 
     // Load documents
     const loadDocuments = async () => {
@@ -888,6 +947,57 @@ export default function DashboardBuilderPage() {
                     <Trash2 className="h-4 w-4" />
                 </Button>
             </div>
+
+            {/* Concierge Nudges Section */}
+            {nudges && nudges.length > 0 && (
+                <Card className="border-primary/20 bg-primary/5">
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Sparkles className="h-5 w-5 text-primary" />
+                                <CardTitle>Concierge Nudges</CardTitle>
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={handleGenerateNudges} disabled={isLoadingNudges}>
+                                <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingNudges ? 'animate-spin' : ''}`} />
+                                Refresh
+                            </Button>
+                        </div>
+                        <CardDescription>
+                            AI-suggested actions based on client activity
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {nudges.map((nudge) => (
+                            <Card key={nudge.id} className="bg-background">
+                                <CardHeader className="pb-2">
+                                    <div className="flex items-center justify-between">
+                                        <Badge variant="outline">{nudge.type.replace('_', ' ')}</Badge>
+                                    </div>
+                                    <CardTitle className="text-base mt-2">{nudge.title}</CardTitle>
+                                    <CardDescription className="text-xs">{nudge.reason}</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="bg-muted p-3 rounded-md text-sm italic mb-3">
+                                        "{nudge.message}"
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(nudge.message);
+                                            toast({ title: 'Copied', description: 'Message copied to clipboard' });
+                                        }}
+                                    >
+                                        <Copy className="h-3 w-3 mr-2" />
+                                        Copy Message
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Client Information Section */}
             <Card>

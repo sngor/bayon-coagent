@@ -18,6 +18,8 @@ export interface GenerateImageInput {
     prompt: string;
     aspectRatio?: '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
     useAdvancedModel?: boolean; // If true, use Gemini 3 Pro Image
+    referenceImage?: string; // Base64 encoded image
+    referenceImageMimeType?: string;
 }
 
 export interface GenerateImageOutput {
@@ -45,7 +47,19 @@ export async function generateImageWithGemini(
 
         const model = genAI.getGenerativeModel({ model: modelName });
 
-        const result = await model.generateContent([input.prompt]);
+        const promptParts: any[] = [input.prompt];
+
+        // Add reference image if provided
+        if (input.referenceImage) {
+            promptParts.push({
+                inlineData: {
+                    data: input.referenceImage,
+                    mimeType: input.referenceImageMimeType || 'image/png',
+                },
+            });
+        }
+
+        const result = await model.generateContent(promptParts);
         const response = await result.response;
 
         // Extract image from response

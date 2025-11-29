@@ -5,6 +5,7 @@
  */
 
 import { defineFlow, definePrompt, MODEL_CONFIGS, BEDROCK_MODELS } from '../flow-base';
+import { getGuardrailsService, DEFAULT_GUARDRAILS_CONFIG } from '../guardrails';
 import {
   GenerateSocialMediaPostInputSchema,
   GenerateSocialMediaPostOutputSchema,
@@ -51,7 +52,18 @@ const generateSocialMediaPostFlow = defineFlow(
     outputSchema: GenerateSocialMediaPostOutputSchema,
   },
   async (input) => {
-    const output = await prompt(input);
+    // 1. Validate input with Guardrails
+    const guardrails = getGuardrailsService();
+    const validationResult = guardrails.validateRequest(input.topic, DEFAULT_GUARDRAILS_CONFIG);
+
+    if (!validationResult.allowed) {
+      throw new Error(`Guardrails validation failed: ${validationResult.reason}`);
+    }
+
+    // Use sanitized prompt if PII was detected
+    const topic = validationResult.sanitizedPrompt || input.topic;
+
+    const output = await prompt({ ...input, topic });
     if (!output?.linkedin || !output?.twitter || !output?.facebook || !output?.googleBusiness) {
       throw new Error("The AI failed to generate posts for all platforms. Please try again.");
     }

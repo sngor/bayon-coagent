@@ -19,10 +19,26 @@ import { getConfig } from '@/aws/config';
 export const GEMINI_IMAGE_MODEL = 'gemini-2.5-flash-image';
 
 /**
+ * Gemini 1.5 Flash model for text and document analysis
+ * This model is fast and supports large context windows (1M tokens)
+ */
+export const GEMINI_TEXT_MODEL = 'gemini-1.5-flash';
+
+/**
  * Default generation config for image tasks
  */
 export const DEFAULT_GENERATION_CONFIG = {
     temperature: 0.7,
+    topK: 40,
+    topP: 0.95,
+    maxOutputTokens: 8192,
+};
+
+/**
+ * Default generation config for text tasks
+ */
+export const DEFAULT_TEXT_GENERATION_CONFIG = {
+    temperature: 0.2, // Lower temperature for more analytical/factual responses
     topK: 40,
     topP: 0.95,
     maxOutputTokens: 8192,
@@ -59,6 +75,17 @@ export function getGeminiImageModel() {
     return client.getGenerativeModel({
         model: GEMINI_IMAGE_MODEL,
         generationConfig: DEFAULT_GENERATION_CONFIG,
+    });
+}
+
+/**
+ * Gets a configured Gemini model instance for text/document analysis
+ */
+export function getGeminiTextModel() {
+    const client = getGoogleAIClient();
+    return client.getGenerativeModel({
+        model: GEMINI_TEXT_MODEL,
+        generationConfig: DEFAULT_TEXT_GENERATION_CONFIG,
     });
 }
 

@@ -18,6 +18,16 @@ export interface GuardrailsConfig {
 }
 
 /**
+ * Default guardrails configuration
+ */
+export const DEFAULT_GUARDRAILS_CONFIG: GuardrailsConfig = {
+  allowedDomains: ['real estate', 'property', 'housing', 'mortgage'],
+  blockedTopics: ['politics', 'religion', 'medical advice', 'legal advice', 'financial advice'],
+  piiDetectionEnabled: true,
+  maxPromptLength: 25000,
+};
+
+/**
  * Guardrails validation result
  */
 export interface GuardrailsResult {

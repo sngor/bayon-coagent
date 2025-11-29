@@ -30,7 +30,7 @@ cat > $ENV_FILE << EOF
 # Generated: $(date)
 
 # AWS Region
-AWS_REGION=us-east-1
+AWS_REGION=us-west-2
 
 # Cognito Configuration
 COGNITO_USER_POOL_ID=${USER_POOL_ID}
@@ -45,7 +45,7 @@ S3_BUCKET_NAME=${S3_BUCKET_NAME}
 
 # Bedrock Configuration
 BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
-BEDROCK_REGION=us-east-1
+BEDROCK_REGION=us-west-2
 
 # Application Configuration
 NODE_ENV=${ENVIRONMENT}

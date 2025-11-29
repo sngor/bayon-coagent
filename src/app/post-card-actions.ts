@@ -8,6 +8,8 @@ const GeneratePostCardSchema = z.object({
     style: z.string().optional(),
     recipient: z.string().optional(),
     cardType: z.string().default('Holiday Card'),
+    generationMode: z.enum(['print', 'social']).default('print'),
+    referenceImage: z.string().optional(), // Base64
 });
 
 export type GeneratePostCardInput = z.infer<typeof GeneratePostCardSchema>;
@@ -28,12 +30,24 @@ export async function generatePostCardAction(input: GeneratePostCardInput) {
             fullPrompt += `. Style: ${validatedInput.style}`;
         }
 
+        // Add mode-specific instructions
+        if (validatedInput.generationMode === 'print') {
+            fullPrompt += `. Full frame, flat 2D design, no background, edge-to-edge design, high resolution print ready, vector style graphics or clean photography filling the entire canvas.`;
+        } else {
+            fullPrompt += `. Staged product photography, photorealistic, the card is sitting on a beautiful surface or held by a hand, aesthetic background, depth of field, soft lighting, 3D mockup style.`;
+        }
+
+        if (validatedInput.referenceImage) {
+            fullPrompt += `. Use the provided image as a strong visual reference for composition and style.`;
+        }
+
         fullPrompt += `. High quality, professional design, clear text if any.`;
 
         const result = await generateImageWithGemini({
             prompt: fullPrompt,
             aspectRatio: '4:3', // Standard card ratio
             useAdvancedModel: true, // Use Gemini 3 Pro Image Preview for highest quality
+            referenceImage: validatedInput.referenceImage,
         });
 
         return {

@@ -5,6 +5,7 @@
  */
 
 import { defineFlow, definePrompt, BEDROCK_MODELS } from '../flow-base';
+import { getGuardrailsService, DEFAULT_GUARDRAILS_CONFIG } from '../guardrails';
 import {
   GenerateNewListingInputSchema,
   OptimizeListingInputSchema,
@@ -97,7 +98,25 @@ const generateNewFlow = defineFlow(
     outputSchema: ListingDescriptionOutputSchema,
   },
   async (input) => {
-    const output = await generateNewPrompt(input);
+    // 1. Validate input with Guardrails
+    const guardrails = getGuardrailsService();
+
+    // Validate key features and location
+    const featuresValidation = guardrails.validateRequest(input.keyFeatures, DEFAULT_GUARDRAILS_CONFIG);
+    if (!featuresValidation.allowed) {
+      throw new Error(`Guardrails validation failed for Key Features: ${featuresValidation.reason}`);
+    }
+
+    const locationValidation = guardrails.validateRequest(input.location, DEFAULT_GUARDRAILS_CONFIG);
+    if (!locationValidation.allowed) {
+      throw new Error(`Guardrails validation failed for Location: ${locationValidation.reason}`);
+    }
+
+    // Use sanitized inputs
+    const keyFeatures = featuresValidation.sanitizedPrompt || input.keyFeatures;
+    const location = locationValidation.sanitizedPrompt || input.location;
+
+    const output = await generateNewPrompt({ ...input, keyFeatures, location });
     if (!output?.description) {
       throw new Error("The AI returned an empty description. Please try again.");
     }
@@ -156,7 +175,28 @@ const optimizeFlow = defineFlow(
     outputSchema: ListingDescriptionOutputSchema,
   },
   async (input) => {
-    const output = await optimizePrompt(input);
+    // 1. Validate input with Guardrails
+    const guardrails = getGuardrailsService();
+
+    // Validate original description
+    const descValidation = guardrails.validateRequest(input.originalDescription, DEFAULT_GUARDRAILS_CONFIG);
+    if (!descValidation.allowed) {
+      throw new Error(`Guardrails validation failed for Original Description: ${descValidation.reason}`);
+    }
+
+    let sellingPoints = input.sellingPoints;
+    if (input.sellingPoints) {
+      const spValidation = guardrails.validateRequest(input.sellingPoints, DEFAULT_GUARDRAILS_CONFIG);
+      if (!spValidation.allowed) {
+        throw new Error(`Guardrails validation failed for Selling Points: ${spValidation.reason}`);
+      }
+      sellingPoints = spValidation.sanitizedPrompt || input.sellingPoints;
+    }
+
+    // Use sanitized inputs
+    const originalDescription = descValidation.sanitizedPrompt || input.originalDescription;
+
+    const output = await optimizePrompt({ ...input, originalDescription, sellingPoints });
     if (!output?.description) {
       throw new Error("The AI returned an empty description. Please try again.");
     }

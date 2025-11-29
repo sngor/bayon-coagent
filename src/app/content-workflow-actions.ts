@@ -505,7 +505,8 @@ export async function updateScheduleAction(
 ): Promise<ActionResult<ScheduledContent>> {
     try {
         // Get current user
-        const user = await getCurrentUser();
+        const userId = formData.get('userId') as string;
+        const user = await getCurrentUser(userId);
         if (!user) {
             return {
                 success: false,
@@ -602,7 +603,8 @@ export async function cancelScheduleAction(
 ): Promise<ActionResult<void>> {
     try {
         // Get current user
-        const user = await getCurrentUser();
+        const userId = formData.get('userId') as string;
+        const user = await getCurrentUser(userId);
         if (!user) {
             return {
                 success: false,
@@ -734,7 +736,8 @@ export async function getCalendarContentAction(
 ): Promise<ActionResult<CalendarContent[]>> {
     try {
         // Get current user
-        const user = await getCurrentUser();
+        const userId = formData.get('userId') as string;
+        const user = await getCurrentUser(userId);
         if (!user) {
             return {
                 success: false,
@@ -1427,10 +1430,10 @@ export async function exportROIDataAction(
  * Returns available publishing channels with connection status.
  * Used for channel selection in scheduling interfaces.
  */
-export async function getConnectedChannelsAction(): Promise<ActionResult<PublishChannel[]>> {
+export async function getConnectedChannelsAction(userId: string): Promise<ActionResult<PublishChannel[]>> {
     try {
         // Get current user
-        const user = await getCurrentUser();
+        const user = await getCurrentUser(userId);
         if (!user) {
             return {
                 success: false,
@@ -1672,6 +1675,7 @@ export async function saveTemplateAction(
         const user = await getCurrentUser();
         if (!user) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Authentication required',
                 errors: ['User not authenticated']
@@ -1692,11 +1696,13 @@ export async function saveTemplateAction(
         // Save template
         const result = await saveTemplate({
             userId: user.id,
-            ...validatedData
+            ...validatedData,
+            description: validatedData.description || ''
         });
 
         if (!result.success) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: result.error || 'Failed to save template',
                 errors: [result.error || 'Unknown error']
@@ -1707,6 +1713,7 @@ export async function saveTemplateAction(
         revalidatePath('/library/templates');
 
         return {
+            timestamp: new Date(),
             success: true,
             message: 'Template saved successfully',
             data: { templateId: result.templateId! }
@@ -1717,6 +1724,7 @@ export async function saveTemplateAction(
 
         if (error instanceof z.ZodError) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Validation failed',
                 errors: error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
@@ -1724,6 +1732,7 @@ export async function saveTemplateAction(
         }
 
         return {
+            timestamp: new Date(),
             success: false,
             message: 'Failed to save template',
             errors: [error instanceof Error ? error.message : 'Unknown error']
@@ -1747,6 +1756,7 @@ export async function getUserTemplatesAction(
         const user = await getCurrentUser();
         if (!user) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Authentication required',
                 errors: ['User not authenticated']
@@ -1765,6 +1775,7 @@ export async function getUserTemplatesAction(
 
         if (!result.success) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: result.error || 'Failed to get templates',
                 errors: [result.error || 'Unknown error']
@@ -1772,6 +1783,7 @@ export async function getUserTemplatesAction(
         }
 
         return {
+            timestamp: new Date(),
             success: true,
             message: 'Templates retrieved successfully',
             data: { templates: result.templates || [] }
@@ -1780,6 +1792,7 @@ export async function getUserTemplatesAction(
     } catch (error) {
         console.error('Get user templates action error:', error);
         return {
+            timestamp: new Date(),
             success: false,
             message: 'Failed to get templates',
             errors: [error instanceof Error ? error.message : 'Unknown error']
@@ -1799,6 +1812,7 @@ export async function getTemplateAction(
         const user = await getCurrentUser();
         if (!user) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Authentication required',
                 errors: ['User not authenticated']
@@ -1808,6 +1822,7 @@ export async function getTemplateAction(
         // Validate input
         if (!templateId) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Template ID is required',
                 errors: ['Template ID is required']
@@ -1822,6 +1837,7 @@ export async function getTemplateAction(
 
         if (!result.success) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: result.error || 'Failed to get template',
                 errors: [result.error || 'Unknown error']
@@ -1829,6 +1845,7 @@ export async function getTemplateAction(
         }
 
         return {
+            timestamp: new Date(),
             success: true,
             message: 'Template retrieved successfully',
             data: { template: result.template! }
@@ -1837,6 +1854,7 @@ export async function getTemplateAction(
     } catch (error) {
         console.error('Get template action error:', error);
         return {
+            timestamp: new Date(),
             success: false,
             message: 'Failed to get template',
             errors: [error instanceof Error ? error.message : 'Unknown error']
@@ -1857,6 +1875,7 @@ export async function updateTemplateAction(
         const user = await getCurrentUser();
         if (!user) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Authentication required',
                 errors: ['User not authenticated']
@@ -1866,6 +1885,7 @@ export async function updateTemplateAction(
         // Validate input
         if (!templateId) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Template ID is required',
                 errors: ['Template ID is required']
@@ -1881,6 +1901,7 @@ export async function updateTemplateAction(
 
         if (!result.success) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: result.error || 'Failed to update template',
                 errors: [result.error || 'Unknown error']
@@ -1891,6 +1912,7 @@ export async function updateTemplateAction(
         revalidatePath('/library/templates');
 
         return {
+            timestamp: new Date(),
             success: true,
             message: 'Template updated successfully',
             data: {}
@@ -1899,6 +1921,7 @@ export async function updateTemplateAction(
     } catch (error) {
         console.error('Update template action error:', error);
         return {
+            timestamp: new Date(),
             success: false,
             message: 'Failed to update template',
             errors: [error instanceof Error ? error.message : 'Unknown error']
@@ -1918,6 +1941,7 @@ export async function deleteTemplateAction(
         const user = await getCurrentUser();
         if (!user) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Authentication required',
                 errors: ['User not authenticated']
@@ -1927,6 +1951,7 @@ export async function deleteTemplateAction(
         // Validate input
         if (!templateId) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Template ID is required',
                 errors: ['Template ID is required']
@@ -1941,6 +1966,7 @@ export async function deleteTemplateAction(
 
         if (!result.success) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: result.error || 'Failed to delete template',
                 errors: [result.error || 'Unknown error']
@@ -1951,6 +1977,7 @@ export async function deleteTemplateAction(
         revalidatePath('/library/templates');
 
         return {
+            timestamp: new Date(),
             success: true,
             message: 'Template deleted successfully',
             data: {}
@@ -1959,6 +1986,7 @@ export async function deleteTemplateAction(
     } catch (error) {
         console.error('Delete template action error:', error);
         return {
+            timestamp: new Date(),
             success: false,
             message: 'Failed to delete template',
             errors: [error instanceof Error ? error.message : 'Unknown error']
@@ -1984,6 +2012,7 @@ export async function applyTemplateAction(
         const user = await getCurrentUser();
         if (!user) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Authentication required',
                 errors: ['User not authenticated']
@@ -1993,6 +2022,7 @@ export async function applyTemplateAction(
         // Validate input
         if (!templateId) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Template ID is required',
                 errors: ['Template ID is required']
@@ -2003,7 +2033,7 @@ export async function applyTemplateAction(
         // Note: In a real implementation, you would fetch the user's brand profile
         // For now, we'll use placeholder values that would come from the user's profile
         const userBrandInfo = {
-            name: user.name || user.email?.split('@')[0] || 'Your Name',
+            name: user.attributes?.name || user.email?.split('@')[0] || 'Your Name',
             contactInfo: user.email || 'your.email@example.com',
             marketArea: 'Your Market Area', // This would come from user profile
             brokerageName: 'Your Brokerage', // This would come from user profile
@@ -2022,6 +2052,7 @@ export async function applyTemplateAction(
 
         if (!result.success) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: result.error || 'Failed to apply template',
                 errors: [result.error || 'Unknown error']
@@ -2029,6 +2060,7 @@ export async function applyTemplateAction(
         }
 
         return {
+            timestamp: new Date(),
             success: true,
             message: 'Template applied successfully',
             data: {
@@ -2040,6 +2072,7 @@ export async function applyTemplateAction(
     } catch (error) {
         console.error('Apply template action error:', error);
         return {
+            timestamp: new Date(),
             success: false,
             message: 'Failed to apply template',
             errors: [error instanceof Error ? error.message : 'Unknown error']
@@ -2077,6 +2110,7 @@ export async function shareTemplateAction(
         const user = await getCurrentUser();
         if (!user) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Authentication required',
                 errors: ['User not authenticated']
@@ -2100,6 +2134,7 @@ export async function shareTemplateAction(
 
         if (!result.success) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: result.error || 'Failed to share template',
                 errors: [result.error || 'Unknown error']
@@ -2110,6 +2145,7 @@ export async function shareTemplateAction(
         revalidatePath('/library/templates');
 
         return {
+            timestamp: new Date(),
             success: true,
             message: 'Template shared successfully',
             data: {}
@@ -2120,6 +2156,7 @@ export async function shareTemplateAction(
 
         if (error instanceof z.ZodError) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Invalid input data',
                 errors: error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
@@ -2127,6 +2164,7 @@ export async function shareTemplateAction(
         }
 
         return {
+            timestamp: new Date(),
             success: false,
             message: 'Failed to share template',
             errors: [error instanceof Error ? error.message : 'Unknown error']
@@ -2148,6 +2186,7 @@ export async function getSharedTemplatesAction(
         const user = await getCurrentUser();
         if (!user) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Authentication required',
                 errors: ['User not authenticated']
@@ -2157,6 +2196,7 @@ export async function getSharedTemplatesAction(
         // Validate input
         if (!brokerageId) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Brokerage ID is required',
                 errors: ['Brokerage ID is required']
@@ -2173,6 +2213,7 @@ export async function getSharedTemplatesAction(
 
         if (!result.success) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: result.error || 'Failed to get shared templates',
                 errors: [result.error || 'Unknown error']
@@ -2180,6 +2221,7 @@ export async function getSharedTemplatesAction(
         }
 
         return {
+            timestamp: new Date(),
             success: true,
             message: 'Shared templates retrieved successfully',
             data: { templates: result.templates! }
@@ -2188,6 +2230,7 @@ export async function getSharedTemplatesAction(
     } catch (error) {
         console.error('Get shared templates action error:', error);
         return {
+            timestamp: new Date(),
             success: false,
             message: 'Failed to get shared templates',
             errors: [error instanceof Error ? error.message : 'Unknown error']
@@ -2209,6 +2252,7 @@ export async function updateSharedTemplateAction(
         const user = await getCurrentUser();
         if (!user) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Authentication required',
                 errors: ['User not authenticated']
@@ -2218,6 +2262,7 @@ export async function updateSharedTemplateAction(
         // Validate input
         if (!templateId) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Template ID is required',
                 errors: ['Template ID is required']
@@ -2234,6 +2279,7 @@ export async function updateSharedTemplateAction(
 
         if (!result.success) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: result.error || 'Failed to update template',
                 errors: [result.error || 'Unknown error']
@@ -2244,6 +2290,7 @@ export async function updateSharedTemplateAction(
         revalidatePath('/library/templates');
 
         return {
+            timestamp: new Date(),
             success: true,
             message: result.isNewCopy ? 'Personal copy created successfully' : 'Template updated successfully',
             data: {
@@ -2255,6 +2302,7 @@ export async function updateSharedTemplateAction(
     } catch (error) {
         console.error('Update shared template action error:', error);
         return {
+            timestamp: new Date(),
             success: false,
             message: 'Failed to update template',
             errors: [error instanceof Error ? error.message : 'Unknown error']
@@ -2275,6 +2323,7 @@ export async function unshareTemplateAction(
         const user = await getCurrentUser();
         if (!user) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Authentication required',
                 errors: ['User not authenticated']
@@ -2284,6 +2333,7 @@ export async function unshareTemplateAction(
         // Validate input
         if (!templateId || !brokerageId) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Template ID and Brokerage ID are required',
                 errors: ['Template ID and Brokerage ID are required']
@@ -2299,6 +2349,7 @@ export async function unshareTemplateAction(
 
         if (!result.success) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: result.error || 'Failed to unshare template',
                 errors: [result.error || 'Unknown error']
@@ -2309,6 +2360,7 @@ export async function unshareTemplateAction(
         revalidatePath('/library/templates');
 
         return {
+            timestamp: new Date(),
             success: true,
             message: 'Template unshared successfully',
             data: {}
@@ -2317,6 +2369,7 @@ export async function unshareTemplateAction(
     } catch (error) {
         console.error('Unshare template action error:', error);
         return {
+            timestamp: new Date(),
             success: false,
             message: 'Failed to unshare template',
             errors: [error instanceof Error ? error.message : 'Unknown error']
@@ -2352,6 +2405,7 @@ export async function getTemplateAnalyticsAction(
         const user = await getCurrentUser();
         if (!user) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: 'Authentication required',
                 errors: ['User not authenticated']
@@ -2369,6 +2423,7 @@ export async function getTemplateAnalyticsAction(
 
         if (!result.success) {
             return {
+                timestamp: new Date(),
                 success: false,
                 message: result.error || 'Failed to get template analytics',
                 errors: [result.error || 'Unknown error']
@@ -2376,6 +2431,7 @@ export async function getTemplateAnalyticsAction(
         }
 
         return {
+            timestamp: new Date(),
             success: true,
             message: 'Template analytics retrieved successfully',
             data: { analytics: result.analytics! }
@@ -2384,6 +2440,7 @@ export async function getTemplateAnalyticsAction(
     } catch (error) {
         console.error('Get template analytics action error:', error);
         return {
+            timestamp: new Date(),
             success: false,
             message: 'Failed to get template analytics',
             errors: [error instanceof Error ? error.message : 'Unknown error']
@@ -2437,7 +2494,7 @@ export async function getSeasonalTemplatesAction(
         // Get current user
         const user = await getCurrentUser();
         if (!user) {
-            return createResponse(false, 'Authentication required', undefined, ['User not authenticated']);
+            return createResponse<any>(false, 'Authentication required', undefined, ['User not authenticated']);
         }
 
         // Get user's brand information for personalization
@@ -2459,7 +2516,7 @@ export async function getSeasonalTemplatesAction(
         });
 
         if (!result.success) {
-            return createResponse(false, result.error || 'Failed to get seasonal templates', undefined, [result.error || 'Unknown error']);
+            return createResponse<any>(false, result.error || 'Failed to get seasonal templates', undefined, [result.error || 'Unknown error']);
         }
 
         return createResponse(true, 'Seasonal templates retrieved successfully', {
@@ -2473,7 +2530,7 @@ export async function getSeasonalTemplatesAction(
 
     } catch (error) {
         console.error('Get seasonal templates action error:', error);
-        return createResponse(false, 'Failed to get seasonal templates', undefined, [error instanceof Error ? error.message : 'Unknown error']);
+        return createResponse<any>(false, 'Failed to get seasonal templates', undefined, [error instanceof Error ? error.message : 'Unknown error']);
     }
 }
 
@@ -2498,7 +2555,7 @@ export async function getSeasonalNotificationsAction(
         // Get current user
         const user = await getCurrentUser();
         if (!user) {
-            return createResponse(false, 'Authentication required', undefined, ['User not authenticated']);
+            return createResponse<any>(false, 'Authentication required', undefined, ['User not authenticated']);
         }
 
         // Get seasonal notifications
@@ -2508,7 +2565,7 @@ export async function getSeasonalNotificationsAction(
         });
 
         if (!result.success) {
-            return createResponse(false, result.error || 'Failed to get seasonal notifications', undefined, [result.error || 'Unknown error']);
+            return createResponse<any>(false, result.error || 'Failed to get seasonal notifications', undefined, [result.error || 'Unknown error']);
         }
 
         return createResponse(true, 'Seasonal notifications retrieved successfully', {
@@ -2517,7 +2574,7 @@ export async function getSeasonalNotificationsAction(
 
     } catch (error) {
         console.error('Get seasonal notifications action error:', error);
-        return createResponse(false, 'Failed to get seasonal notifications', undefined, [error instanceof Error ? error.message : 'Unknown error']);
+        return createResponse<any>(false, 'Failed to get seasonal notifications', undefined, [error instanceof Error ? error.message : 'Unknown error']);
     }
 }
 
@@ -2555,7 +2612,7 @@ export async function getSeasonalTemplateAnalyticsAction(
         // Get current user
         const user = await getCurrentUser();
         if (!user) {
-            return createResponse(false, 'Authentication required', undefined, ['User not authenticated']);
+            return createResponse<any>(false, 'Authentication required', undefined, ['User not authenticated']);
         }
 
         // Get seasonal template analytics
@@ -2567,7 +2624,7 @@ export async function getSeasonalTemplateAnalyticsAction(
         });
 
         if (!result.success) {
-            return createResponse(false, result.error || 'Failed to get seasonal template analytics', undefined, [result.error || 'Unknown error']);
+            return createResponse<any>(false, result.error || 'Failed to get seasonal template analytics', undefined, [result.error || 'Unknown error']);
         }
 
         return createResponse(true, 'Seasonal template analytics retrieved successfully', {
@@ -2576,7 +2633,7 @@ export async function getSeasonalTemplateAnalyticsAction(
 
     } catch (error) {
         console.error('Get seasonal template analytics action error:', error);
-        return createResponse(false, 'Failed to get seasonal template analytics', undefined, [error instanceof Error ? error.message : 'Unknown error']);
+        return createResponse<any>(false, 'Failed to get seasonal template analytics', undefined, [error instanceof Error ? error.message : 'Unknown error']);
     }
 }
 
@@ -2670,7 +2727,7 @@ export async function createNewsletterTemplateAction(
         // Get current user
         const user = await getCurrentUser();
         if (!user) {
-            return createResponse(false, 'Authentication required', undefined, ['User not authenticated']);
+            return createResponse<any>(false, 'Authentication required', undefined, ['User not authenticated']);
         }
 
         // Validate input
@@ -2709,14 +2766,14 @@ export async function createNewsletterTemplateAction(
 
         // Create newsletter template
         const result = await createNewsletterTemplate({
-            userId: user.userId,
+            userId: user.id,
             name: validatedData.name,
             description: validatedData.description,
             config: validatedData.config
         });
 
         if (!result.success) {
-            return createResponse(false, result.error || 'Failed to create newsletter template', undefined, [result.error || 'Unknown error']);
+            return createResponse<any>(false, result.error || 'Failed to create newsletter template', undefined, [result.error || 'Unknown error']);
         }
 
         // Revalidate relevant paths
@@ -2732,10 +2789,10 @@ export async function createNewsletterTemplateAction(
         console.error('Create newsletter template action error:', error);
 
         if (error instanceof z.ZodError) {
-            return createResponse(false, 'Validation failed', undefined, error.errors.map(e => `${e.path.join('.')}: ${e.message}`));
+            return createResponse<any>(false, 'Validation failed', undefined, error.errors.map(e => `${e.path.join('.')}: ${e.message}`));
         }
 
-        return createResponse(false, 'Failed to create newsletter template', undefined, [error instanceof Error ? error.message : 'Unknown error']);
+        return createResponse<any>(false, 'Failed to create newsletter template', undefined, [error instanceof Error ? error.message : 'Unknown error']);
     }
 }
 
@@ -2787,7 +2844,7 @@ export async function exportNewsletterAction(
         // Get current user
         const user = await getCurrentUser();
         if (!user) {
-            return createResponse(false, 'Authentication required', undefined, ['User not authenticated']);
+            return createResponse<any>(false, 'Authentication required', undefined, ['User not authenticated']);
         }
 
         // Validate input
@@ -2804,7 +2861,7 @@ export async function exportNewsletterAction(
 
         // Export newsletter template
         const result = await exportNewsletterTemplate({
-            userId: user.userId,
+            userId: user.id,
             templateId: validatedData.templateId,
             content: {
                 subject: validatedData.subject,
@@ -2815,7 +2872,7 @@ export async function exportNewsletterAction(
         });
 
         if (!result.success || !result.export) {
-            return createResponse(false, result.error || 'Failed to export newsletter template', undefined, [result.error || 'Unknown error']);
+            return createResponse<any>(false, result.error || 'Failed to export newsletter template', undefined, [result.error || 'Unknown error']);
         }
 
         return createResponse(true, 'Newsletter exported successfully', result.export);
@@ -2824,10 +2881,10 @@ export async function exportNewsletterAction(
         console.error('Export newsletter action error:', error);
 
         if (error instanceof z.ZodError) {
-            return createResponse(false, 'Validation failed', undefined, error.errors.map(e => `${e.path.join('.')}: ${e.message}`));
+            return createResponse<any>(false, 'Validation failed', undefined, error.errors.map(e => `${e.path.join('.')}: ${e.message}`));
         }
 
-        return createResponse(false, 'Failed to export newsletter template', undefined, [error instanceof Error ? error.message : 'Unknown error']);
+        return createResponse<any>(false, 'Failed to export newsletter template', undefined, [error instanceof Error ? error.message : 'Unknown error']);
     }
 }
 
@@ -2842,7 +2899,7 @@ export async function getNewsletterTemplatesAction(
         // Get current user
         const user = await getCurrentUser();
         if (!user) {
-            return createResponse(false, 'Authentication required', undefined, ['User not authenticated']);
+            return createResponse<any>(false, 'Authentication required', undefined, ['User not authenticated']);
         }
 
         // Validate input
@@ -2853,12 +2910,12 @@ export async function getNewsletterTemplatesAction(
 
         // Get newsletter templates
         const result = await getNewsletterTemplates({
-            userId: user.userId,
+            userId: user.id,
             category: validatedCategory
         });
 
         if (!result.success) {
-            return createResponse(false, result.error || 'Failed to get newsletter templates', undefined, [result.error || 'Unknown error']);
+            return createResponse<any>(false, result.error || 'Failed to get newsletter templates', undefined, [result.error || 'Unknown error']);
         }
 
         return createResponse(true, 'Newsletter templates retrieved successfully', {
@@ -2869,10 +2926,10 @@ export async function getNewsletterTemplatesAction(
         console.error('Get newsletter templates action error:', error);
 
         if (error instanceof z.ZodError) {
-            return createResponse(false, 'Validation failed', undefined, error.errors.map(e => `${e.path.join('.')}: ${e.message}`));
+            return createResponse<any>(false, 'Validation failed', undefined, error.errors.map(e => `${e.path.join('.')}: ${e.message}`));
         }
 
-        return createResponse(false, 'Failed to get newsletter templates', undefined, [error instanceof Error ? error.message : 'Unknown error']);
+        return createResponse<any>(false, 'Failed to get newsletter templates', undefined, [error instanceof Error ? error.message : 'Unknown error']);
     }
 }
 
@@ -2920,17 +2977,17 @@ export async function exportNewsletterTemplateAction(formData: FormData): Promis
         }
 
         return {
+            timestamp: new Date(),
             success: true,
             data: result.export,
-            message: 'Newsletter exported successfully',
-            timestamp: new Date()
+            message: 'Newsletter exported successfully'
         };
     } catch (error) {
         console.error('Failed to export newsletter template:', error);
         return {
+            timestamp: new Date(),
             success: false,
-            error: error instanceof Error ? error.message : 'Failed to export newsletter template',
-            timestamp: new Date()
+            error: error instanceof Error ? error.message : 'Failed to export newsletter template'
         };
     }
 }
@@ -2968,17 +3025,17 @@ export async function testESPCompatibilityAction(formData: FormData): Promise<Co
         }
 
         return {
+            timestamp: new Date(),
             success: true,
             data: result.results,
-            message: 'ESP compatibility test completed',
-            timestamp: new Date()
+            message: 'ESP compatibility test completed'
         };
     } catch (error) {
         console.error('Failed to test ESP compatibility:', error);
         return {
+            timestamp: new Date(),
             success: false,
-            error: error instanceof Error ? error.message : 'Failed to test ESP compatibility',
-            timestamp: new Date()
+            error: error instanceof Error ? error.message : 'Failed to test ESP compatibility'
         };
     }
 }

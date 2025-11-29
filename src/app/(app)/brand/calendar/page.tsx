@@ -71,98 +71,7 @@ import {
 } from '@/app/content-workflow-actions';
 import { FavoritesButton } from '@/components/favorites-button';
 import { getPageConfig } from '@/components/dashboard-quick-actions';
-// Mock available channels for bulk scheduling
-const mockAvailableChannels: PublishChannel[] = [
-    {
-        type: PublishChannelType.FACEBOOK,
-        accountId: 'fb-123',
-        accountName: 'My Real Estate Page',
-        isActive: true,
-        connectionStatus: 'connected'
-    },
-    {
-        type: PublishChannelType.INSTAGRAM,
-        accountId: 'ig-123',
-        accountName: '@myrealestate',
-        isActive: true,
-        connectionStatus: 'connected'
-    },
-    {
-        type: PublishChannelType.LINKEDIN,
-        accountId: 'li-123',
-        accountName: 'John Doe - Real Estate',
-        isActive: true,
-        connectionStatus: 'connected'
-    },
-    {
-        type: PublishChannelType.BLOG,
-        accountId: 'blog',
-        accountName: 'Blog',
-        isActive: true,
-        connectionStatus: 'connected'
-    }
-];
-
-// Mock data for development - replace with actual data fetching
-const mockScheduledContent: ScheduledContent[] = [
-    {
-        id: 'sched-1',
-        userId: 'user-1',
-        contentId: 'content-1',
-        title: 'New Luxury Condo Listing in Downtown',
-        content: 'Check out this stunning 2-bedroom condo with city views...',
-        contentType: ContentCategory.LISTING_DESCRIPTION,
-        publishTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
-        channels: [
-            {
-                type: PublishChannelType.FACEBOOK,
-                accountId: 'fb-123',
-                accountName: 'My Real Estate Page',
-                isActive: true,
-                connectionStatus: 'connected'
-            },
-            {
-                type: PublishChannelType.INSTAGRAM,
-                accountId: 'ig-123',
-                accountName: '@myrealestate',
-                isActive: true,
-                connectionStatus: 'connected'
-            }
-        ],
-        status: ScheduledContentStatus.SCHEDULED,
-        createdAt: new Date(),
-        updatedAt: new Date()
-    },
-    {
-        id: 'sched-2',
-        userId: 'user-1',
-        contentId: 'content-2',
-        title: 'Market Update: Spring 2024 Trends',
-        content: 'The spring market is showing strong signs of recovery...',
-        contentType: ContentCategory.MARKET_UPDATE,
-        publishTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
-        channels: [
-            {
-                type: PublishChannelType.LINKEDIN,
-                accountId: 'li-123',
-                accountName: 'John Doe - Real Estate',
-                isActive: true,
-                connectionStatus: 'connected'
-            },
-            {
-                type: PublishChannelType.BLOG,
-                accountId: 'blog',
-                accountName: 'Blog',
-                isActive: true,
-                connectionStatus: 'connected'
-            }
-        ],
-        status: ScheduledContentStatus.SCHEDULED,
-        createdAt: new Date(),
-        updatedAt: new Date()
-    }
-];
-
+import { PostCard } from './post-card';
 interface CalendarFilters {
     channels: PublishChannelType[];
     contentTypes: ContentCategory[];
@@ -230,12 +139,30 @@ export default function LibraryCalendarPage() {
             setLoading(true);
             setError(null);
 
-            // For now, use mock data
-            // TODO: Replace with actual API call
-            setScheduledContent(mockScheduledContent);
+            const formData = new FormData();
+            formData.append('userId', user.id); // Add userId for auth
+            formData.append('startDate', filters.dateRange.start.toISOString());
+            formData.append('endDate', filters.dateRange.end.toISOString());
 
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 500));
+            if (filters.channels.length > 0) {
+                formData.append('channels', JSON.stringify(filters.channels));
+            }
+            if (filters.contentTypes.length > 0) {
+                formData.append('contentTypes', JSON.stringify(filters.contentTypes));
+            }
+            if (filters.status.length > 0) {
+                formData.append('status', JSON.stringify(filters.status));
+            }
+
+            const result = await getCalendarContentAction(null, formData);
+
+            if (result.success && result.data) {
+                // Flatten the calendar content structure to ScheduledContent array
+                const flattenedContent: ScheduledContent[] = result.data.flatMap(day => day.items);
+                setScheduledContent(flattenedContent);
+            } else {
+                throw new Error(result.error || 'Failed to fetch calendar content');
+            }
 
         } catch (err) {
             console.error('Failed to fetch calendar content:', err);
@@ -248,7 +175,7 @@ export default function LibraryCalendarPage() {
         } finally {
             setLoading(false);
         }
-    }, [user, filters.dateRange]);
+    }, [user, filters.dateRange, filters.channels, filters.contentTypes, filters.status]);
 
     // Refresh calendar content
     const handleRefresh = useCallback(async () => {
@@ -263,6 +190,8 @@ export default function LibraryCalendarPage() {
 
     // Handle schedule updates (drag and drop)
     const handleScheduleUpdate = useCallback(async (scheduleId: string, newDate: Date) => {
+        if (!user) return;
+
         try {
             // Optimistic update
             setScheduledContent(prev =>
@@ -273,11 +202,16 @@ export default function LibraryCalendarPage() {
                 )
             );
 
-            // TODO: Call actual API
-            // const formData = new FormData();
-            // formData.append('scheduleId', scheduleId);
-            // formData.append('newPublishTime', newDate.toISOString());
-            // const result = await updateScheduleAction(null, formData);
+            const formData = new FormData();
+            formData.append('userId', user.id); // Add userId for auth
+            formData.append('scheduleId', scheduleId);
+            formData.append('newPublishTime', newDate.toISOString());
+
+            const result = await updateScheduleAction(null, formData);
+
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to update schedule');
+            }
 
             toast({
                 title: 'Schedule Updated',
@@ -304,18 +238,25 @@ export default function LibraryCalendarPage() {
 
     const handleContentEdit = useCallback((contentId: string) => {
         // Navigate to Studio to edit content
-        console.log('Edit content:', contentId);
+        window.location.href = `/studio/write?contentId=${contentId}`;
     }, []);
 
     const handleContentDelete = useCallback(async (scheduleId: string) => {
+        if (!user) return;
+
         try {
             // Optimistic update
             setScheduledContent(prev => prev.filter(item => item.id !== scheduleId));
 
-            // TODO: Call actual API
-            // const formData = new FormData();
-            // formData.append('scheduleId', scheduleId);
-            // await cancelScheduleAction(null, formData);
+            const formData = new FormData();
+            formData.append('userId', user.id); // Add userId for auth
+            formData.append('scheduleId', scheduleId);
+
+            const result = await cancelScheduleAction(null, formData);
+
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to cancel schedule');
+            }
 
             toast({
                 title: 'Content Removed',
@@ -336,32 +277,14 @@ export default function LibraryCalendarPage() {
 
     const handleContentDuplicate = useCallback((contentId: string) => {
         // Navigate to Studio with content pre-filled
-        console.log('Duplicate content:', contentId);
+        window.location.href = `/studio/write?duplicate=${contentId}`;
     }, []);
 
     // Filter and sort content
     const filteredAndSortedContent = useMemo(() => {
         let filtered = scheduledContent;
 
-        // Apply filters
-        if (filters.channels.length > 0) {
-            filtered = filtered.filter(item =>
-                item.channels.some(channel => filters.channels.includes(channel.type))
-            );
-        }
-
-        if (filters.contentTypes.length > 0) {
-            filtered = filtered.filter(item =>
-                filters.contentTypes.includes(item.contentType)
-            );
-        }
-
-        if (filters.status.length > 0) {
-            filtered = filtered.filter(item =>
-                filters.status.includes(item.status)
-            );
-        }
-
+        // Apply filters (client-side filtering for search and additional filters not handled by API)
         if (filters.searchQuery) {
             const query = filters.searchQuery.toLowerCase();
             filtered = filtered.filter(item =>
@@ -371,20 +294,14 @@ export default function LibraryCalendarPage() {
             );
         }
 
-        // Apply date range filter
-        filtered = filtered.filter(item =>
-            item.publishTime >= filters.dateRange.start &&
-            item.publishTime <= filters.dateRange.end
-        );
-
         // Apply sorting
         filtered.sort((a, b) => {
             let aValue: any = a[sorting.field];
             let bValue: any = b[sorting.field];
 
             if (sorting.field === 'publishTime') {
-                aValue = aValue.getTime();
-                bValue = bValue.getTime();
+                aValue = new Date(aValue).getTime();
+                bValue = new Date(bValue).getTime();
             } else if (typeof aValue === 'string') {
                 aValue = aValue.toLowerCase();
                 bValue = bValue.toLowerCase();
@@ -398,7 +315,7 @@ export default function LibraryCalendarPage() {
         });
 
         return filtered;
-    }, [scheduledContent, filters, sorting]);
+    }, [scheduledContent, filters.searchQuery, sorting]);
 
     // Export calendar functionality
     const handleExportCalendar = useCallback(async (format: 'ical' | 'google') => {
@@ -422,8 +339,20 @@ export default function LibraryCalendarPage() {
     useEffect(() => {
         if (user) {
             fetchCalendarContent();
+
             // Load available channels
-            setAvailableChannels(mockAvailableChannels);
+            const fetchChannels = async () => {
+                try {
+                    const result = await getConnectedChannelsAction(user.id); // Pass userId
+                    if (result.success && result.data) {
+                        setAvailableChannels(result.data);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch connected channels:', error);
+                }
+            };
+
+            fetchChannels();
         }
     }, [user, fetchCalendarContent]);
 
@@ -947,104 +876,17 @@ export default function LibraryCalendarPage() {
             {viewMode === 'list' && (
                 <div className="space-y-4">
                     {filteredAndSortedContent.map((item) => (
-                        <Card
+                        <PostCard
                             key={item.id}
-                            className={`hover:shadow-md transition-all ${isMultiSelectMode && selectedItems.has(item.id)
-                                ? 'ring-2 ring-blue-500 bg-blue-50'
-                                : ''
-                                }`}
-                        >
-                            <CardContent className="p-6">
-                                <div className="flex items-start gap-4">
-                                    {/* Multi-select checkbox */}
-                                    {isMultiSelectMode && (
-                                        <div className="flex items-center pt-1">
-                                            <Checkbox
-                                                checked={selectedItems.has(item.id)}
-                                                onCheckedChange={(checked) =>
-                                                    handleItemSelect(item.id, checked as boolean)
-                                                }
-                                                className="h-5 w-5"
-                                            />
-                                        </div>
-                                    )}
-
-                                    <div className="flex-1 space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <h3 className="font-semibold text-lg">{item.title}</h3>
-                                            <Badge variant="outline">
-                                                {item.contentType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                            </Badge>
-                                            <Badge
-                                                variant={
-                                                    item.status === ScheduledContentStatus.PUBLISHED ? 'default' :
-                                                        item.status === ScheduledContentStatus.FAILED ? 'destructive' :
-                                                            item.status === ScheduledContentStatus.CANCELLED ? 'secondary' :
-                                                                'outline'
-                                                }
-                                            >
-                                                {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                                            </Badge>
-                                        </div>
-                                        <p className="text-muted-foreground line-clamp-2">
-                                            {item.content}
-                                        </p>
-                                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                            <span className="flex items-center gap-1">
-                                                <Clock className="h-3 w-3" />
-                                                {item.publishTime.toLocaleDateString()} at {item.publishTime.toLocaleTimeString()}
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <Users className="h-3 w-3" />
-                                                {item.channels.length} channel{item.channels.length !== 1 ? 's' : ''}
-                                            </span>
-                                        </div>
-                                        <div className="flex gap-1">
-                                            {item.channels.map((channel, index) => (
-                                                <Badge key={index} variant="secondary" className="text-xs">
-                                                    {channel.type.charAt(0).toUpperCase() + channel.type.slice(1)}
-                                                </Badge>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Action buttons */}
-                                    {!isMultiSelectMode && (
-                                        <div className="flex items-center gap-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleContentClick(item.contentId)}
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                            </Button>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="sm">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => handleContentEdit(item.contentId)}>
-                                                        Edit Content
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => handleContentDuplicate(item.contentId)}>
-                                                        Duplicate
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem
-                                                        onClick={() => handleContentDelete(item.id)}
-                                                        className="text-destructive"
-                                                    >
-                                                        Cancel Schedule
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
+                            item={item}
+                            isMultiSelectMode={isMultiSelectMode}
+                            isSelected={selectedItems.has(item.id)}
+                            onSelect={handleItemSelect}
+                            onClick={handleContentClick}
+                            onEdit={handleContentEdit}
+                            onDuplicate={handleContentDuplicate}
+                            onDelete={handleContentDelete}
+                        />
                     ))}
                 </div>
             )}

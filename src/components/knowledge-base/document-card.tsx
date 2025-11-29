@@ -1,6 +1,6 @@
 'use client';
 
-import { FileText, File, MoreVertical, Eye, Download, Trash2, Edit } from 'lucide-react';
+import { FileText, File, MoreVertical, Eye, Download, Trash2, Edit, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,

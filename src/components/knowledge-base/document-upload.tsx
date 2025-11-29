@@ -18,15 +18,17 @@ interface DocumentUploadProps {
     onUploadComplete?: (files: File[]) => void;
     maxSize?: number; // in MB
     acceptedTypes?: string[];
+    uploadFn?: (file: File) => Promise<any>;
 }
 
 const DEFAULT_ACCEPTED_TYPES = ['.pdf', '.docx', '.doc', '.txt', '.md'];
-const DEFAULT_MAX_SIZE = 10; // MB
+const DEFAULT_MAX_SIZE = 25; // MB
 
 export function DocumentUpload({
     onUploadComplete,
     maxSize = DEFAULT_MAX_SIZE,
     acceptedTypes = DEFAULT_ACCEPTED_TYPES,
+    uploadFn,
 }: DocumentUploadProps) {
     const [isDragging, setIsDragging] = useState(false);
     const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
@@ -55,28 +57,29 @@ export function DocumentUpload({
         );
 
         try {
-            // Simulate progress (will be replaced with actual progress tracking)
-            let progress = 0;
-            const progressInterval = setInterval(() => {
-                progress += 20;
-                setUploadFiles((prev) =>
-                    prev.map((f) =>
-                        f.id === uploadFile.id ? { ...f, progress: Math.min(progress, 90) } : f
-                    )
-                );
-            }, 300);
+            if (uploadFn) {
+                // Use provided upload function
+                const formData = new FormData();
+                formData.append('file', uploadFile.file);
 
-            // TODO: Replace with actual upload when server actions are integrated
-            // const result = await uploadDocumentAction(userId, uploadFile.file);
+                // We wrap this in a promise to allow for progress simulation if needed, 
+                // but for now we just await the result
+                await uploadFn(uploadFile.file);
+            } else {
+                // Simulate upload if no function provided
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 20;
+                    setUploadFiles((prev) =>
+                        prev.map((f) =>
+                            f.id === uploadFile.id ? { ...f, progress: Math.min(progress, 90) } : f
+                        )
+                    );
+                }, 300);
 
-            // Simulate upload completion
-            await new Promise(resolve => setTimeout(resolve, 2000));
-
-            clearInterval(progressInterval);
-
-            // if (!result.success) {
-            //     throw new Error(result.error || 'Upload failed');
-            // }
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                clearInterval(progressInterval);
+            }
 
             setUploadFiles((prev) =>
                 prev.map((f) =>

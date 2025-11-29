@@ -14,6 +14,7 @@
 
 import { z } from 'zod';
 import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
+import { getGuardrailsService, DEFAULT_GUARDRAILS_CONFIG } from '../guardrails';
 import { getSearchClient } from '@/aws/search/client';
 import type { SearchResult } from '@/aws/search/client';
 import {
@@ -127,15 +128,26 @@ const generateBlogPostFlow = defineFlow(
     outputSchema: GenerateBlogPostOutputSchema,
   },
   async (input) => {
+    // 1. Validate input with Guardrails
+    const guardrails = getGuardrailsService();
+    const validationResult = guardrails.validateRequest(input.topic, DEFAULT_GUARDRAILS_CONFIG);
+
+    if (!validationResult.allowed) {
+      throw new Error(`Guardrails validation failed: ${validationResult.reason}`);
+    }
+
+    // Use sanitized prompt if PII was detected
+    const topic = validationResult.sanitizedPrompt || input.topic;
+
     let searchContext = '';
     let sources: Array<{ title: string; url: string; snippet?: string }> = [];
 
     // Perform web search if enabled
     if (input.includeWebSearch !== false) {
       const searchDepth = input.searchDepth || 'basic';
-      console.log(`Performing web search for topic: "${input.topic}"`);
+      console.log(`Performing web search for topic: "${topic}"`);
 
-      const searchData = await searchForContext(input.topic, searchDepth);
+      const searchData = await searchForContext(topic, searchDepth);
       searchContext = searchData.searchContext;
       sources = searchData.sources;
 
@@ -150,7 +162,7 @@ const generateBlogPostFlow = defineFlow(
 
     // Generate blog post with search context
     const output = await textPrompt({
-      topic: input.topic,
+      topic: topic,
       searchContext: searchContext || undefined,
     });
 

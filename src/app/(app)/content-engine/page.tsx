@@ -33,7 +33,10 @@ import {
   regenerateImageAction,
   generateBlogImageAction,
   saveContentAction,
+  generateFutureCastAction,
 } from '@/app/actions';
+import { FutureCastChart } from '@/components/market/future-cast-chart';
+import type { GenerateFutureCastOutput } from '@/ai/schemas/market-update-schemas';
 
 // Buyer personas for listing optimization
 const buyerPersonas = [
@@ -171,6 +174,17 @@ type ImageInitialState = {
   errors: any;
 };
 const imageInitialState: ImageInitialState = {
+  message: '',
+  data: null,
+  errors: {},
+};
+
+type FutureCastInitialState = {
+  message: string;
+  data: GenerateFutureCastOutput | null;
+  errors: any;
+};
+const futureCastInitialState: FutureCastInitialState = {
   message: '',
   data: null,
   errors: {},
@@ -467,10 +481,15 @@ export default function ContentEnginePage() {
     generateBlogImageAction,
     { message: '', data: { imageUrl: null }, errors: {} }
   );
+  const [futureCastState, futureCastAction, isFutureCastPending] = useActionState(
+    generateFutureCastAction,
+    futureCastInitialState
+  );
 
   const [headerImage, setHeaderImage] = useState<string | null>(null);
 
   const [marketUpdateContent, setMarketUpdateContent] = useState('');
+  const [futureCastData, setFutureCastData] = useState<GenerateFutureCastOutput | null>(null);
   const [blogPostContent, setBlogPostContent] = useState('');
   const [videoScriptContent, setVideoScriptContent] = useState('');
   const [guideContent, setGuideContent] = useState('');
@@ -610,6 +629,14 @@ export default function ContentEnginePage() {
     }
   }, [socialState]);
 
+  useEffect(() => {
+    if (futureCastState.message === 'success' && futureCastState.data) {
+      setFutureCastData(futureCastState.data);
+    } else if (futureCastState.message && futureCastState.message !== 'success') {
+      toast({ variant: 'destructive', title: 'FutureCast Failed', description: futureCastState.message });
+    }
+  }, [futureCastState]);
+
 
   const handleListingSubmit = async (formData: FormData) => {
     const description = formData.get('propertyDescription') as string;
@@ -657,6 +684,13 @@ export default function ContentEnginePage() {
       description: 'Create hyper-local market updates for your audience',
       icon: TrendingUp,
       color: 'from-blue-500 to-cyan-500',
+    },
+    {
+      id: 'future-cast',
+      title: 'FutureCast',
+      description: 'Predictive market trends and forecasts',
+      icon: TrendingUp,
+      color: 'from-violet-500 to-purple-500',
     },
     {
       id: 'blog-post',
@@ -773,6 +807,7 @@ export default function ContentEnginePage() {
         <div className="hidden">
           <TabsList>
             <TabsTrigger value="market-update">Market Updates</TabsTrigger>
+            <TabsTrigger value="future-cast">FutureCast</TabsTrigger>
             <TabsTrigger value="blog-post">Blog Posts</TabsTrigger>
             <TabsTrigger value="video-script">Video Scripts</TabsTrigger>
             <TabsTrigger value="guide">Neighborhood Guides</TabsTrigger>
@@ -780,6 +815,96 @@ export default function ContentEnginePage() {
             <TabsTrigger value="listing">Listing Optimizer</TabsTrigger>
           </TabsList>
         </div>
+        <TabsContent value="future-cast" className="mt-6">
+          <div className="grid gap-8 lg:grid-cols-3">
+            <Card className="lg:col-span-1">
+              <CardHeader>
+                <CardTitle className="font-headline">
+                  FutureCast Generator
+                </CardTitle>
+                <CardDescription>
+                  Generate predictive market forecasts for any location.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form action={futureCastAction} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fc-location">Location</Label>
+                    <Input
+                      id="fc-location"
+                      name="location"
+                      placeholder="e.g. Austin, TX 78704"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fc-timePeriod">Time Period</Label>
+                    <Select name="timePeriod" defaultValue="next 6 months">
+                      <SelectTrigger id="fc-timePeriod">
+                        <SelectValue placeholder="Select time period" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="next 3 months">Next 3 Months</SelectItem>
+                        <SelectItem value="next 6 months">Next 6 Months</SelectItem>
+                        <SelectItem value="next 12 months">Next 12 Months</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fc-propertyType">Property Type</Label>
+                    <Select name="propertyType" defaultValue="Single Family">
+                      <SelectTrigger id="fc-propertyType">
+                        <SelectValue placeholder="Select property type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Single Family">Single Family</SelectItem>
+                        <SelectItem value="Condo">Condo</SelectItem>
+                        <SelectItem value="Townhouse">Townhouse</SelectItem>
+                        <SelectItem value="Multi-Family">Multi-Family</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <GenerateButton>Generate Forecast</GenerateButton>
+                </form>
+                <ErrorDisplay message={futureCastState.message} />
+              </CardContent>
+            </Card>
+
+            <div className="lg:col-span-2">
+              {isFutureCastPending ? (
+                <Card className="h-full min-h-[400px]">
+                  <CardContent className="h-full p-0">
+                    <GeneratingContentPlaceholder />
+                  </CardContent>
+                </Card>
+              ) : futureCastData ? (
+                <div className="space-y-6 fade-in">
+                  <FutureCastChart data={futureCastData} />
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => openSaveDialog(JSON.stringify(futureCastData), 'future-cast')}>
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Forecast
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Card className="h-full min-h-[400px] flex items-center justify-center text-center p-8 border-dashed">
+                  <div className="max-w-sm space-y-4">
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                      <TrendingUp className="w-8 h-8 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold">Ready to Forecast</h3>
+                      <p className="text-muted-foreground mt-2">
+                        Enter a location to generate a predictive market forecast with actionable insights.
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              )}
+            </div>
+          </div>
+        </TabsContent>
         <TabsContent value="market-update" className="mt-6">
           <div className="grid gap-8 lg:grid-cols-3">
             <Card className="lg:col-span-1">

@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 ENVIRONMENT=${1:-development}
 ALARM_EMAIL=${2:-}
 PROFILE=${AWS_PROFILE:-default}
-REGION=${AWS_REGION:-us-east-1}
+REGION=${AWS_REGION:-us-west-2}
 
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Bayon CoAgent SAM Deployment${NC}"
@@ -76,6 +76,7 @@ sam deploy \
     --parameter-overrides $PARAMS \
     --profile $PROFILE \
     --region $REGION \
+    --resolve-s3 \
     --no-fail-on-empty-changeset
 
 echo ""

@@ -5,6 +5,7 @@
  */
 
 import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
+import { getGuardrailsService, DEFAULT_GUARDRAILS_CONFIG } from '../guardrails';
 import {
     GenerateMeetingPrepInputSchema,
     GenerateMeetingPrepOutputSchema,
@@ -84,7 +85,32 @@ const generateMeetingPrepFlow = defineFlow(
             throw new Error('Meeting purpose is required');
         }
 
-        const output = await prompt(input);
+        // 1. Validate input with Guardrails
+        const guardrails = getGuardrailsService();
+
+        // Validate and sanitize client name (PII)
+        const nameValidation = guardrails.validateRequest(input.clientName, DEFAULT_GUARDRAILS_CONFIG);
+        // We don't block on name, but we sanitize it
+        const clientName = nameValidation.sanitizedPrompt || input.clientName;
+
+        // Validate purpose
+        const purposeValidation = guardrails.validateRequest(input.meetingPurpose, DEFAULT_GUARDRAILS_CONFIG);
+        if (!purposeValidation.allowed) {
+            throw new Error(`Guardrails validation failed for Meeting Purpose: ${purposeValidation.reason}`);
+        }
+        const meetingPurpose = purposeValidation.sanitizedPrompt || input.meetingPurpose;
+
+        // Validate notes if present
+        let notes = input.notes;
+        if (input.notes) {
+            const notesValidation = guardrails.validateRequest(input.notes, DEFAULT_GUARDRAILS_CONFIG);
+            if (!notesValidation.allowed) {
+                throw new Error(`Guardrails validation failed for Notes: ${notesValidation.reason}`);
+            }
+            notes = notesValidation.sanitizedPrompt || input.notes;
+        }
+
+        const output = await prompt({ ...input, clientName, meetingPurpose, notes });
 
         if (!output?.summary || !output?.propertyRecommendations || !output?.marketInsights || !output?.discussionTopics) {
             throw new Error('The AI failed to generate complete meeting preparation materials. Please try again.');

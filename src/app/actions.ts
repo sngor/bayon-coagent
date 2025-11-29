@@ -80,6 +80,11 @@ import {
   type GenerateMarketUpdateOutput,
 } from '@/aws/bedrock/flows/generate-market-update';
 import {
+  generateFutureCast,
+  type GenerateFutureCastInput,
+  type GenerateFutureCastOutput,
+} from '@/aws/bedrock/flows/generate-future-cast';
+import {
   generateVideoScript,
   type GenerateVideoScriptInput,
   type GenerateVideoScriptOutput,
@@ -157,7 +162,6 @@ import { getValidOAuthTokens, storeOAuthTokens } from '@/aws/dynamodb/oauth-toke
 import { getAlertDataAccess } from '@/lib/alerts/data-access';
 import type { AlertSettings, TargetArea, NeighborhoodProfile, AlertsResponse } from '@/lib/alerts/types';
 import type { Profile } from '@/lib/types';
-import { validateTargetArea } from '@/lib/alerts/validation';
 import { aggregateNeighborhoodData } from '@/lib/alerts/neighborhood-profile-data-aggregation';
 import { v4 as uuidv4 } from 'uuid';
 import { FeatureToggle } from '@/lib/feature-toggles';
@@ -1242,6 +1246,61 @@ export async function generateMarketUpdateAction(
     const errorMessage = handleAWSError(error, 'An unexpected error occurred while generating the market update.');
     return {
       message: `Failed to generate market update: ${errorMessage}`,
+      errors: {},
+      data: null,
+    };
+  }
+}
+
+const futureCastSchema = z.object({
+  location: z.string().min(3, 'Please provide a location.'),
+  timePeriod: z.string().optional(),
+  propertyType: z.string().optional(),
+});
+
+export async function generateFutureCastAction(
+  prevState: any,
+  formData: FormData
+) {
+  const validatedFields = futureCastSchema.safeParse({
+    location: formData.get('location'),
+    timePeriod: formData.get('timePeriod'),
+    propertyType: formData.get('propertyType'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      message: 'Validation failed',
+      errors: validatedFields.error.flatten().fieldErrors,
+      data: null,
+    };
+  }
+
+  try {
+    // Fetch historical market data
+    let marketData = null;
+    try {
+      const aggregatedData = await aggregateNeighborhoodData(validatedFields.data.location);
+      marketData = aggregatedData.marketData;
+    } catch (e) {
+      console.warn('Failed to fetch market data for FutureCast:', e);
+      // Continue without market data
+    }
+
+    const result = await generateFutureCast({
+      ...validatedFields.data,
+      marketData,
+    } as GenerateFutureCastInput);
+
+    return {
+      message: 'success',
+      data: result,
+      errors: {},
+    };
+  } catch (error) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred while generating the FutureCast.');
+    return {
+      message: `Failed to generate FutureCast: ${errorMessage}`,
       errors: {},
       data: null,
     };

@@ -5,6 +5,7 @@
  */
 
 import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
+import { getGuardrailsService, DEFAULT_GUARDRAILS_CONFIG } from '../guardrails';
 import {
   GenerateVideoScriptInputSchema,
   GenerateVideoScriptOutputSchema,
@@ -52,7 +53,18 @@ const generateVideoScriptFlow = defineFlow(
     outputSchema: GenerateVideoScriptOutputSchema,
   },
   async (input) => {
-    const output = await prompt(input);
+    // 1. Validate input with Guardrails
+    const guardrails = getGuardrailsService();
+    const validationResult = guardrails.validateRequest(input.topic, DEFAULT_GUARDRAILS_CONFIG);
+
+    if (!validationResult.allowed) {
+      throw new Error(`Guardrails validation failed: ${validationResult.reason}`);
+    }
+
+    // Use sanitized prompt if PII was detected
+    const topic = validationResult.sanitizedPrompt || input.topic;
+
+    const output = await prompt({ ...input, topic });
     if (!output?.script?.content) {
       throw new Error("The AI returned an empty video script. Please try again.");
     }

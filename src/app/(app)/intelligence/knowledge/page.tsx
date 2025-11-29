@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Upload, Search, BookOpen, FileText, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,65 +14,72 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { uploadAgentDocument, listAgentDocuments, deleteAgentDocument } from '@/app/agent-document-actions';
+import { useToast } from '@/hooks/use-toast';
 
 export default function KnowledgeBasePage() {
     const [documents, setDocuments] = useState<Document[]>([]);
     const [showUploadDialog, setShowUploadDialog] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+    const { toast } = useToast();
 
-    // Mock documents for demonstration
-    const mockDocuments: Document[] = [
-        {
-            id: '1',
-            fileName: 'Q4-2024-Market-Report.pdf',
-            fileType: 'pdf',
-            fileSize: 2457600, // 2.4 MB
-            uploadDate: new Date('2024-11-20').toISOString(),
-            status: 'indexed',
-            title: 'Q4 2024 Market Report',
-            tags: ['Market Data', '2024', 'Seattle'],
-            accessCount: 12,
-        },
-        {
-            id: '2',
-            fileName: 'Downtown-Seattle-Guide.pdf',
-            fileType: 'pdf',
-            fileSize: 1843200, // 1.8 MB
-            uploadDate: new Date('2024-11-18').toISOString(),
-            status: 'indexed',
-            title: 'Downtown Seattle Neighborhood Guide',
-            tags: ['Neighborhoods', 'Seattle'],
-            accessCount: 8,
-        },
-        {
-            id: '3',
-            fileName: 'Investment-Strategy-2025.docx',
-            fileType: 'docx',
-            fileSize: 512000, // 500 KB
-            uploadDate: new Date('2024-11-15').toISOString(),
-            status: 'processing',
-            title: 'Investment Strategy 2025',
-            tags: ['Strategy', 'Investment'],
-        },
-    ];
+    const fetchDocuments = async () => {
+        setIsLoading(true);
+        const result = await listAgentDocuments();
+        if (result.success && result.documents) {
+            // Map AgentDocument to UI Document type
+            const mappedDocs: Document[] = result.documents.map(doc => ({
+                id: doc.id,
+                fileName: doc.fileName,
+                fileType: doc.contentType.split('/').pop() || 'unknown',
+                fileSize: doc.fileSize,
+                uploadDate: new Date(doc.uploadedAt).toISOString(),
+                status: 'indexed', // Assume indexed for now
+                title: doc.fileName,
+                tags: [], // Add tags if available
+            }));
+            setDocuments(mappedDocs);
+        } else {
+            toast({
+                title: 'Error',
+                description: 'Failed to load documents',
+                variant: 'destructive',
+            });
+        }
+        setIsLoading(false);
+    };
 
-    const displayDocuments = documents.length > 0 ? documents : mockDocuments;
+    useEffect(() => {
+        fetchDocuments();
+    }, []);
 
-    const filteredDocuments = searchQuery
-        ? displayDocuments.filter((doc) =>
-            (doc.title || doc.fileName)
-                .toLowerCase()
-                .includes(searchQuery.toLowerCase()) ||
-            doc.tags?.some((tag) =>
-                tag.toLowerCase().includes(searchQuery.toLowerCase())
-            )
+    const filteredDocuments = documents.filter((doc) =>
+        (doc.title || doc.fileName)
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+        doc.tags?.some((tag) =>
+            tag.toLowerCase().includes(searchQuery.toLowerCase())
         )
-        : displayDocuments;
+    );
+
+    const handleUploadFn = async (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const result = await uploadAgentDocument(formData);
+        if (result.error) {
+            throw new Error(result.error);
+        }
+        return result;
+    };
 
     const handleUploadComplete = (files: File[]) => {
-        console.log('Upload complete:', files);
+        toast({
+            title: 'Success',
+            description: `Uploaded ${files.length} file(s)`,
+        });
         setShowUploadDialog(false);
-        // TODO: Implement actual upload logic
+        fetchDocuments();
     };
 
     const handlePreview = (document: Document) => {
@@ -85,9 +92,23 @@ export default function KnowledgeBasePage() {
         // TODO: Implement edit modal
     };
 
-    const handleDelete = (document: Document) => {
-        console.log('Delete document:', document);
-        // TODO: Implement delete confirmation
+    const handleDelete = async (document: Document) => {
+        if (confirm('Are you sure you want to delete this document?')) {
+            const result = await deleteAgentDocument(document.id);
+            if (result.success) {
+                toast({
+                    title: 'Success',
+                    description: 'Document deleted',
+                });
+                fetchDocuments();
+            } else {
+                toast({
+                    title: 'Error',
+                    description: 'Failed to delete document',
+                    variant: 'destructive',
+                });
+            }
+        }
     };
 
     const handleDownload = (document: Document) => {
@@ -96,7 +117,7 @@ export default function KnowledgeBasePage() {
     };
 
     // Empty state
-    if (displayDocuments.length === 0) {
+    if (!isLoading && documents.length === 0) {
         return (
             <div className="container max-w-4xl py-8 space-y-8">
                 {/* Header */}
@@ -166,7 +187,10 @@ export default function KnowledgeBasePage() {
                                 Upload documents to your knowledge base. Supported formats: PDF, DOCX, TXT, MD
                             </DialogDescription>
                         </DialogHeader>
-                        <DocumentUpload onUploadComplete={handleUploadComplete} />
+                        <DocumentUpload
+                            onUploadComplete={handleUploadComplete}
+                            uploadFn={handleUploadFn}
+                        />
                     </DialogContent>
                 </Dialog>
             </div>
@@ -181,7 +205,7 @@ export default function KnowledgeBasePage() {
                 <div className="space-y-1">
                     <h1 className="text-3xl font-headline font-bold">Knowledge Base</h1>
                     <p className="text-muted-foreground">
-                        {displayDocuments.length} document{displayDocuments.length !== 1 ? 's' : ''} uploaded
+                        {documents.length} document{documents.length !== 1 ? 's' : ''} uploaded
                     </p>
                 </div>
                 <Button onClick={() => setShowUploadDialog(true)} className="gap-2">
@@ -225,7 +249,10 @@ export default function KnowledgeBasePage() {
                             Upload documents to your knowledge base. Supported formats: PDF, DOCX, TXT, MD
                         </DialogDescription>
                     </DialogHeader>
-                    <DocumentUpload onUploadComplete={handleUploadComplete} />
+                    <DocumentUpload
+                        onUploadComplete={handleUploadComplete}
+                        uploadFn={handleUploadFn}
+                    />
                 </DialogContent>
             </Dialog>
         </div>

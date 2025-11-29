@@ -26,15 +26,6 @@ Globals:
     MemorySize: 1024
     Runtime: nodejs22.x
     Tracing: Active
-    AutoPublishAlias: live
-    DeploymentPreference:
-      Type: Linear10PercentEvery1Minute
-      Alarms:
-        - !Ref LambdaErrorAlarm
-        - !Ref LambdaThrottleAlarm
-      Hooks:
-        PreTraffic: !Ref PreTrafficHookFunction
-        PostTraffic: !Ref PostTrafficHookFunction
     Environment:
       Variables:
         NODE_ENV: !Ref Environment
@@ -1634,12 +1625,20 @@ Resources:
     Properties:
       Name: !Sub bayon-coagent/oauth/google-${Environment}
       Description: Google OAuth credentials for Business Profile integration
-      SecretString: !Sub |
-        {
-          "clientId": "",
-          "clientSecret": "",
-          "redirectUri": "${IsProduction ? 'https://yourdomain.com' : 'http://localhost:3000'}/api/oauth/google/callback"
-        }
+      SecretString: !If
+        - IsProduction
+        - !Sub |
+          {
+            "clientId": "",
+            "clientSecret": "",
+            "redirectUri": "https://yourdomain.com/api/oauth/google/callback"
+          }
+        - !Sub |
+          {
+            "clientId": "",
+            "clientSecret": "",
+            "redirectUri": "http://localhost:3000/api/oauth/google/callback"
+          }
       Tags:
         - Key: Environment
           Value: !Ref Environment
@@ -1654,12 +1653,20 @@ Resources:
     Properties:
       Name: !Sub bayon-coagent/oauth/facebook-${Environment}
       Description: Facebook OAuth credentials for social media integration
-      SecretString: !Sub |
-        {
-          "appId": "",
-          "appSecret": "",
-          "redirectUri": "${IsProduction ? 'https://yourdomain.com' : 'http://localhost:3000'}/api/oauth/facebook/callback"
-        }
+      SecretString: !If
+        - IsProduction
+        - !Sub |
+          {
+            "appId": "",
+            "appSecret": "",
+            "redirectUri": "https://yourdomain.com/api/oauth/facebook/callback"
+          }
+        - !Sub |
+          {
+            "appId": "",
+            "appSecret": "",
+            "redirectUri": "http://localhost:3000/api/oauth/facebook/callback"
+          }
       Tags:
         - Key: Environment
           Value: !Ref Environment
@@ -1674,12 +1681,20 @@ Resources:
     Properties:
       Name: !Sub bayon-coagent/oauth/instagram-${Environment}
       Description: Instagram OAuth credentials for social media integration
-      SecretString: !Sub |
-        {
-          "appId": "",
-          "appSecret": "",
-          "redirectUri": "${IsProduction ? 'https://yourdomain.com' : 'http://localhost:3000'}/api/oauth/instagram/callback"
-        }
+      SecretString: !If
+        - IsProduction
+        - !Sub |
+          {
+            "appId": "",
+            "appSecret": "",
+            "redirectUri": "https://yourdomain.com/api/oauth/instagram/callback"
+          }
+        - !Sub |
+          {
+            "appId": "",
+            "appSecret": "",
+            "redirectUri": "http://localhost:3000/api/oauth/instagram/callback"
+          }
       Tags:
         - Key: Environment
           Value: !Ref Environment
@@ -1694,12 +1709,20 @@ Resources:
     Properties:
       Name: !Sub bayon-coagent/oauth/linkedin-${Environment}
       Description: LinkedIn OAuth credentials for social media integration
-      SecretString: !Sub |
-        {
-          "clientId": "",
-          "clientSecret": "",
-          "redirectUri": "${IsProduction ? 'https://yourdomain.com' : 'http://localhost:3000'}/api/oauth/linkedin/callback"
-        }
+      SecretString: !If
+        - IsProduction
+        - !Sub |
+          {
+            "clientId": "",
+            "clientSecret": "",
+            "redirectUri": "https://yourdomain.com/api/oauth/linkedin/callback"
+          }
+        - !Sub |
+          {
+            "clientId": "",
+            "clientSecret": "",
+            "redirectUri": "http://localhost:3000/api/oauth/linkedin/callback"
+          }
       Tags:
         - Key: Environment
           Value: !Ref Environment
@@ -1714,13 +1737,22 @@ Resources:
     Properties:
       Name: !Sub bayon-coagent/oauth/twitter-${Environment}
       Description: Twitter OAuth credentials for social media integration
-      SecretString: !Sub |
-        {
-          "apiKey": "",
-          "apiSecret": "",
-          "bearerToken": "",
-          "redirectUri": "${IsProduction ? 'https://yourdomain.com' : 'http://localhost:3000'}/api/oauth/twitter/callback"
-        }
+      SecretString: !If
+        - IsProduction
+        - !Sub |
+          {
+            "apiKey": "",
+            "apiSecret": "",
+            "bearerToken": "",
+            "redirectUri": "https://yourdomain.com/api/oauth/twitter/callback"
+          }
+        - !Sub |
+          {
+            "apiKey": "",
+            "apiSecret": "",
+            "bearerToken": "",
+            "redirectUri": "http://localhost:3000/api/oauth/twitter/callback"
+          }
       Tags:
         - Key: Environment
           Value: !Ref Environment
@@ -2351,8 +2383,6 @@ Resources:
         Environment: !Ref Environment
         Application: BayonCoAgent
         Function: NotificationCleanupMaintenance
-        Application: BayonCoAgent
-        Function: NotificationCleanupMaintenance
 
   # ==========================================
   # AI Processing Service SQS Queues
@@ -2688,7 +2718,7 @@ Resources:
             Arn: !GetAtt EventBridgeDLQ.Arn
           RetryPolicy:
             MaximumRetryAttempts: 2
-            MaximumEventAge: 3600
+            MaximumEventAgeInSeconds: 3600
 
   # Permission for EventBridge to invoke Life Event Processor
   LifeEventProcessorEventPermission:
@@ -2719,7 +2749,7 @@ Resources:
             Arn: !GetAtt EventBridgeDLQ.Arn
           RetryPolicy:
             MaximumRetryAttempts: 2
-            MaximumEventAge: 3600
+            MaximumEventAgeInSeconds: 3600
 
   # Permission for EventBridge to invoke Competitor Monitor
   CompetitorMonitorEventPermission:
@@ -2753,7 +2783,7 @@ Resources:
             Arn: !GetAtt EventBridgeDLQ.Arn
           RetryPolicy:
             MaximumRetryAttempts: 2
-            MaximumEventAge: 3600
+            MaximumEventAgeInSeconds: 3600
 
   # Permission for EventBridge to invoke Trend Detector
   TrendDetectorEventPermission:
@@ -2787,7 +2817,7 @@ Resources:
             Arn: !GetAtt EventBridgeDLQ.Arn
           RetryPolicy:
             MaximumRetryAttempts: 2
-            MaximumEventAge: 3600
+            MaximumEventAgeInSeconds: 3600
 
   # Permission for EventBridge to invoke Price Reduction Monitor
   PriceReductionMonitorEventPermission:
@@ -2824,7 +2854,7 @@ Resources:
             Arn: !GetAtt EventBridgeDLQ.Arn
           RetryPolicy:
             MaximumRetryAttempts: 2
-            MaximumEventAge: 3600
+            MaximumEventAgeInSeconds: 3600
 
   # Permission for EventBridge to invoke Notification Processor
   NotificationProcessorEventPermission:
@@ -2858,7 +2888,7 @@ Resources:
             Arn: !GetAtt EventBridgeDLQ.Arn
           RetryPolicy:
             MaximumRetryAttempts: 2
-            MaximumEventAge: 3600
+            MaximumEventAgeInSeconds: 3600
 
   # Permission for EventBridge to invoke Content Publishing
   ContentPublishingEventPermission:
@@ -2889,7 +2919,7 @@ Resources:
             Arn: !GetAtt EventBridgeDLQ.Arn
           RetryPolicy:
             MaximumRetryAttempts: 2
-            MaximumEventAge: 3600
+            MaximumEventAgeInSeconds: 3600
 
   # Permission for EventBridge to invoke Analytics Sync
   AnalyticsSyncEventPermission:
@@ -4080,8 +4110,6 @@ Resources:
       Environment:
         Variables:
           LOG_LEVEL: INFO
-      DeploymentPreference:
-        Enabled: false
       Tags:
         Environment: !Ref Environment
         Application: BayonCoAgent
@@ -4100,8 +4128,6 @@ Resources:
       Environment:
         Variables:
           LOG_LEVEL: INFO
-      DeploymentPreference:
-        Enabled: false
       Tags:
         Environment: !Ref Environment
         Application: BayonCoAgent
@@ -5098,7 +5124,7 @@ Outputs:
     Description: MLS API Secret ARN
     Value: !Ref MLSAPISecret
     Export:
-      Name: !Sub ${Environment}-AdminServiceApiUrl
+      Name: !Sub ${Environment}-MLSAPISecretArn
 
   AiJobRequestQueueUrl:
     Description: AI Job Request Queue URL

@@ -57,6 +57,21 @@ export async function getCurrentUserServer(): Promise<CognitoUser | null> {
 
             if (!accessToken) {
                 console.debug('⚠️ Server-side auth: No access token in cookie or header');
+
+                // Development fallback
+                if (process.env.NODE_ENV === 'development' || process.env.USE_LOCAL_AWS === 'true') {
+                    console.warn('⚠️ Development mode: Returning mock user for testing (no token)');
+                    return {
+                        id: 'dev-user-123',
+                        email: 'dev@example.com',
+                        emailVerified: true,
+                        attributes: {
+                            given_name: 'Dev',
+                            family_name: 'User',
+                        }
+                    };
+                }
+
                 return null;
             }
         }
@@ -162,6 +177,21 @@ export async function getCurrentUserServer(): Promise<CognitoUser | null> {
 
         // Clear potentially corrupted session
         await clearSessionCookie();
+
+        // Development fallback
+        if (process.env.NODE_ENV === 'development' || process.env.USE_LOCAL_AWS === 'true') {
+            console.warn('⚠️ Development mode: Returning mock user for testing due to auth failure');
+            return {
+                id: 'dev-user-123',
+                email: 'dev@example.com',
+                emailVerified: true,
+                attributes: {
+                    given_name: 'Dev',
+                    family_name: 'User',
+                }
+            };
+        }
+
         return null;
     }
 }

@@ -5,6 +5,7 @@
  */
 
 import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
+import { getGuardrailsService, DEFAULT_GUARDRAILS_CONFIG } from '../guardrails';
 import { z } from 'zod';
 
 const GenerateNeighborhoodGuideInputSchema = z.object({
@@ -57,7 +58,24 @@ const generateNeighborhoodGuideFlow = defineFlow(
     outputSchema: GenerateNeighborhoodGuideOutputSchema,
   },
   async (input) => {
-    const output = await prompt(input);
+    // 1. Validate input with Guardrails
+    const guardrails = getGuardrailsService();
+
+    const marketValidation = guardrails.validateRequest(input.targetMarket, DEFAULT_GUARDRAILS_CONFIG);
+    if (!marketValidation.allowed) {
+      throw new Error(`Guardrails validation failed for Target Market: ${marketValidation.reason}`);
+    }
+
+    const topicValidation = guardrails.validateRequest(input.pillarTopic, DEFAULT_GUARDRAILS_CONFIG);
+    if (!topicValidation.allowed) {
+      throw new Error(`Guardrails validation failed for Pillar Topic: ${topicValidation.reason}`);
+    }
+
+    // Use sanitized inputs
+    const targetMarket = marketValidation.sanitizedPrompt || input.targetMarket;
+    const pillarTopic = topicValidation.sanitizedPrompt || input.pillarTopic;
+
+    const output = await prompt({ ...input, targetMarket, pillarTopic });
     if (!output?.neighborhoodGuide) {
       throw new Error("The AI returned an empty neighborhood guide. Please try again.");
     }

@@ -7,7 +7,7 @@ set -e
 
 ENVIRONMENT=${1:-development}
 PROFILE=${AWS_PROFILE:-default}
-REGION=${AWS_REGION:-us-east-1}
+REGION=${AWS_REGION:-us-west-2}
 STACK_NAME="bayon-coagent-${ENVIRONMENT}"
 ENV_FILE=".env.${ENVIRONMENT}"
 

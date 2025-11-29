@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Search, Filter, RefreshCw, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { getAuditLogsAction } from '@/app/admin-actions';
 import { useDebounce } from 'use-debounce';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from "@/hooks/use-toast";
 
 export default function AuditLogsPage() {
     const [logs, setLogs] = useState<any[]>([]);

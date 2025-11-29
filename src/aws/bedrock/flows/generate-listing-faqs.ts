@@ -5,6 +5,7 @@
  */
 
 import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
+import { getGuardrailsService, DEFAULT_GUARDRAILS_CONFIG } from '../guardrails';
 import { z } from 'zod';
 
 const GenerateListingFaqsInputSchema = z.object({
@@ -51,7 +52,18 @@ const generateListingFaqsFlow = defineFlow(
     outputSchema: GenerateListingFaqsOutputSchema,
   },
   async (input) => {
-    const output = await prompt(input);
+    // 1. Validate input with Guardrails
+    const guardrails = getGuardrailsService();
+    const validationResult = guardrails.validateRequest(input.propertyDescription, DEFAULT_GUARDRAILS_CONFIG);
+
+    if (!validationResult.allowed) {
+      throw new Error(`Guardrails validation failed: ${validationResult.reason}`);
+    }
+
+    // Use sanitized prompt if PII was detected
+    const propertyDescription = validationResult.sanitizedPrompt || input.propertyDescription;
+
+    const output = await prompt({ ...input, propertyDescription });
     if (!output?.faqs || output.faqs.length === 0) {
       throw new Error("The AI returned an unexpected response format for FAQs. Please try again.");
     }
