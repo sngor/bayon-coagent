@@ -31,7 +31,7 @@ import {
     updateTeamMemberRoleAction,
     getPendingInvitationsAction,
     cancelInvitationAction
-} from '@/app/admin-actions';
+} from '@/features/admin/actions/admin-actions';
 import { Invitation } from '@/lib/organization-types';
 
 interface TeamMember {

@@ -4,7 +4,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Mic, Square, Play, Pause, Trash2, Upload, Loader2, Wifi, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { TOUCH_FRIENDLY_CLASSES } from '@/lib/mobile-optimization';
 
 export interface AudioRecording {

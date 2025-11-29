@@ -22,7 +22,7 @@ import {
 import {
     type VirtualStagingParams,
 } from '@/ai/schemas/reimagine-schemas';
-import { processEditAction } from '@/app/reimagine-actions';
+import { processEditAction } from '@/features/intelligence/actions/reimagine-actions';
 import { logError } from '@/aws/bedrock/reimagine-error-handler';
 
 /**

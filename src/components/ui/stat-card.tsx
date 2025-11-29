@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react';
 import { Card, CardContent } from './card';
 import { CardGradientMesh } from './gradient-mesh';

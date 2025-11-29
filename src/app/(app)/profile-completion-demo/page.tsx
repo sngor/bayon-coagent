@@ -3,7 +3,7 @@
 import { StandardPageLayout } from '@/components/standard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ProfileCompletionBanner, ProfileCompletionChecklist } from '@/components/profile-completion-banner';
-import type { Profile } from '@/lib/types';
+import type { Profile } from '@/lib/types/common/common';
 
 export default function ProfileCompletionDemoPage() {
     // Sample profiles with different completion levels

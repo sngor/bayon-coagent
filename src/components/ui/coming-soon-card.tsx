@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LucideIcon, Clock } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 export interface ComingSoonCardProps {
     icon: LucideIcon;

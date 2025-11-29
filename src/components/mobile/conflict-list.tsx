@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { ConflictData } from '@/lib/conflict-detection';
 import { getUnresolvedConflicts, getConflictCount } from '@/lib/conflict-storage';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 interface ConflictListProps {
     onSelectConflict: (conflict: ConflictData) => void;

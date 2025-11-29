@@ -7,7 +7,7 @@ import { StandardErrorDisplay } from '@/components/standard/error-display';
 import { Button } from '@/components/ui/button';
 import { Copy, Check, Save, Download } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 interface AIFormWrapperProps {
     // Form section

@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNotificationTapHandler } from '@/lib/notification-tap-handler';
 import { createMarketAlertMonitor } from '@/lib/market-alert-monitor';
 import { getMobileClasses } from '@/lib/mobile-optimization';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 export interface InAppNotification {
     id: string;

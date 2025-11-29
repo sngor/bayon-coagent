@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Upload, X, Check, AlertCircle } from 'lucide-react';
 import { useS3Upload } from '@/hooks/use-s3-upload';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 export interface S3FileUploadProps {
     userId: string;

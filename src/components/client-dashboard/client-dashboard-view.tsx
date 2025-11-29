@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MortgageCalculator } from '@/components/mortgage-calculator';
 import { RenovationROICalculator } from '@/components/renovation-roi-calculator';
-import { ClientDashboard, SecuredLink, listDashboardDocumentsForClient, type DashboardDocument } from '@/app/client-dashboard-actions';
+import { ClientDashboard, SecuredLink, listDashboardDocumentsForClient, type DashboardDocument } from '@/features/client-dashboards/actions/client-dashboard-actions';
 import {
     CMAReportSkeleton,
     PropertySearchSkeleton,

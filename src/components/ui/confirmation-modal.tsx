@@ -12,7 +12,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AlertTriangle, Trash2, Info, AlertCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/common";
 
 export type ConfirmationVariant = "danger" | "warning" | "info";
 

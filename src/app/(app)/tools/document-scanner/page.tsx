@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Upload, FileText, AlertTriangle, CheckCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DocumentUpload } from '@/components/knowledge-base/document-upload';
-import { uploadAgentDocument, analyzeAgentDocumentRedFlags } from '@/app/agent-document-actions';
+import { uploadAgentDocument, analyzeAgentDocumentRedFlags } from '@/features/intelligence/actions/agent-document-actions';
 import { useToast } from '@/hooks/use-toast';
 import { marked } from 'marked';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

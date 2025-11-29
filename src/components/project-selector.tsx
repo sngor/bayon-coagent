@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
-import type { Project } from '@/lib/types';
+import type { Project } from '@/lib/types/common/common';
 
 interface ProjectSelectorProps {
     value?: string | null;

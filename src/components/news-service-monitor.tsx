@@ -19,7 +19,7 @@ export function NewsServiceMonitor() {
 
     const updateStats = async () => {
         try {
-            const { newsService } = await import('@/services/news-service');
+            const { newsService } = await import('@/services/analytics/news-service');
             const newStats = newsService.getCacheStats();
             setStats(newStats);
         } catch (error) {

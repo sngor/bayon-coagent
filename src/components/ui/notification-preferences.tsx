@@ -9,7 +9,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Bell, Mail, Smartphone, Clock, Filter } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';

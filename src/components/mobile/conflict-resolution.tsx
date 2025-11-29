@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { ConflictData, ConflictResolution, createResolution, mergeContent } from '@/lib/conflict-detection';
 import { resolveConflict } from '@/lib/conflict-storage';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 interface ConflictResolutionProps {
     conflict: ConflictData;

@@ -14,7 +14,7 @@ import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 interface ImageViewerModalProps {
     isOpen: boolean;

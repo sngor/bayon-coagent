@@ -29,7 +29,7 @@ import {
     Clock,
     Target
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { toast } from '@/hooks/use-toast';
 
 const renovationTypes = [

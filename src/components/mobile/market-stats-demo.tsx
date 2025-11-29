@@ -25,7 +25,7 @@ import {
     clearMarketStatsCacheAction,
     type MarketStatsResult,
     type MarketStatsCacheStatsResult
-} from '@/app/mobile-actions';
+} from '@/features/client-dashboards/actions/mobile-actions';
 import { useUser } from '@/aws/auth/use-user';
 
 /**

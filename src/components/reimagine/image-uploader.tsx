@@ -20,9 +20,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { reAnalyzeImageAction } from '@/app/reimagine-actions';
+import { reAnalyzeImageAction } from '@/features/intelligence/actions/reimagine-actions';
 import { type EditSuggestion, type EditType, type EditParams } from '@/ai/schemas/reimagine-schemas';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { HelpTooltip, HelpText } from './help-tooltip';
 import { StandardErrorDisplay } from '@/components/standard';
 import {

@@ -28,7 +28,7 @@ import {
     CheckCircle2,
     Lightbulb
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 /**
  * Empty state components with actionable guidance for new users

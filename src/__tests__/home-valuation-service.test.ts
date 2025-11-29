@@ -57,7 +57,7 @@ describe('Home Valuation Service - Core Functionality', () => {
     describe('Server Actions', () => {
         it('should have generateValuationForDashboard action', async () => {
             // Requirements: 5.1, 5.2, 5.3
-            const { generateValuationForDashboard } = await import('@/app/client-dashboard-actions');
+            const { generateValuationForDashboard } = await import('@/features/client-dashboards/actions/client-dashboard-actions');
 
             // Verify the function exists
             expect(generateValuationForDashboard).toBeDefined();
@@ -72,7 +72,7 @@ describe('Home Valuation Service - Core Functionality', () => {
 
         it('should have getValuation action', async () => {
             // Requirements: 5.3
-            const { getValuation } = await import('@/app/client-dashboard-actions');
+            const { getValuation } = await import('@/features/client-dashboards/actions/client-dashboard-actions');
 
             // Verify the function exists
             expect(getValuation).toBeDefined();

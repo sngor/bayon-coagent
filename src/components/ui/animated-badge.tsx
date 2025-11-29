@@ -8,7 +8,7 @@
 import * as React from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { scaleIn, fadeIn } from '@/lib/animations';
 
 const badgeVariants = cva(

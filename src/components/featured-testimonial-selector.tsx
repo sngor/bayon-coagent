@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Testimonial } from "@/lib/types";
+import { Testimonial } from "@/lib/types/common/common";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Star, GripVertical, X, Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/common";
 import {
     DndContext,
     closestCenter,

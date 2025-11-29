@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react';
 import { Clock, Upload, Edit3 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { getRateLimitStatusAction } from '@/app/reimagine-actions';
+import { getRateLimitStatusAction } from '@/features/intelligence/actions/reimagine-actions';
 
 interface RateLimitStatusProps {
     userId: string;

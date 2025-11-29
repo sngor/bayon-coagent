@@ -22,7 +22,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import {
     Upload,
     Camera,
@@ -32,7 +32,7 @@ import {
     Image as ImageIcon,
     Sparkles,
 } from 'lucide-react';
-import { streamVisionQuery } from '@/app/bayon-vision-actions';
+import { streamVisionQuery } from '@/features/intelligence/actions/bayon-vision-actions';
 import { VisionAnalysisResults } from './vision-analysis-results';
 
 /**

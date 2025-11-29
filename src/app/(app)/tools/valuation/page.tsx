@@ -25,7 +25,7 @@ import { Home, DollarSign, TrendingUp, AlertTriangle, CheckCircle, Copy, Downloa
 import { type PropertyValuationOutput } from '@/aws/bedrock/flows';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 import { FavoritesButton } from '@/components/favorites-button';
 import { getPageConfig } from '@/components/dashboard-quick-actions';

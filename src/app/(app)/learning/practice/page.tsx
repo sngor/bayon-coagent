@@ -6,7 +6,7 @@ import { StandardCard } from '@/components/standard/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getRolePlaySessionsAction } from '@/app/actions';
-import { rolePlayScenarios } from '@/lib/training-data';
+import { rolePlayScenarios } from '@/lib/constants/training-data';
 import { Clock, MessageSquare, Calendar } from 'lucide-react';
 
 export default function PracticePage() {

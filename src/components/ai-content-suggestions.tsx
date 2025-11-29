@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Clock, TrendingUp, Lightbulb, ArrowRight, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import type {
     PostingTimeRecommendation,
     ContentTypeRecommendation,

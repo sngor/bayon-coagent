@@ -20,7 +20,7 @@ import {
     CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { useUser } from '@/aws/auth';
-import type { SavedContent, Project } from '@/lib/types';
+import type { SavedContent, Project } from '@/lib/types/common/common';
 import {
     createProjectAction,
     moveContentToProjectAction,

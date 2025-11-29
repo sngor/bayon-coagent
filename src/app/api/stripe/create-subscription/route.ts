@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { STRIPE_CONFIG } from '@/lib/stripe-config';
+import { STRIPE_CONFIG } from '@/lib/constants/stripe-config';
 
 // Initialize Stripe only if secret key is available
 const stripe = STRIPE_CONFIG.secretKey

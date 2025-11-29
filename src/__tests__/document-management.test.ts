@@ -38,7 +38,7 @@ const {
     listDashboardDocuments,
     getDocumentDownloadUrl,
     logDocumentDownload,
-} = await import('@/app/client-dashboard-actions');
+} = await import('@/features/client-dashboards/actions/client-dashboard-actions');
 
 describe('Document Management Service', () => {
     const mockUser = { id: 'agent-123', email: 'agent@example.com' };

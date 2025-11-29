@@ -17,7 +17,7 @@ import {
     CloudOff,
     Sync
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { offlineContentManager, OfflineIndicatorData } from '@/lib/offline-content-manager';
 import { offlineSyncManager } from '@/lib/offline-sync-manager';
 

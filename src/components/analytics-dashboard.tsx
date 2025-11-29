@@ -73,7 +73,7 @@ import {
     Camera,
     MousePointer,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import {
     getAnalyticsByType,
     getAnalyticsForTimeRange,
@@ -81,7 +81,7 @@ import {
     getROIAnalytics,
     exportROIData,
     TimeRangePreset,
-} from '@/services/analytics-service';
+} from '@/services/analytics/analytics-service';
 
 import { EmptyAnalyticsState, EmptyABTestsState, EmptySearchResultsState } from '@/components/ui/empty-states';
 import { NetworkErrorState, DataLoadErrorState } from '@/components/ui/error-states';

@@ -40,7 +40,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Save, Sparkles, Tag, X } from 'lucide-react';
 import { ContentCategory, TemplateConfiguration } from '@/lib/content-workflow-types';
-import { saveTemplateAction } from '@/app/content-workflow-actions';
+import { saveTemplateAction } from '@/features/content-engine/actions/content-workflow-actions';
 
 interface TemplateSaveModalProps {
     isOpen: boolean;

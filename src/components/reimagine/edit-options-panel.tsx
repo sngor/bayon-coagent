@@ -27,7 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { type EditType, type EditSuggestion, type EditParams } from '@/ai/schemas/reimagine-schemas';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { HelpTooltip, HelpSection } from './help-tooltip';
 
 interface EditOptionsPanelProps {

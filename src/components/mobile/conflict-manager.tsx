@@ -14,7 +14,7 @@ import { ArrowLeft, AlertTriangle } from 'lucide-react';
 import { ConflictData, ConflictResolution } from '@/lib/conflict-detection';
 import { ConflictList } from './conflict-list';
 import { ConflictResolution as ConflictResolutionComponent } from './conflict-resolution';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 interface ConflictManagerProps {
     onConflictResolved?: (resolution: ConflictResolution) => void;

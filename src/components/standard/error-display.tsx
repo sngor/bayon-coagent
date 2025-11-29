@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, ServerCrash, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';

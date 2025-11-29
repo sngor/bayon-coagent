@@ -24,7 +24,7 @@ import {
     Server,
     Globe
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 /**
  * Enhanced error states with clear recovery steps and support contact

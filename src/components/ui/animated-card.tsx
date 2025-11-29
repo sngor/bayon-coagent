@@ -7,7 +7,7 @@
 
 import * as React from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { cardHover, cardLift, fadeInUp, scaleIn } from '@/lib/animations';
 
 export interface AnimatedCardProps extends Omit<HTMLMotionProps<'div'>, 'children'> {

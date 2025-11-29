@@ -5,7 +5,7 @@ import { LayoutDashboard } from 'lucide-react';
 import { useUser } from '@/aws/auth';
 import { useMemo, useEffect, useState } from 'react';
 import { getDashboardData } from './actions';
-import type { Profile } from '@/lib/types';
+import type { Profile } from '@/lib/types/common/common';
 
 function getGreeting(): string {
     const hour = new Date().getHours();

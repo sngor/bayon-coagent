@@ -6,9 +6,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AnimatedProgress } from '@/components/ui/animated-progress';
 import { CheckCircle2, Circle, ArrowRight, Sparkles, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { fadeInUp, staggerContainer, staggerItem } from '@/lib/animations';
-import type { Profile } from '@/lib/types';
+import type { Profile } from '@/lib/types/common/common';
 import Link from 'next/link';
 import { CardGradientMesh } from '@/components/ui/gradient-mesh';
 

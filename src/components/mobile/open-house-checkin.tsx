@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Users, Clock, TrendingUp, CheckCircle, AlertCircle, Play, Square } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import {
     startOpenHouseSessionAction,
     endOpenHouseSessionAction,
@@ -20,7 +20,7 @@ import {
     type Visitor,
     type OpenHouseSession,
     type OpenHouseSummary
-} from '@/app/mobile-actions';
+} from '@/features/client-dashboards/actions/mobile-actions';
 import { offlineSyncManager } from '@/lib/offline-sync-manager';
 
 export interface OpenHouseCheckinProps {

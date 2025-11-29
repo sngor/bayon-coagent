@@ -50,7 +50,7 @@ import {
     Shield,
     Zap
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { Template } from '@/lib/content-workflow-types';
 
 // ==================== Types ====================

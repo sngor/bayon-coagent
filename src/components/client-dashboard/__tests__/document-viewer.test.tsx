@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import type { DashboardDocument } from '@/app/client-dashboard-actions';
+import type { DashboardDocument } from '@/features/client-dashboards/actions/client-dashboard-actions';
 
 describe('DocumentViewer', () => {
     const mockDocuments: DashboardDocument[] = [

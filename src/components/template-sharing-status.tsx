@@ -51,7 +51,7 @@ import {
     CheckCircle,
     XCircle
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import {
     Template,
     TemplatePermissions,
@@ -61,7 +61,7 @@ import {
     getTemplateAnalyticsAction,
     unshareTemplateAction,
     getSharedTemplatesAction
-} from '@/app/content-workflow-actions';
+} from '@/features/content-engine/actions/content-workflow-actions';
 
 // ==================== Types ====================
 

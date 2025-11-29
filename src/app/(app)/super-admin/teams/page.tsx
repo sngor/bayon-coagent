@@ -74,14 +74,14 @@ export default function TeamsPage() {
             }
 
             // Load teams
-            const { getTeamsAction } = await import('@/app/admin-actions');
+            const { getTeamsAction } = await import('@/features/admin/actions/admin-actions');
             const teamsResult = await getTeamsAction(accessToken);
             if (teamsResult.message === 'success') {
                 setTeams(teamsResult.data);
             }
 
             // Load users for admin selection
-            const { getUsersListAction } = await import('@/app/admin-actions');
+            const { getUsersListAction } = await import('@/features/admin/actions/admin-actions');
             const usersResult = await getUsersListAction(accessToken);
             if (usersResult.message === 'success') {
                 setUsers(usersResult.data.filter(u => u.role === 'admin' || u.role === 'super_admin'));
@@ -118,7 +118,7 @@ export default function TeamsPage() {
                 accessToken = session.accessToken;
             }
 
-            const { deleteTeamAction } = await import('@/app/admin-actions');
+            const { deleteTeamAction } = await import('@/features/admin/actions/admin-actions');
             const result = await deleteTeamAction(team.id, accessToken);
 
             if (result.message === 'success') {
@@ -153,7 +153,7 @@ export default function TeamsPage() {
             }
 
             if (isEditOpen && selectedTeam) {
-                const { updateTeamAction } = await import('@/app/admin-actions');
+                const { updateTeamAction } = await import('@/features/admin/actions/admin-actions');
                 const result = await updateTeamAction(selectedTeam.id, teamName, teamAdminId, accessToken);
 
                 if (result.message === 'success') {
@@ -164,7 +164,7 @@ export default function TeamsPage() {
                     toast({ title: "Error", description: result.message, variant: "destructive" });
                 }
             } else {
-                const { createTeamAction } = await import('@/app/admin-actions');
+                const { createTeamAction } = await import('@/features/admin/actions/admin-actions');
                 const result = await createTeamAction(teamName, teamAdminId, accessToken);
 
                 if (result.message === 'success') {

@@ -13,17 +13,17 @@ import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals
 import { performance } from 'perf_hooks';
 
 // Import the modules first
-import { bulkSchedule } from '@/services/scheduling-service';
-import { getAnalyticsForTimeRange, TimeRangePreset } from '@/services/analytics-service';
+import { bulkSchedule } from '@/services/publishing/scheduling-service';
+import { getAnalyticsForTimeRange, TimeRangePreset } from '@/services/analytics/analytics-service';
 import { ContentCalendar } from '@/components/content-calendar';
 import { AnalyticsDashboard } from '@/components/analytics-dashboard';
 
 // Mock the services and components
-jest.mock('@/services/scheduling-service', () => ({
+jest.mock('@/services/publishing/scheduling-service', () => ({
     bulkSchedule: jest.fn(),
 }));
 
-jest.mock('@/services/analytics-service', () => ({
+jest.mock('@/services/analytics/analytics-service', () => ({
     getAnalyticsForTimeRange: jest.fn(),
     TimeRangePreset: {
         LAST_7_DAYS: '7d',

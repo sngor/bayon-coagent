@@ -3,7 +3,7 @@
 import React, { useMemo, useCallback, forwardRef } from 'react';
 import { List } from 'react-window';
 import type { ListChildComponentProps } from 'react-window';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { DraggableContentItem } from '@/components/content-calendar';
 import {
     ScheduledContent,

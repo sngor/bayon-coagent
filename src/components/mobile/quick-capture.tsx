@@ -4,7 +4,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Camera, X, RotateCcw, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { TOUCH_FRIENDLY_CLASSES } from '@/lib/mobile-optimization';
 
 export interface CapturedPhoto {

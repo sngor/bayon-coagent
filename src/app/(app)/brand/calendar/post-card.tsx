@@ -28,7 +28,7 @@ import {
     ExternalLink,
     BarChart2
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 

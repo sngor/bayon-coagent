@@ -39,7 +39,7 @@ import {
 } from '@/components/ui/dialog';
 
 import { useFavorites, type FavoriteItem } from '@/hooks/use-favorites';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { toast } from '@/hooks/use-toast';
 
 // Icon mapping

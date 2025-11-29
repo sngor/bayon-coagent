@@ -22,7 +22,7 @@ import {
     checkPlatformConnections,
     PublishingPreview,
     PublishingStatus,
-} from '@/app/social-publishing-actions';
+} from '@/features/integrations/actions/social-publishing-actions';
 import {
     Dialog,
     DialogContent,
@@ -38,7 +38,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Facebook, Instagram, Linkedin, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 interface SocialPublishingDialogProps {
     listing: Listing;

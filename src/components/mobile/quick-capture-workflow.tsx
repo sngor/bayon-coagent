@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { QuickCapture, type CapturedPhoto } from './quick-capture';
 import { PhotoDescriptionDisplay, type PhotoDescription } from './photo-description-display';
-import { uploadCapturedPhotoAction, generatePhotoDescriptionAction } from '@/app/mobile-actions';
+import { uploadCapturedPhotoAction, generatePhotoDescriptionAction } from '@/features/client-dashboards/actions/mobile-actions';
 import { useToast } from '@/hooks/use-toast';
 import { OfflineSyncManager } from '@/lib/offline-sync-manager';
 

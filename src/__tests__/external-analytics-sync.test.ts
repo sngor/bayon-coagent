@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from '@jest/globals';
 import fc from 'fast-check';
-import { syncExternalAnalytics } from '@/services/analytics-service';
+import { syncExternalAnalytics } from '@/services/analytics/analytics-service';
 import { PublishChannelType } from '@/lib/content-workflow-types';
 
 describe('External Analytics Sync', () => {

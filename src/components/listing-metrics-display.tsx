@@ -33,7 +33,7 @@ import {
     Activity,
     ArrowRightLeft,
 } from 'lucide-react';
-import { getAggregatedMetrics } from '@/app/performance-metrics-actions';
+import { getAggregatedMetrics } from '@/services/monitoring/performance-metrics-actions';
 import { AggregatedMetrics, TimePeriod } from '@/lib/performance-metrics-types';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -149,7 +149,7 @@ export function ListingMetricsDisplay({
         if (!metrics) return;
         setIsAnalyzing(true);
         try {
-            const { analyzeMetrics } = await import('@/app/performance-metrics-actions');
+            const { analyzeMetrics } = await import('@/services/monitoring/performance-metrics-actions');
             const result = await analyzeMetrics(metrics);
             if (result.analysis) {
                 setAnalysis(result.analysis);

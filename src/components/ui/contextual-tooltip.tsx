@@ -9,7 +9,7 @@
 
 import * as React from "react";
 import { X, HelpCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/common";
 import {
     Tooltip,
     TooltipContent,

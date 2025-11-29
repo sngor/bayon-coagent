@@ -7,7 +7,7 @@
 
 import Image, { ImageProps } from 'next/image';
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 interface OptimizedImageProps extends Omit<ImageProps, 'placeholder' | 'blurDataURL'> {
     /**

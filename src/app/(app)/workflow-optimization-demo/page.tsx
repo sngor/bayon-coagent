@@ -3,7 +3,7 @@
 import { StandardPageLayout } from '@/components/standard';
 import { WorkflowOptimizationDemo } from '@/components/workflow-optimization-demo';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { Profile } from '@/lib/types';
+import type { Profile } from '@/lib/types/common/common';
 
 export default function WorkflowOptimizationDemoPage() {
     // Sample profile for demo

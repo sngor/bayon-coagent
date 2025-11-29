@@ -10,7 +10,7 @@ import { NewsFilters } from '@/components/news-filters';
 import { NewsServiceMonitor } from '@/components/news-service-monitor';
 import { Newspaper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { NEWS_CONFIG } from '@/lib/news-config';
+import { NEWS_CONFIG } from '@/lib/constants/news-config';
 
 import { useToast } from '@/hooks/use-toast';
 
@@ -30,7 +30,7 @@ export default function MarketNewsPage() {
     useEffect(() => {
         const prefetchNews = async () => {
             try {
-                const { newsService } = await import('@/services/news-service');
+                const { newsService } = await import('@/services/analytics/news-service');
                 await newsService.prefetchCommonLocations();
             } catch (error) {
                 console.warn('News prefetch failed:', error);

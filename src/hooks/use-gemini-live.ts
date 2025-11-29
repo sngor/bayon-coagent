@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { GoogleGenAI, Modality } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 
 export interface GeminiLiveConfig {
     model?: string;
     systemInstruction?: string;
-    responseModalities?: Modality[];
+    responseModalities?: string[];
     voiceName?: string;
     onMessage?: (message: any) => void;
 }
@@ -88,73 +88,151 @@ export function useGeminiLive(): GeminiLiveHookReturn {
 
             const ai = new GoogleGenAI({ apiKey });
 
+            // Minimal config to test connection
             const sessionConfig: any = {
-                model: config?.model || 'gemini-2.0-flash-exp',
-                config: {
-                    responseModalities: config?.responseModalities || [Modality.AUDIO],
-                    systemInstruction: config?.systemInstruction || 'You are a helpful assistant.',
-                },
+                model: 'gemini-2.0-flash-exp',
             };
 
-            // Add voice configuration if provided
-            if (config?.voiceName) {
-                sessionConfig.config.speechConfig = {
-                    voiceConfig: {
-                        prebuiltVoiceConfig: {
-                            voiceName: config.voiceName,
+            console.log('Connecting to Gemini Live with minimal config...');
+            console.log('Config:', JSON.stringify(sessionConfig, null, 2));
+
+            // Manual WebSocket implementation to bypass SDK issues
+            const host = 'generativelanguage.googleapis.com';
+            const path = '/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent';
+            const url = `wss://${host}${path}?key=${apiKey}`;
+
+            console.log('Connecting to Gemini Live via manual WebSocket:', url);
+
+            const ws = new WebSocket(url);
+
+            ws.onopen = () => {
+                console.log('Gemini Live WebSocket opened');
+                setIsConnected(true);
+
+                // Send initial setup message
+                const setupMessage = {
+                    setup: {
+                        model: config?.model || 'models/gemini-2.0-flash-exp',
+                        generationConfig: {
+                            responseModalities: config?.responseModalities || ['AUDIO'],
+                            speechConfig: config?.voiceName ? {
+                                voiceConfig: {
+                                    prebuiltVoiceConfig: {
+                                        voiceName: config.voiceName,
+                                    },
+                                },
+                            } : undefined,
                         },
-                    },
+                        systemInstruction: config?.systemInstruction ? {
+                            parts: [{ text: config.systemInstruction }]
+                        } : undefined,
+                    }
                 };
-            }
 
-            const session = await ai.live.connect({
-                ...sessionConfig,
-                callbacks: {
-                    onopen: () => {
-                        console.log('Gemini Live session opened');
-                        setIsConnected(true);
-                    },
-                    onmessage: (message: any) => {
-                        console.log('Received message:', message);
+                console.log('Sending setup message:', JSON.stringify(setupMessage, null, 2));
+                ws.send(JSON.stringify(setupMessage));
+            };
 
-                        // Call the onMessage callback if provided
-                        if (config?.onMessage) {
-                            config.onMessage(message);
-                        }
+            ws.onmessage = async (event) => {
+                try {
+                    let data;
+                    if (event.data instanceof Blob) {
+                        data = JSON.parse(await event.data.text());
+                    } else {
+                        data = JSON.parse(event.data);
+                    }
 
-                        // Handle audio response
-                        if (message.data) {
-                            const buffer = Buffer.from(message.data, 'base64');
-                            const int16Array = new Int16Array(
-                                buffer.buffer,
-                                buffer.byteOffset,
-                                buffer.byteLength / Int16Array.BYTES_PER_ELEMENT
-                            );
+                    // console.log('Received message:', data);
 
-                            if (isPlayingRef.current) {
-                                audioQueueRef.current.push(int16Array);
-                            } else {
-                                playAudioChunk(int16Array);
+                    // Call the onMessage callback if provided
+                    if (config?.onMessage) {
+                        config.onMessage(data);
+                    }
+
+                    // Handle serverContent (audio)
+                    if (data.serverContent?.modelTurn?.parts) {
+                        for (const part of data.serverContent.modelTurn.parts) {
+                            if (part.inlineData && part.inlineData.mimeType.startsWith('audio/')) {
+                                const base64Data = part.inlineData.data;
+                                try {
+                                    const binaryString = window.atob(base64Data);
+                                    const len = binaryString.length;
+                                    const bytes = new Uint8Array(len);
+                                    for (let i = 0; i < len; i++) {
+                                        bytes[i] = binaryString.charCodeAt(i);
+                                    }
+                                    const int16Array = new Int16Array(bytes.buffer);
+
+                                    if (isPlayingRef.current) {
+                                        audioQueueRef.current.push(int16Array);
+                                    } else {
+                                        playAudioChunk(int16Array);
+                                    }
+                                } catch (e) {
+                                    console.error('Error processing audio data:', e);
+                                }
                             }
                         }
-                    },
-                    onerror: (e: any) => {
-                        console.error('Gemini Live error:', e);
-                        setError(e.message || 'Connection error');
-                        setIsConnected(false);
-                    },
-                    onclose: (e: any) => {
-                        console.log('Gemini Live session closed:', e.reason);
-                        setIsConnected(false);
-                        setIsRecording(false);
-                        setIsSpeaking(false);
-                    },
-                },
-            });
+                    }
 
-            sessionRef.current = session;
+                    // Handle turnComplete
+                    if (data.serverContent?.turnComplete) {
+                        // console.log('Turn complete');
+                    }
+                } catch (e) {
+                    console.error('Error parsing message:', e);
+                }
+            };
+
+            ws.onerror = (e) => {
+                console.error('Gemini Live WebSocket error:', e);
+                setError('Connection failed. Please check your network connection and API key.');
+                setIsConnected(false);
+            };
+
+            ws.onclose = (e) => {
+                console.log('Gemini Live WebSocket closed. Code:', e.code, 'Reason:', e.reason);
+                setIsConnected(false);
+                setIsRecording(false);
+                setIsSpeaking(false);
+            };
+
+            // Store the WebSocket instance in the ref (casting to any to match existing type)
+            sessionRef.current = {
+                close: () => ws.close(),
+                sendRealtimeInput: (input: any) => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        const message: any = {
+                            clientContent: {
+                                turns: [{
+                                    parts: []
+                                }],
+                                turnComplete: false
+                            }
+                        };
+
+                        if (input.text) {
+                            message.clientContent.turns[0].parts.push({ text: input.text });
+                            message.clientContent.turnComplete = true;
+                        } else if (input.audio) {
+                            message.realtimeInput = {
+                                mediaChunks: [{
+                                    mimeType: input.audio.mimeType,
+                                    data: input.audio.data
+                                }]
+                            };
+                            delete message.clientContent;
+                        }
+
+                        ws.send(JSON.stringify(message));
+                    }
+                }
+            };
         } catch (err: any) {
             console.error('Failed to connect to Gemini Live:', err);
+            if (err instanceof Error) {
+                console.error('Stack:', err.stack);
+            }
             setError(err.message || 'Failed to connect');
             setIsConnected(false);
         }
@@ -220,15 +298,22 @@ export function useGeminiLive(): GeminiLiveHookReturn {
 
                 const inputData = e.inputBuffer.getChannelData(0);
                 const int16Data = float32ToInt16(inputData);
-                const base64Audio = Buffer.from(int16Data.buffer).toString('base64');
 
-                // Send audio chunk to Gemini Live
-                sessionRef.current.sendRealtimeInput({
-                    audio: {
-                        data: base64Audio,
-                        mimeType: 'audio/pcm;rate=16000',
-                    },
-                });
+                // Convert to base64 using FileReader (more efficient/robust)
+                const blob = new Blob([int16Data.buffer as any], { type: 'application/octet-stream' });
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64String = (reader.result as string).split(',')[1];
+                    if (sessionRef.current) {
+                        sessionRef.current.sendRealtimeInput({
+                            audio: {
+                                data: base64String,
+                                mimeType: 'audio/pcm;rate=16000',
+                            },
+                        });
+                    }
+                };
+                reader.readAsDataURL(blob);
             };
 
             source.connect(processor);

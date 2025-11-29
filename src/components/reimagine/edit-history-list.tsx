@@ -40,9 +40,9 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { StandardErrorDisplay, StandardLoadingSpinner } from '@/components/standard';
-import { getEditHistoryAction, deleteEditAction, getDownloadUrlAction, updateEditNameAction } from '@/app/reimagine-actions';
+import { getEditHistoryAction, deleteEditAction, getDownloadUrlAction, updateEditNameAction } from '@/features/intelligence/actions/reimagine-actions';
 import { OptimizedImage } from './optimized-image';
 import { DeleteConfirmationModal } from './delete-confirmation-modal';
 import { ImageViewerModal } from './image-viewer-modal';

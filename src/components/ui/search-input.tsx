@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { useDebouncedCallback } from '@/lib/interaction-optimization';
 
 export interface SearchInputProps

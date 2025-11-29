@@ -13,7 +13,7 @@ import {
     updateSharedTemplate,
     unshareTemplate,
     getTemplateAnalytics
-} from '@/services/template-service';
+} from '@/services/publishing/template-service';
 import { ContentCategory, TemplatePermissions } from '@/lib/content-workflow-types';
 
 describe('Template Sharing', () => {

@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Check, Sparkles } from 'lucide-react';
-import { SUBSCRIPTION_PLANS, SubscriptionPlan } from '@/lib/stripe-config';
-import { cn } from '@/lib/utils';
+import { SUBSCRIPTION_PLANS, SubscriptionPlan } from '@/lib/constants/stripe-config';
+import { cn } from '@/lib/utils/common';
 
 interface StripePricingProps {
     onSelectPlan: (plan: SubscriptionPlan) => void;

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { UserPlus, Check, Loader2, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { checkClientAccountExists, convertLinkToAccount } from '@/app/client-dashboard-actions';
+import { checkClientAccountExists, convertLinkToAccount } from '@/features/client-dashboards/actions/client-dashboard-actions';
 
 interface CreateAccountBannerProps {
     token: string;

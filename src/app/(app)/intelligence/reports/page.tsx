@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
-import { filterBySearch, highlightMatches } from '@/lib/search-utils';
+import { filterBySearch, highlightMatches } from '@/lib/utils/search-utils';
 import {
     Card,
     CardContent,
@@ -20,7 +20,7 @@ import {
 import { StandardSkeleton } from '@/components/ui/reusable';
 import { Search, Calendar, FileText, Plus, Library } from 'lucide-react';
 import { useUser } from '@/aws/auth';
-import type { ResearchReport } from '@/lib/types';
+import type { ResearchReport } from '@/lib/types/common/common';
 import { FavoritesButton } from '@/components/favorites-button';
 import { getPageConfig } from '@/components/dashboard-quick-actions';
 import Link from 'next/link';

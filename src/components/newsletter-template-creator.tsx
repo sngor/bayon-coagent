@@ -29,8 +29,8 @@ import {
     exportNewsletterTemplateAction,
     testESPCompatibilityAction,
     validateSpamScoreAction
-} from '@/app/content-workflow-actions';
-import type { NewsletterTemplateConfig, NewsletterSection } from '@/services/template-service';
+} from '@/features/content-engine/actions/content-workflow-actions';
+import type { NewsletterTemplateConfig, NewsletterSection } from '@/services/publishing/template-service';
 
 interface ValidationResult {
     type: 'error' | 'warning' | 'info';

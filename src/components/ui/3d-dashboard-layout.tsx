@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 /**
  * 3D Dashboard Layout with Interactive Animations

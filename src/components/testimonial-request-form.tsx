@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { TestimonialRequest } from "@/lib/types";
+import { TestimonialRequest } from "@/lib/types/common/common";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

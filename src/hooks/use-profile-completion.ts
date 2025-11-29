@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { Profile } from '@/lib/types';
+import type { Profile } from '@/lib/types/common/common';
 
 interface ProfileField {
   key: keyof Profile;

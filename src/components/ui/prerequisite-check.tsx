@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle2, Circle, AlertCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import type { Prerequisite } from '@/lib/user-flow';
 
 interface PrerequisiteCheckProps {

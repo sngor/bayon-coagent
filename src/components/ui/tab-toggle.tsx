@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsList as TabsList, AnimatedTabsTrigger as TabsTrigger } from '@/components/ui/animated-tabs';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 export interface TabToggleItem {
     value: string;

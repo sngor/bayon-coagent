@@ -1,6 +1,6 @@
 'use client';
 
-import { FileText, File, MoreVertical, Eye, Download, Trash2, Edit, AlertTriangle } from 'lucide-react';
+import { FileText, File, MoreVertical, Eye, Download, Trash2, Edit, Link as LinkIcon, Youtube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -9,18 +9,20 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 export interface Document {
     id: string;
     fileName: string;
     fileType: string;
-    fileSize: number;
+    fileSize?: number; // Optional for links
     uploadDate: string;
     status: 'pending' | 'processing' | 'indexed' | 'failed';
     title?: string;
     tags?: string[];
     accessCount?: number;
+    url?: string; // For links
+    type?: 'file' | 'link';
 }
 
 interface DocumentCardProps {
@@ -39,6 +41,12 @@ export function DocumentCard({
     onDownload,
 }: DocumentCardProps) {
     const getFileIcon = (fileType: string) => {
+        if (document.type === 'link') {
+            if (document.url?.includes('youtube.com') || document.url?.includes('youtu.be')) {
+                return Youtube;
+            }
+            return LinkIcon;
+        }
         if (fileType === 'pdf') return FileText;
         return File;
     };
@@ -55,7 +63,8 @@ export function DocumentCard({
         return <Badge variant={config.variant}>{config.label}</Badge>;
     };
 
-    const formatFileSize = (bytes: number) => {
+    const formatFileSize = (bytes?: number) => {
+        if (bytes === undefined) return null;
         if (bytes < 1024) return `${bytes} B`;
         if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
         return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
@@ -90,9 +99,19 @@ export function DocumentCard({
                 <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-semibold truncate">
-                            {document.title || document.fileName}
+                            {document.type === 'link' ? (
+                                <a href={document.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                                    {document.title || document.fileName}
+                                </a>
+                            ) : (
+                                document.title || document.fileName
+                            )}
                         </h3>
-                        {document.title && (
+                        {document.type === 'link' ? (
+                            <a href={document.url} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground truncate block hover:underline">
+                                {document.url}
+                            </a>
+                        ) : document.title && (
                             <p className="text-xs text-muted-foreground truncate">
                                 {document.fileName}
                             </p>
@@ -103,8 +122,12 @@ export function DocumentCard({
 
                 {/* Metadata */}
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span>{formatFileSize(document.fileSize)}</span>
-                    <span>•</span>
+                    {document.type !== 'link' && (
+                        <>
+                            <span>{formatFileSize(document.fileSize)}</span>
+                            <span>•</span>
+                        </>
+                    )}
                     <span>{formatDate(document.uploadDate)}</span>
                     {document.accessCount !== undefined && document.accessCount > 0 && (
                         <>

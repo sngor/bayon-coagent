@@ -21,7 +21,7 @@ import {
     ArrowRight,
     Clock,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/common";
 import { Button } from "./button";
 import { Progress } from "./progress";
 import { useTooltipContext } from "@/contexts/tooltip-context";

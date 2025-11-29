@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { TOUCH_FRIENDLY_CLASSES } from '@/lib/mobile-optimization';
 import type { VoiceToContentOutput } from '@/ai/schemas/voice-to-content-schemas';
 

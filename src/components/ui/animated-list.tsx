@@ -7,7 +7,7 @@
 
 import * as React from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { staggerContainer, staggerItem, listContainer, listItem } from '@/lib/animations';
 
 export interface AnimatedListProps extends Omit<HTMLMotionProps<'div'>, 'children'> {

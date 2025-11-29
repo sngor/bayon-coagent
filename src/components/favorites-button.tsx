@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Pin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { useFavorites, type FavoriteItem } from '@/hooks/use-favorites';
 import { toast } from '@/hooks/use-toast';
 

@@ -161,7 +161,7 @@ import {
 import { getValidOAuthTokens, storeOAuthTokens } from '@/aws/dynamodb/oauth-tokens';
 import { getAlertDataAccess } from '@/lib/alerts/data-access';
 import type { AlertSettings, TargetArea, NeighborhoodProfile, AlertsResponse } from '@/lib/alerts/types';
-import type { Profile } from '@/lib/types';
+import type { Profile } from '@/lib/types/common/common';
 import { aggregateNeighborhoodData } from '@/lib/alerts/neighborhood-profile-data-aggregation';
 import { v4 as uuidv4 } from 'uuid';
 import { FeatureToggle } from '@/lib/feature-toggles';
@@ -2891,7 +2891,7 @@ export async function getRealEstateNewsAction(prevState: any, formData: FormData
 
   try {
     // Use the news service for better caching and performance
-    const { newsService } = await import('@/services/news-service');
+    const { newsService } = await import('@/services/analytics/news-service');
     const result = await newsService.getNews({ location: validatedFields.data.location });
 
     return {

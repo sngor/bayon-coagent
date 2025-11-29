@@ -17,7 +17,7 @@ import {
     uploadTestimonialPhoto,
     deleteAllTestimonialPhotos,
 } from '../s3/testimonial-storage';
-import { Testimonial } from '@/lib/types';
+import { Testimonial } from '@/lib/types/common/common';
 import { QueryOptions, QueryResult } from './types';
 
 /**

@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
 import { useToast } from "@/hooks/use-toast";
-import { createAnnouncementAction, getAnnouncementsAction } from '@/app/admin-actions';
+import { createAnnouncementAction, getAnnouncementsAction } from '@/features/admin/actions/admin-actions';
 import { Megaphone, Plus, Calendar, User, AlertCircle } from 'lucide-react';
 
 export default function AdminAnnouncementsPage() {

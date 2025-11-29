@@ -10,7 +10,7 @@ import {
 } from '@stripe/react-stripe-js';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
-import { STRIPE_CONFIG } from '@/lib/stripe-config';
+import { STRIPE_CONFIG } from '@/lib/constants/stripe-config';
 import { useToast } from '@/hooks/use-toast';
 
 const stripePromise = STRIPE_CONFIG.publishableKey

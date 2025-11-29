@@ -13,7 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Save, Users } from 'lucide-react';
-import { createDashboard } from '@/app/client-dashboard-actions';
+import { createDashboard } from '@/features/client-dashboards/actions/client-dashboard-actions';
 import { IntelligentEmptyState } from '@/components/ui/intelligent-empty-state';
 
 export default function NewClientDashboardPage() {

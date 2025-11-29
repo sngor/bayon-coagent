@@ -58,10 +58,10 @@ To display service statuses in the Settings page UI:
 
 ## Documentation
 
-- **`COMPLETION_SUMMARY.md`** - What was accomplished
-- **`SERVICE_CHECKS_IMPLEMENTATION.md`** - Technical details
-- **`SETTINGS_PAGE_UPDATE_GUIDE.md`** - UI integration guide
-- **`IMPLEMENTATION_SUMMARY.md`** - Detailed overview
+- **`COMPLETION_SUMMARY.md`** - [What was accomplished](../archive/logs/COMPLETION_SUMMARY.md)
+- **`SERVICE_CHECKS_IMPLEMENTATION.md`** - [Technical details](./SERVICE_CHECKS_IMPLEMENTATION.md)
+- **`SETTINGS_PAGE_UPDATE_GUIDE.md`** - [UI integration guide](../guides/SETTINGS_PAGE_UPDATE_GUIDE.md)
+- **`IMPLEMENTATION_SUMMARY.md`** - [Detailed overview](../archive/logs/IMPLEMENTATION_SUMMARY.md)
 
 ## That's It!
 

@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { HubTabsProps } from './types';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { Badge } from '@/components/ui/badge';
 import { useRef, useMemo, useCallback } from 'react';
 

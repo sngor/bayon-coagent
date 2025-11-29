@@ -58,14 +58,14 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import Link from 'next/link';
 import Image from 'next/image';
 import { type OAuthTokenData } from '@/aws/dynamodb';
-import { getOAuthTokensAction } from '@/app/oauth-actions';
+import { getOAuthTokensAction } from '@/features/integrations/actions/oauth-actions';
 import { useUser } from '@/aws/auth';
 import { useItem, useQuery } from '@/aws/dynamodb/hooks';
-import type { Profile, Review, BrandAudit as BrandAuditType, ReviewAnalysis } from '@/lib/types';
+import type { Profile, Review, BrandAudit as BrandAuditType, ReviewAnalysis } from '@/lib/types/common/common';
 import { runNapAuditAction, getZillowReviewsAction, analyzeReviewSentimentAction, analyzeMultipleReviewsAction } from '@/app/actions';
 import { toast } from '@/hooks/use-toast';
 import { JsonLdDisplay } from '@/components/json-ld-display';

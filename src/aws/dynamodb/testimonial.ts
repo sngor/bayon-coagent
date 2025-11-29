@@ -19,5 +19,5 @@ export {
     deleteTestimonialWithAssets,
 } from './testimonial-service';
 
-export type { Testimonial } from '@/lib/types';
+export type { Testimonial } from '@/lib/types/common/common';
 export type { QueryOptions, QueryResult } from './types';

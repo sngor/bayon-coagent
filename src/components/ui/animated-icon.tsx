@@ -7,7 +7,7 @@
 
 import * as React from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { iconBounce, iconPulse, iconSpin, iconShake } from '@/lib/animations';
 
 export interface AnimatedIconProps extends Omit<HTMLMotionProps<'div'>, 'children'> {

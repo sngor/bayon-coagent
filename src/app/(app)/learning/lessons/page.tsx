@@ -16,12 +16,12 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, TrendingUp, Handshake, Award, BookOpen, Clock, Target, Star, Trophy, Zap, Play, ChevronRight, Sparkles } from 'lucide-react';
 import { useUser } from '@/aws/auth';
 import { useQuery } from '@/aws/dynamodb/hooks';
-import type { TrainingProgress } from '@/lib/types';
+import type { TrainingProgress } from '@/lib/types/common/common';
 import { saveTrainingProgressAction } from '@/app/actions';
-import { marketingModules, closingModules, professionalExcellenceModules, allModules } from '@/lib/training-data';
+import { marketingModules, closingModules, professionalExcellenceModules, allModules } from '@/lib/constants/training-data';
 import { Quiz } from '@/components/quiz';
 // Removed framer-motion to improve performance
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { FavoritesButton } from '@/components/favorites-button';
 import { getPageConfig } from '@/components/dashboard-quick-actions';
 

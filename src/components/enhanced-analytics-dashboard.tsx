@@ -61,7 +61,7 @@ import {
     AlertTriangle,
     CheckCircle,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 // Import our 3D components
 import { Dashboard3DLayout, Grid3DLayout, Section3D } from '@/components/ui/3d-dashboard-layout';
@@ -76,7 +76,7 @@ import {
     getROIAnalytics,
     exportROIData,
     TimeRangePreset,
-} from '@/services/analytics-service';
+} from '@/services/analytics/analytics-service';
 import {
     TypeAnalytics,
     ABTestResults,

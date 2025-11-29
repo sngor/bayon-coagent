@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { LucideIcon, X, Lightbulb, ArrowRight, CheckCircle } from 'lucide-react';
 import { Button } from './button';
 import { Badge } from './badge';

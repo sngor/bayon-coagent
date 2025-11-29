@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Copy, Check, Save, Download, Share2, Trash2, Edit, Plus } from 'lucide-react';
 import { LoadingDots } from '@/components/ui/loading-dots';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 interface ActionButtonsProps {
     // Primary action

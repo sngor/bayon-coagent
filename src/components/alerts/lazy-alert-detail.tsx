@@ -11,7 +11,7 @@ import { useState, useCallback } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import type { Alert as AlertType } from '@/lib/alerts/types';
 
 interface LazyAlertDetailProps {

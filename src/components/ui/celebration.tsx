@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/common";
 import { CheckCircle2, Sparkles, Star, Trophy, Zap } from "lucide-react";
 
 interface ConfettiPiece {

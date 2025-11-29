@@ -10,7 +10,7 @@ import { LoadingDots } from '@/components/ui/loading-dots';
 import { generateTrainingPlanAction, saveTrainingPlanAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { FavoritesButton } from '@/components/favorites-button';
 import { getPageConfig } from '@/components/dashboard-quick-actions';
 

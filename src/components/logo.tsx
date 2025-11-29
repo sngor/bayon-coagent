@@ -1,7 +1,7 @@
 
 'use client';
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/common";
 import { useSidebar } from "./ui/sidebar";
 
 export function Logo({ className }: { className?: string }) {

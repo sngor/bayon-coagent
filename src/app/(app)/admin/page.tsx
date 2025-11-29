@@ -19,7 +19,7 @@ import {
     TrendingUp,
     Megaphone
 } from 'lucide-react';
-import { getAdminDashboardStats, getRecentActivityAction } from '@/app/admin-actions';
+import { getAdminDashboardStats, getRecentActivityAction } from '@/features/admin/actions/admin-actions';
 import { useToast } from '@/hooks/use-toast';
 
 export default function AdminDashboardPage() {

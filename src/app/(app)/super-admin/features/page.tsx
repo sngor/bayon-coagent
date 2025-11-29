@@ -51,7 +51,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { createFeatureAction, updateFeatureAction, toggleFeatureAction, deleteFeatureAction } from '@/app/admin-actions';
+import { createFeatureAction, updateFeatureAction, toggleFeatureAction, deleteFeatureAction } from '@/features/admin/actions/admin-actions';
 
 export default function AdminFeaturesPage() {
     const { features } = useFeatureToggles();

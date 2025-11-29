@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { validateDashboardLink } from '@/app/client-dashboard-actions';
+import { validateDashboardLink } from '@/features/client-dashboards/actions/client-dashboard-actions';
 
 describe('Client Dashboard Link Validation', () => {
     describe('validateDashboardLink', () => {

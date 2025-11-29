@@ -22,7 +22,7 @@ import {
     Zap,
     AlertCircle
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { performanceMonitor } from '@/lib/alerts/query-optimization';
 import { alertCache } from '@/lib/alerts/cache';
 

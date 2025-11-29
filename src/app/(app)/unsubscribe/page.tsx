@@ -61,7 +61,7 @@ export default function UnsubscribePage() {
             const formData = new FormData();
             formData.append('token', token!);
 
-            const { validateUnsubscribeTokenAction } = await import('@/app/unsubscribe-actions');
+            const { validateUnsubscribeTokenAction } = await import('@/services/notifications/unsubscribe-actions');
             const result = await validateUnsubscribeTokenAction(null, formData);
 
             if (result.data?.valid) {
@@ -94,7 +94,7 @@ export default function UnsubscribePage() {
                 formData.append('alertTypes', JSON.stringify(selectedTypes));
             }
 
-            const { processUnsubscribeAction } = await import('@/app/unsubscribe-actions');
+            const { processUnsubscribeAction } = await import('@/services/notifications/unsubscribe-actions');
             const result = await processUnsubscribeAction(null, formData);
 
             if (result.data?.unsubscribed) {

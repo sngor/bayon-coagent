@@ -10,7 +10,7 @@ import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsL
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calculator, DollarSign, Percent, Calendar, Home, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Copy, Share, Plus, X, BarChart3, Settings, FileText } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { toast } from '@/hooks/use-toast';
 
 interface MortgageCalculation {

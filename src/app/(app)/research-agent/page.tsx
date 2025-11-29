@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
 import { NoResultsEmptyState } from '@/components/ui/empty-states';
 import { StandardEmptyState } from '@/components/standard/empty-state';
-import { filterBySearch, highlightMatches } from '@/lib/search-utils';
+import { filterBySearch, highlightMatches } from '@/lib/utils/search-utils';
 import {
   Card,
   CardContent,
@@ -26,7 +26,7 @@ import { type RunResearchAgentOutput } from '@/aws/bedrock/flows';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
 import { saveResearchReportAction } from '@/app/actions';
-import type { ResearchReport } from '@/lib/types';
+import type { ResearchReport } from '@/lib/types/common/common';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FavoritesButton } from '@/components/favorites-button';

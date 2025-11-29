@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { PageHeader, PageHeaderProps } from '@/components/ui/page-header';
 import { motion } from 'framer-motion';
 

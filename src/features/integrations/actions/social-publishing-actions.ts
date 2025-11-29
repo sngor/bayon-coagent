@@ -23,7 +23,7 @@ import { createContentOptimizer } from '@/integrations/social/content-optimizer'
 import { createImageOptimizer } from '@/integrations/social/image-optimizer';
 import { Platform, SocialPost, PublishResult } from '@/integrations/social/types';
 import { Listing } from '@/integrations/mls/types';
-import { schedulingService } from '@/services/scheduling-service';
+import { schedulingService } from '@/services/publishing/scheduling-service';
 import {
     ScheduledContent,
     PublishChannel,
@@ -197,7 +197,7 @@ export async function publishListing(
         const oauthManager = getOAuthConnectionManager();
 
         // Import enhanced publishing service
-        const { createEnhancedPublishingService } = await import('@/services/enhanced-publishing-service');
+        const { createEnhancedPublishingService } = await import('@/services/publishing/enhanced-publishing-service');
         const enhancedPublisher = createEnhancedPublishingService();
 
         // Publishing queue - process platforms sequentially with enhanced error handling
@@ -534,7 +534,7 @@ export async function publishScheduledContent(
         }
 
         // Use enhanced publishing service with comprehensive error handling
-        const { createEnhancedPublishingService } = await import('@/services/enhanced-publishing-service');
+        const { createEnhancedPublishingService } = await import('@/services/publishing/enhanced-publishing-service');
         const enhancedPublisher = createEnhancedPublishingService();
 
         const result = await enhancedPublisher.publishScheduledContent(scheduledContent, user.id);
@@ -900,7 +900,7 @@ export async function getCircuitBreakerStatus(): Promise<{
             return { success: false, message: 'Not authenticated' };
         }
 
-        const { createEnhancedPublishingService } = await import('@/services/enhanced-publishing-service');
+        const { createEnhancedPublishingService } = await import('@/services/publishing/enhanced-publishing-service');
         const enhancedPublisher = createEnhancedPublishingService();
 
         const status = enhancedPublisher.getCircuitBreakerStatus();
@@ -939,7 +939,7 @@ export async function resetCircuitBreaker(
         //     return { success: false, message: 'Admin permissions required' };
         // }
 
-        const { createEnhancedPublishingService } = await import('@/services/enhanced-publishing-service');
+        const { createEnhancedPublishingService } = await import('@/services/publishing/enhanced-publishing-service');
         const enhancedPublisher = createEnhancedPublishingService();
 
         enhancedPublisher.resetCircuitBreaker(platform);
@@ -999,7 +999,7 @@ export async function publishContentToChannel(params: {
         }
 
         // Import enhanced publishing service
-        const { createEnhancedPublishingService } = await import('@/services/enhanced-publishing-service');
+        const { createEnhancedPublishingService } = await import('@/services/publishing/enhanced-publishing-service');
         const enhancedPublisher = createEnhancedPublishingService();
 
         // Create a simplified post object

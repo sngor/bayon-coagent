@@ -18,7 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import { MapPin, Loader2, FileText, Globe, CheckCircle, Download } from 'lucide-react';
 import type { NeighborhoodProfile } from '@/lib/alerts/types';
-import type { Profile } from '@/lib/types';
+import type { Profile } from '@/lib/types/common/common';
 import { useUser } from '@/aws/auth';
 
 interface NeighborhoodProfileGeneratorProps {

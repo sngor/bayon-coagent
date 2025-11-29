@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
 import { Label } from '@/components/ui/label';
-import { filterBySearch, highlightMatches } from '@/lib/search-utils';
+import { filterBySearch, highlightMatches } from '@/lib/utils/search-utils';
 import {
   Card,
   CardContent,
@@ -29,7 +29,7 @@ import { type RunResearchAgentOutput } from '@/aws/bedrock/flows';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
 import { saveResearchReportAction } from '@/app/actions';
-import type { ResearchReport } from '@/lib/types';
+import type { ResearchReport } from '@/lib/types/common/common';
 import Link from 'next/link';
 import { marked } from 'marked';
 import { Badge } from '@/components/ui/badge';

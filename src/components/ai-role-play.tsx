@@ -19,7 +19,7 @@ import {
     sendRolePlayMessageAction,
     endRolePlayAction,
 } from '@/app/actions';
-import { rolePlayScenarios, type RolePlayScenario } from '@/lib/training-data';
+import { rolePlayScenarios, type RolePlayScenario } from '@/lib/constants/training-data';
 import type { RolePlayMessage } from '@/aws/bedrock/flows/role-play-flow';
 import { VoiceRolePlay } from '@/components/voice-role-play';
 import { CoachingMode } from '@/components/coaching-mode';

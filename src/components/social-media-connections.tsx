@@ -66,7 +66,7 @@ import {
     validateChannelAction,
     monitorConnectionHealthAction,
     runConnectionDiagnosticsAction,
-} from '@/app/social-oauth-actions';
+} from '@/features/integrations/actions/social-oauth-actions';
 import type { Platform, OAuthConnection } from '@/integrations/social/types';
 
 interface PlatformConfig {

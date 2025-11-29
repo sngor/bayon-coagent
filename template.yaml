@@ -29,17 +29,33 @@ Globals:
     Environment:
       Variables:
         NODE_ENV: !Ref Environment
-        COGNITO_USER_POOL_ID: !Ref UserPool
-        COGNITO_CLIENT_ID: !Ref UserPoolClient
-        DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
-        S3_BUCKET_NAME: !Ref StorageBucket
         BEDROCK_MODEL_ID: anthropic.claude-3-5-sonnet-20241022-v2:0
         BEDROCK_REGION: !Ref AWS::Region
-        XRAY_TRACING_ENABLED: true
+        XRAY_TRACING_ENABLED: "true"
         XRAY_SERVICE_NAME: !Sub bayon-coagent-${Environment}
-        EVENT_BUS_NAME: !Ref ApplicationEventBus
 
 Resources:
+  # ==========================================
+  # API Gateway Account Settings
+  # ==========================================
+  ApiGatewayAccount:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn: !GetAtt ApiGatewayLoggingRole.Arn
+
+  ApiGatewayLoggingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+
   # ==========================================
   # Cognito User Pool
   # ==========================================
@@ -574,6 +590,31 @@ Resources:
             Action: execute-api:Invoke
             Resource: "*"
 
+  MainHealthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref MainRestApi
+      ParentId: !GetAtt MainRestApi.RootResourceId
+      PathPart: health
+
+  MainHealthMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref MainRestApi
+      ResourceId: !Ref MainHealthResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: "{\"statusCode\": 200}"
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates:
+              application/json: "{\"status\": \"healthy\"}"
+      MethodResponses:
+        - StatusCode: 200
+
   # AI Processing Service API Gateway
   AiServiceApi:
     Type: AWS::ApiGateway::RestApi
@@ -617,12 +658,16 @@ Resources:
   # API Gateway Deployments and Stages
   MainApiDeployment:
     Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - MainHealthMethod
     Properties:
       RestApiId: !Ref MainRestApi
       Description: !Sub Main API deployment for ${Environment}
 
   MainApiStage:
     Type: AWS::ApiGateway::Stage
+    DependsOn:
+      - ApiGatewayAccount
     Properties:
       RestApiId: !Ref MainRestApi
       DeploymentId: !Ref MainApiDeployment
@@ -639,25 +684,30 @@ Resources:
           ThrottlingBurstLimit: !If [IsProduction, 2000, 200]
       AccessLogSetting:
         DestinationArn: !GetAtt ApiGatewayLogGroup.Arn
-        Format: >
-          {
-            "requestId": "$context.requestId",
-            "ip": "$context.identity.sourceIp",
-            "caller": "$context.identity.caller",
-            "user": "$context.identity.user",
-            "requestTime": "$context.requestTime",
-            "httpMethod": "$context.httpMethod",
-            "resourcePath": "$context.resourcePath",
-            "status": "$context.status",
-            "protocol": "$context.protocol",
-            "responseLength": "$context.responseLength",
-            "error.message": "$context.error.message",
-            "error.messageString": "$context.error.messageString",
-            "traceId": "$context.xrayTraceId",
-            "apiVersion": "$context.stage"
-          }
+        Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol","responseLength":"$context.responseLength","error.message":"$context.error.message","error.messageString":"$context.error.messageString","traceId":"$context.xrayTraceId","apiVersion":"$context.stage"}'
 
   # AI Service API Gateway Resources and Methods
+
+  AiServiceSuccessResponseModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      ContentType: application/json
+      Name: SuccessResponse
+      Schema:
+        $schema: http://json-schema.org/draft-04/schema#
+        title: Success Response
+        type: object
+        properties:
+          jobId:
+            type: string
+          status:
+            type: string
+          message:
+            type: string
+        required:
+          - jobId
+          - status
 
   # /jobs resource
   AiServiceJobsResource:
@@ -697,7 +747,7 @@ Resources:
       MethodResponses:
         - StatusCode: 200
           ResponseModels:
-            application/json: !Ref SuccessResponseModel
+            application/json: !Ref AiServiceSuccessResponseModel
 
   # /jobs/{jobId} resource
   AiServiceJobIdResource:
@@ -1846,6 +1896,8 @@ Resources:
   # Secret Rotation Schedule for Google OAuth (90 days)
   GoogleOAuthSecretRotationSchedule:
     Type: AWS::SecretsManager::RotationSchedule
+    DependsOn:
+      - SecretRotationLambdaPermission
     Properties:
       SecretId: !Ref GoogleOAuthSecret
       RotationLambdaARN: !GetAtt SecretRotationFunction.Arn
@@ -1855,6 +1907,8 @@ Resources:
   # Secret Rotation Schedule for Facebook OAuth (90 days)
   FacebookOAuthSecretRotationSchedule:
     Type: AWS::SecretsManager::RotationSchedule
+    DependsOn:
+      - SecretRotationLambdaPermission
     Properties:
       SecretId: !Ref FacebookOAuthSecret
       RotationLambdaARN: !GetAtt SecretRotationFunction.Arn
@@ -1864,6 +1918,8 @@ Resources:
   # Secret Rotation Schedule for Instagram OAuth (90 days)
   InstagramOAuthSecretRotationSchedule:
     Type: AWS::SecretsManager::RotationSchedule
+    DependsOn:
+      - SecretRotationLambdaPermission
     Properties:
       SecretId: !Ref InstagramOAuthSecret
       RotationLambdaARN: !GetAtt SecretRotationFunction.Arn
@@ -1873,6 +1929,8 @@ Resources:
   # Secret Rotation Schedule for LinkedIn OAuth (90 days)
   LinkedInOAuthSecretRotationSchedule:
     Type: AWS::SecretsManager::RotationSchedule
+    DependsOn:
+      - SecretRotationLambdaPermission
     Properties:
       SecretId: !Ref LinkedInOAuthSecret
       RotationLambdaARN: !GetAtt SecretRotationFunction.Arn
@@ -1882,6 +1940,8 @@ Resources:
   # Secret Rotation Schedule for Twitter OAuth (90 days)
   TwitterOAuthSecretRotationSchedule:
     Type: AWS::SecretsManager::RotationSchedule
+    DependsOn:
+      - SecretRotationLambdaPermission
     Properties:
       SecretId: !Ref TwitterOAuthSecret
       RotationLambdaARN: !GetAtt SecretRotationFunction.Arn
@@ -1891,6 +1951,8 @@ Resources:
   # Secret Rotation Schedule for MLS API (90 days)
   MLSAPISecretRotationSchedule:
     Type: AWS::SecretsManager::RotationSchedule
+    DependsOn:
+      - SecretRotationLambdaPermission
     Properties:
       SecretId: !Ref MLSAPISecret
       RotationLambdaARN: !GetAtt SecretRotationFunction.Arn
@@ -3243,7 +3305,7 @@ Resources:
       Environment:
         Variables:
           DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
-          STRIPE_SECRET_KEY: "{{resolve:secretsmanager:bayon-stripe-secret:SecretString:secret_key}}"
+          STRIPE_SECRET_KEY: !Sub "{{resolve:secretsmanager:bayon-stripe-secret-${Environment}:SecretString:secret_key}}"
           NODE_ENV: !Ref Environment
       Tags:
         Environment: !Ref Environment

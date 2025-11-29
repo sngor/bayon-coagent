@@ -67,7 +67,7 @@ describe('Integration Service End-to-End Tests', () => {
     describe('OAuth Integration', () => {
         it('should successfully initiate social OAuth via Integration Service', async () => {
             const { oauthClient } = await import('@/aws/integration-service/client');
-            const { initiateOAuthConnectionAction } = await import('@/app/social-oauth-actions');
+            const { initiateOAuthConnectionAction } = await import('@/features/integrations/actions/social-oauth-actions');
 
             // Mock successful Integration Service response
             (oauthClient.initiateSocialOAuth as jest.Mock).mockResolvedValue({
@@ -85,7 +85,7 @@ describe('Integration Service End-to-End Tests', () => {
         it('should fallback to direct implementation when Integration Service fails', async () => {
             const { oauthClient } = await import('@/aws/integration-service/client');
             const { getOAuthConnectionManager } = await import('@/integrations/oauth/connection-manager');
-            const { initiateOAuthConnectionAction } = await import('@/app/social-oauth-actions');
+            const { initiateOAuthConnectionAction } = await import('@/features/integrations/actions/social-oauth-actions');
 
             // Mock Integration Service failure
             (oauthClient.initiateSocialOAuth as jest.Mock).mockRejectedValue(
@@ -103,7 +103,7 @@ describe('Integration Service End-to-End Tests', () => {
         });
 
         it('should reject invalid platform', async () => {
-            const { initiateOAuthConnectionAction } = await import('@/app/social-oauth-actions');
+            const { initiateOAuthConnectionAction } = await import('@/features/integrations/actions/social-oauth-actions');
 
             const result = await initiateOAuthConnectionAction('test-user-id', 'invalid' as any);
 
@@ -112,7 +112,7 @@ describe('Integration Service End-to-End Tests', () => {
         });
 
         it('should reject missing user ID', async () => {
-            const { initiateOAuthConnectionAction } = await import('@/app/social-oauth-actions');
+            const { initiateOAuthConnectionAction } = await import('@/features/integrations/actions/social-oauth-actions');
 
             const result = await initiateOAuthConnectionAction('', 'facebook');
 
@@ -124,7 +124,7 @@ describe('Integration Service End-to-End Tests', () => {
     describe('MLS Integration', () => {
         it('should successfully import MLS listings via Integration Service', async () => {
             const { mlsClient } = await import('@/aws/integration-service/client');
-            const { importMLSListings } = await import('@/app/mls-actions');
+            const { importMLSListings } = await import('@/features/integrations/actions/mls-actions');
 
             // Mock successful Integration Service response
             (mlsClient.syncMLSData as jest.Mock).mockResolvedValue({
@@ -146,7 +146,7 @@ describe('Integration Service End-to-End Tests', () => {
         it('should fallback to direct implementation when Integration Service fails', async () => {
             const { mlsClient } = await import('@/aws/integration-service/client');
             const { createMLSConnector } = await import('@/integrations/mls/connector');
-            const { importMLSListings } = await import('@/app/mls-actions');
+            const { importMLSListings } = await import('@/features/integrations/actions/mls-actions');
 
             // Mock Integration Service failure
             (mlsClient.syncMLSData as jest.Mock).mockRejectedValue(
@@ -163,7 +163,7 @@ describe('Integration Service End-to-End Tests', () => {
 
         it('should handle expired MLS connection', async () => {
             const { getRepository } = await import('@/aws/dynamodb/repository');
-            const { importMLSListings } = await import('@/app/mls-actions');
+            const { importMLSListings } = await import('@/features/integrations/actions/mls-actions');
 
             // Mock expired connection
             const repository = getRepository();
@@ -182,7 +182,7 @@ describe('Integration Service End-to-End Tests', () => {
 
         it('should successfully sync MLS status via Integration Service', async () => {
             const { mlsClient } = await import('@/aws/integration-service/client');
-            const { syncMLSStatus } = await import('@/app/mls-status-sync-actions');
+            const { syncMLSStatus } = await import('@/features/integrations/actions/mls-status-sync-actions');
 
             // Mock successful Integration Service response
             (mlsClient.syncMLSData as jest.Mock).mockResolvedValue({
@@ -207,7 +207,7 @@ describe('Integration Service End-to-End Tests', () => {
         it('should fallback to direct implementation for status sync when Integration Service fails', async () => {
             const { mlsClient } = await import('@/aws/integration-service/client');
             const { createMLSConnector } = await import('@/integrations/mls/connector');
-            const { syncMLSStatus } = await import('@/app/mls-status-sync-actions');
+            const { syncMLSStatus } = await import('@/features/integrations/actions/mls-status-sync-actions');
 
             // Mock Integration Service failure
             (mlsClient.syncMLSData as jest.Mock).mockRejectedValue(
@@ -226,7 +226,7 @@ describe('Integration Service End-to-End Tests', () => {
     describe('Error Handling', () => {
         it('should handle network errors gracefully', async () => {
             const { oauthClient } = await import('@/aws/integration-service/client');
-            const { initiateOAuthConnectionAction } = await import('@/app/social-oauth-actions');
+            const { initiateOAuthConnectionAction } = await import('@/features/integrations/actions/social-oauth-actions');
 
             // Mock network error
             (oauthClient.initiateSocialOAuth as jest.Mock).mockRejectedValue(
@@ -241,7 +241,7 @@ describe('Integration Service End-to-End Tests', () => {
 
         it('should handle authentication errors', async () => {
             const { getCognitoClient } = await import('@/aws/auth/cognito-client');
-            const { importMLSListings } = await import('@/app/mls-actions');
+            const { importMLSListings } = await import('@/features/integrations/actions/mls-actions');
 
             // Mock authentication failure
             const cognitoClient = getCognitoClient();

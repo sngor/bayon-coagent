@@ -12,7 +12,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { searchPropertiesForDashboard, trackPropertyView, sendPropertyInquiry } from '@/app/client-dashboard-actions';
+import { searchPropertiesForDashboard, trackPropertyView, sendPropertyInquiry } from '@/features/client-dashboards/actions/client-dashboard-actions';
 
 interface PropertySearchProps {
     token: string;

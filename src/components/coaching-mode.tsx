@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useGeminiLive } from '@/hooks/use-gemini-live';
 import { getGeminiApiKeyAction } from '@/app/actions';
 import { Mic, MicOff, Volume2, VolumeX, Loader2, Lightbulb, Target, TrendingUp, Pause, Play, Sparkles } from 'lucide-react';
-import type { RolePlayScenario } from '@/lib/training-data';
+import type { RolePlayScenario } from '@/lib/constants/training-data';
 import { Modality } from '@google/genai';
 
 export interface CoachingModeProps {

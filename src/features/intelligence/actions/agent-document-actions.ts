@@ -12,10 +12,12 @@ import { downloadFile } from '@/aws/s3/client';
 export type AgentDocument = {
     id: string;
     agentId: string;
-    fileName: string;
-    fileSize: number;
-    contentType: string;
-    s3Key: string;
+    type: 'file' | 'link'; // Added type field
+    fileName: string; // Used as title for links
+    url?: string; // URL for link type
+    fileSize?: number; // Optional for links
+    contentType?: string; // Optional for links
+    s3Key?: string; // Optional for links
     category?: string;
     description?: string;
     uploadedAt: number;
@@ -41,6 +43,10 @@ const uploadDocumentSchema = z.object({
     fileName: z.string().min(1, 'File name is required'),
     fileSize: z.number().min(1).max(MAX_FILE_SIZE),
     contentType: z.string().refine((type) => ALLOWED_FILE_TYPES.includes(type), 'Invalid file type'),
+});
+
+const addLinkSchema = z.object({
+    url: z.string().url('Invalid URL format'),
 });
 
 // DynamoDB Keys
@@ -88,6 +94,7 @@ export async function uploadAgentDocument(formData: FormData) {
         const document: AgentDocument = {
             id: documentId,
             agentId: user.id,
+            type: 'file',
             fileName: file.name,
             fileSize: file.size,
             contentType: file.type,
@@ -103,6 +110,57 @@ export async function uploadAgentDocument(formData: FormData) {
     } catch (error) {
         console.error('Upload error:', error);
         return { error: 'Failed to upload document' };
+    }
+}
+
+/**
+ * Add a link to the agent's knowledge base
+ */
+export async function addAgentLink(url: string) {
+    try {
+        const user = await getCurrentUserServer();
+        if (!user || !user.id) {
+            return { error: 'Authentication required' };
+        }
+
+        const validated = addLinkSchema.safeParse({ url });
+        if (!validated.success) {
+            return { error: validated.error.errors[0].message };
+        }
+
+        // Try to fetch page title
+        let title = url;
+        try {
+            const response = await fetch(url);
+            const html = await response.text();
+            const titleMatch = html.match(/<title>(.*?)<\/title>/);
+            if (titleMatch && titleMatch[1]) {
+                title = titleMatch[1];
+            }
+        } catch (e) {
+            console.warn('Failed to fetch title for URL:', url);
+        }
+
+        const documentId = `link-${Date.now()}-${uuidv4().substring(0, 8)}`;
+        
+        // Create record
+        const document: AgentDocument = {
+            id: documentId,
+            agentId: user.id,
+            type: 'link',
+            fileName: title, // Use title as fileName
+            url: url,
+            uploadedAt: Date.now(),
+        };
+
+        const repository = getRepository();
+        const keys = getAgentDocumentKeys(user.id, documentId);
+        await repository.create(keys.PK, keys.SK, 'AgentDocument', document);
+
+        return { success: true, document };
+    } catch (error) {
+        console.error('Add link error:', error);
+        return { error: 'Failed to add link' };
     }
 }
 
@@ -147,8 +205,12 @@ export async function analyzeAgentDocumentRedFlags(documentId: string) {
             return { error: 'Document not found' };
         }
 
+        if (document.type === 'link') {
+            return { error: 'Link analysis not supported yet' };
+        }
+
         // Download file
-        const fileBuffer = await downloadFile(document.s3Key);
+        const fileBuffer = await downloadFile(document.s3Key!); // s3Key is present for file type
         const base64Data = fileBuffer.toString('base64');
 
         // Call Gemini
@@ -177,7 +239,7 @@ export async function analyzeAgentDocumentRedFlags(documentId: string) {
             {
                 inlineData: {
                     data: base64Data,
-                    mimeType: document.contentType,
+                    mimeType: document.contentType!,
                 },
             },
         ]);
@@ -206,7 +268,7 @@ export async function deleteAgentDocument(documentId: string) {
 
         const repository = getRepository();
         const keys = getAgentDocumentKeys(user.id, documentId);
-
+        
         // Soft delete
         await repository.update(keys.PK, keys.SK, { deletedAt: Date.now() });
 

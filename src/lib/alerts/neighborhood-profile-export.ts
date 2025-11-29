@@ -9,7 +9,7 @@
 
 import { uploadFile } from '@/aws/s3/client';
 import type { NeighborhoodProfile } from './types';
-import type { Profile } from '@/lib/types';
+import type { Profile } from '@/lib/types/common/common';
 
 // Simple logger interface for this module
 const logger = {

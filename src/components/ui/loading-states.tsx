@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Sparkles, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/common";
 import { Card, CardHeader, CardContent } from "./card";
 
 /**

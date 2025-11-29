@@ -51,8 +51,8 @@ import {
     getDashboard,
     listDashboardLinks,
     deleteDashboard,
-} from '@/app/client-dashboard-actions';
-import { generateClientNudges, type ClientNudge } from '@/app/client-nudge-actions';
+} from '@/features/client-dashboards/actions/client-dashboard-actions';
+import { generateClientNudges, type ClientNudge } from '@/features/client-dashboards/actions/client-nudge-actions';
 import type { PropertyValuationOutput } from '@/aws/bedrock/flows/property-valuation';
 
 import {

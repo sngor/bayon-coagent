@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { LucideIcon } from 'lucide-react';
 import { SectionHeader } from './section-header';
 

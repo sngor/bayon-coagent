@@ -32,7 +32,7 @@ jest.mock('recharts', () => ({
 jest.mock('next/cache', () => ({}));
 
 // Mock the analytics server actions with simple implementations
-jest.mock('@/app/content-workflow-actions', () => ({
+jest.mock('@/features/content-engine/actions/content-workflow-actions', () => ({
     getAnalyticsAction: jest.fn().mockImplementation(async () => {
         // Simulate async operation
         await new Promise(resolve => setTimeout(resolve, 0));

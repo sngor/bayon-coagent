@@ -731,7 +731,7 @@ describe('Projects Page Visual Regression', () => {
     it('should import proper types', () => {
       expect(projectsContent).toContain('SavedContent');
       expect(projectsContent).toContain('Project');
-      expect(projectsContent).toContain('from \'@/lib/types\'');
+      expect(projectsContent).toContain('from \'@/lib/types/common/common\'');
     });
 
     it('should use typed query hooks', () => {

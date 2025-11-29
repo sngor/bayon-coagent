@@ -52,7 +52,7 @@ import {
     getSeasonalTemplatesAction,
     getSeasonalNotificationsAction,
     applyTemplateAction
-} from '@/app/content-workflow-actions';
+} from '@/features/content-engine/actions/content-workflow-actions';
 
 interface SeasonalTemplateBrowserProps {
     onTemplateSelect?: (template: Template) => void;

@@ -94,8 +94,8 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { useUser } from '@/aws/auth';
-import type { Project } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import type { Project } from '@/lib/types/common/common';
+import { cn } from '@/lib/utils/common';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { StandardErrorDisplay } from '@/components/standard/error-display';
 import { SchedulingModal } from '@/components/scheduling-modal';

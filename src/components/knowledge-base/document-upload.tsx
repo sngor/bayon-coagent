@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { Upload, X, FileText, File, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 interface UploadFile {
     file: File;

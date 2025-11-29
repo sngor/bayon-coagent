@@ -4,7 +4,7 @@
  */
 
 import { getRealEstateNews, type GetRealEstateNewsInput, type GetRealEstateNewsOutput } from '@/aws/bedrock/flows/get-real-estate-news';
-import { NEWS_CONFIG } from '@/lib/news-config';
+import { NEWS_CONFIG } from '@/lib/constants/news-config';
 
 interface CachedNews {
     data: GetRealEstateNewsOutput;

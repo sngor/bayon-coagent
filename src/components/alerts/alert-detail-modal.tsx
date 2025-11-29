@@ -39,7 +39,7 @@ import {
     TrendingDown,
     BarChart3
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { toast } from '@/hooks/use-toast';
 import type { Alert } from '@/lib/alerts/types';
 

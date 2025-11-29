@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Home, TrendingUp, MapPin, Calendar, DollarSign, MessageSquare } from 'lucide-react';
-import { generateValuationForDashboard } from '@/app/client-dashboard-actions';
+import { generateValuationForDashboard } from '@/features/client-dashboards/actions/client-dashboard-actions';
 import type { PropertyValuationOutput } from '@/aws/bedrock/flows/property-valuation';
 
 interface HomeValuationProps {

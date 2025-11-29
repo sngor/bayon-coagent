@@ -36,8 +36,8 @@ import {
     addAngleToSessionAction,
     getStagingSessionAction,
     deleteStagingSessionAction,
-} from '@/app/multi-angle-staging-actions';
-import { cn } from '@/lib/utils';
+} from '@/features/intelligence/actions/multi-angle-staging-actions';
+import { cn } from '@/lib/utils/common';
 
 interface MultiAngleStagingInterfaceProps {
     userId: string;

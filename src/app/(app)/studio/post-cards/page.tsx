@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Sparkles, Download, Share2, Wand2, RefreshCw, ImagePlus, Trash2 } from 'lucide-react';
-import { generatePostCardAction } from '@/app/post-card-actions';
+import { generatePostCardAction } from '@/features/content-engine/actions/post-card-actions';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { FavoritesButton } from '@/components/favorites-button';

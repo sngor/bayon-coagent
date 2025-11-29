@@ -64,7 +64,7 @@ import { useUser } from '@/aws/auth';
 import { ProfileCompletionBanner } from '@/components/profile-completion-banner';
 import { SuggestedNextSteps } from '@/components/suggested-next-steps';
 import { getSuggestedNextActions } from '@/hooks/use-profile-completion';
-import type { Review, Profile, MarketingPlan, MarketingTask, BrandAudit, Competitor as CompetitorType } from '@/lib/types';
+import type { Review, Profile, MarketingPlan, MarketingTask, BrandAudit, Competitor as CompetitorType } from '@/lib/types/common/common';
 
 import { toast } from '@/hooks/use-toast';
 import { getDashboardData } from './actions';

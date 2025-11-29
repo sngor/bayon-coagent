@@ -30,7 +30,7 @@ import {
     ChevronRight,
 } from 'lucide-react';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import type { QuickAction } from '@/lib/user-flow';
 
 interface QuickActionsMenuProps {

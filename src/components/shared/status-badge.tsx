@@ -1,7 +1,7 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { CheckCircle2, XCircle, Clock, AlertCircle, Loader2, Circle } from 'lucide-react';
 
 export type StatusType =

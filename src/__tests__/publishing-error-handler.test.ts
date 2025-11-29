@@ -59,7 +59,7 @@ jest.mock('@/lib/error-handling', () => ({
     })
 }));
 
-import { PublishingErrorHandler } from '@/services/publishing-error-handler';
+import { PublishingErrorHandler } from '@/services/publishing/publishing-error-handler';
 
 describe('PublishingErrorHandler', () => {
     let errorHandler: PublishingErrorHandler;

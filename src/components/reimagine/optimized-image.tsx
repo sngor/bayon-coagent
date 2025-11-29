@@ -12,7 +12,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { Loader2, ImageOff } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 interface OptimizedImageProps {
     src: string;

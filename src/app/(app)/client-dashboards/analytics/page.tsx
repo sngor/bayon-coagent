@@ -28,7 +28,7 @@ import {
     Clock,
     Home,
 } from 'lucide-react';
-import { listDashboards, getDashboardAnalytics, type ClientDashboard, type DashboardAnalytics } from '@/app/client-dashboard-actions';
+import { listDashboards, getDashboardAnalytics, type ClientDashboard, type DashboardAnalytics } from '@/features/client-dashboards/actions/client-dashboard-actions';
 import { formatDistanceToNow, subDays, isAfter } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 

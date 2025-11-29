@@ -5,7 +5,7 @@ version = 0.1
 stack_name = "bayon-coagent"
 
 [default.build.parameters]
-cached = true
+cached = false
 parallel = true
 
 [default.validate.parameters]
@@ -44,6 +44,6 @@ region = "us-west-2"
 [production.deploy.parameters]
 stack_name = "bayon-coagent-prod"
 parameter_overrides = "Environment=production"
-confirm_changeset = true
+confirm_changeset = false
 capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
 region = "us-west-2"

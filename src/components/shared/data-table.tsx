@@ -21,7 +21,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export interface DataTableColumn<T> {

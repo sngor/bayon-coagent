@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/common";
 import { Gift, Home, BadgeCheck, DoorOpen, TrendingUp, Heart } from "lucide-react";
 
 export const CARD_TYPES = [

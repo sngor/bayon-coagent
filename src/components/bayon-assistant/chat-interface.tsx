@@ -12,7 +12,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import {
     Send,
     Info,
@@ -36,7 +36,7 @@ import {
     CheckCircle2,
     X
 } from 'lucide-react';
-import { handleChatQuery, type ChatQueryResponse } from '@/app/bayon-assistant-actions';
+import { handleChatQuery, type ChatQueryResponse } from '@/features/intelligence/actions/bayon-assistant-actions';
 import type { AgentProfile } from '@/aws/dynamodb/agent-profile-repository';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { useUser } from '@/aws/auth';

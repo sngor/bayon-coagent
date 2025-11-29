@@ -10,7 +10,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { StandardEmptyState } from '@/components/standard/empty-state';
 import { useUser } from '@/aws/auth';
 import { useQuery } from '@/aws/dynamodb/hooks';
-import type { ResearchReport } from '@/lib/types';
+import type { ResearchReport } from '@/lib/types/common/common';
 import { deleteResearchReportAction } from '@/app/actions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Library, Calendar, Trash2, Search } from 'lucide-react';
@@ -18,7 +18,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
 import { NoResultsEmptyState } from '@/components/ui/empty-states';
-import { filterBySearchAndFilters, highlightMatches, countFilterOptions } from '@/lib/search-utils';
+import { filterBySearchAndFilters, highlightMatches, countFilterOptions } from '@/lib/utils/search-utils';
 import { FilterControls, useFilters, type FilterGroup } from '@/components/ui/filter-controls';
 import {
     AlertDialog,

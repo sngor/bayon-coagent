@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Profile } from '@/lib/types';
+import type { Profile } from '@/lib/types/common/common';
 import { JsonLdDisplay } from '@/components/json-ld-display';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
@@ -35,9 +35,9 @@ import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsL
 
 import { ProfileCompletionChecklist } from '@/components/profile-completion-banner';
 import { StandardLoadingSpinner } from '@/components/standard';
-import { STICKY_POSITIONS } from '@/lib/utils';
+import { STICKY_POSITIONS } from '@/lib/utils/common';
 import { FeaturedTestimonialSelector } from '@/components/featured-testimonial-selector';
-import type { Testimonial } from '@/lib/types';
+import type { Testimonial } from '@/lib/types/common/common';
 import { CardGradientMesh } from '@/components/ui/gradient-mesh';
 import { FavoritesButton } from '@/components/favorites-button';
 import { getPageConfig } from '@/components/dashboard-quick-actions';

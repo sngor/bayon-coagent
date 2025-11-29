@@ -49,7 +49,7 @@ import {
     listAllAgentLinks,
     type ClientDashboard,
     type SecuredLink
-} from '@/app/client-dashboard-actions';
+} from '@/features/client-dashboards/actions/client-dashboard-actions';
 import { formatDistanceToNow } from 'date-fns';
 import { FavoritesButton } from '@/components/favorites-button';
 import { getPageConfig } from '@/components/dashboard-quick-actions';

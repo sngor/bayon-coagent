@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Sparkles, RotateCcw } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/common";
 
 interface EnhanceFormProps {
     onSubmit: (params: EnhanceParams) => void;

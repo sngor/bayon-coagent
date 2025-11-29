@@ -39,13 +39,13 @@ import {
     processEditAction,
     acceptEditAction,
     getOriginalImageAction,
-} from '@/app/reimagine-actions';
+} from '@/features/intelligence/actions/reimagine-actions';
 import type {
     EditType,
     EditSuggestion,
     EditParams,
 } from '@/ai/schemas/reimagine-schemas';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 // Workflow states - simplified to 3 states
 type WorkflowState =

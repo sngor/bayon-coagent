@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { getOrganizationSettingsAction, updateOrganizationSettingsAction } from '@/app/admin-actions';
+import { getOrganizationSettingsAction, updateOrganizationSettingsAction } from '@/features/admin/actions/admin-actions';
 import { Building2, Save, Palette } from 'lucide-react';
 import { ProfileImageUpload } from '@/components/profile-image-upload';
 

@@ -17,16 +17,16 @@ import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals
 import { performance } from 'perf_hooks';
 
 // Import services and components
-import { bulkSchedule } from '@/services/scheduling-service';
-import { getAnalyticsForTimeRange, TimeRangePreset } from '@/services/analytics-service';
+import { bulkSchedule } from '@/services/publishing/scheduling-service';
+import { getAnalyticsForTimeRange, TimeRangePreset } from '@/services/analytics/analytics-service';
 import { getRepository } from '@/aws/dynamodb/repository';
 
 // Mock the services
-jest.mock('@/services/scheduling-service', () => ({
+jest.mock('@/services/publishing/scheduling-service', () => ({
     bulkSchedule: jest.fn(),
 }));
 
-jest.mock('@/services/analytics-service', () => ({
+jest.mock('@/services/analytics/analytics-service', () => ({
     getAnalyticsForTimeRange: jest.fn(),
     TimeRangePreset: {
         LAST_7_DAYS: '7d',

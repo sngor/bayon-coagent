@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 export interface AnimatedNumberProps {
     value: number;

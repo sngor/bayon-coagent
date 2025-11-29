@@ -10,7 +10,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Loader2, Mail, Bell, Smartphone, Clock, Moon, Save } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/common";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

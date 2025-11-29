@@ -14,7 +14,7 @@
 
 import { useState, useEffect } from 'react';
 import { Listing } from '@/integrations/mls/types';
-import { getUserListings, getListingPosts } from '@/app/social-publishing-actions';
+import { getUserListings, getListingPosts } from '@/features/integrations/actions/social-publishing-actions';
 import { SocialPublishingDialog } from '@/components/social-publishing-dialog';
 import { ListingMetricsDisplay } from '@/components/listing-metrics-display';
 import { useUser } from '@/aws/auth';
@@ -57,7 +57,7 @@ import {
     ExternalLink,
     ArrowRightLeft,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 type ListingStatus = 'active' | 'pending' | 'sold' | 'expired';
 type PropertyTypeFilter = 'all' | 'Single Family' | 'Condo' | 'Townhouse' | 'Multi-Family' | 'Land';

@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { getUsersListAction } from '@/app/admin-actions';
+import { getUsersListAction } from '@/features/admin/actions/admin-actions';
 import {
     Table,
     TableBody,
@@ -83,7 +83,7 @@ export default function AdminUsersPage() {
         if (!confirm(`Are you sure you want to login as ${user.email}?`)) return;
 
         try {
-            const { impersonateUserAction } = await import('@/app/admin-actions');
+            const { impersonateUserAction } = await import('@/features/admin/actions/admin-actions');
             const result = await impersonateUserAction(user.id);
 
             if (result.message === 'success') {
@@ -144,7 +144,7 @@ export default function AdminUsersPage() {
                                 // Load teams
                                 try {
                                     console.log('[AdminUsersPage] Loading teams...');
-                                    const { getTeamsAction } = await import('@/app/admin-actions');
+                                    const { getTeamsAction } = await import('@/features/admin/actions/admin-actions');
                                     const teamsResult = await getTeamsAction(session.accessToken);
                                     console.log('[AdminUsersPage] Teams result:', teamsResult);
                                     if (teamsResult.message === 'success') {
@@ -188,7 +188,7 @@ export default function AdminUsersPage() {
                             accessToken = session.accessToken;
                         }
 
-                        const { getTeamsAction } = await import('@/app/admin-actions');
+                        const { getTeamsAction } = await import('@/features/admin/actions/admin-actions');
                         const teamsResult = await getTeamsAction(accessToken);
                         if (teamsResult.message === 'success') {
                             setTeams(teamsResult.data);
@@ -244,7 +244,7 @@ export default function AdminUsersPage() {
                 accessToken = session.accessToken;
             }
 
-            const { disableUserAction } = await import('@/app/admin-actions');
+            const { disableUserAction } = await import('@/features/admin/actions/admin-actions');
             const result = await disableUserAction(user.id, disable, accessToken);
 
             if (result.message === 'success') {
@@ -283,7 +283,7 @@ export default function AdminUsersPage() {
                 }
             }
 
-            const { updateUserRoleAction } = await import('@/app/admin-actions');
+            const { updateUserRoleAction } = await import('@/features/admin/actions/admin-actions');
 
             // Get team name from team ID
             const team = teams.find(t => t.id === newTeamId);
@@ -344,7 +344,7 @@ export default function AdminUsersPage() {
                 accessToken = session.accessToken;
             }
 
-            const { createUserAction } = await import('@/app/admin-actions');
+            const { createUserAction } = await import('@/features/admin/actions/admin-actions');
             const result = await createUserAction(
                 newUserEmail,
                 newUserName,

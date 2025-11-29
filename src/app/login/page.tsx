@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useSearchParams } from 'next/navigation';
 import { StripePricing } from '@/components/stripe-pricing';
 import { StripePaymentForm } from '@/components/stripe-payment-form';
-import { SUBSCRIPTION_PLANS, SubscriptionPlan } from '@/lib/stripe-config';
+import { SUBSCRIPTION_PLANS, SubscriptionPlan } from '@/lib/constants/stripe-config';
 
 
 function AuthButton({ children }: { children: React.ReactNode }) {

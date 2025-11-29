@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { TOUCH_FRIENDLY_CLASSES, MOBILE_LAYOUT_CLASSES } from '@/lib/mobile-optimization';
 import { OfflineSyncManager } from '@/lib/offline-sync-manager';
-import { savePropertyComparisonAction } from '@/app/mobile-actions';
+import { savePropertyComparisonAction } from '@/features/client-dashboards/actions/mobile-actions';
 import { cacheProperties, getCachedProperties, CachedProperty } from '@/lib/property-cache';
 import { useSwipeGesture } from '@/hooks/use-gesture-handler';
 

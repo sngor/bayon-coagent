@@ -30,7 +30,7 @@ import {
     Filter,
     MoreVertical
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import {
     offlineContentManager,
     ContentDraft,

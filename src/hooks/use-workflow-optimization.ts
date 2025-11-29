@@ -22,7 +22,7 @@ import {
   type ComplexTaskGuidance,
   type WorkflowOptimization,
 } from '@/lib/workflow-optimization';
-import type { Profile } from '@/lib/types';
+import type { Profile } from '@/lib/types/common/common';
 
 interface UseWorkflowOptimizationProps {
   profile: Partial<Profile> | null;

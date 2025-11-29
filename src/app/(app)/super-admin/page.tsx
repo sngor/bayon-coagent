@@ -7,7 +7,7 @@ import { CardGradientMesh } from '@/components/ui/gradient-mesh';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { getAdminDashboardStats, getRecentActivityAction } from '@/app/admin-actions';
+import { getAdminDashboardStats, getRecentActivityAction } from '@/features/admin/actions/admin-actions';
 import {
     Users,
     MessageSquare,

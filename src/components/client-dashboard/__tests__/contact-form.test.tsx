@@ -1,11 +1,11 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ContactForm } from '../contact-form';
-import * as actions from '@/app/client-dashboard-actions';
+import * as actions from '@/features/client-dashboards/actions/client-dashboard-actions';
 
 // Mock the server action
 const mockSendClientInquiry = actions.sendClientInquiry as unknown as ReturnType<typeof vi.fn>;
 
-vi.mock('@/app/client-dashboard-actions', () => ({
+vi.mock('@/features/client-dashboards/actions/client-dashboard-actions', () => ({
     sendClientInquiry: vi.fn(),
 }));
 

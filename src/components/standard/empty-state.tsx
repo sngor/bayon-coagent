@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { Button } from '@/components/ui/button';
 
 export interface StandardEmptyStateProps {

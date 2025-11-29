@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { TestimonialRequest } from '@/lib/types';
+import { TestimonialRequest } from '@/lib/types/common/common';
 
 // Mock all dependencies before importing the service
 jest.mock('@/aws/dynamodb', () => ({
@@ -29,7 +29,7 @@ jest.mock('@/lib/notifications/service', () => ({
 import {
     sendTestimonialReminders,
     expireOldTestimonialRequests,
-} from '@/services/testimonial-reminder-service';
+} from '@/services/notifications/testimonial-reminder-service';
 import * as dynamodb from '@/aws/dynamodb';
 import * as ses from '@/aws/ses/client';
 import * as notificationService from '@/lib/notifications/service';

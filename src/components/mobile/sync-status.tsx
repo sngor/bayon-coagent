@@ -16,7 +16,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { offlineSyncManager, SyncOperation, ConnectivityStatus, QueueStatus } from '@/lib/offline-sync-manager';
 import { useConflictCount } from '@/hooks/use-conflicts';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 interface SyncStatusProps {
     className?: string;

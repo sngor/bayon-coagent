@@ -3,7 +3,7 @@
 import { ReactNode } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 interface FormSectionProps {
     title: string;

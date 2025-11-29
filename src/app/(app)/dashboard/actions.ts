@@ -1,7 +1,7 @@
 'use server';
 
 import { getRepository } from '@/aws/dynamodb/repository';
-import type { Review, Profile, MarketingPlan, BrandAudit, Competitor } from '@/lib/types';
+import type { Review, Profile, MarketingPlan, BrandAudit, Competitor } from '@/lib/types/common/common';
 
 export async function getDashboardData(userId: string) {
   const repository = getRepository();

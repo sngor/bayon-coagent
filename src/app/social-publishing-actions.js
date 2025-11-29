@@ -123,7 +123,7 @@ async function publishListing(request) {
         const contentOptimizer = (0, content_optimizer_1.createContentOptimizer)();
         const imageOptimizer = (0, image_optimizer_1.createImageOptimizer)();
         const oauthManager = (0, connection_manager_1.getOAuthConnectionManager)();
-        const { createEnhancedPublishingService } = await Promise.resolve().then(() => __importStar(require('@/services/enhanced-publishing-service')));
+        const { createEnhancedPublishingService } = await Promise.resolve().then(() => __importStar(require('@/services/publishing/enhanced-publishing-service')));
         const enhancedPublisher = createEnhancedPublishingService();
         const results = [];
         for (const platform of request.platforms) {
@@ -344,7 +344,7 @@ async function publishScheduledContent(scheduledContentId) {
                 message: `Content not ready for publishing. Scheduled for ${scheduledContent.publishTime.toISOString()}`
             };
         }
-        const { createEnhancedPublishingService } = await Promise.resolve().then(() => __importStar(require('@/services/enhanced-publishing-service')));
+        const { createEnhancedPublishingService } = await Promise.resolve().then(() => __importStar(require('@/services/publishing/enhanced-publishing-service')));
         const enhancedPublisher = createEnhancedPublishingService();
         const result = await enhancedPublisher.publishScheduledContent(scheduledContent, user.id);
         return {
@@ -566,7 +566,7 @@ async function getCircuitBreakerStatus() {
         if (!user) {
             return { success: false, message: 'Not authenticated' };
         }
-        const { createEnhancedPublishingService } = await Promise.resolve().then(() => __importStar(require('@/services/enhanced-publishing-service')));
+        const { createEnhancedPublishingService } = await Promise.resolve().then(() => __importStar(require('@/services/publishing/enhanced-publishing-service')));
         const enhancedPublisher = createEnhancedPublishingService();
         const status = enhancedPublisher.getCircuitBreakerStatus();
         return {
@@ -590,7 +590,7 @@ async function resetCircuitBreaker(platform) {
         if (!user) {
             return { success: false, message: 'Not authenticated' };
         }
-        const { createEnhancedPublishingService } = await Promise.resolve().then(() => __importStar(require('@/services/enhanced-publishing-service')));
+        const { createEnhancedPublishingService } = await Promise.resolve().then(() => __importStar(require('@/services/publishing/enhanced-publishing-service')));
         const enhancedPublisher = createEnhancedPublishingService();
         enhancedPublisher.resetCircuitBreaker(platform);
         const { logger } = await Promise.resolve().then(() => __importStar(require('@/aws/logging/logger')));

@@ -23,7 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './car
 import { Progress } from './progress';
 import { Badge } from './badge';
 import { Separator } from './separator';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import type { ComplexTaskGuidance, GuidanceStep } from '@/lib/workflow-optimization';
 
 interface TaskGuidanceProps {

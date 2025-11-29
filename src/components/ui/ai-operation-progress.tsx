@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Sparkles, X, Clock, TrendingUp } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { Button } from './button';
 import { Progress } from './progress';
 import {

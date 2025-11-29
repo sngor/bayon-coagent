@@ -50,7 +50,7 @@ import { ProfileCompletionBanner } from '@/components/profile-completion-banner'
 import { SuggestedNextSteps } from '@/components/suggested-next-steps';
 
 // Types
-import type { Review, Profile, MarketingPlan, MarketingTask, BrandAudit, Competitor as CompetitorType } from '@/lib/types';
+import type { Review, Profile, MarketingPlan, MarketingTask, BrandAudit, Competitor as CompetitorType } from '@/lib/types/common/common';
 
 interface EnhancedDashboardProps {
     user: any;

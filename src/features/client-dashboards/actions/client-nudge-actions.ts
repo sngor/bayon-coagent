@@ -2,7 +2,7 @@
 
 import { getGeminiTextModel } from '@/aws/google-ai/client';
 import { getPropertySearchService } from '@/lib/client-dashboard/property-search';
-import { ClientDashboard, DashboardAnalytics } from '@/app/client-dashboard-actions';
+import { ClientDashboard, DashboardAnalytics } from '@/features/client-dashboards/actions/client-dashboard-actions';
 import { getCurrentUserServer } from '@/aws/auth/server-auth';
 
 export type ClientNudge = {

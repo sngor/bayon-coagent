@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getImpersonationStatusAction, stopImpersonationAction } from '@/app/admin-actions';
+import { getImpersonationStatusAction, stopImpersonationAction } from '@/features/admin/actions/admin-actions';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';

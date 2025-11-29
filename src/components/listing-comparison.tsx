@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRightLeft, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { getListingsForComparison, compareListingsMetrics } from '@/app/performance-metrics-actions';
+import { getListingsForComparison, compareListingsMetrics } from '@/services/monitoring/performance-metrics-actions';
 import { ComparativeMetrics, TimePeriod } from '@/lib/performance-metrics-types';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 

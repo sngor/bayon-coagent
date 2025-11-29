@@ -26,7 +26,7 @@ import {
     type GetOptimalTimesParams,
     type BulkScheduleParams,
     type BulkScheduleProgress
-} from '@/services/scheduling-service';
+} from '@/services/publishing/scheduling-service';
 import {
     createNewsletterTemplate,
     exportNewsletterTemplate,
@@ -34,7 +34,7 @@ import {
     getNewsletterTemplates,
     validateSpamScore,
     optimizeNewsletterHTML
-} from '@/services/template-service';
+} from '@/services/publishing/template-service';
 import {
     analyticsService,
     type GetAnalyticsByTypeParams,
@@ -44,7 +44,7 @@ import {
     type GetROIAnalyticsParams,
     type ExportROIDataParams,
     type TimeRangePreset
-} from '@/services/analytics-service';
+} from '@/services/analytics/analytics-service';
 import {
     ScheduledContent,
     PublishChannel,
@@ -1547,7 +1547,7 @@ export async function validateSchedulingTimeAction(
         }
 
         // Use private method from scheduling service to detect conflicts
-        const schedulingServiceInstance = new (await import('@/services/scheduling-service')).SchedulingService();
+        const schedulingServiceInstance = new (await import('@/services/publishing/scheduling-service')).SchedulingService();
         const conflicts = await (schedulingServiceInstance as any).detectConflicts(
             user.id,
             publishDate,
@@ -1604,7 +1604,7 @@ import {
     getSeasonalNotifications,
     getSeasonalTemplateAnalytics,
     applyTemplate
-} from '@/services/template-service';
+} from '@/services/publishing/template-service';
 import {
     Template,
     TemplateConfiguration,
@@ -2762,7 +2762,7 @@ export async function createNewsletterTemplateAction(
         }).parse({ name, description, config });
 
         // Import newsletter template service functions
-        const { createNewsletterTemplate } = await import('@/services/template-service');
+        const { createNewsletterTemplate } = await import('@/services/publishing/template-service');
 
         // Create newsletter template
         const result = await createNewsletterTemplate({
@@ -2857,7 +2857,7 @@ export async function exportNewsletterAction(
         });
 
         // Import newsletter template service functions
-        const { exportNewsletterTemplate } = await import('@/services/template-service');
+        const { exportNewsletterTemplate } = await import('@/services/publishing/template-service');
 
         // Export newsletter template
         const result = await exportNewsletterTemplate({
@@ -2906,7 +2906,7 @@ export async function getNewsletterTemplatesAction(
         const validatedCategory = category ? z.enum(['market-update', 'client-newsletter', 'listing-showcase', 'seasonal']).parse(category) : undefined;
 
         // Import newsletter template service functions
-        const { getNewsletterTemplates } = await import('@/services/template-service');
+        const { getNewsletterTemplates } = await import('@/services/publishing/template-service');
 
         // Get newsletter templates
         const result = await getNewsletterTemplates({

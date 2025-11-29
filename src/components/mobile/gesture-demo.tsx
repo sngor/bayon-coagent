@@ -25,7 +25,7 @@ import {
     type PinchGesture,
     type LongPressGesture
 } from '@/hooks/use-gesture-handler';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { TOUCH_FRIENDLY_CLASSES } from '@/lib/mobile-optimization';
 
 interface GestureEvent {

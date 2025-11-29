@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth/use-user';
-import { getUserTemplates, getTemplate } from '@/services/template-service';
+import { getUserTemplates, getTemplate } from '@/services/publishing/template-service';
 import { Template, ContentCategory, TemplateBrowserConfig } from '@/lib/content-workflow-types';
 import {
     Search,
@@ -38,7 +38,7 @@ import {
     Copy,
     Loader2
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 // Content type icons mapping
 const contentTypeIcons = {
@@ -500,7 +500,7 @@ export default function LibraryTemplatesPage() {
 
         try {
             // Import the apply template action
-            const { applyTemplateAction } = await import('@/app/content-workflow-actions');
+            const { applyTemplateAction } = await import('@/features/content-engine/actions/content-workflow-actions');
 
             const result = await applyTemplateAction(template.id);
 

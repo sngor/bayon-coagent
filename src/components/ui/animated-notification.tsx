@@ -8,7 +8,7 @@
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { notificationSlide } from '@/lib/animations';
 
 export interface Notification {

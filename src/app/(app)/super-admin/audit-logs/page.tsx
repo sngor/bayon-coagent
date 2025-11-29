@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Search, Filter, RefreshCw, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
-import { getAuditLogsAction } from '@/app/admin-actions';
+import { getAuditLogsAction } from '@/features/admin/actions/admin-actions';
 import { useDebounce } from 'use-debounce';
 import { useToast } from "@/hooks/use-toast";
 

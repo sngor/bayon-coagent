@@ -31,7 +31,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useUser } from '@/aws/auth';
 import { SchedulingModalSkeleton } from '@/components/ui/skeleton-loading';
@@ -76,7 +76,7 @@ import {
     OptimalTime,
 } from '@/lib/content-workflow-types';
 import { format, addDays, isAfter, isBefore, startOfDay } from 'date-fns';
-import { scheduleContentAction, getOptimalTimesAction } from '@/app/content-workflow-actions';
+import { scheduleContentAction, getOptimalTimesAction } from '@/features/content-engine/actions/content-workflow-actions';
 import { toast } from '@/hooks/use-toast';
 
 // ==================== Types ====================

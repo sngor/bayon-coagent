@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { X, Plus, Eraser, RotateCcw } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/common";
 
 interface ItemRemovalFormProps {
     onSubmit: (params: ItemRemovalParams) => void;

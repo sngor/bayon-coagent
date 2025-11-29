@@ -11,7 +11,7 @@ import {
     CheckCircle2,
 } from 'lucide-react';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 export interface NextStep {
     title: string;

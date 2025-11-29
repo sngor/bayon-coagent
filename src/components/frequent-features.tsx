@@ -10,7 +10,7 @@
 import Link from 'next/link';
 import { useFrequentFeatures } from '@/hooks/use-usage-tracking';
 import { Clock, TrendingUp } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 export interface FrequentFeaturesProps {
     className?: string;

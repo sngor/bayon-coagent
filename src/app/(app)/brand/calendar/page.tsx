@@ -68,7 +68,7 @@ import {
     cancelScheduleAction,
     getOptimalTimesAction,
     getConnectedChannelsAction
-} from '@/app/content-workflow-actions';
+} from '@/features/content-engine/actions/content-workflow-actions';
 import { FavoritesButton } from '@/components/favorites-button';
 import { getPageConfig } from '@/components/dashboard-quick-actions';
 import { PostCard } from './post-card';

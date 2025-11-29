@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, X, Users, MapPin, DollarSign, FileText, Lightbulb, TrendingUp, MessageSquare } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 // Helper function for currency formatting
 const formatCurrency = (value: number): string => {
@@ -544,7 +544,7 @@ export default function MeetingPrep({ userId, onGenerate }: MeetingPrepProps) {
 
             if (isOnline) {
                 // Import the server action dynamically to avoid SSR issues
-                const { generateMeetingPrepAction } = await import('@/app/mobile-actions');
+                const { generateMeetingPrepAction } = await import('@/features/client-dashboards/actions/mobile-actions');
 
                 const result = await generateMeetingPrepAction({
                     ...request,
@@ -655,7 +655,7 @@ export default function MeetingPrep({ userId, onGenerate }: MeetingPrepProps) {
 
             if (isOnline) {
                 // Import the server action dynamically to avoid SSR issues
-                const { saveMeetingPrepAction } = await import('@/app/mobile-actions');
+                const { saveMeetingPrepAction } = await import('@/features/client-dashboards/actions/mobile-actions');
 
                 const result = await saveMeetingPrepAction({
                     prepId,

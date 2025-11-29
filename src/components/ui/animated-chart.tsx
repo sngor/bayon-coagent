@@ -17,7 +17,7 @@ import {
     Legend,
     Brush,
 } from "recharts";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/common";
 import {
     ChartContainer,
     ChartTooltip,

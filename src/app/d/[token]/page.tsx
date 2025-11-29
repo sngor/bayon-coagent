@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { validateDashboardLink } from '@/app/client-dashboard-actions';
+import { validateDashboardLink } from '@/features/client-dashboards/actions/client-dashboard-actions';
 import { ClientDashboardView } from '@/components/client-dashboard/client-dashboard-view';
 
 interface ClientDashboardPageProps {

@@ -41,11 +41,11 @@ import { AILoader, StepLoader } from '@/components/ui/loading-states';
 import { StandardEmptyState } from '@/components/standard';
 import { useUser } from '@/aws/auth';
 import { useItem, useQuery } from '@/aws/dynamodb/hooks';
-import type { BrandAudit, Competitor, MarketingPlan as MarketingPlanType } from '@/lib/types';
+import type { BrandAudit, Competitor, MarketingPlan as MarketingPlanType } from '@/lib/types/common/common';
 import { generateMarketingPlanAction, saveMarketingPlanAction } from '@/app/actions';
 import { showSuccessToast, showErrorToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { Celebration } from '@/components/ui/celebration';
 
 type GeneratePlanState = {

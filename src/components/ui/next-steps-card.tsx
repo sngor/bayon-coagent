@@ -22,7 +22,7 @@ import {
     ChevronUp,
 } from 'lucide-react';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { useState } from 'react';
 import type { NextStep } from '@/lib/user-flow';
 

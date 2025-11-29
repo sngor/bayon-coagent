@@ -60,7 +60,7 @@ import {
     DropdownMenuLabel
 } from '@/components/ui/dropdown-menu';
 import { StatusBadge } from '@/components/shared/status-badge';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ContentDetailModal } from '@/components/content-detail-modal';
 import { ConcurrentContentStack } from '@/components/concurrent-content-stack';

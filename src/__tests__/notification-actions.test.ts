@@ -47,7 +47,7 @@ import {
     getNotificationMetricsAction,
     retryFailedNotificationsAction,
     getRateLimitStatusAction,
-} from '@/app/notification-actions';
+} from '@/services/notifications/notification-actions';
 import {
     NotificationType,
     NotificationPriority,

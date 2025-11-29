@@ -8,7 +8,7 @@
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { successPing, successCheck, scaleIn } from '@/lib/animations';
 
 export interface SuccessFeedbackProps {

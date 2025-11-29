@@ -26,7 +26,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { OptimizedImage } from './optimized-image';
 import { HelpTooltip, HelpText } from './help-tooltip';
 

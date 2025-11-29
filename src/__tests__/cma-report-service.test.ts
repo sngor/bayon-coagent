@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { createCMAReport, updateCMAReport, attachCMAToDashboard } from '@/app/client-dashboard-actions';
+import { createCMAReport, updateCMAReport, attachCMAToDashboard } from '@/features/client-dashboards/actions/client-dashboard-actions';
 
 describe('CMA Report Service', () => {
     describe('createCMAReport - Validation', () => {

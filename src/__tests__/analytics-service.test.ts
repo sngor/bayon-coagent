@@ -12,7 +12,7 @@ import {
     trackDocumentDownload,
     trackContactRequest,
     getDashboardAnalytics,
-} from '@/app/client-dashboard-actions';
+} from '@/features/client-dashboards/actions/client-dashboard-actions';
 
 describe('Analytics Service', () => {
     const mockDashboardId = 'dashboard-123';

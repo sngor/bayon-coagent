@@ -18,7 +18,7 @@ import {
     Grid3x3,
     Columns,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 /**
  * Tablet Optimization Test Page

@@ -6,7 +6,7 @@ import { ContentTypeSelector } from './content-type-selector';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertCircle, Wifi, WifiOff } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { TOUCH_FRIENDLY_CLASSES } from '@/lib/mobile-optimization';
 import { offlineSyncManager } from '@/lib/offline-sync-manager';
 import type { VoiceToContentOutput } from '@/ai/schemas/voice-to-content-schemas';
@@ -78,7 +78,7 @@ export function VoiceMemoWorkflow({
             }
 
             // Online processing
-            const { uploadAndTranscribeAudioAction } = await import('@/app/mobile-actions');
+            const { uploadAndTranscribeAudioAction } = await import('@/features/client-dashboards/actions/mobile-actions');
 
             const result = await uploadAndTranscribeAudioAction(
                 recording.blob,

@@ -16,7 +16,7 @@ import {
     sendTestimonialReminders,
     expireOldTestimonialRequests,
     processAllUserReminders
-} from '@/services/testimonial-reminder-service';
+} from '@/services/notifications/testimonial-reminder-service';
 
 // This should be called by a cron job (e.g., AWS EventBridge)
 // For security, you might want to add authentication via a secret token

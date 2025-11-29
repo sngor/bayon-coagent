@@ -433,7 +433,7 @@ export class OfflineSyncManager {
 
         try {
             // Import the sync action dynamically to avoid circular dependencies
-            const { syncContentToDynamoDBAction } = await import('@/app/mobile-actions');
+            const { syncContentToDynamoDBAction } = await import('@/features/client-dashboards/actions/mobile-actions');
 
             // Prepare sync request
             const syncRequest = {
@@ -482,7 +482,7 @@ export class OfflineSyncManager {
                 startOpenHouseSessionAction,
                 addVisitorToSessionAction,
                 endOpenHouseSessionAction
-            } = await import('@/app/mobile-actions');
+            } = await import('@/features/client-dashboards/actions/mobile-actions');
 
             // Handle different types of checkin operations
             switch (operation.data.operationType) {
@@ -551,7 +551,7 @@ export class OfflineSyncManager {
 
         try {
             // Import the sync action dynamically to avoid circular dependencies
-            const { syncContentToDynamoDBAction } = await import('@/app/mobile-actions');
+            const { syncContentToDynamoDBAction } = await import('@/features/client-dashboards/actions/mobile-actions');
 
             // Prepare sync request for edit operation
             const syncRequest = {
@@ -596,7 +596,7 @@ export class OfflineSyncManager {
 
         try {
             // Import the meeting prep actions dynamically to avoid circular dependencies
-            const { generateMeetingPrepAction, saveMeetingPrepAction } = await import('@/app/mobile-actions');
+            const { generateMeetingPrepAction, saveMeetingPrepAction } = await import('@/features/client-dashboards/actions/mobile-actions');
 
             // Check if this is a generation request or a save request
             if (operation.data.operationType === 'generate') {
@@ -675,7 +675,7 @@ export class OfflineSyncManager {
 
         try {
             // Import the sync action dynamically to avoid circular dependencies
-            const { savePropertyComparisonAction } = await import('@/app/mobile-actions');
+            const { savePropertyComparisonAction } = await import('@/features/client-dashboards/actions/mobile-actions');
 
             // Prepare sync request
             const syncRequest = {

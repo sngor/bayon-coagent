@@ -34,9 +34,9 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { ArrowUp, ArrowDown, Minus, Star, PlusCircle, Sparkles, Loader2, Search } from 'lucide-react';
-import type { Competitor, KeywordRanking, Profile, Review } from '@/lib/types';
+import type { Competitor, KeywordRanking, Profile, Review } from '@/lib/types/common/common';
 import { useUser } from '@/aws/auth';
 import { useItem, useQuery } from '@/aws/dynamodb/hooks';
 import { getProfileKeys } from '@/aws/dynamodb/keys';

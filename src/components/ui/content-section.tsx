@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { SectionHeader, SectionHeaderProps } from './section-header';
 import { CardGradientMesh } from './gradient-mesh';
 

@@ -10,7 +10,7 @@
  * Requirements: 27.2, 27.4, 27.7
  */
 
-import type { Profile } from '@/lib/types';
+import type { Profile } from '@/lib/types/common/common';
 import type { 
     SmartRecommendation, 
     ProfileCompletionStatus 

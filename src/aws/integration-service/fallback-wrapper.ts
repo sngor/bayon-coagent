@@ -8,7 +8,7 @@
 
 import { oauthClient, mlsClient } from './client';
 import { getOAuthConnectionManager } from '@/integrations/oauth/connection-manager';
-import { importMLSListings } from '@/app/mls-actions';
+import { importMLSListings } from '@/features/integrations/actions/mls-actions';
 
 /**
  * Initiate OAuth flow with fallback

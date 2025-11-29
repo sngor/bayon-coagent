@@ -88,7 +88,7 @@ export function MLSConnection({ onConnectionChange }: MLSConnectionProps) {
 
         try {
             // Import actions dynamically to avoid circular dependencies
-            const { getMLSConnectionsAction } = await import('@/app/mls-actions');
+            const { getMLSConnectionsAction } = await import('@/features/integrations/actions/mls-actions');
             const result = await getMLSConnectionsAction(user.id);
 
             if (result.success && result.data && result.data.length > 0) {
@@ -96,7 +96,7 @@ export function MLSConnection({ onConnectionChange }: MLSConnectionProps) {
                 setConnection(result.data[0]);
 
                 // Load sync history
-                const { getMLSSyncHistoryAction } = await import('@/app/mls-actions');
+                const { getMLSSyncHistoryAction } = await import('@/features/integrations/actions/mls-actions');
                 const historyResult = await getMLSSyncHistoryAction(user.id);
                 if (historyResult.success && historyResult.data) {
                     setSyncHistory(historyResult.data);
@@ -130,7 +130,7 @@ export function MLSConnection({ onConnectionChange }: MLSConnectionProps) {
         setFormErrors({});
 
         try {
-            const { connectMLSAction } = await import('@/app/mls-actions');
+            const { connectMLSAction } = await import('@/features/integrations/actions/mls-actions');
             const result = await connectMLSAction({
                 provider: selectedProvider,
                 username,
@@ -177,7 +177,7 @@ export function MLSConnection({ onConnectionChange }: MLSConnectionProps) {
         setIsDisconnecting(true);
 
         try {
-            const { disconnectMLSAction } = await import('@/app/mls-actions');
+            const { disconnectMLSAction } = await import('@/features/integrations/actions/mls-actions');
             const result = await disconnectMLSAction(user.id, connection.id);
 
             if (result.success) {
@@ -212,7 +212,7 @@ export function MLSConnection({ onConnectionChange }: MLSConnectionProps) {
         setIsSyncing(true);
 
         try {
-            const { importMLSListings } = await import('@/app/mls-actions');
+            const { importMLSListings } = await import('@/features/integrations/actions/mls-actions');
             const result = await importMLSListings(connection.id);
 
             if (result.success && result.data) {

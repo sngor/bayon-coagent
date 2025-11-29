@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FileText, Download, Image, FileSpreadsheet, File, Loader2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getDocumentDownloadUrl, logDocumentDownload, type DashboardDocument } from '@/app/client-dashboard-actions';
+import { getDocumentDownloadUrl, logDocumentDownload, type DashboardDocument } from '@/features/client-dashboards/actions/client-dashboard-actions';
 import { formatDistanceToNow } from 'date-fns';
 
 interface DocumentViewerProps {

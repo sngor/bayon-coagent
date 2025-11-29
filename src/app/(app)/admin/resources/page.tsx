@@ -33,7 +33,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Upload, Trash2, Search, Download, Loader2, Database, Link as LinkIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { getTeamsAction } from '@/app/admin-actions';
+import { getTeamsAction } from '@/features/admin/actions/admin-actions';
 import {
     getDocumentsAction,
     uploadDocumentAction,
@@ -41,7 +41,7 @@ import {
     deleteDocumentAction,
     getDownloadUrlAction,
     type Document
-} from '@/app/knowledge-actions';
+} from '@/features/intelligence/actions/knowledge-actions';
 import { useUser } from '@/aws/auth';
 
 export default function ResourcesPage() {

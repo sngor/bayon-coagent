@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { HelpCircle, Lightbulb, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import type { ContextualHelp as ContextualHelpType } from '@/lib/user-flow';
 
 interface ContextualHelpProps {

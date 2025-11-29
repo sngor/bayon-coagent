@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowDown, ArrowUp } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { Sparkline } from '@/components/ui/sparkline';
 

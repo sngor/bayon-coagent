@@ -1,71 +1,153 @@
-# Documentation
+# Documentation Index
 
-Complete documentation for Bayon Coagent - AI-powered success platform for real estate agents.
+Welcome to the Bayon CoAgent documentation!
 
-## 🚀 Getting Started
+## 🎯 Quick Start
 
-**New to the project?** Start here:
+**New to the codebase?** Start here:
+1. Read [`CODEBASE_ORGANIZATION.md`](./CODEBASE_ORGANIZATION.md) - Complete guide to the codebase structure
+2. Check the project [`README.md`](../README.md) - Project overview and setup
+3. Review [`.agent/workflows/`](../.agent/workflows/) - Common procedures and workflows
 
-1. [Getting Started Guide](./guides/getting-started.md) - Complete setup instructions
-2. [Architecture Overview](./guides/architecture.md) - System design and patterns
-3. [AWS Local Development](./aws-local-development.md) - LocalStack setup
+## 📚 Main Documentation
 
-## 📖 Core Documentation
+### Structure & Organization
+- **[CODEBASE_ORGANIZATION.md](./CODEBASE_ORGANIZATION.md)** - ⭐ **START HERE**
+  - Complete guide to the feature-based architecture
+  - Directory structure and organization
+  - Import patterns and migration guide
+  - Feature and service reference
+  - Troubleshooting and best practices
 
-### Development
-
-- [Getting Started](./guides/getting-started.md) - Setup and first steps
-- [Architecture](./guides/architecture.md) - System architecture
-- [Environment Variables](./guides/environment-variables.md) - Configuration reference
-- [Authentication Setup](./guides/auth-setup.md) - Cognito configuration
-- [Migration Guide](./guides/migration.md) - Firebase to AWS migration
-
-### Design System
-
-- [Design System](./design-system/design-system.md) - Complete design system
-- [Component Reference](./component-reference.md) - All components and usage
-- [Typography](./design-system/typography.md) - Type scale and guidelines
-- [Color Palette](./design-system/color-palette.md) - Color tokens
-- [Icons](./design-system/icons.md) - Icon system
-- [Accessibility](./design-system/accessibility.md) - WCAG compliance
-
-### Performance
-
-- [Performance Guide](./guides/performance.md) - Optimization strategies
-- [Animation Performance](./guides/animation-performance.md) - Animation best practices
-- [Mobile Optimization](./guides/mobile-optimization.md) - Mobile patterns
-- [Tablet Optimization](./guides/tablet-optimization.md) - Tablet patterns
-- [Virtual Scrolling](./guides/virtual-scrolling.md) - Large list optimization
+### AI & Models
+- **[AI_MODEL_README.md](./AI_MODEL_README.md)** - AI model overview
+- **[AI_MODEL_MIGRATION_GUIDE.md](./AI_MODEL_MIGRATION_GUIDE.md)** - Genkit to Bedrock migration
+- **[AI_MODEL_DECISION_TREE.md](./AI_MODEL_DECISION_TREE.md)** - Model selection guide
+- **[AI_MODEL_EVALUATION_SUMMARY.md](./AI_MODEL_EVALUATION_SUMMARY.md)** - Model comparisons
+- **[AI_MODEL_OPTIMIZATION_RECOMMENDATIONS.md](./AI_MODEL_OPTIMIZATION_RECOMMENDATIONS.md)** - Optimization tips
 
 ### Features
+- **[CLIENT_GIFTING_SYSTEM.md](./CLIENT_GIFTING_SYSTEM.md)** - Client gifting feature
+- **[COACHING_MODE.md](./COACHING_MODE.md)** - AI coaching mode
+- **[VOICE_ROLEPLAY_FEATURE.md](./VOICE_ROLEPLAY_FEATURE.md)** - Voice roleplay
+- **[features/](./features/)** - Individual feature docs
 
-- [Responsive Tables](./guides/responsive-tables.md) - Table patterns
-- [Search Functionality](./guides/search.md) - Search implementation
-- [Animation Patterns](./guides/animation-patterns.md) - Common animations
+### Infrastructure & Deployment
+- **[deployment/](./deployment/)** - Deployment guides
+- **[api-gateway-microservices.md](./api-gateway-microservices.md)** - API Gateway setup
+- **[api-versioning-strategy.md](./api-versioning-strategy.md)** - API versioning
+- **[aws-local-development.md](./aws-local-development.md)** - Local AWS setup
+- **[secrets-management.md](./secrets-management.md)** - Secrets management
+- **[sqs-queue-implementation.md](./sqs-queue-implementation.md)** - SQS queues
 
-### Reimagine Image Toolkit
+### UI & Components
+- **[design-system/](./design-system/)** - Design system documentation
+- **[component-library.md](./component-library.md)** - Component reference
+- **[animation-implementation-guide.md](./animation-implementation-guide.md)** - Animations
+- **[micro-animations.md](./micro-animations.md)** - Micro-interactions
+- **[container-styling-guide.md](./container-styling-guide.md)** - Container patterns
 
-- [Reimagine User Guide](./reimagine/user-guide.md) - Complete overview
-- [Best Practices](./reimagine/best-practices.md) - Professional workflows
-- [Virtual Staging](./reimagine/virtual-staging.md) - Staging guide
-- [Day to Dusk](./reimagine/day-to-dusk.md) - Lighting conversion
-- [Enhancement](./reimagine/enhancement.md) - Image improvements
-- [Item Removal](./reimagine/item-removal.md) - Object removal
-- [Renovation](./reimagine/renovation.md) - Virtual renovations
+### Best Practices
+- **[best-practices.md](./best-practices.md)** - General best practices
+- **[standardization-guide.md](./standardization-guide.md)** - Code standards
+- **[refactoring-checklist.md](./refactoring-checklist.md)** - Refactoring guide
+- **[feature-toggles.md](./feature-toggles.md)** - Feature flags
 
-## 🚢 Deployment
+### Security
+- **[SECURITY.md](./SECURITY.md)** - Security overview
+- **[client-portal-security.md](./client-portal-security.md)** - Client portal security
+- **[client-portal-authentication.md](./client-portal-authentication.md)** - Authentication
 
-- [Deployment Guide](./deployment/deployment.md) - Complete instructions
-- [AWS Setup](./deployment/aws-setup.md) - Infrastructure setup
-- [SAM Deployment](./deployment/sam-deployment.md) - SAM guide
-- [Deployment Checklist](./deployment/checklist.md) - Pre-deployment checks
+### Testing
+- **[mobile-testing-checklist.md](./mobile-testing-checklist.md)** - Mobile testing
+- **[mobile-test-report.md](./mobile-test-report.md)** - Test results
+- **[xray-service-map-testing.md](./xray-service-map-testing.md)** - X-Ray tracing
 
-## 📚 Reference
+### Other
+- **[guides/](./guides/)** - How-to guides
+- **[quick-reference/](./quick-reference/)** - Quick reference sheets
+- **[archive/](./archive/)** - Archived docs
 
-- [Component Reference](./component-reference.md) - Quick component lookup
-- [Quick Reference](./quick-reference.md) - Common patterns and code snippets
-- [Device Testing Checklist](./device-testing.md) - Cross-device testing
+## 🔧 Workflows
 
-## 🗂️ Archive
+Common procedures and workflows are in [`.agent/workflows/`](../.agent/workflows/):
 
-Historical documentation and completed tasks are in [archive/](./archive/).
+- **`split-actions.md`** - Plan for splitting the monolithic actions.ts
+- **`reorganize-codebase.md`** - Codebase reorganization plan
+- And more...
+
+## 🗺️ Navigation Tips
+
+### By Role
+
+**Developer (New to Codebase):**
+1. CODEBASE_ORGANIZATION.md
+2. best-practices.md
+3. quick-reference.md
+
+**Designer:**
+1. design-system/
+2. component-library.md
+3. animation-implementation-guide.md
+
+**DevOps:**
+1. deployment/
+2. aws-local-development.md
+3. secrets-management.md
+
+**QA/Tester:**
+1. mobile-testing-checklist.md
+2. device-testing.md
+
+### By Task
+
+**Want to understand the codebase structure?**
+→ CODEBASE_ORGANIZATION.md
+
+**Need to add a new feature?**
+→ CODEBASE_ORGANIZATION.md (Features section)
+→ best-practices.md
+
+**Working with AI models?**
+→ AI_MODEL_README.md
+→ AI_MODEL_DECISION_TREE.md
+
+**Deploying to AWS?**
+→ deployment/
+→ aws-local-development.md
+
+**Building UI components?**
+→ component-library.md
+→ design-system/
+
+**Need to test?**
+→ mobile-testing-checklist.md
+
+## 📝 Contributing to Docs
+
+When adding documentation:
+1. Use clear, descriptive filenames
+2. Add an entry to this README
+3. Include a table of contents for long docs
+4. Use markdown formatting consistently
+5. Add code examples where helpful
+
+## 🔍 Finding Information
+
+**Can't find what you need?**
+1. Check this README's table of contents
+2. Search the docs folder: `grep -r "your topic" docs/`
+3. Check `.agent/workflows/` for procedures
+4. Review the main project README
+
+## 📊 Documentation Statistics
+
+- **Total docs:** 50+files
+- **Guides:** 20+ guides
+- **Features:** 25+ feature docs
+- **Main reference:** CODEBASE_ORGANIZATION.md
+
+---
+
+**Last updated:** November 28, 2025  
+**Most important doc:** [`CODEBASE_ORGANIZATION.md`](./CODEBASE_ORGANIZATION.md)

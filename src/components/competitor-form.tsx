@@ -26,7 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/aws/auth';
 import { toast } from '@/hooks/use-toast';
-import type { Competitor } from '@/lib/types';
+import type { Competitor } from '@/lib/types/common/common';
 import { Trash2, Sparkles, Loader2, Search } from 'lucide-react';
 import { enrichCompetitorAction } from '@/app/actions';
 import { Separator } from '@/components/ui/separator';

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { getUsersListAction, getAgentStatsAction, disableUserAction } from '@/app/admin-actions';
+import { getUsersListAction, getAgentStatsAction, disableUserAction } from '@/features/admin/actions/admin-actions';
 import {
     Table,
     TableBody,

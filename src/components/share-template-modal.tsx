@@ -66,13 +66,13 @@ import {
     Bell,
     History
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 import {
     Template,
     TemplatePermissions,
     TemplatePermission
 } from '@/lib/content-workflow-types';
-import { shareTemplateAction, getTemplateAnalyticsAction } from '@/app/content-workflow-actions';
+import { shareTemplateAction, getTemplateAnalyticsAction } from '@/features/content-engine/actions/content-workflow-actions';
 
 // ==================== Types ====================
 

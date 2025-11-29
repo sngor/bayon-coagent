@@ -8,7 +8,7 @@
 import { DynamoDBRepository } from './repository';
 import { getTestimonialRequestKeys } from './keys';
 import { QueryOptions, QueryResult } from './types';
-import { TestimonialRequest } from '@/lib/types';
+import { TestimonialRequest } from '@/lib/types/common/common';
 import { randomBytes } from 'crypto';
 
 const repository = new DynamoDBRepository();

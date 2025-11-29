@@ -32,7 +32,7 @@ import type {
     PriorityAction,
     MarketInsight
 } from '@/lib/ai-personalization';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 interface AIDashboardProps {
     userId: string;

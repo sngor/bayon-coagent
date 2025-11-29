@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { HubBreadcrumbsProps } from './types';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 export function HubBreadcrumbs({ items, separator }: HubBreadcrumbsProps) {
     const Separator = separator || <ChevronRight className="h-4 w-4 text-muted-foreground" />;

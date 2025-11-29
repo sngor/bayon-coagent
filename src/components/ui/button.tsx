@@ -3,7 +3,7 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils/common"
 
 const buttonVariants = cva(
   // Mobile-optimized: touch-manipulation for better touch response, min-h-[44px] for touch targets

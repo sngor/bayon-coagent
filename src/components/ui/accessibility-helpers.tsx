@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/common';
 
 /**
  * Accessibility helper components following WCAG 2.1 AA standards
