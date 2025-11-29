@@ -420,6 +420,7 @@ export function handleNetworkError(error: Error, context?: ErrorContext) {
   return handleError(error, {
     context: {
       operation: "network_request",
+      timestamp: new Date(),
       ...context,
     },
   });

@@ -134,6 +134,9 @@ export interface ScheduledContent {
         htmlContent?: string;
         plainTextContent?: string;
         recipients?: string[];
+        bulkScheduled?: boolean;
+        bulkPattern?: string;
+        priority?: number;
     };
     publishResults?: PublishResult[];
     retryCount?: number;
@@ -141,8 +144,8 @@ export interface ScheduledContent {
     createdAt: Date;
     updatedAt: Date;
     // DynamoDB GSI keys for efficient querying
-    GSI1PK?: string; // SCHEDULE#<status>
-    GSI1SK?: string; // TIME#<publishTime>
+    GSI2PK?: string; // SCHEDULE#<status>
+    GSI2SK?: string; // TIME#<publishTime>
 }
 
 /**
@@ -177,9 +180,9 @@ export interface Analytics {
     platformMetrics?: Record<string, any>; // Platform-specific raw data
     lastSynced: Date;
     syncStatus: AnalyticsSyncStatus;
-    // DynamoDB GSI keys
-    GSI1PK?: string; // ANALYTICS#<contentType>
-    GSI1SK?: string; // DATE#<publishDate>
+    // GSI keys for content type analytics aggregation
+    GSI3PK?: string; // ANALYTICS#<contentType>
+    GSI3SK?: string; // DATE#<publishedAt>
 }
 
 /**

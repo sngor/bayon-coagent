@@ -63,7 +63,7 @@ import {
     ScheduledContent,
     SchedulingConflict,
     OptimalTime
-} from '@/lib/content-workflow-types';
+} from '@/lib/types/content-workflow-types';
 import { bulkScheduleAction, getOptimalTimesAction } from '@/features/content-engine/actions/content-workflow-actions';
 
 interface BulkSchedulingModalProps {

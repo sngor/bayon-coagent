@@ -599,14 +599,21 @@ export function createServiceError(
     message: string,
     operation: string,
     category: ErrorCategory = ErrorCategory.UNKNOWN,
-    originalError?: Error
+    originalError?: Error,
+    options: {
+        userMessage?: string;
+        suggestedActions?: string[];
+        recoveryActions?: RecoveryAction[];
+        severity?: 'low' | 'medium' | 'high' | 'critical';
+        retryable?: boolean;
+    } = {}
 ): ServiceError {
     return ServiceErrorFactory.create(
         message,
         `${category.toUpperCase()}_${operation.toUpperCase()}`,
         category,
         { operation, timestamp: new Date() },
-        { originalError }
+        { originalError, ...options }
     );
 }
 

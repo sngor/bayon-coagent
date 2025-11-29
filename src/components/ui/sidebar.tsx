@@ -308,7 +308,7 @@ const SidebarInset = React.forwardRef<
     <main
       ref={ref}
       className={cn(
-        "relative h-svh overflow-y-auto",
+        "relative h-svh overflow-y-auto overflow-x-hidden",
         "pl-0 md:pl-[calc(var(--sidebar-width)+1.5rem)]",
         "transition-[padding] duration-200 ease-linear",
         "data-[state=collapsed]:pl-0 data-[state=collapsed]:md:pl-[calc(var(--sidebar-width-icon)+1.5rem)]",

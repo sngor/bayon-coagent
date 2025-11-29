@@ -590,7 +590,7 @@ export class PublishingErrorHandler {
 // Custom Error Class
 // ============================================================================
 
-class PublishingError extends Error {
+export class PublishingError extends Error {
     constructor(
         message: string,
         public platform: Platform,

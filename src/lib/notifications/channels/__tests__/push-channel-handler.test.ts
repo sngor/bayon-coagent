@@ -26,7 +26,7 @@ import {
 // Mock web-push
 jest.mock('web-push', () => ({
     setVapidDetails: jest.fn(),
-    sendNotification: jest.fn().mockResolvedValue({ statusCode: 201 }),
+    sendNotification: jest.fn<any>().mockResolvedValue({ statusCode: 201 }),
     generateVAPIDKeys: jest.fn().mockReturnValue({
         publicKey: 'test-public-key',
         privateKey: 'test-private-key',

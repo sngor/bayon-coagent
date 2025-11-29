@@ -87,6 +87,14 @@ export const DEFAULT_FEATURES: FeatureToggle[] = [
         icon: 'MessageSquare',
         enabled: true,
         category: 'feature'
+    },
+    {
+        id: 'open-house',
+        name: 'Open House',
+        description: 'Manage open house sessions and visitor check-ins',
+        icon: 'Home',
+        enabled: true,
+        category: 'feature'
     }
 ];
 

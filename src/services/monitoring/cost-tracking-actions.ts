@@ -41,7 +41,7 @@ export async function getCostDashboardMetrics(
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - daysToInclude);
 
-        const logs = await queryExecutionLogs(user.userId, startDate, endDate);
+        const logs = await queryExecutionLogs(user.id, startDate, endDate);
 
         // Generate dashboard metrics
         const metrics = generateDashboardMetrics(logs, daysToInclude);
@@ -77,7 +77,7 @@ export async function getFeatureCostSummary(
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - daysToInclude);
 
-        const logs = await queryExecutionLogs(user.userId, startDate, endDate);
+        const logs = await queryExecutionLogs(user.id, startDate, endDate);
 
         // Aggregate feature costs
         const featureCosts = aggregateFeatureCosts(logs);
@@ -116,7 +116,7 @@ export async function getCostComparison(
         beforeStartDate.setDate(beforeStartDate.getDate() - beforeDays);
 
         const beforeLogs = await queryExecutionLogs(
-            user.userId,
+            user.id,
             beforeStartDate,
             beforeEndDate
         );
@@ -127,7 +127,7 @@ export async function getCostComparison(
         afterStartDate.setDate(afterStartDate.getDate() - afterDays);
 
         const afterLogs = await queryExecutionLogs(
-            user.userId,
+            user.id,
             afterStartDate,
             afterEndDate
         );
@@ -170,7 +170,7 @@ export async function getExecutionStats(
             return { success: false, error: 'Not authenticated' };
         }
 
-        const stats = await getExecutionLogStats(user.userId, days);
+        const stats = await getExecutionLogStats(user.id, days);
 
         return { success: true, data: stats };
     } catch (error) {

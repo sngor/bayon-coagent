@@ -9,12 +9,14 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import {
     Organization,
+    OrganizationSettings,
     TeamMember,
     Invitation,
+    InvitationStatus,
     generateInvitationToken,
     getInvitationExpirationDate,
     isInvitationExpired
-} from '@/lib/organization-types';
+} from '@/lib/types/organization-types';
 import {
     getOrganizationKeys,
     getTeamMemberKeys,

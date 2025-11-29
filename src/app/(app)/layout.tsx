@@ -419,7 +419,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Sidebar>
                 <SidebarInset>
                   <ImpersonationBanner />
-                  <header className={`sticky top-0 z-10 flex h-20 items-center justify-between px-6 -mx-6 bg-transparent backdrop-blur-xl transition-all duration-200 ${isScrolled ? 'border-b border-border/20' : ''}`}>
+                  <header className={`sticky top-0 z-10 flex h-20 items-center justify-between px-4 md:px-6 -mx-4 md:-mx-6 bg-transparent backdrop-blur-xl transition-all duration-200 ${isScrolled ? 'border-b border-border/20' : ''}`}>
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       {isMounted && (
                         <>
@@ -442,7 +442,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       {/* Notifications Center - Temporarily disabled due to infinite loop */}
                       {false && user && (
                         <NotificationCenter
-                          userId={user.id}
+                          userId={user?.id || ''}
                           className="h-9 w-9 rounded-full hover:bg-accent"
                         />
                       )}

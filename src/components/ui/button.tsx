@@ -64,10 +64,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
       setRipples((prev) => [...prev, { x, y, id }])
 
-      // Remove ripple after animation
+      // Remove ripple after animation (improved timing: 600ms → 500ms)
       setTimeout(() => {
         setRipples((prev) => prev.filter((ripple) => ripple.id !== id))
-      }, 600)
+      }, 500)
 
       onClick?.(e)
     }

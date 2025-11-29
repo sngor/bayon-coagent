@@ -108,6 +108,7 @@ export async function uploadPhotoAction(
     formData: FormData
 ): Promise<{
     message: string;
+    success: boolean;
     data: {
         photoId?: string;
         uploadUrl?: string;
@@ -121,6 +122,7 @@ export async function uploadPhotoAction(
         if (!user?.id) {
             return {
                 message: 'Authentication required. Please sign in to upload photos.',
+                success: false,
                 data: null,
                 errors: { auth: ['User not authenticated'] },
             };
@@ -133,6 +135,7 @@ export async function uploadPhotoAction(
         if (!file) {
             return {
                 message: 'No file provided',
+                success: false,
                 data: null,
                 errors: { file: ['File is required'] },
             };
@@ -143,6 +146,7 @@ export async function uploadPhotoAction(
         if (!allowedTypes.includes(file.type)) {
             return {
                 message: 'Invalid file type. Please upload JPEG, PNG, or WebP images.',
+                success: false,
                 data: null,
                 errors: { file: ['Invalid file type'] },
             };
@@ -153,6 +157,7 @@ export async function uploadPhotoAction(
         if (file.size > maxSize) {
             return {
                 message: 'File too large. Please use an image smaller than 10MB.',
+                success: false,
                 data: null,
                 errors: { file: ['File too large'] },
             };
@@ -230,6 +235,7 @@ export async function uploadPhotoAction(
 
         return {
             message: 'success',
+            success: true,
             data: {
                 photoId,
                 uploadUrl,
@@ -242,6 +248,7 @@ export async function uploadPhotoAction(
         const errorMessage = handleMobileError(error, 'Failed to upload photo. Please try again.');
         return {
             message: errorMessage,
+            success: false,
             data: null,
             errors: {},
         };
@@ -262,6 +269,7 @@ export async function uploadVoiceRecordingAction(
     formData: FormData
 ): Promise<{
     message: string;
+    success: boolean;
     data: {
         recordingId?: string;
         transcript?: string;
@@ -275,6 +283,7 @@ export async function uploadVoiceRecordingAction(
         if (!user?.id) {
             return {
                 message: 'Authentication required. Please sign in to upload voice recordings.',
+                success: false,
                 data: null,
                 errors: { auth: ['User not authenticated'] },
             };
@@ -296,6 +305,7 @@ export async function uploadVoiceRecordingAction(
         if (!validatedFields.success) {
             return {
                 message: 'Invalid voice recording data',
+                success: false,
                 data: null,
                 errors: validatedFields.error.flatten().fieldErrors,
             };
@@ -308,6 +318,7 @@ export async function uploadVoiceRecordingAction(
         if (!allowedAudioTypes.includes(audioFile.type)) {
             return {
                 message: 'Invalid audio format. Please use MP3, WAV, WebM, OGG, or MP4.',
+                success: false,
                 data: null,
                 errors: { file: ['Invalid audio format'] },
             };
@@ -318,6 +329,7 @@ export async function uploadVoiceRecordingAction(
         if (audioFile.size > maxSize) {
             return {
                 message: 'Audio file too large. Please use a file smaller than 50MB.',
+                success: false,
                 data: null,
                 errors: { file: ['File too large'] },
             };
@@ -410,6 +422,7 @@ export async function uploadVoiceRecordingAction(
 
         return {
             message: 'success',
+            success: true,
             data: {
                 recordingId,
                 transcript,
@@ -422,6 +435,7 @@ export async function uploadVoiceRecordingAction(
         const errorMessage = handleMobileError(error, 'Failed to process voice recording. Please try again.');
         return {
             message: errorMessage,
+            success: false,
             data: null,
             errors: {},
         };
@@ -447,6 +461,7 @@ export async function generateMeetingPrepAction(
     formData: FormData
 ): Promise<{
     message: string;
+    success: boolean;
     data: (GenerateMeetingPrepOutput & { prepId?: string }) | null;
     errors: any;
 }> {
@@ -456,6 +471,7 @@ export async function generateMeetingPrepAction(
         if (!user?.id) {
             return {
                 message: 'Authentication required. Please sign in to generate meeting prep.',
+                success: false,
                 data: null,
                 errors: { auth: ['User not authenticated'] },
             };
@@ -492,6 +508,7 @@ export async function generateMeetingPrepAction(
         if (!validatedFields.success) {
             return {
                 message: 'Invalid meeting preparation data',
+                success: false,
                 data: null,
                 errors: validatedFields.error.flatten().fieldErrors,
             };
@@ -529,6 +546,7 @@ export async function generateMeetingPrepAction(
 
         return {
             message: 'success',
+            success: true,
             data: {
                 ...prepResult,
                 prepId,
@@ -540,6 +558,7 @@ export async function generateMeetingPrepAction(
         const errorMessage = handleMobileError(error, 'Failed to generate meeting preparation materials. Please try again.');
         return {
             message: errorMessage,
+            success: false,
             data: null,
             errors: {},
         };
@@ -567,6 +586,7 @@ export async function startOpenHouseSessionAction(
     formData: FormData
 ): Promise<{
     message: string;
+    success: boolean;
     data: { sessionId?: string; startTime?: string } | null;
     errors: any;
 }> {
@@ -576,6 +596,7 @@ export async function startOpenHouseSessionAction(
         if (!user?.id) {
             return {
                 message: 'Authentication required. Please sign in to start an open house session.',
+                success: false,
                 data: null,
                 errors: { auth: ['User not authenticated'] },
             };
@@ -593,6 +614,7 @@ export async function startOpenHouseSessionAction(
         if (!validatedFields.success) {
             return {
                 message: 'Invalid open house session data',
+                success: false,
                 data: null,
                 errors: validatedFields.error.flatten().fieldErrors,
             };
@@ -620,6 +642,7 @@ export async function startOpenHouseSessionAction(
 
         return {
             message: 'success',
+            success: true,
             data: {
                 sessionId,
                 startTime,
@@ -631,6 +654,7 @@ export async function startOpenHouseSessionAction(
         const errorMessage = handleMobileError(error, 'Failed to start open house session. Please try again.');
         return {
             message: errorMessage,
+            success: false,
             data: null,
             errors: {},
         };
@@ -642,6 +666,7 @@ export async function checkinVisitorAction(
     formData: FormData
 ): Promise<{
     message: string;
+    success: boolean;
     data: { visitorId?: string } | null;
     errors: any;
 }> {
@@ -651,6 +676,7 @@ export async function checkinVisitorAction(
         if (!user?.id) {
             return {
                 message: 'Authentication required. Please sign in to check in visitors.',
+                success: false,
                 data: null,
                 errors: { auth: ['User not authenticated'] },
             };
@@ -676,6 +702,7 @@ export async function checkinVisitorAction(
         if (!validatedFields.success) {
             return {
                 message: 'Invalid visitor check-in data',
+                success: false,
                 data: null,
                 errors: validatedFields.error.flatten().fieldErrors,
             };
@@ -691,6 +718,7 @@ export async function checkinVisitorAction(
         if (!sessionResult || !(sessionResult as any).Data) {
             return {
                 message: 'Open house session not found',
+                success: false,
                 data: null,
                 errors: { session: ['Session not found'] },
             };
@@ -702,6 +730,7 @@ export async function checkinVisitorAction(
         if (session.status !== 'active') {
             return {
                 message: 'Open house session is not active',
+                success: false,
                 data: null,
                 errors: { session: ['Session not active'] },
             };
@@ -727,6 +756,7 @@ export async function checkinVisitorAction(
 
         return {
             message: 'success',
+            success: true,
             data: {
                 visitorId,
             },
@@ -737,6 +767,7 @@ export async function checkinVisitorAction(
         const errorMessage = handleMobileError(error, 'Failed to check in visitor. Please try again.');
         return {
             message: errorMessage,
+            success: false,
             data: null,
             errors: {},
         };
@@ -747,6 +778,7 @@ export async function endOpenHouseSessionAction(
     sessionId: string
 ): Promise<{
     message: string;
+    success: boolean;
     data: {
         summary?: {
             totalVisitors: number;
@@ -764,6 +796,7 @@ export async function endOpenHouseSessionAction(
         if (!user?.id) {
             return {
                 message: 'Authentication required. Please sign in to end the session.',
+                success: false,
                 data: null,
                 errors: { auth: ['User not authenticated'] },
             };
@@ -772,6 +805,7 @@ export async function endOpenHouseSessionAction(
         if (!sessionId) {
             return {
                 message: 'Session ID is required',
+                success: false,
                 data: null,
                 errors: { sessionId: ['Session ID is required'] },
             };
@@ -785,6 +819,7 @@ export async function endOpenHouseSessionAction(
         if (!sessionResult || !(sessionResult as any).Data) {
             return {
                 message: 'Open house session not found',
+                success: false,
                 data: null,
                 errors: { session: ['Session not found'] },
             };
@@ -796,6 +831,7 @@ export async function endOpenHouseSessionAction(
         if (session.status !== 'active') {
             return {
                 message: 'Open house session is already ended',
+                success: false,
                 data: null,
                 errors: { session: ['Session already ended'] },
             };
@@ -1206,5 +1242,98 @@ export async function registerPushTokenAction(
             data: null,
             errors: {},
         };
+    }
+}
+
+// ==================== Missing Actions for Offline Sync ====================
+
+export async function syncContentToDynamoDBAction(data: any): Promise<{ success: boolean; error?: string; conflictDetected?: boolean; conflictId?: string }> {
+    try {
+        const user = await getCurrentUser();
+        if (!user?.id) return { success: false, error: 'User not authenticated' };
+
+        const repository = getRepository();
+        // Assuming content sync uses a generic structure or specific keys based on type
+        // For now, we'll use a generic key structure based on the input
+        const pk = `USER#${user.id}`;
+        const sk = `CONTENT#${data.id}`;
+
+        await repository.create(pk, sk, 'SyncedContent' as any, { ...data, syncedAt: new Date().toISOString() });
+        return { success: true };
+    } catch (error) {
+        console.error('Sync content error:', error);
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+}
+
+export async function addVisitorToSessionAction(data: { sessionId: string; visitor: any; userId: string }): Promise<{ success: boolean; error?: string }> {
+    try {
+        const user = await getCurrentUser();
+        if (!user?.id) return { success: false, error: 'User not authenticated' };
+
+        const repository = getRepository();
+        const sessionKeys = getOpenHouseSessionKeys(user.id, data.sessionId);
+        const sessionResult = await repository.get(sessionKeys.PK, sessionKeys.SK);
+
+        if (!sessionResult || !(sessionResult as any).Data) {
+            return { success: false, error: 'Session not found' };
+        }
+
+        const session = (sessionResult as any).Data;
+        const visitor = {
+            id: uuidv4(),
+            ...data.visitor,
+            timestamp: new Date().toISOString()
+        };
+
+        const updatedVisitors = [...(session.visitors || []), visitor];
+        await repository.update(sessionKeys.PK, sessionKeys.SK, { visitors: updatedVisitors });
+
+        return { success: true };
+    } catch (error) {
+        console.error('Add visitor error:', error);
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+}
+
+export async function saveMeetingPrepAction(data: any): Promise<{ success: boolean; error?: string; prepId?: string }> {
+    try {
+        const user = await getCurrentUser();
+        if (!user?.id) return { success: false, error: 'User not authenticated' };
+
+        const repository = getRepository();
+        const prepId = data.prepId || uuidv4();
+        const prepKeys = getMeetingPrepKeys(user.id, prepId);
+
+        await repository.create(prepKeys.PK, prepKeys.SK, 'MeetingPrep' as any, {
+            ...data,
+            id: prepId,
+            savedAt: new Date().toISOString()
+        });
+
+        return { success: true, prepId };
+    } catch (error) {
+        console.error('Save meeting prep error:', error);
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+}
+
+export async function savePropertyComparisonAction(data: any): Promise<{ success: boolean; error?: string }> {
+    try {
+        const user = await getCurrentUser();
+        if (!user?.id) return { success: false, error: 'User not authenticated' };
+
+        const repository = getRepository();
+        const comparisonKeys = getPropertyComparisonKeys(user.id, data.id);
+
+        await repository.create(comparisonKeys.PK, comparisonKeys.SK, 'PropertyComparison' as any, {
+            ...data,
+            savedAt: new Date().toISOString()
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error('Save property comparison error:', error);
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
 }

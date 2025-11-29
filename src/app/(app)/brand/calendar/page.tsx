@@ -61,7 +61,7 @@ import {
     ROIAnalytics,
     BulkScheduleItem,
     PublishChannel
-} from '@/lib/content-workflow-types';
+} from '@/lib/types/content-workflow-types';
 import {
     getCalendarContentAction,
     updateScheduleAction,

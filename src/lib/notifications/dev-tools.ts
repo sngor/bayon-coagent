@@ -36,7 +36,7 @@ export class MockChannelHandler implements ChannelHandler {
     public deliveryDelay: number = 0;
 
     constructor(
-        private channel: NotificationChannel,
+        public channel: NotificationChannel,
         options?: {
             shouldFail?: boolean;
             failureReason?: string;

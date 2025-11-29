@@ -140,7 +140,7 @@ export class EmailChannelHandler extends BaseChannelHandler {
             return result;
         } catch (error: any) {
             // Check for specific SES errors
-            let errorCode = ErrorCodes.EMAIL_DELIVERY_FAILED;
+            let errorCode: string = ErrorCodes.EMAIL_DELIVERY_FAILED;
             if (error.code === 'MessageRejected' || error.message?.includes('bounce')) {
                 errorCode = ErrorCodes.EMAIL_BOUNCE;
             } else if (error.message?.includes('complaint')) {

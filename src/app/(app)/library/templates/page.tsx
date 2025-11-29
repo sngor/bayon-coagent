@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth/use-user';
 import { getUserTemplates, getTemplate } from '@/services/publishing/template-service';
-import { Template, ContentCategory, TemplateBrowserConfig } from '@/lib/content-workflow-types';
+import { Template, ContentCategory, TemplateBrowserConfig } from '@/lib/types/content-workflow-types';
 import {
     Search,
     Filter,

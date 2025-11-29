@@ -293,7 +293,9 @@ export class MonitoringDashboardService {
 
         return {
             overall,
-            components: systemHealth.services,
+            components: Object.fromEntries(
+                Object.entries(systemHealth.services).map(([k, v]) => [k, v.status])
+            ) as Record<string, 'up' | 'down' | 'degraded'>,
             uptime: systemHealth.uptime,
             lastIncident: this.getLastIncidentTime(activeAlerts)
         };
@@ -500,27 +502,28 @@ export class MonitoringDashboardService {
             const analytics = errorMonitoringService.getErrorAnalytics(timeRange);
 
             return {
-                totalErrors: this.createMetricValue(analytics.totalErrors, 0, 'count'),
+                totalErrors: this.createMetricValue('TotalErrors', analytics.totalErrors, 0, 'count'),
                 errorsByCategory: Object.fromEntries(
                     Object.entries(analytics.errorsByCategory).map(([category, count]) => [
                         category,
-                        this.createMetricValue(count, 0, 'count')
+                        this.createMetricValue(`Error_${category}`, count, 0, 'count')
                     ])
                 ),
                 errorsByService: Object.fromEntries(
                     Object.entries(analytics.errorsByOperation).map(([service, count]) => [
                         service,
-                        this.createMetricValue(count, 0, 'count')
+                        this.createMetricValue(`Error_${service}`, count, 0, 'count')
                     ])
                 ),
                 criticalErrors: this.createMetricValue(
+                    'CriticalErrors',
                     analytics.errorsBySeverity.critical || 0,
                     0,
                     'count'
                 ),
                 errorTrend: analytics.errorTrend,
-                mttr: this.createMetricValue(analytics.mttr, 0, 'minutes'),
-                affectedUsers: this.createMetricValue(analytics.affectedUsers, 0, 'count')
+                mttr: this.createMetricValue('MTTR', analytics.mttr, 0, 'minutes'),
+                affectedUsers: this.createMetricValue('AffectedUsers', analytics.affectedUsers, 0, 'count')
             };
         });
     }
@@ -583,7 +586,7 @@ export class MonitoringDashboardService {
             const datapoints = response.Datapoints || [];
 
             if (datapoints.length === 0) {
-                return this.createMetricValue(0, threshold);
+                return this.createMetricValue(metricName, 0, threshold);
             }
 
             // Get current and previous values
@@ -591,15 +594,16 @@ export class MonitoringDashboardService {
             const current = sortedPoints[sortedPoints.length - 1].Average || 0;
             const previous = sortedPoints.length > 1 ? sortedPoints[sortedPoints.length - 2].Average || 0 : current;
 
-            return this.createMetricValue(current, threshold, undefined, previous);
+            return this.createMetricValue(metricName, current, threshold, undefined, previous);
 
         } catch (error) {
             console.error(`Error getting metric ${metricName}:`, error);
-            return this.createMetricValue(0, threshold);
+            return this.createMetricValue(metricName, 0, threshold);
         }
     }
 
     private createMetricValue(
+        metricName: string,
         current: number,
         threshold: number,
         unit?: string,

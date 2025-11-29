@@ -94,15 +94,15 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { useUser } from '@/aws/auth';
-import type { Project } from '@/lib/types/common/common';
+import type { Project } from '@/lib/types/common';
 import { cn } from '@/lib/utils/common';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { StandardErrorDisplay } from '@/components/standard/error-display';
 import { SchedulingModal } from '@/components/scheduling-modal';
 import { TemplateSaveModal } from '@/components/template-save-modal';
 import { ProjectSelector } from '@/components/project-selector';
-import { ContentCategory, TemplateConfiguration } from '@/lib/content-workflow-types';
-import { PageHeader } from '@/components/page-header';
+import { ContentCategory, TemplateConfiguration } from '@/lib/types/content-workflow-types';
+import { PageHeader } from '@/components/ui/page-header';
 import { FavoritesButton } from '@/components/favorites-button';
 import { getPageConfig } from '@/components/dashboard-quick-actions';
 

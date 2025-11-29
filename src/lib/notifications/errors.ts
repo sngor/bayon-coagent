@@ -241,11 +241,11 @@ function getErrorSeverity(code: string): ErrorSeverity {
         ErrorCodes.NETWORK_ERROR,
     ];
 
-    if (criticalCodes.includes(code)) {
+    if (criticalCodes.includes(code as any)) {
         return ErrorSeverity.CRITICAL;
-    } else if (highSeverityCodes.includes(code)) {
+    } else if (highSeverityCodes.includes(code as any)) {
         return ErrorSeverity.HIGH;
-    } else if (mediumSeverityCodes.includes(code)) {
+    } else if (mediumSeverityCodes.includes(code as any)) {
         return ErrorSeverity.MEDIUM;
     } else {
         return ErrorSeverity.LOW;
@@ -275,7 +275,7 @@ function isErrorRetryable(code: string): boolean {
         ErrorCodes.INVALID_CONFIGURATION,
     ];
 
-    return !nonRetryableCodes.includes(code);
+    return !nonRetryableCodes.includes(code as any);
 }
 
 /**

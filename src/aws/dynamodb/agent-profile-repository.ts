@@ -19,6 +19,7 @@ export interface AgentProfile {
   primaryMarket: string;
   specialization: 'luxury' | 'first-time-buyers' | 'investment' | 'commercial' | 'general';
   preferredTone: 'warm-consultative' | 'direct-data-driven' | 'professional' | 'casual';
+  agentType: 'buyer' | 'seller' | 'hybrid';
   corePrinciple: string;
   // Optional profile photo URL (stored in S3)
   photoURL?: string | null;
@@ -122,7 +123,7 @@ export class AgentProfileRepository {
     p95Duration: number;
     cacheHitRate: number;
   } | null {
-    const metrics = operation 
+    const metrics = operation
       ? this.performanceMetrics.filter(m => m.operation === operation)
       : this.performanceMetrics;
 
@@ -182,9 +183,9 @@ export class AgentProfileRepository {
       if (!profile.specialization) {
         errors.push({ field: 'specialization', message: 'Specialization is required' });
       } else if (!validSpecializations.includes(profile.specialization)) {
-        errors.push({ 
-          field: 'specialization', 
-          message: `Specialization must be one of: ${validSpecializations.join(', ')}` 
+        errors.push({
+          field: 'specialization',
+          message: `Specialization must be one of: ${validSpecializations.join(', ')}`
         });
       }
     }
@@ -194,9 +195,21 @@ export class AgentProfileRepository {
       if (!profile.preferredTone) {
         errors.push({ field: 'preferredTone', message: 'Preferred tone is required' });
       } else if (!validTones.includes(profile.preferredTone)) {
-        errors.push({ 
-          field: 'preferredTone', 
-          message: `Preferred tone must be one of: ${validTones.join(', ')}` 
+        errors.push({
+          field: 'preferredTone',
+          message: `Preferred tone must be one of: ${validTones.join(', ')}`
+        });
+      }
+    }
+
+    if ('agentType' in profile) {
+      const validTypes = ['buyer', 'seller', 'hybrid'];
+      if (!profile.agentType) {
+        errors.push({ field: 'agentType', message: 'Agent type is required' });
+      } else if (!validTypes.includes(profile.agentType)) {
+        errors.push({
+          field: 'agentType',
+          message: `Agent type must be one of: ${validTypes.join(', ')}`
         });
       }
     }
@@ -226,6 +239,7 @@ export class AgentProfileRepository {
       'primaryMarket',
       'specialization',
       'preferredTone',
+      'agentType',
       'corePrinciple'
     ];
 
@@ -288,7 +302,7 @@ export class AgentProfileRepository {
    */
   async createProfile(userId: string, profile: CreateAgentProfileInput): Promise<AgentProfile> {
     const startTime = Date.now();
-    
+
     // Validate required fields
     const requiredFieldErrors = this.validateRequiredFields(profile);
     if (requiredFieldErrors.length > 0) {
@@ -340,7 +354,7 @@ export class AgentProfileRepository {
    */
   async getProfile(userId: string): Promise<AgentProfile | null> {
     const startTime = Date.now();
-    
+
     // Check cache first
     const cached = this.getFromCache(userId);
     if (cached) {
@@ -372,7 +386,7 @@ export class AgentProfileRepository {
    */
   async updateProfile(userId: string, updates: UpdateAgentProfileInput): Promise<void> {
     const startTime = Date.now();
-    
+
     // Validate update data
     const validationErrors = this.validateProfile(updates);
     if (validationErrors.length > 0) {
@@ -408,7 +422,7 @@ export class AgentProfileRepository {
    */
   async deleteProfile(userId: string): Promise<void> {
     const startTime = Date.now();
-    
+
     const keys = getAgentProfileKeysV2(userId);
     await this.repository.delete(keys.PK, keys.SK);
 

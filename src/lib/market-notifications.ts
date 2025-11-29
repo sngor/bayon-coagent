@@ -18,7 +18,7 @@ const NOTIFICATION_PREFERENCES_ENTITY_TYPE: EntityType = 'NotificationPreference
 /**
  * Entity type for notification history
  */
-const NOTIFICATION_HISTORY_ENTITY_TYPE: EntityType = 'NotificationHistory';
+const NOTIFICATION_HISTORY_ENTITY_TYPE: EntityType = 'NotificationHistory' as any;
 
 /**
  * Notification priority levels
@@ -336,7 +336,7 @@ export class MarketNotificationsService {
     );
 
     const notifications = result.items
-      .map((item) => item.Data as MarketNotification)
+      .map((item) => (item as any).Data as MarketNotification)
       .filter((n) => n.createdAt > oneDayAgo);
 
     return notifications;
@@ -513,7 +513,7 @@ Return your response as JSON matching this structure:
     );
 
     let notifications = result.items.map(
-      (item) => item.Data as MarketNotification
+      (item) => (item as any).Data as MarketNotification
     );
 
     // Filter by unread

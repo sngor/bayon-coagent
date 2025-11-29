@@ -90,7 +90,7 @@ export class NotificationTapHandler {
             return {
                 path: '/market/opportunities',
                 params: {
-                    propertyId: data.propertyId || data.mlsNumber,
+                    propertyId: (data.propertyId || data.mlsNumber) || '',
                 },
                 state: {
                     notificationData: data,
@@ -121,7 +121,7 @@ export class NotificationTapHandler {
             return {
                 path: '/market/opportunities',
                 params: {
-                    propertyId: data.propertyId || data.mlsNumber,
+                    propertyId: (data.propertyId || data.mlsNumber) || '',
                 },
                 state: {
                     notificationData: data,

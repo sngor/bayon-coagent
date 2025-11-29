@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MortgageCalculator } from '@/components/mortgage-calculator';
 import { RenovationROICalculator } from '@/components/renovation-roi-calculator';
+import { RentalPotentialCalculator } from '@/components/rental-potential-calculator';
 import { ClientDashboard, SecuredLink, listDashboardDocumentsForClient, type DashboardDocument } from '@/features/client-dashboards/actions/client-dashboard-actions';
 import {
     CMAReportSkeleton,
@@ -309,8 +310,8 @@ export function ClientDashboardView({ dashboard, link, token }: ClientDashboardV
                                         <div className="flex-1 pt-1.5 pb-2">
                                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
                                                 <h4 className={`font-semibold ${milestone.status === 'completed' ? 'text-gray-900 dark:text-white' :
-                                                        milestone.status === 'in_progress' ? 'text-gray-900 dark:text-white' :
-                                                            'text-gray-500 dark:text-gray-400'
+                                                    milestone.status === 'in_progress' ? 'text-gray-900 dark:text-white' :
+                                                        'text-gray-500 dark:text-gray-400'
                                                     }`}>
                                                     {milestone.title}
                                                 </h4>
@@ -344,9 +345,10 @@ export function ClientDashboardView({ dashboard, link, token }: ClientDashboardV
                             primaryColor={branding.primaryColor}
                         >
                             <Tabs defaultValue="mortgage" className="w-full">
-                                <TabsList className="grid w-full grid-cols-2 mb-6">
+                                <TabsList className="grid w-full grid-cols-3 mb-6">
                                     <TabsTrigger value="mortgage">Mortgage Calculator</TabsTrigger>
                                     <TabsTrigger value="roi">Renovation ROI</TabsTrigger>
+                                    <TabsTrigger value="rental">Rental Potential</TabsTrigger>
                                 </TabsList>
                                 <TabsContent value="mortgage">
                                     <div className="mt-4">
@@ -356,6 +358,11 @@ export function ClientDashboardView({ dashboard, link, token }: ClientDashboardV
                                 <TabsContent value="roi">
                                     <div className="mt-4">
                                         <RenovationROICalculator />
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="rental">
+                                    <div className="mt-4">
+                                        <RentalPotentialCalculator />
                                     </div>
                                 </TabsContent>
                             </Tabs>

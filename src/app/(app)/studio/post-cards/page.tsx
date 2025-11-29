@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,13 +9,24 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Sparkles, Download, Share2, Wand2, RefreshCw, ImagePlus, Trash2 } from 'lucide-react';
 import { generatePostCardAction } from '@/features/content-engine/actions/post-card-actions';
 import { useToast } from '@/hooks/use-toast';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import { FavoritesButton } from '@/components/favorites-button';
 import { getPageConfig } from '@/components/dashboard-quick-actions';
 import { CardTypeSelector } from './card-type-selector';
 import { StyleSelector } from './style-selector';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { QRCodeCanvas } from 'qrcode.react';
+import {
+    listDashboards,
+    listAllAgentLinks,
+    type ClientDashboard,
+    type SecuredLink
+} from '@/features/client-dashboards/actions/client-dashboard-actions';
+import { useUser } from '@/aws/auth';
 
 export default function PostCardsPage() {
     const { toast } = useToast();
@@ -27,6 +38,66 @@ export default function PostCardsPage() {
     const [referenceImage, setReferenceImage] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+
+    // QR Code State
+    const { user } = useUser();
+    const [qrCodeEnabled, setQrCodeEnabled] = useState(false);
+    const [qrCodeSource, setQrCodeSource] = useState<'dashboard' | 'custom'>('dashboard');
+    const [customQrLink, setCustomQrLink] = useState('');
+    const [selectedDashboardId, setSelectedDashboardId] = useState<string>('');
+    const [dashboards, setDashboards] = useState<ClientDashboard[]>([]);
+    const [links, setLinks] = useState<SecuredLink[]>([]);
+    const [isLoadingDashboards, setIsLoadingDashboards] = useState(false);
+
+    // Fetch dashboards when QR code is enabled
+    useEffect(() => {
+        if (qrCodeEnabled && dashboards.length === 0 && user) {
+            const fetchData = async () => {
+                setIsLoadingDashboards(true);
+                try {
+                    const [dashboardsResult, linksResult] = await Promise.all([
+                        listDashboards(),
+                        listAllAgentLinks()
+                    ]);
+
+                    if (dashboardsResult.data) {
+                        setDashboards(dashboardsResult.data);
+                    }
+                    if (linksResult.data) {
+                        setLinks(linksResult.data);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch dashboards:', error);
+                    toast({
+                        title: 'Error',
+                        description: 'Failed to load dashboards for QR code',
+                        variant: 'destructive',
+                    });
+                } finally {
+                    setIsLoadingDashboards(false);
+                }
+            };
+            fetchData();
+        }
+    }, [qrCodeEnabled, user]);
+
+    const getDashboardLink = (dashboardId: string) => {
+        const link = links
+            .filter(l => l.dashboardId === dashboardId && !l.revoked)
+            .sort((a, b) => b.createdAt - a.createdAt)[0];
+
+        if (!link) return '';
+
+        const baseUrl = window.location.origin;
+        return `${baseUrl}/d/${link.token}`;
+    };
+
+    const getQrValue = () => {
+        if (!qrCodeEnabled) return '';
+        if (qrCodeSource === 'custom') return customQrLink;
+        if (selectedDashboardId) return getDashboardLink(selectedDashboardId);
+        return '';
+    };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -109,12 +180,59 @@ export default function PostCardsPage() {
     const handleDownload = () => {
         if (!generatedImage) return;
 
-        const link = document.createElement('a');
-        link.href = generatedImage;
-        link.download = `bayon-postcard-${Date.now()}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const qrValue = getQrValue();
+
+        if (qrCodeEnabled && qrValue) {
+            // Composite QR code onto image
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+
+                // Draw main image
+                ctx?.drawImage(img, 0, 0);
+
+                // Draw QR Code
+                const qrCanvas = document.getElementById('qr-code-canvas') as HTMLCanvasElement;
+                if (qrCanvas && ctx) {
+                    // Calculate position (bottom right, with padding)
+                    const qrSize = Math.max(img.width * 0.15, 150); // 15% of width or min 150px
+                    const padding = qrSize * 0.1;
+                    const x = img.width - qrSize - padding;
+                    const y = img.height - qrSize - padding;
+
+                    // Draw white background for QR code
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(x - 10, y - 10, qrSize + 20, qrSize + 20);
+
+                    // Draw QR code
+                    ctx.drawImage(qrCanvas, x, y, qrSize, qrSize);
+                }
+
+                // Download
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = `bayon-postcard-${Date.now()}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            img.src = generatedImage;
+            // Handle cross-origin if needed (though generatedImage is usually base64 or local blob)
+            img.crossOrigin = "anonymous";
+        } else {
+            // Standard download
+            const link = document.createElement('a');
+            link.href = generatedImage;
+            link.download = `bayon-postcard-${Date.now()}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
         toast({
             title: "Downloaded",
@@ -185,6 +303,92 @@ export default function PostCardsPage() {
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            <Separator />
+
+                            {/* QR Code Configuration */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base font-semibold">Include QR Code</Label>
+                                        <div className="text-xs text-muted-foreground">
+                                            Link to a client dashboard
+                                        </div>
+                                    </div>
+                                    <Switch
+                                        checked={qrCodeEnabled}
+                                        onCheckedChange={setQrCodeEnabled}
+                                    />
+                                </div>
+
+                                {qrCodeEnabled && (
+                                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                                        <RadioGroup
+                                            value={qrCodeSource}
+                                            onValueChange={(value) => setQrCodeSource(value as 'dashboard' | 'custom')}
+                                            className="grid grid-cols-2 gap-4"
+                                        >
+                                            <div>
+                                                <RadioGroupItem value="dashboard" id="source-dashboard" className="peer sr-only" />
+                                                <Label
+                                                    htmlFor="source-dashboard"
+                                                    className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                                                >
+                                                    <span className="text-sm font-medium">Dashboard</span>
+                                                </Label>
+                                            </div>
+                                            <div>
+                                                <RadioGroupItem value="custom" id="source-custom" className="peer sr-only" />
+                                                <Label
+                                                    htmlFor="source-custom"
+                                                    className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-transparent p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                                                >
+                                                    <span className="text-sm font-medium">Custom Link</span>
+                                                </Label>
+                                            </div>
+                                        </RadioGroup>
+
+                                        {qrCodeSource === 'dashboard' ? (
+                                            <div className="space-y-2">
+                                                <Label>Select Dashboard</Label>
+                                                <Select
+                                                    value={selectedDashboardId}
+                                                    onValueChange={setSelectedDashboardId}
+                                                    disabled={isLoadingDashboards}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder={isLoadingDashboards ? "Loading..." : "Select a client dashboard"} />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {dashboards.map((dashboard) => (
+                                                            <SelectItem key={dashboard.id} value={dashboard.id}>
+                                                                {dashboard.clientInfo.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                {selectedDashboardId && !getDashboardLink(selectedDashboardId) && (
+                                                    <p className="text-xs text-destructive">
+                                                        No active link found for this dashboard. Please generate one in the dashboard manager.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                <Label>Custom URL or Text</Label>
+                                                <Input
+                                                    placeholder="https://your-website.com"
+                                                    value={customQrLink}
+                                                    onChange={(e) => setCustomQrLink(e.target.value)}
+                                                />
+                                                <p className="text-xs text-muted-foreground">
+                                                    Enter your website, contact info, or any other link.
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             <Separator />
@@ -354,13 +558,30 @@ export default function PostCardsPage() {
                                         </p>
                                     </div>
                                 </div>
+
                             ) : generatedImage ? (
                                 <div className="relative w-full h-full min-h-[500px] flex items-center justify-center bg-neutral-900/5">
-                                    <img
-                                        src={generatedImage}
-                                        alt="Generated Post Card"
-                                        className="w-full h-full object-contain"
-                                    />
+                                    <div className="relative max-w-full max-h-full">
+                                        <NextImage
+                                            src={generatedImage}
+                                            alt="Generated Post Card"
+                                            className="max-w-full max-h-[600px] object-contain shadow-lg"
+                                            width={800}
+                                            height={600}
+                                            unoptimized
+                                        />
+                                        {qrCodeEnabled && getQrValue() && (
+                                            <div className="absolute bottom-4 right-4 bg-white p-2 rounded shadow-md">
+                                                <QRCodeCanvas
+                                                    id="qr-code-canvas"
+                                                    value={getQrValue()}
+                                                    size={80}
+                                                    level="H"
+                                                    includeMargin={false}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="text-center p-12 max-w-md mx-auto">
@@ -404,6 +625,7 @@ export default function PostCardsPage() {
                     </Card>
                 </div>
             </div>
+
         </div>
     );
 }

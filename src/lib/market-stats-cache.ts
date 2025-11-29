@@ -192,7 +192,7 @@ export class MarketStatsCache {
 
                 // Cache the data with favorited flag
                 await this.cacheMarketStats(
-                    { ...stats, favorited: true },
+                    { ...stats, favorited: true } as any,
                     { location, userId }
                 );
 

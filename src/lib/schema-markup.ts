@@ -4,7 +4,7 @@
  * Generates Schema.org structured data for SEO
  */
 
-import { Testimonial, Profile } from "./types";
+import { Testimonial, Profile } from "@/lib/types/common";
 
 /**
  * Generates Review schema markup for a testimonial

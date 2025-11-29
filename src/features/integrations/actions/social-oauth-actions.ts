@@ -8,7 +8,10 @@
 'use server';
 
 import { getOAuthConnectionManager, disconnectConnection } from '@/integrations/oauth/connection-manager';
-import { runConnectionDiagnostics, type ConnectionDiagnostics } from '@/services/connection-diagnostics';
+import {
+    runConnectionDiagnostics,
+    ConnectionDiagnosticResult
+} from '@/services/monitoring/connection-diagnostics';
 import type { Platform, OAuthConnection } from '@/integrations/social/types';
 
 interface ActionResult<T = any> {

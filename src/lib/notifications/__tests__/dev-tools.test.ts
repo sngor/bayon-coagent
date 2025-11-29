@@ -19,6 +19,7 @@ import {
     NotificationPriority,
     NotificationChannel,
     NotificationStatus,
+    EmailFrequency,
 } from "../types";
 
 describe("MockChannelHandler", () => {
@@ -82,7 +83,7 @@ describe("MockChannelHandler", () => {
             userId: "test-user",
             channels: {
                 inApp: { enabled: true, types: [] },
-                email: { enabled: true, address: "test@example.com", types: [], frequency: "immediate" as const },
+                email: { enabled: true, address: "test@example.com", types: [], frequency: EmailFrequency.IMMEDIATE },
                 push: { enabled: false, types: [] },
             },
             globalSettings: { doNotDisturb: false },
@@ -293,7 +294,7 @@ describe("TestNotificationGenerator", () => {
         expect(notification.priority).toBeDefined();
         expect(notification.title).toBeTruthy();
         expect(notification.content).toBeTruthy();
-        expect(notification.channels.length).toBeGreaterThan(0);
+        expect(notification.channels?.length).toBeGreaterThan(0);
     });
 
     it("should apply overrides", () => {

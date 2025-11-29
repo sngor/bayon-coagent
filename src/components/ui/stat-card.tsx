@@ -74,24 +74,24 @@ export function StatCard({
         default: {
             container: 'p-6',
             header: 'flex items-center justify-between mb-4',
-            title: 'text-sm font-medium text-muted-foreground',
-            value: 'text-2xl md:text-3xl font-bold font-headline',
+            title: 'text-sm font-medium text-muted-foreground truncate',
+            value: 'text-2xl md:text-3xl font-bold font-headline truncate',
             trend: 'flex items-center gap-1 text-sm',
             description: 'text-xs text-muted-foreground mt-2'
         },
         compact: {
             container: 'p-4',
             header: 'flex items-center justify-between mb-2',
-            title: 'text-xs font-medium text-muted-foreground',
-            value: 'text-lg md:text-xl font-semibold font-headline',
+            title: 'text-xs font-medium text-muted-foreground truncate',
+            value: 'text-lg md:text-xl font-semibold font-headline truncate',
             trend: 'flex items-center gap-1 text-xs',
             description: 'text-xs text-muted-foreground mt-1'
         },
         detailed: {
             container: 'p-6',
             header: 'flex items-center justify-between mb-6',
-            title: 'text-base font-medium text-muted-foreground',
-            value: 'text-3xl md:text-4xl font-bold font-headline',
+            title: 'text-base font-medium text-muted-foreground truncate',
+            value: 'text-3xl md:text-4xl font-bold font-headline truncate',
             trend: 'flex items-center gap-2 text-sm',
             description: 'text-sm text-muted-foreground mt-3'
         }

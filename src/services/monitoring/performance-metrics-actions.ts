@@ -14,7 +14,8 @@ import {
     Platform,
     AggregatedMetrics,
     ComparativeMetrics,
-} from '@/lib/performance-metrics-types';
+    MetricEventType
+} from '@/lib/types/performance-metrics-types';
 import {
     getCurrentDate,
     getStartDate,

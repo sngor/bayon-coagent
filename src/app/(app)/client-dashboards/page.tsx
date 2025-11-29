@@ -42,7 +42,9 @@ import {
     AlertCircle,
     Users,
     Link as LinkIcon,
+    QrCode,
 } from 'lucide-react';
+import { QRCodeDialog } from '@/components/qrcode-dialog';
 import {
     listDashboards,
     deleteDashboard,
@@ -118,6 +120,11 @@ export default function ClientDashboardsPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [dashboardToDelete, setDashboardToDelete] = useState<ClientDashboard | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [qrCodeDialogState, setQrCodeDialogState] = useState<{
+        open: boolean;
+        url: string;
+        title: string;
+    }>({ open: false, url: '', title: '' });
 
     // Fetch dashboards
     useEffect(() => {
@@ -401,19 +408,36 @@ export default function ClientDashboardsPage() {
                                                         View Dashboard
                                                     </DropdownMenuItem>
                                                     {linkStatus.status === 'active' && linkStatus.link && (
-                                                        <DropdownMenuItem
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                // Construct the full link URL
-                                                                // The token is stored in the link object
-                                                                const baseUrl = window.location.origin;
-                                                                const linkUrl = `${baseUrl}/d/${linkStatus.link!.token}`;
-                                                                handleCopyLink(linkUrl);
-                                                            }}
-                                                        >
-                                                            <Copy className="h-4 w-4 mr-2" />
-                                                            Copy Link
-                                                        </DropdownMenuItem>
+                                                        <>
+                                                            <DropdownMenuItem
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    // Construct the full link URL
+                                                                    // The token is stored in the link object
+                                                                    const baseUrl = window.location.origin;
+                                                                    const linkUrl = `${baseUrl}/d/${linkStatus.link!.token}`;
+                                                                    handleCopyLink(linkUrl);
+                                                                }}
+                                                            >
+                                                                <Copy className="h-4 w-4 mr-2" />
+                                                                Copy Link
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const baseUrl = window.location.origin;
+                                                                    const linkUrl = `${baseUrl}/d/${linkStatus.link!.token}`;
+                                                                    setQrCodeDialogState({
+                                                                        open: true,
+                                                                        url: linkUrl,
+                                                                        title: dashboard.clientInfo.name,
+                                                                    });
+                                                                }}
+                                                            >
+                                                                <QrCode className="h-4 w-4 mr-2" />
+                                                                QR Code
+                                                            </DropdownMenuItem>
+                                                        </>
                                                     )}
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuItem
@@ -495,6 +519,14 @@ export default function ClientDashboardsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* QR Code Dialog */}
+            <QRCodeDialog
+                open={qrCodeDialogState.open}
+                onOpenChange={(open) => setQrCodeDialogState((prev) => ({ ...prev, open }))}
+                url={qrCodeDialogState.url}
+                title={qrCodeDialogState.title}
+            />
         </div>
     );
 }

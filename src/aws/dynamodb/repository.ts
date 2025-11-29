@@ -293,7 +293,16 @@ export class DynamoDBRepository {
     sk: string,
     entityType: EntityType,
     data: T,
-    gsi?: { GSI1PK?: string; GSI1SK?: string }
+    gsi?: {
+      GSI1PK?: string;
+      GSI1SK?: string;
+      GSI2PK?: string;
+      GSI2SK?: string;
+      GSI3PK?: string;
+      GSI3SK?: string;
+      GSI4PK?: string;
+      GSI4SK?: string;
+    }
   ): Promise<DynamoDBItem<T>> {
     const now = Date.now();
     const item: DynamoDBItem<T> = {

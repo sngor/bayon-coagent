@@ -22,7 +22,7 @@ import {
     TemplateConfiguration,
     TemplatePermissions,
     ContentCategory
-} from '@/lib/content-workflow-types';
+} from '@/lib/types/content-workflow-types';
 
 // ==================== Core Template CRUD Operations ====================
 
@@ -570,7 +570,7 @@ export async function getSharedTemplates(params: {
                     sharedAt: ref.sharedAt,
                     sharedBy: ref.sharedBy,
                     effectivePermissions: ref.permissions
-                });
+                } as any as Template);
             }
         }
 
@@ -650,7 +650,7 @@ export async function updateSharedTemplate(params: {
             });
 
             if (sharedResult.success && sharedResult.templates) {
-                template = sharedResult.templates.find(t => t.id === params.templateId);
+                template = sharedResult.templates.find(t => t.id === params.templateId) || null;
                 isSharedTemplate = true;
             }
         }
@@ -1288,7 +1288,8 @@ export async function getSeasonalTemplates(params: {
         for (const [seasonKey, seasonData] of Object.entries(SEASONAL_TEMPLATES)) {
             if (seasonKey === 'holidays') {
                 // Handle holiday templates separately
-                for (const template of seasonData.templates) {
+                const holidaySeason = seasonData as { templates: Array<any> };
+                for (const template of holidaySeason.templates) {
                     if (!template.months || template.months.includes(targetMonth)) {
                         const seasonalTemplate = createSeasonalTemplate(template, params.userBrandInfo);
                         seasonalTemplates.push(seasonalTemplate);
@@ -1415,7 +1416,15 @@ export async function getSeasonalNotifications(params: {
     try {
         const currentDate = new Date();
         const lookAheadDays = params.lookAheadDays || 14; // Default 2 weeks ahead
-        const notifications = [];
+        const notifications: Array<{
+            type: 'seasonal_opportunity' | 'template_update' | 'market_trend';
+            title: string;
+            message: string;
+            templates: Template[];
+            priority: 'high' | 'medium' | 'low';
+            actionUrl?: string;
+            expiresAt: Date;
+        }> = [];
 
         // Check for upcoming seasonal opportunities
         for (let i = 0; i <= lookAheadDays; i++) {
@@ -1459,7 +1468,7 @@ export async function getSeasonalNotifications(params: {
 
                 if (holidayTemplates.success && holidayTemplates.templates) {
                     const relevantTemplates = holidayTemplates.templates.filter(t =>
-                        t.seasonalTags?.some(tag => opportunity.tags.includes(tag))
+                        t.seasonalTags?.some((tag: string) => opportunity.tags.includes(tag))
                     );
 
                     if (relevantTemplates.length > 0) {
@@ -1483,7 +1492,7 @@ export async function getSeasonalNotifications(params: {
 
         // Sort by priority and date
         notifications.sort((a, b) => {
-            const priorityOrder = { high: 3, medium: 2, low: 1 };
+            const priorityOrder: Record<string, number> = { high: 3, medium: 2, low: 1 };
             const aPriority = priorityOrder[a.priority];
             const bPriority = priorityOrder[b.priority];
 
@@ -1662,8 +1671,8 @@ function createSeasonalTemplate(templateData: any, userBrandInfo?: any): Templat
 
         // Update keywords with user-specific terms
         if (config.stylePreferences && userBrandInfo.marketArea) {
-            config.stylePreferences.keywords = config.stylePreferences.keywords.map(keyword =>
-                keyword.replace(/\[MARKET_AREA\]/g, userBrandInfo.marketArea)
+            config.stylePreferences.keywords = config.stylePreferences.keywords.map((keyword: string) =>
+                keyword.replace(/\[MARKET_AREA\]/g, userBrandInfo.marketArea!)
             );
         }
     }
@@ -1695,16 +1704,18 @@ function isUpcomingSeason(seasonMonths: number[], currentMonth: number): boolean
  * Check if a template is relevant for a specific month
  */
 function isTemplateRelevantForMonth(template: Template, month: number): boolean {
-    if (!template.seasonalTags || template.seasonalTags.length === 0) return false;
-
+    // Check if template has matching seasonal tag
+    if (template.seasonalTags && template.seasonalTags.some((tag: string) => getCurrentSeason(month).includes(tag))) {
+        return true;
+    }
     const season = getCurrentSeason(month);
-    return template.seasonalTags.includes(season) ||
-        template.seasonalTags.some(tag => {
+    return (template.seasonalTags?.includes(season) ?? false) ||
+        (template.seasonalTags?.some(tag => {
             // Check for month-specific tags
             const monthNames = ['january', 'february', 'march', 'april', 'may', 'june',
                 'july', 'august', 'september', 'october', 'november', 'december'];
             return tag.toLowerCase().includes(monthNames[month - 1]);
-        });
+        }) ?? false);
 }
 
 /**
@@ -3172,7 +3183,11 @@ export async function validateSpamScore(params: {
     error?: string;
 }> {
     try {
-        const issues = [];
+        const issues: {
+            type: 'high-risk' | 'medium-risk' | 'low-risk';
+            message: string;
+            suggestion: string;
+        }[] = [];
         let spamScore = 0;
 
         // Check subject line

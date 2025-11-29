@@ -7,7 +7,7 @@ import type {
   Competitor,
   KeywordRanking,
   Property,
-} from './types';
+} from '@/lib/types/common';
 import { PlaceHolderImages } from './placeholder-images';
 
 const getImage = (id: string) =>

@@ -238,7 +238,7 @@ export class CloudWatchLoggingService {
             return {
                 duration: endTime - startTime,
                 memoryUsed: endMemory.heapUsed - startMemory.heapUsed,
-                cpuUsage: process.cpuUsage ? this.calculateCPUUsage() : undefined
+                cpuUsage: typeof process.cpuUsage === 'function' ? this.calculateCPUUsage() : undefined
             };
         };
     }

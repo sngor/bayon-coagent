@@ -3,7 +3,7 @@
  * Provides lightweight alternatives to heavy Framer Motion animations
  */
 
-import { cn } from './utils';
+import { cn } from './common';
 
 /**
  * Optimized animation classes that use CSS transitions instead of JS animations

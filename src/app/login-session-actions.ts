@@ -6,7 +6,7 @@
 
 import { getRepository } from '@/aws/dynamodb/repository';
 import { getLoginSessionKeys } from '@/aws/dynamodb/keys';
-import { LoginSession, parseUserAgent } from '@/lib/login-session-types';
+import { LoginSession, LoginHistory } from '@/lib/types/login-session-types';
 import { headers } from 'next/headers';
 
 /**
@@ -16,15 +16,15 @@ export async function trackLoginSession(userId: string): Promise<void> {
   try {
     const repository = getRepository();
     const sessionId = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    
+
     // Get request headers
     const headersList = await headers();
     const userAgent = headersList.get('user-agent') || '';
     const ipAddress = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || undefined;
-    
+
     // Parse user agent
     const { deviceType, browser, os } = parseUserAgent(userAgent);
-    
+
     // Create session data
     const sessionData: LoginSession = {
       sessionId,
@@ -37,7 +37,7 @@ export async function trackLoginSession(userId: string): Promise<void> {
       os,
       isActive: true,
     };
-    
+
     // Save to DynamoDB
     const keys = getLoginSessionKeys(userId, sessionId);
     await repository.create(
@@ -60,12 +60,12 @@ export async function getLoginHistory(userId: string, limit: number = 10): Promi
     const repository = getRepository();
     const pk = `USER#${userId}`;
     const skPrefix = 'SESSION#';
-    
+
     const result = await repository.query<LoginSession>(pk, skPrefix, {
       limit,
       scanIndexForward: false, // Most recent first
     });
-    
+
     return result.items;
   } catch (error) {
     console.error('Failed to get login history:', error);
@@ -80,7 +80,7 @@ export async function signOutAllDevices(userId: string, currentSessionId?: strin
   try {
     const repository = getRepository();
     const sessions = await getLoginHistory(userId, 100);
-    
+
     // Update all sessions except current to inactive
     for (const session of sessions) {
       if (session.sessionId !== currentSessionId && session.isActive) {

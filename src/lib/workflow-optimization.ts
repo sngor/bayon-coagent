@@ -10,7 +10,7 @@
 
 import { getUsagePatterns, type FeatureUsage } from './usage-tracking';
 import { createUserFlowManager, type UserFlowState } from './user-flow';
-import type { Profile } from './types';
+import type { Profile } from '@/lib/types/common';
 
 // ============================================================================
 // Types and Interfaces
@@ -100,14 +100,14 @@ export interface WorkflowOptimization {
 export function detectWorkflowPatterns(): WorkflowPattern[] {
   const patterns = getUsagePatterns();
   const features = Object.values(patterns.features);
-  
+
   if (features.length < 2) {
     return [];
   }
 
   // Sort features by last used to find sequences
   const sortedFeatures = [...features].sort((a, b) => a.lastUsed - b.lastUsed);
-  
+
   const detectedPatterns: WorkflowPattern[] = [];
 
   // Common pattern: Profile → Marketing Plan → Content Creation
@@ -183,7 +183,7 @@ function detectSequencePattern(
         break;
       }
     }
-    
+
     if (matches) {
       matchCount++;
       // Calculate time between first and last in sequence
@@ -219,10 +219,10 @@ export function suggestWorkflowShortcuts(
   // Find patterns that include the current feature
   patterns.forEach((pattern) => {
     const currentIndex = pattern.sequence.findIndex((f) => f === currentFeature);
-    
+
     if (currentIndex >= 0 && currentIndex < pattern.sequence.length - 1) {
       const nextFeature = pattern.sequence[currentIndex + 1];
-      
+
       shortcuts.push({
         id: `${currentFeature}-to-${nextFeature}`,
         title: `Continue to ${formatFeatureName(nextFeature)}`,
@@ -333,7 +333,7 @@ export function detectIfStuck(
   if (timeOnPage > 3 * 60 * 1000 && !hasCompletedAction) {
     isStuck = true;
     reason = 'You\'ve been on this page for a while without taking action';
-    
+
     suggestions.push({
       id: 'tutorial',
       title: 'Watch Tutorial',
@@ -368,12 +368,12 @@ export function detectIfStuck(
     false,
     false
   );
-  
+
   const prereqCheck = flowManager.checkPrerequisites(currentFeature);
   if (!prereqCheck.canProceed) {
     isStuck = true;
     reason = 'You need to complete some prerequisites first';
-    
+
     prereqCheck.prerequisites
       .filter((p) => !p.met)
       .forEach((prereq) => {
@@ -396,7 +396,7 @@ export function detectIfStuck(
   if (featureUsage && featureUsage.count > 5 && !hasCompletedAction) {
     isStuck = true;
     reason = 'You\'ve visited this feature multiple times without completing an action';
-    
+
     suggestions.push({
       id: 'contact-support',
       title: 'Contact Support',

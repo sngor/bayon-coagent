@@ -1,6 +1,6 @@
 
 import { ChartConfig } from '@/components/ui/chart';
-import { ImagePlaceholder } from './placeholder-images';
+import { ImagePlaceholder } from '@/lib/constants/placeholder-images';
 
 export type Profile = {
   id?: string;

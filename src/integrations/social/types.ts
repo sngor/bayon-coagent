@@ -3,7 +3,15 @@
  * Core TypeScript interfaces for social media data structures
  */
 
-export type Platform = "facebook" | "instagram" | "linkedin" | "twitter";
+export type Platform =
+    | "facebook"
+    | "instagram"
+    | "linkedin"
+    | "twitter"
+    | "followupboss"
+    | "facebook_lead_ads"
+    | "calendly"
+    | "hubspot";
 
 export interface OAuthConnection {
     id: string;

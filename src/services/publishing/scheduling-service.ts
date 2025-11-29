@@ -152,8 +152,8 @@ export class SchedulingService {
                     createdAt: now,
                     updatedAt: now,
                     // GSI keys for efficient querying by status and time
-                    GSI1PK: `SCHEDULE#${ScheduledContentStatus.SCHEDULED}`,
-                    GSI1SK: `TIME#${params.publishTime.toISOString()}`,
+                    GSI2PK: `SCHEDULE#${ScheduledContentStatus.SCHEDULED}`,
+                    GSI2SK: `TIME#${params.publishTime.toISOString()}`,
                 };
 
                 // Store in DynamoDB using existing patterns
@@ -170,8 +170,8 @@ export class SchedulingService {
                     'ScheduledContent' as EntityType,
                     scheduledContent,
                     {
-                        GSI1PK: keys.GSI1PK,
-                        GSI1SK: keys.GSI1SK,
+                        GSI2PK: keys.GSI2PK,
+                        GSI2SK: keys.GSI2SK,
                     }
                 );
 
@@ -384,7 +384,7 @@ export class SchedulingService {
             if (params.newPublishTime) {
                 updates.publishTime = params.newPublishTime;
                 // Update GSI keys for new time
-                updates.GSI1SK = `TIME#${params.newPublishTime.toISOString()}`;
+                updates.GSI2SK = `TIME#${params.newPublishTime.toISOString()}`;
             }
 
             if (params.channels) {
@@ -442,7 +442,7 @@ export class SchedulingService {
                 status: ScheduledContentStatus.CANCELLED,
                 updatedAt: new Date(),
                 // Update GSI key to reflect new status
-                GSI1PK: `SCHEDULE#${ScheduledContentStatus.CANCELLED}`,
+                GSI2PK: `SCHEDULE#${ScheduledContentStatus.CANCELLED}`,
             });
 
             return {
@@ -528,7 +528,8 @@ export class SchedulingService {
         try {
             for (const channel of channels) {
                 // Skip blog and newsletter channels as they don't require OAuth
-                if (channel.type === PublishChannelType.BLOG || channel.type === PublishChannelType.NEWSLETTER) {
+                // Instagram doesn't support text-only posts via API, so filter it out for now.
+                if (channel.type === PublishChannelType.INSTAGRAM || channel.type === PublishChannelType.BLOG || channel.type === PublishChannelType.NEWSLETTER) {
                     continue;
                 }
 
@@ -1021,7 +1022,7 @@ export class SchedulingService {
             ],
         };
 
-        return bestPractices[channel] || bestPractices[PublishChannelType.FACEBOOK];
+        return bestPractices[channel as PublishChannelType] || bestPractices[PublishChannelType.FACEBOOK];
     }
 
     /**
@@ -1267,8 +1268,8 @@ export async function bulkSchedule(params: BulkScheduleParams): Promise<ContentW
                     retryCount: 0,
                     createdAt: new Date(),
                     updatedAt: new Date(),
-                    GSI1PK: `SCHEDULE#${ScheduledContentStatus.SCHEDULED}`,
-                    GSI1SK: `TIME#${publishTime.toISOString()}`,
+                    GSI2PK: `SCHEDULE#${ScheduledContentStatus.SCHEDULED}`,
+                    GSI2SK: `TIME#${publishTime.toISOString()}`,
                 };
 
                 scheduledItems.push(scheduledContent);
@@ -1504,7 +1505,7 @@ function generateCustomDates(
     if (pattern.customDates && pattern.customDates.length > 0) {
         // Use provided custom dates
         return pattern.customDates
-            .filter(date => date >= startDate && !shouldExcludeDate(date, pattern, holidays))
+            .filter((date: Date) => date >= startDate && !shouldExcludeDate(date, pattern, holidays))
             .slice(0, itemCount);
     }
 
@@ -1673,8 +1674,8 @@ async function saveScheduledItemsAtomically(items: ScheduledContent[]): Promise<
                     'ScheduledContent' as EntityType,
                     item,
                     {
-                        GSI1PK: keys.GSI1PK,
-                        GSI1SK: keys.GSI1SK,
+                        GSI2PK: keys.GSI2PK,
+                        GSI2SK: keys.GSI2SK,
                     }
                 );
             });

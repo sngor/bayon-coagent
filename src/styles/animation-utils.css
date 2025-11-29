@@ -1,0 +1,220 @@
+/* Advanced Animation Utilities
+ * Specialized animations for scroll effects, group hovers, and complex interactions
+ */
+
+/* Scroll-triggered animations */
+@layer utilities {
+    .scroll-fade-in {
+        opacity: 0;
+        animation: fade-in 0.6s ease-out forwards;
+        animation-timeline: view();
+        animation-range: entry 0% cover 30%;
+    }
+
+    .scroll-slide-up {
+        opacity: 0;
+        transform: translateY(2rem);
+        animation: slide-up-slow 0.6s ease-out forwards;
+        animation-timeline: view();
+        animation-range: entry 0% cover 30%;
+    }
+
+    .scroll-blur-in {
+        opacity: 0;
+        filter: blur(10px);
+        animation: blur-in 0.6s ease-out forwards;
+        animation-timeline: view();
+        animation-range: entry 0% cover 30%;
+    }
+
+    /* Group hover animations */
+    .group:hover .group-hover-lift {
+        transform: translateY(-4px);
+        transition: transform var(--transition-smooth);
+    }
+
+    .group:hover .group-hover-glow {
+        box-shadow: 0 0 20px hsl(var(--primary) / 0.4);
+        transition: box-shadow var(--transition-smooth);
+    }
+
+    .group:hover .group-hover-scale {
+        transform: scale(1.05);
+        transition: transform var(--transition-smooth);
+    }
+
+    .group:hover .group-hover-fade-in {
+        opacity: 1;
+        transition: opacity var(--transition-base);
+    }
+
+    /* Loading state animations (extended) */
+    .dots-loading span {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        margin: 0 2px;
+        background-color: currentColor;
+        border-radius: 50%;
+        opacity: 0.4;
+        animation: bounce-typing 1.4s ease-in-out infinite;
+    }
+
+    .dots-loading span:nth-child(1) {
+        animation-delay: 0s;
+    }
+
+    .dots-loading span:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+
+    .dots-loading span:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+
+    /* Spring animations with natural motion */
+    .spring-bounce-in {
+        animation: elastic-bounce 0.8s var(--transition-elastic);
+        will-change: opacity, transform;
+        backface-visibility: hidden;
+    }
+
+    .spring-scale {
+        transition: transform var(--transition-spring);
+        will-change: transform;
+    }
+
+    .spring-scale:hover {
+        transform: scale(1.05);
+    }
+
+    .spring-scale:active {
+        transform: scale(0.95);
+    }
+
+    /* Advanced focus effects */
+    .focus-ring-spring:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px hsl(var(--ring) / 0.3);
+        transition: box-shadow var(--transition-spring);
+    }
+
+    /* Pulse animations for notifications */
+    .pulse-notification {
+        animation: pulse-gentle 2s ease-in-out infinite;
+        will-change: opacity, transform;
+    }
+
+    /* Shimmer effect for loading cards */
+    .shimmer-card {
+        position: relative;
+        overflow: hidden;
+        background: hsl(var(--muted));
+    }
+
+    .shimmer-card::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        transform: translateX(-100%);
+        background: linear-gradient(90deg,
+                transparent,
+                hsl(var(--muted-foreground) / 0.1),
+                transparent);
+        animation: shimmer-animation 2s infinite;
+    }
+
+    /* Stagger container - applies delays to children */
+    .stagger-container>* {
+        animation: stagger-fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+    }
+
+    .stagger-container>*:nth-child(1) {
+        animation-delay: 50ms;
+    }
+
+    .stagger-container>*:nth-child(2) {
+        animation-delay: 100ms;
+    }
+
+    .stagger-container>*:nth-child(3) {
+        animation-delay: 150ms;
+    }
+
+    .stagger-container>*:nth-child(4) {
+        animation-delay: 200ms;
+    }
+
+    .stagger-container>*:nth-child(5) {
+        animation-delay: 250ms;
+    }
+
+    .stagger-container>*:nth-child(6) {
+        animation-delay: 300ms;
+    }
+
+    .stagger-container>*:nth-child(7) {
+        animation-delay: 350ms;
+    }
+
+    .stagger-container>*:nth-child(8) {
+        animation-delay: 400ms;
+    }
+
+    .stagger-container>*:nth-child(9) {
+        animation-delay: 450ms;
+    }
+
+    .stagger-container>*:nth-child(10) {
+        animation-delay: 500ms;
+    }
+
+    /* Smooth opacity transitions */
+    .fade-transition {
+        transition: opacity var(--transition-smooth);
+    }
+
+    /* Transform transitions with GPU acceleration */
+    .transform-smooth {
+        transition: transform var(--transition-smooth);
+        will-change: transform;
+        backface-visibility: hidden;
+    }
+
+    .transform-spring {
+        transition: transform var(--transition-spring);
+        will-change: transform;
+        backface-visibility: hidden;
+    }
+
+    /* Reduce motion for accessibility */
+    @media (prefers-reduced-motion: reduce) {
+
+        .scroll-fade-in,
+        .scroll-slide-up,
+        .scroll-blur-in,
+        .animate-elastic-bounce,
+        .animate-blur-in,
+        .animate-rotate-in,
+        .animate-slide-up-slow,
+        .animate-stagger-item,
+        .spring-bounce-in,
+        .stagger-container>* {
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+            filter: none !important;
+        }
+
+        .hover-lift-subtle,
+        .hover-scale-smooth,
+        .spring-scale,
+        .transform-smooth,
+        .transform-spring {
+            transition: none !important;
+        }
+    }
+}

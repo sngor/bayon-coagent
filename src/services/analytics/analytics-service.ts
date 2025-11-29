@@ -387,8 +387,8 @@ export class AnalyticsService {
                     lastSynced: new Date(),
                     syncStatus: AnalyticsSyncStatus.COMPLETED,
                     // GSI keys for content type analytics aggregation
-                    GSI1PK: `ANALYTICS#${params.contentType}`,
-                    GSI1SK: `DATE#${params.publishedAt.toISOString().split('T')[0]}`, // YYYY-MM-DD
+                    GSI3PK: `ANALYTICS#${params.contentType}`,
+                    GSI3SK: `DATE#${params.publishedAt.toISOString().split('T')[0]}`, // YYYY-MM-DD
                 };
 
                 // Store in DynamoDB using existing patterns
@@ -406,8 +406,8 @@ export class AnalyticsService {
                     'Analytics' as EntityType,
                     analytics,
                     {
-                        GSI1PK: keys.GSI1PK,
-                        GSI1SK: keys.GSI1SK,
+                        GSI3PK: keys.GSI3PK,
+                        GSI3SK: keys.GSI3SK,
                     }
                 );
 
@@ -457,8 +457,8 @@ export class AnalyticsService {
                             platformMetrics: {},
                             lastSynced: new Date(),
                             syncStatus: AnalyticsSyncStatus.PENDING,
-                            GSI1PK: `ANALYTICS#${params.contentType}`,
-                            GSI1SK: `DATE#${params.publishedAt.toISOString().split('T')[0]}`
+                            GSI3PK: `ANALYTICS#${params.contentType}`,
+                            GSI3SK: `DATE#${params.publishedAt.toISOString().split('T')[0]}`
                         } as Analytics;
                     }
                 }
@@ -739,7 +739,7 @@ export class AnalyticsService {
             const keys = getABTestKeys(params.userId, params.testId);
             const testResult = await this.repository.get<ABTest>(keys.PK, keys.SK);
 
-            if (!testResult.item) {
+            if (!testResult) {
                 return {
                     success: false,
                     error: 'A/B test not found',
@@ -747,7 +747,7 @@ export class AnalyticsService {
                 };
             }
 
-            const abTest = testResult.item;
+            const abTest = testResult;
 
             // Calculate results for each variation
             const variationResults: VariationResults[] = [];
@@ -862,7 +862,6 @@ export class AnalyticsService {
                 await this.repository.update(
                     keys.PK,
                     keys.SK,
-                    'ABTest' as EntityType,
                     abTest
                 );
             }
@@ -902,7 +901,7 @@ export class AnalyticsService {
             const keys = getABTestKeys(userId, testId);
             const testResult = await this.repository.get<ABTest>(keys.PK, keys.SK);
 
-            if (!testResult.item) {
+            if (!testResult) {
                 return {
                     success: false,
                     error: 'A/B test not found',
@@ -910,7 +909,7 @@ export class AnalyticsService {
                 };
             }
 
-            const abTest = testResult.item;
+            const abTest = testResult;
 
             // Find the variation
             const variationIndex = abTest.variations.findIndex(v => v.id === variationId);
@@ -968,7 +967,6 @@ export class AnalyticsService {
             await this.repository.update(
                 keys.PK,
                 keys.SK,
-                'ABTest' as EntityType,
                 abTest
             );
 
@@ -1309,7 +1307,7 @@ export class AnalyticsService {
         const returnOnAdSpend = estimatedCost > 0 ? (totalRevenue / estimatedCost) * 100 : 0;
 
         // Group by content type
-        const byContentType: Record<ContentCategory, ROIMetrics> = {};
+        const byContentType = {} as Record<ContentCategory, ROIMetrics>;
         const contentTypeGroups = this.groupROIEventsByContentType(roiEvents);
 
         Array.from(contentTypeGroups.entries()).forEach(([contentType, events]) => {
@@ -1317,7 +1315,7 @@ export class AnalyticsService {
         });
 
         // Group by channel (extract from touch points)
-        const byChannel: Record<PublishChannelType, ROIMetrics> = {};
+        const byChannel = {} as Record<PublishChannelType, ROIMetrics>;
         const channelGroups = this.groupROIEventsByChannel(roiEvents);
 
         Array.from(channelGroups.entries()).forEach(([channel, events]) => {
@@ -1548,7 +1546,7 @@ export class AnalyticsService {
             'Attribution'
         ];
 
-        const rows = analytics.topPerformingContent.map(content => [
+        const rows = analytics.topPerformingContent.map((content: ContentROI) => [
             content.contentId,
             content.contentType,
             content.totalRevenue.toFixed(2),
@@ -1558,7 +1556,7 @@ export class AnalyticsService {
         ]);
 
         const csvContent = [headers, ...rows]
-            .map(row => row.map(cell => `"${cell}"`).join(','))
+            .map(row => row.map((cell: string) => `"${cell}"`).join(','))
             .join('\n');
 
         return csvContent;
@@ -1592,7 +1590,7 @@ Summary:
 - Return on Ad Spend: ${analytics.returnOnAdSpend.toFixed(2)}%
 
 Top Performing Content:
-${analytics.topPerformingContent.map(content =>
+${analytics.topPerformingContent.map((content: ContentROI) =>
             `- ${content.title}: $${content.totalRevenue.toFixed(2)} revenue, ${content.totalLeads} leads, ${content.roi.toFixed(2)}% ROI`
         ).join('\n')}
         `;
@@ -2151,7 +2149,7 @@ ${analytics.topPerformingContent.map(content =>
         // Find the variation with the second-highest performance
         const others = variations.filter(v => v.variationId !== winnerId);
         const secondBest = others.reduce((best, current) =>
-            current.metrics[targetMetric] > best.metrics[targetMetric] ? current : best
+            (current.metrics[targetMetric] || 0) > (best.metrics[targetMetric] || 0) ? current : best
         );
 
         const mean1 = winner.conversionRate;
@@ -2434,8 +2432,8 @@ ${analytics.topPerformingContent.map(content =>
                 for (const contentId of contentIds) {
                     const sk = `ANALYTICS#${contentId}#${channel}`;
                     const result = await this.repository.get<Analytics>(pk, sk);
-                    if (result.item) {
-                        items.push(result.item);
+                    if (result) {
+                        items.push(result);
                     }
                 }
                 queryResult = { items };
@@ -2526,7 +2524,7 @@ ${analytics.topPerformingContent.map(content =>
 
         if (!response.ok) {
             if (response.status === 429) {
-                throw new RateLimitError('Facebook API rate limit exceeded', response.headers.get('retry-after'));
+                throw new RateLimitError('Facebook API rate limit exceeded', response.headers.get('retry-after') || undefined);
             }
             throw new Error(`Facebook API error: ${response.status} ${response.statusText}`);
         }
@@ -2596,7 +2594,7 @@ ${analytics.topPerformingContent.map(content =>
 
         if (!response.ok) {
             if (response.status === 429) {
-                throw new RateLimitError('Instagram API rate limit exceeded', response.headers.get('retry-after'));
+                throw new RateLimitError('Instagram API rate limit exceeded', response.headers.get('retry-after') || undefined);
             }
             throw new Error(`Instagram API error: ${response.status} ${response.statusText}`);
         }
@@ -2650,7 +2648,7 @@ ${analytics.topPerformingContent.map(content =>
 
         if (!response.ok) {
             if (response.status === 429) {
-                throw new RateLimitError('LinkedIn API rate limit exceeded', response.headers.get('retry-after'));
+                throw new RateLimitError('LinkedIn API rate limit exceeded', response.headers.get('retry-after') || undefined);
             }
             throw new Error(`LinkedIn API error: ${response.status} ${response.statusText}`);
         }
@@ -2704,7 +2702,7 @@ ${analytics.topPerformingContent.map(content =>
 
         if (!response.ok) {
             if (response.status === 429) {
-                throw new RateLimitError('Twitter API rate limit exceeded', response.headers.get('retry-after'));
+                throw new RateLimitError('Twitter API rate limit exceeded', response.headers.get('retry-after') || undefined);
             }
             throw new Error(`Twitter API error: ${response.status} ${response.statusText}`);
         }
@@ -2817,12 +2815,14 @@ ${analytics.topPerformingContent.map(content =>
             // Get current analytics record
             const currentResult = await this.repository.get<Analytics>(pk, sk);
 
-            if (!currentResult.item) {
-                console.warn(`Analytics record not found for ${contentId} on ${channel}`);
+            if (!currentResult) {
+                // Create new record if not exists
+                // ... (logic handled elsewhere or simplified here)
+                console.warn(`Analytics record not found for ${contentId} on ${channel}. Cannot update.`);
                 return;
             }
 
-            const currentAnalytics = currentResult.item;
+            const currentAnalytics = currentResult;
 
             // Merge metrics (take the higher value for each metric to account for reporting delays)
             const mergedMetrics: EngagementMetrics = {
@@ -2850,7 +2850,7 @@ ${analytics.topPerformingContent.map(content =>
                 syncStatus: AnalyticsSyncStatus.COMPLETED,
             };
 
-            await this.repository.update(pk, sk, 'Analytics' as EntityType, updatedAnalytics);
+            await this.repository.update(pk, sk, updatedAnalytics);
 
         } catch (error) {
             console.error('Failed to update analytics with external data:', error);

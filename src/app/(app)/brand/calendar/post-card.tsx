@@ -1,4 +1,4 @@
-import { ScheduledContent, ScheduledContentStatus, PublishChannelType } from '@/lib/content-workflow-types';
+import { ScheduledContent, ScheduledContentStatus, PublishChannelType } from '@/lib/types/content-workflow-types';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

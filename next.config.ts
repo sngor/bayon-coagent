@@ -6,8 +6,11 @@ const withPWA = require('next-pwa');
 const nextConfig: NextConfig = {
   /* config options here */
   typescript: {
+    // WARN: Ignoring build errors is risky for production. Ensure critical errors are resolved.
     ignoreBuildErrors: true,
   },
+  // Optimize for AWS Lambda/Container deployment
+  output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
   },

@@ -204,6 +204,7 @@ describe('NotificationRepository', () => {
                 channel: NotificationChannel.EMAIL,
                 status: DeliveryStatus.PENDING,
                 attempts: 0,
+                lastAttemptAt: new Date().toISOString(),
             });
 
             expect(record).toBeDefined();
@@ -223,6 +224,7 @@ describe('NotificationRepository', () => {
                 channel: NotificationChannel.EMAIL,
                 status: DeliveryStatus.SENT,
                 attempts: 1,
+                lastAttemptAt: new Date().toISOString(),
             });
 
             await repository.createDeliveryRecord({
@@ -231,6 +233,7 @@ describe('NotificationRepository', () => {
                 channel: NotificationChannel.PUSH,
                 status: DeliveryStatus.DELIVERED,
                 attempts: 1,
+                lastAttemptAt: new Date().toISOString(),
             });
 
             const records = await repository.getDeliveryRecords('notif456');
@@ -246,6 +249,7 @@ describe('NotificationRepository', () => {
                 channel: NotificationChannel.EMAIL,
                 status: DeliveryStatus.PENDING,
                 attempts: 0,
+                lastAttemptAt: new Date().toISOString(),
             });
 
             await repository.updateDeliveryRecord(

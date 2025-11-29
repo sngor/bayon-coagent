@@ -8,25 +8,37 @@ const Card = React.forwardRef<
   React.HTMLAttributes<HTMLDivElement> & {
     interactive?: boolean;
     variant?: 'base' | 'elevated' | 'floating' | 'modal' | 'premium' | 'bordered';
+    hoverEffect?: 'lift' | 'glow' | 'scale' | 'none';
   }
->(({ className, interactive, variant = 'base', ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      // Base container styling
-      variant === 'base' && "container-base",
-      variant === 'elevated' && "container-elevated",
-      variant === 'floating' && "container-floating",
-      variant === 'modal' && "container-modal",
-      variant === 'premium' && "container-premium",
-      variant === 'bordered' && "container-no-shadow",
-      // Interactive behavior
-      interactive && "cursor-pointer hover:shadow-md hover:scale-[1.01] active:scale-[0.99] transition-all duration-300",
-      className
-    )}
-    {...props}
-  />
-))
+>(({ className, interactive, variant = 'base', hoverEffect, ...props }, ref) => {
+  // Determine hover effect - use 'lift' as default for interactive cards if not specified
+  const effectClass = hoverEffect
+    ? (hoverEffect === 'lift' && 'hover-lift-subtle')
+    || (hoverEffect === 'glow' && 'hover-glow-pulse')
+    || (hoverEffect === 'scale' && 'hover-scale-smooth')
+    : interactive ? 'hover-lift-subtle' : '';
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        // Base container styling
+        variant === 'base' && "container-base",
+        variant === 'elevated' && "container-elevated",
+        variant === 'floating' && "container-floating",
+        variant === 'modal' && "container-modal",
+        variant === 'premium' && "container-premium",
+        variant === 'bordered' && "container-no-shadow",
+        // Interactive behavior with improved timing
+        interactive && "cursor-pointer transition-all duration-300 ease-out",
+        // Apply hover effect
+        effectClass,
+        className
+      )}
+      {...props}
+    />
+  )
+})
 Card.displayName = "Card"
 
 const CardHeader = React.forwardRef<

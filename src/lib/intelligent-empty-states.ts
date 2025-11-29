@@ -10,11 +10,25 @@
  * Requirements: 27.2, 27.4, 27.7
  */
 
-import type { Profile } from '@/lib/types/common/common';
-import type { 
-    SmartRecommendation, 
-    ProfileCompletionStatus 
-} from '@/components/ui/empty-states';
+import type { Profile } from '@/lib/types/common';
+
+export interface SmartRecommendation {
+    id: string;
+    title: string;
+    description: string;
+    href: string;
+    priority: 'high' | 'medium' | 'low';
+    estimatedTime: string;
+    prerequisitesMet: boolean;
+}
+
+export interface ProfileCompletionStatus {
+    percentage: number;
+    isComplete: boolean;
+    hasRequiredFields: boolean;
+    missingFields: ProfileField[];
+    nextField?: ProfileField;
+}
 
 // ============================================================================
 // Profile Completion Helpers

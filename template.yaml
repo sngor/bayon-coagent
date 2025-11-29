@@ -61,6 +61,8 @@ Resources:
   # ==========================================
   UserPool:
     Type: AWS::Cognito::UserPool
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       UserPoolName: !Sub bayon-coagent-${Environment}
       AutoVerifiedAttributes:
@@ -107,6 +109,8 @@ Resources:
 
   UserPoolClient:
     Type: AWS::Cognito::UserPoolClient
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       ClientName: !Sub bayon-coagent-web-${Environment}
       UserPoolId: !Ref UserPool
@@ -215,6 +219,8 @@ Resources:
   # - UserIndex: User-based queries (existing)
   DynamoDBTable:
     Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       TableName: !Sub BayonCoAgent-${Environment}
       BillingMode: PAY_PER_REQUEST
@@ -324,6 +330,8 @@ Resources:
   # ==========================================
   StorageBucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       BucketName: !Sub bayon-coagent-storage-${Environment}-${AWS::AccountId}
       BucketEncryption:

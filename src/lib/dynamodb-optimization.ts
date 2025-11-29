@@ -149,7 +149,7 @@ export class OptimizedDynamoDBClient {
             expressionAttributeValues?: Record<string, any>;
             limit?: number;
             scanIndexForward?: boolean;
-            exclusiveStartKey?: Record<string, any>;
+            exclusiveStartKey?: any;
         } = {},
         cacheOptions: {
             useCache?: boolean;
@@ -242,7 +242,7 @@ export class OptimizedDynamoDBClient {
                         this.repository.get<T>(key.pk, key.sk)
                     );
                     const results = await Promise.all(itemPromises);
-                    return results.map(result => result.item).filter(Boolean) as T[];
+                    return results.filter((result): result is NonNullable<typeof result> => result !== null && result !== undefined).map(result => (result as any).Data) as T[];
                 });
 
                 const batchResults = await Promise.all(batchPromises);

@@ -447,17 +447,16 @@ export class UnsubscribeService {
      */
     async getUnsubscribeHistory(userId: string, limit: number = 10): Promise<UnsubscribeRecord[]> {
         try {
-            const result = await this.repository.query({
-                KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
-                ExpressionAttributeValues: {
-                    ':pk': `USER#${userId}`,
-                    ':sk': 'UNSUBSCRIBE_RECORD#',
-                },
-                ScanIndexForward: false, // Most recent first
-                Limit: limit,
-            });
+            const result = await this.repository.query(
+                `USER#${userId}`,
+                'UNSUBSCRIBE_RECORD#',
+                {
+                    scanIndexForward: false, // Most recent first
+                    limit: limit,
+                }
+            );
 
-            return result.items.map((item: any) => item.Data as UnsubscribeRecord);
+            return result.items.map((item: any) => item as UnsubscribeRecord);
         } catch (error) {
             console.error('Failed to get unsubscribe history:', error);
             return [];

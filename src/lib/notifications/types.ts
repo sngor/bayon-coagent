@@ -179,6 +179,9 @@ export interface DeliveryResult {
     deliveryId?: string;
     error?: string;
     timestamp: string;
+    skipped?: boolean;
+    reason?: string;
+    queued?: boolean;
 }
 
 /**

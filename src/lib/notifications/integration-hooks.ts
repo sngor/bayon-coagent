@@ -431,7 +431,7 @@ export function registerUserSignupHook(userId: string): void {
         channels: [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
         titleTemplate: "Welcome to Bayon Coagent!",
         contentTemplate: "Thank you for signing up. Let's get started building your real estate success.",
-        actionUrl: "/dashboard",
+        actionUrlTemplate: "/dashboard",
         actionText: "Get Started",
     });
 }

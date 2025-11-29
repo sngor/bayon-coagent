@@ -138,7 +138,7 @@ export class AIResponseCache {
                         expiresAt: new Date(data.expiresAt),
                     };
                     // Restore to memory cache
-                    this.cache.set(key, cached);
+                    this.cache.set(key, cached!);
                 }
             } catch (error) {
                 console.warn('Failed to retrieve AI cache from localStorage:', error);

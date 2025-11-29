@@ -286,6 +286,13 @@ const regularNavItems = [
         label: 'Chat',
         featureId: 'assistant'
     },
+    {
+        href: '/open-house',
+        icon: HouseIcon,
+        filledIcon: FilledIcons.HouseIcon,
+        label: 'Open House',
+        featureId: 'open-house'
+    },
 ];
 
 // Super Admin navigation

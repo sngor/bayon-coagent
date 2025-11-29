@@ -75,6 +75,35 @@ export const PLATFORM_LIMITS: Record<Platform, PlatformLimits> = {
         ],
         maxFileSize: 5 * 1024 * 1024, // 5MB
     },
+    // CRM platforms - these don't have image/character constraints like social media
+    followupboss: {
+        maxCharacters: 0,
+        maxImages: 0,
+        maxHashtags: 0,
+        imageDimensions: [],
+        maxFileSize: 0,
+    },
+    facebook_lead_ads: {
+        maxCharacters: 0,
+        maxImages: 0,
+        maxHashtags: 0,
+        imageDimensions: [],
+        maxFileSize: 0,
+    },
+    calendly: {
+        maxCharacters: 0,
+        maxImages: 0,
+        maxHashtags: 0,
+        imageDimensions: [],
+        maxFileSize: 0,
+    },
+    hubspot: {
+        maxCharacters: 0,
+        maxImages: 0,
+        maxHashtags: 0,
+        imageDimensions: [],
+        maxFileSize: 0,
+    },
 };
 
 export const GENERAL_HASHTAG_RANGE = {
@@ -165,6 +194,43 @@ export const OAUTH_SCOPES: Record<Platform, string[]> = {
         "block.read",
         "block.write",
     ],
+    followupboss: [
+        // CRM access scopes
+        "read",
+        "write",
+        "admin",
+    ],
+    facebook_lead_ads: [
+        // Lead Ads specific scopes (extends Facebook OAuth)
+        "leads_retrieval",
+        "pages_manage_ads",
+        "pages_read_engagement",
+        "business_management",
+    ],
+    calendly: [
+        // Event management scopes
+        "read:events",
+        "write:events",
+        "read:event_types",
+        "write:event_types",
+        "read:scheduling_links",
+        "write:scheduling_links",
+        "read:webhooks",
+        "write:webhooks",
+    ],
+    hubspot: [
+        // CRM access scopes
+        "crm.objects.contacts.read",
+        "crm.objects.contacts.write",
+        "crm.objects.companies.read",
+        "crm.objects.companies.write",
+        "crm.objects.deals.read",
+        "crm.objects.deals.write",
+        "crm.schemas.contacts.read",
+        "crm.schemas.companies.read",
+        "crm.schemas.deals.read",
+        "timeline",
+    ],
 };
 
 /**
@@ -175,6 +241,10 @@ export const PLATFORM_API_ENDPOINTS: Record<Platform, string> = {
     instagram: "https://graph.facebook.com/v18.0",
     linkedin: "https://api.linkedin.com/v2",
     twitter: "https://api.twitter.com/2",
+    followupboss: "https://api.followupboss.com/v1",
+    facebook_lead_ads: "https://graph.facebook.com/v18.0",
+    calendly: "https://api.calendly.com",
+    hubspot: "https://api.hubapi.com",
 };
 
 /**
@@ -185,6 +255,10 @@ export const ANALYTICS_API_ENDPOINTS: Record<Platform, string> = {
     instagram: "https://graph.facebook.com/v18.0",
     linkedin: "https://api.linkedin.com/v2",
     twitter: "https://api.twitter.com/2",
+    followupboss: "https://api.followupboss.com/v1",
+    facebook_lead_ads: "https://graph.facebook.com/v18.0",
+    calendly: "https://api.calendly.com",
+    hubspot: "https://api.hubapi.com",
 };
 
 /**
@@ -241,6 +315,39 @@ export const ANALYTICS_METRICS: Record<Platform, string[]> = {
         "url_link_clicks",
         "user_profile_clicks",
         "public_metrics",
+    ],
+    followupboss: [
+        "lead_count",
+        "lead_conversion_rate",
+        "contact_count",
+        "contact_engagement",
+        "activity_count",
+        "response_time",
+    ],
+    facebook_lead_ads: [
+        "lead_count",
+        "form_submissions",
+        "cost_per_lead",
+        "conversion_rate",
+        "form_views",
+        "form_completion_rate",
+    ],
+    calendly: [
+        "event_count",
+        "booking_count",
+        "cancellation_count",
+        "no_show_count",
+        "reschedule_count",
+        "attendee_count",
+    ],
+    hubspot: [
+        "contact_count",
+        "deal_count",
+        "deal_value",
+        "contact_engagement",
+        "email_open_rate",
+        "email_click_rate",
+        "pipeline_velocity",
     ],
 };
 

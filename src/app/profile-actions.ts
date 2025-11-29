@@ -49,6 +49,14 @@ const agentProfileSchema = z.object({
       }),
     }
   ),
+  agentType: z.enum(
+    ['buyer', 'seller', 'hybrid'],
+    {
+      errorMap: () => ({
+        message: 'Agent type must be one of: buyer, seller, hybrid',
+      }),
+    }
+  ),
   corePrinciple: z
     .string()
     .min(10, 'Core principle must be at least 10 characters')
@@ -80,7 +88,7 @@ async function getCurrentUser() {
   try {
     const cognitoClient = getCognitoClient();
     const session = await cognitoClient.getSession();
-    
+
     if (!session) {
       return null;
     }
@@ -123,6 +131,7 @@ export async function createAgentProfile(
       primaryMarket: formData.get('primaryMarket'),
       specialization: formData.get('specialization'),
       preferredTone: formData.get('preferredTone'),
+      agentType: formData.get('agentType'),
       corePrinciple: formData.get('corePrinciple'),
     });
 
@@ -148,7 +157,7 @@ export async function createAgentProfile(
     };
   } catch (error) {
     console.error('Create agent profile error:', error);
-    
+
     // Handle specific error cases
     if (error instanceof Error) {
       if (error.message.includes('already exists')) {
@@ -157,7 +166,7 @@ export async function createAgentProfile(
           error: 'You already have an agent profile. Please update your existing profile instead.',
         };
       }
-      
+
       if (error.message.includes('Validation failed')) {
         return {
           success: false,
@@ -168,8 +177,8 @@ export async function createAgentProfile(
 
     return {
       success: false,
-      error: error instanceof Error 
-        ? error.message 
+      error: error instanceof Error
+        ? error.message
         : 'An unexpected error occurred while creating the profile.',
     };
   }
@@ -202,8 +211,8 @@ export async function updateAgentProfile(
 
     // Build update object from form data
     const updates: Record<string, any> = {};
-    const fields = ['agentName', 'primaryMarket', 'specialization', 'preferredTone', 'corePrinciple'];
-    
+    const fields = ['agentName', 'primaryMarket', 'specialization', 'preferredTone', 'agentType', 'corePrinciple'];
+
     for (const field of fields) {
       const value = formData.get(field);
       if (value !== null && value !== undefined && value !== '') {
@@ -247,7 +256,7 @@ export async function updateAgentProfile(
     };
   } catch (error) {
     console.error('Update agent profile error:', error);
-    
+
     // Handle specific error cases
     if (error instanceof Error) {
       if (error.message.includes('not found')) {
@@ -256,7 +265,7 @@ export async function updateAgentProfile(
           error: 'Agent profile not found. Please create a profile first.',
         };
       }
-      
+
       if (error.message.includes('Validation failed')) {
         return {
           success: false,
@@ -267,8 +276,8 @@ export async function updateAgentProfile(
 
     return {
       success: false,
-      error: error instanceof Error 
-        ? error.message 
+      error: error instanceof Error
+        ? error.message
         : 'An unexpected error occurred while updating the profile.',
     };
   }
@@ -312,11 +321,11 @@ export async function getAgentProfile(): Promise<ProfileActionResponse> {
     };
   } catch (error) {
     console.error('Get agent profile error:', error);
-    
+
     return {
       success: false,
-      error: error instanceof Error 
-        ? error.message 
+      error: error instanceof Error
+        ? error.message
         : 'An unexpected error occurred while retrieving the profile.',
     };
   }
@@ -350,11 +359,11 @@ export async function deleteAgentProfile(): Promise<ProfileActionResponse> {
     };
   } catch (error) {
     console.error('Delete agent profile error:', error);
-    
+
     return {
       success: false,
-      error: error instanceof Error 
-        ? error.message 
+      error: error instanceof Error
+        ? error.message
         : 'An unexpected error occurred while deleting the profile.',
     };
   }
@@ -393,7 +402,7 @@ export async function hasAgentProfile(): Promise<boolean> {
 
     const profileRepository = getAgentProfileRepository();
     const profile = await profileRepository.getProfile(user.id);
-    
+
     return profile !== null;
   } catch (error) {
     console.error('Has agent profile error:', error);

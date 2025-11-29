@@ -20,8 +20,13 @@ async function testDynamoDBConnection() {
         const testData = {
             PK: 'TEST#connection',
             SK: 'TEST#' + Date.now(),
-            testData: 'Hello from test',
-            timestamp: new Date().toISOString(),
+            EntityType: 'UserProfile' as any,
+            Data: {
+                testData: 'Hello from test',
+                timestamp: new Date().toISOString(),
+            },
+            CreatedAt: Date.now(),
+            UpdatedAt: Date.now()
         };
 
         await repository.put(testData);
@@ -49,13 +54,16 @@ async function testDynamoDBConnection() {
         const sessionData = {
             PK: `USER#${userId}`,
             SK: `STAGING_SESSION#${sessionId}`,
-            sessionId,
-            userId,
-            roomType: 'living-room',
-            style: 'modern',
-            angles: [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            EntityType: 'UserProfile' as any,
+            Data: {
+                sessionId,
+                userId,
+                roomType: 'living-room',
+                style: 'modern',
+                angles: [],
+            },
+            CreatedAt: Date.now(),
+            UpdatedAt: Date.now()
         };
 
         await repository.put(sessionData);

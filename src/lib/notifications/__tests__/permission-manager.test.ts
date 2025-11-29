@@ -372,7 +372,7 @@ describe('PermissionManager', () => {
                 items: permissions,
                 lastEvaluatedKey: undefined,
             });
-            mockRepository.get.mockImplementation((pk, sk) => {
+            mockRepository.get.mockImplementation((pk: string, sk: string) => {
                 const deviceId = sk.split('#')[1];
                 return Promise.resolve(
                     permissions.find(p => p.deviceId === deviceId) || null

@@ -10,7 +10,7 @@ import {
     TimePeriod,
     Platform,
     PlatformMetrics,
-} from './performance-metrics-types';
+} from './types/performance-metrics-types';
 
 /**
  * Formats a date to YYYY-MM-DD
@@ -107,12 +107,13 @@ export function aggregateMetrics(
             }
 
             const aggPlatform = aggregated.byPlatform[platform as Platform]!;
-            aggPlatform.views += platformMetrics.views;
-            aggPlatform.shares += platformMetrics.shares;
-            aggPlatform.inquiries += platformMetrics.inquiries;
+            const pMetrics = platformMetrics as PlatformMetrics;
+            aggPlatform.views += pMetrics.views;
+            aggPlatform.shares += pMetrics.shares;
+            aggPlatform.inquiries += pMetrics.inquiries;
             aggPlatform.lastUpdated = Math.max(
                 aggPlatform.lastUpdated,
-                platformMetrics.lastUpdated
+                pMetrics.lastUpdated
             );
         }
     }

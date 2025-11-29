@@ -6154,7 +6154,7 @@ import {
   Invitation,
   TeamMember,
   isInvitationExpired
-} from '@/lib/organization-types';
+} from '@/lib/types/organization-types';
 import {
   getInvitationsByEmailQueryKeys,
   getInvitationByTokenQueryKeys,
