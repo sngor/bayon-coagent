@@ -24,14 +24,14 @@ This document lists all environment variables used by the Co-agent Marketer plat
 - **Required**: For local development
 - **Default**: None (uses IAM roles in production)
 - **Description**: AWS access key for authentication
-- **Example**: `AKIAIOSFODNN7EXAMPLE`
+- **Example**: `AKIA_EXAMPLE_ACCESS_KEY`
 
 #### `AWS_SECRET_ACCESS_KEY`
 
 - **Required**: For local development
 - **Default**: None (uses IAM roles in production)
 - **Description**: AWS secret key for authentication
-- **Example**: `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY`
+- **Example**: `wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY_SAFE`
 
 ### AWS Cognito (Authentication)
 
