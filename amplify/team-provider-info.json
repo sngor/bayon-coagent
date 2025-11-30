@@ -1,0 +1,23 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-bayoncoagent-dev-24003-authRole",
+      "UnauthRoleArn": "arn:aws:iam::409136660268:role/amplify-bayoncoagent-dev-24003-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::409136660268:role/amplify-bayoncoagent-dev-24003-authRole",
+      "Region": "us-east-2",
+      "DeploymentBucketName": "amplify-bayoncoagent-dev-24003-deployment",
+      "UnauthRoleName": "amplify-bayoncoagent-dev-24003-unauthRole",
+      "StackName": "amplify-bayoncoagent-dev-24003",
+      "StackId": "arn:aws:cloudformation:us-east-2:409136660268:stack/amplify-bayoncoagent-dev-24003/93b41aa0-cdc9-11f0-9ac5-06301e5f81eb",
+      "AmplifyAppId": "d2en4qzqmti675"
+    },
+    "categories": {
+      "hosting": {
+        "amplifyhosting": {
+          "appId": "d2en4qzqmti675",
+          "type": "manual"
+        }
+      }
+    }
+  }
+}

@@ -34,7 +34,16 @@ frontend:
   artifacts:
     baseDirectory: .next
     files:
-      - "**/*"
+      - '**/*'
+    secondaryArtifacts:
+      - baseDirectory: public
+        files:
+          - '**/*'
+      - baseDirectory: .
+        files:
+          - package.json
+          - package-lock.json
+          - next.config.ts
 
   cache:
     paths:
