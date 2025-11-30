@@ -9,16 +9,16 @@ import { OAuthConnectionManagerImpl } from '../connection-manager';
 import type { Platform, OAuthConnection } from '../../social/types';
 
 // Create mock repository functions
-const mockGetItem = jest.fn();
-const mockPutItem = jest.fn();
-const mockDeleteItem = jest.fn();
+const mockGetItem = jest.fn<(...args: any[]) => any>();
+const mockPutItem = jest.fn<(...args: any[]) => any>();
+const mockDeleteItem = jest.fn<(...args: any[]) => any>();
 
 // Mock the repository
 jest.mock('@/aws/dynamodb/repository', () => ({
     getRepository: jest.fn(() => ({
         getItem: mockGetItem,
-        putItem: mockPutItem,
-        deleteItem: mockDeleteItem,
+        put: mockPutItem,
+        delete: mockDeleteItem,
     })),
 }));
 

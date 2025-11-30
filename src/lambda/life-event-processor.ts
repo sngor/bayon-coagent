@@ -12,7 +12,7 @@ import { getRepository } from '../aws/dynamodb/repository';
 import { TargetArea, AlertSettings } from '../lib/alerts/types';
 import {
     withErrorHandling,
-    withRetry,
+    retryHandler,
     alertErrorHandler,
     createUserFriendlyMessage,
     AlertProcessingError
@@ -52,7 +52,8 @@ export const handler: Handler<ScheduledEvent, ProcessingResult> = async (event, 
         const dataAccess = getAlertDataAccess();
 
         // Get all users with life event alerts enabled with retry logic
-        const users = await withRetry(
+        // Get all users with life event alerts enabled with retry logic
+        const users = await retryHandler.withRetry(
             () => getUsersWithLifeEventAlertsEnabled(),
             { maxAttempts: 3, baseDelayMs: 2000 },
             { operation: 'get-users-with-alerts-enabled' }
@@ -78,7 +79,8 @@ export const handler: Handler<ScheduledEvent, ProcessingResult> = async (event, 
                 });
 
                 // Get user's alert settings with retry
-                const settings = await withRetry(
+                // Get user's alert settings with retry
+                const settings = await retryHandler.withRetry(
                     () => dataAccess.getAlertSettings(user.userId),
                     { maxAttempts: 2, baseDelayMs: 1000 },
                     { operation: 'get-alert-settings' }
@@ -106,7 +108,7 @@ export const handler: Handler<ScheduledEvent, ProcessingResult> = async (event, 
                 for (const alert of alerts) {
                     try {
                         alert.userId = user.userId;
-                        await withRetry(
+                        await retryHandler.withRetry(
                             () => dataAccess.saveAlert(user.userId, alert),
                             { maxAttempts: 2, baseDelayMs: 500 },
                             { operation: 'save-alert' }

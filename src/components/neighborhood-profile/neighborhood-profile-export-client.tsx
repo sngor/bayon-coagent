@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { Download, FileText, Globe, Loader2 } from 'lucide-react';
 import type { NeighborhoodProfile } from '@/lib/alerts/types';
-import type { Profile } from '@/lib/types/common/common';
+import type { Profile } from '@/lib/types/common';
 
 interface NeighborhoodProfileExportClientProps {
     profile: NeighborhoodProfile;

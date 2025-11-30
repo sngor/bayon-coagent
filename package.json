@@ -53,9 +53,11 @@
     "verify:eventbridge:prod": "tsx scripts/verify-eventbridge-setup.ts production"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock": "^3.940.0",
     "@aws-sdk/client-bedrock-runtime": "^3.933.0",
     "@aws-sdk/client-cloudwatch": "^3.936.0",
     "@aws-sdk/client-cloudwatch-logs": "^3.936.0",
+    "@aws-sdk/client-codedeploy": "^3.940.0",
     "@aws-sdk/client-cognito-identity-provider": "^3.933.0",
     "@aws-sdk/client-dynamodb": "^3.933.0",
     "@aws-sdk/client-eventbridge": "^3.936.0",

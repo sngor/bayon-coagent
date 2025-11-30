@@ -458,7 +458,7 @@ export async function deleteDocumentAction(
 /**
  * Get a signed URL for downloading a document
  */
-export async function getDownloadUrlAction(
+export async function getDocumentDownloadUrlAction(
     userId: string,
     documentId: string
 ): Promise<{ url?: string; error?: string }> {

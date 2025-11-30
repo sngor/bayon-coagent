@@ -16,7 +16,7 @@ import {
 } from './types';
 import {
     withErrorHandling,
-    withRetry,
+    retryHandler,
     dataQualityValidator,
     ExternalAPIError,
     DataQualityError,
@@ -85,7 +85,7 @@ export class CompetitorMonitor {
                     });
 
                     // Get new listings for this competitor with retry logic
-                    const newListings = await withRetry(
+                    const newListings = await retryHandler.withRetry(
                         () => this.detectNewListings(competitor, targetAreas),
                         { maxAttempts: 2, baseDelayMs: 1000 },
                         { operation: 'detect-new-listings' }
@@ -99,7 +99,7 @@ export class CompetitorMonitor {
                     }
 
                     // Get price reductions for this competitor
-                    const priceReductions = await withRetry(
+                    const priceReductions = await retryHandler.withRetry(
                         () => this.detectPriceReductions(competitor, targetAreas),
                         { maxAttempts: 2, baseDelayMs: 1000 },
                         { operation: 'detect-price-reductions' }
@@ -113,7 +113,7 @@ export class CompetitorMonitor {
                     }
 
                     // Get withdrawals/expirations for this competitor
-                    const withdrawals = await withRetry(
+                    const withdrawals = await retryHandler.withRetry(
                         () => this.detectWithdrawals(competitor, targetAreas),
                         { maxAttempts: 2, baseDelayMs: 1000 },
                         { operation: 'detect-withdrawals' }
@@ -152,7 +152,7 @@ export class CompetitorMonitor {
             });
 
             return alerts;
-        }, { operation: 'track-listing-events', service: 'competitor-monitor' });
+        }, { operation: 'track-listing-events', service: 'competitor-monitor' })();
     }
 
     /**
@@ -469,7 +469,7 @@ export class CompetitorMonitor {
     private validateAlert(alert: CompetitorAlert): boolean {
         const validation = dataQualityValidator.validateAlert(alert);
         if (!validation.isValid) {
-            this.logger.warn('Invalid alert generated', undefined, {
+            this.logger.warn('Invalid alert generated', {
                 alertId: alert.id,
                 errors: validation.errors,
             });

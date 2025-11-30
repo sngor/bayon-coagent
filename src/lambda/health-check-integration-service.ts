@@ -18,12 +18,14 @@ const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME!;
 const BUCKET_NAME = process.env.S3_BUCKET_NAME!;
 
 interface HealthCheckDependencies {
+    [key: string]: 'healthy' | 'unhealthy';
     dynamodb: 'healthy' | 'unhealthy';
     secretsManager: 'healthy' | 'unhealthy';
     s3: 'healthy' | 'unhealthy';
 }
 
 interface HealthCheckMetrics {
+    [key: string]: number;
     uptime: number;
     memoryUsed: number;
     memoryTotal: number;

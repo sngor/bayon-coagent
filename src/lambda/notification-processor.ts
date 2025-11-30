@@ -406,7 +406,7 @@ async function updateJobStatus(
 ): Promise<void> {
     const tableName = process.env.DYNAMODB_TABLE_NAME || 'BayonCoAgent';
 
-    const updateExpression = 'SET #data.#status = :status, #data.attempts = :attempts, UpdatedAt = :updatedAt';
+    let updateExpression = 'SET #data.#status = :status, #data.attempts = :attempts, UpdatedAt = :updatedAt';
     const expressionAttributeNames: Record<string, string> = {
         '#data': 'Data',
         '#status': 'status',

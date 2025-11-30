@@ -53,7 +53,7 @@ export class PriceReductionDataAccess {
             types: ['price-reduction'],
         });
 
-        const priceReductionAlerts = alerts.filter(
+        const priceReductionAlerts = alerts.alerts.filter(
             (alert): alert is PriceReductionAlert => alert.type === 'price-reduction'
         );
 

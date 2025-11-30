@@ -12,9 +12,9 @@ import { SocialPost, OAuthConnection, Platform } from '../types';
 // Mock DynamoDB repository
 jest.mock('@/aws/dynamodb/repository', () => ({
     getRepository: jest.fn(() => ({
-        put: jest.fn().mockResolvedValue(undefined),
-        getItem: jest.fn().mockResolvedValue(null),
-        delete: jest.fn().mockResolvedValue(undefined),
+        put: jest.fn().mockImplementation(() => Promise.resolve()),
+        getItem: jest.fn().mockImplementation(() => Promise.resolve(null)),
+        delete: jest.fn().mockImplementation(() => Promise.resolve()),
     })),
 }));
 

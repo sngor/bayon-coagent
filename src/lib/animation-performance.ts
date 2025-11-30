@@ -11,6 +11,8 @@
  * - Reduced motion support
  */
 
+import React from "react";
+
 // Performance thresholds
 const PERFORMANCE_THRESHOLDS = {
   TARGET_FPS: 60,
@@ -20,7 +22,7 @@ const PERFORMANCE_THRESHOLDS = {
 } as const;
 
 // Animation performance metrics
-interface AnimationMetrics {
+export interface AnimationMetrics {
   averageFrameTime: number;
   maxFrameTime: number;
   minFrameTime: number;
@@ -266,7 +268,7 @@ export function requestIdleCallback(
   }
 
   // Fallback to setTimeout
-  return window.setTimeout(callback, 1) as unknown as number;
+  return setTimeout(callback, 1) as unknown as number;
 }
 
 /**
@@ -397,4 +399,4 @@ export function initPerformanceMonitoring(): void {
 }
 
 // React import for hook
-import React from "react";
+

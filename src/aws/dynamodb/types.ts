@@ -11,6 +11,7 @@ export type EntityType =
   | 'UserProfile'
   | 'RealEstateAgentProfile'
   | 'AgentProfile'
+  | 'AgentDocument'
   | 'Review'
   | 'BrandAudit'
   | 'Competitor'
@@ -96,7 +97,11 @@ export type EntityType =
   | 'SEOAnalysis'
   | 'SavedKeyword'
   | 'ClientInvitation'
-  | 'Announcement';
+  | 'Announcement'
+  | 'ContentPerformance'
+  | 'SystemConfig'
+  | 'SystemConfigHistory'
+  | 'OAuthState';
 
 /**
  * Base DynamoDB item structure
@@ -131,6 +136,8 @@ export interface DynamoDBItem<T = any> {
   GSI4PK?: string;
   /** Optional GSI4 sort key for content workflow templates */
   GSI4SK?: string;
+  /** Optional Time To Live timestamp (Unix seconds) */
+  TTL?: number;
 }
 
 /**

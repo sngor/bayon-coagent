@@ -15,6 +15,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -98,15 +99,14 @@ export function NewsletterTemplateCreator() {
     const handleCreateTemplate = async () => {
         setIsCreating(true);
         try {
-            const formData = new FormData();
-            formData.append('name', templateName);
-            formData.append('description', templateDescription);
-            formData.append('config', JSON.stringify({
-                ...config,
-                sections
-            }));
-
-            const result = await createNewsletterTemplateAction(formData);
+            const result = await createNewsletterTemplateAction(
+                templateName,
+                templateDescription,
+                {
+                    ...config,
+                    sections
+                }
+            );
 
             if (result.success) {
                 setValidationResults(result.data?.validationResults || []);

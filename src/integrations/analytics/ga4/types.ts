@@ -25,7 +25,10 @@ export type GA4EventName =
     | 'social_post_published'
     | 'integration_connected'
     | 'zap_triggered'
-    | 'design_exported';
+    | 'design_exported'
+    | 'deal_closed'
+    | 'feedback_submitted'
+    | 'openhouse_scheduled';
 
 /**
  * GA4 Event Parameters
@@ -149,7 +152,10 @@ export const GA4EventNameSchema = z.enum([
     'social_post_published',
     'integration_connected',
     'zap_triggered',
-    'design_exported'
+    'design_exported',
+    'deal_closed',
+    'feedback_submitted',
+    'openhouse_scheduled'
 ]);
 
 export const GA4EventSchema = z.object({

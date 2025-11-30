@@ -18,7 +18,7 @@ export interface HubLayoutProps {
   title: string;
   description?: string;
   icon: LucideIcon;
-  tabs: HubTab[];
+  tabs?: HubTab[];
   children: React.ReactNode;
   actions?: React.ReactNode;
   tabsVariant?: 'default' | 'pills' | 'underline';

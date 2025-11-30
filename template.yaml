@@ -139,12 +139,12 @@ Resources:
       CallbackURLs:
         - !If
           - IsProduction
-          - https://yourdomain.com/oauth/callback
+          - https://bayoncoagent.app/oauth/callback
           - http://localhost:3000/oauth/callback
       LogoutURLs:
         - !If
           - IsProduction
-          - https://yourdomain.com
+          - https://bayoncoagent.app
           - http://localhost:3000
 
   IdentityPool:
@@ -372,7 +372,7 @@ Resources:
           - AllowedOrigins:
               - !If
                 - IsProduction
-                - https://yourdomain.com
+                - https://bayoncoagent.app
                 - http://localhost:3000
             AllowedMethods:
               - GET
@@ -1689,7 +1689,7 @@ Resources:
           {
             "clientId": "",
             "clientSecret": "",
-            "redirectUri": "https://yourdomain.com/api/oauth/google/callback"
+            "redirectUri": "https://bayoncoagent.app/api/oauth/google/callback"
           }
         - !Sub |
           {
@@ -1717,7 +1717,7 @@ Resources:
           {
             "appId": "",
             "appSecret": "",
-            "redirectUri": "https://yourdomain.com/api/oauth/facebook/callback"
+            "redirectUri": "https://bayoncoagent.app/api/oauth/facebook/callback"
           }
         - !Sub |
           {
@@ -1745,7 +1745,7 @@ Resources:
           {
             "appId": "",
             "appSecret": "",
-            "redirectUri": "https://yourdomain.com/api/oauth/instagram/callback"
+            "redirectUri": "https://bayoncoagent.app/api/oauth/instagram/callback"
           }
         - !Sub |
           {
@@ -1773,7 +1773,7 @@ Resources:
           {
             "clientId": "",
             "clientSecret": "",
-            "redirectUri": "https://yourdomain.com/api/oauth/linkedin/callback"
+            "redirectUri": "https://bayoncoagent.app/api/oauth/linkedin/callback"
           }
         - !Sub |
           {
@@ -1802,7 +1802,7 @@ Resources:
             "apiKey": "",
             "apiSecret": "",
             "bearerToken": "",
-            "redirectUri": "https://yourdomain.com/api/oauth/twitter/callback"
+            "redirectUri": "https://bayoncoagent.app/api/oauth/twitter/callback"
           }
         - !Sub |
           {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Testimonial } from "@/lib/types/common/common";
+import { Testimonial } from "@/lib/types/common";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Quote } from "lucide-react";

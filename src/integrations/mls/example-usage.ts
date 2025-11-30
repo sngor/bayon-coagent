@@ -107,7 +107,7 @@ async function exampleFetchListingDetails(
         console.log("✓ Listing details retrieved\n");
         console.log(`MLS #: ${details.mlsNumber}`);
         console.log(`Address: ${details.address.street}`);
-        console.log(`         ${details.address.city}, ${details.address.state} ${details.address.zipCode}`);
+        console.log(`         ${details.address.city}, ${details.address.state} ${details.address.zip}`);
         console.log(`\nBasic Info:`);
         console.log(`  Price: $${details.price.toLocaleString()}`);
         console.log(`  Beds/Baths: ${details.bedrooms}/${details.bathrooms}`);

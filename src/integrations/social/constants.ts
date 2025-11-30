@@ -359,6 +359,11 @@ export const S3_IMAGE_PATHS = {
     facebook: "facebook",
     instagram: "instagram",
     linkedin: "linkedin",
+    twitter: "twitter",
+    followupboss: "followupboss",
+    facebook_lead_ads: "facebook_lead_ads",
+    calendly: "calendly",
+    hubspot: "hubspot",
 };
 
 /**

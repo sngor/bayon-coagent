@@ -384,6 +384,8 @@ export type DashboardAnalytics = {
 /**
  * Testimonial - Client testimonial with optional photo
  */
+export type TestimonialStatus = 'pending' | 'published' | 'archived';
+
 export type Testimonial = {
   id: string; // Unique identifier
   userId: string; // Agent's user ID
@@ -395,6 +397,7 @@ export type Testimonial = {
   displayOrder?: number; // Order for featured testimonials
   tags: string[]; // Categories (e.g., "buyer", "seller", "luxury")
   requestId?: string; // Link to testimonial request if applicable
+  status: TestimonialStatus;
   createdAt: number; // Unix timestamp
   updatedAt: number; // Unix timestamp
 };

@@ -1,9 +1,16 @@
 'use client';
 
 import React, { useMemo, useCallback, forwardRef } from 'react';
-import { List } from 'react-window';
-import type { ListChildComponentProps } from 'react-window';
+import { FixedSizeList, VariableSizeList } from 'react-window';
+// import type { ListChildComponentProps } from 'react-window';
 import { cn } from '@/lib/utils/common';
+
+interface ListChildComponentProps<T = any> {
+    index: number;
+    style: React.CSSProperties;
+    data: T;
+    isScrolling?: boolean;
+}
 import { DraggableContentItem } from '@/components/content-calendar';
 import {
     ScheduledContent,
@@ -35,14 +42,14 @@ interface VirtualCalendarListProps {
     className?: string;
 }
 
-interface VirtualCalendarItemProps extends ListChildComponentProps {
-    data: {
-        items: ScheduledContent[];
-        onContentClick?: (contentId: string) => void;
-        onContentAction?: (action: string, content: ScheduledContent) => void;
-        onScheduleUpdate?: (scheduleId: string, newDate: Date) => Promise<void>;
-    };
+interface VirtualCalendarItemData {
+    items: ScheduledContent[];
+    onContentClick?: (contentId: string) => void;
+    onContentAction?: (action: string, content: ScheduledContent) => void;
+    onScheduleUpdate?: (scheduleId: string, newDate: Date) => Promise<void>;
 }
+
+type VirtualCalendarItemProps = ListChildComponentProps<VirtualCalendarItemData>;
 
 /**
  * Individual calendar item component for virtual list
@@ -108,7 +115,7 @@ export function VirtualCalendarList({
 
     return (
         <div className={cn("border rounded-lg overflow-hidden", className)}>
-            <List
+            <FixedSizeList
                 height={height}
                 itemCount={itemCount}
                 itemSize={itemHeight}
@@ -116,8 +123,8 @@ export function VirtualCalendarList({
                 overscanCount={overscan}
                 className="scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
             >
-                {VirtualCalendarItem}
-            </List>
+                {VirtualCalendarItem as any}
+            </FixedSizeList>
         </div>
     );
 }
@@ -201,7 +208,7 @@ export function VariableVirtualCalendarList({
 
     return (
         <div className={cn("border rounded-lg overflow-hidden", className)}>
-            <List
+            <VariableSizeList
                 height={height}
                 itemCount={itemCount}
                 itemSize={getItemHeight}
@@ -209,8 +216,8 @@ export function VariableVirtualCalendarList({
                 overscanCount={overscan}
                 className="scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
             >
-                {VariableVirtualCalendarItem}
-            </List>
+                {VariableVirtualCalendarItem as any}
+            </VariableSizeList>
         </div>
     );
 }
@@ -230,13 +237,13 @@ interface GroupedItemData {
     totalItems?: number;
 }
 
-const GroupedVirtualCalendarItem = React.memo(({ index, style, data }: ListChildComponentProps & {
-    data: {
-        items: GroupedItemData[];
-        onContentClick?: (contentId: string) => void;
-        onContentAction?: (action: string, content: ScheduledContent) => void;
-    };
-}) => {
+interface GroupedVirtualCalendarItemData {
+    items: GroupedItemData[];
+    onContentClick?: (contentId: string) => void;
+    onContentAction?: (action: string, content: ScheduledContent) => void;
+}
+
+const GroupedVirtualCalendarItem = React.memo(({ index, style, data }: ListChildComponentProps<GroupedVirtualCalendarItemData>) => {
     const { items, onContentClick, onContentAction } = data;
     const item = items[index];
 
@@ -346,7 +353,7 @@ export function GroupedVirtualCalendarList({
 
     return (
         <div className={cn("border rounded-lg overflow-hidden", className)}>
-            <List
+            <VariableSizeList
                 height={height}
                 itemCount={flattenedItems.length}
                 itemSize={getItemSize}
@@ -354,8 +361,8 @@ export function GroupedVirtualCalendarList({
                 overscanCount={overscan}
                 className="scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
             >
-                {GroupedVirtualCalendarItem}
-            </List>
+                {GroupedVirtualCalendarItem as any}
+            </VariableSizeList>
         </div>
     );
 }

@@ -195,6 +195,8 @@ function getPlatformConfig(platform: Platform): PlatformOAuthConfig {
                 redirectUri: `${baseRedirectUri}/api/oauth/twitter/callback`,
                 scope: OAUTH_SCOPES.twitter,
             };
+        default:
+            throw new Error(`Unsupported platform config: ${platform}`);
     }
 }
 
@@ -446,23 +448,23 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
             // Scan for the connection with matching ID
             // In production, consider adding a GSI for connectionId lookups for better performance
             const scanResult = await repository.scan({
-                FilterExpression: '#entityType = :entityType AND #data.#id = :connectionId',
-                ExpressionAttributeNames: {
+                filterExpression: '#entityType = :entityType AND #data.#id = :connectionId',
+                expressionAttributeNames: {
                     '#entityType': 'EntityType',
                     '#data': 'Data',
                     '#id': 'id',
                 },
-                ExpressionAttributeValues: {
+                expressionAttributeValues: {
                     ':entityType': 'SocialConnection',
                     ':connectionId': connectionId,
                 },
             });
 
-            if (!scanResult.Items || scanResult.Items.length === 0) {
+            if (!scanResult.items || scanResult.items.length === 0) {
                 throw new Error(`Connection with ID ${connectionId} not found`);
             }
 
-            const connectionItem = scanResult.Items[0];
+            const connectionItem = scanResult.items[0] as any;
 
             // Delete the connection using its PK and SK
             await repository.delete(connectionItem.PK, connectionItem.SK);
@@ -571,6 +573,8 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
                 return await this.getLinkedInUserInfo(accessToken);
             case 'twitter':
                 return await this.getTwitterUserInfo(accessToken);
+            default:
+                throw new Error(`Unsupported platform for user info: ${platform}`);
         }
     }
 
@@ -880,7 +884,7 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
         accessToken: string
     ): Promise<{ isValid: boolean; error?: string }> {
         try {
-            let testUrl: string;
+            let testUrl: string = '';
             let headers: Record<string, string> = {};
 
             switch (platform) {
@@ -898,6 +902,8 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
                     testUrl = `${PLATFORM_API_ENDPOINTS.twitter}/users/me`;
                     headers['Authorization'] = `Bearer ${accessToken}`;
                     break;
+                default:
+                    return { isValid: true }; // Skip validation for other platforms
             }
 
             const response = await fetch(testUrl, {
@@ -936,7 +942,7 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
         const startTime = Date.now();
 
         try {
-            let testUrl: string;
+            let testUrl: string = '';
             let headers: Record<string, string> = {};
 
             switch (platform) {
@@ -958,6 +964,8 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
                     testUrl = `${ANALYTICS_API_ENDPOINTS.twitter}/users/me?user.fields=public_metrics`;
                     headers['Authorization'] = `Bearer ${accessToken}`;
                     break;
+                default:
+                    return { hasAccess: true, availableMetrics: [] }; // Skip validation for other platforms
             }
 
             const response = await fetch(testUrl, {
@@ -1052,7 +1060,7 @@ export class OAuthConnectionManagerImpl implements OAuthConnectionManager {
      * @private
      */
     private isAnalyticsScope(platform: Platform, scope: string): boolean {
-        const analyticsScopes: Record<Platform, string[]> = {
+        const analyticsScopes: Record<string, string[]> = {
             facebook: [
                 'pages_read_engagement',
                 'read_insights',

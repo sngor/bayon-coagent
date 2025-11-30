@@ -18,12 +18,14 @@ const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME!;
 const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
 
 interface HealthCheckDependencies {
+    [key: string]: 'healthy' | 'unhealthy';
     dynamodb: 'healthy' | 'unhealthy';
     cognito: 'healthy' | 'unhealthy';
     cloudWatch: 'healthy' | 'unhealthy';
 }
 
 interface HealthCheckMetrics {
+    [key: string]: number;
     uptime: number;
     memoryUsed: number;
     memoryTotal: number;
@@ -66,7 +68,6 @@ async function checkCloudWatch(): Promise<'healthy' | 'unhealthy'> {
     try {
         await cloudWatchClient.send(new ListMetricsCommand({
             Namespace: 'AWS/Lambda',
-            MaxRecords: 1,
         }));
         return 'healthy';
     } catch (error) {

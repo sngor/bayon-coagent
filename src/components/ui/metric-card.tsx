@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils/common';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { Sparkline } from '@/components/ui/sparkline';
 
-interface MetricCardProps {
+export interface MetricCardProps {
     value: number;
     label: string;
     icon?: React.ReactNode;

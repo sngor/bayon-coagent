@@ -858,6 +858,7 @@ export async function endOpenHouseSessionAction(
 
         return {
             message: 'success',
+            success: true,
             data: {
                 summary,
             },
@@ -868,6 +869,7 @@ export async function endOpenHouseSessionAction(
         const errorMessage = handleMobileError(error, 'Failed to end open house session. Please try again.');
         return {
             message: errorMessage,
+            success: false,
             data: null,
             errors: {},
         };
@@ -885,6 +887,7 @@ export async function fetchMarketStatsAction(
     formData: FormData
 ): Promise<{
     message: string;
+    success: boolean;
     data: {
         location?: string;
         stats?: {
@@ -904,6 +907,7 @@ export async function fetchMarketStatsAction(
         if (!user?.id) {
             return {
                 message: 'Authentication required. Please sign in to fetch market stats.',
+                success: false,
                 data: null,
                 errors: { auth: ['User not authenticated'] },
             };
@@ -919,6 +923,7 @@ export async function fetchMarketStatsAction(
         if (!validatedFields.success) {
             return {
                 message: 'Invalid location data',
+                success: false,
                 data: null,
                 errors: validatedFields.error.flatten().fieldErrors,
             };
@@ -971,6 +976,7 @@ export async function fetchMarketStatsAction(
 
         return {
             message: 'success',
+            success: true,
             data: {
                 location: searchLocation,
                 stats: {
@@ -985,6 +991,7 @@ export async function fetchMarketStatsAction(
         const errorMessage = handleMobileError(error, 'Failed to fetch market statistics. Please try again.');
         return {
             message: errorMessage,
+            success: false,
             data: null,
             errors: {},
         };
@@ -998,6 +1005,7 @@ export async function queueSyncOperationAction(
     operationData: any
 ): Promise<{
     message: string;
+    success: boolean;
     data: { operationId?: string } | null;
     errors: any;
 }> {
@@ -1007,6 +1015,7 @@ export async function queueSyncOperationAction(
         if (!user?.id) {
             return {
                 message: 'Authentication required. Please sign in to queue sync operations.',
+                success: false,
                 data: null,
                 errors: { auth: ['User not authenticated'] },
             };
@@ -1035,6 +1044,7 @@ export async function queueSyncOperationAction(
 
         return {
             message: 'success',
+            success: true,
             data: {
                 operationId,
             },
@@ -1045,6 +1055,7 @@ export async function queueSyncOperationAction(
         const errorMessage = handleMobileError(error, 'Failed to queue sync operation. Please try again.');
         return {
             message: errorMessage,
+            success: false,
             data: null,
             errors: {},
         };
@@ -1053,6 +1064,7 @@ export async function queueSyncOperationAction(
 
 export async function getSyncQueueStatusAction(): Promise<{
     message: string;
+    success: boolean;
     data: {
         pending?: number;
         failed?: number;
@@ -1066,6 +1078,7 @@ export async function getSyncQueueStatusAction(): Promise<{
         if (!user?.id) {
             return {
                 message: 'Authentication required. Please sign in to check sync status.',
+                success: false,
                 data: null,
                 errors: { auth: ['User not authenticated'] },
             };
@@ -1085,6 +1098,7 @@ export async function getSyncQueueStatusAction(): Promise<{
 
         return {
             message: 'success',
+            success: true,
             data: status,
             errors: {},
         };
@@ -1093,6 +1107,7 @@ export async function getSyncQueueStatusAction(): Promise<{
         const errorMessage = handleMobileError(error, 'Failed to get sync queue status. Please try again.');
         return {
             message: errorMessage,
+            success: false,
             data: null,
             errors: {},
         };
@@ -1117,6 +1132,7 @@ export async function updateNotificationPreferencesAction(
     formData: FormData
 ): Promise<{
     message: string;
+    success: boolean;
     data: any;
     errors: any;
 }> {
@@ -1126,6 +1142,7 @@ export async function updateNotificationPreferencesAction(
         if (!user?.id) {
             return {
                 message: 'Authentication required. Please sign in to update notification preferences.',
+                success: false,
                 data: null,
                 errors: { auth: ['User not authenticated'] },
             };
@@ -1155,6 +1172,7 @@ export async function updateNotificationPreferencesAction(
         if (!validatedFields.success) {
             return {
                 message: 'Invalid notification preferences',
+                success: false,
                 data: null,
                 errors: validatedFields.error.flatten().fieldErrors,
             };
@@ -1174,6 +1192,7 @@ export async function updateNotificationPreferencesAction(
 
         return {
             message: 'success',
+            success: true,
             data: prefsData,
             errors: {},
         };
@@ -1182,6 +1201,7 @@ export async function updateNotificationPreferencesAction(
         const errorMessage = handleMobileError(error, 'Failed to update notification preferences. Please try again.');
         return {
             message: errorMessage,
+            success: false,
             data: null,
             errors: {},
         };
@@ -1193,6 +1213,7 @@ export async function registerPushTokenAction(
     pushToken: string
 ): Promise<{
     message: string;
+    success: boolean;
     data: any;
     errors: any;
 }> {
@@ -1202,6 +1223,7 @@ export async function registerPushTokenAction(
         if (!user?.id) {
             return {
                 message: 'Authentication required. Please sign in to register push token.',
+                success: false,
                 data: null,
                 errors: { auth: ['User not authenticated'] },
             };
@@ -1210,6 +1232,7 @@ export async function registerPushTokenAction(
         if (!deviceId || !pushToken) {
             return {
                 message: 'Device ID and push token are required',
+                success: false,
                 data: null,
                 errors: { token: ['Device ID and push token are required'] },
             };
@@ -1231,6 +1254,7 @@ export async function registerPushTokenAction(
 
         return {
             message: 'success',
+            success: true,
             data: { registered: true },
             errors: {},
         };
@@ -1239,6 +1263,7 @@ export async function registerPushTokenAction(
         const errorMessage = handleMobileError(error, 'Failed to register push token. Please try again.');
         return {
             message: errorMessage,
+            success: false,
             data: null,
             errors: {},
         };
@@ -1266,7 +1291,7 @@ export async function syncContentToDynamoDBAction(data: any): Promise<{ success:
     }
 }
 
-export async function addVisitorToSessionAction(data: { sessionId: string; visitor: any; userId: string }): Promise<{ success: boolean; error?: string }> {
+export async function addVisitorToSessionAction(data: { sessionId: string; visitor: any; userId: string }): Promise<{ success: boolean; error?: string; visitor?: any; session?: any }> {
     try {
         const user = await getCurrentUser();
         if (!user?.id) return { success: false, error: 'User not authenticated' };
@@ -1283,13 +1308,18 @@ export async function addVisitorToSessionAction(data: { sessionId: string; visit
         const visitor = {
             id: uuidv4(),
             ...data.visitor,
-            timestamp: new Date().toISOString()
+            timestamp: Date.now()
         };
 
         const updatedVisitors = [...(session.visitors || []), visitor];
         await repository.update(sessionKeys.PK, sessionKeys.SK, { visitors: updatedVisitors });
 
-        return { success: true };
+        const updatedSession = {
+            ...session,
+            visitors: updatedVisitors
+        };
+
+        return { success: true, visitor, session: updatedSession };
     } catch (error) {
         console.error('Add visitor error:', error);
         return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };

@@ -39,7 +39,7 @@ import {
     uploadDocumentAction,
     addLinkResourceAction,
     deleteDocumentAction,
-    getDownloadUrlAction,
+    getDocumentDownloadUrlAction,
     type Document
 } from '@/features/intelligence/actions/knowledge-actions';
 import { useUser } from '@/aws/auth';
@@ -239,7 +239,7 @@ export default function ResourcesPage() {
             // Construct partition key manually for now as per my knowledge-actions change
             const partitionKey = `TEAM#${selectedTeamId}`;
 
-            const result = await getDownloadUrlAction(partitionKey, documentId);
+            const result = await getDocumentDownloadUrlAction(partitionKey, documentId);
 
             if (result.url) {
                 window.open(result.url, '_blank');

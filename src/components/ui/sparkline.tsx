@@ -3,7 +3,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils/common';
 
-interface SparklineProps {
+export interface SparklineProps {
     data: number[];
     width?: number;
     height?: number;
@@ -98,7 +98,7 @@ export function Sparkline({
     );
 }
 
-interface SparklineBarProps {
+export interface SparklineBarProps {
     data: number[];
     width?: number;
     height?: number;
@@ -153,5 +153,39 @@ export function SparklineBar({
                 );
             })}
         </svg>
+    );
+}
+
+export interface SparklineCardProps extends SparklineProps {
+    title: string;
+    value: string | number;
+    trend?: number;
+    trendLabel?: string;
+}
+
+export function SparklineCard({ title, value, trend, trendLabel, ...props }: SparklineCardProps) {
+    return (
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4">
+            <div className="flex flex-col space-y-1.5 mb-4">
+                <h3 className="font-semibold leading-none tracking-tight text-sm text-muted-foreground">{title}</h3>
+                <div className="text-2xl font-bold">{value}</div>
+            </div>
+            <div className="h-[40px]">
+                <Sparkline {...props} width={props.width || 200} height={props.height || 40} />
+            </div>
+            {(trend !== undefined || trendLabel) && (
+                <div className="mt-2 flex items-center text-xs">
+                    {trend !== undefined && (
+                        <span className={cn(
+                            "font-medium mr-1",
+                            trend > 0 ? "text-green-600" : trend < 0 ? "text-red-600" : "text-muted-foreground"
+                        )}>
+                            {trend > 0 ? '+' : ''}{trend}%
+                        </span>
+                    )}
+                    {trendLabel && <span className="text-muted-foreground">{trendLabel}</span>}
+                </div>
+            )}
+        </div>
     );
 }

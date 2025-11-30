@@ -255,7 +255,7 @@ export function validateAlert(alert: unknown): { isValid: boolean; errors: strin
             return { isValid: true, errors: [], data: result.data as Alert };
         } else {
             const errors = result.error.errors.map(err => `${err.path.join('.')}: ${err.message}`);
-            logger.warn('Alert validation failed', undefined, { errors });
+            logger.warn('Alert validation failed', { errors });
             return { isValid: false, errors };
         }
     } catch (error) {
@@ -275,7 +275,7 @@ export function validateAlertSettings(settings: unknown): { isValid: boolean; er
             return { isValid: true, errors: [], data: result.data as AlertSettings };
         } else {
             const errors = result.error.errors.map(err => `${err.path.join('.')}: ${err.message}`);
-            logger.warn('Alert settings validation failed', undefined, { errors });
+            logger.warn('Alert settings validation failed', { errors });
             return { isValid: false, errors };
         }
     } catch (error) {
@@ -305,7 +305,7 @@ export function validateTargetArea(area: unknown): { isValid: boolean; errors: s
             return { isValid: true, errors: [], data: data as TargetArea };
         } else {
             const errors = result.error.errors.map(err => `${err.path.join('.')}: ${err.message}`);
-            logger.warn('Target area validation failed', undefined, { errors });
+            logger.warn('Target area validation failed', { errors });
             return { isValid: false, errors };
         }
     } catch (error) {
@@ -325,7 +325,7 @@ export function validateLifeEvent(event: unknown): { isValid: boolean; errors: s
             return { isValid: true, errors: [], data: result.data as LifeEvent };
         } else {
             const errors = result.error.errors.map(err => `${err.path.join('.')}: ${err.message}`);
-            logger.warn('Life event validation failed', undefined, { errors });
+            logger.warn('Life event validation failed', { errors });
             return { isValid: false, errors };
         }
     } catch (error) {
@@ -345,7 +345,7 @@ export function validateProspect(prospect: unknown): { isValid: boolean; errors:
             return { isValid: true, errors: [], data: result.data as Prospect };
         } else {
             const errors = result.error.errors.map(err => `${err.path.join('.')}: ${err.message}`);
-            logger.warn('Prospect validation failed', undefined, { errors });
+            logger.warn('Prospect validation failed', { errors });
             return { isValid: false, errors };
         }
     } catch (error) {
@@ -365,7 +365,7 @@ export function validateNeighborhoodProfile(profile: unknown): { isValid: boolea
             return { isValid: true, errors: [], data: result.data as NeighborhoodProfile };
         } else {
             const errors = result.error.errors.map(err => `${err.path.join('.')}: ${err.message}`);
-            logger.warn('Neighborhood profile validation failed', undefined, { errors });
+            logger.warn('Neighborhood profile validation failed', { errors });
             return { isValid: false, errors };
         }
     } catch (error) {

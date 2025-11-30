@@ -5,6 +5,7 @@ import { useUser } from '@/aws/auth';
 
 interface AccessibilityPreferences {
     highContrastBorders: boolean;
+    fullWidth: boolean;
 }
 
 interface AccessibilityContextType {
@@ -19,6 +20,7 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
     const { user } = useUser();
     const [preferences, setPreferences] = useState<AccessibilityPreferences>({
         highContrastBorders: false,
+        fullWidth: false,
     });
     const [isLoading, setIsLoading] = useState(true);
 
@@ -38,6 +40,7 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
                     const userPreferences = result.data.Data.preferences;
                     setPreferences({
                         highContrastBorders: userPreferences.highContrastBorders || false,
+                        fullWidth: userPreferences.fullWidth || false,
                     });
                 }
             } catch (error) {

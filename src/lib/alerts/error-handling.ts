@@ -326,7 +326,7 @@ export class RetryHandler {
         context: LogContext & { operation: string }
     ): Promise<T> {
         const retryConfig = { ...DEFAULT_RETRY_CONFIG, ...config };
-        let lastError: Error;
+        let lastError: Error = new Error('Operation failed before first attempt');
         let attempt = 0;
 
         while (attempt < retryConfig.maxAttempts) {
@@ -353,10 +353,11 @@ export class RetryHandler {
             } catch (error) {
                 lastError = error as Error;
 
-                this.logger.warn(`Operation failed on attempt ${attempt}`, lastError, {
+                this.logger.warn(`Operation failed on attempt ${attempt}`, {
                     ...context,
                     attempt,
                     willRetry: attempt < retryConfig.maxAttempts && this.shouldRetry(lastError, retryConfig),
+                    error: lastError
                 });
 
                 // Don't retry if this is the last attempt or error is not retryable
@@ -471,7 +472,7 @@ export class DataQualityValidator {
         const isValid = errors.length === 0;
 
         if (!isValid) {
-            this.logger.warn('Alert data validation failed', undefined, {
+            this.logger.warn('Alert data validation failed', {
                 alertId: alert.id,
                 alertType: alert.type,
                 errors,
@@ -508,8 +509,8 @@ export class DataQualityValidator {
         // Target areas validation
         if (settings.targetAreas) {
             for (const area of settings.targetAreas) {
-                const areaErrors = this.validateTargetArea(area);
-                errors.push(...areaErrors);
+                const validation = this.validateTargetArea(area);
+                errors.push(...validation.errors);
             }
         }
 
@@ -530,7 +531,7 @@ export class DataQualityValidator {
         const isValid = errors.length === 0;
 
         if (!isValid) {
-            this.logger.warn('Alert settings validation failed', undefined, {
+            this.logger.warn('Alert settings validation failed', {
                 userId: settings.userId,
                 errors,
             });
@@ -542,7 +543,7 @@ export class DataQualityValidator {
     /**
      * Validates target area data
      */
-    private validateTargetArea(area: TargetArea): string[] {
+    public validateTargetArea(area: TargetArea): { isValid: boolean; errors: string[] } {
         const errors: string[] = [];
 
         if (!area.id) errors.push('Target area ID is required');
@@ -566,7 +567,7 @@ export class DataQualityValidator {
             }
         }
 
-        return errors;
+        return { isValid: errors.length === 0, errors };
     }
 
     /**
@@ -648,8 +649,9 @@ export class DataQualityValidator {
                     return sanitized;
             }
         } catch (error) {
-            this.logger.warn(`Data sanitization failed for ${dataType}`, error as Error, {
+            this.logger.warn(`Data sanitization failed for ${dataType}`, {
                 dataType,
+                error: error as Error
             });
             throw new DataQualityError(
                 `Failed to sanitize ${dataType} data`,

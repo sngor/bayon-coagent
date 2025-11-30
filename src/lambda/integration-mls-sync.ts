@@ -148,7 +148,7 @@ async function handleSync(
 
     // Create sync job record with retry logic
     await retry(
-        async () => await repository.createItem(request.userId, `MLSSYNC#${syncId}`, {
+        async () => await repository.create(`USER#${request.userId}`, `MLSSYNC#${syncId}`, 'SyncOperation', {
             syncId,
             provider: request.provider,
             agentId: request.agentId,
@@ -187,7 +187,7 @@ async function handleSync(
 
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch listings';
 
-        await repository.updateItem(request.userId, `MLSSYNC#${syncId}`, {
+        await repository.update(`USER#${request.userId}`, `MLSSYNC#${syncId}`, {
             status: 'failed',
             error: errorMessage,
             completedAt: Date.now(),
@@ -271,7 +271,7 @@ async function handleSync(
 
             // Store listing in DynamoDB with retry logic
             await retry(
-                async () => await repository.createItem(request.userId, `LISTING#${listing.mlsNumber}`, {
+                async () => await repository.create(`USER#${request.userId}`, `LISTING#${listing.mlsNumber}`, 'Listing', {
                     listingId: listing.mlsNumber,
                     mlsId: listing.mlsId,
                     mlsNumber: listing.mlsNumber,
@@ -304,7 +304,7 @@ async function handleSync(
     }
 
     // Update sync job record
-    await repository.updateItem(request.userId, `MLSSYNC#${syncId}`, {
+    await repository.update(`USER#${request.userId}`, `MLSSYNC#${syncId}`, {
         status: 'completed',
         totalListings: listings.length,
         syncedListings: syncedCount,

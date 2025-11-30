@@ -563,6 +563,31 @@ export default function SettingsPage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
+                                <div className="flex items-center justify-between pt-4 border-t">
+                                    <div className="space-y-0.5">
+                                        <Label>Full Width Layout</Label>
+                                        <p className="text-sm text-muted-foreground">Allow pages to use full screen width instead of being centered with maximum width</p>
+                                    </div>
+                                    <Switch
+                                        checked={preferences.fullWidth}
+                                        onCheckedChange={async (enabled) => {
+                                            try {
+                                                await updatePreference('fullWidth', enabled);
+                                                toast({
+                                                    title: 'Layout Updated',
+                                                    description: `Pages will now ${enabled ? 'use full width' : 'be centered with maximum width'}.`,
+                                                });
+                                            } catch (error) {
+                                                console.error('Error saving layout preference:', error);
+                                                toast({
+                                                    title: 'Error',
+                                                    description: 'Failed to save layout preference. Please try again.',
+                                                    variant: 'destructive',
+                                                });
+                                            }
+                                        }}
+                                    />
+                                </div>
                             </DataGrid>
                         </FormSection>
 

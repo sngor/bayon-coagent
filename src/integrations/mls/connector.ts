@@ -580,7 +580,7 @@ export class RESOWebAPIConnector implements MLSConnector {
             street: resoListing.UnparsedAddress || "",
             city: resoListing.City || "",
             state: resoListing.StateOrProvince || "",
-            zipCode: resoListing.PostalCode || "",
+            zip: resoListing.PostalCode || "",
             country: resoListing.Country || "US",
         };
     }

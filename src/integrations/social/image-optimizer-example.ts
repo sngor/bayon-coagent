@@ -65,7 +65,7 @@ export async function multiPlatformOptimization(
 
     const imageUrls = listing.photos.map((photo) => photo.url);
 
-    const results: Record<Platform, any[]> = {
+    const results: Record<string, any[]> = {
         facebook: [],
         instagram: [],
         linkedin: [],
@@ -299,7 +299,7 @@ export async function verifyOptimization(
     );
 
     // Platform-specific dimension checks
-    const dimensionChecks = {
+    const dimensionChecks: Record<string, any> = {
         facebook: { width: 1200, height: 630 },
         instagram: [
             { width: 1080, height: 1080 },

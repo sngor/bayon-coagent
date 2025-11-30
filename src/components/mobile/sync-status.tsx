@@ -345,7 +345,7 @@ export function FloatingSyncStatus({ className }: { className?: string }) {
     const [connectivityStatus, setConnectivityStatus] = useState<ConnectivityStatus>(
         offlineSyncManager.getConnectivityStatus()
     );
-    const [queueStatus, setQueueStatus] = useState<QueueStatus>({ pending: 0, failed: 0, completed: 0 });
+    const [queueStatus, setQueueStatus] = useState<QueueStatus>({ pending: 0, failed: 0, completed: 0, conflicts: 0 });
     const [syncProgress, setSyncProgress] = useState<SyncProgress[]>([]);
     const [isVisible, setIsVisible] = useState(false);
 

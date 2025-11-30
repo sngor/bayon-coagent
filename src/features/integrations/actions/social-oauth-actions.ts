@@ -10,7 +10,7 @@
 import { getOAuthConnectionManager, disconnectConnection } from '@/integrations/oauth/connection-manager';
 import {
     runConnectionDiagnostics,
-    ConnectionDiagnosticResult
+    ConnectionDiagnostics
 } from '@/services/monitoring/connection-diagnostics';
 import type { Platform, OAuthConnection } from '@/integrations/social/types';
 
@@ -44,7 +44,7 @@ export async function initiateOAuthConnectionAction(
             };
         }
 
-        if (!['facebook', 'instagram', 'linkedin', 'twitter'].includes(platform)) {
+        if (!['facebook', 'instagram', 'linkedin', 'twitter'].includes(platform as any)) {
             return {
                 success: false,
                 error: 'Invalid platform',
@@ -54,7 +54,7 @@ export async function initiateOAuthConnectionAction(
         // Try integration service Lambda via API Gateway first
         try {
             const { oauthClient } = await import('@/aws/integration-service/client');
-            const result = await oauthClient.initiateSocialOAuth(platform, userId);
+            const result = await oauthClient.initiateSocialOAuth(platform as any, userId);
 
             console.log(`Successfully initiated ${platform} OAuth via Integration Service`);
 
@@ -142,7 +142,7 @@ export async function validateChannelAction(
             };
         }
 
-        if (!['facebook', 'instagram', 'linkedin', 'twitter'].includes(platform)) {
+        if (!['facebook', 'instagram', 'linkedin', 'twitter'].includes(platform as any)) {
             return {
                 success: false,
                 error: 'Invalid platform',
@@ -286,7 +286,7 @@ export async function getConnectedChannelsAction(
  */
 export async function getAllOAuthConnectionsAction(
     userId: string
-): Promise<ActionResult<Record<Platform, OAuthConnection | null>>> {
+): Promise<ActionResult<Partial<Record<Platform, OAuthConnection | null>>>> {
     try {
         if (!userId) {
             return {
@@ -298,7 +298,7 @@ export async function getAllOAuthConnectionsAction(
         const manager = getOAuthConnectionManager();
         const platforms: Platform[] = ['facebook', 'instagram', 'linkedin', 'twitter'];
 
-        const connections: Record<Platform, OAuthConnection | null> = {
+        const connections: Partial<Record<Platform, OAuthConnection | null>> = {
             facebook: null,
             instagram: null,
             linkedin: null,
@@ -349,7 +349,7 @@ export async function disconnectOAuthConnectionAction(
             };
         }
 
-        if (!['facebook', 'instagram', 'linkedin', 'twitter'].includes(platform)) {
+        if (!['facebook', 'instagram', 'linkedin', 'twitter'].includes(platform as any)) {
             return {
                 success: false,
                 error: 'Invalid platform',
@@ -526,7 +526,7 @@ export async function updateConnectionUsageAction(
             };
         }
 
-        if (!['facebook', 'instagram', 'linkedin', 'twitter'].includes(platform)) {
+        if (!['facebook', 'instagram', 'linkedin', 'twitter'].includes(platform as any)) {
             return {
                 success: false,
                 error: 'Invalid platform',
@@ -680,7 +680,7 @@ export async function runConnectionDiagnosticsAction(
             };
         }
 
-        if (!['facebook', 'instagram', 'linkedin', 'twitter'].includes(platform)) {
+        if (!['facebook', 'instagram', 'linkedin', 'twitter'].includes(platform as any)) {
             return {
                 success: false,
                 error: 'Invalid platform',

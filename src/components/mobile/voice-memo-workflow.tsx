@@ -78,22 +78,22 @@ export function VoiceMemoWorkflow({
             }
 
             // Online processing
-            const { uploadAndTranscribeAudioAction } = await import('@/features/client-dashboards/actions/mobile-actions');
+            const { uploadVoiceRecordingAction } = await import('@/features/client-dashboards/actions/mobile-actions');
 
-            const result = await uploadAndTranscribeAudioAction(
-                recording.blob,
-                userId,
-                {
-                    duration: recording.duration,
-                    timestamp: recording.timestamp
-                }
-            );
+            // Prepare FormData for the action
+            const actionFormData = new FormData();
+            actionFormData.append('file', recording.blob);
+            actionFormData.append('duration', recording.duration.toString());
+            actionFormData.append('contentType', 'notes'); // Default content type
+            actionFormData.append('context', 'Mobile voice memo');
 
-            if (result.success && result.transcript) {
-                setTranscript(result.transcript);
+            const result = await uploadVoiceRecordingAction(null, actionFormData);
+
+            if (result.success && result.data?.transcript) {
+                setTranscript(result.data.transcript);
                 setCurrentStep('generate');
             } else {
-                setError(result.error || 'Failed to transcribe audio');
+                setError(result.message || 'Failed to transcribe audio');
                 setCurrentStep('record');
             }
         } catch (err: any) {

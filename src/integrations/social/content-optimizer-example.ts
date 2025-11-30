@@ -15,7 +15,7 @@ const sampleListing: Listing = {
         street: "123 Ocean View Drive",
         city: "Santa Monica",
         state: "CA",
-        zipCode: "90401",
+        zip: "90401",
         country: "US",
     },
     price: 2500000,

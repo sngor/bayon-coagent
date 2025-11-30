@@ -7,23 +7,25 @@
 import { APIGatewayProxyHandler, APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient, DescribeTableCommand } from '@aws-sdk/client-dynamodb';
 import { SQSClient, GetQueueAttributesCommand } from '@aws-sdk/client-sqs';
-import { BedrockRuntimeClient, ListFoundationModelsCommand } from '@aws-sdk/client-bedrock-runtime';
+import { BedrockClient, ListFoundationModelsCommand } from '@aws-sdk/client-bedrock';
 import { createHealthCheckResponse } from '../aws/api-gateway/config';
 
 const dynamoClient = new DynamoDBClient({});
 const sqsClient = new SQSClient({});
-const bedrockClient = new BedrockRuntimeClient({});
+const bedrockClient = new BedrockClient({});
 
 const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME!;
 const REQUEST_QUEUE_URL = process.env.AI_JOB_REQUEST_QUEUE_URL!;
 
 interface HealthCheckDependencies {
+    [key: string]: 'healthy' | 'unhealthy';
     dynamodb: 'healthy' | 'unhealthy';
     sqs: 'healthy' | 'unhealthy';
     bedrock: 'healthy' | 'unhealthy';
 }
 
 interface HealthCheckMetrics {
+    [key: string]: number;
     queueDepth: number;
     uptime: number;
     memoryUsed: number;

@@ -397,7 +397,7 @@ export function ChatInterface({
                 <div className="absolute inset-0 bg-gradient-to-b from-purple-500/15 via-blue-500/8 to-transparent backdrop-blur-[20px]"></div>
                 <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/30 to-transparent backdrop-blur-[12px]"></div>
                 <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/5 to-transparent dark:from-white/5 dark:via-white/2 dark:to-transparent"></div>
-                <div className="relative z-10">
+                <div className="relative z-10 max-w-3xl mx-auto">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="relative">
@@ -426,7 +426,7 @@ export function ChatInterface({
             {/* Messages Area */}
             <div className="flex-1 overflow-hidden">
                 <ScrollArea className="h-full">
-                    <div className="p-4 space-y-4">
+                    <div className="p-4 space-y-4 max-w-3xl mx-auto">
                         {messages.length === 0 ? (
                             <div className="flex flex-col items-center justify-center min-h-[400px] text-center py-8 px-4">
                                 {/* Enhanced Animated AI Avatar */}
@@ -577,9 +577,7 @@ export function ChatInterface({
 
             {/* Enhanced Input Area */}
             <div className="flex-shrink-0 border-t bg-background/80 backdrop-blur-sm p-4">
-
-
-                <form ref={formRef} onSubmit={handleSubmit} className="relative">
+                <form ref={formRef} onSubmit={handleSubmit} className="relative max-w-3xl mx-auto">
                     {/* File Upload Inputs */}
                     <input
                         ref={fileInputRef}

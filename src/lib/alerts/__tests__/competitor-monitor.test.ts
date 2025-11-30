@@ -409,7 +409,7 @@ describe('CompetitorMonitor', () => {
             detectPriceReductionsSpy.mockResolvedValue([]);
             detectWithdrawalsSpy.mockResolvedValue([]);
 
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
 
             const alerts = await competitorMonitor.trackListingEvents(
                 mockCompetitors, // Both competitors
@@ -496,7 +496,7 @@ describe('CompetitorMonitor', () => {
             );
             fetchMLSDataSpy.mockRejectedValue(new Error('MLS API Error'));
 
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
 
             const events = await competitorMonitor.detectNewListings(
                 mockCompetitors[0],
@@ -541,7 +541,7 @@ describe('CompetitorMonitor', () => {
             );
             getPriceHistorySpy.mockRejectedValue(new Error('Price history error'));
 
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
 
             const events = await competitorMonitor.detectPriceReductions(
                 mockCompetitors[0],

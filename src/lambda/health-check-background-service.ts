@@ -18,12 +18,14 @@ const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME!;
 const EVENT_BUS_NAME = process.env.EVENT_BUS_NAME!;
 
 interface HealthCheckDependencies {
+    [key: string]: 'healthy' | 'unhealthy';
     dynamodb: 'healthy' | 'unhealthy';
     eventBridge: 'healthy' | 'unhealthy';
     cloudWatch: 'healthy' | 'unhealthy';
 }
 
 interface HealthCheckMetrics {
+    [key: string]: number;
     uptime: number;
     memoryUsed: number;
     memoryTotal: number;
@@ -66,7 +68,6 @@ async function checkCloudWatch(): Promise<'healthy' | 'unhealthy'> {
     try {
         await cloudWatchClient.send(new ListMetricsCommand({
             Namespace: 'BayonCoAgent/ContentWorkflow',
-            MaxRecords: 1,
         }));
         return 'healthy';
     } catch (error) {

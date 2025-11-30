@@ -5,5 +5,5 @@
  * Perfect for dashboard cards, tables, and inline data visualization.
  */
 
-export { Sparkline, SparklineCard } from "./sparkline";
-export type { SparklineProps, SparklineCardProps } from "./sparkline";
+export { Sparkline, SparklineCard, SparklineBar } from "./sparkline";
+export type { SparklineProps, SparklineCardProps, SparklineBarProps } from "./sparkline";

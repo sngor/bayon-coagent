@@ -50,7 +50,8 @@ export function useOfflineSync(): UseOfflineSyncReturn {
     const [queueStatus, setQueueStatus] = useState<QueueStatus>({
         pending: 0,
         failed: 0,
-        completed: 0
+        completed: 0,
+        conflicts: 0
     });
     const [syncProgress, setSyncProgress] = useState<SyncProgress[]>([]);
 
@@ -193,7 +194,8 @@ export function useSyncQueueStatus() {
     const [queueStatus, setQueueStatus] = useState<QueueStatus>({
         pending: 0,
         failed: 0,
-        completed: 0
+        completed: 0,
+        conflicts: 0
     });
 
     const refreshStatus = useCallback(async () => {

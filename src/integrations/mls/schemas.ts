@@ -9,7 +9,7 @@ export const AddressSchema = z.object({
     street: z.string().min(1, "Street is required"),
     city: z.string().min(1, "City is required"),
     state: z.string().min(2, "State is required").max(2, "State must be 2 characters"),
-    zipCode: z.string().min(5, "Zip code is required"),
+    zip: z.string().min(5, "Zip code is required"),
     country: z.string().default("US"),
 });
 

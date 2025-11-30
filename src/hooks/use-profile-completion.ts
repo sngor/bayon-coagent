@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { Profile } from '@/lib/types/common/common';
+import type { Profile } from '@/lib/types/common';
 
 interface ProfileField {
   key: keyof Profile;
@@ -172,7 +172,7 @@ export function getSuggestedNextActions(
   const completedRequired = completed.filter((f) => f.required);
   const hasRequiredFields = completedRequired.length === requiredFields.length;
   const isComplete = completed.length === PROFILE_FIELDS.length;
-  
+
   const suggestions: NextStep[] = [];
 
   // Priority 1: Complete profile if required fields are missing

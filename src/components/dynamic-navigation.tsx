@@ -21,6 +21,7 @@ import {
     Wand2,
     Calculator,
     FileText,
+    DoorOpen,
 } from 'lucide-react';
 import {
     HouseIcon,
@@ -217,6 +218,20 @@ const FilledIcons = {
             <line x1="10" y1="9" x2="8" y2="9" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
         </svg>
     ),
+    DoorOpen: ({ ...props }) => (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            {...props}
+        >
+            <path d="M13 4h3a2 2 0 0 1 2 2v14" />
+            <path d="M2 20h3" />
+            <path d="M13 20h9" />
+            <path d="M10 12v.01" stroke="currentColor" strokeWidth="2" fill="none" />
+            <path d="M13 4.562v15.157a1 1 0 0 1-.553.894l-4.553 2.277a1 1 0 0 1-1.447-.894V5.562a2 2 0 0 1 1.105-1.788l4.553-2.277a1 1 0 0 1 1.447.894" />
+        </svg>
+    ),
 };
 
 // Regular user navigation
@@ -288,8 +303,8 @@ const regularNavItems = [
     },
     {
         href: '/open-house',
-        icon: HouseIcon,
-        filledIcon: FilledIcons.HouseIcon,
+        icon: DoorOpen,
+        filledIcon: FilledIcons.DoorOpen,
         label: 'Open House',
         featureId: 'open-house'
     },

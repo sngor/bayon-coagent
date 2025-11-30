@@ -66,13 +66,15 @@ export function StyledBreadcrumbExample() {
 export function PageLayoutWithBreadcrumbsExample() {
     return (
         <PageLayout
-            title="Marketing Plan"
-            description="Create and manage your marketing strategy"
-            breadcrumbs={[
-                { label: "Home", href: "/" },
-                { label: "Dashboard", href: "/dashboard" },
-                { label: "Marketing Plan" }
-            ]}
+            header={{
+                title: "Marketing Plan",
+                description: "Create and manage your marketing strategy",
+                breadcrumbs: [
+                    { label: "Home", href: "/" },
+                    { label: "Dashboard", href: "/dashboard" },
+                    { label: "Marketing Plan" }
+                ]
+            }}
         >
             <div className="space-y-6">
                 <p>Your page content goes here...</p>
@@ -85,13 +87,15 @@ export function PageLayoutWithBreadcrumbsExample() {
 export function DynamicBreadcrumbExample({ reportId }: { reportId: string }) {
     return (
         <PageLayout
-            title={`Report #${reportId}`}
-            breadcrumbs={[
-                { label: "Home", href: "/" },
-                { label: "Dashboard", href: "/dashboard" },
-                { label: "Research Agent", href: "/research-agent" },
-                { label: `Report #${reportId}` }
-            ]}
+            header={{
+                title: `Report #${reportId}`,
+                breadcrumbs: [
+                    { label: "Home", href: "/" },
+                    { label: "Dashboard", href: "/dashboard" },
+                    { label: "Research Agent", href: "/research-agent" },
+                    { label: `Report #${reportId}` }
+                ]
+            }}
         >
             <div>Report content...</div>
         </PageLayout>
@@ -116,13 +120,15 @@ export function SettingsBreadcrumbExample() {
 export function ToolPageBreadcrumbExample() {
     return (
         <PageLayout
-            title="Brand Audit"
-            description="Analyze your online presence and reputation"
-            breadcrumbs={[
-                { label: "Home", href: "/" },
-                { label: "Dashboard", href: "/dashboard" },
-                { label: "Brand Audit" }
-            ]}
+            header={{
+                title: "Brand Audit",
+                description: "Analyze your online presence and reputation",
+                breadcrumbs: [
+                    { label: "Home", href: "/" },
+                    { label: "Dashboard", href: "/dashboard" },
+                    { label: "Brand Audit" }
+                ]
+            }}
         >
             <div>Brand audit content...</div>
         </PageLayout>

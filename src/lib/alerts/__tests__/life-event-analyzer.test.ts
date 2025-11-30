@@ -5,8 +5,8 @@
 import {
     LifeEventAnalyzer,
     createLifeEventAnalyzer,
-    validateLifeEvent,
-    validateProspect,
+    isLifeEvent,
+    isProspect,
     getEventTypeDisplayName,
     getEventTypeDescription,
 } from '../life-event-analyzer';
@@ -247,7 +247,7 @@ describe('Life Event Analyzer', () => {
 });
 
 describe('Validation Functions', () => {
-    describe('validateLifeEvent', () => {
+    describe('isLifeEvent', () => {
         it('should validate correct life event', () => {
             const validEvent = {
                 id: '1',
@@ -259,7 +259,7 @@ describe('Validation Functions', () => {
                 source: 'public-records',
             };
 
-            expect(validateLifeEvent(validEvent)).toBe(true);
+            expect(isLifeEvent(validEvent)).toBe(true);
         });
 
         it('should reject invalid life event', () => {
@@ -273,7 +273,7 @@ describe('Validation Functions', () => {
                 source: 'public-records',
             };
 
-            expect(validateLifeEvent(invalidEvent)).toBe(false);
+            expect(isLifeEvent(invalidEvent)).toBe(false);
         });
 
         it('should reject events with invalid event types', () => {
@@ -287,7 +287,7 @@ describe('Validation Functions', () => {
                 source: 'public-records',
             };
 
-            expect(validateLifeEvent(invalidEvent)).toBe(false);
+            expect(isLifeEvent(invalidEvent)).toBe(false);
         });
 
         it('should reject events with confidence out of range', () => {
@@ -301,11 +301,11 @@ describe('Validation Functions', () => {
                 source: 'public-records',
             };
 
-            expect(validateLifeEvent(invalidEvent)).toBe(false);
+            expect(isLifeEvent(invalidEvent)).toBe(false);
         });
     });
 
-    describe('validateProspect', () => {
+    describe('isProspect', () => {
         it('should validate correct prospect', () => {
             const validProspect = {
                 id: 'prospect1',
@@ -323,7 +323,7 @@ describe('Validation Functions', () => {
                 lastAnalyzed: new Date().toISOString(),
             };
 
-            expect(validateProspect(validProspect)).toBe(true);
+            expect(isProspect(validProspect)).toBe(true);
         });
 
         it('should reject invalid prospect', () => {
@@ -335,7 +335,7 @@ describe('Validation Functions', () => {
                 lastAnalyzed: new Date().toISOString(),
             };
 
-            expect(validateProspect(invalidProspect)).toBe(false);
+            expect(isProspect(invalidProspect)).toBe(false);
         });
     });
 });

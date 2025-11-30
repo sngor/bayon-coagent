@@ -9,7 +9,7 @@ import { DynamoDBClient, PutItemCommand, UpdateItemCommand } from '@aws-sdk/clie
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { marshall } from '@aws-sdk/util-dynamodb';
 import { generateBlogPost } from '../aws/bedrock/flows/generate-blog-post';
-import { AWSXRay } from 'aws-xray-sdk-core';
+import AWSXRay from 'aws-xray-sdk-core';
 import { publishAiJobCompletedEvent } from './utils/eventbridge-client';
 import { invokeIntegrationService, invokeBackgroundService } from './utils/request-signer';
 import { retry } from '../lib/retry-utility';
@@ -61,7 +61,7 @@ async function updateJobStatus(
 ): Promise<void> {
     const now = new Date().toISOString();
 
-    const updateExpression = status === 'completed' || status === 'failed'
+    let updateExpression = status === 'completed' || status === 'failed'
         ? 'SET #status = :status, #updatedAt = :updatedAt, #completedAt = :completedAt'
         : 'SET #status = :status, #updatedAt = :updatedAt';
 
@@ -143,10 +143,8 @@ async function processJob(record: SQSRecord): Promise<void> {
         const fallbackResult = await executeWithFallback(
             async () => await generateBlogPost({
                 topic,
-                tone,
-                keywords,
-                targetAudience,
-                length,
+                includeWebSearch: true,
+                searchDepth: 'basic',
             }),
             {
                 operationName: 'ai-blog-post-generation',

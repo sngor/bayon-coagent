@@ -53,7 +53,6 @@ import type {
     EditParams,
 } from '@/ai/schemas/reimagine-schemas';
 import { cn } from '@/lib/utils/common';
-import { PageHeader } from '@/components/page-header';
 import { FavoritesButton } from '@/components/favorites-button';
 import { getPageConfig } from '@/components/dashboard-quick-actions';
 

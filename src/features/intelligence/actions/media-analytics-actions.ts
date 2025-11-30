@@ -5,7 +5,7 @@ import type { MediaAnalytics, MediaMention } from '../types/media-types';
 import { mediaMonitoringService } from '../services/media-monitoring-service';
 import { mediaMentionRepository } from '../repositories/media-mention-repository';
 import { mediaAnalyticsService } from '../services/media-analytics-service';
-import { getUserIdFromSession } from '@/aws/auth/server';
+import { getUserIdFromRequest } from '@/aws/auth/server-auth';
 
 /**
  * Fetch fresh media mentions and save to database
@@ -14,7 +14,7 @@ export async function syncMediaMentionsAction(
     query: string = 'real estate'
 ): Promise<{ success: boolean; count: number; error?: string }> {
     try {
-        const userId = await getUserIdFromSession();
+        const userId = await getUserIdFromRequest();
         if (!userId) {
             return { success: false, count: 0, error: 'Not authenticated' };
         }
@@ -52,7 +52,7 @@ export async function getMediaAnalyticsAction(
     error?: string;
 }> {
     try {
-        const userId = await getUserIdFromSession();
+        const userId = await getUserIdFromRequest();
         if (!userId) {
             return { success: false, error: 'Not authenticated' };
         }
@@ -80,7 +80,7 @@ export async function getRecentMentionsAction(
     error?: string;
 }> {
     try {
-        const userId = await getUserIdFromSession();
+        const userId = await getUserIdFromRequest();
         if (!userId) {
             return { success: false, error: 'Not authenticated' };
         }
@@ -109,7 +109,7 @@ export async function getMentionsByTimeRangeAction(
     error?: string;
 }> {
     try {
-        const userId = await getUserIdFromSession();
+        const userId = await getUserIdFromRequest();
         if (!userId) {
             return { success: false, error: 'Not authenticated' };
         }
@@ -137,7 +137,7 @@ export async function deleteMentionAction(
     mentionId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const userId = await getUserIdFromSession();
+        const userId = await getUserIdFromRequest();
         if (!userId) {
             return { success: false, error: 'Not authenticated' };
         }
@@ -164,7 +164,7 @@ export async function initializeMediaMonitoringAction(): Promise<{
     error?: string;
 }> {
     try {
-        const userId = await getUserIdFromSession();
+        const userId = await getUserIdFromRequest();
         if (!userId) {
             return { success: false, count: 0, error: 'Not authenticated' };
         }

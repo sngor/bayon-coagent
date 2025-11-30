@@ -14,8 +14,7 @@ import {
     CheckCircle,
     Loader2,
     Cloud,
-    CloudOff,
-    Sync
+    CloudOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils/common';
 import { offlineContentManager, OfflineIndicatorData } from '@/lib/offline-content-manager';
@@ -274,7 +273,7 @@ export function OfflineStatusIndicator({
                             </>
                         ) : (
                             <>
-                                <Sync className="h-4 w-4" />
+                                <RefreshCw className="h-4 w-4" />
                                 <span>Sync Now</span>
                             </>
                         )}

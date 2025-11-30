@@ -21,7 +21,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from './ui/dialog';
-import type { Profile } from '@/lib/types/common/common';
+import type { Profile } from '@/lib/types/common';
 import type { ComplexTaskGuidance } from '@/lib/workflow-optimization';
 
 interface WorkflowOptimizationDemoProps {

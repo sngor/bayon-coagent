@@ -259,7 +259,7 @@ export function ShareTemplateModal({
     }, [searchQuery, roleFilter, departmentFilter, currentUserId]);
 
     const departments = useMemo(() => {
-        const depts = new Set(MOCK_TEAM_MEMBERS.map(m => m.department).filter(Boolean));
+        const depts = new Set(MOCK_TEAM_MEMBERS.map(m => m.department).filter((d): d is string => !!d));
         return Array.from(depts);
     }, []);
 
@@ -399,29 +399,29 @@ export function ShareTemplateModal({
     const getMemberPermissions = (memberId: string): TemplatePermission[] => {
         const memberPermissions: TemplatePermission[] = [];
 
-        if (permissions.canView.includes(memberId)) memberPermissions.push('view');
-        if (permissions.canEdit.includes(memberId)) memberPermissions.push('edit');
-        if (permissions.canShare.includes(memberId)) memberPermissions.push('share');
-        if (permissions.canDelete.includes(memberId)) memberPermissions.push('delete');
+        if (permissions.canView.includes(memberId)) memberPermissions.push(TemplatePermission.VIEW);
+        if (permissions.canEdit.includes(memberId)) memberPermissions.push(TemplatePermission.EDIT);
+        if (permissions.canShare.includes(memberId)) memberPermissions.push(TemplatePermission.SHARE);
+        if (permissions.canDelete.includes(memberId)) memberPermissions.push(TemplatePermission.DELETE);
 
         return memberPermissions;
     };
 
     const getPermissionIcon = (permission: TemplatePermission) => {
         switch (permission) {
-            case 'view': return <Eye className="w-4 h-4" />;
-            case 'edit': return <Edit className="w-4 h-4" />;
-            case 'share': return <Share2 className="w-4 h-4" />;
-            case 'delete': return <Trash2 className="w-4 h-4" />;
+            case TemplatePermission.VIEW: return <Eye className="w-4 h-4" />;
+            case TemplatePermission.EDIT: return <Edit className="w-4 h-4" />;
+            case TemplatePermission.SHARE: return <Share2 className="w-4 h-4" />;
+            case TemplatePermission.DELETE: return <Trash2 className="w-4 h-4" />;
         }
     };
 
     const getPermissionDescription = (permission: TemplatePermission) => {
         switch (permission) {
-            case 'view': return 'Can view and use the template';
-            case 'edit': return 'Can modify template content and settings';
-            case 'share': return 'Can share template with other team members';
-            case 'delete': return 'Can delete the template (use with caution)';
+            case TemplatePermission.VIEW: return 'Can view and use the template';
+            case TemplatePermission.EDIT: return 'Can modify template content and settings';
+            case TemplatePermission.SHARE: return 'Can share template with other team members';
+            case TemplatePermission.DELETE: return 'Can delete the template (use with caution)';
         }
     };
 
@@ -596,7 +596,7 @@ export function ShareTemplateModal({
 
                                                 {/* Permission Checkboxes */}
                                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                                    {(['view', 'edit', 'share', 'delete'] as TemplatePermission[]).map(permission => (
+                                                    {([TemplatePermission.VIEW, TemplatePermission.EDIT, TemplatePermission.SHARE, TemplatePermission.DELETE] as TemplatePermission[]).map(permission => (
                                                         <div key={permission} className="flex items-center space-x-2">
                                                             <Checkbox
                                                                 id={`${member.id}-${permission}`}
@@ -604,7 +604,7 @@ export function ShareTemplateModal({
                                                                 onCheckedChange={(checked) =>
                                                                     handlePermissionChange(member.id, permission, !!checked)
                                                                 }
-                                                                disabled={!member.isActive && permission !== 'view'}
+                                                                disabled={!member.isActive && permission !== TemplatePermission.VIEW}
                                                             />
                                                             <Label
                                                                 htmlFor={`${member.id}-${permission}`}
@@ -627,7 +627,7 @@ export function ShareTemplateModal({
                         {filteredMembers.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                                 <span className="text-sm text-muted-foreground self-center">Bulk actions:</span>
-                                {(['view', 'edit', 'share'] as TemplatePermission[]).map(permission => (
+                                {([TemplatePermission.VIEW, TemplatePermission.EDIT, TemplatePermission.SHARE] as TemplatePermission[]).map(permission => (
                                     <div key={permission} className="flex gap-1">
                                         <Button
                                             variant="outline"

@@ -126,7 +126,7 @@ class ZapierOAuthManager implements IntegrationService {
                 accessToken: tokenData.access_token,
                 refreshToken: tokenData.refresh_token,
                 expiresAt: Date.now() + (tokenData.expires_in * 1000),
-                scope: ZAPIER_SCOPES
+                scope: [...ZAPIER_SCOPES]
             };
 
             const connection: IntegrationConnection = {

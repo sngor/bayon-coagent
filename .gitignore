@@ -35,6 +35,9 @@ yarn-error.log*
 # TypeScript build info
 *.tsbuildinfo
 
+# AWS SAM
+.aws-sam/
+
 # IDE
 .idea/
 *.swp

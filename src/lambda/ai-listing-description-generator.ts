@@ -7,8 +7,8 @@
 import { SQSHandler, SQSEvent, SQSRecord } from 'aws-lambda';
 import { DynamoDBClient, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
-import { generateListingDescription } from '../aws/bedrock/flows/listing-description-generator';
-import { AWSXRay } from 'aws-xray-sdk-core';
+import { generateNewListingDescription } from '../aws/bedrock/flows/listing-description-generator';
+import AWSXRay from 'aws-xray-sdk-core';
 import { publishAiJobCompletedEvent } from './utils/eventbridge-client';
 import { invokeIntegrationService } from './utils/request-signer';
 import { retry } from '../lib/retry-utility';
@@ -46,7 +46,7 @@ async function updateJobStatus(
 ): Promise<void> {
     const now = new Date().toISOString();
 
-    const updateExpression = status === 'completed' || status === 'failed'
+    let updateExpression = status === 'completed' || status === 'failed'
         ? 'SET #status = :status, #updatedAt = :updatedAt, #completedAt = :completedAt'
         : 'SET #status = :status, #updatedAt = :updatedAt';
 
@@ -125,18 +125,15 @@ async function processJob(record: SQSRecord): Promise<void> {
 
         // Generate listing description using Bedrock flow with retry logic
         const result = await retry(
-            async () => await generateListingDescription({
+            async () => await generateNewListingDescription({
                 propertyType,
-                bedrooms,
-                bathrooms,
-                squareFeet,
-                price,
-                address,
-                features,
-                neighborhood,
-                persona,
-            }, {
-                userId,
+                bedrooms: bedrooms.toString(),
+                bathrooms: bathrooms.toString(),
+                squareFeet: squareFeet.toString(),
+                location: address,
+                keyFeatures: features ? features.join(', ') : '',
+                buyerPersona: persona || 'First-Time Homebuyer',
+                writingStyle: 'Balanced',
             }),
             {
                 maxRetries: 3,

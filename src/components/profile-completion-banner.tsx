@@ -8,12 +8,14 @@ import { AnimatedProgress } from '@/components/ui/animated-progress';
 import { CheckCircle2, Circle, ArrowRight, Sparkles, X } from 'lucide-react';
 import { cn } from '@/lib/utils/common';
 import { fadeInUp, staggerContainer, staggerItem } from '@/lib/animations';
-import type { Profile } from '@/lib/types/common/common';
+import { Profile } from "@/lib/types/common";
+
+type UserProfile = Profile;
 import Link from 'next/link';
 import { CardGradientMesh } from '@/components/ui/gradient-mesh';
 
 export interface ProfileField {
-    key: keyof Profile;
+    key: keyof UserProfile;
     label: string;
     benefit: string;
     required: boolean;

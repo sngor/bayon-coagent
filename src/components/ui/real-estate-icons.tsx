@@ -282,3 +282,93 @@ export const UsersIcon: React.FC<LucideProps & { animated?: boolean }> = ({ anim
         <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
 );
+
+export const ChartIcon: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        {...props}
+    >
+        <path d="M3 3v18h18" />
+        <path d="M18 17V9" />
+        <path d="M13 17V5" />
+        <path d="M8 17v-3" />
+    </svg>
+);
+
+export const ToolsIcon: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        {...props}
+    >
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+    </svg>
+);
+
+export const EmptyStateHouseIcon: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray="4 4"
+        {...props}
+    >
+        <path d="M3 12l9-9 9 9" />
+        <path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10" />
+        <path d="M9 21v-6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v6" />
+    </svg>
+);
+
+export const EmptyStateContentIcon: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray="4 4"
+        {...props}
+    >
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <path d="M7 7h10" />
+        <path d="M7 12h10" />
+        <path d="M7 17h6" />
+        <path d="M17 17h.01" />
+    </svg>
+);
+
+export const EmptyStateChartIcon: React.FC<LucideProps & { animated?: boolean }> = ({ animated, ...props }) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray="4 4"
+        {...props}
+    >
+        <path d="M3 3v18h18" />
+        <path d="M18 17V9" />
+        <path d="M13 17V5" />
+        <path d="M8 17v-3" />
+    </svg>
+);

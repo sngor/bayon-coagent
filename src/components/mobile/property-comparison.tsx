@@ -374,8 +374,9 @@ export function PropertyComparison({
                     <div
                         ref={(el) => {
                             scrollContainerRef.current = el;
-                            if (swipeRef.current !== el) {
-                                (swipeRef as React.MutableRefObject<HTMLElement | null>).current = el;
+                            // Apply swipe ref using type assertion to work around readonly
+                            if (el && swipeRef) {
+                                (swipeRef as any).current = el;
                             }
                         }}
                         className="overflow-hidden"

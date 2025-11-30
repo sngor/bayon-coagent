@@ -688,75 +688,28 @@ async function publishScheduledContentWithService(
     });
 
     try {
-        // Import the publishing function for individual channels
-        const { publishContentToChannel } = await import('../app/social-publishing-actions');
+        // Import the enhanced publishing service
+        const { createEnhancedPublishingService } = await import('../services/publishing/enhanced-publishing-service');
+        const service = createEnhancedPublishingService();
 
-        let successfulChannels = 0;
-        let failedChannels = 0;
-        const errors: string[] = [];
+        const result = await service.publishScheduledContent(scheduledContent, scheduledContent.userId);
 
-        // Publish to each channel
-        for (const channel of scheduledContent.channels) {
-            try {
-                logger.debug('Publishing to channel via service', {
-                    channelType: channel.type,
-                    accountId: channel.accountId
-                });
-
-                const result = await publishContentToChannel({
-                    userId: scheduledContent.userId,
-                    content: scheduledContent.content,
-                    mediaUrls: scheduledContent.metadata?.mediaUrls,
-                    channel,
-                    metadata: {
-                        contentId: scheduledContent.contentId,
-                        scheduleId: scheduledContent.id,
-                        hashtags: scheduledContent.metadata?.hashtags,
-                    }
-                });
-
-                if (result.success) {
-                    successfulChannels++;
-                    logger.debug('Channel publishing succeeded via service', {
-                        channelType: channel.type,
-                        postId: result.postId
-                    });
-                } else {
-                    failedChannels++;
-                    const error = result.error || 'Unknown error';
-                    errors.push(`${channel.type}: ${error}`);
-                    logger.warn('Channel publishing failed via service', {
-                        channelType: channel.type,
-                        error
-                    });
-                }
-
-            } catch (error) {
-                failedChannels++;
-                const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-                errors.push(`${channel.type}: ${errorMessage}`);
-                logger.error('Channel publishing error via service', error as Error, {
-                    channelType: channel.type
-                });
-            }
-        }
-
-        const success = successfulChannels > 0;
-        const error = errors.length > 0 ? errors.join('; ') : undefined;
+        const successfulChannels = result.results.filter(r => r.status === 'success').length;
+        const failedChannels = result.results.filter(r => r.status === 'failed' || r.status === 'circuit_breaker_open').length;
 
         logger.info('Enhanced publishing service completed', {
-            success,
+            success: result.success,
             successfulChannels,
             failedChannels,
-            totalChannels
+            totalChannels: result.results.length
         });
 
         return {
-            success,
-            error,
+            success: result.success,
+            error: result.success ? undefined : (result.statusUpdate.failureReason || result.message),
             successfulChannels,
             failedChannels,
-            totalChannels
+            totalChannels: result.results.length
         };
 
     } catch (error) {
@@ -1223,7 +1176,7 @@ export async function healthCheck(): Promise<{
         const publishStartTime = Date.now();
 
         // Test import of publishing service
-        await import('../app/social-publishing-actions');
+        await import('../services/publishing/enhanced-publishing-service');
         checks.publishingService = true;
         metrics.publishingServiceLatencyMs = Date.now() - publishStartTime;
     } catch (error) {

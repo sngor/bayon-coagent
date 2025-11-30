@@ -100,7 +100,7 @@ export function ContentEngineWithSuggestions() {
                     </Button>
                     <AIContentSuggestions
                         userId={user.id}
-                        marketFocus={user.marketFocus}
+                        marketFocus={(user as any).marketFocus}
                         onSelectContentType={handleSelectContentType}
                         onSelectIdea={handleSelectIdea}
                     />
@@ -144,12 +144,12 @@ export function ExampleContentForm() {
             // Track successful creation
             await trackContentCreationAction('Blog Post', true);
 
-            return { success: true, data: result };
+            // return { success: true, data: result };
         } catch (error) {
             // Track failed creation
             await trackContentCreationAction('Blog Post', false);
 
-            return { success: false, error: 'Failed to generate content' };
+            // return { success: false, error: 'Failed to generate content' };
         }
     };
 
@@ -185,7 +185,7 @@ export function ContentSuggestionsSidebar() {
                 <CardContent>
                     <AIContentSuggestions
                         userId={user.id}
-                        marketFocus={user.marketFocus}
+                        marketFocus={(user as any).marketFocus}
                         onSelectContentType={(type) => {
                             console.log('Selected content type:', type);
                         }}
@@ -214,7 +214,7 @@ export function QuickSuggestionsWidget() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 userId: user.id,
-                marketFocus: user.marketFocus,
+                marketFocus: (user as any).marketFocus,
             }),
         });
 

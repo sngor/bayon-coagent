@@ -22,7 +22,7 @@ import {
   type ComplexTaskGuidance,
   type WorkflowOptimization,
 } from '@/lib/workflow-optimization';
-import type { Profile } from '@/lib/types/common/common';
+import type { Profile } from '@/lib/types/common';
 
 interface UseWorkflowOptimizationProps {
   profile: Partial<Profile> | null;
@@ -60,7 +60,7 @@ export function useWorkflowOptimization({
   // Track time on page
   useEffect(() => {
     const startTime = Date.now();
-    
+
     const interval = setInterval(() => {
       setTimeOnPage(Date.now() - startTime);
     }, 1000);
@@ -139,7 +139,7 @@ export function useTimeOnPage(): number {
 
   useEffect(() => {
     const startTime = Date.now();
-    
+
     const interval = setInterval(() => {
       setTimeOnPage(Date.now() - startTime);
     }, 1000);

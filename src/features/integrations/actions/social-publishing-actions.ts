@@ -47,10 +47,13 @@ export interface PublishingRequest {
  */
 export interface PublishingStatus {
     platform: Platform;
-    status: 'pending' | 'publishing' | 'success' | 'failed';
+    status: 'pending' | 'publishing' | 'success' | 'failed' | 'circuit_breaker_open';
     postId?: string;
     postUrl?: string;
     error?: string;
+    attempts?: number;
+    duration?: number;
+    recoveryActions?: string[];
 }
 
 /**
@@ -454,7 +457,7 @@ export async function getUserListings(): Promise<{
 export async function checkPlatformConnections(): Promise<{
     success: boolean;
     message: string;
-    connections?: Record<Platform, boolean>;
+    connections?: Partial<Record<Platform, boolean>>;
 }> {
     try {
         const user = await getCurrentUser();
@@ -465,7 +468,7 @@ export async function checkPlatformConnections(): Promise<{
         const oauthManager = getOAuthConnectionManager();
         const platforms: Platform[] = ['facebook', 'instagram', 'linkedin'];
 
-        const connections: Record<Platform, boolean> = {
+        const connections: Partial<Record<Platform, boolean>> = {
             facebook: false,
             instagram: false,
             linkedin: false,

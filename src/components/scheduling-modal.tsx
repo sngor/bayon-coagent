@@ -808,7 +808,7 @@ export function SchedulingModal({
     const selectedChannels = connectedChannels.filter(c => c.isSelected);
 
     const publishDateTime = useMemo(() => {
-        if (!selectedDate || !selectedTime) return null;
+        if (!selectedDate || !selectedTime) return undefined;
         const [hours, minutes] = selectedTime.split(':').map(Number);
         const dateTime = new Date(selectedDate);
         dateTime.setHours(hours, minutes, 0, 0);

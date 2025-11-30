@@ -271,8 +271,8 @@ export async function syncMLSStatus(
         const mlsIds: string[] = [];
 
         for (const item of listingsResult.items) {
-            const listing = item.Data as Listing;
-            const listingId = item.SK ? item.SK.replace('LISTING#', '') : 'unknown';
+            const listing = item;
+            const listingId = listing.listingId || 'unknown';
 
             listingsMap.set(listing.mlsId, {
                 ...listing,
@@ -475,8 +475,8 @@ export async function syncAllMLSConnections(): Promise<SyncActionResponse<{
         let failedSyncs = 0;
 
         for (const item of connectionsResult.items) {
-            const connection = item.Data as MLSConnection;
-            const connectionId = item.SK ? item.SK.replace('MLS_CONNECTION#', '') : 'unknown';
+            const connection = item;
+            const connectionId = connection.id || 'unknown';
 
             try {
                 const syncResponse = await syncMLSStatus(connectionId);
@@ -566,7 +566,6 @@ export async function syncListingStatus(
         );
 
         const connection = connectionsResult.items
-            .map(item => item.Data as MLSConnection)
             .find(conn => conn.provider === (listing as any).mlsProvider);
 
         if (!connection) {

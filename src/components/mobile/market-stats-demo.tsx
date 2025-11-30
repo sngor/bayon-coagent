@@ -19,12 +19,7 @@ import {
 } from 'lucide-react';
 import { MarketStats, MarketStatsProps } from './market-stats';
 import {
-    fetchMarketStatsAction,
-    preCacheFavoritedLocationsAction,
-    getMarketStatsCacheStatsAction,
-    clearMarketStatsCacheAction,
-    type MarketStatsResult,
-    type MarketStatsCacheStatsResult
+    fetchMarketStatsAction
 } from '@/features/client-dashboards/actions/mobile-actions';
 import { useUser } from '@/aws/auth/use-user';
 
@@ -50,7 +45,7 @@ export function MarketStatsDemo() {
         'Austin, TX',
         'Miami Beach, FL'
     ]);
-    const [cacheStats, setCacheStats] = useState<MarketStatsCacheStatsResult['stats']>();
+    // const [cacheStats, setCacheStats] = useState<any>();
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
     // Monitor online status
@@ -68,13 +63,13 @@ export function MarketStatsDemo() {
     }, []);
 
     // Load cache stats on mount
-    useEffect(() => {
-        if (user) {
-            loadCacheStats();
-        }
-    }, [user]);
+    // useEffect(() => {
+    //     if (user) {
+    //         loadCacheStats();
+    //     }
+    // }, [user]);
 
-    const loadCacheStats = async () => {
+    /* const loadCacheStats = async () => {
         if (!user) return;
 
         try {
@@ -85,7 +80,7 @@ export function MarketStatsDemo() {
         } catch (error) {
             console.error('Failed to load cache stats:', error);
         }
-    };
+    }; */
 
     const handleSearch = async (searchLocation?: string) => {
         const targetLocation = searchLocation || location.trim();
@@ -99,14 +94,17 @@ export function MarketStatsDemo() {
         setError(undefined);
 
         try {
-            const result: MarketStatsResult = await fetchMarketStatsAction({
-                location: targetLocation,
-                userId: user.id,
-                forceRefresh: false
-            });
+            const formData = new FormData();
+            formData.append('location', targetLocation);
 
-            if (result.success && result.stats) {
-                setCurrentStats(result.stats);
+            const result = await fetchMarketStatsAction(null, formData);
+
+            if (result.data?.stats) {
+                setCurrentStats({
+                    ...result.data.stats,
+                    location: targetLocation,
+                    timestamp: Date.parse(result.data.stats.timestamp)
+                });
 
                 // Add to recent searches
                 setRecentSearches(prev => {
@@ -119,13 +117,13 @@ export function MarketStatsDemo() {
                     setLocation('');
                 }
             } else {
-                setError(result.error || 'Failed to fetch market stats');
+                setError(result.message || 'Failed to fetch market stats');
             }
         } catch (error: any) {
             setError(error.message || 'Failed to fetch market stats');
         } finally {
             setLoading(false);
-            await loadCacheStats(); // Refresh cache stats
+            // await loadCacheStats(); // Refresh cache stats
         }
     };
 
@@ -133,22 +131,25 @@ export function MarketStatsDemo() {
         if (currentStats && user) {
             setLoading(true);
             try {
-                const result: MarketStatsResult = await fetchMarketStatsAction({
-                    location: currentStats.location,
-                    userId: user.id,
-                    forceRefresh: true
-                });
+                const formData = new FormData();
+                formData.append('location', currentStats.location);
 
-                if (result.success && result.stats) {
-                    setCurrentStats(result.stats);
+
+                const result = await fetchMarketStatsAction(null, formData);
+
+                if (result.data?.stats) {
+                    setCurrentStats({
+                        ...result.data.stats,
+                        location: currentStats.location
+                    });
                 } else {
-                    setError(result.error || 'Failed to refresh market stats');
+                    setError(result.message || 'Failed to refresh market stats');
                 }
             } catch (error: any) {
                 setError(error.message || 'Failed to refresh market stats');
             } finally {
                 setLoading(false);
-                await loadCacheStats();
+                // await loadCacheStats();
             }
         }
     };
@@ -164,6 +165,9 @@ export function MarketStatsDemo() {
     };
 
     const handlePreCacheFavorites = async () => {
+        // TODO: Implement preCacheFavoritedLocationsAction server action
+        console.log('Pre-cache functionality not yet implemented');
+        /*
         if (!user || favoritedLocations.length === 0) return;
 
         setLoading(true);
@@ -182,9 +186,13 @@ export function MarketStatsDemo() {
             setLoading(false);
             await loadCacheStats();
         }
+        */
     };
 
     const handleClearCache = async () => {
+        // TODO: Implement clearMarketStatsCacheAction server action
+        console.log('Clear cache functionality not yet implemented');
+        /*
         if (!user) return;
 
         try {
@@ -200,6 +208,7 @@ export function MarketStatsDemo() {
         } catch (error) {
             console.error('Failed to clear cache:', error);
         }
+        */
     };
 
     if (!user) {
@@ -273,16 +282,18 @@ export function MarketStatsDemo() {
             </Card>
 
             {/* Market Stats Display */}
-            {(currentStats || loading || error) && (
-                <MarketStats
-                    location={currentStats?.location || location}
-                    onRefresh={handleRefresh}
-                    loading={loading}
-                    stats={currentStats}
-                    error={error}
-                    isOnline={isOnline}
-                />
-            )}
+            {
+                (currentStats || loading || error) && (
+                    <MarketStats
+                        location={currentStats?.location || location}
+                        onRefresh={handleRefresh}
+                        loading={loading}
+                        stats={currentStats}
+                        error={error}
+                        isOnline={isOnline}
+                    />
+                )
+            }
 
             {/* Favorited Locations */}
             <Card>
@@ -373,7 +384,7 @@ export function MarketStatsDemo() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    {cacheStats ? (
+                    {false ? ( // cacheStats disabled until server actions are implemented
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             <div className="text-center">
                                 <div className="text-2xl font-bold">{cacheStats.totalCached}</div>
@@ -419,7 +430,7 @@ export function MarketStatsDemo() {
                     </div>
                 </CardContent>
             </Card>
-        </div>
+        </div >
     );
 }
 

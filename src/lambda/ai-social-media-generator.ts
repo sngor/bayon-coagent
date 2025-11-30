@@ -8,7 +8,7 @@ import { SQSHandler, SQSEvent, SQSRecord } from 'aws-lambda';
 import { DynamoDBClient, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { generateSocialMediaPost } from '../aws/bedrock/flows/generate-social-media-post';
-import { AWSXRay } from 'aws-xray-sdk-core';
+import AWSXRay from 'aws-xray-sdk-core';
 import { publishAiJobCompletedEvent } from './utils/eventbridge-client';
 import { invokeIntegrationService } from './utils/request-signer';
 import { retry } from '../lib/retry-utility';
@@ -43,7 +43,7 @@ async function updateJobStatus(
 ): Promise<void> {
     const now = new Date().toISOString();
 
-    const updateExpression = status === 'completed' || status === 'failed'
+    let updateExpression = status === 'completed' || status === 'failed'
         ? 'SET #status = :status, #updatedAt = :updatedAt, #completedAt = :completedAt'
         : 'SET #status = :status, #updatedAt = :updatedAt';
 
@@ -123,14 +123,8 @@ async function processJob(record: SQSRecord): Promise<void> {
         // Generate social media post using Bedrock flow with retry logic
         const result = await retry(
             async () => await generateSocialMediaPost({
-                platform,
                 topic,
-                tone,
-                includeHashtags,
-                includeEmojis,
-                callToAction,
-            }, {
-                userId,
+                tone: tone || 'professional',
             }),
             {
                 maxRetries: 3,

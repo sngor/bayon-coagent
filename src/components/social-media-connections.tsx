@@ -69,6 +69,8 @@ import {
 } from '@/features/integrations/actions/social-oauth-actions';
 import type { Platform, OAuthConnection } from '@/integrations/social/types';
 
+type SocialPlatform = Extract<Platform, 'facebook' | 'instagram' | 'linkedin' | 'twitter'>;
+
 interface PlatformConfig {
     name: string;
     icon: React.ReactNode;
@@ -98,7 +100,7 @@ interface DisconnectOptions {
     notifyOnReconnect: boolean;
 }
 
-const PLATFORM_CONFIGS: Record<Platform, PlatformConfig> = {
+const PLATFORM_CONFIGS: Record<Extract<Platform, 'facebook' | 'instagram' | 'linkedin' | 'twitter'>, PlatformConfig> = {
     facebook: {
         name: 'Facebook',
         icon: <Facebook className="h-5 w-5" />,
@@ -223,10 +225,10 @@ export function SocialMediaConnections() {
     const [validatingPlatform, setValidatingPlatform] = useState<Platform | null>(null);
 
     // Onboarding and troubleshooting modals
-    const [showOnboardingModal, setShowOnboardingModal] = useState<Platform | null>(null);
-    const [showTroubleshootingModal, setShowTroubleshootingModal] = useState<Platform | null>(null);
-    const [showDisconnectModal, setShowDisconnectModal] = useState<Platform | null>(null);
-    const [showDiagnosticsModal, setShowDiagnosticsModal] = useState<Platform | null>(null);
+    const [showOnboardingModal, setShowOnboardingModal] = useState<SocialPlatform | null>(null);
+    const [showTroubleshootingModal, setShowTroubleshootingModal] = useState<SocialPlatform | null>(null);
+    const [showDisconnectModal, setShowDisconnectModal] = useState<SocialPlatform | null>(null);
+    const [showDiagnosticsModal, setShowDiagnosticsModal] = useState<SocialPlatform | null>(null);
     const [disconnectOptions, setDisconnectOptions] = useState<DisconnectOptions>({
         retainData: true,
         retainAnalytics: true,
@@ -281,10 +283,10 @@ export function SocialMediaConnections() {
         const message = params.get('message');
         const platform = params.get('platform');
 
-        if (success && platform) {
+        if (success && platform && (platform in PLATFORM_CONFIGS)) {
             toast({
                 title: 'Connection Successful',
-                description: `Successfully connected to ${PLATFORM_CONFIGS[platform as Platform]?.name || platform}`,
+                description: `Successfully connected to ${PLATFORM_CONFIGS[platform as SocialPlatform]?.name || platform}`,
             });
             // Reload connections
             loadConnections();
@@ -364,7 +366,7 @@ export function SocialMediaConnections() {
         }
     }
 
-    async function handleConnect(platform: Platform) {
+    async function handleConnect(platform: SocialPlatform) {
         if (!user) {
             toast({
                 title: 'Error',
@@ -395,7 +397,7 @@ export function SocialMediaConnections() {
         }
     }
 
-    async function handleDisconnect(platform: Platform) {
+    async function handleDisconnect(platform: SocialPlatform) {
         if (!user) return;
 
         setDisconnectingPlatform(platform);
@@ -425,7 +427,7 @@ export function SocialMediaConnections() {
         }
     }
 
-    async function handleValidateConnection(platform: Platform) {
+    async function handleValidateConnection(platform: SocialPlatform) {
         if (!user) return;
 
         setValidatingPlatform(platform);
@@ -509,7 +511,7 @@ export function SocialMediaConnections() {
         }
     }
 
-    async function runDiagnostics(platform: Platform) {
+    async function runDiagnostics(platform: SocialPlatform) {
         if (!user) return;
 
         setIsRunningDiagnostics(true);
@@ -690,7 +692,7 @@ export function SocialMediaConnections() {
                         )}
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {(['facebook', 'instagram', 'linkedin', 'twitter'] as Platform[]).map((platform) => {
+                        {(['facebook', 'instagram', 'linkedin', 'twitter'] as SocialPlatform[]).map((platform) => {
                             const config = PLATFORM_CONFIGS[platform];
                             const connectionStatus = connectionStatuses.find(s => s.platform === platform);
                             const isConnected = connectionStatus?.status === 'connected';
@@ -978,7 +980,7 @@ export function SocialMediaConnections() {
                             </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
-                            {showOnboardingModal && PLATFORM_CONFIGS[showOnboardingModal].setupSteps.map((step, index) => (
+                            {showOnboardingModal && PLATFORM_CONFIGS[showOnboardingModal].setupSteps.map((step: string, index: number) => (
                                 <div key={index} className="flex gap-3">
                                     <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm flex items-center justify-center">
                                         {index + 1}
@@ -1016,7 +1018,7 @@ export function SocialMediaConnections() {
                             </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
-                            {showTroubleshootingModal && PLATFORM_CONFIGS[showTroubleshootingModal].troubleshooting.map((item, index) => (
+                            {showTroubleshootingModal && PLATFORM_CONFIGS[showTroubleshootingModal].troubleshooting.map((item: { issue: string; solution: string }, index: number) => (
                                 <div key={index} className="space-y-2">
                                     <div className="flex items-start gap-2">
                                         <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />

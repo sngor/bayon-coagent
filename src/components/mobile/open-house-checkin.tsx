@@ -318,7 +318,7 @@ export default function OpenHouseCheckin({
                 };
 
                 // Check for duplicate email in local session
-                const existingVisitor = session.visitors.find(v => v.email === visitor.email);
+                const existingVisitor = session.visitors.find((v: Visitor) => v.email === visitor.email);
                 if (existingVisitor) {
                     setError('A visitor with this email has already checked in');
                     return;
@@ -652,14 +652,14 @@ export default function OpenHouseCheckin({
                                     <div className="flex items-center gap-2">
                                         <TrendingUp className="h-4 w-4 text-green-600" />
                                         <span className="text-sm text-green-600">
-                                            {session.visitors.filter(v => v.interestLevel === 'high').length} high interest
+                                            {session.visitors.filter((v: Visitor) => v.interestLevel === 'high').length} high interest
                                         </span>
                                     </div>
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-3">
-                                    {session.visitors.map((visitor, index) => (
+                                    {session.visitors.map((visitor: Visitor, index: number) => (
                                         <div key={visitor.id}>
                                             <div className="flex items-start justify-between p-3 rounded-lg bg-gray-50">
                                                 <div className="flex-1">

@@ -195,8 +195,7 @@ export async function fetchMarketData(location: string): Promise<MarketDataRespo
                 await new Promise(resolve => setTimeout(resolve, 500));
                 return mockData;
             },
-            `Market Data API: ${location}`,
-            logger
+            `Market Data API: ${location}`
         );
 
         if (!validateMarketData(data)) {
@@ -283,8 +282,7 @@ export async function fetchDemographicsData(location: string): Promise<Demograph
                 await new Promise(resolve => setTimeout(resolve, 800));
                 return mockData;
             },
-            `Demographics API: ${location}`,
-            logger
+            `Demographics API: ${location}`
         );
 
         if (!validateDemographicsData(data)) {
@@ -385,8 +383,7 @@ export async function fetchSchoolsData(location: string): Promise<SchoolResponse
                 await new Promise(resolve => setTimeout(resolve, 600));
                 return mockData;
             },
-            `Schools API: ${location}`,
-            logger
+            `Schools API: ${location}`
         );
 
         if (!validateSchoolData(data)) {
@@ -468,8 +465,7 @@ export async function fetchAmenitiesData(location: string): Promise<AmenitiesRes
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 return mockData;
             },
-            `Amenities API: ${location}`,
-            logger
+            `Amenities API: ${location}`
         );
 
         if (!validateAmenitiesData(data)) {
@@ -560,8 +556,7 @@ export async function fetchWalkabilityData(location: string): Promise<Walkabilit
                 await new Promise(resolve => setTimeout(resolve, 400));
                 return mockData;
             },
-            `Walkability API: ${location}`,
-            logger
+            `Walkability API: ${location}`
         );
 
         if (!validateWalkabilityData(data)) {

@@ -187,6 +187,11 @@ async function testPlatformAPI(platform: Platform, accessToken: string): Promise
                 testUrl = `${PLATFORM_API_ENDPOINTS.twitter}/users/me`;
                 headers['Authorization'] = `Bearer ${accessToken}`;
                 break;
+            default:
+                return {
+                    success: false,
+                    error: `Unsupported platform for API test: ${platform}`
+                };
         }
 
         const response = await fetch(testUrl, {

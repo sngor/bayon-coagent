@@ -37,7 +37,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Facebook, Instagram, Linkedin, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { Loader2, Facebook, Instagram, Linkedin, Twitter, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils/common';
 
 interface SocialPublishingDialogProps {
@@ -47,7 +47,9 @@ interface SocialPublishingDialogProps {
     onSuccess?: () => void;
 }
 
-const PLATFORM_INFO = {
+type SocialPlatform = Extract<Platform, 'facebook' | 'instagram' | 'linkedin' | 'twitter'>;
+
+const PLATFORM_INFO: Record<SocialPlatform, { name: string; icon: any; color: string; bgColor: string }> = {
     facebook: {
         name: 'Facebook',
         icon: Facebook,
@@ -66,6 +68,12 @@ const PLATFORM_INFO = {
         color: 'text-blue-700',
         bgColor: 'bg-blue-50',
     },
+    twitter: {
+        name: 'Twitter/X',
+        icon: Twitter,
+        color: 'text-black dark:text-white',
+        bgColor: 'bg-gray-100',
+    },
 };
 
 export function SocialPublishingDialog({
@@ -74,21 +82,23 @@ export function SocialPublishingDialog({
     onOpenChange,
     onSuccess,
 }: SocialPublishingDialogProps) {
-    const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>([]);
+    const [selectedPlatforms, setSelectedPlatforms] = useState<SocialPlatform[]>([]);
     const [previews, setPreviews] = useState<PublishingPreview[]>([]);
-    const [customHashtags, setCustomHashtags] = useState<Record<Platform, string>>({
+    const [customHashtags, setCustomHashtags] = useState<Record<SocialPlatform, string>>({
         facebook: '',
         instagram: '',
         linkedin: '',
+        twitter: '',
     });
     const [customContent, setCustomContent] = useState('');
     const [isLoadingPreview, setIsLoadingPreview] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
     const [publishingResults, setPublishingResults] = useState<PublishingStatus[]>([]);
-    const [platformConnections, setPlatformConnections] = useState<Record<Platform, boolean>>({
+    const [platformConnections, setPlatformConnections] = useState<Record<SocialPlatform, boolean>>({
         facebook: false,
         instagram: false,
         linkedin: false,
+        twitter: false,
     });
     const [error, setError] = useState<string | null>(null);
 
@@ -109,7 +119,18 @@ export function SocialPublishingDialog({
     const checkConnections = async () => {
         const result = await checkPlatformConnections();
         if (result.success && result.connections) {
-            setPlatformConnections(result.connections);
+            setPlatformConnections(prev => {
+                const newConnections = { ...prev };
+                const connections = result.connections;
+                if (connections) {
+                    (Object.keys(connections) as Platform[]).forEach(key => {
+                        if (key === 'facebook' || key === 'instagram' || key === 'linkedin' || key === 'twitter') {
+                            newConnections[key] = !!connections[key];
+                        }
+                    });
+                }
+                return newConnections;
+            });
         }
     };
 
@@ -127,14 +148,17 @@ export function SocialPublishingDialog({
                 setPreviews(result.previews);
 
                 // Initialize custom hashtags with generated ones
-                const hashtagsMap: Record<Platform, string> = {
+                const hashtagsMap: Record<SocialPlatform, string> = {
                     facebook: '',
                     instagram: '',
                     linkedin: '',
+                    twitter: '',
                 };
 
                 result.previews.forEach(preview => {
-                    hashtagsMap[preview.platform] = preview.hashtags.join(' ');
+                    if (preview.platform in hashtagsMap) {
+                        hashtagsMap[preview.platform as SocialPlatform] = preview.hashtags.join(' ');
+                    }
                 });
 
                 setCustomHashtags(hashtagsMap);
@@ -148,7 +172,7 @@ export function SocialPublishingDialog({
         }
     };
 
-    const handlePlatformToggle = (platform: Platform) => {
+    const handlePlatformToggle = (platform: SocialPlatform) => {
         if (!platformConnections[platform]) {
             setError(`Please connect your ${PLATFORM_INFO[platform].name} account in settings first.`);
             return;
@@ -257,7 +281,7 @@ export function SocialPublishingDialog({
                     <div>
                         <h3 className="font-headline text-sm font-medium mb-3">Select Platforms</h3>
                         <div className="grid grid-cols-3 gap-4">
-                            {(Object.keys(PLATFORM_INFO) as Platform[]).map(platform => {
+                            {(Object.keys(PLATFORM_INFO) as SocialPlatform[]).map(platform => {
                                 const info = PLATFORM_INFO[platform];
                                 const Icon = info.icon;
                                 const isConnected = platformConnections[platform];

@@ -16,7 +16,7 @@ import {
   type BreadcrumbItem,
   type Prerequisite,
 } from '@/lib/user-flow';
-import type { Profile } from '@/lib/types/common/common';
+import type { Profile } from '@/lib/types/common';
 
 interface UseUserFlowProps {
   profile: Partial<Profile> | null;

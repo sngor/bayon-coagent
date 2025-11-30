@@ -98,7 +98,7 @@ export function HubLayout({
             </div>
 
             {/* Static Hub Tabs - Wrapped around content */}
-            {tabs.length > 0 && (
+            {tabs && tabs.length > 0 && (
                 <div className="sticky top-20 z-50 pt-0 pb-3 bg-transparent -mt-6 flex pointer-events-none">
                     <div className="border-t border-border/20 pt-3 inline-flex pointer-events-auto">
                         <StaticHubTabs tabs={tabs} activeTab="" variant={tabsVariant} isSticky={isHeaderCovered} />

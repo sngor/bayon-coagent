@@ -106,7 +106,7 @@ export class AlertLogger {
         validationErrors: string[];
         recordsAffected: number;
     }): void {
-        this.logger.warn('Data quality issue detected', undefined, {
+        this.logger.warn('Data quality issue detected', {
             ...context,
             timestamp: new Date().toISOString(),
             stage: 'data-quality',

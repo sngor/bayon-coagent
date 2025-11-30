@@ -93,8 +93,8 @@ async function handler(
 
         // Add performance metrics
         addPerformanceMetrics({
-            executionTime: Date.now() - parseInt(event.requestContext?.requestTimeEpoch || '0'),
-            memoryUsage: context.memoryLimitInMB * 0.7, // Simulated usage
+            executionTime: Date.now() - (event.requestContext?.requestTimeEpoch || 0),
+            memoryUsage: parseInt(context.memoryLimitInMB) * 0.7, // Simulated usage
             requestSize: JSON.stringify(event.body || '').length,
             responseSize: JSON.stringify(processedResult).length,
         });

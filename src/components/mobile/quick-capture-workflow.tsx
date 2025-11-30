@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { QuickCapture, type CapturedPhoto } from './quick-capture';
 import { PhotoDescriptionDisplay, type PhotoDescription } from './photo-description-display';
-import { uploadCapturedPhotoAction, generatePhotoDescriptionAction } from '@/features/client-dashboards/actions/mobile-actions';
+import { uploadPhotoAction } from '@/features/client-dashboards/actions/mobile-actions';
 import { useToast } from '@/hooks/use-toast';
 import { OfflineSyncManager } from '@/lib/offline-sync-manager';
 
@@ -96,52 +96,54 @@ export function QuickCaptureWorkflow({
         setState('uploading');
 
         try {
-            // Convert blob to base64 for AI analysis
-            const base64Data = await blobToBase64(photo.blob);
+            // Convert blob to File object for FormData
+            const file = new File([photo.blob], `photo-${photo.id}.jpg`, { type: 'image/jpeg' });
 
-            // Upload photo to S3
-            const uploadResult = await uploadCapturedPhotoAction(
-                photo.blob,
-                userId,
-                photo.metadata
-            );
+            // Create FormData for upload
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('context', 'Mobile photo capture');
 
-            if (!uploadResult.success || !uploadResult.url) {
-                throw new Error(uploadResult.error || 'Failed to upload photo');
+            // Upload photo to S3 and generate AI description
+            const uploadResult = await uploadPhotoAction(null, formData);
+
+            if (!uploadResult.success || !uploadResult.data?.uploadUrl) {
+                throw new Error(uploadResult.message || 'Failed to upload photo');
             }
 
-            setPhotoUrl(uploadResult.url);
+            setPhotoUrl(uploadResult.data.uploadUrl);
             setState('generating');
 
-            // Generate AI description
-            const descriptionResult = await generatePhotoDescriptionAction(
-                base64Data,
-                'jpeg', // Assuming JPEG from camera
-                photo.metadata,
-                userId
-            );
+            // Check if we got a description from the upload
+            if (uploadResult.data.description) {
+                const photoDescription: PhotoDescription = {
+                    description: uploadResult.data.description.description,
+                    keyFeatures: uploadResult.data.description.keyFeatures || [],
+                    tags: uploadResult.data.description.tags || [],
+                    roomType: uploadResult.data.description.roomType,
+                    marketingAppeal: uploadResult.data.description.marketingAppeal || 'medium',
+                    improvementSuggestions: uploadResult.data.description.improvementSuggestions,
+                };
 
-            if (!descriptionResult.success || !descriptionResult.description) {
-                throw new Error(descriptionResult.error || 'Failed to generate description');
+                setDescription(photoDescription);
+                setState('display');
+
+                toast({
+                    title: "Photo processed successfully",
+                    description: "Your photo has been uploaded and analyzed.",
+                });
+            } else {
+                // No description was generated
+                toast({
+                    title: "Photo uploaded",
+                    description: "Photo uploaded but description generation is not available.",
+                });
+
+                // Reset to capture state
+                setState('capture');
+                setCapturedPhoto(null);
+                setPhotoUrl(null);
             }
-
-            // Set the description
-            const photoDescription: PhotoDescription = {
-                description: descriptionResult.description,
-                keyFeatures: descriptionResult.keyFeatures || [],
-                tags: descriptionResult.tags || [],
-                roomType: descriptionResult.roomType,
-                marketingAppeal: descriptionResult.marketingAppeal || 'medium',
-                improvementSuggestions: descriptionResult.improvementSuggestions,
-            };
-
-            setDescription(photoDescription);
-            setState('display');
-
-            toast({
-                title: "Photo processed successfully",
-                description: "Your photo has been uploaded and analyzed.",
-            });
 
         } catch (error: any) {
             console.error('Photo processing error:', error);

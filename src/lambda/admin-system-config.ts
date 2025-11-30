@@ -211,8 +211,7 @@ async function handleGetConfigHistory(
     const repository = getRepository();
 
     // Query configuration history
-    const history = await repository.query('SYSTEM', {
-        beginsWith: 'CONFIG#HISTORY#',
+    const historyResult = await repository.query('SYSTEM', 'CONFIG#HISTORY#', {
         limit,
         scanIndexForward: false, // Most recent first
     });
@@ -226,13 +225,13 @@ async function handleGetConfigHistory(
         sourceIp,
         success: true,
         details: {
-            resultCount: history.length,
+            resultCount: historyResult.count,
         },
     });
 
     const { formatSuccessResponse, toAPIGatewaySuccessResponse } = await import('../lib/error-response');
     const successResponse = formatSuccessResponse(
-        { history },
+        { history: historyResult.items },
         'Configuration history retrieved successfully'
     );
 

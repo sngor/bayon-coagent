@@ -132,28 +132,28 @@ describe('Error Handler - Basic Functionality', () => {
 
     describe('Retry Logic Patterns', () => {
         it('should not retry authentication errors', () => {
-            const errorCategory = 'AUTHENTICATION';
+            const errorCategory: string = 'AUTHENTICATION';
             const shouldRetry = errorCategory !== 'AUTHENTICATION' && errorCategory !== 'VALIDATION';
 
             expect(shouldRetry).toBe(false);
         });
 
         it('should retry network errors', () => {
-            const errorCategory = 'NETWORK';
+            const errorCategory: string = 'NETWORK';
             const shouldRetry = errorCategory === 'NETWORK' || errorCategory === 'RATE_LIMIT';
 
             expect(shouldRetry).toBe(true);
         });
 
         it('should retry rate limit errors', () => {
-            const errorCategory = 'RATE_LIMIT';
+            const errorCategory: string = 'RATE_LIMIT';
             const shouldRetry = errorCategory === 'NETWORK' || errorCategory === 'RATE_LIMIT';
 
             expect(shouldRetry).toBe(true);
         });
 
         it('should not retry validation errors', () => {
-            const errorCategory = 'VALIDATION';
+            const errorCategory: string = 'VALIDATION';
             const shouldRetry = errorCategory !== 'AUTHENTICATION' && errorCategory !== 'VALIDATION';
 
             expect(shouldRetry).toBe(false);

@@ -12,7 +12,7 @@ import {
     CognitoIdentityProviderClient,
     GetUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
-import { createVerifier } from 'aws-jwt-verify';
+import { CognitoJwtVerifier } from 'aws-jwt-verify';
 import { getConfig } from '../aws/config';
 
 interface AuthorizerEvent {
@@ -137,7 +137,7 @@ async function verifyToken(token: string): Promise<CognitoTokenPayload> {
     const config = getConfig();
 
     // Create JWT verifier for Cognito User Pool
-    const verifier = createVerifier({
+    const verifier = CognitoJwtVerifier.create({
         userPoolId: config.cognito.userPoolId,
         tokenUse: 'access', // Verify access tokens
         clientId: config.cognito.clientId,

@@ -14,6 +14,7 @@ import {
     AlertFilters,
     AlertQueryOptions,
     AlertsResponse,
+    AlertType,
 } from './types';
 
 export class CompetitorDataAccess {
@@ -177,7 +178,7 @@ export class CompetitorDataAccess {
         options: AlertQueryOptions = {}
     ): Promise<AlertsResponse> {
         // Filter for competitor alert types
-        const competitorTypes = [
+        const competitorTypes: AlertType[] = [
             'competitor-new-listing',
             'competitor-price-reduction',
             'competitor-withdrawal'

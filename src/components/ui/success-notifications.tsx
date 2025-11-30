@@ -59,7 +59,8 @@ export function ContentScheduledNotification({
     scheduledTime,
     channelCount = 1,
     contentTitle,
-    actions = []
+    actions = [],
+    className
 }: SuccessNotificationProps & {
     scheduledTime?: Date;
     channelCount?: number;

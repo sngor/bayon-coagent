@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Testimonial } from "@/lib/types/common/common";
+import { Testimonial, TestimonialStatus } from '@/lib/types/common';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

@@ -51,6 +51,7 @@ export { default as ConflictList } from './conflict-list';
 
 // Photo Description Display
 export { PhotoDescriptionDisplay } from './photo-description-display';
+export type { PhotoDescription } from './photo-description-display';
 
 // Gesture Handling
 export { default as GestureDemo } from './gesture-demo';

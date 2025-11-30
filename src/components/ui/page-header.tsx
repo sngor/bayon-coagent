@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils/common';
 import { LucideIcon } from 'lucide-react';
+import { Breadcrumbs, BreadcrumbItem } from '@/components/ui/breadcrumbs';
 
 export interface PageHeaderProps {
     title: string;
@@ -10,6 +11,7 @@ export interface PageHeaderProps {
     actions?: React.ReactNode;
     className?: string;
     variant?: 'default' | 'hub' | 'compact';
+    breadcrumbs?: BreadcrumbItem[];
 }
 
 export function PageHeader({
@@ -18,7 +20,8 @@ export function PageHeader({
     icon: Icon,
     actions,
     className,
-    variant = 'default'
+    variant = 'default',
+    breadcrumbs
 }: PageHeaderProps) {
     const variants = {
         default: {
@@ -60,6 +63,9 @@ export function PageHeader({
 
     return (
         <header className={cn(styles.container, className)}>
+            {breadcrumbs && breadcrumbs.length > 0 && (
+                <Breadcrumbs items={breadcrumbs} className="mb-2" />
+            )}
             <div className={styles.header}>
                 <div className={styles.content}>
                     {Icon && (

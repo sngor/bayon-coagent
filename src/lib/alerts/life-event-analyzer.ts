@@ -8,7 +8,7 @@
 import { LifeEvent, Prospect, LifeEventAlert, MarketData, TargetArea } from './types';
 import {
     withErrorHandling,
-    withRetry,
+    retryHandler,
     dataQualityValidator,
     ExternalAPIError,
     DataQualityError,
@@ -76,7 +76,7 @@ export class LifeEventAnalyzer {
             for (const area of targetAreas) {
                 const validation = dataQualityValidator.validateTargetArea(area);
                 if (!validation.isValid) {
-                    this.logger.warn('Invalid target area detected', undefined, {
+                    this.logger.warn('Invalid target area detected', {
                         areaId: area.id,
                         errors: validation.errors,
                     });
@@ -86,7 +86,7 @@ export class LifeEventAnalyzer {
 
             try {
                 // Fetch prospects with retry logic for external API calls
-                const prospects = await withRetry(
+                const prospects = await retryHandler.withRetry(
                     () => this.fetchProspectsInTargetAreas(targetAreas),
                     { maxAttempts: 3, baseDelayMs: 2000 },
                     { operation: 'fetch-prospects' }
@@ -100,13 +100,13 @@ export class LifeEventAnalyzer {
                     try {
                         // Validate prospect data
                         if (!this.validateProspect(prospect)) {
-                            this.logger.warn('Invalid prospect data detected', undefined, {
+                            this.logger.warn('Invalid prospect data detected', {
                                 prospectId: prospect.id,
                             });
                             continue;
                         }
 
-                        const marketConditions = await withRetry(
+                        const marketConditions = await retryHandler.withRetry(
                             () => this.getMarketConditions(prospect.location),
                             { maxAttempts: 2, baseDelayMs: 1000 },
                             { operation: 'get-market-conditions' }
@@ -122,7 +122,7 @@ export class LifeEventAnalyzer {
                             if (alertValidation.isValid) {
                                 alerts.push(alert);
                             } else {
-                                this.logger.warn('Invalid alert generated', undefined, {
+                                this.logger.warn('Invalid alert generated', {
                                     prospectId: prospect.id,
                                     errors: alertValidation.errors,
                                 });
@@ -153,7 +153,7 @@ export class LifeEventAnalyzer {
                     error as Error
                 );
             }
-        }, { operation: 'analyze-life-events', service: 'life-event-analyzer' });
+        }, { operation: 'analyze-life-events', service: 'life-event-analyzer' })();
     }
 
     /**
@@ -361,8 +361,9 @@ export class LifeEventAnalyzer {
 
             return true;
         } catch (error) {
-            this.logger.warn('Prospect validation error', error as Error, {
+            this.logger.warn('Prospect validation error', {
                 prospectId: prospect.id,
+                error: error as Error
             });
             return false;
         }
@@ -502,7 +503,7 @@ export function createLifeEventAnalyzer(): LifeEventAnalyzer {
 /**
  * Validates life event data structure
  */
-export function validateLifeEvent(event: any): event is LifeEvent {
+export function isLifeEvent(event: any): event is LifeEvent {
     return (
         typeof event === 'object' &&
         typeof event.id === 'string' &&
@@ -520,13 +521,13 @@ export function validateLifeEvent(event: any): event is LifeEvent {
 /**
  * Validates prospect data structure
  */
-export function validateProspect(prospect: any): prospect is Prospect {
+export function isProspect(prospect: any): prospect is Prospect {
     return (
         typeof prospect === 'object' &&
         typeof prospect.id === 'string' &&
         typeof prospect.location === 'string' &&
         Array.isArray(prospect.events) &&
-        prospect.events.every(validateLifeEvent) &&
+        prospect.events.every(isLifeEvent) &&
         typeof prospect.leadScore === 'number' &&
         prospect.leadScore >= 0 && prospect.leadScore <= 100 &&
         typeof prospect.lastAnalyzed === 'string'

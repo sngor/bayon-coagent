@@ -55,7 +55,7 @@ import { useUser, useAuthMethods } from '@/aws/auth/use-user';
 import { PageTransition } from '@/components/page-transition';
 import { TooltipProvider } from '@/contexts/tooltip-context';
 import { AdminProvider, useAdmin } from '@/contexts/admin-context';
-import { AccessibilityProvider } from '@/contexts/accessibility-context';
+import { AccessibilityProvider, useAccessibility } from '@/contexts/accessibility-context';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { StickyHeaderProvider, useStickyHeader } from '@/hooks/use-sticky-header';
 
@@ -81,6 +81,16 @@ const allNavItems = [
 
 function AppLoadingScreen() {
   return <SessionLoading />;
+}
+
+function ContentWrapper({ children }: { children: React.ReactNode }) {
+  const { preferences } = useAccessibility();
+
+  return (
+    <div className={preferences.fullWidth ? '' : 'max-w-7xl mx-auto'}>
+      {children}
+    </div>
+  );
 }
 
 function StickyHeaderTitle() {
@@ -481,7 +491,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </div>
                   </header>
                   <main className="flex-1 w-full p-4 md:p-6">
-                    <PageTransition>{children}</PageTransition>
+                    <ContentWrapper>
+                      <PageTransition>{children}</PageTransition>
+                    </ContentWrapper>
                   </main>
                 </SidebarInset>
               </SidebarProvider>

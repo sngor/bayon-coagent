@@ -44,7 +44,10 @@ async function publishToSinglePlatform(
     };
 
     // Publish based on platform
-    let result: PublishResult;
+    let result: PublishResult = {
+        success: false,
+        error: 'Unsupported platform'
+    };
 
     switch (platform) {
         case 'facebook':
@@ -109,7 +112,10 @@ async function publishToMultiplePlatforms(
             };
 
             // Publish
-            let result: PublishResult;
+            let result: PublishResult = {
+                success: false,
+                error: 'Unsupported platform'
+            };
 
             switch (platform) {
                 case 'facebook':
@@ -181,7 +187,10 @@ async function publishWithRetry(
             };
 
             // Publish
-            let result: PublishResult;
+            let result: PublishResult = {
+                success: false,
+                error: 'Unsupported platform'
+            };
 
             switch (platform) {
                 case 'facebook':
@@ -315,7 +324,10 @@ async function publishCustomContent(
                 platform,
             };
 
-            let result: PublishResult;
+            let result: PublishResult = {
+                success: false,
+                error: 'Unsupported platform'
+            };
 
             switch (platform) {
                 case 'facebook':

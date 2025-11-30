@@ -16,7 +16,7 @@ import {
     createEmptyPlatformMetrics,
     incrementMetric,
 } from '../performance-metrics';
-import { PerformanceMetrics, TimePeriod } from '../performance-metrics-types';
+import { PerformanceMetrics, TimePeriod, Platform, PlatformMetrics } from '../types/performance-metrics-types';
 
 describe('Performance Metrics Utilities', () => {
     describe('formatDate', () => {

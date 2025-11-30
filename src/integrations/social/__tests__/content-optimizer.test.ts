@@ -22,7 +22,7 @@ describe("ContentOptimizerService", () => {
             street: "123 Main St",
             city: "Los Angeles",
             state: "CA",
-            zipCode: "90001",
+            zip: "90001",
             country: "US",
         },
         price: 750000,
@@ -230,7 +230,7 @@ describe("ContentOptimizerService", () => {
                     street: "123 Main St",
                     city: "Los Angeles",
                     state: "CA",
-                    zipCode: "90001",
+                    zip: "90210",
                     country: "US",
                 },
             });
@@ -375,7 +375,7 @@ describe("ContentOptimizerService", () => {
                     street: "123 Main St",
                     city: "St. Louis",
                     state: "MO",
-                    zipCode: "63101",
+                    zip: "63101",
                     country: "US",
                 },
             });

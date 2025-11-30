@@ -9,13 +9,13 @@ import { OfflineSyncManager } from '../offline-sync-manager';
 // Mock IndexedDB wrapper
 jest.mock('@/lib/indexeddb-wrapper', () => ({
     syncQueueStore: {
-        queueOperation: jest.fn().mockResolvedValue('test-id'),
-        getPendingOperations: jest.fn().mockResolvedValue([]),
-        getFailedOperations: jest.fn().mockResolvedValue([]),
-        getQueueStatus: jest.fn().mockResolvedValue({ pending: 0, failed: 0, completed: 0 }),
-        updateOperationStatus: jest.fn().mockResolvedValue(undefined),
-        get: jest.fn().mockResolvedValue(null),
-        cleanupCompletedOperations: jest.fn().mockResolvedValue(undefined),
+        queueOperation: jest.fn<() => Promise<string>>().mockResolvedValue('test-id'),
+        getPendingOperations: jest.fn<() => Promise<any[]>>().mockResolvedValue([]),
+        getFailedOperations: jest.fn<() => Promise<any[]>>().mockResolvedValue([]),
+        getQueueStatus: jest.fn<() => Promise<{ pending: number; failed: number; completed: number }>>().mockResolvedValue({ pending: 0, failed: 0, completed: 0 }),
+        updateOperationStatus: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+        get: jest.fn<() => Promise<any>>().mockResolvedValue(null),
+        cleanupCompletedOperations: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
     },
 }));
 

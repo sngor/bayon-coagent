@@ -126,12 +126,14 @@ export class AIContentSuggestionsEngine {
     success: boolean
   ): Promise<void> {
     const keys = this.getContentPerformanceKeys(userId, contentType);
-    
+
     try {
-      const existing = await this.repository.get<ContentPerformance>(
+      const existingItem = await this.repository.getItem<ContentPerformance>(
         keys.PK,
         keys.SK
       );
+
+      const existing = existingItem?.Data;
 
       const performance: ContentPerformance = existing || {
         contentType,
@@ -149,7 +151,7 @@ export class AIContentSuggestionsEngine {
         ...keys,
         EntityType: 'ContentPerformance',
         Data: performance,
-        CreatedAt: existing ? undefined : Date.now(),
+        CreatedAt: existingItem ? existingItem.CreatedAt : Date.now(),
         UpdatedAt: Date.now(),
       });
     } catch (error) {
@@ -167,7 +169,7 @@ export class AIContentSuggestionsEngine {
         'CONTENT_PERF#'
       );
 
-      return items.map((item) => item.Data);
+      return items.items;
     } catch (error) {
       console.error('Failed to get content performance:', error);
       return [];
@@ -276,8 +278,9 @@ Return your response as JSON matching this structure:
     userId: string,
     marketFocus?: string[]
   ): Promise<ContentTypeRecommendation[]> {
+    let performance: ContentPerformance[] = [];
     try {
-      const performance = await this.getContentPerformance(userId);
+      performance = await this.getContentPerformance(userId);
       const prompt = this.buildContentTypePrompt(performance, marketFocus);
 
       const result = await this.bedrockClient.invoke(

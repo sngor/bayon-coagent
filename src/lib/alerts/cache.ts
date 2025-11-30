@@ -158,9 +158,9 @@ export class AlertCache {
     }
 
     /**
-     * Gets cached alert statistics
+     * Gets cached alert statistics for a user
      */
-    getStats(userId: string): any | null {
+    getUserStats(userId: string): any | null {
         this.cleanup();
 
         const key = this.generateStatsKey(userId);
@@ -178,9 +178,9 @@ export class AlertCache {
     }
 
     /**
-     * Sets cached alert statistics
+     * Sets cached alert statistics for a user
      */
-    setStats(userId: string, stats: any, ttl: number = this.defaultTTL): void {
+    setUserStats(userId: string, stats: any, ttl: number = this.defaultTTL): void {
         this.cleanup();
         this.enforceMaxSize();
 

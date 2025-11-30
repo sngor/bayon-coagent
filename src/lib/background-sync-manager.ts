@@ -19,6 +19,18 @@ export interface BackgroundSyncEvent {
 
 export type BackgroundSyncCallback = (event: BackgroundSyncEvent) => void;
 
+interface SyncManager {
+    getTags(): Promise<string[]>;
+    register(tag: string): Promise<void>;
+}
+
+declare global {
+    interface ServiceWorkerRegistration {
+        readonly sync: SyncManager;
+    }
+}
+
+
 /**
  * Background sync manager class
  */

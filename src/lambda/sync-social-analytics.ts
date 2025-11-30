@@ -185,7 +185,7 @@ export const handler = async (event: LambdaEvent, context: LambdaContext): Promi
             instagram: { connections: 0, synced: 0, failed: 0, rateLimited: 0 },
             linkedin: { connections: 0, synced: 0, failed: 0, rateLimited: 0 },
             twitter: { connections: 0, synced: 0, failed: 0, rateLimited: 0 }
-        }
+        } as Record<Platform, { connections: number; synced: number; failed: number; rateLimited: number; }>
     };
 
     try {
@@ -290,7 +290,7 @@ export const handler = async (event: LambdaEvent, context: LambdaContext): Promi
                 });
 
                 // Perform the analytics sync using the analytics service
-                const { syncExternalAnalytics } = await import('../services/analytics-service');
+                const { syncExternalAnalytics } = await import('../services/analytics/analytics-service');
                 const syncResult = await syncExternalAnalytics({
                     userId: userConnection.userId,
                     channel: mapPlatformToChannelType(userConnection.platform),
@@ -582,14 +582,18 @@ function shouldSync(lastSyncTime?: Date): boolean {
  * Map platform to channel type for analytics service
  */
 function mapPlatformToChannelType(platform: Platform): PublishChannelType {
-    const mapping: Record<Platform, PublishChannelType> = {
+    const mapping: Partial<Record<Platform, PublishChannelType>> = {
         facebook: PublishChannelType.FACEBOOK,
         instagram: PublishChannelType.INSTAGRAM,
         linkedin: PublishChannelType.LINKEDIN,
         twitter: PublishChannelType.TWITTER
     };
 
-    return mapping[platform];
+    const channel = mapping[platform];
+    if (!channel) {
+        throw new Error(`Unsupported platform for analytics sync: ${platform}`);
+    }
+    return channel;
 }
 
 /**
@@ -767,7 +771,7 @@ export async function healthCheck(): Promise<{
         // Check analytics service availability
         const analyticsStartTime = Date.now();
         // Test import of analytics service
-        await import('../services/analytics-service');
+        await import('../services/analytics/analytics-service');
         checks.analyticsService = true;
         metrics.analyticsServiceLatencyMs = Date.now() - analyticsStartTime;
     } catch (error) {
