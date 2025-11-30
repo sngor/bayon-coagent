@@ -141,14 +141,14 @@ export function getAWSConfig(): AWSConfig {
     appUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
 
     cognito: {
-      userPoolId: process.env.COGNITO_USER_POOL_ID || '',
-      clientId: process.env.COGNITO_CLIENT_ID || '',
+      userPoolId: process.env.NEXT_PUBLIC_USER_POOL_ID || process.env.COGNITO_USER_POOL_ID || '',
+      clientId: process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || process.env.COGNITO_CLIENT_ID || '',
       endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
 
     clientCognito: {
-      userPoolId: process.env.CLIENT_COGNITO_USER_POOL_ID || process.env.COGNITO_USER_POOL_ID || '',
-      clientId: process.env.CLIENT_COGNITO_CLIENT_ID || process.env.COGNITO_CLIENT_ID || '',
+      userPoolId: process.env.CLIENT_COGNITO_USER_POOL_ID || process.env.NEXT_PUBLIC_USER_POOL_ID || process.env.COGNITO_USER_POOL_ID || '',
+      clientId: process.env.CLIENT_COGNITO_CLIENT_ID || process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || process.env.COGNITO_CLIENT_ID || '',
       endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
 
@@ -246,11 +246,11 @@ export function validateConfig(): { valid: boolean; errors: string[] } {
   const config = getAWSConfig();
 
   if (!config.cognito.userPoolId) {
-    errors.push('COGNITO_USER_POOL_ID is not set');
+    errors.push('NEXT_PUBLIC_USER_POOL_ID or COGNITO_USER_POOL_ID is not set');
   }
 
   if (!config.cognito.clientId) {
-    errors.push('COGNITO_CLIENT_ID is not set');
+    errors.push('NEXT_PUBLIC_USER_POOL_CLIENT_ID or COGNITO_CLIENT_ID is not set');
   }
 
   if (!config.dynamodb.tableName) {

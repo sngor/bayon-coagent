@@ -19,9 +19,9 @@ const nextConfig: NextConfig = {
 
   // Expose environment variables to the browser
   env: {
-    AWS_REGION: process.env.AWS_REGION,
-    COGNITO_USER_POOL_ID: process.env.COGNITO_USER_POOL_ID,
-    COGNITO_CLIENT_ID: process.env.COGNITO_CLIENT_ID,
+    AWS_REGION: process.env.AWS_REGION || process.env.NEXT_PUBLIC_REGION,
+    COGNITO_USER_POOL_ID: process.env.NEXT_PUBLIC_USER_POOL_ID || process.env.COGNITO_USER_POOL_ID,
+    COGNITO_CLIENT_ID: process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || process.env.COGNITO_CLIENT_ID,
     DYNAMODB_TABLE_NAME: process.env.DYNAMODB_TABLE_NAME,
     S3_BUCKET_NAME: process.env.S3_BUCKET_NAME,
     BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID,
