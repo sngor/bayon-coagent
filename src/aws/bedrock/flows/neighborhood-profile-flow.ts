@@ -19,7 +19,7 @@ import {
     type NeighborhoodProfileOutput,
 } from '@/ai/schemas/neighborhood-profile-schemas';
 
-export { type NeighborhoodProfileInput, type NeighborhoodProfileOutput };
+
 
 const neighborhoodProfilePrompt = definePrompt({
     name: 'neighborhoodProfilePrompt',

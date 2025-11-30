@@ -13,7 +13,7 @@ import {
   type GenerateMarketUpdateOutput,
 } from '@/ai/schemas/market-update-schemas';
 
-export { type GenerateMarketUpdateInput, type GenerateMarketUpdateOutput };
+
 
 const prompt = definePrompt({
   name: 'generateMarketUpdatePrompt',

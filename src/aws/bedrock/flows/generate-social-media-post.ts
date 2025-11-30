@@ -13,7 +13,7 @@ import {
   type GenerateSocialMediaPostOutput,
 } from '@/ai/schemas/social-media-post-schemas';
 
-export { type GenerateSocialMediaPostInput, type GenerateSocialMediaPostOutput };
+
 
 const prompt = definePrompt({
   name: 'generateSocialMediaPostPrompt',

@@ -13,7 +13,7 @@ import {
   type GenerateVideoScriptOutput,
 } from '@/ai/schemas/video-script-schemas';
 
-export { type GenerateVideoScriptInput, type GenerateVideoScriptOutput };
+
 
 const prompt = definePrompt({
   name: 'generateVideoScriptPrompt',

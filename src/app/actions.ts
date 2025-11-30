@@ -28,77 +28,105 @@ import {
 } from '@/aws/bedrock/flows/generate-listing-faqs';
 import {
   exchangeGoogleToken,
-  type ExchangeGoogleTokenInput,
-  type ExchangeGoogleTokenOutput,
 } from '@/aws/bedrock/flows/exchange-google-token';
 import {
+  type ExchangeGoogleTokenInput,
+  type ExchangeGoogleTokenOutput,
+} from '@/ai/schemas/google-token-schemas';
+import {
   generateAgentBio,
-  type GenerateAgentBioInput,
-  type GenerateAgentBioOutput,
 } from '@/aws/bedrock/flows/generate-agent-bio';
 import {
+  type GenerateAgentBioInput,
+  type GenerateAgentBioOutput,
+} from '@/ai/schemas/agent-bio-schemas';
+import {
   findCompetitors,
-  type FindCompetitorsInput,
-  type FindCompetitorsOutput,
   enrichCompetitorData,
-  type EnrichCompetitorDataInput,
-  type EnrichCompetitorDataOutput,
 } from '@/aws/bedrock/flows/find-competitors';
 import {
+  type FindCompetitorsInput,
+  type FindCompetitorsOutput,
+  type EnrichCompetitorDataInput,
+  type EnrichCompetitorDataOutput,
+} from '@/ai/schemas/competitor-analysis-schemas';
+import {
   runNapAudit,
-  type RunNapAuditInput,
-  type RunNapAuditOutput,
 } from '@/aws/bedrock/flows/run-nap-audit';
 import {
+  type RunNapAuditInput,
+  type RunNapAuditOutput,
+} from '@/ai/schemas/nap-audit-schemas';
+import {
   generateSocialMediaPost,
-  type GenerateSocialMediaPostInput,
-  type GenerateSocialMediaPostOutput,
 } from '@/aws/bedrock/flows/generate-social-media-post';
 import {
+  type GenerateSocialMediaPostInput,
+  type GenerateSocialMediaPostOutput,
+} from '@/ai/schemas/social-media-post-schemas';
+import {
   runResearchAgent,
-  type RunResearchAgentInput,
-  type RunResearchAgentOutput,
 } from '@/aws/bedrock/flows/run-research-agent';
 import {
+  type RunResearchAgentInput,
+  type RunResearchAgentOutput,
+} from '@/ai/schemas/research-agent-schemas';
+import {
   runPropertyValuation,
-  type PropertyValuationInput,
-  type PropertyValuationOutput,
 } from '@/aws/bedrock/flows/property-valuation';
 import {
+  type PropertyValuationInput,
+  type PropertyValuationOutput,
+} from '@/ai/schemas/property-valuation-schemas';
+import {
   runRenovationROIAnalysis,
-  type RenovationROIInput,
-  type RenovationROIOutput,
 } from '@/aws/bedrock/flows/renovation-roi';
 import {
+  type RenovationROIInput,
+  type RenovationROIOutput,
+} from '@/ai/schemas/renovation-roi-schemas';
+import {
   runNeighborhoodProfileSynthesis,
-  type NeighborhoodProfileInput,
-  type NeighborhoodProfileOutput,
 } from '@/aws/bedrock/flows/neighborhood-profile-flow';
 import {
+  type NeighborhoodProfileInput,
+  type NeighborhoodProfileOutput,
+} from '@/ai/schemas/neighborhood-profile-schemas';
+import {
   generateMarketUpdate,
-  type GenerateMarketUpdateInput,
-  type GenerateMarketUpdateOutput,
 } from '@/aws/bedrock/flows/generate-market-update';
 import {
+  type GenerateMarketUpdateInput,
+  type GenerateMarketUpdateOutput,
+} from '@/ai/schemas/market-update-schemas';
+import {
   generateFutureCast,
-  type GenerateFutureCastInput,
-  type GenerateFutureCastOutput,
 } from '@/aws/bedrock/flows/generate-future-cast';
 import {
+  type GenerateFutureCastInput,
+  type GenerateFutureCastOutput,
+} from '@/ai/schemas/market-update-schemas';
+import {
   generateVideoScript,
-  type GenerateVideoScriptInput,
-  type GenerateVideoScriptOutput,
 } from '@/aws/bedrock/flows/generate-video-script';
 import {
+  type GenerateVideoScriptInput,
+  type GenerateVideoScriptOutput,
+} from '@/ai/schemas/video-script-schemas';
+import {
   getKeywordRankings,
-  type GetKeywordRankingsInput,
-  type GetKeywordRankingsOutput,
 } from '@/aws/bedrock/flows/get-keyword-rankings';
 import {
+  type GetKeywordRankingsInput,
+  type GetKeywordRankingsOutput,
+} from '@/ai/schemas/keyword-ranking-schemas';
+import {
   generateBlogPost,
+} from '@/aws/bedrock/flows/generate-blog-post';
+import {
   type GenerateBlogPostInput,
   type GenerateBlogPostOutput,
-} from '@/aws/bedrock/flows/generate-blog-post';
+} from '@/ai/schemas/blog-post-schemas';
 import {
   generateHeaderImage,
   type GenerateHeaderImageInput,
@@ -106,29 +134,39 @@ import {
 } from '@/aws/bedrock/flows/generate-header-image';
 import {
   generateMarketingPlan,
-  type GenerateMarketingPlanInput,
-  type GenerateMarketingPlanOutput,
 } from '@/aws/bedrock/flows/generate-marketing-plan';
 import {
+  type GenerateMarketingPlanInput,
+  type GenerateMarketingPlanOutput,
+} from '@/ai/schemas/marketing-plan-schemas';
+import {
   getZillowReviews,
-  type GetZillowReviewsInput,
-  type GetZillowReviewsOutput,
 } from '@/aws/bedrock/flows/get-zillow-reviews';
 import {
+  type GetZillowReviewsInput,
+  type GetZillowReviewsOutput,
+} from '@/ai/schemas/zillow-review-schemas';
+import {
   analyzeReviewSentiment,
-  type AnalyzeReviewSentimentInput,
-  type AnalyzeReviewSentimentOutput,
 } from '@/aws/bedrock/flows/analyze-review-sentiment';
 import {
+  type AnalyzeReviewSentimentInput,
+  type AnalyzeReviewSentimentOutput,
+} from '@/ai/schemas/review-sentiment-schemas';
+import {
   analyzeMultipleReviews,
-  type AnalyzeMultipleReviewsInput,
-  type AnalyzeMultipleReviewsOutput,
 } from '@/aws/bedrock/flows/analyze-multiple-reviews';
 import {
+  type AnalyzeMultipleReviewsInput,
+  type AnalyzeMultipleReviewsOutput,
+} from '@/ai/schemas/review-analysis-schemas';
+import {
   getRealEstateNews,
+} from '@/aws/bedrock/flows/get-real-estate-news';
+import {
   type GetRealEstateNewsInput,
   type GetRealEstateNewsOutput
-} from '@/aws/bedrock/flows/get-real-estate-news';
+} from '@/ai/schemas/real-estate-news-schemas';
 import {
   generateTrainingPlan,
   type TrainingPlanInput,

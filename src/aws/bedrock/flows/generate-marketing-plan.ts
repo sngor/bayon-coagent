@@ -12,7 +12,7 @@ import {
   type GenerateMarketingPlanOutput,
 } from '@/ai/schemas/marketing-plan-schemas';
 
-export { type GenerateMarketingPlanInput, type GenerateMarketingPlanOutput };
+
 
 const prompt = definePrompt({
   name: 'generateMarketingPlanPrompt',

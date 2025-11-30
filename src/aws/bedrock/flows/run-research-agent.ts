@@ -14,7 +14,7 @@ import {
   type RunResearchAgentOutput,
 } from '@/ai/schemas/research-agent-schemas';
 
-export { type RunResearchAgentInput, type RunResearchAgentOutput };
+
 
 const researchPrompt = definePrompt({
   name: 'researchPrompt',

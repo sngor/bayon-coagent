@@ -20,7 +20,7 @@ import {
   type EnrichCompetitorDataOutput,
 } from '@/ai/schemas/competitor-analysis-schemas';
 
-export { type FindCompetitorsInput, type FindCompetitorsOutput, type EnrichCompetitorDataInput, type EnrichCompetitorDataOutput };
+
 
 const enrichCompetitorPrompt = definePrompt({
   name: 'enrichCompetitorPrompt',
@@ -58,7 +58,7 @@ const enrichCompetitorDataFlow = defineFlow(
     // Search for competitor information
     const searchClient = getSearchClient();
     const searchQuery = `${input.name} ${input.agency} real estate agent reviews social media`;
-    
+
     try {
       const searchResults = await searchClient.search(searchQuery, {
         maxResults: 5,
@@ -131,7 +131,7 @@ const findCompetitorsFlow = defineFlow(
     // Search for competitors in the market
     const searchClient = getSearchClient();
     const searchQuery = `top real estate agents ${input.address} ${input.agencyName}`;
-    
+
     try {
       const searchResults = await searchClient.search(searchQuery, {
         maxResults: 10,
@@ -152,7 +152,7 @@ const findCompetitorsFlow = defineFlow(
     } catch (error) {
       // If search fails, fall back to AI knowledge
       console.warn('Web search failed for finding competitors:', error);
-      
+
       const output = await findCompetitorsPrompt({
         ...input,
         searchContext: 'Web search unavailable. Please provide estimates based on typical market patterns.',

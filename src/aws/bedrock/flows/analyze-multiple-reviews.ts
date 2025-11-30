@@ -12,7 +12,7 @@ import {
   type AnalyzeMultipleReviewsOutput,
 } from '@/ai/schemas/review-analysis-schemas';
 
-export { type AnalyzeMultipleReviewsInput, type AnalyzeMultipleReviewsOutput };
+
 
 const prompt = definePrompt({
   name: 'analyzeMultipleReviewsPrompt',

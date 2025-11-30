@@ -7,7 +7,7 @@ const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & {
     interactive?: boolean;
-    variant?: 'base' | 'elevated' | 'floating' | 'modal' | 'premium' | 'bordered';
+    variant?: 'base' | 'elevated' | 'floating' | 'modal' | 'premium' | 'bordered' | 'glass';
     hoverEffect?: 'lift' | 'glow' | 'scale' | 'none';
   }
 >(({ className, interactive, variant = 'base', hoverEffect, ...props }, ref) => {
@@ -29,6 +29,7 @@ const Card = React.forwardRef<
         variant === 'modal' && "container-modal",
         variant === 'premium' && "container-premium",
         variant === 'bordered' && "container-no-shadow",
+        variant === 'glass' && "container-glass",
         // Interactive behavior with improved timing
         interactive && "cursor-pointer transition-all duration-300 ease-out",
         // Apply hover effect

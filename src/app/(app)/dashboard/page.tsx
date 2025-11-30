@@ -21,7 +21,8 @@ import {
     CardTitle,
     CardContent
 } from '@/components/ui';
-import { StandardEmptyState, StandardSkeleton } from '@/components/ui/reusable';
+import { StandardEmptyState } from '@/components/ui/reusable';
+import { LoadingState } from '@/components/ui/loading-state';
 
 
 import {
@@ -64,7 +65,7 @@ import { useUser } from '@/aws/auth';
 import { ProfileCompletionBanner } from '@/components/profile-completion-banner';
 import { SuggestedNextSteps } from '@/components/suggested-next-steps';
 import { getSuggestedNextActions } from '@/hooks/use-profile-completion';
-import type { Review, Profile, MarketingPlan, MarketingTask, BrandAudit, Competitor as CompetitorType } from '@/lib/types/common/common';
+import type { Review, Profile, MarketingPlan, MarketingTask, BrandAudit, Competitor as CompetitorType } from '@/lib/types/common';
 
 import { toast } from '@/hooks/use-toast';
 import { getDashboardData } from './actions';
@@ -401,7 +402,7 @@ export default function DashboardPage() {
                     {/* Performance Overview */}
                     <ContentSection title="Performance Overview" description="Track your progress and key metrics" icon={BarChart3} variant="card">
                         {isLoadingProfile ? (
-                            <StandardSkeleton variant="metric" count={2} />
+                            <LoadingState variant="dashboard" count={1} className="mb-4" />
                         ) : (
                             <div className="space-y-8">
                                 {/* Profile Completion */}
@@ -484,7 +485,7 @@ export default function DashboardPage() {
                         variant="card"
                     >
                         {isPlanLoading || areCompetitorsLoading || isAuditLoading ? (
-                            <StandardSkeleton variant="list" count={2} />
+                            <LoadingState variant="list" count={2} />
                         ) : latestPlanData && latestPlanData.length > 0 ? (
                             <div className="space-y-4">
                                 {latestPlanData[0].steps.slice(0, 3).map((task: MarketingTask, index: number) => (
@@ -554,7 +555,7 @@ export default function DashboardPage() {
 
                     <ContentSection title="Reputation Snapshot" description="Client testimonials and reviews" icon={Star} variant="card">
                         {isLoadingStats ? (
-                            <StandardSkeleton variant="metric" count={3} className="mb-4 md:mb-6" />
+                            <LoadingState variant="card" count={3} className="mb-4 md:mb-6" />
                         ) : (
                             <div className="space-y-8">
                                 <DataGrid columns={3} gap="spacious">
@@ -621,7 +622,7 @@ export default function DashboardPage() {
                                         {isLoadingCarousel ? (
                                             <CarouselItem className="md:basis-full">
                                                 <div className="p-1 h-full">
-                                                    <StandardSkeleton variant="list" count={2} />
+                                                    <LoadingState variant="list" count={2} />
                                                 </div>
                                             </CarouselItem>
                                         ) : recentReviews && recentReviews.length > 0 ? (
@@ -757,7 +758,7 @@ export default function DashboardPage() {
                             </CardHeader>
                             <CardContent className="relative z-10">
                                 {isLoadingProfile ? (
-                                    <StandardSkeleton variant="list" count={2} />
+                                    <LoadingState variant="list" count={2} />
                                 ) : suggestedSteps.length > 0 ? (
                                     <div className="space-y-4">
                                         {suggestedSteps.slice(0, 3).map((step, index) => (

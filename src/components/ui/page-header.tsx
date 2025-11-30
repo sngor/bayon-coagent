@@ -1,95 +1,39 @@
-'use client';
+import * as React from "react"
+import { cn } from "@/lib/utils/common"
 
-import { cn } from '@/lib/utils/common';
-import { LucideIcon } from 'lucide-react';
-import { Breadcrumbs, BreadcrumbItem } from '@/components/ui/breadcrumbs';
-
-export interface PageHeaderProps {
-    title: string;
-    description?: string;
-    icon?: LucideIcon;
-    actions?: React.ReactNode;
-    className?: string;
-    variant?: 'default' | 'hub' | 'compact';
-    breadcrumbs?: BreadcrumbItem[];
+interface PageHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+  title: string
+  description?: string
+  actions?: React.ReactNode
 }
 
-export function PageHeader({
-    title,
-    description,
-    icon: Icon,
-    actions,
-    className,
-    variant = 'default',
-    breadcrumbs
-}: PageHeaderProps) {
-    const variants = {
-        default: {
-            container: 'space-y-4',
-            header: 'flex items-start justify-between gap-4',
-            content: 'flex items-start gap-4 min-w-0 flex-1',
-            iconWrapper: 'flex-shrink-0 mt-1',
-            icon: 'h-8 w-8 text-primary',
-            textWrapper: 'min-w-0 flex-1',
-            title: 'font-headline text-3xl md:text-4xl font-bold text-primary',
-            description: 'mt-2 text-lg text-muted-foreground',
-            actions: 'flex-shrink-0'
-        },
-        hub: {
-            container: 'space-y-6',
-            header: 'flex items-start justify-between gap-4',
-            content: 'flex items-start gap-4 min-w-0 flex-1',
-            iconWrapper: 'flex-shrink-0 mt-1',
-            icon: 'h-8 w-8 text-primary',
-            textWrapper: 'min-w-0 flex-1',
-            title: 'font-headline text-3xl md:text-4xl font-bold text-primary',
-            description: 'mt-2 text-lg text-muted-foreground',
-            actions: 'flex-shrink-0'
-        },
-        compact: {
-            container: 'space-y-2',
-            header: 'flex items-center justify-between gap-4',
-            content: 'flex items-center gap-3 min-w-0 flex-1',
-            iconWrapper: 'flex-shrink-0',
-            icon: 'h-6 w-6 text-primary',
-            textWrapper: 'min-w-0 flex-1',
-            title: 'font-headline text-xl md:text-2xl font-semibold text-primary',
-            description: 'text-sm text-muted-foreground',
-            actions: 'flex-shrink-0'
-        }
-    };
-
-    const styles = variants[variant];
-
+const PageHeader = React.forwardRef<HTMLDivElement, PageHeaderProps>(
+  ({ className, title, description, actions, ...props }, ref) => {
     return (
-        <header className={cn(styles.container, className)}>
-            {breadcrumbs && breadcrumbs.length > 0 && (
-                <Breadcrumbs items={breadcrumbs} className="mb-2" />
-            )}
-            <div className={styles.header}>
-                <div className={styles.content}>
-                    {Icon && (
-                        <div className={styles.iconWrapper} aria-hidden="true">
-                            <Icon className={styles.icon} />
-                        </div>
-                    )}
-                    <div className={styles.textWrapper}>
-                        <h1 className={styles.title}>
-                            {title}
-                        </h1>
-                        {description && (
-                            <p className={styles.description}>
-                                {description}
-                            </p>
-                        )}
-                    </div>
-                </div>
-                {actions && (
-                    <div className={styles.actions} role="group" aria-label="Page actions">
-                        {actions}
-                    </div>
-                )}
-            </div>
-        </header>
-    );
-}
+      <div
+        ref={ref}
+        className={cn("flex flex-col gap-4 pb-4 md:flex-row md:items-center md:justify-between", className)}
+        {...props}
+      >
+        <div className="space-y-1.5">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl font-headline">
+            {title}
+          </h1>
+          {description && (
+            <p className="text-muted-foreground text-sm sm:text-base">
+              {description}
+            </p>
+          )}
+        </div>
+        {actions && (
+          <div className="flex items-center gap-2">
+            {actions}
+          </div>
+        )}
+      </div>
+    )
+  }
+)
+PageHeader.displayName = "PageHeader"
+
+export { PageHeader }

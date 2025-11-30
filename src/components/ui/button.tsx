@@ -2,6 +2,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
+import { Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils/common"
 
@@ -48,10 +49,11 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
   VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  loading?: boolean
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, onClick, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, loading = false, onClick, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
     const [ripples, setRipples] = React.useState<Array<{ x: number; y: number; id: number }>>([])
 
@@ -77,14 +79,16 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         onClick={asChild ? onClick : handleClick}
+        disabled={props.disabled || loading}
         {...props}
       >
         {asChild ? (
           props.children
         ) : (
           <>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {props.children}
-            {ripples.map((ripple) => (
+            {!loading && ripples.map((ripple) => (
               <span
                 key={ripple.id}
                 className="absolute rounded-full bg-white/30 pointer-events-none animate-ripple"

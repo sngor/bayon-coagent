@@ -14,7 +14,7 @@ import {
   type GetZillowReviewsOutput,
 } from '@/ai/schemas/zillow-review-schemas';
 
-export { type GetZillowReviewsInput, type GetZillowReviewsOutput };
+
 
 const getZillowReviewsFlow = defineFlow(
   {
@@ -39,7 +39,7 @@ const getZillowReviewsFlow = defineFlow(
         method: 'GET',
         headers: headers,
       });
-      
+
       if (!revieweeResponse.ok) {
         const errorText = await revieweeResponse.text();
         throw new Error(`Failed to fetch Zillow data for ${agentEmail}. Status: ${revieweeResponse.status}. Response: ${errorText}`);
@@ -51,10 +51,10 @@ const getZillowReviewsFlow = defineFlow(
         // It's not an error if no profile is found, just return empty.
         return { reviews: [] };
       }
-      
+
       const agentProfile = revieweeData.value[0];
       const reviews = agentProfile.Reviews || [];
-      
+
       const formattedReviews = reviews.map((review: any) => ({
         authorName: review.ReviewerFullName || 'Anonymous',
         rating: review.Rating,

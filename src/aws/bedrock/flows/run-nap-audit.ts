@@ -17,7 +17,7 @@ import {
   type RunNapAuditOutput,
 } from '@/ai/schemas/nap-audit-schemas';
 
-export { type RunNapAuditInput, type RunNapAuditOutput };
+
 
 const napAuditPrompt = definePrompt({
   name: 'napAuditPrompt',

@@ -16,7 +16,7 @@ import {
   type GetKeywordRankingsOutput,
 } from '@/ai/schemas/keyword-ranking-schemas';
 
-export { type GetKeywordRankingsInput, type GetKeywordRankingsOutput };
+
 
 const prompt = definePrompt({
   name: 'getKeywordRankingsPrompt',

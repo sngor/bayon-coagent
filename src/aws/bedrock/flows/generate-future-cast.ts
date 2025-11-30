@@ -13,7 +13,7 @@ import {
     type GenerateFutureCastOutput,
 } from '@/ai/schemas/market-update-schemas';
 
-export { type GenerateFutureCastInput, type GenerateFutureCastOutput };
+
 
 const prompt = definePrompt({
     name: 'generateFutureCastPrompt',

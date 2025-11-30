@@ -14,7 +14,7 @@ import {
   type ExchangeGoogleTokenOutput,
 } from '@/ai/schemas/google-token-schemas';
 
-export { type ExchangeGoogleTokenInput, type ExchangeGoogleTokenOutput };
+
 
 const exchangeGoogleTokenFlow = defineFlow(
   {
@@ -47,7 +47,8 @@ const exchangeGoogleTokenFlow = defineFlow(
     return {
       accessToken: data.access_token,
       refreshToken: data.refresh_token,
-      expiryDate: Date.now() + data.expires_in * 1000,
+      expiresIn: data.expires_in,
+      tokenType: data.token_type || 'Bearer',
     };
   }
 );

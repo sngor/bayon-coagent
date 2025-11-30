@@ -12,7 +12,7 @@ import {
   type AnalyzeReviewSentimentOutput,
 } from '@/ai/schemas/review-sentiment-schemas';
 
-export { type AnalyzeReviewSentimentInput, type AnalyzeReviewSentimentOutput };
+
 
 const prompt = definePrompt({
   name: 'analyzeReviewSentimentPrompt',

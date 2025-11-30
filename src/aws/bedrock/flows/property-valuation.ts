@@ -14,7 +14,7 @@ import {
     type PropertyValuationOutput,
 } from '@/ai/schemas/property-valuation-schemas';
 
-export { type PropertyValuationInput, type PropertyValuationOutput };
+
 
 const propertyValuationPrompt = definePrompt({
     name: 'propertyValuationPrompt',

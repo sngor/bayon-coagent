@@ -14,7 +14,7 @@ import {
     type RenovationROIOutput,
 } from '@/ai/schemas/renovation-roi-schemas';
 
-export { type RenovationROIInput, type RenovationROIOutput };
+
 
 const renovationROIPrompt = definePrompt({
     name: 'renovationROIPrompt',

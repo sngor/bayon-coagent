@@ -12,7 +12,7 @@ import {
   type GenerateAgentBioOutput,
 } from '@/ai/schemas/agent-bio-schemas';
 
-export { type GenerateAgentBioInput, type GenerateAgentBioOutput };
+
 
 const prompt = definePrompt({
   name: 'generateAgentBioPrompt',

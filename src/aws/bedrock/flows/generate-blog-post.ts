@@ -24,7 +24,7 @@ import {
   type GenerateBlogPostOutput,
 } from '@/ai/schemas/blog-post-schemas';
 
-export { type GenerateBlogPostInput, type GenerateBlogPostOutput };
+
 
 const textPrompt = definePrompt({
   name: 'generateBlogPostTextPrompt',
