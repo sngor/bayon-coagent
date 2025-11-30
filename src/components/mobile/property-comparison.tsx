@@ -53,7 +53,7 @@ export function PropertyComparison({
     const [cachedProperties, setCachedProperties] = useState<Property[]>([]);
     const [usingCachedData, setUsingCachedData] = useState(false);
 
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
     // Auto-detect view mode based on screen size
     useEffect(() => {

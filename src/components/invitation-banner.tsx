@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Mail, Check, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getUserInvitationsAction, acceptInvitationAction, rejectInvitationAction } from '@/app/actions';
-import { Invitation } from '@/lib/organization-types';
+import { Invitation } from '@/lib/types/organization-types';
 
 export function InvitationBanner() {
     const [invitations, setInvitations] = useState<Invitation[]>([]);

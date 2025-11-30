@@ -30,6 +30,7 @@ interface Metric3DCardProps {
     glowColor?: string;
     particleEffect?: boolean;
     size?: 'sm' | 'md' | 'lg';
+    animated?: boolean;
 }
 
 const sizeConfig = {
@@ -361,7 +362,7 @@ export const Metric3DCard: React.FC<Metric3DCardProps> = ({
  * Specialized metric cards for different use cases
  */
 
-export const RevenueMetric3DCard: React.FC<Omit<Metric3DCardProps, 'glowColor' | 'trend'> & {
+export const RevenueMetric3DCard: React.FC<Omit<Metric3DCardProps, 'glowColor' | 'trend' | 'value'> & {
     revenue: number;
     previousRevenue?: number;
 }> = ({ revenue, previousRevenue, ...props }) => {
@@ -380,7 +381,7 @@ export const RevenueMetric3DCard: React.FC<Omit<Metric3DCardProps, 'glowColor' |
     );
 };
 
-export const EngagementMetric3DCard: React.FC<Omit<Metric3DCardProps, 'glowColor' | 'trend'> & {
+export const EngagementMetric3DCard: React.FC<Omit<Metric3DCardProps, 'glowColor' | 'trend' | 'value'> & {
     rate: number;
     previousRate?: number;
 }> = ({ rate, previousRate, ...props }) => {
@@ -399,7 +400,7 @@ export const EngagementMetric3DCard: React.FC<Omit<Metric3DCardProps, 'glowColor
     );
 };
 
-export const GrowthMetric3DCard: React.FC<Omit<Metric3DCardProps, 'glowColor' | 'trend'> & {
+export const GrowthMetric3DCard: React.FC<Omit<Metric3DCardProps, 'glowColor' | 'trend' | 'value'> & {
     current: number;
     previous: number;
 }> = ({ current, previous, ...props }) => {

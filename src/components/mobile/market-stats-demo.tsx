@@ -45,7 +45,7 @@ export function MarketStatsDemo() {
         'Austin, TX',
         'Miami Beach, FL'
     ]);
-    // const [cacheStats, setCacheStats] = useState<any>();
+    const [cacheStats, setCacheStats] = useState<any>();
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
     // Monitor online status
@@ -104,7 +104,7 @@ export function MarketStatsDemo() {
                     ...result.data.stats,
                     location: targetLocation,
                     timestamp: Date.parse(result.data.stats.timestamp)
-                });
+                } as MarketStats);
 
                 // Add to recent searches
                 setRecentSearches(prev => {
@@ -140,8 +140,9 @@ export function MarketStatsDemo() {
                 if (result.data?.stats) {
                     setCurrentStats({
                         ...result.data.stats,
-                        location: currentStats.location
-                    });
+                        location: currentStats.location,
+                        timestamp: Date.parse(result.data.stats.timestamp)
+                    } as MarketStats);
                 } else {
                     setError(result.message || 'Failed to refresh market stats');
                 }

@@ -34,7 +34,7 @@ import {
     ArrowRightLeft,
 } from 'lucide-react';
 import { getAggregatedMetrics } from '@/services/monitoring/performance-metrics-actions';
-import { AggregatedMetrics, TimePeriod } from '@/lib/performance-metrics-types';
+import { PerformanceMetrics, PlatformMetrics, TimePeriod, AggregatedMetrics } from '@/lib/types/performance-metrics-types';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import {

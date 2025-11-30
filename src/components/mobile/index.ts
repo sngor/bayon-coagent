@@ -54,7 +54,7 @@ export { PhotoDescriptionDisplay } from './photo-description-display';
 export type { PhotoDescription } from './photo-description-display';
 
 // Gesture Handling
-export { default as GestureDemo } from './gesture-demo';
+export { GestureDemo } from './gesture-demo';
 
 // Workflow Components
 export { VoiceMemoWorkflow, WorkflowProgress } from './voice-memo-workflow';

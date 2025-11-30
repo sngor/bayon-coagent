@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRightLeft, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { getListingsForComparison, compareListingsMetrics } from '@/services/monitoring/performance-metrics-actions';
-import { ComparativeMetrics, TimePeriod } from '@/lib/performance-metrics-types';
+import { ComparativeMetrics, TimePeriod, PerformanceMetrics } from '@/lib/types/performance-metrics-types';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { useUser } from '@/aws/auth';

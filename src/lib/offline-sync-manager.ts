@@ -487,11 +487,12 @@ export class OfflineSyncManager {
             // Handle different types of checkin operations
             switch (operation.data.operationType) {
                 case 'start-session':
-                    const startFormData = new FormData();
-                    startFormData.append('propertyId', operation.data.propertyId);
-                    startFormData.append('propertyAddress', operation.data.propertyAddress);
-
-                    const startResult = await startOpenHouseSessionAction(null, startFormData);
+                    const startResult = await startOpenHouseSessionAction({
+                        sessionId: operation.data.sessionId,
+                        propertyId: operation.data.propertyId,
+                        propertyAddress: operation.data.propertyAddress,
+                        userId: operation.data.userId
+                    });
 
                     if (!startResult.success) {
                         throw new Error(startResult.message || 'Failed to start open house session');
@@ -521,7 +522,10 @@ export class OfflineSyncManager {
                     break;
 
                 case 'end-session':
-                    const endResult = await endOpenHouseSessionAction(operation.data.sessionId);
+                    const endResult = await endOpenHouseSessionAction({
+                        sessionId: operation.data.sessionId,
+                        userId: operation.data.userId
+                    });
 
                     if (!endResult.success) {
                         throw new Error(endResult.message || 'Failed to end open house session');
@@ -598,23 +602,22 @@ export class OfflineSyncManager {
             if (operation.data.operationType === 'generate') {
                 // Generate meeting prep materials
                 // Generate meeting prep materials
-                const formData = new FormData();
-                formData.append('clientName', operation.data.clientName);
-                formData.append('clientEmail', operation.data.clientEmail);
-                formData.append('meetingPurpose', operation.data.meetingPurpose);
-                formData.append('propertyInterests', JSON.stringify(operation.data.propertyInterests || []));
-                formData.append('budgetMin', (operation.data.budget?.min || 0).toString());
-                formData.append('budgetMax', (operation.data.budget?.max || 0).toString());
-                formData.append('notes', operation.data.notes || '');
+                const result = await generateMeetingPrepAction({
+                    clientName: operation.data.clientName,
+                    clientEmail: operation.data.clientEmail,
+                    meetingPurpose: operation.data.meetingPurpose,
+                    propertyInterests: operation.data.propertyInterests || [],
+                    budget: operation.data.budget || { min: 0, max: 0 },
+                    notes: operation.data.notes || '',
+                    userId: operation.data.userId
+                });
 
-                const result = await generateMeetingPrepAction(null, formData);
-
-                if (!result.success || !result.data) {
+                if (!result.success || !result.materials) {
                     throw new Error(result.message || 'Meeting prep generation failed');
                 }
 
                 // Store the generated materials in the operation data for potential save later
-                operation.data.generatedMaterials = result.data;
+                operation.data.generatedMaterials = result.materials;
 
                 console.log('Meeting prep materials generated successfully:', operation.data.clientName);
             } else if (operation.data.operationType === 'save') {

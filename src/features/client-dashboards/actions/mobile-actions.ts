@@ -65,6 +65,43 @@ import {
 // Import schemas for validation
 import type { AudioTranscriptionInput } from '@/ai/schemas/audio-transcription-schemas';
 
+export interface Visitor {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    interestLevel: 'low' | 'medium' | 'high';
+    notes?: string;
+    timestamp: number | string;
+}
+
+export interface OpenHouseSession {
+    sessionId: string;
+    propertyId: string;
+    propertyAddress?: string;
+    startTime: number | string;
+    endTime?: number | string | null;
+    visitors: Visitor[];
+    status: 'active' | 'ended';
+    userId: string;
+}
+
+export interface OpenHouseSummary {
+    sessionId: string;
+    propertyId: string;
+    propertyAddress?: string;
+    visitors: Visitor[];
+    totalVisitors: number;
+    highInterest: number;
+    mediumInterest: number;
+    lowInterest: number;
+    averageInterestLevel: number;
+    followUpGenerated: boolean;
+    startTime: number | string;
+    endTime: number | string;
+    duration: number;
+}
+
 /**
  * Error handling utility for mobile actions
  */
@@ -457,13 +494,12 @@ const meetingPrepSchema = z.object({
 });
 
 export async function generateMeetingPrepAction(
-    prevState: any,
-    formData: FormData
+    data: GenerateMeetingPrepInput
 ): Promise<{
     message: string;
     success: boolean;
-    data: (GenerateMeetingPrepOutput & { prepId?: string }) | null;
-    errors: any;
+    materials?: GenerateMeetingPrepOutput & { prepId?: string };
+    error?: string;
 }> {
     try {
         // Get current user
@@ -472,58 +508,22 @@ export async function generateMeetingPrepAction(
             return {
                 message: 'Authentication required. Please sign in to generate meeting prep.',
                 success: false,
-                data: null,
-                errors: { auth: ['User not authenticated'] },
+                error: 'User not authenticated',
             };
         }
 
-        // Parse and validate form data
-        const clientName = formData.get('clientName') as string;
-        const clientEmail = formData.get('clientEmail') as string;
-        const meetingPurpose = formData.get('meetingPurpose') as string;
-        const propertyInterestsStr = formData.get('propertyInterests') as string;
-        const budgetMinStr = formData.get('budgetMin') as string;
-        const budgetMaxStr = formData.get('budgetMax') as string;
-        const notes = formData.get('notes') as string;
-
-        let propertyInterests: string[] = [];
-        try {
-            propertyInterests = JSON.parse(propertyInterestsStr || '[]');
-        } catch {
-            propertyInterests = propertyInterestsStr ? [propertyInterestsStr] : [];
-        }
-
-        const validatedFields = meetingPrepSchema.safeParse({
-            clientName,
-            clientEmail,
-            meetingPurpose,
-            propertyInterests,
-            budget: {
-                min: parseFloat(budgetMinStr) || 0,
-                max: parseFloat(budgetMaxStr) || 0,
-            },
-            notes,
-        });
-
-        if (!validatedFields.success) {
+        // Validate input
+        if (!data.clientName || !data.meetingPurpose) {
             return {
                 message: 'Invalid meeting preparation data',
                 success: false,
-                data: null,
-                errors: validatedFields.error.flatten().fieldErrors,
+                error: 'Missing required fields',
             };
         }
 
-        const meetingData = validatedFields.data;
-
         // Generate meeting preparation materials
         const prepInput: GenerateMeetingPrepInput = {
-            clientName: meetingData.clientName,
-            clientEmail: meetingData.clientEmail,
-            meetingPurpose: meetingData.meetingPurpose,
-            propertyInterests: meetingData.propertyInterests,
-            budget: meetingData.budget,
-            notes: meetingData.notes || '',
+            ...data,
             userId: user.id,
         };
 
@@ -537,7 +537,7 @@ export async function generateMeetingPrepAction(
         const meetingPrepData = {
             id: prepId,
             userId: user.id,
-            clientInfo: meetingData,
+            clientInfo: data,
             materials: prepResult,
             createdAt: new Date().toISOString(),
         };
@@ -547,11 +547,10 @@ export async function generateMeetingPrepAction(
         return {
             message: 'success',
             success: true,
-            data: {
+            materials: {
                 ...prepResult,
                 prepId,
             },
-            errors: {},
         };
 
     } catch (error) {
@@ -559,8 +558,7 @@ export async function generateMeetingPrepAction(
         return {
             message: errorMessage,
             success: false,
-            data: null,
-            errors: {},
+            error: errorMessage,
         };
     }
 }
@@ -581,57 +579,39 @@ const visitorCheckinSchema = z.object({
     notes: z.string().optional(),
 });
 
-export async function startOpenHouseSessionAction(
-    prevState: any,
-    formData: FormData
-): Promise<{
+export async function startOpenHouseSessionAction(data: {
+    sessionId: string;
+    propertyId: string;
+    propertyAddress?: string;
+    userId: string;
+}): Promise<{
     message: string;
     success: boolean;
-    data: { sessionId?: string; startTime?: string } | null;
-    errors: any;
+    session?: OpenHouseSession;
+    error?: string;
 }> {
     try {
-        // Get current user
+        const { sessionId, propertyId, propertyAddress, userId } = data;
+
+        // Get current user to verify
         const user = await getCurrentUser();
-        if (!user?.id) {
+        if (!user?.id || user.id !== userId) {
             return {
-                message: 'Authentication required. Please sign in to start an open house session.',
+                message: 'Authentication required',
                 success: false,
-                data: null,
-                errors: { auth: ['User not authenticated'] },
+                error: 'User not authenticated or ID mismatch',
             };
         }
 
-        // Validate form data
-        const propertyId = formData.get('propertyId') as string;
-        const propertyAddress = formData.get('propertyAddress') as string;
+        const startTime = new Date().toISOString();
+        const repository = getRepository();
+        const sessionKeys = getOpenHouseSessionKeys(userId, sessionId);
 
-        const validatedFields = openHouseSessionSchema.safeParse({
+        const sessionData: OpenHouseSession = {
+            sessionId,
+            userId,
             propertyId,
             propertyAddress,
-        });
-
-        if (!validatedFields.success) {
-            return {
-                message: 'Invalid open house session data',
-                success: false,
-                data: null,
-                errors: validatedFields.error.flatten().fieldErrors,
-            };
-        }
-
-        // Generate session ID and create session
-        const sessionId = uuidv4();
-        const startTime = new Date().toISOString();
-
-        const repository = getRepository();
-        const sessionKeys = getOpenHouseSessionKeys(user.id, sessionId);
-
-        const sessionData = {
-            sessionId,
-            userId: user.id,
-            propertyId: validatedFields.data.propertyId,
-            propertyAddress: validatedFields.data.propertyAddress,
             startTime,
             endTime: null,
             visitors: [],
@@ -643,11 +623,7 @@ export async function startOpenHouseSessionAction(
         return {
             message: 'success',
             success: true,
-            data: {
-                sessionId,
-                startTime,
-            },
-            errors: {},
+            session: sessionData,
         };
 
     } catch (error) {
@@ -655,8 +631,7 @@ export async function startOpenHouseSessionAction(
         return {
             message: errorMessage,
             success: false,
-            data: null,
-            errors: {},
+            error: errorMessage,
         };
     }
 }
@@ -774,79 +749,86 @@ export async function checkinVisitorAction(
     }
 }
 
-export async function endOpenHouseSessionAction(
-    sessionId: string
-): Promise<{
+export async function endOpenHouseSessionAction(data: {
+    sessionId: string;
+    userId: string;
+}): Promise<{
     message: string;
     success: boolean;
-    data: {
-        summary?: {
-            totalVisitors: number;
-            highInterest: number;
-            mediumInterest: number;
-            lowInterest: number;
-            endTime: string;
-        };
-    } | null;
-    errors: any;
+    summary?: OpenHouseSummary;
+    error?: string;
 }> {
     try {
+        const { sessionId, userId } = data;
+
         // Get current user
         const user = await getCurrentUser();
-        if (!user?.id) {
+        if (!user?.id || user.id !== userId) {
             return {
-                message: 'Authentication required. Please sign in to end the session.',
+                message: 'Authentication required',
                 success: false,
-                data: null,
-                errors: { auth: ['User not authenticated'] },
-            };
-        }
-
-        if (!sessionId) {
-            return {
-                message: 'Session ID is required',
-                success: false,
-                data: null,
-                errors: { sessionId: ['Session ID is required'] },
+                error: 'User not authenticated',
             };
         }
 
         // Get the open house session
         const repository = getRepository();
-        const sessionKeys = getOpenHouseSessionKeys(user.id, sessionId);
+        const sessionKeys = getOpenHouseSessionKeys(userId, sessionId);
         const sessionResult = await repository.get(sessionKeys.PK, sessionKeys.SK);
 
         if (!sessionResult || !(sessionResult as any).Data) {
             return {
                 message: 'Open house session not found',
                 success: false,
-                data: null,
-                errors: { session: ['Session not found'] },
+                error: 'Session not found',
             };
         }
 
-        const session = (sessionResult as any).Data;
+        const session = (sessionResult as any).Data as OpenHouseSession;
 
         // Verify session is active
         if (session.status !== 'active') {
             return {
                 message: 'Open house session is already ended',
                 success: false,
-                data: null,
-                errors: { session: ['Session already ended'] },
+                error: 'Session already ended',
             };
         }
 
         // Calculate summary statistics
         const visitors = session.visitors || [];
         const endTime = new Date().toISOString();
+        const startTime = new Date(session.startTime).getTime();
+        const endTimeMs = new Date(endTime).getTime();
+        const duration = Math.round((endTimeMs - startTime) / (1000 * 60));
 
-        const summary = {
-            totalVisitors: visitors.length,
-            highInterest: visitors.filter((v: any) => v.interestLevel === 'high').length,
-            mediumInterest: visitors.filter((v: any) => v.interestLevel === 'medium').length,
-            lowInterest: visitors.filter((v: any) => v.interestLevel === 'low').length,
+        const totalVisitors = visitors.length;
+        const highInterest = visitors.filter((v: Visitor) => v.interestLevel === 'high').length;
+        const mediumInterest = visitors.filter((v: Visitor) => v.interestLevel === 'medium').length;
+        const lowInterest = visitors.filter((v: Visitor) => v.interestLevel === 'low').length;
+
+        // Calculate average interest level (high=3, medium=2, low=1)
+        const interestSum = visitors.reduce((sum: number, visitor: Visitor) => {
+            const interestValue = visitor.interestLevel === 'high' ? 3 :
+                visitor.interestLevel === 'medium' ? 2 : 1;
+            return sum + interestValue;
+        }, 0);
+        const averageInterestLevel = totalVisitors > 0 ? interestSum / totalVisitors : 0;
+
+        const summary: OpenHouseSummary = {
+            sessionId,
+            propertyId: session.propertyId,
+            propertyAddress: session.propertyAddress,
+            visitors,
+            totalVisitors,
+            highInterest,
+            mediumInterest,
+            lowInterest,
+            averageInterestLevel,
+            followUpGenerated: false,
+            startTime: session.startTime,
             endTime,
+            duration,
         };
 
         // Update session status
@@ -859,10 +841,7 @@ export async function endOpenHouseSessionAction(
         return {
             message: 'success',
             success: true,
-            data: {
-                summary,
-            },
-            errors: {},
+            summary,
         };
 
     } catch (error) {
@@ -870,8 +849,7 @@ export async function endOpenHouseSessionAction(
         return {
             message: errorMessage,
             success: false,
-            data: null,
-            errors: {},
+            error: errorMessage,
         };
     }
 }

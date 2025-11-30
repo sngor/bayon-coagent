@@ -16,7 +16,6 @@ import {
     startOpenHouseSessionAction,
     endOpenHouseSessionAction,
     addVisitorToSessionAction,
-    getOpenHouseSessionAction,
     type Visitor,
     type OpenHouseSession,
     type OpenHouseSummary
@@ -222,12 +221,12 @@ export default function OpenHouseCheckin({
                 const endTime = Date.now();
                 const visitors = session.visitors;
                 const totalVisitors = visitors.length;
-                const highInterest = visitors.filter(v => v.interestLevel === 'high').length;
-                const mediumInterest = visitors.filter(v => v.interestLevel === 'medium').length;
-                const lowInterest = visitors.filter(v => v.interestLevel === 'low').length;
+                const highInterest = visitors.filter((v: Visitor) => v.interestLevel === 'high').length;
+                const mediumInterest = visitors.filter((v: Visitor) => v.interestLevel === 'medium').length;
+                const lowInterest = visitors.filter((v: Visitor) => v.interestLevel === 'low').length;
 
                 // Calculate average interest level (high=3, medium=2, low=1)
-                const interestSum = visitors.reduce((sum, visitor) => {
+                const interestSum = visitors.reduce((sum: number, visitor: Visitor) => {
                     const interestValue = visitor.interestLevel === 'high' ? 3 :
                         visitor.interestLevel === 'medium' ? 2 : 1;
                     return sum + interestValue;
@@ -235,7 +234,8 @@ export default function OpenHouseCheckin({
                 const averageInterestLevel = totalVisitors > 0 ? interestSum / totalVisitors : 0;
 
                 // Calculate duration in minutes
-                const duration = Math.round((endTime - session.startTime) / (1000 * 60));
+                const startTimeMs = typeof session.startTime === 'string' ? new Date(session.startTime).getTime() : session.startTime;
+                const duration = Math.round((endTime - startTimeMs) / (1000 * 60));
 
                 const localSummary: OpenHouseSummary = {
                     sessionId: session.sessionId,
@@ -369,7 +369,7 @@ export default function OpenHouseCheckin({
         }
     };
 
-    const formatTime = (timestamp: number) => {
+    const formatTime = (timestamp: number | string) => {
         return new Date(timestamp).toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit'

@@ -11,6 +11,11 @@ export interface PageLayoutProps {
     maxWidth?: 'default' | 'wide' | 'full';
     spacing?: 'default' | 'compact' | 'spacious';
     animate?: boolean;
+    // Convenience props for header
+    title?: string;
+    description?: string;
+    actions?: React.ReactNode;
+    breadcrumbs?: React.ReactNode | { label: string; href?: string }[];
 }
 
 export function PageLayout({
@@ -19,7 +24,11 @@ export function PageLayout({
     className,
     maxWidth = 'default',
     spacing = 'default',
-    animate = true
+    animate = true,
+    title,
+    description,
+    actions,
+    breadcrumbs
 }: PageLayoutProps) {
     const maxWidthClasses = {
         default: 'max-w-7xl mx-auto',
@@ -33,13 +42,16 @@ export function PageLayout({
         spacious: 'space-y-8'
     };
 
+    // Construct header props from direct props or header object
+    const headerProps = header || (title ? { title, description, actions, breadcrumbs } : null);
+
     const content = (
         <div className={cn(
             maxWidthClasses[maxWidth],
             spacingClasses[spacing],
             className
         )}>
-            {header && <PageHeader {...header} />}
+            {headerProps && <PageHeader {...headerProps} />}
             {children}
         </div>
     );

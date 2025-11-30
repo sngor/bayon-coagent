@@ -23,7 +23,7 @@ export function PageLayoutDemo() {
                         { label: "Marketing", href: "/marketing" },
                         { label: "Marketing Plan" },
                     ]}
-                    action={
+                    actions={
                         <Button variant="default" size="lg">
                             Generate New Plan
                         </Button>
@@ -91,7 +91,7 @@ export function PageLayoutDemo() {
                         { label: "Home", href: "/" },
                         { label: "Content Engine" },
                     ]}
-                    action={
+                    actions={
                         <div className="flex gap-2">
                             <Button variant="outline">Save Draft</Button>
                             <Button variant="default">Publish</Button>

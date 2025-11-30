@@ -25,13 +25,13 @@ import {
     GitMerge,
     AlertTriangle
 } from 'lucide-react';
-import { ConflictData, ConflictResolution, createResolution, mergeContent } from '@/lib/conflict-detection';
+import { ConflictData, ConflictResolution as ConflictResolutionType, createResolution, mergeContent } from '@/lib/conflict-detection';
 import { resolveConflict } from '@/lib/conflict-storage';
 import { cn } from '@/lib/utils/common';
 
 interface ConflictResolutionProps {
     conflict: ConflictData;
-    onResolved: (resolution: ConflictResolution) => void;
+    onResolved: (resolution: ConflictResolutionType) => void;
     onCancel?: () => void;
     className?: string;
 }
@@ -69,7 +69,7 @@ export function ConflictResolution({
 
         try {
             let resolvedContent: any;
-            let resolutionType: ConflictResolution['resolution'];
+            let resolutionType: ConflictResolutionType['resolution'];
 
             switch (selectedResolution) {
                 case 'local':
@@ -325,5 +325,3 @@ export function ConflictResolution({
         </div>
     );
 }
-
-export default ConflictResolution;
