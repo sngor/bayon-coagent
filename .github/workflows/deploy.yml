@@ -37,11 +37,22 @@ jobs:
           AMPLIFY_APP_ID: d2en4qzqmti675
           AMPLIFY_ENV: dev
         run: |
-          # Configure Amplify to use the AWS credentials from secrets
-          amplify configure --usage-data-off
-          
-          # Pull the latest backend environment
-          amplify pull --appId $AMPLIFY_APP_ID --envName $AMPLIFY_ENV --yes --simple
-          
+          # Create AWS profile for Amplify
+          mkdir -p ~/.aws
+          echo "[default]" > ~/.aws/credentials
+          echo "aws_access_key_id=$AWS_ACCESS_KEY_ID" >> ~/.aws/credentials
+          echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY" >> ~/.aws/credentials
+          echo "[default]" > ~/.aws/config
+          echo "region=$AWS_REGION" >> ~/.aws/config
+
+          # Pull the backend environment
+          amplify pull --appId $AMPLIFY_APP_ID --envName $AMPLIFY_ENV --yes --providers "{\
+            \"awscloudformation\":{\
+              \"configLevel\":\"project\",\
+              \"useProfile\":true,\
+              \"profileName\":\"default\"\
+            }\
+          }"
+
           # Build and Publish
           amplify publish --yes
