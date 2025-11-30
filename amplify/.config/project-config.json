@@ -9,7 +9,8 @@
       "SourceDir": "src",
       "DistributionDir": ".next",
       "BuildCommand": "npm run build",
-      "StartCommand": "npm run-script start"
+      "StartCommand": "npm run-script start",
+      "ServerlessContainers": false
     }
   },
   "providers": [
