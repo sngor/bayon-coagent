@@ -37,13 +37,14 @@ export {
 
 export {
   CloudWatchLogger,
-  CloudWatchConfig,
   createCloudWatchLogger,
 } from './cloudwatch';
 
+export type {
+  CloudWatchConfig,
+} from './cloudwatch';
+
 export {
-  DashboardConfig,
-  DashboardWidget,
   dashboards,
   systemHealthDashboard,
   performanceDashboard,
@@ -52,10 +53,12 @@ export {
   generateDashboardTemplate,
 } from './dashboard-config';
 
+export type {
+  DashboardConfig,
+  DashboardWidget,
+} from './dashboard-config';
+
 export {
-  AlarmConfig,
-  ComparisonOperator,
-  Statistic,
   alarms,
   highErrorRateAlarm,
   highLatencyAlarm,
@@ -67,6 +70,12 @@ export {
   aiGenerationFailureAlarm,
   generateAlarmTemplate,
   generateAllAlarmsTemplate,
+} from './alerts';
+
+export type {
+  AlarmConfig,
+  ComparisonOperator,
+  Statistic,
 } from './alerts';
 
 export {

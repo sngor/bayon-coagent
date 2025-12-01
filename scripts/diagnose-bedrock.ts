@@ -6,7 +6,8 @@
  */
 
 import { getConfig, validateConfig, getAWSCredentials } from '../src/aws/config';
-import { BedrockRuntimeClient, ListFoundationModelsCommand } from '@aws-sdk/client-bedrock-runtime';
+import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
+import { BedrockClient, ListFoundationModelsCommand } from '@aws-sdk/client-bedrock';
 
 async function diagnoseBedrock() {
   console.log('🔍 Diagnosing Bedrock Configuration...\n');
@@ -55,9 +56,9 @@ async function diagnoseBedrock() {
       region: config.bedrock.region,
       credentials: credentials.accessKeyId && credentials.secretAccessKey
         ? {
-            accessKeyId: credentials.accessKeyId,
-            secretAccessKey: credentials.secretAccessKey,
-          }
+          accessKeyId: credentials.accessKeyId,
+          secretAccessKey: credentials.secretAccessKey,
+        }
         : undefined,
     });
 
@@ -67,15 +68,15 @@ async function diagnoseBedrock() {
       region: config.bedrock.region,
       credentials: credentials.accessKeyId && credentials.secretAccessKey
         ? {
-            accessKeyId: credentials.accessKeyId,
-            secretAccessKey: credentials.secretAccessKey,
-          }
+          accessKeyId: credentials.accessKeyId,
+          secretAccessKey: credentials.secretAccessKey,
+        }
         : undefined,
     });
 
     const command = new BedrockListCommand({});
     const response = await bedrockClient.send(command);
-    
+
     console.log('   ✅ Successfully connected to Bedrock');
     console.log(`   ✅ Found ${response.modelSummaries?.length || 0} available models\n`);
 
@@ -98,7 +99,7 @@ async function diagnoseBedrock() {
   } catch (error: any) {
     console.log('   ❌ Failed to connect to Bedrock');
     console.log(`   Error: ${error.message}`);
-    
+
     if (error.name === 'UnrecognizedClientException' || error.message.includes('security token')) {
       console.log('\n   💡 This error usually means:');
       console.log('      - AWS credentials are invalid or expired');
@@ -114,7 +115,7 @@ async function diagnoseBedrock() {
 
   // Step 5: Recommendations
   console.log('5️⃣ Recommendations:');
-  
+
   if (credentials.accessKeyId === 'your-access-key-here' || !credentials.accessKeyId) {
     console.log('   📝 Update .env.local with your AWS credentials:');
     console.log('      AWS_ACCESS_KEY_ID=your-actual-access-key');

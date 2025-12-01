@@ -743,6 +743,127 @@ export async function generateSocialPostAction(
   }
 }
 
+const socialProofSchema = z.object({
+  testimonialIds: z.array(z.string()).min(1, 'Please select at least one testimonial.'),
+  format: z.enum(['instagram', 'facebook', 'linkedin']),
+  agentName: z.string().min(1, 'Agent name is required.'),
+});
+
+export async function generateSocialProofAction(
+  prevState: any,
+  formData: FormData
+): Promise<{
+  message: string;
+  data: (GenerateSocialProofOutput & { savedContentId?: string }) | null;
+  errors: any;
+}> {
+  const validatedFields = socialProofSchema.safeParse({
+    testimonialIds: JSON.parse(formData.get('testimonialIds') as string || '[]'),
+    format: formData.get('format'),
+    agentName: formData.get('agentName'),
+  });
+
+  if (!validatedFields.success) {
+    const fieldErrors = validatedFields.error.flatten().fieldErrors;
+    const firstError = Object.values(fieldErrors)[0]?.[0] || 'Validation failed.';
+    return {
+      message: firstError,
+      errors: fieldErrors,
+      data: null,
+    };
+  }
+
+  try {
+    // Get current user
+    const user = await getCurrentUserServer();
+    if (!user || !user.id) {
+      return {
+        message: 'Authentication required',
+        data: null,
+        errors: { auth: ['You must be logged in to generate social proof content'] },
+      };
+    }
+
+    const { testimonialIds, format, agentName } = validatedFields.data;
+
+    // Fetch testimonials from DynamoDB
+    const repository = getRepository();
+    const testimonials = [];
+
+    for (const testimonialId of testimonialIds) {
+      const testimonialData = await repository.get(
+        `USER#${user.id}`,
+        `TESTIMONIAL#${testimonialId}`
+      );
+      if (testimonialData?.Data) {
+        testimonials.push(testimonialData.Data);
+      }
+    }
+
+    if (testimonials.length === 0) {
+      return {
+        message: 'No testimonials found with the provided IDs',
+        data: null,
+        errors: {},
+      };
+    }
+
+    // Prepare input for AI flow
+    const input: GenerateSocialProofInput = {
+      testimonials: testimonials.map(t => ({
+        clientName: t.clientName,
+        testimonialText: t.testimonialText,
+        dateReceived: t.dateReceived,
+        clientPhotoUrl: t.clientPhotoUrl,
+      })),
+      format,
+      agentName,
+    };
+
+    // Generate social proof content
+    const result = await generateSocialProof(input);
+
+    // Save to Library Content
+    const contentId = `social-proof-${Date.now()}`;
+    const keys = getSavedContentKeys(user.id, contentId);
+
+    const formatLabel = format.charAt(0).toUpperCase() + format.slice(1);
+    const title = `Social Proof - ${formatLabel} Post`;
+
+    // Format content with hashtags
+    const fullContent = `${result.content}\n\n${result.hashtags.map(tag => `#${tag}`).join(' ')}`;
+
+    await repository.create(keys.PK, keys.SK, 'SavedContent', {
+      id: contentId,
+      title,
+      content: fullContent,
+      type: 'social-proof',
+      createdAt: new Date().toISOString(),
+      metadata: {
+        format,
+        testimonialIds,
+        imageSuggestions: result.imageSuggestions,
+      },
+    });
+
+    return {
+      message: 'success',
+      data: {
+        ...result,
+        savedContentId: contentId,
+      },
+      errors: {},
+    };
+  } catch (error) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred while generating social proof content.');
+    return {
+      message: `Failed to generate social proof: ${errorMessage}`,
+      errors: {},
+      data: null,
+    };
+  }
+}
+
 const researchAgentSchema = z.object({
   topic: z.string().min(10, 'Please provide a more specific topic for better research results.'),
 });
@@ -6600,119 +6721,5 @@ export async function getTestimonialsAction(
   }
 }
 
-/**
- * Generates social proof content from testimonials
- */
-export async function generateSocialProofAction(
-  userId: string,
-  testimonialIds: string[],
-  format: 'instagram' | 'facebook' | 'linkedin'
-): Promise<{
-  message: string;
-  data: { content: string; contentId?: string } | null;
-  errors?: string[];
-}> {
-  try {
-    if (!userId || typeof userId !== 'string') {
-      return {
-        message: 'Authentication required',
-        data: null,
-        errors: ['You must be logged in to generate social proof content'],
-      };
-    }
 
-    if (!testimonialIds || !Array.isArray(testimonialIds) || testimonialIds.length === 0) {
-      return {
-        message: 'Invalid testimonials',
-        data: null,
-        errors: ['At least one testimonial must be selected'],
-      };
-    }
-
-    if (!['instagram', 'facebook', 'linkedin'].includes(format)) {
-      return {
-        message: 'Invalid format',
-        data: null,
-        errors: ['Format must be instagram, facebook, or linkedin'],
-      };
-    }
-
-    // Import dependencies
-    const { getTestimonial } = await import('@/aws/dynamodb/testimonial-repository');
-    const { getAgentProfile } = await import('@/aws/dynamodb/agent-profile-repository');
-    const { generateSocialProof } = await import('@/aws/bedrock/flows/generate-social-proof');
-
-    // Fetch the testimonials
-    const testimonials = await Promise.all(
-      testimonialIds.map(async (id) => {
-        const testimonial = await getTestimonial(userId, id);
-        if (!testimonial) {
-          throw new Error(`Testimonial ${id} not found`);
-        }
-        return testimonial;
-      })
-    );
-
-    // Get agent profile for name
-    const profile = await getAgentProfile(userId);
-    const agentName = profile?.name || 'Agent';
-
-    // Generate social proof content
-    const result = await generateSocialProof({
-      testimonials: testimonials.map(t => ({
-        clientName: t.clientName,
-        testimonialText: t.testimonialText,
-        dateReceived: t.dateReceived,
-        clientPhotoUrl: t.clientPhotoUrl,
-      })),
-      format,
-      agentName,
-    });
-
-    // Save to Library Content section
-    const contentName = `${format.charAt(0).toUpperCase() + format.slice(1)} Social Proof - ${new Date().toLocaleDateString()}`;
-
-    // Format the content with hashtags for saving
-    const fullContent = `${result.content}\n\n${result.hashtags.map(tag => `#${tag}`).join(' ')}`;
-
-    // Add image suggestions as a note if present
-    const contentWithSuggestions = result.imageSuggestions.length > 0
-      ? `${fullContent}\n\n---\n\n**Image Suggestions:**\n${result.imageSuggestions.map((s, i) => `${i + 1}. ${s}`).join('\n')}`
-      : fullContent;
-
-    const saveResult = await saveContentAction(
-      userId,
-      contentWithSuggestions,
-      'social-proof',
-      contentName,
-      null, // No project ID
-      null  // No header image
-    );
-
-    if (saveResult.errors && saveResult.errors.length > 0) {
-      console.error('Failed to save social proof content:', saveResult.errors);
-      // Still return the generated content even if save fails
-      return {
-        message: 'Social proof generated but failed to save to library',
-        data: { content: result.content },
-        errors: saveResult.errors,
-      };
-    }
-
-    return {
-      message: 'Social proof content generated and saved successfully',
-      data: {
-        content: result.content,
-        contentId: saveResult.data?.id,
-      },
-    };
-  } catch (error: any) {
-    console.error('Failed to generate social proof:', error);
-    return {
-      message: 'Failed to generate social proof content',
-      data: null,
-      errors: [error.message || 'An unexpected error occurred'],
-    };
-  }
-}
 // Force rebuild Fri Nov 28 04:23:25 PST 2025

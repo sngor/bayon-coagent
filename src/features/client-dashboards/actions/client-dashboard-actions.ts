@@ -4,13 +4,15 @@ import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { getRepository } from '@/aws/dynamodb/repository';
 import {
-    getClientDashboardKeys,
-    getSecuredLinkKeys,
-    getDashboardAnalyticsKeys,
     getCMAReportKeys,
     getDashboardDocumentKeys,
     getDocumentDownloadLogKeys,
-} from '@/aws/dynamodb/keys';
+} from '@/aws/dynamodb/extra-keys';
+import {
+    getClientDashboardKeys,
+    getSecuredLinkKeys,
+    getDashboardAnalyticsKeys,
+} from '@/aws/dynamodb/dashboard-keys';
 import { getCurrentUserServer } from '@/aws/auth/server-auth';
 import { sendEmail } from '@/aws/ses/client';
 import { getConfig } from '@/aws/config';

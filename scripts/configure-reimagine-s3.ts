@@ -13,6 +13,7 @@ import {
   GetBucketCorsCommand,
   PutBucketLifecycleConfigurationCommand,
   GetBucketLifecycleConfigurationCommand,
+  type LifecycleRule,
 } from '@aws-sdk/client-s3';
 import { getConfig } from '../src/aws/config';
 
@@ -30,7 +31,7 @@ async function configureS3() {
   try {
     // Configure CORS
     console.log('📝 Configuring CORS rules...');
-    
+
     const corsRules = {
       CORSRules: [
         {
@@ -76,33 +77,33 @@ async function configureS3() {
     // Configure Lifecycle Rules
     console.log('📝 Configuring lifecycle rules...');
 
-    const lifecycleRules = {
+    const lifecycleRules: { Rules: LifecycleRule[] } = {
       Rules: [
         {
-          Id: 'DeleteOldVersions',
-          Status: 'Enabled',
+          ID: 'DeleteOldVersions',
+          Status: 'Enabled' as const,
           NoncurrentVersionExpiration: {
             NoncurrentDays: 90,
           },
         },
         {
-          Id: 'ArchiveOldReimagineEdits',
-          Status: 'Enabled',
+          ID: 'ArchiveOldReimagineEdits',
+          Status: 'Enabled' as const,
           Prefix: 'reimagine/edits/',
           Transitions: [
             {
               Days: 90,
-              StorageClass: 'STANDARD_IA',
+              StorageClass: 'STANDARD_IA' as const,
             },
             {
               Days: 180,
-              StorageClass: 'GLACIER',
+              StorageClass: 'GLACIER' as const,
             },
           ],
         },
         {
-          Id: 'DeleteReimaginePreviewEdits',
-          Status: 'Enabled',
+          ID: 'DeleteReimaginePreviewEdits',
+          Status: 'Enabled' as const,
           Prefix: 'reimagine/preview/',
           Expiration: {
             Days: 7,
@@ -146,7 +147,7 @@ async function configureS3() {
 
   } catch (error) {
     console.error('❌ Error configuring S3:', error);
-    
+
     if (error instanceof Error) {
       if (error.message.includes('NoSuchBucket')) {
         console.log('\n📝 Bucket Not Found:');
@@ -158,7 +159,7 @@ async function configureS3() {
         console.log('Required permissions: s3:PutBucketCors, s3:PutBucketLifecycleConfiguration');
       }
     }
-    
+
     process.exit(1);
   }
 }

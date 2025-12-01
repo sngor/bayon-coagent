@@ -40,7 +40,7 @@ export default async function ClientDashboardPage({ params }: ClientDashboardPag
 
 // Generate metadata for SEO
 export async function generateMetadata({ params }: ClientDashboardPageProps) {
-    const { token } = params;
+    const { token } = await params;
     const result = await validateDashboardLink(token);
 
     if (result.message !== 'success' || !result.data) {

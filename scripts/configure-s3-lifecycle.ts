@@ -33,7 +33,10 @@ async function configureLifecycleRules() {
     region: config.region,
     endpoint: config.s3.endpoint,
     credentials: credentials.accessKeyId && credentials.secretAccessKey
-      ? credentials
+      ? {
+        accessKeyId: credentials.accessKeyId,
+        secretAccessKey: credentials.secretAccessKey,
+      }
       : undefined,
     forcePathStyle: config.environment === 'local',
   });
@@ -41,8 +44,8 @@ async function configureLifecycleRules() {
   // Define lifecycle rules
   const lifecycleRules: LifecycleRule[] = [
     {
-      Id: 'reimagine-archive-old-edits',
-      Status: 'Enabled',
+      ID: 'reimagine-archive-old-edits',
+      Status: 'Enabled' as const,
       Filter: {
         Prefix: 'users/',
         Tag: {
@@ -58,8 +61,8 @@ async function configureLifecycleRules() {
       ],
     },
     {
-      Id: 'reimagine-delete-preview-edits',
-      Status: 'Enabled',
+      ID: 'reimagine-delete-preview-edits',
+      Status: 'Enabled' as const,
       Filter: {
         And: {
           Prefix: 'users/',
@@ -80,8 +83,8 @@ async function configureLifecycleRules() {
       },
     },
     {
-      Id: 'reimagine-cleanup-incomplete-uploads',
-      Status: 'Enabled',
+      ID: 'reimagine-cleanup-incomplete-uploads',
+      Status: 'Enabled' as const,
       Filter: {
         Prefix: 'users/',
       },
@@ -98,17 +101,17 @@ async function configureLifecycleRules() {
         Bucket: config.s3.bucketName,
       });
       const existingConfig = await s3Client.send(getCommand);
-      
+
       if (existingConfig.Rules && existingConfig.Rules.length > 0) {
         console.log('⚠️  Existing lifecycle rules found:');
         existingConfig.Rules.forEach((rule) => {
-          console.log(`   - ${rule.Id}: ${rule.Status}`);
+          console.log(`   - ${rule.ID}: ${rule.Status}`);
         });
         console.log('\n📝 Merging with new Reimagine rules...\n');
-        
+
         // Merge existing rules with new ones (avoid duplicates)
-        const existingIds = new Set(existingConfig.Rules.map((r) => r.Id));
-        const newRules = lifecycleRules.filter((r) => !existingIds.has(r.Id));
+        const existingIds = new Set(existingConfig.Rules.map((r) => r.ID));
+        const newRules = lifecycleRules.filter((r) => !existingIds.has(r.ID));
         lifecycleRules.push(...(existingConfig.Rules as LifecycleRule[]));
         lifecycleRules.push(...newRules);
       }
@@ -133,7 +136,7 @@ async function configureLifecycleRules() {
     console.log('✅ S3 Lifecycle Rules configured successfully!\n');
     console.log('📋 Applied Rules:');
     lifecycleRules.forEach((rule) => {
-      console.log(`\n   ${rule.Id}:`);
+      console.log(`\n   ${rule.ID}:`);
       console.log(`   - Status: ${rule.Status}`);
       if (rule.Transitions) {
         rule.Transitions.forEach((t) => {
@@ -160,13 +163,13 @@ async function configureLifecycleRules() {
     console.log('   In production AWS, these rules will be enforced by S3 automatically.\n');
   } catch (error) {
     console.error('❌ Error configuring lifecycle rules:', error);
-    
+
     if (config.environment === 'local') {
       console.log('\n💡 LocalStack may have limited lifecycle support.');
       console.log('   This is expected in local development.');
       console.log('   The configuration will work correctly in production AWS.\n');
     }
-    
+
     process.exit(1);
   }
 }

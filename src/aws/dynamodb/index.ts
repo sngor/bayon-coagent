@@ -55,6 +55,12 @@ export {
   getTestimonialRequestKeys,
   getSEOAnalysisKeys,
   getSavedKeywordKeys,
+  getClientDashboardKeys,
+  getSecuredLinkKeys,
+  getDashboardAnalyticsKeys,
+  getCMAReportKeys,
+  getDashboardDocumentKeys,
+  getDocumentDownloadLogKeys,
 } from './keys';
 
 // Error handling

@@ -27,7 +27,8 @@ import {
     getInvitationByTokenQueryKeys,
     getUserOrganizationsQueryKeys
 } from '@/aws/dynamodb/organization-keys';
-import { getProfileKeys, getAnnouncementKeys } from '@/aws/dynamodb/keys';
+import { getProfileKeys } from '@/aws/dynamodb/keys';
+import { getAnnouncementKeys } from '@/aws/dynamodb/extra-keys';
 import { sendInvitationEmail } from '@/lib/email-service';
 
 export async function getUsersListAction(
