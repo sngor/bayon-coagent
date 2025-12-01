@@ -17,6 +17,10 @@ import { getRepository } from '@/aws/dynamodb/repository';
 import { getConversationKeys } from '@/aws/dynamodb/keys';
 import { getBedrockClient } from '@/aws/bedrock/client';
 import { v4 as uuidv4 } from 'uuid';
+import { retrieveRelevantDocuments, formatDocumentsAsContext } from '@/aws/bedrock/knowledge-retriever';
+import { getAgentCore } from '@/aws/bedrock/agent-core';
+import { createWorkerTask } from '@/aws/bedrock/worker-protocol';
+import { executeKnowledgeRetrievalTask } from '@/aws/bedrock/knowledge-retriever';
 
 /**
  * Chat query input schema
@@ -63,10 +67,11 @@ export interface ChatQueryResponse {
 }
 
 /**
- * Simple response generation using Bedrock directly
+ * Simple response generation using Bedrock directly with RAG support
  */
 async function generateSimpleResponse(
   query: string,
+  userId: string,
   agentProfile?: any,
   attachments?: FileAttachment[]
 ): Promise<{
@@ -77,9 +82,63 @@ async function generateSimpleResponse(
     title: string;
     sourceType: string;
   }>;
+  documentsUsed?: number;
 }> {
   try {
     const client = getBedrockClient();
+    const agentCore = getAgentCore();
+
+    let knowledgeBaseContext = '';
+    let kbCitations: Array<{ url: string; title: string; sourceType: string }> = [];
+    let documentsUsed = 0;
+
+    // Step 1: Retrieve relevant documents from knowledge base using AgentCore
+    try {
+      const retrievalTask = createWorkerTask(
+        'knowledge-retriever',
+        `Retrieve relevant documents for chat query: ${query}`,
+        {
+          query,
+          userId,
+          topK: 3, // Limit to 3 docs for chat (faster)
+          minScore: 0.6, // Higher threshold for chat relevance
+          scope: 'personal',
+        }
+      );
+
+      // Allocate task to knowledge retriever strand
+      const retrieverStrand = await agentCore.allocateTask(retrievalTask);
+
+      // Execute retrieval
+      const retrievalResult = await executeKnowledgeRetrievalTask(retrievalTask);
+
+      // Update strand metrics
+      agentCore.updateStrandMetrics(retrieverStrand.id, retrievalResult);
+
+      if (retrievalResult.status === 'success' && retrievalResult.output) {
+        const documents = retrievalResult.output.documents || [];
+        documentsUsed = documents.length;
+
+        if (documents.length > 0) {
+          // Format documents as context
+          knowledgeBaseContext = '\n\n# Relevant Information from Your Knowledge Base\n\n' +
+            documents.map((doc: any, index: number) =>
+              `## Document ${index + 1}: ${doc.title || doc.source}\n` +
+              `${doc.text}\n`
+            ).join('\n---\n\n');
+
+          // Add KB citations
+          kbCitations = documents.map((doc: any) => ({
+            url: doc.url || `#document-${doc.documentId}`,
+            title: doc.title || doc.source,
+            sourceType: 'knowledge-base',
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Knowledge base retrieval error (non-fatal):', error);
+      // Continue without KB context if retrieval fails
+    }
 
     // Create personalized system prompt
     const systemPrompt = `You are a warm, friendly, and highly knowledgeable AI assistant who specializes in helping real estate professionals succeed. Think of yourself as a supportive colleague who's always excited to help with any real estate challenge!
@@ -92,6 +151,10 @@ About the Agent You're Helping:
 - Preferred Style: ${agentProfile.preferredTone || 'Professional'}
 
 Always personalize your responses for ${agentProfile.agentName || 'this agent'}'s specific market and communication preferences.
+` : ''}
+
+${knowledgeBaseContext ? `
+IMPORTANT: The user has uploaded documents to their knowledge base. When relevant information is available in their knowledge base (shown below), prioritize it in your response and mention that you're referencing their documents.
 ` : ''}
 
 Your Real Estate Expertise:
@@ -129,13 +192,14 @@ Always assume questions are about real estate business unless clearly stated oth
       });
     }
 
-    const userPrompt = `A real estate professional just said: "${query}"${attachmentContext}
+    const userPrompt = `A real estate professional just said: "${query}"${attachmentContext}${knowledgeBaseContext}
 
 Instructions:
 - If this is a greeting (like "hi", "hello", "hey"), respond with a warm, enthusiastic greeting and ask how you can help with their real estate business today
 - If they've attached files, analyze the content and provide specific insights about the documents
 - For text files, contracts, or documents: provide analysis, suggestions, or answer questions about the content
 - For images: describe what you see and provide relevant real estate insights
+${knowledgeBaseContext ? '- IMPORTANT: If relevant information is available in their Knowledge Base (shown above), reference it in your response and mention that you found it in their documents' : ''}
 - If this is a question, provide comprehensive, practical advice with specific insights
 - Always be warm, friendly, and genuinely excited to help them succeed
 - Make them feel supported and confident in their real estate journey
@@ -156,17 +220,18 @@ Respond appropriately to what they said!`;
     // Extract key points from the response (simple implementation)
     const keyPoints = extractKeyPoints(result.response);
 
-    // For now, return empty citations (can be enhanced later)
+    // Combine KB citations with any other citations
     const citations: Array<{
       url: string;
       title: string;
       sourceType: string;
-    }> = [];
+    }> = [...kbCitations];
 
     return {
       content: result.response,
       keyPoints,
       citations,
+      documentsUsed,
     };
   } catch (error) {
     console.error('Bedrock AI call failed:', error);
@@ -424,8 +489,8 @@ export async function handleChatQuery(
     const profileRepository = getAgentProfileRepository();
     const agentProfile = await profileRepository.getProfile(mockUser.id);
 
-    // Simple AI response using Bedrock directly (bypassing complex orchestrator for now)
-    const response = await generateSimpleResponse(sanitizedQuery, agentProfile, attachments);
+    // Simple AI response using Bedrock directly with RAG support
+    const response = await generateSimpleResponse(sanitizedQuery, mockUser.id, agentProfile, attachments);
 
     // Save conversation to DynamoDB
     const conversationIdToUse = (conversationId && typeof conversationId === 'string') ? conversationId : uuidv4();
@@ -804,8 +869,8 @@ export async function handleChatQueryStream(
           totalSteps: 5,
         }) + '\n'));
 
-        // Generate simple response
-        const response = await generateSimpleResponse(sanitizedQuery, agentProfile);
+        // Generate simple response with RAG support
+        const response = await generateSimpleResponse(sanitizedQuery, mockUser.id, agentProfile);
 
         // Send progress: Finalizing
         controller.enqueue(encoder.encode(JSON.stringify({

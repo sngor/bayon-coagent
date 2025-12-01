@@ -22,8 +22,6 @@ import {
     type GenerateSocialProofOutput,
 } from '@/ai/schemas/social-proof-schemas';
 
-export { type GenerateSocialProofInput, type GenerateSocialProofOutput };
-
 const socialProofPrompt = definePrompt({
     name: 'generateSocialProofPrompt',
     inputSchema: z.object({

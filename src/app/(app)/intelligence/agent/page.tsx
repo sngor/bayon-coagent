@@ -24,15 +24,29 @@ import {
 } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { runResearchAgentAction } from '@/app/actions';
-import { Library, Calendar, Search, Sparkles, Save, RotateCcw, ExternalLink, FileText, Download } from 'lucide-react';
+import { Library, Calendar, Search, Sparkles, Save, RotateCcw, ExternalLink, FileText, Download, Database, BookOpen } from 'lucide-react';
 import { type RunResearchAgentOutput } from '@/aws/bedrock/flows';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
 import { saveResearchReportAction } from '@/app/actions';
-import type { ResearchReport } from '@/lib/types/common/common';
+import { researchWithKnowledgeBaseAction } from '@/app/research-rag-actions';
+
+interface ResearchReport {
+  id: string;
+  topic: string;
+  createdAt: string;
+}
 import Link from 'next/link';
 import { marked } from 'marked';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type ResearchInitialState = {
   message: string;
@@ -85,6 +99,12 @@ export default function ResearchAgentPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [topicInput, setTopicInput] = useState<string>('');
   const [renderedReport, setRenderedReport] = useState<string>('');
+
+  // RAG settings
+  const [useKnowledgeBase, setUseKnowledgeBase] = useState(true);
+  const [researchDepth, setResearchDepth] = useState<'quick' | 'standard' | 'comprehensive'>('standard');
+  const [isResearchingWithRAG, setIsResearchingWithRAG] = useState(false);
+  const [ragResult, setRagResult] = useState<any>(null);
 
   // Fetch reports from API
   useEffect(() => {
@@ -219,6 +239,60 @@ export default function ResearchAgentPage() {
     });
   };
 
+  const handleResearchWithRAG = async (topic: string) => {
+    if (!topic.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Topic Required',
+        description: 'Please enter a research topic.',
+      });
+      return;
+    }
+
+    setIsResearchingWithRAG(true);
+    setLastTopic(topic);
+    setRagResult(null);
+
+    try {
+      const result = await researchWithKnowledgeBaseAction(topic, {
+        researchDepth,
+        outputFormat: 'report',
+        useKnowledgeBase,
+        topK: researchDepth === 'comprehensive' ? 10 : researchDepth === 'standard' ? 5 : 3,
+      });
+
+      if (result.success && result.data) {
+        setRagResult(result.data);
+
+        // Render markdown
+        const html = await marked.parse(result.data.answer);
+        setRenderedReport(html);
+
+        toast({
+          title: 'Research Complete!',
+          description: useKnowledgeBase && result.data.documentsRetrieved > 0
+            ? `Used ${result.data.documentsRetrieved} documents from your knowledge base`
+            : 'Research completed successfully',
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Research Failed',
+          description: result.error || 'Failed to complete research',
+        });
+      }
+    } catch (error) {
+      console.error('Research error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Research Failed',
+        description: error instanceof Error ? error.message : 'An error occurred',
+      });
+    } finally {
+      setIsResearchingWithRAG(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Feature Banner with Tips */}
@@ -236,7 +310,7 @@ export default function ResearchAgentPage() {
       />
 
       {/* Research Results Display */}
-      {state.message === 'success' && state.data?.report && (
+      {(ragResult || (state.message === 'success' && state.data?.report)) && (
         <div className="space-y-4">
           {/* Report Header */}
           <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
@@ -248,9 +322,24 @@ export default function ResearchAgentPage() {
                       <Sparkles className="h-3 w-3" />
                       AI Research
                     </Badge>
-                    <Badge variant="outline">
-                      {state.data.citations?.length || 0} Sources
-                    </Badge>
+                    {ragResult && (
+                      <>
+                        <Badge variant="outline">
+                          {ragResult.sources?.length || 0} Sources
+                        </Badge>
+                        {ragResult.knowledgeBaseUsed && (
+                          <Badge variant="default" className="gap-1">
+                            <Database className="h-3 w-3" />
+                            {ragResult.documentsRetrieved} KB Docs
+                          </Badge>
+                        )}
+                      </>
+                    )}
+                    {!ragResult && state.data?.citations && (
+                      <Badge variant="outline">
+                        {state.data.citations.length} Sources
+                      </Badge>
+                    )}
                   </div>
                   <h2 className="text-2xl font-headline font-bold">{lastTopic || "Research Report"}</h2>
                   <p className="text-sm text-muted-foreground">
@@ -268,6 +357,7 @@ export default function ResearchAgentPage() {
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => {
                     setTopicInput('');
+                    setRagResult(null);
                     window.location.reload();
                   }}>
                     <RotateCcw className="mr-2 h-4 w-4" />
@@ -288,7 +378,7 @@ export default function ResearchAgentPage() {
           </Card>
 
           {/* Sources Section */}
-          {state.data.citations && state.data.citations.length > 0 && (
+          {ragResult?.sources && ragResult.sources.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -298,7 +388,57 @@ export default function ResearchAgentPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-2">
-                  {state.data.citations.map((citation, idx) => (
+                  {ragResult.sources.map((source: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 p-3 rounded-lg border"
+                    >
+                      {source.type === 'knowledge-base' ? (
+                        <BookOpen className="h-4 w-4 text-primary" />
+                      ) : (
+                        <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{source.title}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {source.type === 'knowledge-base' ? 'Your KB' : 'Web'}
+                          </Badge>
+                          {source.relevance && (
+                            <Badge variant={source.relevance === 'high' ? 'default' : 'secondary'} className="text-xs">
+                              {source.relevance}
+                            </Badge>
+                          )}
+                        </div>
+                        {source.url && (
+                          <a
+                            href={source.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-muted-foreground hover:text-primary truncate block"
+                          >
+                            {source.url}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {!ragResult && state.data?.citations && state.data.citations.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Sources & References
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-2">
+                  {state.data.citations.map((citation: string, idx: number) => (
                     <a
                       key={idx}
                       href={citation}
@@ -317,33 +457,53 @@ export default function ResearchAgentPage() {
         </div>
       )}
 
-      <DataGrid columns={state.message === 'success' && state.data?.report ? 1 : 2}>
+      <DataGrid columns={(ragResult || (state.message === 'success' && state.data?.report)) ? 1 : 2}>
         {/* Research Form */}
-        {(!state.message || state.message !== 'success' || !state.data?.report) && (
+        {!ragResult && (!state.message || state.message !== 'success' || !state.data?.report) && (
           <ContentSection
             title="Research Topic"
             description="Ask any question and get comprehensive, source-backed insights"
             icon={Search}
             variant="card"
           >
-            <form
-              action={(formData) => {
-                const topic = formData.get('topic') as string;
-                if (!topic || topic.trim() === '') {
-                  toast({
-                    variant: 'destructive',
-                    title: 'Topic Required',
-                    description: 'Please enter a research topic.',
-                  });
-                  return;
-                }
-                setLastTopic(topic);
-                setIsSaving(false);
-                setTopicInput(''); // Clear input after submission
-                formAction(formData);
-              }}
-              className="space-y-6"
-            >
+            <div className="space-y-6">
+              {/* RAG Settings */}
+              <div className="space-y-4 p-4 rounded-lg border bg-muted/50">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="use-kb" className="text-sm font-medium flex items-center gap-2">
+                      <Database className="h-4 w-4" />
+                      Use Knowledge Base
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Include your uploaded documents in research
+                    </p>
+                  </div>
+                  <Switch
+                    id="use-kb"
+                    checked={useKnowledgeBase}
+                    onCheckedChange={setUseKnowledgeBase}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="depth" className="text-sm font-medium">
+                    Research Depth
+                  </Label>
+                  <Select value={researchDepth} onValueChange={(v: any) => setResearchDepth(v)}>
+                    <SelectTrigger id="depth">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="quick">Quick (3 docs, ~30s)</SelectItem>
+                      <SelectItem value="standard">Standard (5 docs, ~1min)</SelectItem>
+                      <SelectItem value="comprehensive">Comprehensive (10 docs, ~2min)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Research Form */}
               <div className="space-y-3">
                 <Label htmlFor="topic" className="text-base font-semibold">
                   What would you like to research?
@@ -355,33 +515,46 @@ export default function ResearchAgentPage() {
                   onChange={(e) => setTopicInput(e.target.value)}
                   placeholder="e.g., How are rising interest rates affecting commercial real estate in NYC?"
                   rows={4}
-                  disabled={isPending}
+                  disabled={isResearchingWithRAG}
                   className="resize-none text-base"
                 />
-                {state.errors?.topic?.[0] && (
-                  <p className="text-sm text-destructive">{state.errors.topic[0]}</p>
-                )}
                 <div className="flex items-start gap-2 text-sm text-muted-foreground">
                   <Sparkles className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <p>
-                    AI will search the web, analyze multiple sources, and compile a comprehensive report with citations.
+                    {useKnowledgeBase
+                      ? 'AI will search your knowledge base and the web, then compile a comprehensive report with citations.'
+                      : 'AI will search the web, analyze multiple sources, and compile a comprehensive report with citations.'}
                   </p>
                 </div>
               </div>
+
               <ActionBar alignment="left">
-                <SubmitButton disabled={isUserLoading || isPending || !topicInput.trim()} />
+                <Button
+                  onClick={() => handleResearchWithRAG(topicInput)}
+                  disabled={isUserLoading || isResearchingWithRAG || !topicInput.trim()}
+                  variant="ai"
+                  size="lg"
+                  className="w-full md:w-auto"
+                >
+                  {isResearchingWithRAG ? (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4 animate-pulse" />
+                      Researching...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="mr-2 h-4 w-4" />
+                      Start Research
+                    </>
+                  )}
+                </Button>
               </ActionBar>
-              {state.message && state.message !== 'success' && (
-                <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
-                  <p className="text-sm text-destructive">{state.message}</p>
-                </div>
-              )}
-            </form>
+            </div>
           </ContentSection>
         )}
 
         {/* Research Results / Recent Reports */}
-        {(!state.message || state.message !== 'success' || !state.data?.report) && (
+        {!ragResult && (!state.message || state.message !== 'success' || !state.data?.report) && (
           <ContentSection
             title="Recent Reports"
             description="Your saved research reports and findings"
@@ -419,7 +592,7 @@ export default function ResearchAgentPage() {
             )}
 
             {/* Progress indicator for active research */}
-            {isPending && (
+            {(isPending || isResearchingWithRAG) && (
               <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
                 <CardContent className="pt-6">
                   <div className="flex flex-col items-center justify-center py-8 space-y-4">
@@ -436,7 +609,12 @@ export default function ResearchAgentPage() {
                       </p>
                     </div>
                     <div className="flex flex-wrap justify-center gap-2 max-w-md">
-                      <Badge variant="outline" className="animate-pulse">Searching web</Badge>
+                      {useKnowledgeBase && (
+                        <Badge variant="outline" className="animate-pulse">
+                          <Database className="h-3 w-3 mr-1" />
+                          Searching KB
+                        </Badge>
+                      )}
                       <Badge variant="outline" className="animate-pulse animation-delay-200">Analyzing data</Badge>
                       <Badge variant="outline" className="animate-pulse animation-delay-400">Compiling report</Badge>
                     </div>

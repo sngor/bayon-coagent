@@ -206,7 +206,7 @@ export default function KnowledgeBasePage() {
                                     <div>
                                         <p className="text-sm font-medium">Supported Formats</p>
                                         <p className="text-xs text-muted-foreground">
-                                            PDF, DOCX, TXT, MD
+                                            PDF, DOCX, CSV, TXT, MD, JSON, HTML
                                         </p>
                                     </div>
                                 </div>
@@ -230,7 +230,7 @@ export default function KnowledgeBasePage() {
                         <DialogHeader>
                             <DialogTitle>Upload Documents</DialogTitle>
                             <DialogDescription>
-                                Upload documents to your knowledge base. Supported formats: PDF, DOCX, TXT, MD
+                                Upload documents to your knowledge base. Supported formats: PDF, DOCX, CSV, TXT, MD, JSON, HTML
                             </DialogDescription>
                         </DialogHeader>
                         <DocumentUpload
@@ -327,7 +327,7 @@ export default function KnowledgeBasePage() {
                     <DialogHeader>
                         <DialogTitle>Upload Documents</DialogTitle>
                         <DialogDescription>
-                            Upload documents to your knowledge base. Supported formats: PDF, DOCX, TXT, MD
+                            Upload documents to your knowledge base. Supported formats: PDF, DOCX, CSV, TXT, MD, JSON, HTML
                         </DialogDescription>
                     </DialogHeader>
                     <DocumentUpload

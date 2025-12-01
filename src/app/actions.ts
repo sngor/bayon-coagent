@@ -65,6 +65,14 @@ import {
   type GenerateSocialMediaPostOutput,
 } from '@/ai/schemas/social-media-post-schemas';
 import {
+  generateSocialMediaImage,
+  regenerateSingleImage,
+} from '@/aws/bedrock/flows/generate-social-media-image';
+import {
+  type GenerateSocialMediaImageInput,
+  type GenerateSocialMediaImageOutput,
+} from '@/ai/schemas/social-media-image-schemas';
+import {
   generateSocialProof,
 } from '@/aws/bedrock/flows/generate-social-proof';
 import {
@@ -705,15 +713,22 @@ export async function getAuditDataAction(userId: string): Promise<{ message: str
 const socialPostSchema = z.object({
   topic: z.string().min(10, 'Please provide a more detailed topic for better results.'),
   tone: z.enum(['Professional', 'Casual', 'Enthusiastic', 'Humorous']),
+  platforms: z.array(z.string()).min(1, 'Please select at least one platform.'),
+  numberOfVariations: z.coerce.number().min(1).max(3).default(1),
 });
 
 export async function generateSocialPostAction(
   prevState: any,
   formData: FormData
 ) {
+  const platformsJson = formData.get('platforms');
+  const platforms = platformsJson ? JSON.parse(platformsJson as string) : ['linkedin', 'twitter', 'facebook', 'googleBusiness'];
+
   const validatedFields = socialPostSchema.safeParse({
     topic: formData.get('topic'),
     tone: formData.get('tone'),
+    platforms,
+    numberOfVariations: formData.get('numberOfVariations') || 1,
   });
 
   if (!validatedFields.success) {
@@ -737,6 +752,111 @@ export async function generateSocialPostAction(
     const errorMessage = handleAWSError(error, 'An unexpected error occurred while generating social posts.');
     return {
       message: `Failed to generate posts: ${errorMessage}`,
+      errors: {},
+      data: null,
+    };
+  }
+}
+
+const socialMediaImageSchema = z.object({
+  topic: z.string().min(5, 'Please provide a topic for the image.'),
+  platform: z.string().optional(),
+  aspectRatio: z.string().min(1, 'Please select an aspect ratio.'),
+  style: z.enum(['professional', 'modern', 'luxury', 'minimalist', 'vibrant', 'elegant']).default('professional'),
+  includeText: z.boolean().default(false),
+  customPrompt: z.string().optional(),
+  numberOfImages: z.coerce.number().min(1).max(4).default(3),
+});
+
+export async function generateSocialMediaImageAction(
+  prevState: any,
+  formData: FormData
+): Promise<{
+  message: string;
+  data: GenerateSocialMediaImageOutput | null;
+  errors: any;
+}> {
+  const validatedFields = socialMediaImageSchema.safeParse({
+    topic: formData.get('topic'),
+    platform: formData.get('platform') || undefined,
+    aspectRatio: formData.get('aspectRatio'),
+    style: formData.get('style') || 'professional',
+    includeText: formData.get('includeText') === 'true',
+    customPrompt: formData.get('customPrompt') || undefined,
+    numberOfImages: formData.get('numberOfImages') || 3,
+  });
+
+  if (!validatedFields.success) {
+    const fieldErrors = validatedFields.error.flatten().fieldErrors;
+    const firstError = Object.values(fieldErrors)[0]?.[0] || 'Validation failed.';
+    return {
+      message: firstError,
+      errors: fieldErrors,
+      data: null,
+    };
+  }
+
+  try {
+    const result = await generateSocialMediaImage(
+      validatedFields.data as GenerateSocialMediaImageInput
+    );
+    return {
+      message: 'success',
+      data: result,
+      errors: {},
+    };
+  } catch (error) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred while generating the image.');
+    return {
+      message: `Failed to generate image: ${errorMessage}`,
+      errors: {},
+      data: null,
+    };
+  }
+}
+
+const regenerateSocialMediaImageSchema = z.object({
+  prompt: z.string().min(5, 'Prompt is required.'),
+  aspectRatio: z.string().min(1, 'Aspect ratio is required.'),
+});
+
+export async function regenerateSocialMediaImageAction(
+  prevState: any,
+  formData: FormData
+): Promise<{
+  message: string;
+  data: { imageUrl: string; seed: number } | null;
+  errors: any;
+}> {
+  const validatedFields = regenerateSocialMediaImageSchema.safeParse({
+    prompt: formData.get('prompt'),
+    aspectRatio: formData.get('aspectRatio'),
+  });
+
+  if (!validatedFields.success) {
+    const fieldErrors = validatedFields.error.flatten().fieldErrors;
+    const firstError = Object.values(fieldErrors)[0]?.[0] || 'Validation failed.';
+    return {
+      message: firstError,
+      errors: fieldErrors,
+      data: null,
+    };
+  }
+
+  try {
+    const result = await regenerateSingleImage(
+      validatedFields.data.prompt,
+      validatedFields.data.aspectRatio
+    );
+    return {
+      message: 'success',
+      data: result,
+      errors: {},
+    };
+  } catch (error) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred while regenerating the image.');
+    return {
+      message: `Failed to regenerate image: ${errorMessage}`,
       errors: {},
       data: null,
     };
@@ -1590,7 +1710,7 @@ export async function generateBlogPostAction(
     return {
       message: 'Validation failed',
       errors: validatedFields.error.flatten().fieldErrors,
-      data: { blogPost: null, headerImage: null },
+      data: { blogPost: null, headerImage: null, validation: null },
     };
   }
 
@@ -1606,16 +1726,62 @@ export async function generateBlogPostAction(
       blogPostPreview: result.blogPost?.substring(0, 100)
     });
 
+    // Validate the generated content
+    let validation = null;
+    if (result.blogPost) {
+      try {
+        const { getValidationAgent } = await import('@/aws/bedrock/validation-agent-enhanced');
+        const validator = getValidationAgent();
+
+        validation = await validator.validate(result.blogPost, {
+          validateGoalAlignment: true,
+          userGoal: `Generate an engaging, SEO-optimized blog post about: ${validatedFields.data.topic}`,
+          minQualityScore: 70,
+          checkCompleteness: true,
+          checkCoherence: true,
+          checkProfessionalism: true,
+          enforceGuardrails: true,
+          checkDomainCompliance: true,
+          checkEthicalCompliance: true,
+          expectedFormat: 'markdown',
+          minLength: 500,
+          requiredElements: ['introduction', 'conclusion'],
+          checkFactualConsistency: true,
+          checkToneAndStyle: true,
+          targetAudience: 'real estate agents and their clients',
+          validateSocialMedia: true,
+          validateSEO: true,
+          contentType: 'blog',
+          targetKeywords: [validatedFields.data.topic, 'real estate'],
+          strictMode: false,
+        });
+
+        console.log('Validation scores:', {
+          overall: validation.score,
+          goalAlignment: validation.scoreBreakdown.goalAlignment,
+          socialMedia: validation.scoreBreakdown.socialMedia,
+          seo: validation.scoreBreakdown.seo,
+        });
+      } catch (validationError) {
+        console.error('Validation failed:', validationError);
+        // Don't fail the entire action if validation fails
+      }
+    }
+
     const response = {
       message: 'success',
-      data: result,
+      data: {
+        ...result,
+        validation,
+      },
       errors: {},
     };
 
     console.log('Action response structure:', {
       message: response.message,
       hasData: !!response.data,
-      dataKeys: Object.keys(response.data || {})
+      dataKeys: Object.keys(response.data || {}),
+      hasValidation: !!validation,
     });
 
     return response;
@@ -1624,7 +1790,7 @@ export async function generateBlogPostAction(
     return {
       message: `Failed to generate blog post: ${errorMessage}`,
       errors: {},
-      data: { blogPost: null, headerImage: null },
+      data: { blogPost: null, headerImage: null, validation: null },
     };
   }
 }
@@ -6330,6 +6496,11 @@ import {
   getTeamMemberKeys,
   getOrganizationKeys
 } from '@/aws/dynamodb/organization-keys';
+import { Competitor } from '@/lib/types/common';
+import { Competitor } from '@/lib/types/common';
+import { Competitor } from '@/lib/types/common';
+import { Competitor } from '@/lib/types/common';
+import { validateTargetArea } from '@/lib/alerts';
 
 export async function getUserInvitationsAction(): Promise<{
   message: string;
@@ -6723,5 +6894,48 @@ export async function getTestimonialsAction(
   }
 }
 
+/**
+ * Generate listing description from property images using AI vision
+ */
+export async function generateFromImagesAction(input: {
+  images: Array<{ data: string; format: string; order: number }>;
+  propertyType: string;
+  location: string;
+  buyerPersona: string;
+  writingStyle: string;
+  bedrooms?: string;
+  bathrooms?: string;
+  squareFeet?: string;
+}): Promise<{ message: string; data: ListingDescriptionOutput | null; errors: any }> {
+  try {
+    const { generateListingFromImages } = await import('@/aws/bedrock/flows/listing-description-generator');
 
-// Force rebuild Fri Nov 28 04:23:25 PST 2025
+    const result = await generateListingFromImages({
+      images: input.images.map(img => ({
+        data: img.data,
+        format: img.format as 'jpeg' | 'png' | 'webp',
+        order: img.order,
+      })),
+      propertyType: input.propertyType,
+      location: input.location,
+      buyerPersona: input.buyerPersona,
+      writingStyle: input.writingStyle,
+      bedrooms: input.bedrooms,
+      bathrooms: input.bathrooms,
+      squareFeet: input.squareFeet,
+    });
+
+    return {
+      message: 'success',
+      data: result,
+      errors: {},
+    };
+  } catch (error) {
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred while generating the listing description from images.');
+    return {
+      message: `Failed to generate listing description from images: ${errorMessage}`,
+      data: null,
+      errors: {},
+    };
+  }
+}

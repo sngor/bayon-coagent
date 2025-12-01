@@ -993,97 +993,97 @@ export function getSavedKeywordKeys(
 // ==================== Client Dashboard Keys ====================
 
 /**
- * Generates keys for ClientDashboard
+ * Generates keys for UserClientDashboard
  * Pattern: PK: USER#<userId>, SK: CLIENT_DASHBOARD#<dashboardId>
  */
-export function getClientDashboardKeys(userId: string, dashboardId: string): DynamoDBKey {
-    return {
-        PK: `USER#${userId}`,
-        SK: `CLIENT_DASHBOARD#${dashboardId}`,
-    };
+export function getUserClientDashboardKeys(userId: string, dashboardId: string): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `CLIENT_DASHBOARD#${dashboardId}`,
+  };
 }
 
 /**
- * Generates keys for SecuredLink
+ * Generates keys for UserSecuredLink
  * Pattern: PK: SECURE_LINK#<token>, SK: METADATA
  * GSI1: PK: USER#<userId>, SK: DASHBOARD#<dashboardId>
  */
-export function getSecuredLinkKeys(
-    token: string,
-    userId?: string,
-    dashboardId?: string
+export function getUserSecuredLinkKeys(
+  token: string,
+  userId?: string,
+  dashboardId?: string
 ): DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } {
-    const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
-        PK: `SECURE_LINK#${token}`,
-        SK: 'METADATA',
-    };
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `SECURE_LINK#${token}`,
+    SK: 'METADATA',
+  };
 
-    if (userId && dashboardId) {
-        keys.GSI1PK = `USER#${userId}`;
-        keys.GSI1SK = `DASHBOARD#${dashboardId}`;
-    }
+  if (userId && dashboardId) {
+    keys.GSI1PK = `USER#${userId}`;
+    keys.GSI1SK = `DASHBOARD#${dashboardId}`;
+  }
 
-    return keys;
+  return keys;
 }
 
 /**
- * Generates keys for DashboardAnalytics
+ * Generates keys for DashboardAnalytics (User-based)
  * Pattern: PK: DASHBOARD#<dashboardId>, SK: ANALYTICS
  */
-export function getDashboardAnalyticsKeys(
-    dashboardId: string,
-    timestamp?: string | number
+export function getUserDashboardAnalyticsKeys(
+  dashboardId: string,
+  timestamp?: string | number
 ): DynamoDBKey {
-    return {
-        PK: `DASHBOARD#${dashboardId}`,
-        SK: 'ANALYTICS',
-    };
+  return {
+    PK: `DASHBOARD#${dashboardId}`,
+    SK: 'ANALYTICS',
+  };
 }
 
 /**
- * Generates keys for CMAReport
+ * Generates keys for CMAReport (User-based)
  * Pattern: PK: USER#<userId>, SK: CMA_REPORT#<reportId>
  */
-export function getCMAReportKeys(userId: string, reportId: string): DynamoDBKey {
-    return {
-        PK: `USER#${userId}`,
-        SK: `CMA_REPORT#${reportId}`,
-    };
+export function getUserCMAReportKeys(userId: string, reportId: string): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `CMA_REPORT#${reportId}`,
+  };
 }
 
 /**
- * Generates keys for DashboardDocument
+ * Generates keys for DashboardDocument (User-based)
  * Pattern: PK: USER#<userId>, SK: DASHBOARD_DOC#<documentId>
  */
-export function getDashboardDocumentKeys(
-    userId: string,
-    documentId: string
+export function getUserDashboardDocumentKeys(
+  userId: string,
+  documentId: string
 ): DynamoDBKey {
-    return {
-        PK: `USER#${userId}`,
-        SK: `DASHBOARD_DOC#${documentId}`,
-    };
+  return {
+    PK: `USER#${userId}`,
+    SK: `DASHBOARD_DOC#${documentId}`,
+  };
 }
 
 /**
- * Generates keys for DocumentDownloadLog
+ * Generates keys for DocumentDownloadLog (User-based)
  * Pattern: PK: DOCUMENT#<documentId>, SK: DOWNLOAD#<timestamp>
  * GSI1: PK: DASHBOARD#<dashboardId>, SK: DOWNLOAD#<timestamp>
  */
-export function getDocumentDownloadLogKeys(
-    documentId: string,
-    timestamp: number,
-    dashboardId?: string
+export function getUserDocumentDownloadLogKeys(
+  documentId: string,
+  timestamp: number,
+  dashboardId?: string
 ): DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } {
-    const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
-        PK: `DOCUMENT#${documentId}`,
-        SK: `DOWNLOAD#${timestamp}`,
-    };
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `DOCUMENT#${documentId}`,
+    SK: `DOWNLOAD#${timestamp}`,
+  };
 
-    if (dashboardId) {
-        keys.GSI1PK = `DASHBOARD#${dashboardId}`;
-        keys.GSI1SK = `DOWNLOAD#${timestamp}`;
-    }
+  if (dashboardId) {
+    keys.GSI1PK = `DASHBOARD#${dashboardId}`;
+    keys.GSI1SK = `DOWNLOAD#${timestamp}`;
+  }
 
-    return keys;
+  return keys;
 }

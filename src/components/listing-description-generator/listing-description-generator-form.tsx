@@ -24,7 +24,7 @@ import { StandardFormActions } from '@/components/standard/form-actions';
 import { StandardLoadingSpinner } from '@/components/standard/loading-spinner';
 import { StandardErrorDisplay } from '@/components/standard/error-display';
 import { toast } from '@/hooks/use-toast';
-import { Sparkles, Home, Copy, Check, Save } from 'lucide-react';
+import { Sparkles, Home, Copy, Check, Save, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { SchedulingModal } from '@/components/scheduling-modal';
 import { TemplateSaveModal } from '@/components/template-save-modal';
 import { ContentCategory, TemplateConfiguration } from '@/lib/content-workflow-types';
@@ -32,6 +32,7 @@ import { ProjectSelector } from '@/components/project-selector';
 import { saveContentAction } from '@/app/actions';
 import { useUser } from '@/aws/auth';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AEOOptimizationPanel } from '@/components/aeo-optimization-panel';
 
 // Buyer personas for listing optimization
 const buyerPersonas = [
@@ -80,6 +81,52 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
   const [sellingPoints, setSellingPoints] = useState('');
   const [emotionalAppeal, setEmotionalAppeal] = useState('Balanced');
 
+  // Image upload state
+  const [uploadedImages, setUploadedImages] = useState<Array<{ file: File; preview: string; order: number }>>([]);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter(file => {
+      const isValidType = file.type.startsWith('image/');
+      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
+      if (!isValidType) {
+        toast({
+          variant: 'destructive',
+          title: 'Invalid File Type',
+          description: `${file.name} is not an image file.`,
+        });
+      }
+      if (!isValidSize) {
+        toast({
+          variant: 'destructive',
+          title: 'File Too Large',
+          description: `${file.name} exceeds 10MB limit.`,
+        });
+      }
+      return isValidType && isValidSize;
+    });
+
+    const newImages = validFiles.map((file, index) => ({
+      file,
+      preview: URL.createObjectURL(file),
+      order: uploadedImages.length + index,
+    }));
+
+    setUploadedImages(prev => [...prev, ...newImages]);
+  };
+
+  const removeImage = (order: number) => {
+    setUploadedImages(prev => {
+      const updated = prev.filter(img => img.order !== order);
+      // Clean up preview URL
+      const removed = prev.find(img => img.order === order);
+      if (removed) {
+        URL.revokeObjectURL(removed.preview);
+      }
+      return updated;
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -111,27 +158,59 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
           emotionalAppeal,
         });
       } else {
-        // Validate required fields
-        if (!location || location.trim().length < 3) {
-          throw new Error('Please enter a location (at least 3 characters).');
-        }
-        if (!keyFeatures || keyFeatures.trim().length < 10) {
-          throw new Error('Please enter key features (at least 10 characters).');
-        }
+        // Check if using images or manual input
+        if (uploadedImages.length > 0) {
+          // Generate from images
+          const { generateFromImagesAction } = await import('@/app/actions');
 
-        // Import the action dynamically
-        const { generateNewListingDescriptionAction } = await import('@/app/actions');
+          // Convert images to base64
+          const imagePromises = uploadedImages.map(async (img) => {
+            return new Promise<{ data: string; format: string; order: number }>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                const base64 = (reader.result as string).split(',')[1];
+                const format = img.file.type.split('/')[1] as 'jpeg' | 'png' | 'webp';
+                resolve({ data: base64, format, order: img.order });
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(img.file);
+            });
+          });
 
-        result = await generateNewListingDescriptionAction({
-          propertyType,
-          bedrooms,
-          bathrooms,
-          squareFeet: squareFeet.trim(),
-          location: location.trim(),
-          keyFeatures: keyFeatures.trim(),
-          buyerPersona,
-          writingStyle,
-        });
+          const imageData = await Promise.all(imagePromises);
+
+          result = await generateFromImagesAction({
+            images: imageData,
+            propertyType,
+            location: location.trim(),
+            buyerPersona,
+            writingStyle,
+            bedrooms: bedrooms || undefined,
+            bathrooms: bathrooms || undefined,
+            squareFeet: squareFeet.trim() || undefined,
+          });
+        } else {
+          // Generate from manual input
+          if (!location || location.trim().length < 3) {
+            throw new Error('Please enter a location (at least 3 characters).');
+          }
+          if (!keyFeatures || keyFeatures.trim().length < 10) {
+            throw new Error('Please enter key features (at least 10 characters).');
+          }
+
+          const { generateNewListingDescriptionAction } = await import('@/app/actions');
+
+          result = await generateNewListingDescriptionAction({
+            propertyType,
+            bedrooms,
+            bathrooms,
+            squareFeet: squareFeet.trim(),
+            location: location.trim(),
+            keyFeatures: keyFeatures.trim(),
+            buyerPersona,
+            writingStyle,
+          });
+        }
       }
 
       if (result.message === 'success' && result.data) {
@@ -349,6 +428,66 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
                 </>
               ) : (
                 <>
+                  {/* Image Upload Section */}
+                  <StandardFormField
+                    label="Property Images (Optional)"
+                    id="propertyImages"
+                    hint="Upload images to generate descriptions based on visual features"
+                  >
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('image-upload')?.click()}
+                          className="w-full"
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload Images
+                        </Button>
+                        <input
+                          id="image-upload"
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          aria-label="Upload property images"
+                        />
+                      </div>
+
+                      {uploadedImages.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2">
+                          {uploadedImages.map((img) => (
+                            <div key={img.order} className="relative group">
+                              <img
+                                src={img.preview}
+                                alt={`Property ${img.order + 1}`}
+                                className="w-full h-24 object-cover rounded-md border"
+                              />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => removeImage(img.order)}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {uploadedImages.length > 0 && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <ImageIcon className="h-3 w-3" />
+                          {uploadedImages.length} image{uploadedImages.length !== 1 ? 's' : ''} uploaded. AI will analyze these to generate your description.
+                        </p>
+                      )}
+                    </div>
+                  </StandardFormField>
+
                   <StandardFormField
                     label="Property Type"
                     id="propertyType"
@@ -441,7 +580,7 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
                   <StandardFormField
                     label="Key Features"
                     id="keyFeatures"
-                    hint="Highlight standout features and amenities"
+                    hint={uploadedImages.length > 0 ? "Optional when using images - AI will extract features from photos" : "Highlight standout features and amenities"}
                   >
                     <Textarea
                       id="keyFeatures"
@@ -449,7 +588,7 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
                       onChange={(e) => setKeyFeatures(e.target.value)}
                       placeholder="e.g., Updated kitchen, hardwood floors, large backyard, walk-in closets, smart home features"
                       rows={4}
-                      required
+                      required={uploadedImages.length === 0}
                     />
                   </StandardFormField>
 
@@ -561,12 +700,32 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
                 featureType="listing-description"
               />
             ) : generation ? (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <Textarea
                   value={generation}
                   onChange={(e) => setGeneration(e.target.value)}
                   rows={15}
                   className="w-full h-full font-mono text-sm resize-none"
+                />
+
+                {/* AEO Optimization for Listing Descriptions */}
+                <AEOOptimizationPanel
+                  content={generation}
+                  contentType="article"
+                  targetKeywords={[
+                    propertyType,
+                    location,
+                    `${bedrooms} bedroom`,
+                    `${bathrooms} bathroom`,
+                    ...(keyFeatures ? keyFeatures.split(',').map(f => f.trim()) : []),
+                  ].filter(Boolean)}
+                  onOptimized={(optimizedContent) => {
+                    setGeneration(optimizedContent);
+                    toast({
+                      title: 'Listing Optimized for AI',
+                      description: 'Your listing is now optimized for ChatGPT, Perplexity, and other AI search engines.',
+                    });
+                  }}
                 />
               </div>
             ) : (

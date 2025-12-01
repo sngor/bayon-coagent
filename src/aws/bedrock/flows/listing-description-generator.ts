@@ -6,6 +6,7 @@
 
 import { defineFlow, definePrompt, BEDROCK_MODELS } from '../flow-base';
 import { getGuardrailsService, DEFAULT_GUARDRAILS_CONFIG } from '../guardrails';
+import { getBedrockClient } from '../client';
 import {
   GenerateNewListingInputSchema,
   OptimizeListingInputSchema,
@@ -235,4 +236,114 @@ export async function generateListingDescription(
     buyerPersona: 'First-Time Homebuyer',
     writingStyle: 'Balanced',
   });
+}
+
+// Generate listing description from images
+const GenerateFromImagesInputSchema = z.object({
+  images: z.array(z.object({
+    data: z.string(), // Base64 encoded
+    format: z.enum(['jpeg', 'png', 'webp']),
+    order: z.number(),
+  })).min(1, 'At least one image is required'),
+  propertyType: z.string(),
+  location: z.string(),
+  buyerPersona: z.string(),
+  writingStyle: z.string(),
+  bedrooms: z.string().optional(),
+  bathrooms: z.string().optional(),
+  squareFeet: z.string().optional(),
+});
+
+type GenerateFromImagesInput = z.infer<typeof GenerateFromImagesInputSchema>;
+
+const generateFromImagesFlow = defineFlow(
+  {
+    name: 'generateFromImagesFlow',
+    inputSchema: GenerateFromImagesInputSchema,
+    outputSchema: ListingDescriptionOutputSchema,
+  },
+  async (input) => {
+    // Validate location with Guardrails
+    const guardrails = getGuardrailsService();
+    const locationValidation = guardrails.validateRequest(input.location, DEFAULT_GUARDRAILS_CONFIG);
+    if (!locationValidation.allowed) {
+      throw new Error(`Guardrails validation failed for Location: ${locationValidation.reason}`);
+    }
+
+    const location = locationValidation.sanitizedPrompt || input.location;
+
+    // Build the system prompt
+    const systemPrompt = 'You are an expert real estate copywriter specializing in compelling property listings. Analyze property images and create engaging descriptions.';
+
+    // Build the user prompt with property details
+    let userPrompt = `Analyze the provided property images and create an engaging, professional listing description.
+
+Property Details:
+- Property Type: ${input.propertyType}`;
+
+    if (input.bedrooms) userPrompt += `\n- Bedrooms: ${input.bedrooms}`;
+    if (input.bathrooms) userPrompt += `\n- Bathrooms: ${input.bathrooms}`;
+    if (input.squareFeet) userPrompt += `\n- Square Feet: ${input.squareFeet}`;
+
+    userPrompt += `\n- Location: ${location}
+
+Target Buyer Persona: ${input.buyerPersona}
+Writing Style: ${input.writingStyle}
+
+Based on the images provided, identify and highlight:
+1. Architectural style and exterior features
+2. Interior finishes, materials, and design elements
+3. Room layouts and spatial flow
+4. Natural lighting and views
+5. Unique or standout features
+6. Condition and maintenance level
+7. Outdoor spaces (yard, patio, deck, etc.)
+8. Any luxury or premium elements
+
+Tailor the description specifically for the ${input.buyerPersona} persona based on their typical needs and use the ${input.writingStyle} writing style.
+
+The description should:
+- Start with an attention-grabbing opening that speaks directly to the target buyer
+- Highlight features visible in the images that are most relevant to the ${input.buyerPersona} persona
+- Use vivid, descriptive language appropriate for the ${input.writingStyle} style
+- Be 2-4 paragraphs long (200-300 words)
+- Paint a picture of the lifestyle this property enables
+- End with a compelling call-to-action
+
+Return a JSON response with a "description" field containing the listing description.`;
+
+    // Get Bedrock client
+    const client = getBedrockClient();
+
+    // Process images one at a time (Claude vision works best with single images)
+    // We'll use the first image as primary, or combine insights if multiple
+    const primaryImage = input.images[0];
+
+    const output = await client.invokeWithVision(
+      systemPrompt,
+      userPrompt,
+      {
+        data: primaryImage.data,
+        format: primaryImage.format,
+      },
+      ListingDescriptionOutputSchema,
+      {
+        temperature: 0.7,
+        maxTokens: 2048,
+        flowName: 'generateFromImagesFlow',
+      }
+    );
+
+    if (!output?.description) {
+      throw new Error("The AI returned an empty description. Please try again.");
+    }
+
+    return output;
+  }
+);
+
+export async function generateListingFromImages(
+  input: GenerateFromImagesInput
+): Promise<ListingDescriptionOutput> {
+  return generateFromImagesFlow.execute(input);
 }

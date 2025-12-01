@@ -1,41 +1,53 @@
-# Content Detail Modal
+# Content Detail Modal Component
 
-A comprehensive modal component for displaying and editing scheduled content with rich metadata, performance analytics, and quick actions.
+## Overview
+
+The `ContentDetailModal` component provides a comprehensive detail view for scheduled content items in the content workflow system. It displays all relevant information about a piece of scheduled content, supports inline editing, and provides quick actions for managing the content.
+
+**Validates:** Requirements 2.3 - Display content details on click
 
 ## Features
 
-### 📋 Content Information
+### 1. Comprehensive Content Display
 
-- **Inline Editing**: Edit title, content, and publish time directly in the modal
-- **Real-time Validation**: Immediate feedback on input validation errors
-- **Rich Metadata**: Display original prompts, AI model used, tags, and timestamps
-- **Content Type & Status**: Clear visual indicators for content category and status
+- **Content Preview**: Full content text with formatting preserved
+- **Title and Metadata**: Content title, type, status, and tags
+- **Media Attachments**: Display and link to attached media files
+- **Hashtags**: Visual display of associated hashtags
 
-### 📊 Performance Analytics
+### 2. Scheduling Information with Timezone
 
-- **Engagement Metrics**: Views, likes, shares, comments, clicks, and engagement rate
-- **ROI Tracking**: Revenue, leads, conversions, and cost metrics
-- **Visual Cards**: Clean metric display with icons and formatted numbers
+- **Publish Time**: Formatted date and time with user's timezone
+- **Creation Time**: When the content was originally created
+- **Channel Information**: All selected publishing channels with account names
+- **Status Badge**: Visual indicator of current status (scheduled, publishing, published, failed, cancelled)
 
-### ⏰ Scheduling Features
+### 3. Inline Editing with Validation
 
-- **Timezone Support**: Display times with timezone information and relative formatting
-- **Optimal Times**: AI-powered recommendations for best posting times
-- **Quick Reschedule**: Calendar picker with time selection
-- **Channel Status**: Connection status indicators for each publishing channel
+- **Edit Mode**: Toggle between view and edit modes
+- **Editable Fields**: Title, content text, and publish time
+- **Validation**: Future date validation for publish time
+- **Save/Cancel**: Commit or discard changes
 
-### 🚀 Quick Actions
+### 4. Quick Actions
 
-- **Reschedule**: Change publish date and time with calendar interface
-- **Duplicate**: Create a copy of the content for reuse
-- **Delete**: Remove scheduled content with confirmation dialog
-- **Edit**: Inline editing with save/cancel functionality
+- **Edit**: Enter inline editing mode
+- **Reschedule**: Change the publish time
+- **Duplicate**: Create a copy of the content
+- **Delete**: Remove the scheduled content (with confirmation)
 
-### 📱 Responsive Design
+### 5. Performance Metrics (When Available)
 
-- **Mobile Optimized**: Full-screen modal on mobile devices
-- **Desktop Layout**: Multi-column layout with optimal space usage
-- **Touch Friendly**: Large touch targets and gesture support
+- **Engagement Metrics**: Views, likes, shares, comments, clicks
+- **Engagement Rate**: Calculated engagement percentage
+- **Last Updated**: Timestamp of last metrics sync
+- **Visual Cards**: Color-coded metric cards with icons
+
+### 6. Publishing Results
+
+- **Per-Channel Results**: Success/failure status for each channel
+- **Error Messages**: Detailed error information for failed publishes
+- **Published URLs**: Direct links to published posts
 
 ## Usage
 
@@ -43,79 +55,101 @@ A comprehensive modal component for displaying and editing scheduled content wit
 
 ```tsx
 import { ContentDetailModal } from "@/components/content-detail-modal";
+import { useState } from "react";
 
 function MyComponent() {
+  const [isOpen, setIsOpen] = useState(false);
   const [selectedContent, setSelectedContent] =
     useState<ScheduledContent | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <ContentDetailModal
-      content={selectedContent}
-      isOpen={isOpen}
-      onClose={() => setIsOpen(false)}
-      onUpdate={handleUpdate}
-      onDelete={handleDelete}
-      onDuplicate={handleDuplicate}
-      onReschedule={handleReschedule}
-    />
+    <>
+      <button
+        onClick={() => {
+          setSelectedContent(myContent);
+          setIsOpen(true);
+        }}
+      >
+        View Details
+      </button>
+
+      <ContentDetailModal
+        open={isOpen}
+        onOpenChange={setIsOpen}
+        content={selectedContent}
+      />
+    </>
   );
 }
 ```
 
-### With Analytics and Optimal Times
+### With All Features
 
 ```tsx
-<ContentDetailModal
-  content={selectedContent}
-  isOpen={isOpen}
-  onClose={() => setIsOpen(false)}
-  onUpdate={handleUpdate}
-  onDelete={handleDelete}
-  onDuplicate={handleDuplicate}
-  onReschedule={handleReschedule}
-  analytics={engagementMetrics}
-  optimalTimes={optimalTimesArray}
-  roiData={roiAnalytics}
-  loading={isLoadingData}
-/>
-```
+import { ContentDetailModal } from "@/components/content-detail-modal";
+import { useState } from "react";
 
-### Integration with Content Calendar
+function MyComponent() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedContent, setSelectedContent] =
+    useState<ScheduledContent | null>(null);
+  const [analytics, setAnalytics] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-```tsx
-import { ContentCalendar } from "@/features/content-calendar/components/content-calendar";
-
-function CalendarPage() {
-  const handleContentUpdate = async (
+  const handleEdit = async (
     contentId: string,
     updates: Partial<ScheduledContent>
   ) => {
-    // Update content via API
-    await updateScheduledContent(contentId, updates);
+    setIsLoading(true);
+    try {
+      await updateScheduledContent(contentId, updates);
+      // Refresh content
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const getAnalytics = async (contentId: string) => {
-    // Fetch analytics data
-    return await fetchContentAnalytics(contentId);
+  const handleReschedule = async (contentId: string, newTime: Date) => {
+    setIsLoading(true);
+    try {
+      await rescheduleContent(contentId, newTime);
+      // Refresh content
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const getOptimalTimes = async (
-    contentType: ContentCategory,
-    channel: PublishChannelType
-  ) => {
-    // Fetch optimal posting times
-    return await fetchOptimalTimes(contentType, channel);
+  const handleDuplicate = async (contentId: string) => {
+    setIsLoading(true);
+    try {
+      await duplicateContent(contentId);
+      setIsOpen(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async (contentId: string) => {
+    setIsLoading(true);
+    try {
+      await deleteScheduledContent(contentId);
+      setIsOpen(false);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <ContentCalendar
-      userId={userId}
-      scheduledContent={scheduledContent}
-      onContentUpdate={handleContentUpdate}
-      getAnalytics={getAnalytics}
-      getOptimalTimes={getOptimalTimes}
-      getROIData={getROIData}
+    <ContentDetailModal
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      content={selectedContent}
+      analytics={analytics}
+      onEdit={handleEdit}
+      onReschedule={handleReschedule}
+      onDuplicate={handleDuplicate}
+      onDelete={handleDelete}
+      isLoading={isLoading}
     />
   );
 }
@@ -125,171 +159,159 @@ function CalendarPage() {
 
 ### ContentDetailModalProps
 
-| Prop           | Type                                                    | Required | Description                          |
-| -------------- | ------------------------------------------------------- | -------- | ------------------------------------ |
-| `content`      | `ScheduledContent \| null`                              | ✅       | The content to display in the modal  |
-| `isOpen`       | `boolean`                                               | ✅       | Whether the modal is open            |
-| `onClose`      | `() => void`                                            | ✅       | Callback when modal is closed        |
-| `onUpdate`     | `(updates: Partial<ScheduledContent>) => Promise<void>` | ❌       | Callback for updating content        |
-| `onDelete`     | `(contentId: string) => Promise<void>`                  | ❌       | Callback for deleting content        |
-| `onDuplicate`  | `(contentId: string) => Promise<void>`                  | ❌       | Callback for duplicating content     |
-| `onReschedule` | `(contentId: string, newDate: Date) => Promise<void>`   | ❌       | Callback for rescheduling content    |
-| `analytics`    | `EngagementMetrics`                                     | ❌       | Performance analytics data           |
-| `optimalTimes` | `OptimalTime[]`                                         | ❌       | Optimal posting time recommendations |
-| `roiData`      | `ROIAnalytics`                                          | ❌       | ROI and conversion data              |
-| `loading`      | `boolean`                                               | ❌       | Whether data is loading              |
-| `className`    | `string`                                                | ❌       | Additional CSS classes               |
+| Prop           | Type                                                                       | Required | Description                                   |
+| -------------- | -------------------------------------------------------------------------- | -------- | --------------------------------------------- |
+| `open`         | `boolean`                                                                  | Yes      | Whether the modal is open                     |
+| `onOpenChange` | `(open: boolean) => void`                                                  | Yes      | Callback when modal should close              |
+| `content`      | `ScheduledContent \| null`                                                 | Yes      | The scheduled content to display              |
+| `analytics`    | `{ metrics: EngagementMetrics; lastUpdated: Date }`                        | No       | Optional analytics data for published content |
+| `onEdit`       | `(contentId: string, updates: Partial<ScheduledContent>) => Promise<void>` | No       | Callback when content is edited               |
+| `onReschedule` | `(contentId: string, newTime: Date) => Promise<void>`                      | No       | Callback when content is rescheduled          |
+| `onDuplicate`  | `(contentId: string) => Promise<void>`                                     | No       | Callback when content is duplicated           |
+| `onDelete`     | `(contentId: string) => Promise<void>`                                     | No       | Callback when content is deleted              |
+| `isLoading`    | `boolean`                                                                  | No       | Whether actions are currently loading         |
 
-## Data Types
+## Component Behavior
 
-### ScheduledContent
+### Status-Based Actions
 
-```typescript
-interface ScheduledContent {
-  id: string;
-  userId: string;
-  contentId: string;
-  title: string;
-  content: string;
-  contentType: ContentCategory;
-  publishTime: Date;
-  channels: PublishChannel[];
-  status: ScheduledContentStatus;
-  metadata?: {
-    originalPrompt?: string;
-    aiModel?: string;
-    generatedAt?: Date;
-    tags?: string[];
-  };
-  createdAt: Date;
-  updatedAt: Date;
-}
-```
+The available actions depend on the content status:
 
-### EngagementMetrics
+- **Scheduled**: Edit, Duplicate, Delete
+- **Publishing**: No actions (read-only)
+- **Published**: Duplicate only
+- **Failed**: Edit, Duplicate, Delete
+- **Cancelled**: Duplicate only
 
-```typescript
-interface EngagementMetrics {
-  views: number;
-  likes: number;
-  shares: number;
-  comments: number;
-  clicks: number;
-  saves?: number;
-  engagementRate: number;
-  reach?: number;
-  impressions?: number;
-}
-```
+### Edit Mode
 
-### OptimalTime
+When entering edit mode:
+
+1. Title, content, and publish time become editable
+2. Action buttons change to Save/Cancel
+3. Validation is applied on save:
+   - Publish time must be in the future
+   - Title and content cannot be empty
+
+### Delete Confirmation
+
+When deleting content:
+
+1. Browser confirmation dialog appears
+2. User must confirm the deletion
+3. Modal closes after successful deletion
+
+### Timezone Display
+
+The component automatically detects and displays the user's timezone using:
 
 ```typescript
-interface OptimalTime {
-  time: string; // HH:MM format
-  dayOfWeek: number; // 0-6, Sunday=0
-  expectedEngagement: number;
-  confidence: number;
-  historicalData: {
-    sampleSize: number;
-    avgEngagement: number;
-    lastCalculated: Date;
-  };
-}
+const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 ```
-
-## Validation Rules
-
-### Title Validation
-
-- Required field
-- Maximum 200 characters
-- Real-time validation with error display
-
-### Content Validation
-
-- Required field
-- Minimum 10 characters
-- Maximum 10,000 characters
-- Preserves formatting and line breaks
-
-### Publish Time Validation
-
-- Must be in the future
-- Timezone-aware validation
-- Displays relative time (e.g., "in 2 hours")
-
-## Accessibility Features
-
-- **Keyboard Navigation**: Full keyboard support for all interactive elements
-- **Screen Reader Support**: Proper ARIA labels and descriptions
-- **Focus Management**: Logical tab order and focus trapping
-- **High Contrast**: Supports high contrast mode
-- **Touch Targets**: Minimum 44px touch targets for mobile
 
 ## Styling
 
-The modal uses the existing design system components and follows the established patterns:
+The component uses Tailwind CSS and follows the application's design system:
 
-- **Colors**: Uses semantic color tokens (primary, destructive, muted, etc.)
-- **Typography**: Consistent font sizes and weights
-- **Spacing**: Standard spacing scale (2, 4, 6, 8, etc.)
-- **Borders**: Consistent border radius and colors
-- **Shadows**: Appropriate elevation for modal overlay
+- **Responsive**: Adapts to mobile, tablet, and desktop screens
+- **Scrollable**: Content scrolls within the modal for long content
+- **Accessible**: Proper ARIA labels and keyboard navigation
+- **Consistent**: Uses shadcn/ui components for consistency
+
+### Color Coding
+
+- **Status Badges**: Color-coded by status (blue=scheduled, green=published, red=failed)
+- **Metric Cards**: Each metric has a unique color (blue=views, red=likes, green=shares, etc.)
+- **Publishing Results**: Green for success, red for failure
+
+## Accessibility
+
+The component follows WCAG 2.1 AA guidelines:
+
+- **Keyboard Navigation**: Full keyboard support for all actions
+- **Screen Readers**: Proper ARIA labels and semantic HTML
+- **Focus Management**: Focus is trapped within the modal when open
+- **Color Contrast**: All text meets contrast requirements
+- **Touch Targets**: Minimum 44x44px touch targets for mobile
+
+## Integration with Calendar
+
+The modal is designed to be used with the ContentCalendar component:
+
+```tsx
+import { ContentCalendar } from "@/components/content-calendar";
+import { ContentDetailModal } from "@/components/content-detail-modal";
+
+function CalendarPage() {
+  const [selectedContent, setSelectedContent] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  return (
+    <>
+      <ContentCalendar
+        userId={userId}
+        onContentClick={(content) => {
+          setSelectedContent(content);
+          setIsModalOpen(true);
+        }}
+      />
+
+      <ContentDetailModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        content={selectedContent}
+        // ... other props
+      />
+    </>
+  );
+}
+```
 
 ## Performance Considerations
 
-- **Lazy Loading**: Analytics and ROI data are loaded on demand
-- **Optimistic Updates**: UI updates immediately while API calls are in progress
-- **Error Handling**: Graceful error states with retry options
-- **Memory Management**: Proper cleanup of event listeners and timers
+- **Lazy Loading**: Analytics data is only loaded when needed
+- **Optimistic Updates**: UI updates immediately, then syncs with server
+- **Debouncing**: Edit changes are debounced to reduce API calls
+- **Memoization**: Component uses React.memo for performance
 
-## Browser Support
+## Error Handling
 
-- **Modern Browsers**: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
-- **Mobile Browsers**: iOS Safari 14+, Chrome Mobile 90+
-- **Responsive**: Works on all screen sizes from 320px to 4K displays
+The component handles errors gracefully:
 
-## Examples
+- **API Errors**: Displays error messages to the user
+- **Validation Errors**: Shows inline validation messages
+- **Network Errors**: Retries failed requests automatically
+- **Loading States**: Shows loading indicators during async operations
 
-See `src/components/examples/content-detail-modal-example.tsx` for a complete working example with mock data.
+## Testing
 
-## Requirements Validated
+See the example file for a complete working demo:
 
-This component validates the following requirements from the Content Workflow Features spec:
+- `src/components/content-detail-modal-example.tsx`
 
-- **Requirement 2.3**: Display full content details and scheduling information
-- **Inline Editing**: Real-time validation and save functionality
-- **Quick Actions**: Edit, reschedule, duplicate, delete with confirmations
-- **Performance Metrics**: Display engagement predictions when available
-- **Timezone Support**: Complete scheduling information with timezone display
+## Related Components
 
-## Integration Notes
-
-### With Content Calendar
-
-The modal integrates seamlessly with the ContentCalendar component. When a user clicks on scheduled content, the calendar automatically loads analytics data and displays the modal.
-
-### With Server Actions
-
-The modal works with the existing content workflow server actions:
-
-- `updateScheduleAction` for content updates
-- `cancelScheduleAction` for content deletion
-- `getOptimalTimesAction` for timing recommendations
-
-### With Analytics Service
-
-The modal can display real-time analytics data when integrated with the analytics service:
-
-- Engagement metrics from social media platforms
-- ROI data with attribution modeling
-- Performance comparisons and trends
+- `ContentCalendar` - Calendar view that opens this modal
+- `SchedulingModal` - Modal for creating new scheduled content
+- `AnalyticsDashboard` - Dashboard showing aggregated analytics
 
 ## Future Enhancements
 
-- **Version History**: Track and display content edit history
-- **Collaboration**: Multi-user editing with conflict resolution
-- **Templates**: Save content as reusable templates
-- **Bulk Actions**: Select and modify multiple content items
-- **Advanced Analytics**: Deeper performance insights and predictions
+Potential improvements for future versions:
+
+1. **Rich Text Editing**: Support for formatted text editing
+2. **Image Preview**: Display attached images inline
+3. **Version History**: Show edit history and allow rollback
+4. **Comments**: Add commenting system for team collaboration
+5. **Approval Workflow**: Add approval process for scheduled content
+6. **AI Suggestions**: Suggest improvements to content
+7. **A/B Testing**: Create A/B test variations from the modal
+8. **Export**: Export content in various formats
+
+## Support
+
+For issues or questions:
+
+- Check the example file for usage patterns
+- Review the type definitions in `content-workflow-types.ts`
+- Consult the design document at `.kiro/specs/content-workflow-features/design.md`

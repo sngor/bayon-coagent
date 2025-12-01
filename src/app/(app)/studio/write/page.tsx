@@ -39,6 +39,8 @@ import {
   generateBlogImageAction,
   generateBlogImageWithPromptAction,
   saveContentAction,
+  generateSocialMediaImageAction,
+  regenerateSocialMediaImageAction,
 } from '@/app/actions';
 import {
   analyzeSEOAction,
@@ -115,6 +117,10 @@ import { SEOAnalysisCard } from '@/components/seo-analysis-card';
 import { MetaDescriptionEditor } from '@/components/meta-description-editor';
 import { KeywordSuggestionPanel } from '@/components/keyword-suggestion-panel';
 import type { SEOAnalysis, SavedKeyword } from '@/lib/types/common';
+import { ValidationScoreDisplay } from '@/components/validation-score-display';
+import { ContentImprovementPanel } from '@/components/content-improvement-panel';
+import { AEOOptimizationPanel } from '@/components/aeo-optimization-panel';
+import type { ValidationResult, ValidationConfig } from '@/aws/bedrock/validation-agent-enhanced';
 
 // #region State & Button Components
 type GuideInitialState = {
@@ -139,7 +145,16 @@ const socialInitialState: SocialInitialState = {
   errors: {},
 };
 
-type SocialPostContentWithTopic = GenerateSocialMediaPostOutput & { topic?: string };
+type SocialPostContentWithTopic = {
+  topic?: string;
+  variations: Array<{
+    linkedin?: string;
+    twitter?: string;
+    facebook?: string;
+    googleBusiness?: string;
+    instagram?: string;
+  }>;
+};
 
 type Faq = { q: string; a: string };
 type ListingInitialState = {
@@ -177,12 +192,12 @@ const videoScriptInitialState: VideoScriptInitialState = {
 
 type BlogPostInitialState = {
   message: string;
-  data: { blogPost: string | null; headerImage: string | null };
+  data: { blogPost: string | null; headerImage: string | null; validation?: ValidationResult | null };
   errors: any;
 };
 const blogPostInitialState: BlogPostInitialState = {
   message: '',
-  data: { blogPost: null, headerImage: null },
+  data: { blogPost: null, headerImage: null, validation: null },
   errors: {},
 };
 
@@ -565,6 +580,16 @@ export default function ContentEnginePage() {
     generateSocialPostAction,
     socialInitialState
   );
+  const [socialImageState, socialImageAction, isSocialImagePending] = useActionState(
+    generateSocialMediaImageAction,
+    { message: '', data: null, errors: {} }
+  );
+  const [isRegeneratingImage, setIsRegeneratingImage] = useState(false);
+  const [regenerateImageState, setRegenerateImageState] = useState<{
+    message: string;
+    data: { imageUrl: string; seed: number } | null;
+    errors: any;
+  }>({ message: '', data: null, errors: {} });
   const [marketUpdateState, marketUpdateAction, isMarketUpdatePending] =
     useActionState(generateMarketUpdateAction, marketUpdateInitialState);
   const [videoScriptState, videoScriptAction, isVideoScriptPending] =
@@ -593,6 +618,13 @@ export default function ContentEnginePage() {
   const [videoScriptContent, setVideoScriptContent] = useState('');
   const [guideContent, setGuideContent] = useState('');
   const [socialPostContent, setSocialPostContent] = useState<SocialPostContentWithTopic | null>(null);
+  const [socialMediaImages, setSocialMediaImages] = useState<Array<{ imageUrl: string; prompt: string; seed: number }>>([]);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number>(0);
+  const [selectedPlatform, setSelectedPlatform] = useState<string>('instagram');
+  const [selectedAspectRatio, setSelectedAspectRatio] = useState<string>('1:1');
+  const [imagePrompt, setImagePrompt] = useState<string>('');
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['linkedin', 'twitter', 'facebook', 'googleBusiness']);
+  const [selectedVariationIndex, setSelectedVariationIndex] = useState<number>(0);
 
   // SEO-related state
   const [seoAnalysis, setSeoAnalysis] = useState<SEOAnalysis | null>(null);
@@ -602,6 +634,9 @@ export default function ContentEnginePage() {
   const [keywordSuggestions, setKeywordSuggestions] = useState<SavedKeyword[]>([]);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
   const [isLoadingKeywords, setIsLoadingKeywords] = useState(false);
+
+  // Validation state
+  const [blogValidation, setBlogValidation] = useState<ValidationResult | null>(null);
 
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
 
@@ -875,7 +910,21 @@ export default function ContentEnginePage() {
     if (blogPostState.message === 'success') {
       if (blogPostState.data?.blogPost) {
         setBlogPostContent(blogPostState.data.blogPost);
-        toast({ title: 'Blog Post Generated', description: 'Your blog post is ready!' });
+
+        // Capture validation if present
+        if (blogPostState.data?.validation) {
+          setBlogValidation(blogPostState.data.validation);
+
+          // Show validation score in toast
+          const validation = blogPostState.data.validation;
+          toast({
+            title: 'Blog Post Generated',
+            description: `Quality Score: ${validation.score}/100 | Goal: ${validation.scoreBreakdown.goalAlignment} | Social: ${validation.scoreBreakdown.socialMedia} | SEO: ${validation.scoreBreakdown.seo}`,
+            duration: 5000,
+          });
+        } else {
+          toast({ title: 'Blog Post Generated', description: 'Your blog post is ready!' });
+        }
 
         // Automatically trigger SEO analysis
         if (blogTopic) {
@@ -906,6 +955,53 @@ export default function ContentEnginePage() {
       toast({ variant: 'destructive', title: 'Image Generation Failed', description: customImageState.message });
     }
   }, [customImageState]);
+
+  useEffect(() => {
+    if (socialImageState.message === 'success' && socialImageState.data?.images) {
+      setSocialMediaImages(socialImageState.data.images);
+      setSelectedImageIndex(0);
+      if (socialImageState.data.images.length > 0) {
+        setImagePrompt(socialImageState.data.images[0].prompt);
+      }
+      toast({
+        title: 'Social Media Images Generated',
+        description: `${socialImageState.data.images.length} variations created in ${socialImageState.data.aspectRatio} format!`
+      });
+    } else if (socialImageState.message && socialImageState.message !== 'success') {
+      toast({ variant: 'destructive', title: 'Image Generation Failed', description: socialImageState.message });
+    }
+  }, [socialImageState]);
+
+  const handleRegenerateImage = async () => {
+    setIsRegeneratingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('prompt', imagePrompt);
+      formData.append('aspectRatio', selectedAspectRatio);
+
+      const result = await regenerateSocialMediaImageAction(null, formData);
+
+      if (result.message === 'success' && result.data) {
+        // Replace the selected image with the regenerated one
+        setSocialMediaImages(prev => {
+          const newImages = [...prev];
+          newImages[selectedImageIndex] = {
+            imageUrl: result.data!.imageUrl,
+            prompt: imagePrompt,
+            seed: result.data!.seed,
+          };
+          return newImages;
+        });
+        toast({ title: 'Image Regenerated', description: 'A new variation has been created!' });
+      } else {
+        toast({ variant: 'destructive', title: 'Regeneration Failed', description: result.message });
+      }
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Regeneration Failed', description: 'An error occurred' });
+    } finally {
+      setIsRegeneratingImage(false);
+    }
+  };
 
   useEffect(() => {
     if (imageState.message === 'success' && imageState.data?.headerImage) {
@@ -949,7 +1045,13 @@ export default function ContentEnginePage() {
 
   useEffect(() => {
     if (socialState.message === 'success' && socialState.data) {
-      setSocialPostContent(socialState.data);
+      setSocialPostContent(socialState.data as SocialPostContentWithTopic);
+      setSelectedVariationIndex(0);
+      const numVariations = socialState.data.variations?.length || 1;
+      toast({
+        title: 'Social Posts Generated',
+        description: `${numVariations} variation${numVariations > 1 ? 's' : ''} created for ${selectedPlatforms.length} platform${selectedPlatforms.length > 1 ? 's' : ''}!`
+      });
     } else if (socialState.message && socialState.message !== 'success') {
       toast({ variant: 'destructive', title: 'Social Post Failed', description: socialState.message });
     }
@@ -1804,6 +1906,57 @@ export default function ContentEnginePage() {
                       className="w-full h-full font-mono text-sm resize-none"
                     />
 
+                    {/* Validation Scores */}
+                    {blogValidation && (
+                      <div className="mt-6 space-y-6">
+                        <ValidationScoreDisplay validation={blogValidation} showDetails={true} />
+
+                        {/* AI Content Improvement */}
+                        {blogValidation.score < 95 && (
+                          <ContentImprovementPanel
+                            content={blogPostContent}
+                            validation={blogValidation}
+                            validationConfig={{
+                              validateGoalAlignment: true,
+                              userGoal: `Generate an engaging, SEO-optimized blog post about: ${blogTopic}`,
+                              minQualityScore: 70,
+                              checkCompleteness: true,
+                              checkCoherence: true,
+                              checkProfessionalism: true,
+                              enforceGuardrails: true,
+                              checkDomainCompliance: true,
+                              checkEthicalCompliance: true,
+                              expectedFormat: 'markdown',
+                              minLength: 500,
+                              requiredElements: ['introduction', 'conclusion'],
+                              checkFactualConsistency: true,
+                              checkToneAndStyle: true,
+                              targetAudience: 'real estate agents and their clients',
+                              validateSocialMedia: true,
+                              validateSEO: true,
+                              contentType: 'blog',
+                              targetKeywords: [blogTopic, 'real estate'],
+                              strictMode: false,
+                            }}
+                            onImproved={(improvedContent, newValidation) => {
+                              setBlogPostContent(improvedContent);
+                              setBlogValidation(newValidation);
+                            }}
+                          />
+                        )}
+
+                        {/* AEO - AI Search Engine Optimization */}
+                        <AEOOptimizationPanel
+                          content={blogPostContent}
+                          contentType="blog"
+                          targetKeywords={[blogTopic, 'real estate', ...(selectedKeywords || [])]}
+                          onOptimized={(optimizedContent) => {
+                            setBlogPostContent(optimizedContent);
+                          }}
+                        />
+                      </div>
+                    )}
+
                     {/* SEO Analysis Card */}
                     {seoAnalysis && (
                       <div className="mt-6 space-y-4">
@@ -2245,33 +2398,77 @@ export default function ContentEnginePage() {
                     />
                   </StandardFormField>
                   <StandardFormField
-                    label="Target Audience"
-                    id="socialAudience"
+                    label="Select Platforms"
+                    id="platforms"
+                    error={socialState.errors?.platforms?.[0]}
+                    hint="Choose which platforms to generate content for"
                   >
-                    <Input
-                      id="socialAudience"
-                      name="audience"
-                      placeholder="e.g., First-time buyers, Millennials"
-                    />
+                    <div className="space-y-2">
+                      {[
+                        { value: 'linkedin', label: 'LinkedIn', icon: Linkedin },
+                        { value: 'twitter', label: 'X (Twitter)', icon: X },
+                        { value: 'facebook', label: 'Facebook', icon: Facebook },
+                        { value: 'googleBusiness', label: 'Google Business', icon: Building2 },
+                        { value: 'instagram', label: 'Instagram', icon: MessageSquare },
+                      ].map(platform => (
+                        <label key={platform.value} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedPlatforms.includes(platform.value)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedPlatforms(prev => [...prev, platform.value]);
+                              } else {
+                                setSelectedPlatforms(prev => prev.filter(p => p !== platform.value));
+                              }
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                          <platform.icon className="w-4 h-4" />
+                          <span className="text-sm">{platform.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <input type="hidden" name="platforms" value={JSON.stringify(selectedPlatforms)} />
                   </StandardFormField>
-                  <StandardFormField
-                    label="Tone of Voice"
-                    id="tone"
-                    error={socialState.errors?.tone?.[0]}
-                  >
-                    <Select name="tone" defaultValue="Professional">
-                      <SelectTrigger id="tone">
-                        <SelectValue placeholder="Select a tone" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Professional">Professional</SelectItem>
-                        <SelectItem value="Casual">Casual</SelectItem>
-                        <SelectItem value="Enthusiastic">Enthusiastic</SelectItem>
-                        <SelectItem value="Humorous">Humorous</SelectItem>
-                        <SelectItem value="Inspirational">Inspirational</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </StandardFormField>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <StandardFormField
+                      label="Tone of Voice"
+                      id="tone"
+                      error={socialState.errors?.tone?.[0]}
+                    >
+                      <Select name="tone" defaultValue="Professional">
+                        <SelectTrigger id="tone">
+                          <SelectValue placeholder="Select a tone" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Professional">Professional</SelectItem>
+                          <SelectItem value="Casual">Casual</SelectItem>
+                          <SelectItem value="Enthusiastic">Enthusiastic</SelectItem>
+                          <SelectItem value="Humorous">Humorous</SelectItem>
+                          <SelectItem value="Inspirational">Inspirational</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </StandardFormField>
+
+                    <StandardFormField
+                      label="Content Variations"
+                      id="numberOfVariations"
+                      hint="Generate multiple options to choose from"
+                    >
+                      <Select name="numberOfVariations" defaultValue="1">
+                        <SelectTrigger id="numberOfVariations">
+                          <SelectValue placeholder="Select number" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1 variation</SelectItem>
+                          <SelectItem value="2">2 variations</SelectItem>
+                          <SelectItem value="3">3 variations</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </StandardFormField>
+                  </div>
                   <StandardFormField
                     label="Include Hashtags"
                     id="includeHashtags"
@@ -2329,245 +2526,634 @@ export default function ContentEnginePage() {
                 <CardContent className="space-y-6">
                   {isSocialPending ? (
                     <StandardLoadingSpinner variant="ai" message="Writing your social posts..." showSubtext={true} featureType="social-media" />
-                  ) : socialPostContent ? (
+                  ) : socialPostContent && socialPostContent.variations && socialPostContent.variations.length > 0 ? (
                     <>
-                      <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-700/30">
-                        <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-blue-700/5 to-transparent">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-blue-700 flex items-center justify-center">
-                              <Linkedin className="w-5 h-5 text-white" />
-                            </div>
-                            <h3 className="font-headline font-bold text-lg">LinkedIn</h3>
-                          </div>
+                      {/* Variation Selector */}
+                      {socialPostContent.variations.length > 1 && (
+                        <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                           <div className="flex items-center gap-2">
-                            <Button
-                              variant="ai"
-                              size="sm"
-                              onClick={() => openScheduleDialog(socialPostContent.linkedin || '', 'LinkedIn Post', ContentCategory.SOCIAL_MEDIA)}
-                              className="font-medium"
-                            >
-                              <Sparkles className="mr-2 h-4 w-4" />
-                              Schedule
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.linkedin || '', 'Social Post (LinkedIn)')}>
-                              <Save className="mr-2 h-4 w-4" />
-                              Save
-                            </Button>
-                            <Button
-                              variant={copiedStates['linkedin'] ? 'default' : 'outline'}
-                              size="sm"
-                              onClick={() =>
-                                copyToClipboard(
-                                  socialPostContent.linkedin || '',
-                                  'linkedin'
-                                )
-                              }
-                            >
-                              {copiedStates['linkedin'] ? (
-                                <>
-                                  <Check className="w-4 h-4 mr-2" />
-                                  Copied!
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-4 h-4 mr-2" />
-                                  Copy
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pt-6">
-                          <Textarea
-                            value={socialPostContent.linkedin}
-                            onChange={(e) => setSocialPostContent(prev => ({ ...prev!, linkedin: e.target.value }))}
-                            rows={6}
-                            className="w-full h-full font-mono text-sm resize-none"
-                          />
-                        </CardContent>
-                      </Card>
-                      <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-600/30">
-                        <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-blue-600/5 to-transparent">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
-                              <Facebook className="w-5 h-5 text-white" />
+                            <span className="text-sm font-medium">Content Variation:</span>
+                            <div className="flex gap-2">
+                              {socialPostContent.variations.map((_, index) => (
+                                <Button
+                                  key={index}
+                                  variant={selectedVariationIndex === index ? 'default' : 'outline'}
+                                  size="sm"
+                                  onClick={() => setSelectedVariationIndex(index)}
+                                >
+                                  {selectedVariationIndex === index && <Check className="w-4 h-4 mr-1" />}
+                                  Option {index + 1}
+                                </Button>
+                              ))}
                             </div>
-                            <h3 className="font-headline font-bold text-lg">Facebook</h3>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ai"
-                              size="sm"
-                              onClick={() => openScheduleDialog(socialPostContent.facebook || '', 'Facebook Post', ContentCategory.SOCIAL_MEDIA)}
-                              className="font-medium"
-                            >
-                              <Sparkles className="mr-2 h-4 w-4" />
-                              Schedule
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.facebook || '', 'Social Post (Facebook)')}>
-                              <Save className="mr-2 h-4 w-4" />
-                              Save
-                            </Button>
-                            <Button
-                              variant={copiedStates['facebook'] ? 'default' : 'outline'}
-                              size="sm"
-                              onClick={() =>
-                                copyToClipboard(
-                                  socialPostContent.facebook || '',
-                                  'facebook'
-                                )
-                              }
-                            >
-                              {copiedStates['facebook'] ? (
-                                <>
-                                  <Check className="w-4 h-4 mr-2" />
-                                  Copied!
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-4 h-4 mr-2" />
-                                  Copy
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pt-6">
-                          <Textarea
-                            value={socialPostContent.facebook}
-                            onChange={(e) => setSocialPostContent(prev => ({ ...prev!, facebook: e.target.value }))}
-                            rows={6}
-                            className="w-full h-full font-mono text-sm resize-none"
-                          />
-                        </CardContent>
-                      </Card>
-                      <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-sky-500/30">
-                        <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-sky-500/5 to-transparent">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center">
-                              <X className="w-5 h-5 text-white" />
+                          <Badge variant="outline">{socialPostContent.variations.length} variations</Badge>
+                        </div>
+                      )}
+
+                      {/* Platform Posts */}
+                      {(() => {
+                        const currentVariation = socialPostContent.variations[selectedVariationIndex];
+                        const platformConfigs = [
+                          { key: 'linkedin', name: 'LinkedIn', icon: Linkedin, color: 'blue-700' },
+                          { key: 'twitter', name: 'X (Twitter)', icon: X, color: 'black' },
+                          { key: 'facebook', name: 'Facebook', icon: Facebook, color: 'blue-600' },
+                          { key: 'googleBusiness', name: 'Google Business Profile', icon: Building2, color: 'red-500' },
+                          { key: 'instagram', name: 'Instagram', icon: MessageSquare, color: 'pink-500' },
+                        ];
+
+                        return platformConfigs
+                          .filter(config => selectedPlatforms.includes(config.key) && currentVariation[config.key as keyof typeof currentVariation])
+                          .map(config => {
+                            const content = currentVariation[config.key as keyof typeof currentVariation] || '';
+                            const copyId = `${config.key}-${selectedVariationIndex}`;
+
+                            return (
+                              <Card key={config.key} className="hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/30">
+                                <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-primary/5 to-transparent">
+                                  <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-lg bg-${config.color} flex items-center justify-center`}>
+                                      <config.icon className="w-5 h-5 text-white" />
+                                    </div>
+                                    <h3 className="font-headline font-bold text-lg">{config.name}</h3>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      variant="ai"
+                                      size="sm"
+                                      onClick={() => openScheduleDialog(content, `${config.name} Post`, ContentCategory.SOCIAL_MEDIA)}
+                                      className="font-medium"
+                                    >
+                                      <Sparkles className="mr-2 h-4 w-4" />
+                                      Schedule
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => openSaveDialog(content, `Social Post (${config.name})`)}
+                                    >
+                                      <Save className="mr-2 h-4 w-4" />
+                                      Save
+                                    </Button>
+                                    <Button
+                                      variant={copiedStates[copyId] ? 'default' : 'outline'}
+                                      size="sm"
+                                      onClick={() => copyToClipboard(content, copyId)}
+                                    >
+                                      {copiedStates[copyId] ? (
+                                        <>
+                                          <Check className="w-4 h-4 mr-2" />
+                                          Copied!
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Copy className="w-4 h-4 mr-2" />
+                                          Copy
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
+                                </CardHeader>
+                                <CardContent className="pt-6">
+                                  <Textarea
+                                    value={content}
+                                    onChange={(e) => {
+                                      setSocialPostContent(prev => {
+                                        if (!prev) return prev;
+                                        const newVariations = [...prev.variations];
+                                        newVariations[selectedVariationIndex] = {
+                                          ...newVariations[selectedVariationIndex],
+                                          [config.key]: e.target.value
+                                        };
+                                        return { ...prev, variations: newVariations };
+                                      });
+                                    }}
+                                    rows={config.key === 'twitter' ? 4 : 6}
+                                    className="w-full h-full font-mono text-sm resize-none"
+                                  />
+                                </CardContent>
+                              </Card>
+                            );
+                          });
+                      })()}
+                      <>
+                        <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-700/30">
+                          <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-blue-700/5 to-transparent">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-blue-700 flex items-center justify-center">
+                                <Linkedin className="w-5 h-5 text-white" />
+                              </div>
+                              <h3 className="font-headline font-bold text-lg">LinkedIn</h3>
                             </div>
-                            <h3 className="font-headline font-bold text-lg">X (Twitter)</h3>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ai"
-                              size="sm"
-                              onClick={() => openScheduleDialog(socialPostContent.twitter || '', 'X (Twitter) Post', ContentCategory.SOCIAL_MEDIA)}
-                              className="font-medium"
-                            >
-                              <Sparkles className="mr-2 h-4 w-4" />
-                              Schedule
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.twitter || '', 'Social Post (X/Twitter)')}>
-                              <Save className="mr-2 h-4 w-4" />
-                              Save
-                            </Button>
-                            <Button
-                              variant={copiedStates['twitter'] ? 'default' : 'outline'}
-                              size="sm"
-                              onClick={() =>
-                                copyToClipboard(
-                                  socialPostContent.twitter || '',
-                                  'twitter'
-                                )
-                              }
-                            >
-                              {copiedStates['twitter'] ? (
-                                <>
-                                  <Check className="w-4 h-4 mr-2" />
-                                  Copied!
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-4 h-4 mr-2" />
-                                  Copy
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pt-6">
-                          <Textarea
-                            value={socialPostContent.twitter}
-                            onChange={(e) => setSocialPostContent(prev => ({ ...prev!, twitter: e.target.value }))}
-                            rows={4}
-                            className="w-full h-full font-mono text-sm resize-none"
-                          />
-                        </CardContent>
-                      </Card>
-                      <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-red-500/30">
-                        <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-red-500/5 to-transparent">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-red-500 flex items-center justify-center">
-                              <Building2 className="w-5 h-5 text-white" />
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ai"
+                                size="sm"
+                                onClick={() => openScheduleDialog(socialPostContent.linkedin || '', 'LinkedIn Post', ContentCategory.SOCIAL_MEDIA)}
+                                className="font-medium"
+                              >
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                Schedule
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.linkedin || '', 'Social Post (LinkedIn)')}>
+                                <Save className="mr-2 h-4 w-4" />
+                                Save
+                              </Button>
+                              <Button
+                                variant={copiedStates['linkedin'] ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() =>
+                                  copyToClipboard(
+                                    socialPostContent.linkedin || '',
+                                    'linkedin'
+                                  )
+                                }
+                              >
+                                {copiedStates['linkedin'] ? (
+                                  <>
+                                    <Check className="w-4 h-4 mr-2" />
+                                    Copied!
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-4 h-4 mr-2" />
+                                    Copy
+                                  </>
+                                )}
+                              </Button>
                             </div>
-                            <h3 className="font-headline font-bold text-lg">Google Business Profile</h3>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ai"
-                              size="sm"
-                              onClick={() => openScheduleDialog(socialPostContent.googleBusiness || '', 'Google Business Post', ContentCategory.SOCIAL_MEDIA)}
-                              className="font-medium"
-                            >
-                              <Sparkles className="mr-2 h-4 w-4" />
-                              Schedule
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.googleBusiness || '', 'Social Post (Google Business Profile)')}>
-                              <Save className="mr-2 h-4 w-4" />
-                              Save
-                            </Button>
-                            <Button
-                              variant={copiedStates['googleBusiness'] ? 'default' : 'outline'}
-                              size="sm"
-                              onClick={() =>
-                                copyToClipboard(
-                                  socialPostContent.googleBusiness || '',
-                                  'googleBusiness'
-                                )
-                              }
-                            >
-                              {copiedStates['googleBusiness'] ? (
-                                <>
-                                  <Check className="w-4 h-4 mr-2" />
-                                  Copied!
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-4 h-4 mr-2" />
-                                  Copy
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pt-6">
-                          <Textarea
-                            value={socialPostContent.googleBusiness}
-                            onChange={(e) => setSocialPostContent(prev => ({ ...prev!, googleBusiness: e.target.value }))}
-                            rows={6}
-                            className="w-full h-full font-mono text-sm resize-none"
-                          />
-                        </CardContent>
-                      </Card>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                        <MessageSquare className="w-8 h-8 text-primary" />
+                          </CardHeader>
+                          <CardContent className="pt-6">
+                            <Textarea
+                              value={socialPostContent.linkedin}
+                              onChange={(e) => setSocialPostContent(prev => ({ ...prev!, linkedin: e.target.value }))}
+                              rows={6}
+                              className="w-full h-full font-mono text-sm resize-none"
+                            />
+                          </CardContent>
+                        </Card>
+                        <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-600/30">
+                          <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-blue-600/5 to-transparent">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
+                                <Facebook className="w-5 h-5 text-white" />
+                              </div>
+                              <h3 className="font-headline font-bold text-lg">Facebook</h3>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ai"
+                                size="sm"
+                                onClick={() => openScheduleDialog(socialPostContent.facebook || '', 'Facebook Post', ContentCategory.SOCIAL_MEDIA)}
+                                className="font-medium"
+                              >
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                Schedule
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.facebook || '', 'Social Post (Facebook)')}>
+                                <Save className="mr-2 h-4 w-4" />
+                                Save
+                              </Button>
+                              <Button
+                                variant={copiedStates['facebook'] ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() =>
+                                  copyToClipboard(
+                                    socialPostContent.facebook || '',
+                                    'facebook'
+                                  )
+                                }
+                              >
+                                {copiedStates['facebook'] ? (
+                                  <>
+                                    <Check className="w-4 h-4 mr-2" />
+                                    Copied!
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-4 h-4 mr-2" />
+                                    Copy
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pt-6">
+                            <Textarea
+                              value={socialPostContent.facebook}
+                              onChange={(e) => setSocialPostContent(prev => ({ ...prev!, facebook: e.target.value }))}
+                              rows={6}
+                              className="w-full h-full font-mono text-sm resize-none"
+                            />
+                          </CardContent>
+                        </Card>
+                        <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-sky-500/30">
+                          <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-sky-500/5 to-transparent">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center">
+                                <X className="w-5 h-5 text-white" />
+                              </div>
+                              <h3 className="font-headline font-bold text-lg">X (Twitter)</h3>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ai"
+                                size="sm"
+                                onClick={() => openScheduleDialog(socialPostContent.twitter || '', 'X (Twitter) Post', ContentCategory.SOCIAL_MEDIA)}
+                                className="font-medium"
+                              >
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                Schedule
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.twitter || '', 'Social Post (X/Twitter)')}>
+                                <Save className="mr-2 h-4 w-4" />
+                                Save
+                              </Button>
+                              <Button
+                                variant={copiedStates['twitter'] ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() =>
+                                  copyToClipboard(
+                                    socialPostContent.twitter || '',
+                                    'twitter'
+                                  )
+                                }
+                              >
+                                {copiedStates['twitter'] ? (
+                                  <>
+                                    <Check className="w-4 h-4 mr-2" />
+                                    Copied!
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-4 h-4 mr-2" />
+                                    Copy
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pt-6">
+                            <Textarea
+                              value={socialPostContent.twitter}
+                              onChange={(e) => setSocialPostContent(prev => ({ ...prev!, twitter: e.target.value }))}
+                              rows={4}
+                              className="w-full h-full font-mono text-sm resize-none"
+                            />
+                          </CardContent>
+                        </Card>
+                        <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-red-500/30">
+                          <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-red-500/5 to-transparent">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-red-500 flex items-center justify-center">
+                                <Building2 className="w-5 h-5 text-white" />
+                              </div>
+                              <h3 className="font-headline font-bold text-lg">Google Business Profile</h3>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ai"
+                                size="sm"
+                                onClick={() => openScheduleDialog(socialPostContent.googleBusiness || '', 'Google Business Post', ContentCategory.SOCIAL_MEDIA)}
+                                className="font-medium"
+                              >
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                Schedule
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.googleBusiness || '', 'Social Post (Google Business Profile)')}>
+                                <Save className="mr-2 h-4 w-4" />
+                                Save
+                              </Button>
+                              <Button
+                                variant={copiedStates['googleBusiness'] ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() =>
+                                  copyToClipboard(
+                                    socialPostContent.googleBusiness || '',
+                                    'googleBusiness'
+                                  )
+                                }
+                              >
+                                {copiedStates['googleBusiness'] ? (
+                                  <>
+                                    <Check className="w-4 h-4 mr-2" />
+                                    Copied!
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-4 h-4 mr-2" />
+                                    Copy
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pt-6">
+                            <Textarea
+                              value={socialPostContent.googleBusiness}
+                              onChange={(e) => setSocialPostContent(prev => ({ ...prev!, googleBusiness: e.target.value }))}
+                              rows={6}
+                              className="w-full h-full font-mono text-sm resize-none"
+                            />
+                          </CardContent>
+                        </Card>
+                      </>
+                      ) : (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                          <MessageSquare className="w-8 h-8 text-primary" />
+                        </div>
+                        <p className="text-muted-foreground text-lg">
+                          Your generated social media posts will appear here.
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Posts will be optimized for LinkedIn, Facebook, X (Twitter), and Google Business Profile.
+                        </p>
                       </div>
-                      <p className="text-muted-foreground text-lg">
-                        Your generated social media posts will appear here.
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Posts will be optimized for LinkedIn, Facebook, X (Twitter), and Google Business Profile.
-                      </p>
-                    </div>
                   )}
-                  <ErrorDisplay message={socialState.message !== 'success' ? socialState.message : null} />
-                </CardContent>
+                      <ErrorDisplay message={socialState.message !== 'success' ? socialState.message : null} />
+                    </CardContent>
               </Card>
+
+              {socialPostContent && (
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="font-headline flex items-center gap-2">
+                      <ImagePlus className="w-5 h-5" />
+                      Generate Social Media Image
+                    </CardTitle>
+                    <CardDescription>
+                      Create a professional image to accompany your social media posts
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form action={socialImageAction} className="space-y-4">
+                      <input type="hidden" name="topic" value={socialPostContent.topic || ''} />
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <StandardFormField label="Platform" id="platform">
+                          <Select
+                            name="platform"
+                            value={selectedPlatform}
+                            onValueChange={(value) => {
+                              setSelectedPlatform(value);
+                              // Auto-select recommended aspect ratio
+                              const ratios: Record<string, string> = {
+                                instagram: '1:1',
+                                facebook: '1:1',
+                                twitter: '16:9',
+                                linkedin: '16:9',
+                                story: '9:16',
+                                pinterest: '2:3',
+                              };
+                              setSelectedAspectRatio(ratios[value] || '1:1');
+                            }}
+                          >
+                            <SelectTrigger id="platform">
+                              <SelectValue placeholder="Select platform" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="instagram">Instagram Post</SelectItem>
+                              <SelectItem value="facebook">Facebook Post</SelectItem>
+                              <SelectItem value="twitter">X (Twitter)</SelectItem>
+                              <SelectItem value="linkedin">LinkedIn</SelectItem>
+                              <SelectItem value="story">Instagram/Facebook Story</SelectItem>
+                              <SelectItem value="pinterest">Pinterest</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </StandardFormField>
+
+                        <StandardFormField
+                          label="Aspect Ratio"
+                          id="aspectRatio"
+                          hint={`Recommended for ${selectedPlatform}`}
+                        >
+                          <Select
+                            name="aspectRatio"
+                            value={selectedAspectRatio}
+                            onValueChange={setSelectedAspectRatio}
+                          >
+                            <SelectTrigger id="aspectRatio">
+                              <SelectValue placeholder="Select ratio" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1:1">
+                                <div className="flex items-center justify-between w-full">
+                                  <span>Square (1:1)</span>
+                                  <Badge variant="outline" className="ml-2">Instagram, Facebook</Badge>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="4:5">
+                                <div className="flex items-center justify-between w-full">
+                                  <span>Portrait (4:5)</span>
+                                  <Badge variant="outline" className="ml-2">Instagram</Badge>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="9:16">
+                                <div className="flex items-center justify-between w-full">
+                                  <span>Story (9:16)</span>
+                                  <Badge variant="outline" className="ml-2">Stories, TikTok</Badge>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="16:9">
+                                <div className="flex items-center justify-between w-full">
+                                  <span>Landscape (16:9)</span>
+                                  <Badge variant="outline" className="ml-2">YouTube, LinkedIn</Badge>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="2:1">
+                                <div className="flex items-center justify-between w-full">
+                                  <span>Wide (2:1)</span>
+                                  <Badge variant="outline" className="ml-2">Twitter Header</Badge>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="2:3">
+                                <div className="flex items-center justify-between w-full">
+                                  <span>Tall (2:3)</span>
+                                  <Badge variant="outline" className="ml-2">Pinterest</Badge>
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </StandardFormField>
+                      </div>
+
+                      <StandardFormField label="Visual Style" id="style">
+                        <Select name="style" defaultValue="professional">
+                          <SelectTrigger id="style">
+                            <SelectValue placeholder="Select style" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="professional">Professional</SelectItem>
+                            <SelectItem value="modern">Modern</SelectItem>
+                            <SelectItem value="luxury">Luxury</SelectItem>
+                            <SelectItem value="minimalist">Minimalist</SelectItem>
+                            <SelectItem value="vibrant">Vibrant</SelectItem>
+                            <SelectItem value="elegant">Elegant</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </StandardFormField>
+
+                      <StandardFormField
+                        label="Custom Prompt (Optional)"
+                        id="customPrompt"
+                        hint="Add specific details about the image you want"
+                      >
+                        <Textarea
+                          id="customPrompt"
+                          name="customPrompt"
+                          placeholder="e.g., Include a modern house exterior, sunset lighting, palm trees in background"
+                          rows={3}
+                        />
+                      </StandardFormField>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <StandardFormField label="Number of Variations" id="numberOfImages">
+                          <Select name="numberOfImages" defaultValue="3">
+                            <SelectTrigger id="numberOfImages">
+                              <SelectValue placeholder="Select number" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">1 image</SelectItem>
+                              <SelectItem value="2">2 images</SelectItem>
+                              <SelectItem value="3">3 images</SelectItem>
+                              <SelectItem value="4">4 images</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </StandardFormField>
+
+                        <div className="flex items-center space-x-2 pt-8">
+                          <input
+                            type="checkbox"
+                            id="includeText"
+                            name="includeText"
+                            value="true"
+                            className="rounded border-gray-300"
+                            aria-label="Leave space for text overlay"
+                          />
+                          <Label htmlFor="includeText" className="text-sm font-normal cursor-pointer">
+                            Leave space for text overlay
+                          </Label>
+                        </div>
+                      </div>
+
+                      <Button
+                        type="submit"
+                        variant="ai"
+                        disabled={isSocialImagePending}
+                        className="w-full"
+                      >
+                        {isSocialImagePending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Generating Images...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            Generate Images
+                          </>
+                        )}
+                      </Button>
+                    </form>
+
+                    {socialMediaImages.length > 0 && (
+                      <div className="mt-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-semibold">Generated Variations</h4>
+                          <Badge variant="outline">{socialMediaImages.length} images</Badge>
+                        </div>
+
+                        {/* Image Gallery Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          {socialMediaImages.map((img, index) => (
+                            <button
+                              key={index}
+                              onClick={() => setSelectedImageIndex(index)}
+                              className={cn(
+                                "relative rounded-lg overflow-hidden border-2 transition-all hover:scale-105",
+                                selectedImageIndex === index
+                                  ? "border-primary ring-2 ring-primary/20"
+                                  : "border-gray-200 hover:border-primary/50"
+                              )}
+                            >
+                              <Image
+                                src={img.imageUrl}
+                                alt={`Variation ${index + 1}`}
+                                width={300}
+                                height={300}
+                                className="w-full h-auto"
+                              />
+                              {selectedImageIndex === index && (
+                                <div className="absolute top-2 right-2 bg-primary text-white rounded-full p-1">
+                                  <Check className="w-4 h-4" />
+                                </div>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Selected Image Preview */}
+                        <div className="space-y-3">
+                          <div className="relative rounded-lg overflow-hidden border-2 border-primary/20">
+                            <Image
+                              src={socialMediaImages[selectedImageIndex].imageUrl}
+                              alt="Selected social media image"
+                              width={1024}
+                              height={1024}
+                              className="w-full h-auto"
+                            />
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                const link = document.createElement('a');
+                                link.href = socialMediaImages[selectedImageIndex].imageUrl;
+                                link.download = `social-media-${selectedPlatform}-${Date.now()}.png`;
+                                link.click();
+                              }}
+                            >
+                              <Copy className="mr-2 h-4 w-4" />
+                              Download
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={handleRegenerateImage}
+                              disabled={isRegeneratingImage}
+                            >
+                              {isRegeneratingImage ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Regenerating...
+                                </>
+                              ) : (
+                                <>
+                                  <RefreshCw className="mr-2 h-4 w-4" />
+                                  Regenerate This
+                                </>
+                              )}
+                            </Button>
+                          </div>
+
+                          <Button
+                            variant="ghost"
+                            onClick={() => {
+                              setSocialMediaImages([]);
+                              setSelectedImageIndex(0);
+                            }}
+                            className="w-full"
+                          >
+                            Clear All & Start Over
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </TabsContent>

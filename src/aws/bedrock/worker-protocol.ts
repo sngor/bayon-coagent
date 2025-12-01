@@ -12,11 +12,12 @@ import { z } from 'zod';
 /**
  * Worker agent types
  */
-export type WorkerAgentType = 
+export type WorkerAgentType =
   | 'data-analyst'
   | 'content-generator'
   | 'market-forecaster'
-  | 'search';
+  | 'search'
+  | 'knowledge-retriever';
 
 /**
  * Task status
@@ -26,7 +27,7 @@ export type TaskStatus = 'pending' | 'in-progress' | 'completed' | 'failed';
 /**
  * Error types for structured error responses
  */
-export type WorkerErrorType = 
+export type WorkerErrorType =
   | 'VALIDATION_ERROR'
   | 'API_ERROR'
   | 'TIMEOUT_ERROR'
@@ -40,29 +41,29 @@ export type WorkerErrorType =
 export interface WorkerTask {
   /** Unique task identifier */
   id: string;
-  
+
   /** Type of worker agent to handle this task */
   type: WorkerAgentType;
-  
+
   /** Human-readable task description */
   description: string;
-  
+
   /** Task dependencies (IDs of tasks that must complete first) */
   dependencies: string[];
-  
+
   /** Input data for the worker agent */
   input: Record<string, any>;
-  
+
   /** Optional context for personalization */
   context?: {
     userId?: string;
     agentProfile?: any;
     conversationId?: string;
   };
-  
+
   /** Task creation timestamp */
   createdAt: string;
-  
+
   /** Current task status */
   status: TaskStatus;
 }
@@ -74,37 +75,37 @@ export interface WorkerTask {
 export interface WorkerResult {
   /** Task ID this result corresponds to */
   taskId: string;
-  
+
   /** Worker agent type that produced this result */
   workerType: WorkerAgentType;
-  
+
   /** Result status */
   status: 'success' | 'error';
-  
+
   /** Output data from the worker agent */
   output?: Record<string, any>;
-  
+
   /** Error information if status is 'error' */
   error?: WorkerError;
-  
+
   /** Execution metadata */
   metadata: {
     /** Execution time in milliseconds */
     executionTime: number;
-    
+
     /** Timestamp when execution started */
     startedAt: string;
-    
+
     /** Timestamp when execution completed */
     completedAt: string;
-    
+
     /** Model used (if applicable) */
     modelId?: string;
-    
+
     /** Token usage (if applicable) */
     tokensUsed?: number;
   };
-  
+
   /** Citations or sources used in generating the result */
   citations?: Array<{
     url: string;
@@ -120,19 +121,19 @@ export interface WorkerResult {
 export interface WorkerError {
   /** Error type for categorization */
   type: WorkerErrorType;
-  
+
   /** Human-readable error message */
   message: string;
-  
+
   /** Error code for programmatic handling */
   code?: string;
-  
+
   /** Additional error details */
   details?: Record<string, any>;
-  
+
   /** Stack trace (only in development) */
   stack?: string;
-  
+
   /** Timestamp when error occurred */
   timestamp: string;
 }
@@ -143,7 +144,7 @@ export interface WorkerError {
 
 export const WorkerTaskSchema = z.object({
   id: z.string(),
-  type: z.enum(['data-analyst', 'content-generator', 'market-forecaster', 'search']),
+  type: z.enum(['data-analyst', 'content-generator', 'market-forecaster', 'search', 'knowledge-retriever']),
   description: z.string(),
   dependencies: z.array(z.string()),
   input: z.record(z.any()),
@@ -173,7 +174,7 @@ export const WorkerErrorSchema = z.object({
 
 export const WorkerResultSchema = z.object({
   taskId: z.string(),
-  workerType: z.enum(['data-analyst', 'content-generator', 'market-forecaster', 'search']),
+  workerType: z.enum(['data-analyst', 'content-generator', 'market-forecaster', 'search', 'knowledge-retriever']),
   status: z.enum(['success', 'error']),
   output: z.record(z.any()).optional(),
   error: WorkerErrorSchema.optional(),

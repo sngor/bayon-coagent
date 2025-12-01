@@ -34,7 +34,9 @@ import {
     Zap,
     Clock,
     CheckCircle2,
-    X
+    X,
+    FileText,
+    BookOpen
 } from 'lucide-react';
 import { handleChatQuery, type ChatQueryResponse } from '@/features/intelligence/actions/bayon-assistant-actions';
 import type { AgentProfile } from '@/aws/dynamodb/agent-profile-repository';
@@ -971,19 +973,36 @@ function MessageBubble({ message, userName }: { message: Message; userName: stri
                         {/* Citations */}
                         {message.citations && message.citations.length > 0 && (
                             <div className="mt-3 pt-3 border-t border-border/30">
-                                <p className="text-xs font-semibold mb-2 text-muted-foreground">Sources</p>
+                                <p className="text-xs font-semibold mb-2 text-muted-foreground flex items-center gap-1">
+                                    <FileText className="w-3 h-3" />
+                                    Sources
+                                </p>
                                 <div className="space-y-1">
-                                    {message.citations.map((citation, idx) => (
-                                        <a
-                                            key={idx}
-                                            href={citation.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="block text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
-                                        >
-                                            {citation.title}
-                                        </a>
-                                    ))}
+                                    {message.citations.map((citation, idx) => {
+                                        const isKB = citation.sourceType === 'knowledge-base';
+                                        return (
+                                            <div key={idx} className="flex items-center gap-2">
+                                                {isKB ? (
+                                                    <Badge variant="default" className="text-xs h-5 gap-1">
+                                                        <BookOpen className="w-3 h-3" />
+                                                        Your KB
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="outline" className="text-xs h-5">
+                                                        Web
+                                                    </Badge>
+                                                )}
+                                                <a
+                                                    href={citation.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline truncate flex-1"
+                                                >
+                                                    {citation.title}
+                                                </a>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}

@@ -55,6 +55,7 @@ export interface Document {
 import { getCurrentUserServer } from '@/aws/auth/server-auth';
 import { checkAdminStatusAction } from '@/app/actions';
 import { getRepository } from '@/aws/dynamodb/repository';
+import { processDocument } from '@/aws/bedrock/document-processor';
 
 async function verifyTeamAdmin(userId: string, teamId: string): Promise<boolean> {
     const adminStatus = await checkAdminStatusAction(userId);
@@ -64,6 +65,22 @@ async function verifyTeamAdmin(userId: string, teamId: string): Promise<boolean>
     const repository = getRepository();
     const teamConfig = await repository.get<any>(`TEAM#${teamId}`, 'CONFIG');
     return teamConfig?.adminId === userId;
+}
+
+/**
+ * Process document asynchronously (extract text and generate embeddings)
+ */
+async function processDocumentAsync(
+    userId: string,
+    documentId: string,
+    s3Key: string,
+    fileType: string
+): Promise<void> {
+    try {
+        await processDocument(userId, documentId, s3Key, fileType);
+    } catch (error) {
+        console.error('Document processing error:', error);
+    }
 }
 
 /**
@@ -142,8 +159,11 @@ export async function uploadDocumentAction(
 
         await docClient.send(putCommand);
 
-        // TODO: Trigger processing Lambda
-        // await triggerProcessingLambda(documentId);
+        // Trigger document processing asynchronously
+        // In production, this should be done via Lambda triggered by S3 event
+        processDocumentAsync(partitionKey, documentId, s3Key, fileExtension).catch(error => {
+            console.error('Background document processing error:', error);
+        });
 
         return {
             success: true,

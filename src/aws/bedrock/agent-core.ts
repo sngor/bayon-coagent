@@ -223,6 +223,21 @@ export class AgentCore extends EventEmitter {
                 memory: this.createEmptyMemory(),
                 metrics: this.createInitialMetrics(),
             },
+            {
+                type: 'knowledge-retriever',
+                capabilities: {
+                    expertise: ['document-search', 'semantic-retrieval', 'context-extraction', 'knowledge-base-query'],
+                    taskTypes: ['knowledge-query', 'document-retrieval', 'context-gathering', 'rag-retrieval'],
+                    qualityScore: 0.95,
+                    speedScore: 0.85,
+                    reliabilityScore: 0.98,
+                    maxConcurrentTasks: 5,
+                    preferredModel: 'amazon.titan-embed-text-v2:0',
+                },
+                state: 'idle',
+                memory: this.createEmptyMemory(),
+                metrics: this.createInitialMetrics(),
+            },
         ];
 
         defaultStrands.forEach(strandConfig => {
