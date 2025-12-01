@@ -49,12 +49,32 @@ export interface Competitor {
 
 export interface Testimonial {
     id: string;
+    userId: string;
     clientName: string;
-    role?: string;
     testimonialText: string;
-    rating: number;
-    avatar?: string;
-    company?: string;
-    isFeatured?: boolean;
+    dateReceived: string;
+    clientPhotoUrl?: string;
+    isFeatured: boolean;
     displayOrder?: number;
+    tags: string[];
+    requestId?: string;
+    createdAt: number;
+    updatedAt: number;
 }
+
+export interface TestimonialRequest {
+    id: string;
+    userId: string;
+    clientName: string;
+    clientEmail: string;
+    status: 'pending' | 'submitted' | 'expired';
+    submissionLink: string;
+    sentAt: string;
+    reminderSentAt?: string;
+    submittedAt?: string;
+    expiresAt: string;
+    createdAt: number;
+    updatedAt: number;
+}
+
+export type TestimonialStatus = 'pending' | 'submitted' | 'expired';

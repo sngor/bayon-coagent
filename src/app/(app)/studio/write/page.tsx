@@ -40,6 +40,11 @@ import {
   generateBlogImageWithPromptAction,
   saveContentAction,
 } from '@/app/actions';
+import {
+  analyzeSEOAction,
+  generateMetaDescriptionAction,
+  getKeywordSuggestionsForContentAction,
+} from '@/app/seo-actions';
 
 // Buyer personas for listing optimization
 const buyerPersonas = [
@@ -84,8 +89,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { type GenerateSocialMediaPostOutput } from '@/aws/bedrock/flows/generate-social-media-post';
+import { type GenerateSocialMediaPostOutput } from '@/ai/schemas/social-media-post-schemas';
 import { useWebAI } from '@/hooks/useWebAI';
 import {
   Accordion,
@@ -105,6 +111,10 @@ import { ContentCategory, TemplateConfiguration } from '@/lib/types/content-work
 import { PageHeader } from '@/components/ui/page-header';
 import { FavoritesButton } from '@/components/favorites-button';
 import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { SEOAnalysisCard } from '@/components/seo-analysis-card';
+import { MetaDescriptionEditor } from '@/components/meta-description-editor';
+import { KeywordSuggestionPanel } from '@/components/keyword-suggestion-panel';
+import type { SEOAnalysis, SavedKeyword } from '@/lib/types/common';
 
 // #region State & Button Components
 type GuideInitialState = {
@@ -192,6 +202,7 @@ type SaveDialogInfo = {
   content: string;
   type: string;
   headerImage?: string | null;
+  metaDescription?: string | null;
 }
 
 type ScheduleDialogInfo = {
@@ -300,7 +311,8 @@ function SaveDialog({ dialogInfo, setDialogInfo }: { dialogInfo: SaveDialogInfo,
           dialogInfo.type,
           name || dialogInfo.type,
           projectId || null,
-          dialogInfo.headerImage || null
+          dialogInfo.headerImage || null,
+          dialogInfo.metaDescription || null
         );
 
         console.log('🎯 Save result:', result);
@@ -312,7 +324,7 @@ function SaveDialog({ dialogInfo, setDialogInfo }: { dialogInfo: SaveDialogInfo,
             description: `Your content has been saved to your Library.`,
             className: 'success-message',
           });
-          setDialogInfo({ isOpen: false, content: '', type: '', headerImage: null });
+          setDialogInfo({ isOpen: false, content: '', type: '', headerImage: null, metaDescription: null });
           setName('');
           setProjectId(null);
         } else {
@@ -354,7 +366,7 @@ function SaveDialog({ dialogInfo, setDialogInfo }: { dialogInfo: SaveDialogInfo,
           />
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => setDialogInfo({ isOpen: false, content: '', type: '', headerImage: null })}>Cancel</Button>
+          <Button variant="ghost" onClick={() => setDialogInfo({ isOpen: false, content: '', type: '', headerImage: null, metaDescription: null })}>Cancel</Button>
           <Button onClick={handleSave} disabled={isPending}>
             {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
             Save
@@ -506,7 +518,7 @@ export default function ContentEnginePage() {
     searchParams.get('tab') || 'market-update'
   );
   const [blogTopic, setBlogTopic] = useState('');
-  const [saveDialogInfo, setSaveDialogInfo] = useState<SaveDialogInfo>({ isOpen: false, content: '', type: '', headerImage: null });
+  const [saveDialogInfo, setSaveDialogInfo] = useState<SaveDialogInfo>({ isOpen: false, content: '', type: '', headerImage: null, metaDescription: null });
   const [imageRegenerateDialog, setImageRegenerateDialog] = useState<ImageRegenerateDialogInfo>({
     isOpen: false,
     topic: '',
@@ -582,7 +594,14 @@ export default function ContentEnginePage() {
   const [guideContent, setGuideContent] = useState('');
   const [socialPostContent, setSocialPostContent] = useState<SocialPostContentWithTopic | null>(null);
 
-
+  // SEO-related state
+  const [seoAnalysis, setSeoAnalysis] = useState<SEOAnalysis | null>(null);
+  const [metaDescription, setMetaDescription] = useState('');
+  const [isAnalyzingSEO, setIsAnalyzingSEO] = useState(false);
+  const [isGeneratingMeta, setIsGeneratingMeta] = useState(false);
+  const [keywordSuggestions, setKeywordSuggestions] = useState<SavedKeyword[]>([]);
+  const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
+  const [isLoadingKeywords, setIsLoadingKeywords] = useState(false);
 
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
 
@@ -600,9 +619,126 @@ export default function ContentEnginePage() {
     }, 2000);
   };
 
-  const openSaveDialog = (content: string, type: string, image?: string | null) => {
+  // SEO Analysis Handler
+  const handleSEOAnalysis = async (content: string, title: string) => {
+    if (!content || content.length < 100) return;
+
+    setIsAnalyzingSEO(true);
+    try {
+      const result = await analyzeSEOAction({
+        content,
+        title,
+        metaDescription: metaDescription || undefined,
+        targetKeywords: selectedKeywords.length > 0 ? selectedKeywords : undefined,
+        contentType: 'blog-post',
+      });
+
+      if (result.data) {
+        setSeoAnalysis(result.data);
+        toast({
+          title: 'SEO Analysis Complete',
+          description: `Your content scored ${result.data.score}/100`,
+        });
+      } else if (result.message) {
+        toast({
+          variant: 'destructive',
+          title: 'SEO Analysis Failed',
+          description: result.message,
+        });
+      }
+    } catch (error) {
+      console.error('SEO analysis error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'SEO Analysis Failed',
+        description: 'An error occurred while analyzing your content.',
+      });
+    } finally {
+      setIsAnalyzingSEO(false);
+    }
+  };
+
+  // Meta Description Generation Handler
+  const handleGenerateMetaDescription = async () => {
+    if (!blogPostContent || !blogTopic) {
+      toast({
+        variant: 'destructive',
+        title: 'Cannot Generate Meta Description',
+        description: 'Please generate a blog post first.',
+      });
+      return;
+    }
+
+    const primaryKeyword = selectedKeywords[0] || blogTopic.split(' ').slice(0, 3).join(' ');
+
+    setIsGeneratingMeta(true);
+    try {
+      const result = await generateMetaDescriptionAction({
+        content: blogPostContent,
+        primaryKeyword,
+      });
+
+      if (result.data) {
+        setMetaDescription(result.data.metaDescription);
+        toast({
+          title: 'Meta Description Generated',
+          description: `${result.data.characterCount} characters`,
+        });
+      } else if (result.message) {
+        toast({
+          variant: 'destructive',
+          title: 'Generation Failed',
+          description: result.message,
+        });
+      }
+    } catch (error) {
+      console.error('Meta description generation error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Generation Failed',
+        description: 'An error occurred while generating the meta description.',
+      });
+    } finally {
+      setIsGeneratingMeta(false);
+    }
+  };
+
+  // Load Keyword Suggestions
+  const loadKeywordSuggestions = async () => {
+    setIsLoadingKeywords(true);
+    try {
+      const result = await getKeywordSuggestionsForContentAction({
+        contentType: 'blog-post',
+        existingKeywords: selectedKeywords,
+        limit: 10,
+      });
+
+      if (result.data) {
+        setKeywordSuggestions(result.data);
+      } else if (result.message && result.message !== 'Keyword suggestions retrieved successfully') {
+        toast({
+          variant: 'destructive',
+          title: 'Failed to Load Keywords',
+          description: result.message,
+        });
+      }
+    } catch (error) {
+      console.error('Keyword loading error:', error);
+    } finally {
+      setIsLoadingKeywords(false);
+    }
+  };
+
+  // Load keywords when blog post tab is active
+  useEffect(() => {
+    if (activeTab === 'blog-post' && keywordSuggestions.length === 0) {
+      loadKeywordSuggestions();
+    }
+  }, [activeTab]);
+
+  const openSaveDialog = (content: string, type: string, image?: string | null, meta?: string | null) => {
     if (!content) return;
-    setSaveDialogInfo({ isOpen: true, content, type, headerImage: image || null });
+    setSaveDialogInfo({ isOpen: true, content, type, headerImage: image || null, metaDescription: meta || null });
   }
 
   const openScheduleDialog = (content: string, title: string, contentType: ContentCategory) => {
@@ -740,6 +876,11 @@ export default function ContentEnginePage() {
       if (blogPostState.data?.blogPost) {
         setBlogPostContent(blogPostState.data.blogPost);
         toast({ title: 'Blog Post Generated', description: 'Your blog post is ready!' });
+
+        // Automatically trigger SEO analysis
+        if (blogTopic) {
+          handleSEOAnalysis(blogPostState.data.blogPost, blogTopic);
+        }
       }
       // Don't set header image from blog post state anymore
     } else if (blogPostState.message && blogPostState.message !== 'success') {
@@ -1425,6 +1566,87 @@ export default function ContentEnginePage() {
                       </SelectContent>
                     </Select>
                   </StandardFormField>
+
+                  {/* Keyword Suggestions Panel */}
+                  {keywordSuggestions.length > 0 && (
+                    <div className="pt-4 border-t">
+                      <div className="space-y-2">
+                        <Label>Suggested Keywords</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {keywordSuggestions.slice(0, 10).map((kw) => (
+                            <Badge
+                              key={kw.id}
+                              variant={selectedKeywords.includes(kw.keyword) ? 'default' : 'outline'}
+                              className="cursor-pointer"
+                              onClick={() => {
+                                if (selectedKeywords.includes(kw.keyword)) {
+                                  setSelectedKeywords(selectedKeywords.filter(k => k !== kw.keyword));
+                                } else {
+                                  setSelectedKeywords([...selectedKeywords, kw.keyword]);
+                                }
+                              }}
+                            >
+                              {kw.keyword}
+                              {selectedKeywords.includes(kw.keyword) && ' ✓'}
+                            </Badge>
+                          ))}
+                        </div>
+                        {selectedKeywords.length > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            {selectedKeywords.length} keyword{selectedKeywords.length !== 1 ? 's' : ''} selected
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Meta Description Editor */}
+                  {blogPostContent && (
+                    <div className="pt-4 border-t space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label>Meta Description</Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleGenerateMetaDescription}
+                          disabled={isGeneratingMeta}
+                        >
+                          {isGeneratingMeta ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              Auto-Generate
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      <Textarea
+                        value={metaDescription}
+                        onChange={(e) => setMetaDescription(e.target.value)}
+                        placeholder="Enter a compelling meta description (150-160 characters)..."
+                        rows={3}
+                        className="resize-none"
+                      />
+                      <div className="flex items-center justify-between text-xs">
+                        <span className={cn(
+                          'text-muted-foreground',
+                          metaDescription.length >= 150 && metaDescription.length <= 160 && 'text-green-600',
+                          (metaDescription.length < 150 || metaDescription.length > 160) && metaDescription.length > 0 && 'text-yellow-600'
+                        )}>
+                          {metaDescription.length} / 160 characters
+                        </span>
+                        {metaDescription.length >= 150 && metaDescription.length <= 160 && (
+                          <span className="text-green-600">✓ Optimal length</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <StandardFormActions
                     primaryAction={{
                       label: 'Generate Blog Post',
@@ -1479,7 +1701,7 @@ export default function ContentEnginePage() {
                         </>
                       )}
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => openSaveDialog(blogPostContent, 'Blog Post', headerImage)}>
+                    <Button variant="outline" size="sm" onClick={() => openSaveDialog(blogPostContent, 'Blog Post', headerImage, metaDescription)}>
                       <Save className="mr-2 h-4 w-4" />
                       Save
                     </Button>
@@ -1581,6 +1803,61 @@ export default function ContentEnginePage() {
                       rows={20}
                       className="w-full h-full font-mono text-sm resize-none"
                     />
+
+                    {/* SEO Analysis Card */}
+                    {seoAnalysis && (
+                      <div className="mt-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold">SEO Analysis</h3>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSEOAnalysis(blogPostContent, blogTopic)}
+                            disabled={isAnalyzingSEO}
+                          >
+                            {isAnalyzingSEO ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Analyzing...
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Re-analyze
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                        <SEOAnalysisCard
+                          analysis={seoAnalysis}
+                          showRecommendations={true}
+                        />
+                      </div>
+                    )}
+
+                    {/* Analyze SEO Button */}
+                    {!seoAnalysis && blogPostContent && (
+                      <div className="mt-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => handleSEOAnalysis(blogPostContent, blogTopic)}
+                          disabled={isAnalyzingSEO}
+                          className="w-full"
+                        >
+                          {isAnalyzingSEO ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Analyzing SEO...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              Analyze SEO
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-12 text-center">

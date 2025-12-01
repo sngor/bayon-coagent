@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Quote } from "lucide-react";
 import { format } from "date-fns";
-import { generateReviewSchema } from "@/lib/schema-markup";
+import { generateTestimonialSchemaWithContext } from "@/lib/schema/testimonial-schema";
 
 interface ProfileTestimonialsDisplayProps {
     testimonials: Testimonial[];
@@ -32,7 +32,7 @@ export function ProfileTestimonialsDisplay({
 
     // Generate schema markup for all testimonials
     const reviewSchemas = testimonials.map((testimonial) =>
-        generateReviewSchema(testimonial, agentName)
+        generateTestimonialSchemaWithContext(testimonial, agentName)
     );
 
     return (

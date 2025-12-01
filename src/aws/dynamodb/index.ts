@@ -131,3 +131,16 @@ export {
   queryPendingRequestsOlderThan,
   checkAndUpdateExpiredRequest,
 } from './testimonial-request-repository';
+
+// Keyword Repository
+export {
+  KeywordRepository,
+  keywordRepository,
+} from './keyword-repository';
+
+// SEO Repository
+export {
+  SEORepository,
+  seoRepository,
+  type SEOAnalysis as SEOAnalysisType,
+} from './seo-repository';

@@ -169,6 +169,16 @@ export const AVAILABLE_PAGES = [
         category: 'Brand'
     },
     {
+        id: 'brand-testimonials',
+        title: 'Testimonials',
+        description: 'Collect and showcase client feedback',
+        href: '/brand/testimonials',
+        icon: 'MessageSquare',
+        color: 'bg-purple-500',
+        gradient: 'from-purple-500 to-purple-600',
+        category: 'Brand'
+    },
+    {
         id: 'brand-calendar',
         title: 'Content Calendar',
         description: 'Schedule and manage content',

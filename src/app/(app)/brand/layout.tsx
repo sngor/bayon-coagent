@@ -2,13 +2,14 @@
 
 import { HubLayoutWithFavorites } from '@/components/hub/hub-layout-with-favorites';
 import { FeatureGuard } from '@/components/feature-guard';
-import { Target, User, Shield, Users, Zap, Calendar } from 'lucide-react';
+import { Target, User, Shield, Users, Zap, Calendar, MessageSquareQuote } from 'lucide-react';
 
 const brandTabs = [
     { id: 'profile', label: 'Profile', href: '/brand/profile', icon: User },
     { id: 'audit', label: 'Audit', href: '/brand/audit', icon: Shield },
     { id: 'competitors', label: 'Competitors', href: '/brand/competitors', icon: Users },
     { id: 'strategy', label: 'Strategy', href: '/brand/strategy', icon: Zap },
+    { id: 'testimonials', label: 'Testimonials', href: '/brand/testimonials', icon: MessageSquareQuote },
     { id: 'calendar', label: 'Calendar', href: '/brand/calendar', icon: Calendar },
 ];
 

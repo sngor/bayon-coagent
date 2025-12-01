@@ -5,31 +5,31 @@
  */
 
 export interface TestimonialEmailData {
-    clientName: string;
-    agentName: string;
-    agencyName?: string;
-    submissionLink: string;
-    expiresAt: string;
+  clientName: string;
+  agentName: string;
+  agencyName?: string;
+  submissionLink: string;
+  expiresAt: string;
 }
 
 /**
  * Generates the initial testimonial request email
  */
 export function generateTestimonialRequestEmail(data: TestimonialEmailData): {
-    subject: string;
-    html: string;
-    text: string;
+  subject: string;
+  html: string;
+  text: string;
 } {
-    const { clientName, agentName, agencyName, submissionLink, expiresAt } = data;
-    const expiryDate = new Date(expiresAt).toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-    });
+  const { clientName, agentName, agencyName, submissionLink, expiresAt } = data;
+  const expiryDate = new Date(expiresAt).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
 
-    const subject = `${agentName} would love your feedback`;
+  const subject = `${agentName} would love your feedback`;
 
-    const html = `
+  const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -76,7 +76,7 @@ export function generateTestimonialRequestEmail(data: TestimonialEmailData): {
 </html>
   `.trim();
 
-    const text = `
+  const text = `
 Hi ${clientName},
 
 Thank you for choosing ${agentName}${agencyName ? ` at ${agencyName}` : ''} for your real estate needs. Your experience matters to us, and we'd love to hear about it!
@@ -95,27 +95,27 @@ ${agencyName || ''}
 This is an automated email. Please do not reply to this message.
   `.trim();
 
-    return { subject, html, text };
+  return { subject, html, text };
 }
 
 /**
  * Generates the reminder email for pending testimonial requests
  */
 export function generateTestimonialReminderEmail(data: TestimonialEmailData): {
-    subject: string;
-    html: string;
-    text: string;
+  subject: string;
+  html: string;
+  text: string;
 } {
-    const { clientName, agentName, agencyName, submissionLink, expiresAt } = data;
-    const expiryDate = new Date(expiresAt).toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-    });
+  const { clientName, agentName, agencyName, submissionLink, expiresAt } = data;
+  const expiryDate = new Date(expiresAt).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
 
-    const subject = `Reminder: Share your experience with ${agentName}`;
+  const subject = `Reminder: Share your experience with ${agentName}`;
 
-    const html = `
+  const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -161,7 +161,7 @@ export function generateTestimonialReminderEmail(data: TestimonialEmailData): {
 </html>
   `.trim();
 
-    const text = `
+  const text = `
 Hi ${clientName},
 
 We noticed you haven't had a chance to share your experience with ${agentName}${agencyName ? ` at ${agencyName}` : ''} yet. Your feedback would mean a lot!
@@ -180,26 +180,26 @@ ${agencyName || ''}
 This is an automated reminder. Please do not reply to this message.
   `.trim();
 
-    return { subject, html, text };
+  return { subject, html, text };
 }
 
 /**
- * Generates the submission confirmation email
+ * Generates the submission confirmation email (sent to client)
  */
 export function generateTestimonialConfirmationEmail(data: {
-    clientName: string;
-    agentName: string;
-    agencyName?: string;
+  clientName: string;
+  agentName: string;
+  agencyName?: string;
 }): {
-    subject: string;
-    html: string;
-    text: string;
+  subject: string;
+  html: string;
+  text: string;
 } {
-    const { clientName, agentName, agencyName } = data;
+  const { clientName, agentName, agencyName } = data;
 
-    const subject = `Thank you for your testimonial!`;
+  const subject = `Thank you for your testimonial!`;
 
-    const html = `
+  const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -238,7 +238,7 @@ export function generateTestimonialConfirmationEmail(data: {
 </html>
   `.trim();
 
-    const text = `
+  const text = `
 Thank You, ${clientName}!
 
 Your testimonial has been successfully submitted. ${agentName} truly appreciates you taking the time to share your experience.
@@ -253,5 +253,111 @@ ${agencyName || ''}
 This is an automated confirmation. Please do not reply to this message.
   `.trim();
 
-    return { subject, html, text };
+  return { subject, html, text };
+}
+
+/**
+ * Generates the agent notification email when a client submits a testimonial
+ */
+export function generateTestimonialSubmittedNotification(data: {
+  agentName: string;
+  agentEmail: string;
+  clientName: string;
+  testimonialText: string;
+  submittedAt: string;
+  testimonialUrl?: string;
+}): {
+  subject: string;
+  html: string;
+  text: string;
+} {
+  const { agentName, clientName, testimonialText, submittedAt, testimonialUrl } = data;
+  const submissionDate = new Date(submittedAt).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+
+  const subject = `New testimonial received from ${clientName}`;
+
+  // Truncate testimonial text for preview (first 200 characters)
+  const testimonialPreview = testimonialText.length > 200
+    ? testimonialText.substring(0, 200) + '...'
+    : testimonialText;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${subject}</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="background-color: #f8f9fa; padding: 30px; border-radius: 10px;">
+    <div style="text-align: center; margin-bottom: 20px;">
+      <div style="font-size: 48px;">🎉</div>
+    </div>
+    
+    <h1 style="color: #2563eb; margin-bottom: 20px; text-align: center;">New Testimonial Received!</h1>
+    
+    <p style="font-size: 16px; margin-bottom: 20px;">
+      Hi ${agentName},
+    </p>
+    
+    <p style="font-size: 16px; margin-bottom: 20px;">
+      Great news! <strong>${clientName}</strong> has submitted a testimonial for you.
+    </p>
+    
+    <div style="background-color: white; padding: 20px; border-left: 4px solid #2563eb; margin: 20px 0; border-radius: 5px;">
+      <p style="font-style: italic; color: #555; margin: 0;">
+        "${testimonialPreview}"
+      </p>
+    </div>
+    
+    <p style="font-size: 14px; color: #666; margin-bottom: 20px;">
+      <strong>Submitted:</strong> ${submissionDate}
+    </p>
+    
+    ${testimonialUrl ? `
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${testimonialUrl}" 
+         style="background-color: #2563eb; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;">
+        View Full Testimonial
+      </a>
+    </div>
+    ` : ''}
+    
+    <p style="font-size: 16px; margin-top: 30px;">
+      You can manage this testimonial in your Brand hub under the Testimonials section.
+    </p>
+  </div>
+  
+  <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #999;">
+    <p>This is an automated notification from Bayon Coagent.</p>
+  </div>
+</body>
+</html>
+  `.trim();
+
+  const text = `
+🎉 New Testimonial Received!
+
+Hi ${agentName},
+
+Great news! ${clientName} has submitted a testimonial for you.
+
+"${testimonialPreview}"
+
+Submitted: ${submissionDate}
+
+${testimonialUrl ? `View full testimonial: ${testimonialUrl}\n\n` : ''}You can manage this testimonial in your Brand hub under the Testimonials section.
+
+---
+This is an automated notification from Bayon Coagent.
+  `.trim();
+
+  return { subject, html, text };
 }

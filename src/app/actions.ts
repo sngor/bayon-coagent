@@ -4064,7 +4064,8 @@ export async function saveContentAction(
   type: string,
   name?: string,
   projectId?: string | null,
-  headerImage?: string | null
+  headerImage?: string | null,
+  metaDescription?: string | null
 ): Promise<{
   message: string;
   data: any | null;
@@ -4118,6 +4119,7 @@ export async function saveContentAction(
       createdAt: new Date().toISOString(),
       contentSize: contentSizeBytes,
       ...(headerImage && { headerImage }), // Include header image if provided
+      ...(metaDescription && { metaDescription }), // Include meta description if provided
     };
 
     console.log('💾 Saving content:', {
