@@ -84,7 +84,7 @@ function MyComponent() {
 ### Integration with Content Calendar
 
 ```tsx
-import { ContentCalendar } from "@/components/content-calendar";
+import { ContentCalendar } from "@/features/content-calendar/components/content-calendar";
 
 function CalendarPage() {
   const handleContentUpdate = async (

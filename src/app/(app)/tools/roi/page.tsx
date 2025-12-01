@@ -1,7 +1,7 @@
 'use client';
 
 import { ContentSection, FeatureBanner } from '@/components/ui';
-import { RenovationROICalculator } from '@/components/renovation-roi-calculator';
+import { RenovationROICalculator } from '@/features/calculators/components/renovation-roi-calculator';
 import { Button } from '@/components/ui/button';
 
 import { useToast } from '@/hooks/use-toast';

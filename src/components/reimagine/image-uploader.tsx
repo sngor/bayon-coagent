@@ -416,7 +416,7 @@ export function ImageUploader({
                             {previewUrl && (
                                 <img
                                     src={previewUrl}
-                                    alt="Preview"
+                                    alt="Preview of uploaded image"
                                     className="w-full h-auto max-h-[400px] object-contain"
                                 />
                             )}
@@ -426,6 +426,7 @@ export function ImageUploader({
                                 className="absolute top-2 right-2"
                                 onClick={handleClear}
                                 disabled={isUploading}
+                                aria-label="Remove image"
                             >
                                 <X className="h-4 w-4" />
                             </Button>

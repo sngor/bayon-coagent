@@ -42,35 +42,35 @@ export function FeatureBanner({
 
     const variants = {
         default: {
-            container: 'bg-card/50 border-border/50 backdrop-blur-sm hover:bg-card/60 transition-colors',
+            container: 'bg-background/60 border-border/50 backdrop-blur-md hover:bg-background/70 transition-colors',
             icon: 'text-primary',
             title: 'text-foreground',
             description: 'text-muted-foreground',
             button: 'border-2 border-border/50 text-foreground hover:bg-accent hover:border-primary/50 active:bg-accent active:border-primary'
         },
         tip: {
-            container: 'bg-blue-500/5 border-blue-500/20 backdrop-blur-sm hover:bg-blue-500/10 transition-colors',
+            container: 'bg-blue-500/10 border-blue-500/20 backdrop-blur-md hover:bg-blue-500/15 transition-colors',
             icon: 'text-blue-600 dark:text-blue-400',
             title: 'text-blue-950 dark:text-blue-50',
             description: 'text-blue-900/80 dark:text-blue-100/80',
             button: 'border-2 border-blue-500/30 text-blue-700 dark:text-blue-300 hover:bg-blue-500/10 hover:border-blue-500/50 active:bg-blue-500 active:text-white active:border-blue-500'
         },
         onboarding: {
-            container: 'bg-violet-500/5 border-violet-500/20 backdrop-blur-sm hover:bg-violet-500/10 transition-colors',
+            container: 'bg-violet-500/10 border-violet-500/20 backdrop-blur-md hover:bg-violet-500/15 transition-colors',
             icon: 'text-violet-600 dark:text-violet-400',
             title: 'text-violet-950 dark:text-violet-50',
             description: 'text-violet-900/80 dark:text-violet-100/80',
             button: 'border-2 border-violet-500/30 text-violet-700 dark:text-violet-300 hover:bg-violet-500/10 hover:border-violet-500/50 active:bg-violet-500 active:text-white active:border-violet-500'
         },
         success: {
-            container: 'bg-emerald-500/5 border-emerald-500/20 backdrop-blur-sm hover:bg-emerald-500/10 transition-colors',
+            container: 'bg-emerald-500/10 border-emerald-500/20 backdrop-blur-md hover:bg-emerald-500/15 transition-colors',
             icon: 'text-emerald-600 dark:text-emerald-400',
             title: 'text-emerald-950 dark:text-emerald-50',
             description: 'text-emerald-900/80 dark:text-emerald-100/80',
             button: 'border-2 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 hover:border-emerald-500/50 active:bg-emerald-500 active:text-white active:border-emerald-500'
         },
         warning: {
-            container: 'bg-amber-500/5 border-amber-500/20 backdrop-blur-sm hover:bg-amber-500/10 transition-colors',
+            container: 'bg-amber-500/10 border-amber-500/20 backdrop-blur-md hover:bg-amber-500/15 transition-colors',
             icon: 'text-amber-600 dark:text-amber-400',
             title: 'text-amber-950 dark:text-amber-50',
             description: 'text-amber-900/80 dark:text-amber-100/80',

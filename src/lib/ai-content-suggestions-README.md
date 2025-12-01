@@ -36,7 +36,7 @@ Provides specific, actionable content ideas including:
 ### In React Components
 
 ```typescript
-import { AIContentSuggestions } from "@/components/ai-content-suggestions";
+import { AIContentSuggestions } from "@/features/ai-dashboard/components/ai-content-suggestions";
 
 function ContentEnginePage() {
   const { user } = useUser();

@@ -8,7 +8,7 @@
 
 import { useState } from 'react';
 import { useWorkflowOptimization } from '@/hooks/use-workflow-optimization';
-import { WorkflowOptimizationPanel } from './ui/workflow-optimization-panel';
+import { WorkflowOptimizationPanel } from '@/features/workflow/components/workflow-optimization-panel';
 import { TaskGuidance } from './ui/task-guidance';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';

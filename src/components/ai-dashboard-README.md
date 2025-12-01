@@ -26,7 +26,7 @@ Validates the following requirements from the UI/UX Enhancement spec:
 ### Basic Usage
 
 ```tsx
-import { AIDashboard } from "@/components/ai-dashboard";
+import { AIDashboard } from "@/features/ai-dashboard/components/ai-dashboard";
 
 export default function DashboardPage() {
   const { user } = useUser();

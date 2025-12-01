@@ -9,7 +9,7 @@
 
 import { useState } from 'react';
 import { useUser } from '@/aws/auth';
-import { AIContentSuggestions } from '@/components/ai-content-suggestions';
+import { AIContentSuggestions } from '@/features/ai-dashboard/components/ai-content-suggestions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sparkles, X } from 'lucide-react';

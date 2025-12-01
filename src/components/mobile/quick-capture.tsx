@@ -214,7 +214,7 @@ export function QuickCapture({
     }
 
     return (
-        <Card className={cn("w-full max-w-md mx-auto", className)}>
+        <Card variant="elevated" className={cn("w-full max-w-md mx-auto", className)}>
             <CardContent className="p-4">
                 {error && (
                     <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
@@ -268,7 +268,8 @@ export function QuickCapture({
                                     onClick={switchCamera}
                                     variant="secondary"
                                     size="sm"
-                                    className="bg-black/50 hover:bg-black/70 text-white border-white/20"
+                                    className="bg-black/50 hover:bg-black/70 text-white border-white/20 backdrop-blur-sm"
+                                    aria-label="Switch camera"
                                 >
                                     <RotateCcw className="w-4 h-4" />
                                 </Button>
@@ -277,15 +278,16 @@ export function QuickCapture({
                                     onClick={capturePhoto}
                                     disabled={isCapturing}
                                     className={cn(
-                                        "w-16 h-16 rounded-full bg-white hover:bg-gray-100 text-black",
-                                        "border-4 border-white shadow-lg",
+                                        "w-16 h-16 rounded-full bg-background hover:bg-accent text-foreground",
+                                        "border-4 border-background shadow-lg",
                                         TOUCH_FRIENDLY_CLASSES.button
                                     )}
+                                    aria-label="Capture photo"
                                 >
                                     {isCapturing ? (
                                         <Loader2 className="w-6 h-6 animate-spin" />
                                     ) : (
-                                        <div className="w-8 h-8 bg-black rounded-full" />
+                                        <div className="w-8 h-8 bg-foreground rounded-full" />
                                     )}
                                 </Button>
 
@@ -293,7 +295,8 @@ export function QuickCapture({
                                     onClick={stopCamera}
                                     variant="secondary"
                                     size="sm"
-                                    className="bg-black/50 hover:bg-black/70 text-white border-white/20"
+                                    className="bg-black/50 hover:bg-black/70 text-white border-white/20 backdrop-blur-sm"
+                                    aria-label="Close camera"
                                 >
                                     <X className="w-4 h-4" />
                                 </Button>

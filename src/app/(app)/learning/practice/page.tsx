@@ -1,6 +1,6 @@
 'use client';
 
-import { AIRolePlay } from '@/components/ai-role-play';
+import { AIRolePlay } from '@/features/ai-dashboard/components/ai-role-play';
 import { useState, useEffect } from 'react';
 import { StandardCard } from '@/components/standard/card';
 import { Button } from '@/components/ui/button';

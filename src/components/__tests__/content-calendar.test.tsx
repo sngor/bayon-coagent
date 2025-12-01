@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, jest } from '@jest/globals';
-import { ContentCalendar } from '../content-calendar';
+import { ContentCalendar } from '../../features/content-calendar/components/content-calendar';
 import {
     ScheduledContent,
     PublishChannelType,

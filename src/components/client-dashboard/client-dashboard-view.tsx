@@ -5,9 +5,9 @@ import dynamic from 'next/dynamic';
 import { Phone, Mail, MessageSquare, CheckCircle2, Clock, ExternalLink, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MortgageCalculator } from '@/components/mortgage-calculator';
-import { RenovationROICalculator } from '@/components/renovation-roi-calculator';
-import { RentalPotentialCalculator } from '@/components/rental-potential-calculator';
+import { MortgageCalculator } from '@/features/calculators/components/mortgage-calculator';
+import { RenovationROICalculator } from '@/features/calculators/components/renovation-roi-calculator';
+import { RentalPotentialCalculator } from '@/features/calculators/components/rental-potential-calculator';
 import { ClientDashboard, SecuredLink, listDashboardDocumentsForClient, type DashboardDocument } from '@/features/client-dashboards/actions/client-dashboard-actions';
 import {
     CMAReportSkeleton,

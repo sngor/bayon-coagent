@@ -85,9 +85,9 @@ function getInsightIcon(category: 'opportunity' | 'warning' | 'trend' | 'tip') {
 function getInsightColor(category: 'opportunity' | 'warning' | 'trend' | 'tip') {
     switch (category) {
         case 'opportunity':
-            return 'text-green-600 dark:text-green-400';
+            return 'text-success';
         case 'warning':
-            return 'text-amber-600 dark:text-amber-400';
+            return 'text-warning';
         case 'trend':
             return 'text-blue-600 dark:text-blue-400';
         case 'tip':
@@ -288,7 +288,7 @@ export function AIDashboard({ userId, userName }: AIDashboardProps) {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.2 }}
                 >
-                    <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+                    <Card variant="elevated" interactive hoverEffect="lift">
                         <CardHeader>
                             <CardTitle className="text-xl font-bold flex items-center gap-2">
                                 <TrendingUp className="h-5 w-5 text-primary" />
@@ -305,11 +305,11 @@ export function AIDashboard({ userId, userName }: AIDashboardProps) {
                                         animate={{ opacity: 1 }}
                                         transition={{ delay: i * 0.15, duration: 0.3 }}
                                         className={cn(
-                                            "p-4 rounded-lg border-2 transition-all duration-300 hover:shadow-md",
-                                            insight.category === 'opportunity' && "bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-900",
-                                            insight.category === 'warning' && "bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900",
-                                            insight.category === 'trend' && "bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900",
-                                            insight.category === 'tip' && "bg-purple-50/50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-900"
+                                            "p-4 rounded-lg border transition-all duration-300 hover:shadow-md",
+                                            insight.category === 'opportunity' && "bg-success/5 border-success/20",
+                                            insight.category === 'warning' && "bg-warning/5 border-warning/20",
+                                            insight.category === 'trend' && "bg-blue-500/5 border-blue-500/20",
+                                            insight.category === 'tip' && "bg-purple-500/5 border-purple-500/20"
                                         )}
                                     >
                                         <div className="flex items-start gap-3">

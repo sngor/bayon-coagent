@@ -6,6 +6,8 @@
 
 'use client';
 
+// Force update
+
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -20,11 +22,11 @@ import {
     BookOpen,
     MessageCircle,
 } from 'lucide-react';
-import { Button } from './button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card';
-import { Badge } from './badge';
-import { Progress } from './progress';
-import { Separator } from './separator';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
 import type {
     WorkflowShortcut,
     StuckDetection,

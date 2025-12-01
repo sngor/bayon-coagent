@@ -96,7 +96,7 @@ function MyComponent() {
 ### Display Optimization Panel
 
 ```typescript
-import { WorkflowOptimizationPanel } from "@/components/ui/workflow-optimization-panel";
+import { WorkflowOptimizationPanel } from "@/features/workflow/components/workflow-optimization-panel";
 
 <WorkflowOptimizationPanel
   shortcuts={shortcuts}
@@ -251,7 +251,7 @@ Calculates workflow efficiency score (0-100).
 
 ```typescript
 import { useWorkflowOptimization } from "@/hooks/use-workflow-optimization";
-import { WorkflowOptimizationPanel } from "@/components/ui/workflow-optimization-panel";
+import { WorkflowOptimizationPanel } from "@/features/workflow/components/workflow-optimization-panel";
 
 export function Dashboard({ profile }) {
   const { shortcuts, stuckDetection, optimizations, efficiencyScore } =

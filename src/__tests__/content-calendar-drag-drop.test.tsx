@@ -8,7 +8,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, jest } from '@jest/globals';
-import { ContentCalendar } from '@/components/content-calendar';
+import { ContentCalendar } from '@/features/content-calendar/components/content-calendar';
 import {
     ScheduledContent,
     ScheduledContentStatus,

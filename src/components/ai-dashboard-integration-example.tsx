@@ -9,7 +9,7 @@
 
 'use client';
 
-import { AIDashboard } from '@/components/ai-dashboard';
+import { AIDashboard } from '@/features/ai-dashboard/components/ai-dashboard';
 import { useUser } from '@/aws/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';

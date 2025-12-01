@@ -11,7 +11,7 @@ interface ListChildComponentProps<T = any> {
     data: T;
     isScrolling?: boolean;
 }
-import { DraggableContentItem } from '@/components/content-calendar';
+import { DraggableContentItem } from '@/features/content-calendar/components/content-calendar';
 import {
     ScheduledContent,
     CalendarContent,

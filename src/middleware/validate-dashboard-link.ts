@@ -11,17 +11,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRepository } from '@/aws/dynamodb/repository';
 import {
-    getSecuredLinkKeys as getSecuredLinkKeysFunc,
-    getClientDashboardKeys as getClientDashboardKeysFunc,
-    getDashboardAnalyticsKeys as getDashboardAnalyticsKeysFunc
+    getSecuredLinkKeys,
+    getClientDashboardKeys,
+    getDashboardAnalyticsKeys
 } from '@/aws/dynamodb/keys';
-import * as keys from '@/aws/dynamodb/keys';
 import type { SecuredLink, ClientDashboard } from '@/features/client-dashboards/actions/client-dashboard-actions';
 
 // Re-export for backward compatibility
-export const getSecuredLinkKeys = getSecuredLinkKeysFunc;
-export const getClientDashboardKeys = getClientDashboardKeysFunc;
-export const getDashboardAnalyticsKeys = getDashboardAnalyticsKeysFunc;
+export { getSecuredLinkKeys, getClientDashboardKeys, getDashboardAnalyticsKeys };
 
 // ==================== Rate Limiting ====================
 
@@ -164,7 +161,7 @@ export async function validateDashboardLinkToken(
         }
 
         const repository = getRepository();
-        const linkKeys = keys.getSecuredLinkKeys(token);
+        const linkKeys = getSecuredLinkKeys(token);
 
         // Get the secured link
         const link = await repository.get<SecuredLink>(linkKeys.PK, linkKeys.SK);
@@ -194,7 +191,7 @@ export async function validateDashboardLinkToken(
         }
 
         // Get the dashboard data
-        const dashboardKeys = keys.getClientDashboardKeys(link.agentId, link.dashboardId);
+        const dashboardKeys = getClientDashboardKeys(link.agentId, link.dashboardId);
         const dashboard = await repository.get<ClientDashboard>(
             dashboardKeys.PK,
             dashboardKeys.SK
@@ -231,7 +228,7 @@ async function trackDashboardAccess(
     try {
         const repository = getRepository();
         const now = Date.now();
-        const analyticsKeys = keys.getDashboardAnalyticsKeys(dashboardId, now.toString());
+        const analyticsKeys = getDashboardAnalyticsKeys(dashboardId, now.toString());
 
         await repository.create(
             analyticsKeys.PK,
@@ -258,7 +255,7 @@ async function updateLinkAccess(
 ): Promise<void> {
     try {
         const repository = getRepository();
-        const linkKeys = keys.getSecuredLinkKeys(token);
+        const linkKeys = getSecuredLinkKeys(token);
         const now = Date.now();
 
         await repository.update<SecuredLink>(

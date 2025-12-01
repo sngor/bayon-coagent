@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useUser } from '@/aws/auth';
-import { ContentCalendar } from '@/components/content-calendar';
+import { ContentCalendar } from '@/features/content-calendar/components/content-calendar';
 import { BulkSchedulingModal } from '@/components/bulk-scheduling-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';

@@ -15,7 +15,7 @@ import { performance } from 'perf_hooks';
 // Import the modules first
 import { bulkSchedule } from '@/services/publishing/scheduling-service';
 import { getAnalyticsForTimeRange, TimeRangePreset } from '@/services/analytics/analytics-service';
-import { ContentCalendar } from '@/components/content-calendar';
+import { ContentCalendar } from '@/features/content-calendar/components/content-calendar';
 import { AnalyticsDashboard } from '@/components/analytics-dashboard';
 
 // Mock the services and components
