@@ -16,12 +16,13 @@ import {
 } from '@aws-sdk/client-bedrock-runtime';
 import { getConfig, getAWSCredentials } from '@/aws/config';
 import { z } from 'zod';
-import { 
-  createExecutionLogger, 
-  extractTokenUsage, 
+import {
+  createExecutionLogger,
+  extractTokenUsage,
   type ExecutionMetadata,
-  type ExecutionLogger 
+  type ExecutionLogger
 } from './execution-logger';
+import { aiCache } from '@/lib/ai/cache/service';
 
 /**
  * Error thrown when Bedrock API calls fail
@@ -79,6 +80,11 @@ export interface InvokeOptions {
   retryConfig?: Partial<RetryConfig>;
   flowName?: string;
   executionMetadata?: ExecutionMetadata;
+  /**
+   * Whether to use cached responses if available
+   * Default: true
+   */
+  useCache?: boolean;
 }
 
 /**
@@ -124,9 +130,9 @@ export class BedrockClient {
       endpoint: config.bedrock.endpoint,
       credentials: credentials.accessKeyId && credentials.secretAccessKey
         ? {
-            accessKeyId: credentials.accessKeyId,
-            secretAccessKey: credentials.secretAccessKey,
-          }
+          accessKeyId: credentials.accessKeyId,
+          secretAccessKey: credentials.secretAccessKey,
+        }
         : undefined,
     });
 
@@ -227,7 +233,7 @@ export class BedrockClient {
 
         // Check if error is retryable (throttling, timeout, etc.)
         const isRetryable = this.isRetryableError(error);
-        
+
         if (!isRetryable || attempt === retryConfig.maxRetries) {
           throw lastError;
         }
@@ -239,7 +245,7 @@ export class BedrockClient {
 
         // Wait before retrying
         await new Promise(resolve => setTimeout(resolve, delay));
-        
+
         // Increase delay for next attempt
         delay = Math.min(
           delay * retryConfig.backoffMultiplier,
@@ -257,23 +263,23 @@ export class BedrockClient {
   private isRetryableError(error: unknown): boolean {
     if (error && typeof error === 'object') {
       const err = error as any;
-      
+
       // Retry on throttling errors
       if (err.name === 'ThrottlingException' || err.code === 'ThrottlingException') {
         return true;
       }
-      
+
       // Retry on service unavailable
       if (err.statusCode === 503 || err.statusCode === 429) {
         return true;
       }
-      
+
       // Retry on timeout
       if (err.name === 'TimeoutError' || err.code === 'TimeoutError') {
         return true;
       }
     }
-    
+
     return false;
   }
 
@@ -290,6 +296,23 @@ export class BedrockClient {
     outputSchema: z.ZodSchema<TOutput>,
     options: InvokeOptions = {}
   ): Promise<TOutput> {
+    const useCache = options.useCache ?? true;
+    let cacheKey: string | undefined;
+
+    // Check cache
+    if (useCache) {
+      cacheKey = aiCache.generateKey(this.modelId, prompt, {
+        temperature: options.temperature,
+        maxTokens: options.maxTokens,
+        topP: options.topP
+      });
+
+      const cached = await aiCache.get<TOutput>(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
+
     const retryConfig = {
       ...DEFAULT_RETRY_CONFIG,
       ...options.retryConfig,
@@ -305,7 +328,7 @@ export class BedrockClient {
       );
     }
 
-    return this.withRetry(async () => {
+    const result = await this.withRetry(async () => {
       try {
         // Construct Converse API request
         const input: ConverseCommandInput = {
@@ -340,7 +363,7 @@ export class BedrockClient {
 
         // Validate against schema
         const validationResult = outputSchema.safeParse(parsedOutput);
-        
+
         if (!validationResult.success) {
           throw new BedrockParseError(
             'Response does not match expected schema',
@@ -380,6 +403,13 @@ export class BedrockClient {
         );
       }
     }, retryConfig, executionLogger);
+
+    // Cache the result
+    if (useCache && cacheKey) {
+      await aiCache.set(cacheKey, result);
+    }
+
+    return result;
   }
 
   /**
@@ -447,6 +477,23 @@ export class BedrockClient {
     outputSchema: z.ZodSchema<TOutput>,
     options: InvokeOptions = {}
   ): Promise<TOutput> {
+    const useCache = options.useCache ?? true;
+    let cacheKey: string | undefined;
+
+    // Check cache
+    if (useCache) {
+      cacheKey = aiCache.generateKey(this.modelId, { systemPrompt, userPrompt }, {
+        temperature: options.temperature,
+        maxTokens: options.maxTokens,
+        topP: options.topP
+      });
+
+      const cached = await aiCache.get<TOutput>(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
+
     const retryConfig = {
       ...DEFAULT_RETRY_CONFIG,
       ...options.retryConfig,
@@ -462,7 +509,7 @@ export class BedrockClient {
       );
     }
 
-    return this.withRetry(async () => {
+    const result = await this.withRetry(async () => {
       try {
         // Construct Converse API request with system prompt
         const input: ConverseCommandInput = {
@@ -498,7 +545,7 @@ export class BedrockClient {
 
         // Validate against schema
         const validationResult = outputSchema.safeParse(parsedOutput);
-        
+
         if (!validationResult.success) {
           throw new BedrockParseError(
             'Response does not match expected schema',
@@ -538,6 +585,13 @@ export class BedrockClient {
         );
       }
     }, retryConfig, executionLogger);
+
+    // Cache the result
+    if (useCache && cacheKey) {
+      await aiCache.set(cacheKey, result);
+    }
+
+    return result;
   }
 
   /**
@@ -612,6 +666,10 @@ export class BedrockClient {
     outputSchema: z.ZodSchema<TOutput>,
     options: InvokeOptions = {}
   ): Promise<TOutput> {
+    // Note: Caching for vision requests is more complex due to large image data
+    // For now, we'll skip caching for vision requests or implement it later with hash of image
+    // If we want to support it, we should hash the image data for the key
+
     const retryConfig = {
       ...DEFAULT_RETRY_CONFIG,
       ...options.retryConfig,
@@ -678,7 +736,7 @@ export class BedrockClient {
 
         // Validate against schema
         const validationResult = outputSchema.safeParse(parsedOutput);
-        
+
         if (!validationResult.success) {
           throw new BedrockParseError(
             'Response does not match expected schema',
@@ -742,3 +800,4 @@ export function getBedrockClient(modelId?: string): BedrockClient {
 export function resetBedrockClient(): void {
   bedrockClientInstance = null;
 }
+

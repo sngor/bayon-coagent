@@ -65,6 +65,13 @@ import {
   type GenerateSocialMediaPostOutput,
 } from '@/ai/schemas/social-media-post-schemas';
 import {
+  generateSocialProof,
+} from '@/aws/bedrock/flows/generate-social-proof';
+import {
+  type GenerateSocialProofInput,
+  type GenerateSocialProofOutput,
+} from '@/ai/schemas/social-proof-schemas';
+import {
   runResearchAgent,
 } from '@/aws/bedrock/flows/run-research-agent';
 import {

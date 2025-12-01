@@ -3,9 +3,9 @@ import { validateDashboardLink } from '@/features/client-dashboards/actions/clie
 import { ClientDashboardView } from '@/components/client-dashboard/client-dashboard-view';
 
 interface ClientDashboardPageProps {
-    params: {
+    params: Promise<{
         token: string;
-    };
+    }>;
 }
 
 /**
@@ -17,7 +17,7 @@ interface ClientDashboardPageProps {
  * Requirements: 4.1, 8.1, 8.2
  */
 export default async function ClientDashboardPage({ params }: ClientDashboardPageProps) {
-    const { token } = params;
+    const { token } = await params;
 
     // Validate the secured link and get dashboard data
     const result = await validateDashboardLink(token);

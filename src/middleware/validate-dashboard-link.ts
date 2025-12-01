@@ -14,7 +14,7 @@ import {
     getSecuredLinkKeys,
     getClientDashboardKeys,
     getDashboardAnalyticsKeys
-} from '@/aws/dynamodb/keys';
+} from '@/aws/dynamodb/dashboard-keys';
 import type { SecuredLink, ClientDashboard } from '@/features/client-dashboards/actions/client-dashboard-actions';
 
 // Re-export for backward compatibility
