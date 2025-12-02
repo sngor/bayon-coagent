@@ -101,7 +101,16 @@ export type EntityType =
   | 'ContentPerformance'
   | 'SystemConfig'
   | 'SystemConfigHistory'
-  | 'OAuthState';
+  | 'OAuthState'
+  | 'OpenHouseSession'
+  | 'Visitor'
+  | 'FollowUpContent'
+  | 'FollowUpSequence'
+  | 'SequenceEnrollment'
+  | 'SessionTemplate'
+  | 'SessionPhoto'
+  | 'SyncOperation'
+  | 'WebhookConfig';
 
 /**
  * Base DynamoDB item structure

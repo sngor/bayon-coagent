@@ -20,6 +20,11 @@ global.fetch = jest.fn().mockResolvedValue({
     text: jest.fn().mockResolvedValue(''),
 }) as any;
 
+// Polyfill for TextEncoder and TextDecoder (needed by qrcode library)
+import { TextEncoder, TextDecoder } from 'util';
+global.TextEncoder = TextEncoder as any;
+global.TextDecoder = TextDecoder as any;
+
 // Polyfill for structuredClone (Node.js 17+)
 if (typeof global.structuredClone === 'undefined') {
     global.structuredClone = (obj: any) => {

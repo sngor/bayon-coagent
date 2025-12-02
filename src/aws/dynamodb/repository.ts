@@ -2059,6 +2059,1171 @@ export class DynamoDBRepository {
     const skPrefix = 'LISTING_SNAPSHOT#';
     return this.query<T>(pk, skPrefix, options);
   }
+
+  // ==================== Open House Enhancement Methods ====================
+
+  /**
+   * Creates a new open house session
+   * @param userId User ID
+   * @param sessionId Session ID
+   * @param sessionData Open house session data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createOpenHouseSession<T>(
+    userId: string,
+    sessionId: string,
+    sessionData: T & { status?: string; scheduledDate?: string }
+  ): Promise<DynamoDBItem<T>> {
+    const { getOpenHouseKeys } = await import('./keys');
+    const keys = getOpenHouseKeys(
+      userId,
+      sessionId,
+      sessionData.status,
+      sessionData.scheduledDate
+    );
+
+    return this.create(keys.PK, keys.SK, 'OpenHouseSession', sessionData, {
+      GSI1PK: keys.GSI1PK,
+      GSI1SK: keys.GSI1SK,
+      GSI2PK: keys.GSI2PK,
+      GSI2SK: keys.GSI2SK,
+    });
+  }
+
+  /**
+   * Gets an open house session by ID
+   * @param userId User ID
+   * @param sessionId Session ID
+   * @returns Open house session data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getOpenHouseSession<T>(
+    userId: string,
+    sessionId: string
+  ): Promise<T | null> {
+    const { getOpenHouseKeys } = await import('./keys');
+    const keys = getOpenHouseKeys(userId, sessionId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates an open house session
+   * @param userId User ID
+   * @param sessionId Session ID
+   * @param updates Partial session data to update
+   * @param options Update options (conditions, etc.)
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateOpenHouseSession<T>(
+    userId: string,
+    sessionId: string,
+    updates: Partial<T>,
+    options: UpdateOptions = {}
+  ): Promise<void> {
+    const { getOpenHouseKeys } = await import('./keys');
+    const keys = getOpenHouseKeys(userId, sessionId);
+    await this.update(keys.PK, keys.SK, updates, options);
+  }
+
+  /**
+   * Deletes an open house session
+   * @param userId User ID
+   * @param sessionId Session ID
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteOpenHouseSession(
+    userId: string,
+    sessionId: string
+  ): Promise<void> {
+    const { getOpenHouseKeys } = await import('./keys');
+    const keys = getOpenHouseKeys(userId, sessionId);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all open house sessions for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with open house sessions
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryOpenHouseSessions<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'OPENHOUSE#';
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  /**
+   * Queries open house sessions by status using GSI1
+   * @param status Session status (scheduled, active, completed, cancelled)
+   * @param options Query options
+   * @returns Query result with open house sessions
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryOpenHouseSessionsByStatus<T>(
+    status: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    try {
+      return await withRetry(async () => {
+        const client = getDocumentClient();
+
+        const command = new QueryCommand({
+          TableName: this.tableName,
+          IndexName: 'GSI1',
+          KeyConditionExpression: 'GSI1PK = :gsi1pk',
+          ExpressionAttributeValues: {
+            ':gsi1pk': `SESSION#${status}`,
+            ...options.expressionAttributeValues,
+          },
+          ExpressionAttributeNames: options.expressionAttributeNames,
+          FilterExpression: options.filterExpression,
+          Limit: options.limit,
+          ExclusiveStartKey: options.exclusiveStartKey,
+          ScanIndexForward: options.scanIndexForward ?? true,
+        });
+
+        const response = await client.send(command);
+
+        const items = (response.Items || []) as DynamoDBItem<T>[];
+        const data = items.map((item) => item.Data);
+
+        return {
+          items: data,
+          lastEvaluatedKey: response.LastEvaluatedKey as DynamoDBKey | undefined,
+          count: response.Count || 0,
+        };
+      }, this.retryOptions);
+    } catch (error: any) {
+      throw wrapDynamoDBError(error);
+    }
+  }
+
+  /**
+   * Queries open house sessions by status and date range using GSI1
+   * @param status Session status
+   * @param startDate Start date (ISO 8601)
+   * @param endDate End date (ISO 8601)
+   * @param options Query options
+   * @returns Query result with open house sessions
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryOpenHouseSessionsByStatusAndDate<T>(
+    status: string,
+    startDate: string,
+    endDate: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    try {
+      return await withRetry(async () => {
+        const client = getDocumentClient();
+
+        const command = new QueryCommand({
+          TableName: this.tableName,
+          IndexName: 'GSI1',
+          KeyConditionExpression:
+            'GSI1PK = :gsi1pk AND GSI1SK BETWEEN :startDate AND :endDate',
+          ExpressionAttributeValues: {
+            ':gsi1pk': `SESSION#${status}`,
+            ':startDate': `DATE#${startDate}`,
+            ':endDate': `DATE#${endDate}`,
+            ...options.expressionAttributeValues,
+          },
+          ExpressionAttributeNames: options.expressionAttributeNames,
+          FilterExpression: options.filterExpression,
+          Limit: options.limit,
+          ExclusiveStartKey: options.exclusiveStartKey,
+          ScanIndexForward: options.scanIndexForward ?? true,
+        });
+
+        const response = await client.send(command);
+
+        const items = (response.Items || []) as DynamoDBItem<T>[];
+        const data = items.map((item) => item.Data);
+
+        return {
+          items: data,
+          lastEvaluatedKey: response.LastEvaluatedKey as DynamoDBKey | undefined,
+          count: response.Count || 0,
+        };
+      }, this.retryOptions);
+    } catch (error: any) {
+      throw wrapDynamoDBError(error);
+    }
+  }
+
+  /**
+   * Gets an open house session by sessionId using GSI2 (for public QR code access)
+   * @param sessionId Session ID
+   * @returns The session or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getOpenHouseSessionBySessionId<T>(
+    sessionId: string
+  ): Promise<T | null> {
+    try {
+      return await withRetry(async () => {
+        const client = getDocumentClient();
+
+        const command = new QueryCommand({
+          TableName: this.tableName,
+          IndexName: 'GSI2',
+          KeyConditionExpression: 'GSI2PK = :gsi2pk',
+          ExpressionAttributeValues: {
+            ':gsi2pk': `SESSIONID#${sessionId}`,
+          },
+          Limit: 1,
+        });
+
+        const response = await client.send(command);
+
+        if (!response.Items || response.Items.length === 0) {
+          return null;
+        }
+
+        const item = response.Items[0] as DynamoDBItem<T>;
+        return item.Data;
+      }, this.retryOptions);
+    } catch (error: any) {
+      throw wrapDynamoDBError(error);
+    }
+  }
+
+  /**
+   * Creates a new visitor record
+   * @param userId User ID
+   * @param sessionId Session ID
+   * @param visitorId Visitor ID
+   * @param visitorData Visitor data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createVisitor<T>(
+    userId: string,
+    sessionId: string,
+    visitorId: string,
+    visitorData: T & { interestLevel?: string; checkInTime?: string }
+  ): Promise<DynamoDBItem<T>> {
+    const { getVisitorKeys } = await import('./keys');
+    const keys = getVisitorKeys(
+      userId,
+      sessionId,
+      visitorId,
+      visitorData.interestLevel,
+      visitorData.checkInTime
+    );
+
+    return this.create(keys.PK, keys.SK, 'Visitor', visitorData, {
+      GSI1PK: keys.GSI1PK,
+      GSI1SK: keys.GSI1SK,
+    });
+  }
+
+  /**
+   * Gets a visitor by ID
+   * @param userId User ID
+   * @param sessionId Session ID
+   * @param visitorId Visitor ID
+   * @returns Visitor data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getVisitor<T>(
+    userId: string,
+    sessionId: string,
+    visitorId: string
+  ): Promise<T | null> {
+    const { getVisitorKeys } = await import('./keys');
+    const keys = getVisitorKeys(userId, sessionId, visitorId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates a visitor record
+   * @param userId User ID
+   * @param sessionId Session ID
+   * @param visitorId Visitor ID
+   * @param updates Partial visitor data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateVisitor<T>(
+    userId: string,
+    sessionId: string,
+    visitorId: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getVisitorKeys } = await import('./keys');
+    const keys = getVisitorKeys(userId, sessionId, visitorId);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Deletes a visitor record
+   * @param userId User ID
+   * @param sessionId Session ID
+   * @param visitorId Visitor ID
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteVisitor(
+    userId: string,
+    sessionId: string,
+    visitorId: string
+  ): Promise<void> {
+    const { getVisitorKeys } = await import('./keys');
+    const keys = getVisitorKeys(userId, sessionId, visitorId);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all visitors for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with visitors
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryVisitors<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'VISITOR#';
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  /**
+   * Queries visitors for a specific session
+   * @param userId User ID
+   * @param sessionId Session ID
+   * @param options Query options
+   * @returns Query result with visitors
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryVisitorsBySession<T>(
+    userId: string,
+    sessionId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = `VISITOR#${sessionId}#`;
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  /**
+   * Queries visitors by session using GSI1
+   * @param sessionId Session ID
+   * @param options Query options
+   * @returns Query result with visitors
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryVisitorsBySessionGSI<T>(
+    sessionId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    try {
+      return await withRetry(async () => {
+        const client = getDocumentClient();
+
+        const command = new QueryCommand({
+          TableName: this.tableName,
+          IndexName: 'GSI1',
+          KeyConditionExpression: 'GSI1PK = :gsi1pk',
+          ExpressionAttributeValues: {
+            ':gsi1pk': `SESSION#${sessionId}`,
+            ...options.expressionAttributeValues,
+          },
+          ExpressionAttributeNames: options.expressionAttributeNames,
+          FilterExpression: options.filterExpression,
+          Limit: options.limit,
+          ExclusiveStartKey: options.exclusiveStartKey,
+          ScanIndexForward: options.scanIndexForward ?? true,
+        });
+
+        const response = await client.send(command);
+
+        const items = (response.Items || []) as DynamoDBItem<T>[];
+        const data = items.map((item) => item.Data);
+
+        return {
+          items: data,
+          lastEvaluatedKey: response.LastEvaluatedKey as DynamoDBKey | undefined,
+          count: response.Count || 0,
+        };
+      }, this.retryOptions);
+    } catch (error: any) {
+      throw wrapDynamoDBError(error);
+    }
+  }
+
+  /**
+   * Queries visitors by session and interest level using GSI1
+   * @param sessionId Session ID
+   * @param interestLevel Interest level (low, medium, high)
+   * @param options Query options
+   * @returns Query result with visitors
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryVisitorsByInterestLevel<T>(
+    sessionId: string,
+    interestLevel: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    try {
+      return await withRetry(async () => {
+        const client = getDocumentClient();
+
+        const command = new QueryCommand({
+          TableName: this.tableName,
+          IndexName: 'GSI1',
+          KeyConditionExpression: 'GSI1PK = :gsi1pk AND begins_with(GSI1SK, :interest)',
+          ExpressionAttributeValues: {
+            ':gsi1pk': `SESSION#${sessionId}`,
+            ':interest': `INTEREST#${interestLevel}#`,
+            ...options.expressionAttributeValues,
+          },
+          ExpressionAttributeNames: options.expressionAttributeNames,
+          FilterExpression: options.filterExpression,
+          Limit: options.limit,
+          ExclusiveStartKey: options.exclusiveStartKey,
+          ScanIndexForward: options.scanIndexForward ?? true,
+        });
+
+        const response = await client.send(command);
+
+        const items = (response.Items || []) as DynamoDBItem<T>[];
+        const data = items.map((item) => item.Data);
+
+        return {
+          items: data,
+          lastEvaluatedKey: response.LastEvaluatedKey as DynamoDBKey | undefined,
+          count: response.Count || 0,
+        };
+      }, this.retryOptions);
+    } catch (error: any) {
+      throw wrapDynamoDBError(error);
+    }
+  }
+
+  /**
+   * Creates a follow-up sequence
+   * @param userId User ID
+   * @param sequenceId Sequence ID
+   * @param sequenceData Follow-up sequence data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createFollowUpSequence<T>(
+    userId: string,
+    sequenceId: string,
+    sequenceData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getFollowUpSequenceKeys } = await import('./keys');
+    const keys = getFollowUpSequenceKeys(userId, sequenceId);
+    return this.create(keys.PK, keys.SK, 'FollowUpSequence', sequenceData);
+  }
+
+  /**
+   * Gets a follow-up sequence by ID
+   * @param userId User ID
+   * @param sequenceId Sequence ID
+   * @returns Follow-up sequence data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getFollowUpSequence<T>(
+    userId: string,
+    sequenceId: string
+  ): Promise<T | null> {
+    const { getFollowUpSequenceKeys } = await import('./keys');
+    const keys = getFollowUpSequenceKeys(userId, sequenceId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates a follow-up sequence
+   * @param userId User ID
+   * @param sequenceId Sequence ID
+   * @param updates Partial sequence data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateFollowUpSequence<T>(
+    userId: string,
+    sequenceId: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getFollowUpSequenceKeys } = await import('./keys');
+    const keys = getFollowUpSequenceKeys(userId, sequenceId);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Deletes a follow-up sequence
+   * @param userId User ID
+   * @param sequenceId Sequence ID
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteFollowUpSequence(
+    userId: string,
+    sequenceId: string
+  ): Promise<void> {
+    const { getFollowUpSequenceKeys } = await import('./keys');
+    const keys = getFollowUpSequenceKeys(userId, sequenceId);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all follow-up sequences for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with follow-up sequences
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryFollowUpSequences<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'SEQUENCE#';
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  /**
+   * Creates follow-up content
+   * @param userId User ID
+   * @param sessionId Session ID
+   * @param visitorId Visitor ID
+   * @param contentData Follow-up content data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createFollowUpContent<T>(
+    userId: string,
+    sessionId: string,
+    visitorId: string,
+    contentData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getFollowUpContentKeys } = await import('./keys');
+    const keys = getFollowUpContentKeys(userId, sessionId, visitorId);
+    return this.create(keys.PK, keys.SK, 'FollowUpContent', contentData);
+  }
+
+  /**
+   * Gets follow-up content for a visitor
+   * @param userId User ID
+   * @param sessionId Session ID
+   * @param visitorId Visitor ID
+   * @returns Follow-up content data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getFollowUpContent<T>(
+    userId: string,
+    sessionId: string,
+    visitorId: string
+  ): Promise<T | null> {
+    const { getFollowUpContentKeys } = await import('./keys');
+    const keys = getFollowUpContentKeys(userId, sessionId, visitorId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates follow-up content
+   * @param userId User ID
+   * @param sessionId Session ID
+   * @param visitorId Visitor ID
+   * @param updates Partial content data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateFollowUpContent<T>(
+    userId: string,
+    sessionId: string,
+    visitorId: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getFollowUpContentKeys } = await import('./keys');
+    const keys = getFollowUpContentKeys(userId, sessionId, visitorId);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Deletes follow-up content
+   * @param userId User ID
+   * @param sessionId Session ID
+   * @param visitorId Visitor ID
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteFollowUpContent(
+    userId: string,
+    sessionId: string,
+    visitorId: string
+  ): Promise<void> {
+    const { getFollowUpContentKeys } = await import('./keys');
+    const keys = getFollowUpContentKeys(userId, sessionId, visitorId);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all follow-up content for a session
+   * @param userId User ID
+   * @param sessionId Session ID
+   * @param options Query options
+   * @returns Query result with follow-up content
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryFollowUpContentBySession<T>(
+    userId: string,
+    sessionId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = `FOLLOWUP#${sessionId}#`;
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  // ==================== Sequence Enrollment Methods ====================
+
+  /**
+   * Creates a sequence enrollment
+   * @param userId User ID
+   * @param enrollmentId Enrollment ID
+   * @param enrollmentData Sequence enrollment data
+   * @param sequenceId Sequence ID (for GSI1)
+   * @param visitorId Visitor ID (for GSI1 and GSI2)
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createSequenceEnrollment<T>(
+    userId: string,
+    enrollmentId: string,
+    enrollmentData: T,
+    sequenceId: string,
+    visitorId: string
+  ): Promise<DynamoDBItem<T>> {
+    const { getSequenceEnrollmentKeys } = await import('./keys');
+    const keys = getSequenceEnrollmentKeys(userId, enrollmentId, sequenceId, visitorId);
+    return this.create(keys.PK, keys.SK, 'SequenceEnrollment', enrollmentData, {
+      GSI1PK: keys.GSI1PK,
+      GSI1SK: keys.GSI1SK,
+      GSI2PK: keys.GSI2PK,
+      GSI2SK: keys.GSI2SK,
+    });
+  }
+
+  /**
+   * Gets a sequence enrollment by ID
+   * @param userId User ID
+   * @param enrollmentId Enrollment ID
+   * @returns Sequence enrollment data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getSequenceEnrollment<T>(
+    userId: string,
+    enrollmentId: string
+  ): Promise<T | null> {
+    const { getSequenceEnrollmentKeys } = await import('./keys');
+    const keys = getSequenceEnrollmentKeys(userId, enrollmentId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates a sequence enrollment
+   * @param userId User ID
+   * @param enrollmentId Enrollment ID
+   * @param updates Partial enrollment data to update
+   * @param sequenceId Sequence ID (for GSI1)
+   * @param visitorId Visitor ID (for GSI1 and GSI2)
+   * @param options Update options (conditions, etc.)
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateSequenceEnrollment<T>(
+    userId: string,
+    enrollmentId: string,
+    updates: Partial<T>,
+    sequenceId: string,
+    visitorId: string,
+    options: UpdateOptions = {}
+  ): Promise<void> {
+    const { getSequenceEnrollmentKeys } = await import('./keys');
+    const keys = getSequenceEnrollmentKeys(userId, enrollmentId, sequenceId, visitorId);
+
+    // Include GSI keys in the update
+    const updatesWithGSI = {
+      ...updates,
+      GSI1PK: keys.GSI1PK,
+      GSI1SK: keys.GSI1SK,
+      GSI2PK: keys.GSI2PK,
+      GSI2SK: keys.GSI2SK,
+    };
+
+    await this.update(keys.PK, keys.SK, updatesWithGSI, options);
+  }
+
+  /**
+   * Deletes a sequence enrollment
+   * @param userId User ID
+   * @param enrollmentId Enrollment ID
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteSequenceEnrollment(
+    userId: string,
+    enrollmentId: string
+  ): Promise<void> {
+    const { getSequenceEnrollmentKeys } = await import('./keys');
+    const keys = getSequenceEnrollmentKeys(userId, enrollmentId);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all sequence enrollments for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with sequence enrollments
+   * @throws DynamoDBError if the operation fails
+   */
+  async querySequenceEnrollments<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'ENROLLMENT#';
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  /**
+   * Queries sequence enrollments by sequence ID using GSI1
+   * @param sequenceId Sequence ID
+   * @param options Query options
+   * @returns Query result with sequence enrollments
+   * @throws DynamoDBError if the operation fails
+   */
+  async querySequenceEnrollmentsBySequence<T>(
+    sequenceId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    try {
+      return await withRetry(async () => {
+        const client = getDocumentClient();
+
+        const command = new QueryCommand({
+          TableName: this.tableName,
+          IndexName: 'GSI1',
+          KeyConditionExpression: 'GSI1PK = :gsi1pk',
+          ExpressionAttributeValues: {
+            ':gsi1pk': `SEQUENCE#${sequenceId}`,
+            ...options.expressionAttributeValues,
+          },
+          ExpressionAttributeNames: options.expressionAttributeNames,
+          FilterExpression: options.filterExpression,
+          Limit: options.limit,
+          ExclusiveStartKey: options.exclusiveStartKey,
+          ScanIndexForward: options.scanIndexForward ?? true,
+        });
+
+        const response = await client.send(command);
+
+        const items = (response.Items || []) as DynamoDBItem<T>[];
+        const data = items.map((item) => item.Data);
+
+        return {
+          items: data,
+          lastEvaluatedKey: response.LastEvaluatedKey as DynamoDBKey | undefined,
+          count: response.Count || 0,
+        };
+      }, this.retryOptions);
+    } catch (error: any) {
+      throw wrapDynamoDBError(error);
+    }
+  }
+
+  /**
+   * Queries sequence enrollments by visitor ID using GSI2
+   * @param visitorId Visitor ID
+   * @param options Query options
+   * @returns Query result with sequence enrollments
+   * @throws DynamoDBError if the operation fails
+   */
+  async querySequenceEnrollmentsByVisitor<T>(
+    userId: string,
+    visitorId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    try {
+      return await withRetry(async () => {
+        const client = getDocumentClient();
+
+        const command = new QueryCommand({
+          TableName: this.tableName,
+          IndexName: 'GSI2',
+          KeyConditionExpression: 'GSI2PK = :gsi2pk',
+          ExpressionAttributeValues: {
+            ':gsi2pk': `VISITOR#${visitorId}`,
+            ...options.expressionAttributeValues,
+          },
+          ExpressionAttributeNames: options.expressionAttributeNames,
+          FilterExpression: options.filterExpression,
+          Limit: options.limit,
+          ExclusiveStartKey: options.exclusiveStartKey,
+          ScanIndexForward: options.scanIndexForward ?? true,
+        });
+
+        const response = await client.send(command);
+
+        const items = (response.Items || []) as DynamoDBItem<T>[];
+        const data = items.map((item) => item.Data);
+
+        return {
+          items: data,
+          lastEvaluatedKey: response.LastEvaluatedKey as DynamoDBKey | undefined,
+          count: response.Count || 0,
+        };
+      }, this.retryOptions);
+    } catch (error: any) {
+      throw wrapDynamoDBError(error);
+    }
+  }
+
+  /**
+   * Creates a session template
+   * @param userId User ID
+   * @param templateId Template ID
+   * @param templateData Session template data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createSessionTemplate<T>(
+    userId: string,
+    templateId: string,
+    templateData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getSessionTemplateKeys } = await import('./keys');
+    const keys = getSessionTemplateKeys(userId, templateId);
+    return this.create(keys.PK, keys.SK, 'SessionTemplate', templateData);
+  }
+
+  /**
+   * Gets a session template by ID
+   * @param userId User ID
+   * @param templateId Template ID
+   * @returns Session template data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getSessionTemplate<T>(
+    userId: string,
+    templateId: string
+  ): Promise<T | null> {
+    const { getSessionTemplateKeys } = await import('./keys');
+    const keys = getSessionTemplateKeys(userId, templateId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates a session template
+   * @param userId User ID
+   * @param templateId Template ID
+   * @param updates Partial template data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateSessionTemplate<T>(
+    userId: string,
+    templateId: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getSessionTemplateKeys } = await import('./keys');
+    const keys = getSessionTemplateKeys(userId, templateId);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Deletes a session template
+   * @param userId User ID
+   * @param templateId Template ID
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteSessionTemplate(
+    userId: string,
+    templateId: string
+  ): Promise<void> {
+    const { getSessionTemplateKeys } = await import('./keys');
+    const keys = getSessionTemplateKeys(userId, templateId);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all session templates for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with session templates
+   * @throws DynamoDBError if the operation fails
+   */
+  async querySessionTemplates<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'OH_TEMPLATE#';
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  /**
+   * Creates a webhook configuration
+   * @param userId User ID
+   * @param webhookId Webhook ID
+   * @param webhookData Webhook configuration data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createWebhookConfig<T>(
+    userId: string,
+    webhookId: string,
+    webhookData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getWebhookConfigKeys } = await import('./keys');
+    const keys = getWebhookConfigKeys(userId, webhookId);
+    return this.create(keys.PK, keys.SK, 'WebhookConfig', webhookData);
+  }
+
+  /**
+   * Gets a webhook configuration by ID
+   * @param userId User ID
+   * @param webhookId Webhook ID
+   * @returns Webhook configuration data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getWebhookConfig<T>(
+    userId: string,
+    webhookId: string
+  ): Promise<T | null> {
+    const { getWebhookConfigKeys } = await import('./keys');
+    const keys = getWebhookConfigKeys(userId, webhookId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates a webhook configuration
+   * @param userId User ID
+   * @param webhookId Webhook ID
+   * @param updates Partial webhook data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateWebhookConfig<T>(
+    userId: string,
+    webhookId: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getWebhookConfigKeys } = await import('./keys');
+    const keys = getWebhookConfigKeys(userId, webhookId);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Deletes a webhook configuration
+   * @param userId User ID
+   * @param webhookId Webhook ID
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteWebhookConfig(
+    userId: string,
+    webhookId: string
+  ): Promise<void> {
+    const { getWebhookConfigKeys } = await import('./keys');
+    const keys = getWebhookConfigKeys(userId, webhookId);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all webhook configurations for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with webhook configurations
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryWebhookConfigs<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'WEBHOOK#';
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  /**
+   * Creates a webhook delivery log
+   * @param userId User ID
+   * @param webhookId Webhook ID
+   * @param deliveryId Delivery ID
+   * @param logData Delivery log data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createWebhookDeliveryLog<T>(
+    userId: string,
+    webhookId: string,
+    deliveryId: string,
+    logData: T & { createdAt: string }
+  ): Promise<DynamoDBItem<T>> {
+    const { getWebhookDeliveryLogKeys } = await import('./keys');
+    const keys = getWebhookDeliveryLogKeys(
+      userId,
+      webhookId,
+      deliveryId,
+      logData.createdAt
+    );
+    return this.create(keys.PK, keys.SK, 'WebhookDeliveryLog', logData, {
+      GSI1PK: keys.GSI1PK,
+      GSI1SK: keys.GSI1SK,
+    });
+  }
+
+  /**
+   * Gets a webhook delivery log by ID
+   * @param userId User ID
+   * @param deliveryId Delivery ID (includes webhookId in SK pattern)
+   * @returns Delivery log data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getWebhookDeliveryLog<T>(
+    userId: string,
+    deliveryId: string
+  ): Promise<T | null> {
+    // Need to query since we don't have the full SK
+    const pk = `USER#${userId}`;
+    const skPrefix = `WEBHOOK_LOG#`;
+    const result = await this.query<T>(pk, skPrefix);
+
+    // Find the log with matching deliveryId
+    const log = result.items.find((item: any) =>
+      item.deliveryId === deliveryId
+    );
+
+    return log || null;
+  }
+
+  /**
+   * Updates a webhook delivery log
+   * @param userId User ID
+   * @param deliveryId Delivery ID
+   * @param updates Partial delivery log data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateWebhookDeliveryLog<T>(
+    userId: string,
+    deliveryId: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    // First get the log to find the full SK
+    const log = await this.getWebhookDeliveryLog<any>(userId, deliveryId);
+    if (!log) {
+      throw new Error('Webhook delivery log not found');
+    }
+
+    const { getWebhookDeliveryLogKeys } = await import('./keys');
+    const keys = getWebhookDeliveryLogKeys(
+      userId,
+      log.webhookId,
+      deliveryId
+    );
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Queries webhook delivery logs for a specific webhook
+   * @param userId User ID
+   * @param webhookId Webhook ID
+   * @param options Query options
+   * @returns Query result with delivery logs
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryWebhookDeliveryLogs<T>(
+    userId: string,
+    webhookId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = `WEBHOOK_LOG#${webhookId}#`;
+    return this.query<T>(pk, skPrefix, options);
+  }
+
+  /**
+   * Creates an offline sync operation
+   * @param userId User ID
+   * @param operationId Operation ID
+   * @param operationData Offline sync operation data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createOfflineSyncOperation<T>(
+    userId: string,
+    operationId: string,
+    operationData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getOfflineSyncKeys } = await import('./keys');
+    const keys = getOfflineSyncKeys(userId, operationId);
+    return this.create(keys.PK, keys.SK, 'SyncOperation', operationData);
+  }
+
+  /**
+   * Gets an offline sync operation by ID
+   * @param userId User ID
+   * @param operationId Operation ID
+   * @returns Offline sync operation data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getOfflineSyncOperation<T>(
+    userId: string,
+    operationId: string
+  ): Promise<T | null> {
+    const { getOfflineSyncKeys } = await import('./keys');
+    const keys = getOfflineSyncKeys(userId, operationId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates an offline sync operation
+   * @param userId User ID
+   * @param operationId Operation ID
+   * @param updates Partial operation data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateOfflineSyncOperation<T>(
+    userId: string,
+    operationId: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getOfflineSyncKeys } = await import('./keys');
+    const keys = getOfflineSyncKeys(userId, operationId);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Deletes an offline sync operation
+   * @param userId User ID
+   * @param operationId Operation ID
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteOfflineSyncOperation(
+    userId: string,
+    operationId: string
+  ): Promise<void> {
+    const { getOfflineSyncKeys } = await import('./keys');
+    const keys = getOfflineSyncKeys(userId, operationId);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all offline sync operations for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with offline sync operations
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryOfflineSyncOperations<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'OFFLINE_SYNC#';
+    return this.query<T>(pk, skPrefix, options);
+  }
 }
 
 // Export a singleton instance

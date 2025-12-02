@@ -1087,3 +1087,221 @@ export function getUserDocumentDownloadLogKeys(
 
   return keys;
 }
+
+// ==================== Open House Enhancement Keys ====================
+
+/**
+ * Generates keys for OpenHouseSession
+ * Pattern: PK: USER#<userId>, SK: OPENHOUSE#<sessionId>
+ * GSI1: PK: SESSION#<status>, SK: DATE#<scheduledDate>
+ * GSI2: PK: SESSIONID#<sessionId>, SK: USER#<userId> (for public QR code access)
+ */
+export function getOpenHouseKeys(
+  userId: string,
+  sessionId: string,
+  status?: string,
+  scheduledDate?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+  GSI2PK?: string;
+  GSI2SK?: string;
+} {
+  const keys: DynamoDBKey & {
+    GSI1PK?: string;
+    GSI1SK?: string;
+    GSI2PK?: string;
+    GSI2SK?: string;
+  } = {
+    PK: `USER#${userId}`,
+    SK: `OPENHOUSE#${sessionId}`,
+  };
+
+  // Add GSI1 keys for querying by status and date
+  if (status) {
+    keys.GSI1PK = `SESSION#${status}`;
+  }
+  if (scheduledDate) {
+    keys.GSI1SK = `DATE#${scheduledDate}`;
+  }
+
+  // Add GSI2 keys for public access by sessionId (for QR code check-in)
+  keys.GSI2PK = `SESSIONID#${sessionId}`;
+  keys.GSI2SK = `USER#${userId}`;
+
+  return keys;
+}
+
+/**
+ * Generates keys for Visitor
+ * Pattern: PK: USER#<userId>, SK: VISITOR#<sessionId>#<visitorId>
+ * GSI1: PK: SESSION#<sessionId>, SK: INTEREST#<level>#<timestamp>
+ */
+export function getVisitorKeys(
+  userId: string,
+  sessionId: string,
+  visitorId: string,
+  interestLevel?: string,
+  checkInTime?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `VISITOR#${sessionId}#${visitorId}`,
+  };
+
+  // Add GSI1 keys for querying visitors by session and interest level
+  if (sessionId) {
+    keys.GSI1PK = `SESSION#${sessionId}`;
+  }
+  if (interestLevel && checkInTime) {
+    keys.GSI1SK = `INTEREST#${interestLevel}#${checkInTime}`;
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for FollowUpSequence
+ * Pattern: PK: USER#<userId>, SK: SEQUENCE#<sequenceId>
+ */
+export function getFollowUpSequenceKeys(
+  userId: string,
+  sequenceId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `SEQUENCE#${sequenceId}`,
+  };
+}
+
+/**
+ * Generates keys for FollowUpContent
+ * Pattern: PK: USER#<userId>, SK: FOLLOWUP#<sessionId>#<visitorId>
+ */
+export function getFollowUpContentKeys(
+  userId: string,
+  sessionId: string,
+  visitorId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `FOLLOWUP#${sessionId}#${visitorId}`,
+  };
+}
+
+/**
+ * Generates keys for SessionTemplate
+ * Pattern: PK: USER#<userId>, SK: OH_TEMPLATE#<templateId>
+ */
+export function getSessionTemplateKeys(
+  userId: string,
+  templateId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `OH_TEMPLATE#${templateId}`,
+  };
+}
+
+/**
+ * Generates keys for WebhookConfig
+ * Pattern: PK: USER#<userId>, SK: WEBHOOK#<webhookId>
+ */
+export function getWebhookConfigKeys(
+  userId: string,
+  webhookId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `WEBHOOK#${webhookId}`,
+  };
+}
+
+/**
+ * Generates keys for WebhookDeliveryLog
+ * Pattern: PK: USER#<userId>, SK: WEBHOOK_LOG#<webhookId>#<deliveryId>
+ * GSI1: PK: WEBHOOK#<webhookId>, SK: DELIVERY#<timestamp>
+ */
+export function getWebhookDeliveryLogKeys(
+  userId: string,
+  webhookId: string,
+  deliveryId: string,
+  timestamp?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & {
+    GSI1PK?: string;
+    GSI1SK?: string;
+  } = {
+    PK: `USER#${userId}`,
+    SK: `WEBHOOK_LOG#${webhookId}#${deliveryId}`,
+  };
+
+  // Add GSI1 keys for querying logs by webhook
+  if (timestamp) {
+    keys.GSI1PK = `WEBHOOK#${webhookId}`;
+    keys.GSI1SK = `DELIVERY#${timestamp}`;
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for SequenceEnrollment
+ * Pattern: PK: USER#<userId>, SK: ENROLLMENT#<enrollmentId>
+ * GSI1: PK: SEQUENCE#<sequenceId>, SK: VISITOR#<visitorId>
+ * GSI2: PK: VISITOR#<visitorId>, SK: ENROLLMENT#<enrollmentId>
+ */
+export function getSequenceEnrollmentKeys(
+  userId: string,
+  enrollmentId: string,
+  sequenceId?: string,
+  visitorId?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+  GSI2PK?: string;
+  GSI2SK?: string;
+} {
+  const keys: DynamoDBKey & {
+    GSI1PK?: string;
+    GSI1SK?: string;
+    GSI2PK?: string;
+    GSI2SK?: string;
+  } = {
+    PK: `USER#${userId}`,
+    SK: `ENROLLMENT#${enrollmentId}`,
+  };
+
+  // Add GSI1 keys for querying enrollments by sequence
+  if (sequenceId) {
+    keys.GSI1PK = `SEQUENCE#${sequenceId}`;
+  }
+  if (visitorId) {
+    keys.GSI1SK = `VISITOR#${visitorId}`;
+    // Add GSI2 keys for querying enrollments by visitor
+    keys.GSI2PK = `VISITOR#${visitorId}`;
+    keys.GSI2SK = `ENROLLMENT#${enrollmentId}`;
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for OfflineSync operations
+ * Pattern: PK: USER#<userId>, SK: OFFLINE_SYNC#<operationId>
+ */
+export function getOfflineSyncKeys(
+  userId: string,
+  operationId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `OFFLINE_SYNC#${operationId}`,
+  };
+}
