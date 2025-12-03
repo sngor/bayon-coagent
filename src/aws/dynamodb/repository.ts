@@ -3224,6 +3224,530 @@ export class DynamoDBRepository {
     const skPrefix = 'OFFLINE_SYNC#';
     return this.query<T>(pk, skPrefix, options);
   }
+
+  // ==================== AI Search Monitoring Methods ====================
+
+  /**
+   * Creates an AI mention record
+   * @param userId User ID
+   * @param mentionId Mention ID
+   * @param mentionData AI mention data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createAIMention<T>(
+    userId: string,
+    mentionId: string,
+    mentionData: T & { platform: string; timestamp: string }
+  ): Promise<DynamoDBItem<T>> {
+    const { getAIMentionKeys } = await import('./keys');
+    const keys = getAIMentionKeys(
+      userId,
+      mentionId,
+      mentionData.platform,
+      mentionData.timestamp
+    );
+
+    return this.create(keys.PK, keys.SK, 'AIMention', mentionData, {
+      GSI1PK: keys.GSI1PK,
+      GSI1SK: keys.GSI1SK,
+    });
+  }
+
+  /**
+   * Gets an AI mention by ID
+   * @param userId User ID
+   * @param mentionId Mention ID
+   * @param platform Platform name
+   * @param timestamp Mention timestamp
+   * @returns AI mention data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getAIMention<T>(
+    userId: string,
+    mentionId: string,
+    platform: string,
+    timestamp: string
+  ): Promise<T | null> {
+    const { getAIMentionKeys } = await import('./keys');
+    const keys = getAIMentionKeys(userId, mentionId, platform, timestamp);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates an AI mention
+   * @param userId User ID
+   * @param mentionId Mention ID
+   * @param platform Platform name
+   * @param timestamp Mention timestamp
+   * @param updates Partial mention data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateAIMention<T>(
+    userId: string,
+    mentionId: string,
+    platform: string,
+    timestamp: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getAIMentionKeys } = await import('./keys');
+    const keys = getAIMentionKeys(userId, mentionId, platform, timestamp);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Deletes an AI mention
+   * @param userId User ID
+   * @param mentionId Mention ID
+   * @param platform Platform name
+   * @param timestamp Mention timestamp
+   * @throws DynamoDBError if the operation fails
+   */
+  async deleteAIMention(
+    userId: string,
+    mentionId: string,
+    platform: string,
+    timestamp: string
+  ): Promise<void> {
+    const { getAIMentionKeys } = await import('./keys');
+    const keys = getAIMentionKeys(userId, mentionId, platform, timestamp);
+    await this.delete(keys.PK, keys.SK);
+  }
+
+  /**
+   * Queries all AI mentions for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with AI mentions
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryAIMentions<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'AI_MENTION#';
+    return this.query<T>(pk, skPrefix, {
+      ...options,
+      scanIndexForward: false, // Most recent first
+    });
+  }
+
+  /**
+   * Queries AI mentions by platform
+   * @param userId User ID
+   * @param platform Platform name
+   * @param options Query options
+   * @returns Query result with AI mentions
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryAIMentionsByPlatform<T>(
+    userId: string,
+    platform: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = `AI_MENTION#${platform}#`;
+    return this.query<T>(pk, skPrefix, {
+      ...options,
+      scanIndexForward: false, // Most recent first
+    });
+  }
+
+  /**
+   * Queries AI mentions by date range using GSI1
+   * @param userId User ID
+   * @param startDate Start date (ISO 8601)
+   * @param endDate End date (ISO 8601)
+   * @param options Query options
+   * @returns Query result with AI mentions
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryAIMentionsByDateRange<T>(
+    userId: string,
+    startDate: string,
+    endDate: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    try {
+      return await withRetry(async () => {
+        const client = getDocumentClient();
+
+        const command = new QueryCommand({
+          TableName: this.tableName,
+          IndexName: 'GSI1',
+          KeyConditionExpression:
+            'GSI1PK = :gsi1pk AND GSI1SK BETWEEN :startDate AND :endDate',
+          ExpressionAttributeValues: {
+            ':gsi1pk': `USER#${userId}`,
+            ':startDate': `AI_MENTION_BY_DATE#${startDate}`,
+            ':endDate': `AI_MENTION_BY_DATE#${endDate}`,
+            ...options.expressionAttributeValues,
+          },
+          ExpressionAttributeNames: options.expressionAttributeNames,
+          FilterExpression: options.filterExpression,
+          Limit: options.limit,
+          ExclusiveStartKey: options.exclusiveStartKey,
+          ScanIndexForward: options.scanIndexForward ?? false, // Most recent first
+        });
+
+        const response = await client.send(command);
+
+        const items = (response.Items || []) as DynamoDBItem<T>[];
+        const data = items.map((item) => item.Data);
+
+        return {
+          items: data,
+          lastEvaluatedKey: response.LastEvaluatedKey as DynamoDBKey | undefined,
+          count: response.Count || 0,
+        };
+      }, this.retryOptions);
+    } catch (error: any) {
+      throw wrapDynamoDBError(error);
+    }
+  }
+
+  /**
+   * Creates or updates an AI visibility score
+   * @param userId User ID
+   * @param calculatedAt Calculation timestamp
+   * @param scoreData AI visibility score data
+   * @param isLatest Whether this is the latest score
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async saveAIVisibilityScore<T>(
+    userId: string,
+    calculatedAt: string,
+    scoreData: T,
+    isLatest: boolean = false
+  ): Promise<DynamoDBItem<T>> {
+    const { getAIVisibilityScoreKeys } = await import('./keys');
+    const keys = getAIVisibilityScoreKeys(userId, calculatedAt, isLatest);
+
+    return this.create(keys.PK, keys.SK, 'AIVisibilityScore', scoreData, {
+      GSI1PK: keys.GSI1PK,
+      GSI1SK: keys.GSI1SK,
+    });
+  }
+
+  /**
+   * Gets an AI visibility score by calculation date
+   * @param userId User ID
+   * @param calculatedAt Calculation timestamp
+   * @returns AI visibility score data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getAIVisibilityScore<T>(
+    userId: string,
+    calculatedAt: string
+  ): Promise<T | null> {
+    const { getAIVisibilityScoreKeys } = await import('./keys');
+    const keys = getAIVisibilityScoreKeys(userId, calculatedAt);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Gets the latest AI visibility score for a user using GSI1
+   * @param userId User ID
+   * @returns Latest AI visibility score data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getLatestAIVisibilityScore<T>(userId: string): Promise<T | null> {
+    try {
+      return await withRetry(async () => {
+        const client = getDocumentClient();
+
+        const command = new QueryCommand({
+          TableName: this.tableName,
+          IndexName: 'GSI1',
+          KeyConditionExpression: 'GSI1PK = :gsi1pk AND GSI1SK = :gsi1sk',
+          ExpressionAttributeValues: {
+            ':gsi1pk': `USER#${userId}`,
+            ':gsi1sk': 'AI_SCORE_LATEST',
+          },
+          Limit: 1,
+        });
+
+        const response = await client.send(command);
+
+        if (!response.Items || response.Items.length === 0) {
+          return null;
+        }
+
+        const item = response.Items[0] as DynamoDBItem<T>;
+        return item.Data;
+      }, this.retryOptions);
+    } catch (error: any) {
+      throw wrapDynamoDBError(error);
+    }
+  }
+
+  /**
+   * Updates an AI visibility score
+   * @param userId User ID
+   * @param calculatedAt Calculation timestamp
+   * @param updates Partial score data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateAIVisibilityScore<T>(
+    userId: string,
+    calculatedAt: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getAIVisibilityScoreKeys } = await import('./keys');
+    const keys = getAIVisibilityScoreKeys(userId, calculatedAt);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Queries all AI visibility scores for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with AI visibility scores
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryAIVisibilityScores<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'AI_VISIBILITY_SCORE#';
+    return this.query<T>(pk, skPrefix, {
+      ...options,
+      scanIndexForward: false, // Most recent first
+    });
+  }
+
+  /**
+   * Creates or updates AI monitoring configuration
+   * @param userId User ID
+   * @param configData AI monitoring config data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async saveAIMonitoringConfig<T>(
+    userId: string,
+    configData: T
+  ): Promise<DynamoDBItem<T>> {
+    const { getAIMonitoringConfigKeys } = await import('./keys');
+    const keys = getAIMonitoringConfigKeys(userId);
+    return this.create(keys.PK, keys.SK, 'AIMonitoringConfig', configData);
+  }
+
+  /**
+   * Gets AI monitoring configuration for a user
+   * @param userId User ID
+   * @returns AI monitoring config data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getAIMonitoringConfig<T>(userId: string): Promise<T | null> {
+    const { getAIMonitoringConfigKeys } = await import('./keys');
+    const keys = getAIMonitoringConfigKeys(userId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates AI monitoring configuration
+   * @param userId User ID
+   * @param updates Partial config data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateAIMonitoringConfig<T>(
+    userId: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getAIMonitoringConfigKeys } = await import('./keys');
+    const keys = getAIMonitoringConfigKeys(userId);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Creates an AI monitoring job record
+   * @param userId User ID
+   * @param jobId Job ID
+   * @param jobData AI monitoring job data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createAIMonitoringJob<T>(
+    userId: string,
+    jobId: string,
+    jobData: T & { startedAt: string }
+  ): Promise<DynamoDBItem<T>> {
+    const { getAIMonitoringJobKeys } = await import('./keys');
+    const keys = getAIMonitoringJobKeys(userId, jobId, jobData.startedAt);
+    return this.create(keys.PK, keys.SK, 'AIMonitoringJob', jobData);
+  }
+
+  /**
+   * Gets an AI monitoring job by ID
+   * @param userId User ID
+   * @param jobId Job ID
+   * @param startedAt Job start timestamp
+   * @returns AI monitoring job data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getAIMonitoringJob<T>(
+    userId: string,
+    jobId: string,
+    startedAt: string
+  ): Promise<T | null> {
+    const { getAIMonitoringJobKeys } = await import('./keys');
+    const keys = getAIMonitoringJobKeys(userId, jobId, startedAt);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates an AI monitoring job
+   * @param userId User ID
+   * @param jobId Job ID
+   * @param startedAt Job start timestamp
+   * @param updates Partial job data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateAIMonitoringJob<T>(
+    userId: string,
+    jobId: string,
+    startedAt: string,
+    updates: Partial<T>
+  ): Promise<void> {
+    const { getAIMonitoringJobKeys } = await import('./keys');
+    const keys = getAIMonitoringJobKeys(userId, jobId, startedAt);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Queries all AI monitoring jobs for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with AI monitoring jobs
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryAIMonitoringJobs<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'AI_MONITORING_JOB#';
+    return this.query<T>(pk, skPrefix, {
+      ...options,
+      scanIndexForward: false, // Most recent first
+    });
+  }
+
+  /**
+   * Creates an API usage record
+   * @param userId User ID
+   * @param recordId Record ID
+   * @param recordData API usage record data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createAPIUsageRecord<T>(
+    userId: string,
+    recordId: string,
+    recordData: T & { timestamp: string }
+  ): Promise<DynamoDBItem<T>> {
+    const { getAPIUsageRecordKeys } = await import('./keys');
+    const keys = getAPIUsageRecordKeys(userId, recordId, recordData.timestamp);
+    return this.create(keys.PK, keys.SK, 'APIUsageRecord', recordData);
+  }
+
+  /**
+   * Queries API usage records by date range
+   * @param userId User ID
+   * @param startDate Start date (ISO string)
+   * @param endDate End date (ISO string)
+   * @param options Query options
+   * @returns Query result with API usage records
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryAPIUsageByDateRange<T>(
+    userId: string,
+    startDate: string,
+    endDate: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skStart = `API_USAGE#${startDate}`;
+    const skEnd = `API_USAGE#${endDate}`;
+    return this.queryBetween<T>(pk, skStart, skEnd, options);
+  }
+
+  /**
+   * Saves user budget configuration
+   * @param userId User ID
+   * @param budgetData Budget data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async saveUserBudget<T>(userId: string, budgetData: T): Promise<DynamoDBItem<T>> {
+    const { getUserBudgetKeys } = await import('./keys');
+    const keys = getUserBudgetKeys(userId);
+    return this.put(keys.PK, keys.SK, 'UserBudget', budgetData);
+  }
+
+  /**
+   * Gets user budget configuration
+   * @param userId User ID
+   * @returns User budget data or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getUserBudget<T>(userId: string): Promise<T | null> {
+    const { getUserBudgetKeys } = await import('./keys');
+    const keys = getUserBudgetKeys(userId);
+    return this.get<T>(keys.PK, keys.SK);
+  }
+
+  /**
+   * Updates user budget configuration
+   * @param userId User ID
+   * @param updates Partial budget data to update
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateUserBudget<T>(userId: string, updates: Partial<T>): Promise<void> {
+    const { getUserBudgetKeys } = await import('./keys');
+    const keys = getUserBudgetKeys(userId);
+    await this.update(keys.PK, keys.SK, updates);
+  }
+
+  /**
+   * Creates a cost spike alert
+   * @param userId User ID
+   * @param alertId Alert ID
+   * @param alertData Cost spike alert data
+   * @returns The created DynamoDB item
+   * @throws DynamoDBError if the operation fails
+   */
+  async createCostSpikeAlert<T>(
+    userId: string,
+    alertId: string,
+    alertData: T & { timestamp: string }
+  ): Promise<DynamoDBItem<T>> {
+    const { getCostSpikeAlertKeys } = await import('./keys');
+    const keys = getCostSpikeAlertKeys(userId, alertId, alertData.timestamp);
+    return this.create(keys.PK, keys.SK, 'CostSpikeAlert', alertData);
+  }
+
+  /**
+   * Queries cost spike alerts for a user
+   * @param userId User ID
+   * @param options Query options
+   * @returns Query result with cost spike alerts
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryCostSpikeAlerts<T>(
+    userId: string,
+    options: QueryOptions = {}
+  ): Promise<QueryResult<T>> {
+    const pk = `USER#${userId}`;
+    const skPrefix = 'COST_SPIKE_ALERT#';
+    return this.query<T>(pk, skPrefix, {
+      ...options,
+      scanIndexForward: false, // Most recent first
+    });
+  }
 }
 
 // Export a singleton instance

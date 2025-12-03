@@ -193,6 +193,9 @@ import {
   type RolePlayOutput,
   type RolePlayMessage
 } from '@/aws/bedrock/flows/role-play-flow';
+import {
+  type WebsiteAnalysisResult,
+} from '@/ai/schemas/website-analysis-schemas';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { getRepository } from '@/aws/dynamodb/repository';
@@ -214,7 +217,7 @@ import {
 import { getValidOAuthTokens, storeOAuthTokens } from '@/aws/dynamodb/oauth-tokens';
 import { getAlertDataAccess } from '@/lib/alerts/data-access';
 import type { AlertSettings, TargetArea, NeighborhoodProfile, AlertsResponse } from '@/lib/alerts/types';
-import type { Profile } from '@/lib/types/common/common';
+import type { Profile, AIMention, AIVisibilityScore, AIMonitoringConfig, AIMonitoringJob } from '@/lib/types/common/common';
 import { aggregateNeighborhoodData } from '@/lib/alerts/neighborhood-profile-data-aggregation';
 import { v4 as uuidv4 } from 'uuid';
 import { FeatureToggle } from '@/lib/feature-toggles';
@@ -6990,6 +6993,1551 @@ export async function generateFromImagesAction(input: {
       message: `Failed to generate listing description from images: ${errorMessage}`,
       data: null,
       errors: {},
+    };
+  }
+}
+
+// ==================== AI Search Monitoring Actions ====================
+
+/**
+ * Get AI visibility data for a user
+ * Returns the latest visibility score and summary statistics
+ * Handles stale data by including last update timestamp
+ * Uses caching to improve performance
+ */
+export async function getAIVisibilityData(userId: string): Promise<{
+  message: string;
+  data: {
+    score: AIVisibilityScore | null;
+    recentMentions: AIMention[];
+    config: AIMonitoringConfig | null;
+    isStale: boolean;
+    lastUpdated: string | null;
+  } | null;
+  errors: any;
+}> {
+  try {
+    const { getAIVisibilityCacheService } = await import('@/lib/ai-visibility-cache');
+    const cache = getAIVisibilityCacheService();
+
+    // Get the latest visibility score (with caching)
+    const latestScore = await cache.getVisibilityScore(userId);
+
+    // Check if data is stale (older than 7 days)
+    const isStale = latestScore
+      ? (Date.now() - new Date(latestScore.calculatedAt).getTime()) > (7 * 24 * 60 * 60 * 1000)
+      : true;
+
+    const lastUpdated = latestScore?.calculatedAt || null;
+
+    // Get recent mentions (last 10) with caching
+    const recentMentions = await cache.getMentions(userId, { limit: 10 });
+
+    // Get monitoring config with caching
+    const config = await cache.getMonitoringConfig(userId);
+
+    // Provide helpful message based on data state
+    let message = 'success';
+    if (!latestScore && !config) {
+      message = 'No monitoring data found. Set up monitoring to start tracking your AI visibility.';
+    } else if (!latestScore) {
+      message = 'Monitoring is configured but no data has been collected yet. The first monitoring run will happen soon.';
+    } else if (isStale) {
+      message = 'Data is older than 7 days. Consider running a manual refresh for the latest insights.';
+    }
+
+    return {
+      message,
+      data: {
+        score: latestScore || null,
+        recentMentions,
+        config: config || null,
+        isStale,
+        lastUpdated,
+      },
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Failed to get AI visibility data:', error);
+
+    // Provide user-friendly error messages
+    let errorMessage = 'Failed to load AI visibility data. Please try again.';
+
+    if (error.name === 'ResourceNotFoundException') {
+      errorMessage = 'AI visibility data not found. Please set up monitoring first.';
+    } else if (error.name === 'AccessDeniedException') {
+      errorMessage = 'You do not have permission to access this data.';
+    } else if (error.message?.includes('timeout')) {
+      errorMessage = 'Request timed out. Please try again.';
+    } else if (error.message?.includes('network')) {
+      errorMessage = 'Network error. Please check your connection and try again.';
+    }
+
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { system: error.message },
+    };
+  }
+}
+
+/**
+ * Get AI mentions with filtering options
+ * Uses caching to improve performance
+ */
+export async function getAIMentions(
+  userId: string,
+  options?: {
+    limit?: number;
+    platform?: 'chatgpt' | 'perplexity' | 'claude' | 'gemini';
+    startDate?: string;
+    endDate?: string;
+  }
+): Promise<{
+  message: string;
+  data: AIMention[] | null;
+  errors: any;
+}> {
+  try {
+    const { getAIVisibilityCacheService } = await import('@/lib/ai-visibility-cache');
+    const cache = getAIVisibilityCacheService();
+
+    // Get mentions with caching
+    const mentions = await cache.getMentions(userId, options);
+
+    // Provide helpful message if no mentions found
+    let message = 'success';
+    if (mentions.length === 0) {
+      if (options?.platform) {
+        message = `No mentions found on ${options.platform}. Try checking other platforms or adjusting your date range.`;
+      } else if (options?.startDate || options?.endDate) {
+        message = 'No mentions found in the selected date range. Try expanding your search period.';
+      } else {
+        message = 'No mentions found yet. Monitoring will run automatically, or you can trigger a manual refresh.';
+      }
+    }
+
+    return {
+      message,
+      data: mentions,
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Failed to get AI mentions:', error);
+
+    // Provide user-friendly error messages
+    let errorMessage = 'Failed to load AI mentions. Please try again.';
+
+    if (error.name === 'ResourceNotFoundException') {
+      errorMessage = 'No mention data found. Please set up monitoring first.';
+    } else if (error.name === 'AccessDeniedException') {
+      errorMessage = 'You do not have permission to access this data.';
+    } else if (error.message?.includes('timeout')) {
+      errorMessage = 'Request timed out. Please try again.';
+    } else if (error.message?.includes('network')) {
+      errorMessage = 'Network error. Please check your connection and try again.';
+    }
+
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { system: error.message },
+    };
+  }
+}
+
+/**
+ * Get competitor AI visibility for comparison
+ */
+export async function getCompetitorAIVisibility(
+  userId: string,
+  competitorIds: string[]
+): Promise<{
+  message: string;
+  data: Array<{
+    competitorId: string;
+    competitorName: string;
+    score: AIVisibilityScore | null;
+    mentionCount: number;
+  }> | null;
+  errors: any;
+}> {
+  try {
+    const repository = getRepository();
+    const results = [];
+
+    // Get user's own data first
+    const userScoreResult = await repository.query(
+      `USER#${userId}`,
+      'AI_VISIBILITY_SCORE#',
+      {
+        limit: 1,
+        scanIndexForward: false,
+      }
+    );
+
+    const userScore = (userScoreResult.items[0] as any)?.Data as AIVisibilityScore | undefined;
+
+    // Get user profile for name
+    const userProfileKeys = getUserProfileKeys(userId);
+    const userProfileResult = await repository.get(userProfileKeys.PK, userProfileKeys.SK);
+    const userProfile = (userProfileResult as any)?.Data as Profile | undefined;
+
+    results.push({
+      competitorId: userId,
+      competitorName: userProfile?.name || 'You',
+      score: userScore || null,
+      mentionCount: userScore?.mentionCount || 0,
+    });
+
+    // Get each competitor's data
+    for (const competitorId of competitorIds) {
+      try {
+        // Get competitor's latest score
+        const scoreResult = await repository.query(
+          `USER#${competitorId}`,
+          'AI_VISIBILITY_SCORE#',
+          {
+            limit: 1,
+            scanIndexForward: false,
+          }
+        );
+
+        const score = (scoreResult.items[0] as any)?.Data as AIVisibilityScore | undefined;
+
+        // Get competitor profile for name
+        const competitorKeys = getCompetitorKeys(userId, competitorId);
+        const competitorResult = await repository.get(competitorKeys.PK, competitorKeys.SK);
+        const competitor = (competitorResult as any)?.Data as Competitor | undefined;
+
+        results.push({
+          competitorId,
+          competitorName: competitor?.name || 'Unknown',
+          score: score || null,
+          mentionCount: score?.mentionCount || 0,
+        });
+      } catch (error) {
+        console.warn(`Failed to get data for competitor ${competitorId}:`, error);
+        // Continue with other competitors
+      }
+    }
+
+    // Sort by score descending
+    results.sort((a, b) => {
+      const scoreA = a.score?.score || 0;
+      const scoreB = b.score?.score || 0;
+      return scoreB - scoreA;
+    });
+
+    return {
+      message: 'success',
+      data: results,
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Failed to get competitor AI visibility:', error);
+    const errorMessage = handleAWSError(error, 'Failed to load competitor visibility data');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { system: error.message },
+    };
+  }
+}
+
+/**
+ * Trigger manual monitoring job for a user
+ */
+export async function triggerManualMonitoring(userId: string): Promise<{
+  message: string;
+  data: { jobId: string } | null;
+  errors: any;
+}> {
+  try {
+    const repository = getRepository();
+
+    // Check if monitoring is enabled
+    const configResult = await repository.get(
+      `USER#${userId}`,
+      'AI_MONITORING_CONFIG'
+    );
+
+    const config = (configResult as any)?.Data as AIMonitoringConfig | undefined;
+
+    if (!config || !config.enabled) {
+      return {
+        message: 'AI monitoring is not enabled for this user',
+        data: null,
+        errors: { config: ['Please enable AI monitoring in settings first'] },
+      };
+    }
+
+    // Check rate limits
+    if (config.queriesThisPeriod >= config.queryLimit) {
+      return {
+        message: 'Query limit reached for this period',
+        data: null,
+        errors: { rateLimit: ['You have reached your query limit for this period. Please try again later.'] },
+      };
+    }
+
+    // Create a new monitoring job
+    const jobId = `job-${Date.now()}-${uuidv4().substring(0, 8)}`;
+    const job: AIMonitoringJob = {
+      id: jobId,
+      userId,
+      status: 'pending',
+      startedAt: new Date().toISOString(),
+      queriesExecuted: 0,
+      mentionsFound: 0,
+      errors: [],
+      costEstimate: 0,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    // Save job to DynamoDB
+    await repository.create(
+      `USER#${userId}`,
+      `AI_MONITORING_JOB#${job.startedAt}#${jobId}`,
+      'AIMonitoringJob',
+      job
+    );
+
+    // Import and execute the monitoring scheduler
+    const { AIMonitoringScheduler } = await import('@/lib/ai-monitoring-scheduler');
+    const scheduler = new AIMonitoringScheduler();
+
+    // Execute monitoring asynchronously (don't await)
+    scheduler.executeMonitoring(userId).then(result => {
+      console.log('Manual monitoring completed:', result);
+    }).catch(error => {
+      console.error('Manual monitoring failed:', error);
+    });
+
+    return {
+      message: 'Monitoring job started successfully',
+      data: { jobId },
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Failed to trigger manual monitoring:', error);
+    const errorMessage = handleAWSError(error, 'Failed to start monitoring job');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { system: error.message },
+    };
+  }
+}
+
+/**
+ * Export AI visibility report as PDF
+ * Generates a comprehensive report with visibility scores, mentions, sentiment analysis, and competitor comparison
+ */
+export async function exportAIVisibilityReport(
+  userId: string,
+  dateRange: { start: string; end: string }
+): Promise<{
+  message: string;
+  data: { downloadUrl: string } | null;
+  errors: any;
+}> {
+  try {
+    const repository = getRepository();
+
+    // Get user profile for agent name
+    const userProfileKeys = getUserProfileKeys(userId);
+    const userProfileResult = await repository.get(userProfileKeys.PK, userProfileKeys.SK);
+    const userProfile = (userProfileResult as any)?.Data as Profile | undefined;
+    const agentName = userProfile?.name || 'Agent';
+
+    // Get the latest visibility score
+    const scoreResult = await repository.query(
+      `USER#${userId}`,
+      'AI_VISIBILITY_SCORE#',
+      {
+        limit: 1,
+        scanIndexForward: false,
+      }
+    );
+
+    const latestScore = (scoreResult.items[0] as any)?.Data as AIVisibilityScore | undefined;
+
+    if (!latestScore) {
+      return {
+        message: 'No visibility data available to export',
+        data: null,
+        errors: { data: ['No visibility data found. Please run monitoring first.'] },
+      };
+    }
+
+    // Get mentions within date range
+    const mentionsResult = await repository.query(
+      `USER#${userId}`,
+      'AI_MENTION#',
+      {
+        limit: 100,
+        scanIndexForward: false,
+      }
+    );
+
+    const allMentions = mentionsResult.items.map((item: any) => item.Data as AIMention);
+
+    // Filter mentions by date range
+    const mentions = allMentions.filter(mention => {
+      const mentionDate = new Date(mention.timestamp);
+      return mentionDate >= new Date(dateRange.start) && mentionDate <= new Date(dateRange.end);
+    });
+
+    // Get competitor data
+    const competitorResult = await getCompetitorAIVisibility(userId, []);
+    const competitorData = competitorResult.data?.map(comp => ({
+      name: comp.competitorName,
+      score: comp.score?.score || 0,
+      mentionCount: comp.mentionCount,
+      sentimentDistribution: comp.score?.sentimentDistribution || {
+        positive: 0,
+        neutral: 0,
+        negative: 0,
+      },
+    })) || [];
+
+    // Generate PDF report
+    const { generatePDFReport, generateExportFilename } = await import('@/lib/ai-visibility-export');
+
+    const exportData = {
+      visibilityScore: latestScore,
+      mentions,
+      competitorData,
+      dateRange,
+      agentName,
+    };
+
+    const pdfBuffer = await generatePDFReport(exportData);
+    const filename = generateExportFilename(agentName, dateRange);
+
+    // Upload to S3 with 24-hour expiration
+    const { uploadFile, getPresignedDownloadUrl } = await import('@/aws/s3/client');
+    const s3Key = `exports/${userId}/ai-visibility/${Date.now()}-${filename}`;
+
+    await uploadFile(
+      s3Key,
+      pdfBuffer,
+      'application/pdf',
+      {
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'max-age=86400', // 24 hours
+      }
+    );
+
+    // Generate presigned download URL (valid for 24 hours)
+    const downloadUrl = await getPresignedDownloadUrl(s3Key, filename, 86400);
+
+    return {
+      message: 'Report generated successfully',
+      data: { downloadUrl },
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Failed to export AI visibility report:', error);
+    const errorMessage = handleAWSError(error, 'Failed to generate report');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { system: error.message },
+    };
+  }
+}
+
+/**
+ * Get user budget and API usage information
+ */
+export async function getUserBudgetInfo(userId: string): Promise<{
+  message: string;
+  data: {
+    budget: {
+      monthlyLimit: number;
+      currentSpend: number;
+      remainingBudget: number;
+      percentageUsed: number;
+      periodStart: string;
+      periodEnd: string;
+      autoReduceFrequency: boolean;
+    };
+    usage: {
+      totalQueries: number;
+      costByPlatform: Record<string, number>;
+      recentUsage: any[];
+    };
+  } | null;
+  errors: any;
+}> {
+  try {
+    const { createAICostControlService } = await import('@/lib/ai-cost-control');
+    const costControl = createAICostControlService();
+
+    // Get user budget
+    const budget = await costControl.getUserBudget(userId);
+    const remainingBudget = budget.monthlyLimit - budget.currentSpend;
+    const percentageUsed = (budget.currentSpend / budget.monthlyLimit) * 100;
+
+    // Get recent API usage
+    const recentUsage = await costControl.getAPIUsage(
+      userId,
+      budget.periodStart,
+      budget.periodEnd
+    );
+
+    // Calculate cost by platform
+    const costByPlatform: Record<string, number> = {};
+    let totalQueries = 0;
+
+    for (const record of recentUsage) {
+      costByPlatform[record.platform] = (costByPlatform[record.platform] || 0) + record.estimatedCost;
+      totalQueries += record.queryCount;
+    }
+
+    return {
+      message: 'Budget information retrieved successfully',
+      data: {
+        budget: {
+          monthlyLimit: budget.monthlyLimit,
+          currentSpend: budget.currentSpend,
+          remainingBudget,
+          percentageUsed,
+          periodStart: budget.periodStart,
+          periodEnd: budget.periodEnd,
+          autoReduceFrequency: budget.autoReduceFrequency,
+        },
+        usage: {
+          totalQueries,
+          costByPlatform,
+          recentUsage: recentUsage.slice(0, 10), // Last 10 records
+        },
+      },
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Failed to get user budget info:', error);
+    const errorMessage = handleAWSError(error, 'Failed to retrieve budget information');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { system: error.message },
+    };
+  }
+}
+
+/**
+ * Update user budget configuration
+ */
+export async function updateUserBudgetConfig(
+  userId: string,
+  updates: {
+    monthlyLimit?: number;
+    alertThresholds?: number[];
+    autoReduceFrequency?: boolean;
+  }
+): Promise<{
+  message: string;
+  data: { success: boolean } | null;
+  errors: any;
+}> {
+  try {
+    const { createAICostControlService } = await import('@/lib/ai-cost-control');
+    const costControl = createAICostControlService();
+
+    await costControl.updateUserBudget(userId, updates);
+
+    return {
+      message: 'Budget configuration updated successfully',
+      data: { success: true },
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Failed to update user budget config:', error);
+    const errorMessage = handleAWSError(error, 'Failed to update budget configuration');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { system: error.message },
+    };
+  }
+}
+
+/**
+ * Estimate cost for upcoming monitoring execution
+ */
+export async function estimateMonitoringCost(userId: string): Promise<{
+  message: string;
+  data: {
+    totalCost: number;
+    breakdown: {
+      platform: string;
+      queries: number;
+      costPerQuery: number;
+      totalCost: number;
+    }[];
+    withinBudget: boolean;
+    remainingBudget: number;
+  } | null;
+  errors: any;
+}> {
+  try {
+    const repository = getRepository();
+    const { createAICostControlService } = await import('@/lib/ai-cost-control');
+    const costControl = createAICostControlService();
+
+    // Get monitoring config
+    const config = await repository.getAIMonitoringConfig<AIMonitoringConfig>(userId);
+
+    if (!config) {
+      return {
+        message: 'Monitoring not configured for this user',
+        data: null,
+        errors: { config: ['Please configure AI monitoring first'] },
+      };
+    }
+
+    // Estimate cost
+    const queriesPerPlatform = config.queryTemplates.length;
+    const estimate = await costControl.estimateCost(
+      userId,
+      config.platforms,
+      queriesPerPlatform
+    );
+
+    return {
+      message: 'Cost estimate calculated successfully',
+      data: estimate,
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Failed to estimate monitoring cost:', error);
+    const errorMessage = handleAWSError(error, 'Failed to estimate cost');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { system: error.message },
+    };
+  }
+}
+
+/**
+ * Get cost spike alerts for admin
+ */
+export async function getCostSpikeAlerts(
+  options: {
+    limit?: number;
+    unacknowledgedOnly?: boolean;
+  } = {}
+): Promise<{
+  message: string;
+  data: any[] | null;
+  errors: any;
+}> {
+  try {
+    const repository = getRepository();
+
+    // This would typically query across all users (admin function)
+    // For now, we'll return a placeholder
+    // In production, you'd need a GSI to query all cost spike alerts
+
+    return {
+      message: 'Cost spike alerts retrieved successfully',
+      data: [],
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Failed to get cost spike alerts:', error);
+    const errorMessage = handleAWSError(error, 'Failed to retrieve cost spike alerts');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { system: error.message },
+    };
+  }
+}
+
+/**
+ * Update AI monitoring configuration
+ */
+export async function updateAIMonitoringConfigAction(
+  userId: string,
+  config: Partial<AIMonitoringConfig>
+): Promise<{
+  message: string;
+  data: AIMonitoringConfig | null;
+  errors: any;
+}> {
+  try {
+    const repository = getRepository();
+
+    // Get existing config
+    const existingConfig = await repository.getAIMonitoringConfig<AIMonitoringConfig>(userId);
+
+    if (!existingConfig) {
+      // Create new config if it doesn't exist
+      const { createAIMonitoringScheduler } = await import('@/lib/ai-monitoring-scheduler');
+      const scheduler = createAIMonitoringScheduler();
+
+      // Schedule monitoring with the provided frequency
+      await scheduler.scheduleMonitoring(
+        userId,
+        config.frequency || 'weekly'
+      );
+
+      // Get the newly created config
+      const newConfig = await repository.getAIMonitoringConfig<AIMonitoringConfig>(userId);
+
+      if (!newConfig) {
+        throw new Error('Failed to create monitoring configuration');
+      }
+
+      // Update with any additional settings
+      if (config.platforms || config.alertThreshold !== undefined || config.enabled !== undefined) {
+        await repository.updateAIMonitoringConfig(userId, {
+          ...config,
+          updatedAt: Date.now(),
+        });
+      }
+
+      const updatedConfig = await repository.getAIMonitoringConfig<AIMonitoringConfig>(userId);
+
+      return {
+        message: 'success',
+        data: updatedConfig,
+        errors: {},
+      };
+    }
+
+    // Update existing config
+    await repository.updateAIMonitoringConfig(userId, {
+      ...config,
+      updatedAt: Date.now(),
+    });
+
+    // If frequency changed, reschedule
+    if (config.frequency && config.frequency !== existingConfig.frequency) {
+      const { createAIMonitoringScheduler } = await import('@/lib/ai-monitoring-scheduler');
+      const scheduler = createAIMonitoringScheduler();
+      await scheduler.scheduleMonitoring(userId, config.frequency);
+    }
+
+    const updatedConfig = await repository.getAIMonitoringConfig<AIMonitoringConfig>(userId);
+
+    return {
+      message: 'success',
+      data: updatedConfig,
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Failed to update monitoring config:', error);
+    const errorMessage = handleAWSError(error, 'Failed to update monitoring configuration');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { system: error.message },
+    };
+  }
+}
+
+// ==================== Website Analysis Actions ====================
+
+/**
+ * Save website analysis to DynamoDB
+ * Saves both as latest and as historical record
+ * Optimized with parallel writes for better performance
+ */
+export async function saveWebsiteAnalysis(
+  userId: string,
+  analysis: WebsiteAnalysisResult
+): Promise<{
+  message: string;
+  data: { success: boolean } | null;
+  errors: any;
+}> {
+  try {
+    const repository = getRepository();
+    const { getWebsiteAnalysisKeys } = await import('@/aws/dynamodb/keys');
+    const { websiteAnalysisResultSchema } = await import('@/ai/schemas/website-analysis-schemas');
+
+    // Validate analysis data
+    const validatedAnalysis = websiteAnalysisResultSchema.parse(analysis);
+
+    // Prepare keys for both writes
+    const latestKeys = getWebsiteAnalysisKeys(userId);
+    const timestamp = new Date(validatedAnalysis.analyzedAt).getTime().toString();
+    const historicalKeys = getWebsiteAnalysisKeys(userId, timestamp);
+
+    // Execute both writes in parallel for better performance
+    const [latestResult, historicalResult] = await Promise.allSettled([
+      repository.create(
+        latestKeys.PK,
+        latestKeys.SK,
+        'WebsiteAnalysis',
+        validatedAnalysis
+      ),
+      repository.create(
+        historicalKeys.PK,
+        historicalKeys.SK,
+        'WebsiteAnalysis',
+        validatedAnalysis
+      ),
+    ]);
+
+    // Check if both writes succeeded
+    if (latestResult.status === 'rejected' || historicalResult.status === 'rejected') {
+      const errors = [];
+      if (latestResult.status === 'rejected') {
+        errors.push(`Latest: ${latestResult.reason}`);
+      }
+      if (historicalResult.status === 'rejected') {
+        errors.push(`Historical: ${historicalResult.reason}`);
+      }
+      throw new Error(`Failed to save analysis: ${errors.join(', ')}`);
+    }
+
+    // Update profile with optimization score (async, don't block)
+    // Run in background to avoid blocking the response
+    Promise.resolve().then(async () => {
+      try {
+        const profileKeys = getProfileKeys(userId);
+        const existingProfile = await repository.get(profileKeys.PK, profileKeys.SK) as any;
+
+        if (existingProfile && existingProfile.Data) {
+          const updatedProfileData = {
+            PK: profileKeys.PK,
+            SK: profileKeys.SK,
+            EntityType: 'RealEstateAgentProfile' as const,
+            Data: {
+              ...(existingProfile.Data as any),
+              websiteOptimizationScore: validatedAnalysis.overallScore,
+              websiteOptimizationAnalyzedAt: validatedAnalysis.analyzedAt,
+            },
+            CreatedAt: existingProfile.CreatedAt || Date.now(),
+            UpdatedAt: Date.now(),
+          };
+
+          await repository.put(updatedProfileData);
+        }
+      } catch (profileError) {
+        // Log error but don't fail the entire operation
+        console.error('Failed to update profile with optimization score:', profileError);
+      }
+    }).catch(err => {
+      console.error('Background profile update failed:', err);
+    });
+
+    return {
+      message: 'Website analysis saved successfully',
+      data: { success: true },
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Failed to save website analysis:', error);
+    const errorMessage = handleAWSError(error, 'Failed to save website analysis');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { system: error.message },
+    };
+  }
+}
+
+/**
+ * Get the latest website analysis for a user
+ */
+export async function getLatestWebsiteAnalysis(userId: string): Promise<{
+  message: string;
+  data: WebsiteAnalysisResult | null;
+  errors: any;
+}> {
+  try {
+    const repository = getRepository();
+    const { getWebsiteAnalysisKeys } = await import('@/aws/dynamodb/keys');
+
+    const keys = getWebsiteAnalysisKeys(userId);
+    const result = await repository.get<WebsiteAnalysisResult>(keys.PK, keys.SK);
+
+    if (!result) {
+      return {
+        message: 'No website analysis found. Run your first analysis to get started.',
+        data: null,
+        errors: {},
+      };
+    }
+
+    return {
+      message: 'success',
+      data: result,
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Failed to get latest website analysis:', error);
+    const errorMessage = handleAWSError(error, 'Failed to retrieve website analysis');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { system: error.message },
+    };
+  }
+}
+
+/**
+ * Get website analysis history for a user
+ * Returns up to the specified limit of historical analyses, sorted by date (newest first)
+ * Optimized with projection to reduce data transfer
+ */
+export async function getWebsiteAnalysisHistory(
+  userId: string,
+  limit: number = 5
+): Promise<{
+  message: string;
+  data: WebsiteAnalysisResult[] | null;
+  errors: any;
+}> {
+  try {
+    const repository = getRepository();
+
+    // Query with optimized limit to reduce over-fetching
+    // We fetch limit + 1 to account for the 'latest' entry, but no more
+    const result = await repository.query<WebsiteAnalysisResult>(
+      `USER#${userId}`,
+      'WEBSITE_ANALYSIS#',
+      {
+        limit: limit + 1, // +1 to account for the 'latest' entry
+        scanIndexForward: false, // Most recent first
+      }
+    );
+
+    // Filter out the 'latest' entry (it has SK = 'WEBSITE_ANALYSIS#latest')
+    // and only keep historical entries (SK = 'WEBSITE_ANALYSIS#<timestamp>')
+    const historicalAnalyses = result.items.filter(analysis => {
+      // Historical entries have numeric timestamps in their IDs
+      return analysis.id !== 'latest' && /^\d+$/.test(analysis.id.split('-').pop() || '');
+    }).slice(0, limit);
+
+    if (historicalAnalyses.length === 0) {
+      return {
+        message: 'No analysis history found. Run multiple analyses to track your progress over time.',
+        data: [],
+        errors: {},
+      };
+    }
+
+    return {
+      message: 'success',
+      data: historicalAnalyses,
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Failed to get website analysis history:', error);
+    const errorMessage = handleAWSError(error, 'Failed to retrieve analysis history');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { system: error.message },
+    };
+  }
+}
+
+/**
+ * Calculate trend from historical website analysis data
+ * Compares the latest analysis with previous ones to determine if scores are improving, declining, or stable
+ */
+export async function calculateWebsiteAnalysisTrend(
+  userId: string
+): Promise<{
+  message: string;
+  data: {
+    trend: 'improving' | 'declining' | 'stable';
+    currentScore: number;
+    previousScore: number | null;
+    scoreChange: number;
+    percentageChange: number;
+    analysisCount: number;
+  } | null;
+  errors: any;
+}> {
+  try {
+    const repository = getRepository();
+
+    // Get the last 2 analyses to compare
+    const result = await repository.query<WebsiteAnalysisResult>(
+      `USER#${userId}`,
+      'WEBSITE_ANALYSIS#',
+      {
+        limit: 3, // Get 3 to account for 'latest' entry
+        scanIndexForward: false, // Most recent first
+      }
+    );
+
+    // Filter out the 'latest' entry
+    const historicalAnalyses = result.items.filter(analysis => {
+      return analysis.id !== 'latest' && /^\d+$/.test(analysis.id.split('-').pop() || '');
+    });
+
+    if (historicalAnalyses.length === 0) {
+      return {
+        message: 'Not enough data to calculate trend. Run at least one analysis.',
+        data: null,
+        errors: {},
+      };
+    }
+
+    const currentAnalysis = historicalAnalyses[0];
+    const currentScore = currentAnalysis.overallScore;
+
+    // If only one analysis exists, we can't calculate a trend
+    if (historicalAnalyses.length === 1) {
+      return {
+        message: 'success',
+        data: {
+          trend: 'stable',
+          currentScore,
+          previousScore: null,
+          scoreChange: 0,
+          percentageChange: 0,
+          analysisCount: 1,
+        },
+        errors: {},
+      };
+    }
+
+    const previousAnalysis = historicalAnalyses[1];
+    const previousScore = previousAnalysis.overallScore;
+    const scoreChange = currentScore - previousScore;
+    const percentageChange = previousScore > 0 ? (scoreChange / previousScore) * 100 : 0;
+
+    // Determine trend based on score change
+    // Consider changes less than 2 points as stable
+    let trend: 'improving' | 'declining' | 'stable';
+    if (Math.abs(scoreChange) < 2) {
+      trend = 'stable';
+    } else if (scoreChange > 0) {
+      trend = 'improving';
+    } else {
+      trend = 'declining';
+    }
+
+    return {
+      message: 'success',
+      data: {
+        trend,
+        currentScore,
+        previousScore,
+        scoreChange,
+        percentageChange,
+        analysisCount: historicalAnalyses.length,
+      },
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Failed to calculate website analysis trend:', error);
+    const errorMessage = handleAWSError(error, 'Failed to calculate trend');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { system: error.message },
+    };
+  }
+}
+
+/**
+ * Server action to analyze a website
+ * Validates input, runs the analysis flow, and saves results
+ * Handles missing profile data, unreachable websites, and Bedrock errors
+ */
+export async function analyzeWebsiteAction(
+  prevState: any,
+  formData: FormData
+): Promise<{
+  message: string;
+  data: WebsiteAnalysisResult | null;
+  errors: any;
+}> {
+  const startTime = Date.now();
+  let userId: string | undefined;
+  let websiteUrl: string | undefined;
+
+  try {
+    const { websiteAnalysisInputSchema } = await import('@/ai/schemas/website-analysis-schemas');
+    const { analyzeWebsite } = await import('@/aws/bedrock/flows/website-analysis');
+    const { createLogger, generateCorrelationId } = await import('@/aws/logging/logger');
+
+    // Initialize logger
+    const correlationId = generateCorrelationId();
+    const actionLogger = createLogger({
+      correlationId,
+      service: 'website-analysis-action',
+      operation: 'analyzeWebsiteAction',
+    });
+
+    // Get current user
+    const user = await getCurrentUserServer();
+    if (!user || !user.id) {
+      actionLogger.warn('Unauthorized website analysis attempt', {
+        reason: 'No user session',
+      });
+
+      return {
+        message: 'Please sign in to analyze your website',
+        data: null,
+        errors: { auth: ['You must be logged in to analyze a website'] },
+      };
+    }
+
+    userId = user.id;
+    actionLogger.debug('User authenticated', { userId });
+
+    // Parse and validate input
+    websiteUrl = formData.get('websiteUrl') as string;
+    const profileDataJson = formData.get('profileData') as string;
+
+    actionLogger.debug('Parsing input', {
+      hasWebsiteUrl: !!websiteUrl,
+      hasProfileData: !!profileDataJson,
+    });
+
+    // Validate website URL
+    if (!websiteUrl || websiteUrl.trim().length === 0) {
+      actionLogger.warn('Validation failed: missing website URL', {
+        userId,
+      });
+
+      return {
+        message: 'Please enter a website URL to analyze',
+        data: null,
+        errors: { websiteUrl: ['Website URL is required'] },
+      };
+    }
+
+    // Basic URL format validation
+    try {
+      const url = new URL(websiteUrl);
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+        actionLogger.warn('Validation failed: invalid URL protocol', {
+          userId,
+          websiteUrl,
+          protocol: url.protocol,
+        });
+
+        return {
+          message: 'Please enter a valid website URL starting with http:// or https://',
+          data: null,
+          errors: { websiteUrl: ['URL must use http:// or https:// protocol'] },
+        };
+      }
+    } catch (error) {
+      actionLogger.warn('Validation failed: malformed URL', {
+        userId,
+        websiteUrl,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+
+      return {
+        message: 'Please enter a valid website URL (e.g., https://example.com)',
+        data: null,
+        errors: { websiteUrl: ['Invalid URL format'] },
+      };
+    }
+
+    // Parse profile data
+    let profileData;
+    try {
+      profileData = profileDataJson ? JSON.parse(profileDataJson) : {};
+      actionLogger.debug('Profile data parsed', {
+        userId,
+        hasName: !!profileData.name,
+        hasAddress: !!profileData.address,
+        hasPhone: !!profileData.phone,
+      });
+    } catch (error) {
+      actionLogger.error('Failed to parse profile data', error as Error, {
+        userId,
+      });
+
+      return {
+        message: 'Invalid profile data format',
+        data: null,
+        errors: { profileData: ['Invalid profile data format'] },
+      };
+    }
+
+    // Check for missing critical profile data
+    const missingFields: string[] = [];
+    if (!profileData.name || profileData.name.trim().length === 0) {
+      missingFields.push('name');
+    }
+    if (!profileData.address || profileData.address.trim().length === 0) {
+      missingFields.push('address');
+    }
+    if (!profileData.phone || profileData.phone.trim().length === 0) {
+      missingFields.push('phone');
+    }
+
+    if (missingFields.length > 0) {
+      const fieldList = missingFields.join(', ');
+      actionLogger.warn('Validation failed: incomplete profile', {
+        userId,
+        missingFields,
+      });
+
+      return {
+        message: `Please complete your profile before analyzing your website. Missing: ${fieldList}`,
+        data: null,
+        errors: {
+          profile: [
+            `Your profile is missing required information: ${fieldList}`,
+            'Please update your profile in Brand → Profile before running the analysis',
+          ],
+        },
+      };
+    }
+
+    // Validate input with schema
+    const validatedInput = websiteAnalysisInputSchema.safeParse({
+      userId: user.id,
+      websiteUrl,
+      profileData,
+    });
+
+    if (!validatedInput.success) {
+      const errors = validatedInput.error.flatten().fieldErrors;
+      const firstError = Object.values(errors)[0]?.[0] || 'Validation failed';
+
+      actionLogger.warn('Schema validation failed', {
+        userId,
+        websiteUrl,
+        errors,
+      });
+
+      return {
+        message: firstError,
+        data: null,
+        errors,
+      };
+    }
+
+    actionLogger.info('Starting website analysis', {
+      userId,
+      websiteUrl,
+    });
+
+    // Run the website analysis flow
+    let result: WebsiteAnalysisResult;
+    try {
+      result = await analyzeWebsite(validatedInput.data);
+
+      actionLogger.info('Website analysis completed successfully', {
+        userId,
+        websiteUrl,
+        duration: Date.now() - startTime,
+        score: result.overallScore,
+      });
+    } catch (error) {
+      actionLogger.error('Website analysis flow failed', error as Error, {
+        userId,
+        websiteUrl,
+        duration: Date.now() - startTime,
+      });
+
+      const errorMessage = error instanceof Error ? error.message : 'Analysis failed';
+
+      // Provide specific error messages based on error type
+      if (errorMessage.includes('timeout')) {
+        return {
+          message: 'The website took too long to respond. Please try again or check if the website is slow.',
+          data: null,
+          errors: { network: ['Request timeout'] },
+        };
+      } else if (errorMessage.includes('not found') || errorMessage.includes('404')) {
+        return {
+          message: 'Website not found. Please verify the URL is correct and the website is online.',
+          data: null,
+          errors: { network: ['Website not found'] },
+        };
+      } else if (errorMessage.includes('refused') || errorMessage.includes('403')) {
+        return {
+          message: 'Unable to access the website. It may be blocking automated access or require authentication.',
+          data: null,
+          errors: { network: ['Access denied'] },
+        };
+      } else if (errorMessage.includes('certificate') || errorMessage.includes('SSL')) {
+        return {
+          message: 'The website has an invalid SSL certificate. Please contact the website administrator.',
+          data: null,
+          errors: { network: ['SSL certificate error'] },
+        };
+      } else if (errorMessage.includes('AI analysis')) {
+        return {
+          message: 'The AI analysis service is temporarily unavailable. Please try again in a few moments.',
+          data: null,
+          errors: { ai: ['AI service error'] },
+        };
+      }
+
+      // Generic error fallback
+      return {
+        message: errorMessage || 'An unexpected error occurred while analyzing the website',
+        data: null,
+        errors: { system: [errorMessage] },
+      };
+    }
+
+    // Save the analysis results
+    try {
+      await saveWebsiteAnalysis(user.id, result);
+      actionLogger.debug('Analysis results saved to database', {
+        userId,
+        analysisId: result.id,
+      });
+    } catch (error) {
+      actionLogger.error('Failed to save analysis results', error as Error, {
+        userId,
+        analysisId: result.id,
+      });
+
+      // Don't fail the entire operation if save fails - return the results anyway
+      // The user can still see the analysis, just won't be saved to history
+      return {
+        message: 'Analysis complete, but failed to save to history',
+        data: result,
+        errors: { storage: ['Failed to save analysis to database'] },
+      };
+    }
+
+    actionLogger.info('Website analysis action completed successfully', {
+      userId,
+      websiteUrl,
+      duration: Date.now() - startTime,
+      score: result.overallScore,
+    });
+
+    return {
+      message: 'success',
+      data: result,
+      errors: {},
+    };
+  } catch (error: any) {
+    const { createLogger } = await import('@/aws/logging/logger');
+    const errorLogger = createLogger({
+      service: 'website-analysis-action',
+      operation: 'analyzeWebsiteAction',
+    });
+
+    errorLogger.error('Unexpected error in analyzeWebsiteAction', error, {
+      userId,
+      websiteUrl,
+      duration: Date.now() - startTime,
+    });
+
+    const errorMessage = handleAWSError(error, 'An unexpected error occurred while analyzing the website');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { system: [error.message || 'Unknown error'] },
+    };
+  }
+}
+
+/**
+ * Server action to get saved website analysis
+ * Returns the latest analysis for the current user
+ */
+export async function getWebsiteAnalysisAction(userId: string): Promise<{
+  message: string;
+  data: WebsiteAnalysisResult | null;
+  errors: any;
+}> {
+  const startTime = Date.now();
+
+  try {
+    const { createLogger } = await import('@/aws/logging/logger');
+    const actionLogger = createLogger({
+      service: 'website-analysis-action',
+      operation: 'getWebsiteAnalysisAction',
+      userId,
+    });
+
+    actionLogger.debug('Retrieving latest website analysis', { userId });
+
+    const result = await getLatestWebsiteAnalysis(userId);
+
+    actionLogger.debug('Latest website analysis retrieved', {
+      userId,
+      duration: Date.now() - startTime,
+      hasData: !!result.data,
+    });
+
+    return result;
+  } catch (error: any) {
+    const { createLogger } = await import('@/aws/logging/logger');
+    const errorLogger = createLogger({
+      service: 'website-analysis-action',
+      operation: 'getWebsiteAnalysisAction',
+      userId,
+    });
+
+    errorLogger.error('Failed to get website analysis', error, {
+      userId,
+      duration: Date.now() - startTime,
+    });
+
+    const errorMessage = handleAWSError(error, 'Failed to retrieve website analysis');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { system: error.message },
+    };
+  }
+}
+
+/**
+ * Server action to get website analysis history
+ * Returns historical analyses with trend calculation
+ * Optimized to avoid redundant queries by calculating trend from history data
+ */
+export async function getWebsiteAnalysisHistoryAction(
+  userId: string,
+  limit: number = 5
+): Promise<{
+  message: string;
+  data: {
+    history: WebsiteAnalysisResult[];
+    trend: {
+      trend: 'improving' | 'declining' | 'stable';
+      currentScore: number;
+      previousScore: number | null;
+      scoreChange: number;
+      percentageChange: number;
+      analysisCount: number;
+    } | null;
+  } | null;
+  errors: any;
+}> {
+  const startTime = Date.now();
+
+  try {
+    const { createLogger } = await import('@/aws/logging/logger');
+    const actionLogger = createLogger({
+      service: 'website-analysis-action',
+      operation: 'getWebsiteAnalysisHistoryAction',
+      userId,
+    });
+
+    actionLogger.debug('Retrieving website analysis history', {
+      userId,
+      limit,
+    });
+
+    // Get history - single query instead of two separate queries
+    const historyResult = await getWebsiteAnalysisHistory(userId, limit);
+
+    if (!historyResult.data || historyResult.data.length === 0) {
+      actionLogger.debug('No website analysis history found', {
+        userId,
+        duration: Date.now() - startTime,
+      });
+
+      return {
+        message: historyResult.message,
+        data: null,
+        errors: historyResult.errors,
+      };
+    }
+
+    // Calculate trend from the history data we already have
+    // This avoids a second database query
+    const history = historyResult.data;
+    let trend: {
+      trend: 'improving' | 'declining' | 'stable';
+      currentScore: number;
+      previousScore: number | null;
+      scoreChange: number;
+      percentageChange: number;
+      analysisCount: number;
+    } | null = null;
+
+    if (history.length > 0) {
+      const currentAnalysis = history[0];
+      const currentScore = currentAnalysis.overallScore;
+
+      if (history.length === 1) {
+        // Only one analysis, no trend to calculate
+        trend = {
+          trend: 'stable',
+          currentScore,
+          previousScore: null,
+          scoreChange: 0,
+          percentageChange: 0,
+          analysisCount: 1,
+        };
+      } else {
+        // Calculate trend from first two analyses
+        const previousAnalysis = history[1];
+        const previousScore = previousAnalysis.overallScore;
+        const scoreChange = currentScore - previousScore;
+        const percentageChange = previousScore > 0 ? (scoreChange / previousScore) * 100 : 0;
+
+        // Determine trend based on score change
+        // Consider changes less than 2 points as stable
+        let trendDirection: 'improving' | 'declining' | 'stable';
+        if (Math.abs(scoreChange) < 2) {
+          trendDirection = 'stable';
+        } else if (scoreChange > 0) {
+          trendDirection = 'improving';
+        } else {
+          trendDirection = 'declining';
+        }
+
+        trend = {
+          trend: trendDirection,
+          currentScore,
+          previousScore,
+          scoreChange,
+          percentageChange,
+          analysisCount: history.length,
+        };
+      }
+    }
+
+    actionLogger.debug('Website analysis history retrieved', {
+      userId,
+      duration: Date.now() - startTime,
+      historyCount: history.length,
+      hasTrend: !!trend,
+      trendDirection: trend?.trend,
+    });
+
+    return {
+      message: 'success',
+      data: {
+        history,
+        trend,
+      },
+      errors: {},
+    };
+  } catch (error: any) {
+    const { createLogger } = await import('@/aws/logging/logger');
+    const errorLogger = createLogger({
+      service: 'website-analysis-action',
+      operation: 'getWebsiteAnalysisHistoryAction',
+      userId,
+    });
+
+    errorLogger.error('Failed to get website analysis history', error, {
+      userId,
+      duration: Date.now() - startTime,
+    });
+
+    const errorMessage = handleAWSError(error, 'Failed to retrieve analysis history');
+    return {
+      message: errorMessage,
+      data: null,
+      errors: { system: error.message },
     };
   }
 }

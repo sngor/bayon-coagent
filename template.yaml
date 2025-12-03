@@ -615,11 +615,11 @@ Resources:
       Integration:
         Type: MOCK
         RequestTemplates:
-          application/json: "{\"statusCode\": 200}"
+          application/json: '{"statusCode": 200}'
         IntegrationResponses:
           - StatusCode: 200
             ResponseTemplates:
-              application/json: "{\"status\": \"healthy\"}"
+              application/json: '{"status": "healthy"}'
       MethodResponses:
         - StatusCode: 200
 
@@ -3276,6 +3276,68 @@ Resources:
         Application: BayonCoAgent
         Function: SyncSocialAnalytics
 
+  # AI Monitoring Lambda (Weekly)
+  ScheduledAIMonitoringFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-scheduled-ai-monitoring-${Environment}
+      CodeUri: src/lambda/
+      Handler: scheduled-ai-monitoring.handler
+      Runtime: nodejs22.x
+      Timeout: 900 # 15 minutes
+      MemorySize: 2048
+      Role: !GetAtt ContentWorkflowLambdaRole.Arn
+      Events:
+        WeeklySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 3 ? * MON *) # Weekly on Mondays at 3 AM UTC
+            Description: Weekly AI visibility monitoring across all platforms
+            Enabled: true
+            Input: !Sub |
+              {
+                "source": "aws.events",
+                "detail-type": "Scheduled Event",
+                "detail": {
+                  "maxUsers": 50,
+                  "batchSize": 10
+                }
+              }
+            DeadLetterConfig:
+              Arn: !GetAtt ScheduledAIMonitoringDLQ.Arn
+            RetryPolicy:
+              MaximumRetryAttempts: 2
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+          CLOUDWATCH_NAMESPACE: BayonCoAgent/AIMonitoring
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+          S3_BUCKET_NAME: !Ref StorageBucket
+          LAMBDA_VERSION: "1.0.0"
+          OPENAI_API_KEY: !Sub "{{resolve:secretsmanager:bayon-coagent/ai-platforms/${Environment}:SecretString:openai_api_key}}"
+          PERPLEXITY_API_KEY: !Sub "{{resolve:secretsmanager:bayon-coagent/ai-platforms/${Environment}:SecretString:perplexity_api_key}}"
+          ANTHROPIC_API_KEY: !Sub "{{resolve:secretsmanager:bayon-coagent/ai-platforms/${Environment}:SecretString:anthropic_api_key}}"
+          GOOGLE_AI_API_KEY: !Sub "{{resolve:secretsmanager:bayon-coagent/ai-platforms/${Environment}:SecretString:google_ai_api_key}}"
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: ScheduledAIMonitoring
+
+  # Dead Letter Queue for AI Monitoring
+  ScheduledAIMonitoringDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub bayon-coagent-scheduled-ai-monitoring-dlq-${Environment}
+      MessageRetentionPeriod: 1209600 # 14 days
+      VisibilityTimeout: 60
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Function
+          Value: ScheduledAIMonitoring
+
   # ==========================================
   # Stripe Subscription Handler Lambda
   # ==========================================
@@ -4569,6 +4631,67 @@ Resources:
         - !Ref AlarmTopic
       TreatMissingData: notBreaching
 
+  # AI Monitoring Lambda Alarms
+  ScheduledAIMonitoringErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-scheduled-ai-monitoring-errors
+      AlarmDescription: Alert when scheduled AI monitoring has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ScheduledAIMonitoringFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  ScheduledAIMonitoringDurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-scheduled-ai-monitoring-duration
+      AlarmDescription: Alert when scheduled AI monitoring duration exceeds threshold
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 720000 # 12 minutes in milliseconds
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ScheduledAIMonitoringFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  ScheduledAIMonitoringThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-scheduled-ai-monitoring-throttles
+      AlarmDescription: Alert when scheduled AI monitoring is being throttled
+      MetricName: Throttles
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ScheduledAIMonitoringFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
   CalculateOptimalTimesDurationAlarm:
     Type: AWS::CloudWatch::Alarm
     Condition: HasAlarmEmail
@@ -4915,9 +5038,26 @@ Resources:
               "type": "metric",
               "properties": {
                 "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${ScheduledAIMonitoringFunction}", {"stat": "Sum"}],
+                  [".", "Errors", ".", ".", {"stat": "Sum"}],
+                  [".", "Duration", ".", ".", {"stat": "Average"}],
+                  [".", "Throttles", ".", ".", {"stat": "Sum"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Scheduled AI Monitoring",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
                   ["AWS/SQS", "ApproximateNumberOfVisibleMessages", "QueueName", "${PublishScheduledContentDLQ.QueueName}", {"stat": "Sum"}],
                   [".", ".", ".", "${SyncSocialAnalyticsDLQ.QueueName}", {"stat": "Sum"}],
-                  [".", ".", ".", "${CalculateOptimalTimesDLQ.QueueName}", {"stat": "Sum"}]
+                  [".", ".", ".", "${CalculateOptimalTimesDLQ.QueueName}", {"stat": "Sum"}],
+                  [".", ".", ".", "${ScheduledAIMonitoringDLQ.QueueName}", {"stat": "Sum"}]
                 ],
                 "period": 300,
                 "stat": "Sum",
@@ -5073,6 +5213,12 @@ Outputs:
     Export:
       Name: !Sub ${Environment}-SyncSocialAnalyticsFunctionArn
 
+  ScheduledAIMonitoringFunctionArn:
+    Description: Scheduled AI Monitoring Lambda Function ARN
+    Value: !GetAtt ScheduledAIMonitoringFunction.Arn
+    Export:
+      Name: !Sub ${Environment}-ScheduledAIMonitoringFunctionArn
+
   # Content Workflow Dead Letter Queue Outputs
   PublishScheduledContentDLQArn:
     Description: Publish Scheduled Content Dead Letter Queue ARN
@@ -5091,6 +5237,12 @@ Outputs:
     Value: !GetAtt CalculateOptimalTimesDLQ.Arn
     Export:
       Name: !Sub ${Environment}-CalculateOptimalTimesDLQArn
+
+  ScheduledAIMonitoringDLQArn:
+    Description: Scheduled AI Monitoring Dead Letter Queue ARN
+    Value: !GetAtt ScheduledAIMonitoringDLQ.Arn
+    Export:
+      Name: !Sub ${Environment}-ScheduledAIMonitoringDLQArn
 
   ContentWorkflowLambdaRoleArn:
     Description: Content Workflow Lambda Role ARN

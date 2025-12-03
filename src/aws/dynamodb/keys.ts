@@ -1475,3 +1475,138 @@ export function getAEOCompetitorScoreKeys(
     SK: `AEO#COMPETITOR#${competitorId}#${timestamp}`,
   };
 }
+
+// ==================== AI Search Monitoring Keys ====================
+
+/**
+ * Generates keys for AIMention
+ * Pattern: PK: USER#<userId>, SK: AI_MENTION#<platform>#<timestamp>#<id>
+ * GSI1: PK: USER#<userId>, SK: AI_MENTION_BY_DATE#<timestamp>
+ */
+export function getAIMentionKeys(
+  userId: string,
+  mentionId: string,
+  platform: string,
+  timestamp: string
+): DynamoDBKey & {
+  GSI1PK: string;
+  GSI1SK: string;
+} {
+  return {
+    PK: `USER#${userId}`,
+    SK: `AI_MENTION#${platform}#${timestamp}#${mentionId}`,
+    GSI1PK: `USER#${userId}`,
+    GSI1SK: `AI_MENTION_BY_DATE#${timestamp}`,
+  };
+}
+
+/**
+ * Generates keys for AIVisibilityScore
+ * Pattern: PK: USER#<userId>, SK: AI_VISIBILITY_SCORE#<calculatedAt>
+ * GSI1: PK: USER#<userId>, SK: AI_SCORE_LATEST
+ */
+export function getAIVisibilityScoreKeys(
+  userId: string,
+  calculatedAt: string,
+  isLatest?: boolean
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `AI_VISIBILITY_SCORE#${calculatedAt}`,
+  };
+
+  // Add GSI1 keys for latest score lookup
+  if (isLatest) {
+    keys.GSI1PK = `USER#${userId}`;
+    keys.GSI1SK = 'AI_SCORE_LATEST';
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for AIMonitoringConfig
+ * Pattern: PK: USER#<userId>, SK: AI_MONITORING_CONFIG
+ */
+export function getAIMonitoringConfigKeys(userId: string): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: 'AI_MONITORING_CONFIG',
+  };
+}
+
+/**
+ * Generates keys for AIMonitoringJob
+ * Pattern: PK: USER#<userId>, SK: AI_MONITORING_JOB#<startedAt>#<id>
+ */
+export function getAIMonitoringJobKeys(
+  userId: string,
+  jobId: string,
+  startedAt: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `AI_MONITORING_JOB#${startedAt}#${jobId}`,
+  };
+}
+
+/**
+ * Generates keys for APIUsageRecord
+ * Pattern: PK: USER#<userId>, SK: API_USAGE#<timestamp>#<id>
+ */
+export function getAPIUsageRecordKeys(
+  userId: string,
+  recordId: string,
+  timestamp: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `API_USAGE#${timestamp}#${recordId}`,
+  };
+}
+
+/**
+ * Generates keys for UserBudget
+ * Pattern: PK: USER#<userId>, SK: USER_BUDGET
+ */
+export function getUserBudgetKeys(userId: string): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: 'USER_BUDGET',
+  };
+}
+
+/**
+ * Generates keys for CostSpikeAlert
+ * Pattern: PK: USER#<userId>, SK: COST_SPIKE_ALERT#<timestamp>#<id>
+ */
+export function getCostSpikeAlertKeys(
+  userId: string,
+  alertId: string,
+  timestamp: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `COST_SPIKE_ALERT#${timestamp}#${alertId}`,
+  };
+}
+
+// ==================== Website Analysis Keys ====================
+
+/**
+ * Generates keys for WebsiteAnalysis
+ * Pattern: PK: USER#<userId>, SK: WEBSITE_ANALYSIS#latest (for latest analysis)
+ * Pattern: PK: USER#<userId>, SK: WEBSITE_ANALYSIS#<timestamp> (for historical analyses)
+ */
+export function getWebsiteAnalysisKeys(
+  userId: string,
+  timestamp?: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: timestamp ? `WEBSITE_ANALYSIS#${timestamp}` : 'WEBSITE_ANALYSIS#latest',
+  };
+}

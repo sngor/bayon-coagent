@@ -92,43 +92,47 @@ global.ResizeObserver = class ResizeObserver {
     disconnect() { }
 };
 
-// Mock matchMedia for responsive hooks
-Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    value: jest.fn().mockImplementation(query => ({
-        matches: false,
-        media: query,
-        onchange: null,
-        addListener: jest.fn(), // deprecated
-        removeListener: jest.fn(), // deprecated
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        dispatchEvent: jest.fn(),
-    })),
-});
-
-// Mock IndexedDB for testing
-Object.defineProperty(window, 'indexedDB', {
-    value: {
-        open: jest.fn().mockImplementation(() => ({
-            result: {
-                createObjectStore: jest.fn(),
-                transaction: jest.fn().mockReturnValue({
-                    objectStore: jest.fn().mockReturnValue({
-                        add: jest.fn().mockResolvedValue(undefined),
-                        get: jest.fn().mockResolvedValue(undefined),
-                        getAll: jest.fn().mockResolvedValue([]),
-                        put: jest.fn().mockResolvedValue(undefined),
-                        delete: jest.fn().mockResolvedValue(undefined),
-                    }),
-                }),
-            },
-            onsuccess: null,
-            onerror: null,
+// Mock matchMedia for responsive hooks (only in jsdom environment)
+if (typeof window !== 'undefined') {
+    Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        value: jest.fn().mockImplementation(query => ({
+            matches: false,
+            media: query,
+            onchange: null,
+            addListener: jest.fn(), // deprecated
+            removeListener: jest.fn(), // deprecated
+            addEventListener: jest.fn(),
+            removeEventListener: jest.fn(),
+            dispatchEvent: jest.fn(),
         })),
-    },
-    writable: true,
-});
+    });
+}
+
+// Mock IndexedDB for testing (only in jsdom environment)
+if (typeof window !== 'undefined') {
+    Object.defineProperty(window, 'indexedDB', {
+        value: {
+            open: jest.fn().mockImplementation(() => ({
+                result: {
+                    createObjectStore: jest.fn(),
+                    transaction: jest.fn().mockReturnValue({
+                        objectStore: jest.fn().mockReturnValue({
+                            add: jest.fn().mockResolvedValue(undefined),
+                            get: jest.fn().mockResolvedValue(undefined),
+                            getAll: jest.fn().mockResolvedValue([]),
+                            put: jest.fn().mockResolvedValue(undefined),
+                            delete: jest.fn().mockResolvedValue(undefined),
+                        }),
+                    }),
+                },
+                onsuccess: null,
+                onerror: null,
+            })),
+        },
+        writable: true,
+    });
+}
 
 // Start server before all tests
 beforeAll(() => {

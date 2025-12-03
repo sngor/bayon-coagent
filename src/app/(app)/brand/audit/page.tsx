@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle2, AlertCircle, ArrowRight, Loader2, ServerCrash, Lightbulb, ExternalLink, Star, Globe, Home, Building, MessageSquareQuote, Bot, Trash2, TrendingUp, Award, Shield } from 'lucide-react';
+import { CheckCircle2, AlertCircle, ArrowRight, Loader2, ServerCrash, Lightbulb, ExternalLink, Star, Globe, Home, Building, MessageSquareQuote, Bot, Trash2, TrendingUp, Award, Shield, HelpCircle, Info } from 'lucide-react';
 import {
     AISparkleIcon,
     SuccessIcon,
@@ -51,13 +51,19 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils/common';
 import Link from 'next/link';
 import Image from 'next/image';
 import { type OAuthTokenData } from '@/aws/dynamodb';
 import { getOAuthTokensAction } from '@/features/integrations/actions/oauth-actions';
 import { useUser } from '@/aws/auth';
-import type { Profile, Review, BrandAudit as BrandAuditType, ReviewAnalysis } from '@/lib/types/common/common';
+import type { Profile, Review, BrandAudit as BrandAuditType, ReviewAnalysis } from '@/lib/types/common';
 import { runNapAuditAction, getZillowReviewsAction, analyzeReviewSentimentAction, analyzeMultipleReviewsAction, getReviewsAction, deleteReviewAction } from '@/app/actions';
 import { toast } from '@/hooks/use-toast';
 import { JsonLdDisplay } from '@/components/json-ld-display';
@@ -67,6 +73,9 @@ import { Celebration } from '@/components/ui/celebration';
 import { AIOperationProgress, useAIOperation } from '@/components/ui/ai-operation-progress';
 import { FavoritesButton } from '@/components/favorites-button';
 import { getPageConfig } from '@/components/dashboard-quick-actions';
+import type { WebsiteAnalysisResult } from '@/ai/schemas/website-analysis-schemas';
+import { AnalysisResultsDisplay } from '@/components/website-analysis-results-display';
+import { WebsiteHistoricalTrendChart } from '@/components/website-historical-trend-chart';
 
 
 type AuditResult = {
@@ -303,6 +312,20 @@ export default function BrandAuditPage() {
     const [reviewToDelete, setReviewToDelete] = useState<Review | null>(null);
     const [showCelebration, setShowCelebration] = useState(false);
 
+    // Website Analysis state
+    const [websiteAnalysisState, setWebsiteAnalysisState] = useState<{
+        message: string;
+        data: WebsiteAnalysisResult | null;
+        errors: any;
+    }>({
+        message: '',
+        data: null,
+        errors: {},
+    });
+    const [isAnalyzingWebsite, setIsAnalyzingWebsite] = useState(false);
+    const [websiteAnalysisHistory, setWebsiteAnalysisHistory] = useState<WebsiteAnalysisResult[]>([]);
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
     // State for profile and audit data
     const [agentProfileData, setAgentProfileData] = useState<Profile | null>(null);
     const [isProfileLoading, setIsProfileLoading] = useState(true);
@@ -316,10 +339,148 @@ export default function BrandAuditPage() {
     // AI operation tracking for NAP audit
     const napAuditOperation = useAIOperation('run-nap-audit');
 
+    // AI operation tracking for website analysis
+    const websiteAnalysisOperation = useAIOperation('analyze-website');
+
     // Wrapper for audit form action to track operation
     const handleAuditSubmit = async (formData: FormData) => {
         napAuditOperation.start();
         return auditFormAction(formData);
+    };
+
+    // Handler for website analysis
+    const handleWebsiteAnalysis = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        // Check for missing profile data
+        if (!user?.id) {
+            toast({
+                variant: 'destructive',
+                title: 'Authentication Required',
+                description: 'Please sign in to analyze your website.',
+            });
+            return;
+        }
+
+        if (!agentProfileData?.website) {
+            toast({
+                variant: 'destructive',
+                title: 'Missing Website URL',
+                description: 'Please add a website URL to your profile first.',
+            });
+            return;
+        }
+
+        // Check for missing profile fields needed for NAP comparison
+        const missingFields: string[] = [];
+        if (!agentProfileData.name) missingFields.push('name');
+        if (!agentProfileData.address) missingFields.push('address');
+        if (!agentProfileData.phone) missingFields.push('phone');
+
+        if (missingFields.length > 0) {
+            toast({
+                variant: 'destructive',
+                title: 'Incomplete Profile',
+                description: `Please complete your profile (${missingFields.join(', ')}) before analyzing your website.`,
+                action: {
+                    label: 'Go to Profile',
+                    onClick: () => window.location.href = '/brand/profile',
+                },
+            });
+            return;
+        }
+
+        setIsAnalyzingWebsite(true);
+        websiteAnalysisOperation.start();
+
+        try {
+            const formData = new FormData();
+            formData.append('userId', user.id);
+            formData.append('websiteUrl', agentProfileData.website);
+
+            // Pass profile data as JSON for NAP comparison
+            const profileData = {
+                name: agentProfileData.name || '',
+                address: agentProfileData.address || '',
+                phone: agentProfileData.phone || '',
+                email: agentProfileData.email || '',
+            };
+            formData.append('profileData', JSON.stringify(profileData));
+
+            const { analyzeWebsiteAction } = await import('@/app/actions');
+            const result = await analyzeWebsiteAction(null, formData);
+
+            setWebsiteAnalysisState(result);
+
+            if (result.message === 'success' && result.data) {
+                websiteAnalysisOperation.complete();
+
+                // Reload history to include the new analysis
+                try {
+                    const { getWebsiteAnalysisHistoryAction } = await import('@/app/actions');
+                    const historyResult = await getWebsiteAnalysisHistoryAction(user.id, 5);
+                    if (historyResult.message === 'success' && historyResult.data?.history) {
+                        setWebsiteAnalysisHistory(historyResult.data.history);
+                    }
+                } catch (error) {
+                    console.error('Failed to reload history:', error);
+                }
+
+                toast({
+                    title: 'Analysis Complete',
+                    description: `Your website scored ${result.data.overallScore}/100 for AI optimization.`,
+                });
+            } else {
+                websiteAnalysisOperation.fail(result.message || 'Analysis failed');
+
+                // Provide more helpful error messages based on error type
+                let errorTitle = 'Analysis Failed';
+                let errorDescription = result.message || 'An error occurred during analysis.';
+
+                if (result.errors?.profile) {
+                    errorTitle = 'Profile Incomplete';
+                    errorDescription = Array.isArray(result.errors.profile)
+                        ? result.errors.profile[0]
+                        : result.message;
+                } else if (result.errors?.network) {
+                    errorTitle = 'Website Access Error';
+                } else if (result.errors?.ai) {
+                    errorTitle = 'AI Service Error';
+                } else if (result.errors?.storage) {
+                    errorTitle = 'Save Failed';
+                    // Still show the results even if save failed
+                    if (result.data) {
+                        toast({
+                            variant: 'default',
+                            title: 'Analysis Complete (Not Saved)',
+                            description: 'Analysis completed but could not be saved to history.',
+                        });
+                        return;
+                    }
+                }
+
+                toast({
+                    variant: 'destructive',
+                    title: errorTitle,
+                    description: errorDescription,
+                });
+            }
+        } catch (error) {
+            console.error('Website analysis error:', error);
+            websiteAnalysisOperation.fail('An unexpected error occurred');
+
+            const errorMessage = error instanceof Error
+                ? error.message
+                : 'An unexpected error occurred during analysis.';
+
+            toast({
+                variant: 'destructive',
+                title: 'Unexpected Error',
+                description: errorMessage,
+            });
+        } finally {
+            setIsAnalyzingWebsite(false);
+        }
     };
 
     // Load profile data
@@ -408,6 +569,32 @@ export default function BrandAuditPage() {
         }
 
         loadReviews();
+    }, [user?.id]);
+
+    // Load website analysis history
+    useEffect(() => {
+        async function loadWebsiteAnalysisHistory() {
+            if (!user?.id) {
+                setIsLoadingHistory(false);
+                return;
+            }
+
+            try {
+                setIsLoadingHistory(true);
+                const { getWebsiteAnalysisHistoryAction } = await import('@/app/actions');
+                const result = await getWebsiteAnalysisHistoryAction(user.id, 5);
+
+                if (result.message === 'success' && result.data?.history) {
+                    setWebsiteAnalysisHistory(result.data.history);
+                }
+            } catch (error) {
+                console.error('Failed to load website analysis history:', error);
+            } finally {
+                setIsLoadingHistory(false);
+            }
+        }
+
+        loadWebsiteAnalysisHistory();
     }, [user?.id]);
 
     const displayAuditData = auditState.data || savedAuditData?.results || null;
@@ -873,6 +1060,278 @@ export default function BrandAuditPage() {
                                 )}
                             </CardContent>
                         </Card>
+
+                        {/* Website Analysis Card */}
+                        <Card>
+                            <CardHeader>
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <CardTitle className="font-headline">Website AI Optimization Analysis</CardTitle>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-5 w-5 p-0">
+                                                            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                                                            <span className="sr-only">Help</span>
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="max-w-xs">
+                                                        <p className="font-semibold mb-1">What is AEO?</p>
+                                                        <p className="text-sm">
+                                                            AI Engine Optimization (AEO) ensures your website is optimized for AI-powered search engines like ChatGPT, Perplexity, and Claude. We analyze schema markup, meta tags, and structured data to help AI systems discover and recommend your services.
+                                                        </p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
+                                        <CardDescription>
+                                            Check how well AI search engines can discover and understand your website.
+                                        </CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {/* Website Analysis Form */}
+                                <form onSubmit={handleWebsiteAnalysis} className="space-y-4">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <Label htmlFor="websiteUrl">Website URL</Label>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="max-w-xs">
+                                                        <p className="text-sm">
+                                                            We'll analyze your website URL from your profile. Make sure your profile includes your name, address, and phone number for accurate NAP consistency checking.
+                                                        </p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
+                                        <Input
+                                            id="websiteUrl"
+                                            type="url"
+                                            placeholder="https://yourwebsite.com"
+                                            value={agentProfileData?.website || ''}
+                                            disabled
+                                            className="bg-muted"
+                                        />
+                                        {!agentProfileData?.website && (
+                                            <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-md border border-yellow-200 dark:border-yellow-800">
+                                                <p className="text-sm text-yellow-800 dark:text-yellow-200 flex items-start gap-2">
+                                                    <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                                    <span>
+                                                        Add your website URL in your{' '}
+                                                        <Link href="/brand/profile" className="underline font-semibold hover:text-yellow-900 dark:hover:text-yellow-100">
+                                                            profile
+                                                        </Link>{' '}
+                                                        to analyze it.
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Show empty state if no analysis has been run */}
+                                    {!websiteAnalysisState.data && !websiteAnalysisOperation.isRunning && (
+                                        <Card className="border-dashed border-2">
+                                            <CardContent className="flex flex-col items-center justify-center py-16 px-8 text-center">
+                                                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+                                                    <Globe className="h-10 w-10 text-primary" />
+                                                </div>
+
+                                                <h3 className="text-xl font-semibold mb-2">Analyze Your Website for AI</h3>
+                                                <p className="text-muted-foreground mb-6 max-w-md">
+                                                    We'll check if AI search engines like ChatGPT and Perplexity can easily discover and understand your website. Get actionable recommendations to improve your visibility in AI-powered search results.
+                                                </p>
+
+                                                {/* What We Check Section */}
+                                                <div className="w-full max-w-2xl mb-8 p-6 bg-gradient-to-br from-primary/5 to-purple-600/5 rounded-lg border border-primary/10">
+                                                    <h4 className="font-headline font-semibold text-sm uppercase text-primary mb-4 flex items-center gap-2">
+                                                        <Lightbulb className="h-4 w-4" />
+                                                        What We Check
+                                                    </h4>
+                                                    <div className="grid gap-3 text-left text-sm">
+                                                        <div className="flex items-start gap-3 p-3 rounded-md bg-background/50">
+                                                            <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <strong className="text-foreground">Schema Markup:</strong>
+                                                                <span className="text-muted-foreground"> Structured data that helps AI understand your business</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-3 p-3 rounded-md bg-background/50">
+                                                            <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <strong className="text-foreground">Meta Tags:</strong>
+                                                                <span className="text-muted-foreground"> Title, description, and social media tags</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-3 p-3 rounded-md bg-background/50">
+                                                            <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <strong className="text-foreground">NAP Consistency:</strong>
+                                                                <span className="text-muted-foreground"> Name, address, and phone match with your profile</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-3 p-3 rounded-md bg-background/50">
+                                                            <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <strong className="text-foreground">AI Discoverability:</strong>
+                                                                <span className="text-muted-foreground"> How easily AI can find and recommend you</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-col sm:flex-row gap-3 mb-6">
+                                                    {!agentProfileData?.website ? (
+                                                        <>
+                                                            <Button
+                                                                variant="default"
+                                                                onClick={() => { window.location.href = '/brand/profile'; }}
+                                                                className="min-w-[180px]"
+                                                            >
+                                                                Add Website First
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                type="button"
+                                                                onClick={() => { window.location.href = '/training'; }}
+                                                            >
+                                                                Learn More About AEO
+                                                            </Button>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Button
+                                                                type="submit"
+                                                                variant="ai"
+                                                                disabled={isAnalyzingWebsite}
+                                                                className="min-w-[180px]"
+                                                            >
+                                                                {isAnalyzingWebsite ? (
+                                                                    <>
+                                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                                        Analyzing...
+                                                                    </>
+                                                                ) : (
+                                                                    'Analyze Website'
+                                                                )}
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                type="button"
+                                                                onClick={() => { window.location.href = '/training'; }}
+                                                            >
+                                                                Learn More About AEO
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </div>
+
+                                                {/* Help Text */}
+                                                <p className="text-xs text-muted-foreground max-w-lg">
+                                                    💡 Tip: Analysis takes about 30 seconds. We'll crawl your homepage and up to 10 additional pages to give you a comprehensive score.
+                                                </p>
+                                            </CardContent>
+                                        </Card>
+                                    )}
+
+                                    {/* AI Operation Progress */}
+                                    {websiteAnalysisOperation.isRunning && websiteAnalysisOperation.tracker && (
+                                        <AIOperationProgress
+                                            operationName="analyze-website"
+                                            tracker={websiteAnalysisOperation.tracker}
+                                        />
+                                    )}
+
+                                    {/* Show analyze button if analysis has been run before and not currently running */}
+                                    {websiteAnalysisState.data && !websiteAnalysisOperation.isRunning && (
+                                        <div>
+                                            <Button
+                                                type="submit"
+                                                variant="ai"
+                                                disabled={isAnalyzingWebsite || !agentProfileData?.website}
+                                            >
+                                                {isAnalyzingWebsite ? (
+                                                    <>
+                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                        Analyzing...
+                                                    </>
+                                                ) : (
+                                                    'Re-analyze Website'
+                                                )}
+                                            </Button>
+                                        </div>
+                                    )}
+                                </form>
+
+                                {/* Display Analysis Results */}
+                                {websiteAnalysisState.data && (
+                                    <>
+                                        <AnalysisResultsDisplay analysis={websiteAnalysisState.data} />
+
+                                        {/* Next Steps Guide */}
+                                        <div className="mt-6 p-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                            <div className="flex items-start gap-3">
+                                                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/40">
+                                                    <Info className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <h4 className="font-headline font-semibold text-blue-900 dark:text-blue-100 mb-2">What to Do Next</h4>
+                                                    <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
+                                                        <li className="flex items-start gap-2">
+                                                            <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                                            <span>Review your recommendations below and prioritize high-impact items</span>
+                                                        </li>
+                                                        <li className="flex items-start gap-2">
+                                                            <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                                            <span>Implement the suggested schema markup and meta tag improvements</span>
+                                                        </li>
+                                                        <li className="flex items-start gap-2">
+                                                            <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                                            <span>Re-run the analysis after making changes to track your progress</span>
+                                                        </li>
+                                                        <li className="flex items-start gap-2">
+                                                            <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                                                            <span>
+                                                                Need help? Visit our{' '}
+                                                                <Link href="/training" className="underline font-semibold hover:text-blue-900 dark:hover:text-blue-100">
+                                                                    Training Hub
+                                                                </Link>
+                                                                {' '}for detailed guides
+                                                            </span>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Error Display */}
+                                {websiteAnalysisState.message && websiteAnalysisState.message !== 'success' && (
+                                    <div className="mt-6 rounded-lg bg-destructive/10 p-4 border border-destructive/20">
+                                        <div className="flex items-start gap-3">
+                                            <ServerCrash className="h-5 mt-0.5 text-destructive flex-shrink-0" />
+                                            <div>
+                                                <h4 className="font-headline font-semibold text-destructive">Analysis Failed</h4>
+                                                <p className="text-sm text-destructive/80">
+                                                    {websiteAnalysisState.message}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Historical Trend Chart */}
+                        {websiteAnalysisHistory.length > 0 && (
+                            <WebsiteHistoricalTrendChart history={websiteAnalysisHistory} />
+                        )}
 
                     </div>
                     <div className="lg:col-span-1 space-y-6">

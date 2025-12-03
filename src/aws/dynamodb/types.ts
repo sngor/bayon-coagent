@@ -125,7 +125,14 @@ export type EntityType =
   | 'ChatSession'
   | 'MemoryEntry'
   | 'HandoffRecord'
-  | 'UserPreferences';
+  | 'UserPreferences'
+  | 'WebhookDeliveryLog'
+  | 'AIMention'
+  | 'AIVisibilityScore'
+  | 'AIMonitoringConfig'
+  | 'AIMonitoringJob'
+  | 'AIVisibilityAlert'
+  | 'WebsiteAnalysis';
 
 /**
  * Base DynamoDB item structure

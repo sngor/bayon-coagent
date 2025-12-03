@@ -22,6 +22,8 @@ export type Profile = {
   domainAuthority?: number;
   zillowEmail?: string;
   teamId?: string;
+  websiteOptimizationScore?: number; // 0-100 score from website analysis
+  websiteOptimizationAnalyzedAt?: string; // ISO timestamp of last analysis
 };
 
 export type Review = {

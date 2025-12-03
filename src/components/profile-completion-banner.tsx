@@ -76,6 +76,12 @@ const PROFILE_FIELDS: ProfileField[] = [
         benefit: 'Makes your content more personal',
         required: false,
     },
+    {
+        key: 'websiteOptimizationScore',
+        label: 'Website AI Optimization',
+        benefit: 'Ensures AI engines can find and recommend you',
+        required: false,
+    },
 ];
 
 export interface ProfileCompletionBannerProps {

@@ -30,6 +30,7 @@ import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
 import { generateBioAction, saveContentAction } from '@/app/actions';
 import { Save, User, Building2, Award, Phone, Share2 } from 'lucide-react';
+import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsList as TabsList, AnimatedTabsTrigger as TabsTrigger } from '@/components/ui/animated-tabs';
 
@@ -201,6 +202,25 @@ function ContactSection({ profile, onInputChange }: { profile: Partial<Profile>,
                     <Input id="website" name="website" type="url" value={profile.website || ''} onChange={onInputChange} placeholder="https://your-website.com" pattern="https?://.+" />
                 </StandardFormField>
             </DataGrid>
+            {profile.website && (
+                <div className="rounded-lg bg-primary/5 p-3 border border-primary/10 backdrop-blur-sm">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium">Website AI Optimization</p>
+                            <p className="text-xs text-muted-foreground">
+                                {profile.websiteOptimizationScore !== undefined
+                                    ? `Current score: ${profile.websiteOptimizationScore}/100 • Last analyzed ${new Date(profile.websiteOptimizationAnalyzedAt || '').toLocaleDateString()}`
+                                    : 'Analyze your website to see how well AI engines can find and recommend you'}
+                            </p>
+                        </div>
+                        <Link href="/brand/audit">
+                            <Button variant="outline" size="sm" className="bg-background/50 backdrop-blur-sm">
+                                {profile.websiteOptimizationScore !== undefined ? 'View Analysis' : 'Analyze Website'}
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
+            )}
             <StandardFormField
                 label="Primary Business Address"
                 id="address"
