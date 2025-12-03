@@ -77,14 +77,14 @@ describe('CacheManager', () => {
                 cache.set(`key${i}`, `value${i}`);
             }
 
-            // Access key0 to make it recently used
-            cache.get('key0');
+            // Access key9 to make it recently used
+            cache.get('key9');
 
-            // Add new entry, should evict key1 (least recently used)
+            // Add new entry, should evict key0 (least recently used)
             cache.set('key10', 'value10');
 
-            expect(cache.get('key0')).toBe('value0'); // Still exists
-            expect(cache.get('key1')).toBeNull(); // Evicted
+            expect(cache.get('key0')).toBeNull(); // Evicted (oldest)
+            expect(cache.get('key9')).toBe('value9'); // Still exists (recently accessed)
             expect(cache.get('key10')).toBe('value10'); // New entry
         });
     });

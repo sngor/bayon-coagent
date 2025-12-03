@@ -1375,3 +1375,103 @@ export function getLocationCheckInKeys(
     SK: `CHECKIN#${checkInId}`,
   };
 }
+
+// ==================== AEO (Answer Engine Optimization) Keys ====================
+
+/**
+ * Generates keys for AEO Score
+ * Pattern: PK: USER#<userId>, SK: AEO#SCORE#<timestamp>
+ * GSI1: PK: AEO#SCORE, SK: <timestamp> (for global leaderboard)
+ */
+export function getAEOScoreKeys(
+  userId: string,
+  timestamp: string,
+  includeGSI?: boolean
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `AEO#SCORE#${timestamp}`,
+  };
+
+  // Add GSI1 keys for global leaderboard
+  if (includeGSI) {
+    keys.GSI1PK = 'AEO#SCORE';
+    keys.GSI1SK = timestamp;
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for AEO Mention
+ * Pattern: PK: USER#<userId>, SK: AEO#MENTION#<mentionId>
+ * GSI1: PK: AEO#MENTION#<source>, SK: <timestamp>
+ */
+export function getAEOMentionKeys(
+  userId: string,
+  mentionId: string,
+  source?: string,
+  timestamp?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `AEO#MENTION#${mentionId}`,
+  };
+
+  // Add GSI1 keys for querying by source
+  if (source && timestamp) {
+    keys.GSI1PK = `AEO#MENTION#${source}`;
+    keys.GSI1SK = timestamp;
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for AEO Recommendation
+ * Pattern: PK: USER#<userId>, SK: AEO#RECOMMENDATION#<recommendationId>
+ */
+export function getAEORecommendationKeys(
+  userId: string,
+  recommendationId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `AEO#RECOMMENDATION#${recommendationId}`,
+  };
+}
+
+/**
+ * Generates keys for AEO Analysis
+ * Pattern: PK: USER#<userId>, SK: AEO#ANALYSIS#<analysisId>
+ */
+export function getAEOAnalysisKeys(
+  userId: string,
+  analysisId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `AEO#ANALYSIS#${analysisId}`,
+  };
+}
+
+/**
+ * Generates keys for AEO Competitor Score
+ * Pattern: PK: USER#<userId>, SK: AEO#COMPETITOR#<competitorId>#<timestamp>
+ */
+export function getAEOCompetitorScoreKeys(
+  userId: string,
+  competitorId: string,
+  timestamp: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `AEO#COMPETITOR#${competitorId}#${timestamp}`,
+  };
+}

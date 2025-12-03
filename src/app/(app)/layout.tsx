@@ -16,6 +16,7 @@ import {
   SidebarFooter,
   SidebarToggle,
 } from '@/components/ui/sidebar';
+import { ICON_SIZES } from '@/lib/constants/icon-sizes';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,18 +68,6 @@ import { NotificationCenter } from '@/lib/notifications/components';
 import { SubtleGradientMesh } from '@/components/ui/gradient-mesh';
 import { ImpersonationBanner } from '@/components/impersonation-banner';
 
-const allNavItems = [
-  { href: '/dashboard', icon: HouseIcon, label: 'Dashboard', customIcon: true, featureId: null },
-  { href: '/assistant', icon: MessageSquare, label: 'Chat', featureId: 'assistant' },
-  { href: '/studio', icon: Wand2, label: 'Studio', featureId: 'studio' },
-  { href: '/brand', icon: Target, label: 'Brand', featureId: 'brand' },
-  { href: '/research', icon: AISparkleIcon, label: 'Research', customIcon: true, featureId: 'research' },
-  { href: '/market', icon: BarChart3, label: 'Market', featureId: 'market' },
-  { href: '/tools', icon: Calculator, label: 'Tools', featureId: 'tools' },
-  { href: '/library', icon: Library, label: 'Library', featureId: 'library' },
-  { href: '/training', icon: GraduationCap, label: 'Training', featureId: 'training' },
-];
-
 function AppLoadingScreen() {
   return <SessionLoading />;
 }
@@ -101,7 +90,10 @@ function StickyHeaderTitle() {
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-left-2 duration-200">
+    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
+      {headerInfo.icon && (
+        <headerInfo.icon className={ICON_SIZES.lg} />
+      )}
       <h2 className="text-lg font-semibold font-headline text-foreground truncate whitespace-nowrap">
         {headerInfo.title}
       </h2>
@@ -109,59 +101,7 @@ function StickyHeaderTitle() {
   );
 }
 
-function NavigationItems() {
-  const [navItems, setNavItems] = useState(allNavItems);
-  const pathname = usePathname();
 
-  useEffect(() => {
-    // Import feature toggle manager dynamically to avoid SSR issues
-    import('@/lib/feature-toggles').then(({ featureToggleManager }) => {
-      const filteredItems = allNavItems.filter(item => {
-        // Always show dashboard
-        if (!item.featureId) return true;
-        // Check if feature is enabled
-        return featureToggleManager.isEnabled(item.featureId);
-      });
-      setNavItems(filteredItems);
-
-      // Listen for feature toggle changes
-      const handleToggleChange = () => {
-        const updatedItems = allNavItems.filter(item => {
-          if (!item.featureId) return true;
-          return featureToggleManager.isEnabled(item.featureId);
-        });
-        setNavItems(updatedItems);
-      };
-
-      window.addEventListener('featureToggleChanged', handleToggleChange);
-      window.addEventListener('featureToggleReset', handleToggleChange);
-
-      return () => {
-        window.removeEventListener('featureToggleChanged', handleToggleChange);
-        window.removeEventListener('featureToggleReset', handleToggleChange);
-      };
-    });
-  }, []);
-
-  return (
-    <>
-      {navItems.map((item) => (
-        <SidebarMenuItem key={item.href}>
-          <SidebarMenuButton
-            asChild
-            isActive={pathname.startsWith(item.href)}
-            tooltip={item.label}
-          >
-            <Link href={item.href}>
-              <item.icon className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
-              <span className="button-text-hover">{item.label}</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      ))}
-    </>
-  );
-}
 
 function AdminModeBadge() {
   const { adminMode } = useAdmin();

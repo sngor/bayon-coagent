@@ -6,6 +6,18 @@ import { Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils/common"
 
+/**
+ * Icon Size Guidelines for Buttons:
+ * - Use ICON_SIZES.sm (w-4 h-4 / 16px) for all button icons
+ * - This is enforced by the [&>svg]:size-4 selector in buttonVariants
+ * 
+ * Example:
+ * ```tsx
+ * import { ICON_SIZES } from '@/lib/constants/icon-sizes';
+ * <Button><Icon className={ICON_SIZES.sm} />Click me</Button>
+ * ```
+ */
+
 const buttonVariants = cva(
   // Mobile-optimized: touch-manipulation for better touch response, min-h-[44px] for touch targets
   // Enhanced micro-interactions: relative overflow-hidden for ripple effect, improved active state with inset shadow

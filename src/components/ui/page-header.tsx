@@ -36,10 +36,18 @@ const PageHeader = React.forwardRef<HTMLDivElement, PageHeaderProps>(
       return null;
     };
 
+    // Hub variant uses larger, more prominent styling
+    const isHub = variant === 'hub';
+    const isCompact = variant === 'compact';
+
     return (
       <div
         ref={ref}
-        className={cn("flex flex-col gap-4 pb-4", className)}
+        className={cn(
+          "flex flex-col gap-4",
+          isHub ? "pb-0" : "pb-4",
+          className
+        )}
         {...props}
       >
         {breadcrumbs && (
@@ -47,29 +55,44 @@ const PageHeader = React.forwardRef<HTMLDivElement, PageHeaderProps>(
             {renderBreadcrumbs()}
           </div>
         )}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-start gap-4">
+        <div className={cn(
+          "flex gap-4",
+          isHub ? "items-start justify-between" : "flex-col md:flex-row md:items-center md:justify-between"
+        )}>
+          <div className="flex items-start gap-4 min-w-0 flex-1">
             {Icon && (
-              <div className="p-2 bg-primary/10 rounded-lg mt-1">
-                <Icon className="w-6 h-6 text-primary" />
+              <div className={cn(
+                "flex-shrink-0 mt-1",
+                isHub ? "" : "p-2 bg-primary/10 rounded-lg"
+              )} aria-hidden="true">
+                <Icon className={cn(
+                  "text-primary",
+                  isHub ? "h-8 w-8" : isCompact ? "w-5 h-5" : "w-6 h-6"
+                )} />
               </div>
             )}
-            <div className="space-y-1.5">
+            <div className={cn("min-w-0 flex-1", isHub ? "" : "space-y-1.5")}>
               <h1 className={cn(
                 "font-bold tracking-tight text-foreground font-headline",
-                variant === 'compact' ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"
+                isHub ? "text-3xl md:text-4xl" : isCompact ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"
               )}>
                 {title}
               </h1>
               {description && (
-                <p className="text-muted-foreground text-sm sm:text-base">
+                <p className={cn(
+                  "text-muted-foreground",
+                  isHub ? "mt-2 text-lg" : "text-sm sm:text-base"
+                )}>
                   {description}
                 </p>
               )}
             </div>
           </div>
           {actions && (
-            <div className="flex items-center gap-2">
+            <div className={cn(
+              "flex-shrink-0",
+              isHub ? "" : "flex items-center gap-2"
+            )} role="group" aria-label="Page actions">
               {actions}
             </div>
           )}

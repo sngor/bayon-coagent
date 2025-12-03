@@ -28,6 +28,7 @@ import {
     AISparkleIcon,
 } from '@/components/ui/real-estate-icons';
 import { useFeatureToggles } from '@/lib/feature-toggles';
+import { ICON_SIZES } from '@/lib/constants/icon-sizes';
 
 // Filled icon variants for active states - matching the exact shapes of outlined icons
 const FilledIcons = {
@@ -262,7 +263,7 @@ const regularNavItems = [
         href: '/intelligence',
         icon: AISparkleIcon,
         filledIcon: FilledIcons.AISparkleIcon,
-        label: 'Intelligence',
+        label: 'Intelligence', // Matches URL /intelligence
         customIcon: true,
         featureId: 'research'
     },
@@ -291,14 +292,14 @@ const regularNavItems = [
         href: '/learning',
         icon: GraduationCap,
         filledIcon: FilledIcons.GraduationCap,
-        label: 'Learning',
+        label: 'Learning', // Matches URL /learning
         featureId: 'training'
     },
     {
         href: '/assistant',
         icon: MessagesSquare,
         filledIcon: FilledIcons.MessagesSquare,
-        label: 'Chat',
+        label: 'Assistant', // Changed from 'Chat' to match URL
         featureId: 'assistant'
     },
     {
@@ -453,10 +454,10 @@ export function DynamicNavigation() {
                                 <Link href={item.href}>
                                     {isActive ? (
                                         // Show filled icon when active
-                                        <item.filledIcon className="w-5 h-5" />
+                                        <item.filledIcon className={ICON_SIZES.md} />
                                     ) : (
                                         // Show outlined icon when inactive
-                                        <item.icon className="w-5 h-5" />
+                                        <item.icon className={ICON_SIZES.md} />
                                     )}
                                     <span>{item.label}</span>
                                 </Link>
