@@ -33,7 +33,7 @@ export function OfflineIndicator({
     return (
         <div
             className={cn(
-                'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium',
+                'fixed top-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium shadow-lg',
                 isOffline && 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',
                 isSlow && 'bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
                 isOnline && queueSize > 0 && 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',

@@ -15,14 +15,14 @@ import { definePrompt, MODEL_CONFIGS } from '../flow-base';
 import {
   ContentGeneratorInputSchema,
   ContentGeneratorOutputSchema,
-  type ContentGeneratorInput,
-  type ContentGeneratorOutput,
+} from '@/ai/schemas/content-generator-worker-schemas';
+import type {
+  ContentGeneratorInput,
+  ContentGeneratorOutput,
 } from '@/ai/schemas/content-generator-worker-schemas';
 import type { WorkerTask, WorkerResult } from '../worker-protocol';
 import { createSuccessResult, createErrorResult } from '../worker-protocol';
 import { getAgentProfileRepository, type AgentProfile } from '@/aws/dynamodb/agent-profile-repository';
-
-export { type ContentGeneratorInput, type ContentGeneratorOutput };
 
 /**
  * Content Generator prompt that creates personalized content
@@ -96,11 +96,11 @@ export async function executeContentGeneratorWorker(
 ): Promise<WorkerResult> {
   const startTime = Date.now();
   const startedAt = new Date().toISOString();
-  
+
   try {
     // Validate input
     const input = ContentGeneratorInputSchema.parse(task.input);
-    
+
     // Load agent profile from repository if userId is provided but profile is not
     let agentProfile = input.agentProfile;
     if (!agentProfile && task.context?.userId) {
@@ -110,15 +110,15 @@ export async function executeContentGeneratorWorker(
         agentProfile = loadedProfile;
       }
     }
-    
+
     // If no profile is available, throw an error as content generation requires personalization
     if (!agentProfile) {
       throw new Error('Agent profile is required for content generation');
     }
-    
+
     // Set default target length if not provided
     const targetLength = input.targetLength || getDefaultLength(input.contentType);
-    
+
     // Execute content generation prompt
     const output = await contentGeneratorPrompt({
       ...input,
@@ -126,9 +126,9 @@ export async function executeContentGeneratorWorker(
       targetLength,
       instructions: input.instructions || `Generate high-quality ${input.contentType} content`,
     });
-    
+
     const executionTime = Date.now() - startTime;
-    
+
     return createSuccessResult(
       task.id,
       'content-generator',
@@ -141,11 +141,11 @@ export async function executeContentGeneratorWorker(
     );
   } catch (error) {
     const executionTime = Date.now() - startTime;
-    
+
     // Determine error type
     let errorType: 'VALIDATION_ERROR' | 'API_ERROR' | 'INTERNAL_ERROR' = 'INTERNAL_ERROR';
     let errorMessage = 'An unexpected error occurred during content generation';
-    
+
     if (error instanceof z.ZodError) {
       errorType = 'VALIDATION_ERROR';
       errorMessage = `Input validation failed: ${error.errors.map(e => e.message).join(', ')}`;
@@ -155,7 +155,7 @@ export async function executeContentGeneratorWorker(
       }
       errorMessage = error.message;
     }
-    
+
     return createErrorResult(
       task.id,
       'content-generator',
@@ -188,13 +188,13 @@ export async function generateContent(
     createdAt: new Date().toISOString(),
     status: 'in-progress',
   };
-  
+
   const result = await executeContentGeneratorWorker(task);
-  
+
   if (result.status === 'error') {
     throw new Error(result.error?.message || 'Content generation failed');
   }
-  
+
   return result.output as ContentGeneratorOutput;
 }
 
@@ -210,6 +210,6 @@ function getDefaultLength(contentType: string): number {
     'blog-excerpt': 250,
     'marketing-copy': 200,
   };
-  
+
   return defaults[contentType] || 200;
 }

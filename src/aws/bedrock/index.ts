@@ -44,6 +44,63 @@ export {
   type AllocationStrategy,
 } from './agent-core';
 
+// Collaboration Infrastructure
+export {
+  HandoffManager,
+  getHandoffManager,
+  resetHandoffManager,
+  type HandoffContext,
+  type HandoffRecord,
+  SharedContextPool,
+  getSharedContextPool,
+  resetSharedContextPool,
+  DependencyTracker,
+  getDependencyTracker,
+  resetDependencyTracker,
+  type DependencyGraph,
+  ParallelExecutor,
+  getParallelExecutor,
+  resetParallelExecutor,
+} from './collaboration';
+
+// Memory System
+export {
+  LongTermMemoryStore,
+  getLongTermMemoryStore,
+  resetLongTermMemoryStore,
+  ContextWindowManager,
+  getContextWindowManager,
+  resetContextWindowManager,
+  MemoryPrioritizer,
+  getMemoryPrioritizer,
+  resetMemoryPrioritizer,
+  SemanticSearchEngine,
+  getSemanticSearchEngine,
+  resetSemanticSearchEngine,
+  type MemoryEntry,
+  type MemoryMetadata,
+  type MemoryFilters,
+  type SimilarityResult,
+  type EmbeddingRecord,
+  type ConsolidatedMemory,
+  type ContextWindowConfig,
+  type PrioritizedMemory,
+} from './memory';
+
+// Learning & Feedback System
+export {
+  PreferenceEngine,
+  getPreferenceEngine,
+  resetPreferenceEngine,
+  type FeedbackRecord,
+  type EditRecord,
+  type EngagementMetrics,
+  type UserPreferences,
+  type PreferenceUpdate,
+  type FeedbackFilters,
+  type PreferenceLearningConfig,
+} from './learning';
+
 export {
   DataAnalystStrand,
   ContentGeneratorStrand,

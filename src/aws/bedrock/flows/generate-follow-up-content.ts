@@ -8,11 +8,12 @@ import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
 import {
     GenerateFollowUpContentInputSchema,
     GenerateFollowUpContentOutputSchema,
-    type GenerateFollowUpContentInput,
-    type GenerateFollowUpContentOutput,
 } from '@/ai/schemas/follow-up-content-schemas';
 
-export { type GenerateFollowUpContentInput, type GenerateFollowUpContentOutput };
+import type {
+    GenerateFollowUpContentInput,
+    GenerateFollowUpContentOutput,
+} from '@/ai/schemas/follow-up-content-schemas';
 
 const prompt = definePrompt({
     name: 'generateFollowUpContentPrompt',

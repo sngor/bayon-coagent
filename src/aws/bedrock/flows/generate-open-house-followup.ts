@@ -16,11 +16,12 @@ import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
 import {
     GenerateOpenHouseFollowUpInputSchema,
     GenerateOpenHouseFollowUpOutputSchema,
-    type GenerateOpenHouseFollowUpInput,
-    type GenerateOpenHouseFollowUpOutput,
 } from '@/ai/schemas/open-house-followup-schemas';
 
-export { type GenerateOpenHouseFollowUpInput, type GenerateOpenHouseFollowUpOutput };
+import type {
+    GenerateOpenHouseFollowUpInput,
+    GenerateOpenHouseFollowUpOutput,
+} from '@/ai/schemas/open-house-followup-schemas';
 
 const prompt = definePrompt({
     name: 'generateOpenHouseFollowUpPrompt',

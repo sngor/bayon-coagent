@@ -28,6 +28,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { getConfig, getAWSCredentials } from '../config';
+import { getConnectionPoolManager } from '../performance/connection-pool';
 
 // Multipart upload threshold: 5MB
 const MULTIPART_THRESHOLD = 5 * 1024 * 1024;
@@ -37,21 +38,40 @@ const PART_SIZE = 5 * 1024 * 1024;
 let s3Client: S3Client | null = null;
 
 /**
- * Gets or creates the S3 client instance
+ * Gets or creates the S3 client instance with connection pooling
  */
 export function getS3Client(): S3Client {
   if (!s3Client) {
     const config = getConfig();
     const credentials = getAWSCredentials();
 
-    s3Client = new S3Client({
+    const clientConfig: any = {
       region: config.s3.region,
       endpoint: config.s3.endpoint,
       credentials: credentials.accessKeyId && credentials.secretAccessKey
         ? { accessKeyId: credentials.accessKeyId, secretAccessKey: credentials.secretAccessKey }
         : undefined,
       forcePathStyle: config.environment === 'local', // Required for LocalStack
-    });
+    };
+
+    // Add optimized request handler with connection pooling
+    // Only in Node.js environment (not in browser or edge runtime)
+    if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+      try {
+        const poolManager = getConnectionPoolManager({
+          maxSockets: 50,
+          maxFreeSockets: 10,
+          keepAlive: true,
+          keepAliveTimeout: 60000,
+        });
+        clientConfig.requestHandler = poolManager.getRequestHandler();
+      } catch (error) {
+        // Fallback to default if connection pooling fails
+        console.warn('Failed to initialize connection pooling for S3:', error);
+      }
+    }
+
+    s3Client = new S3Client(clientConfig);
   }
 
   return s3Client;

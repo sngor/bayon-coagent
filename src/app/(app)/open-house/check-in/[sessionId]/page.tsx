@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { CheckInForm } from '@/components/open-house/check-in-form';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckInSource } from '@/lib/open-house/types';
-import { getPublicOpenHouseSession } from '../../../actions';
+import { getPublicOpenHouseSession } from '@/app/(app)/open-house/actions';
 
 interface QRCheckInPageProps {
     params: {

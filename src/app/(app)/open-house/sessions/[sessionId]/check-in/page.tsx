@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getOpenHouseSession } from '../../../actions';
+import { getOpenHouseSession } from '@/app/(app)/open-house/actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, MapPin, AlertCircle } from 'lucide-react';

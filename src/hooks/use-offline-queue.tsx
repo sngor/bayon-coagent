@@ -15,7 +15,8 @@ import { useState, useEffect, useCallback } from 'react';
 import {
     offlineQueue,
     QueuedOperation,
-    SyncProgress
+    SyncProgress,
+    OperationType
 } from '@/lib/mobile/offline-queue';
 
 export interface UseOfflineQueueReturn {
@@ -24,92 +25,115 @@ export interface UseOfflineQueueReturn {
     pendingCount: number;
     syncProgress: SyncProgress;
     isSyncing: boolean;
-    addOperation: (type: string, action: string, data: any) => Promise<string>;
+    addOperation: (type: OperationType, data: any) => Promise<string>;
     syncQueue: () => Promise<void>;
-    retryOperation: (operationId: string) => Promise<void>;
-    removeOperation: (operationId: string) => Promise<void>;
     clearCompleted: () => Promise<void>;
 }
 
 export function useOfflineQueue(): UseOfflineQueueReturn {
-    const [isOnline, setIsOnline] = useState(true);
+    const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
     const [queue, setQueue] = useState<QueuedOperation[]>([]);
+    const [pendingCount, setPendingCount] = useState(0);
+    const [syncProgress, setSyncProgress] = useState<SyncProgress>({
+        total: 0,
+        completed: 0,
+        failed: 0,
+        inProgress: 0,
+    });
     const [isSyncing, setIsSyncing] = useState(false);
 
+    // Load initial data
     useEffect(() => {
-        // Initialize state
-        setIsOnline(offlineQueue.isDeviceOnline());
-        setQueue(offlineQueue.getQueue());
-        setIsSyncing(offlineQueue.isSyncInProgress());
+        const loadData = async () => {
+            try {
+                await offlineQueue.init();
+                const allOps = await offlineQueue.getAllOperations();
+                const pending = await offlineQueue.getQueueSize();
+                const progress = await offlineQueue.getSyncProgress();
 
-        // Listen for events
-        const handleOnline = () => {
-            setIsOnline(true);
+                setQueue(allOps);
+                setPendingCount(pending);
+                setSyncProgress(progress);
+            } catch (error) {
+                console.error('[useOfflineQueue] Failed to load data:', error);
+            }
         };
 
-        const handleOffline = () => {
-            setIsOnline(false);
-        };
+        loadData();
+    }, []);
 
-        const handleQueueUpdated = (e: Event) => {
-            const customEvent = e as CustomEvent;
-            setQueue(customEvent.detail.queue);
-        };
+    // Listen for online/offline events
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
 
-        const handleSyncStarted = () => {
-            setIsSyncing(true);
-        };
-
-        const handleSyncCompleted = () => {
-            setIsSyncing(false);
-            setQueue(offlineQueue.getQueue());
-        };
-
-        window.addEventListener('offline-queue:online', handleOnline);
-        window.addEventListener('offline-queue:offline', handleOffline);
-        window.addEventListener('offline-queue:updated', handleQueueUpdated);
-        window.addEventListener('offline-queue:sync-started', handleSyncStarted);
-        window.addEventListener('offline-queue:sync-completed', handleSyncCompleted);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
 
         return () => {
-            window.removeEventListener('offline-queue:online', handleOnline);
-            window.removeEventListener('offline-queue:offline', handleOffline);
-            window.removeEventListener('offline-queue:updated', handleQueueUpdated);
-            window.removeEventListener('offline-queue:sync-started', handleSyncStarted);
-            window.removeEventListener('offline-queue:sync-completed', handleSyncCompleted);
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
         };
     }, []);
 
-    const addOperation = useCallback(async (type: string, action: string, data: any) => {
-        return await offlineQueue.addOperation(type, action, data);
+    // Subscribe to sync progress updates
+    useEffect(() => {
+        const unsubscribe = offlineQueue.onSyncProgress((progress) => {
+            setSyncProgress(progress);
+            setIsSyncing(progress.inProgress > 0);
+        });
+
+        return unsubscribe;
+    }, []);
+
+    const addOperation = useCallback(async (type: OperationType, data: any) => {
+        const id = await offlineQueue.enqueue(type, data);
+
+        // Refresh queue
+        const allOps = await offlineQueue.getAllOperations();
+        const pending = await offlineQueue.getQueueSize();
+        setQueue(allOps);
+        setPendingCount(pending);
+
+        return id;
     }, []);
 
     const syncQueue = useCallback(async () => {
-        await offlineQueue.syncQueue();
-    }, []);
+        setIsSyncing(true);
+        try {
+            await offlineQueue.syncAll();
 
-    const retryOperation = useCallback(async (operationId: string) => {
-        await offlineQueue.retryOperation(operationId);
-    }, []);
+            // Refresh queue
+            const allOps = await offlineQueue.getAllOperations();
+            const pending = await offlineQueue.getQueueSize();
+            const progress = await offlineQueue.getSyncProgress();
 
-    const removeOperation = useCallback(async (operationId: string) => {
-        await offlineQueue.removeOperation(operationId);
+            setQueue(allOps);
+            setPendingCount(pending);
+            setSyncProgress(progress);
+        } finally {
+            setIsSyncing(false);
+        }
     }, []);
 
     const clearCompleted = useCallback(async () => {
         await offlineQueue.clearCompleted();
+
+        // Refresh queue
+        const allOps = await offlineQueue.getAllOperations();
+        const pending = await offlineQueue.getQueueSize();
+        setQueue(allOps);
+        setPendingCount(pending);
     }, []);
 
     return {
         isOnline,
         queue,
-        pendingCount: offlineQueue.getPendingCount(),
-        syncProgress: offlineQueue.getSyncProgress(),
+        pendingCount,
+        syncProgress,
         isSyncing,
         addOperation,
         syncQueue,
-        retryOperation,
-        removeOperation,
         clearCompleted,
     };
 }

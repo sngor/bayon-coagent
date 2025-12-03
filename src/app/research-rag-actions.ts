@@ -5,7 +5,7 @@
  */
 
 import { getCurrentUserServer } from '@/aws/auth/server-auth';
-import { getAgentProfile } from '@/aws/dynamodb/agent-profile-repository';
+import { getAgentProfileRepository } from '@/aws/dynamodb/agent-profile-repository';
 import {
     executeResearchAgentWithRAG,
     quickResearch,
@@ -40,7 +40,7 @@ export async function researchWithKnowledgeBaseAction(
         }
 
         // Get agent profile
-        const agentProfile = await getAgentProfile(user.id);
+        const agentProfile = await getAgentProfileRepository().getProfile(user.id);
 
         // Execute research with RAG
         const result = await executeResearchAgentWithRAG(
@@ -93,7 +93,7 @@ export async function quickResearchAction(
             return { success: false, error: 'User not authenticated' };
         }
 
-        const agentProfile = await getAgentProfile(user.id);
+        const agentProfile = await getAgentProfileRepository().getProfile(user.id);
 
         const result = await quickResearch(query, user.id, {
             useKnowledgeBase,
@@ -133,7 +133,7 @@ export async function comprehensiveResearchAction(
             return { success: false, error: 'User not authenticated' };
         }
 
-        const agentProfile = await getAgentProfile(user.id);
+        const agentProfile = await getAgentProfileRepository().getProfile(user.id);
 
         const result = await comprehensiveResearch(query, user.id, {
             useKnowledgeBase: options?.useKnowledgeBase ?? true,

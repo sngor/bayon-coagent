@@ -2506,8 +2506,8 @@ export default function ContentEnginePage() {
                         const form = document.querySelector('form[action*="social"]') as HTMLFormElement;
                         if (form) {
                           const formData = new FormData(form);
-                          const previewContent = socialPostContent ?
-                            `LinkedIn: ${socialPostContent.linkedin?.substring(0, 100)}...` : '';
+                          const previewContent = socialPostContent && socialPostContent.variations[0] ?
+                            `LinkedIn: ${socialPostContent.variations[0].linkedin?.substring(0, 100)}...` : '';
                           openTemplateSaveDialog(ContentCategory.SOCIAL_MEDIA, formData, previewContent);
                         }
                       }
@@ -2636,243 +2636,22 @@ export default function ContentEnginePage() {
                             );
                           });
                       })()}
-                      <>
-                        <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-700/30">
-                          <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-blue-700/5 to-transparent">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-blue-700 flex items-center justify-center">
-                                <Linkedin className="w-5 h-5 text-white" />
-                              </div>
-                              <h3 className="font-headline font-bold text-lg">LinkedIn</h3>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ai"
-                                size="sm"
-                                onClick={() => openScheduleDialog(socialPostContent.linkedin || '', 'LinkedIn Post', ContentCategory.SOCIAL_MEDIA)}
-                                className="font-medium"
-                              >
-                                <Sparkles className="mr-2 h-4 w-4" />
-                                Schedule
-                              </Button>
-                              <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.linkedin || '', 'Social Post (LinkedIn)')}>
-                                <Save className="mr-2 h-4 w-4" />
-                                Save
-                              </Button>
-                              <Button
-                                variant={copiedStates['linkedin'] ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() =>
-                                  copyToClipboard(
-                                    socialPostContent.linkedin || '',
-                                    'linkedin'
-                                  )
-                                }
-                              >
-                                {copiedStates['linkedin'] ? (
-                                  <>
-                                    <Check className="w-4 h-4 mr-2" />
-                                    Copied!
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="w-4 h-4 mr-2" />
-                                    Copy
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="pt-6">
-                            <Textarea
-                              value={socialPostContent.linkedin}
-                              onChange={(e) => setSocialPostContent(prev => ({ ...prev!, linkedin: e.target.value }))}
-                              rows={6}
-                              className="w-full h-full font-mono text-sm resize-none"
-                            />
-                          </CardContent>
-                        </Card>
-                        <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-blue-600/30">
-                          <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-blue-600/5 to-transparent">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
-                                <Facebook className="w-5 h-5 text-white" />
-                              </div>
-                              <h3 className="font-headline font-bold text-lg">Facebook</h3>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ai"
-                                size="sm"
-                                onClick={() => openScheduleDialog(socialPostContent.facebook || '', 'Facebook Post', ContentCategory.SOCIAL_MEDIA)}
-                                className="font-medium"
-                              >
-                                <Sparkles className="mr-2 h-4 w-4" />
-                                Schedule
-                              </Button>
-                              <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.facebook || '', 'Social Post (Facebook)')}>
-                                <Save className="mr-2 h-4 w-4" />
-                                Save
-                              </Button>
-                              <Button
-                                variant={copiedStates['facebook'] ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() =>
-                                  copyToClipboard(
-                                    socialPostContent.facebook || '',
-                                    'facebook'
-                                  )
-                                }
-                              >
-                                {copiedStates['facebook'] ? (
-                                  <>
-                                    <Check className="w-4 h-4 mr-2" />
-                                    Copied!
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="w-4 h-4 mr-2" />
-                                    Copy
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="pt-6">
-                            <Textarea
-                              value={socialPostContent.facebook}
-                              onChange={(e) => setSocialPostContent(prev => ({ ...prev!, facebook: e.target.value }))}
-                              rows={6}
-                              className="w-full h-full font-mono text-sm resize-none"
-                            />
-                          </CardContent>
-                        </Card>
-                        <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-sky-500/30">
-                          <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-sky-500/5 to-transparent">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center">
-                                <X className="w-5 h-5 text-white" />
-                              </div>
-                              <h3 className="font-headline font-bold text-lg">X (Twitter)</h3>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ai"
-                                size="sm"
-                                onClick={() => openScheduleDialog(socialPostContent.twitter || '', 'X (Twitter) Post', ContentCategory.SOCIAL_MEDIA)}
-                                className="font-medium"
-                              >
-                                <Sparkles className="mr-2 h-4 w-4" />
-                                Schedule
-                              </Button>
-                              <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.twitter || '', 'Social Post (X/Twitter)')}>
-                                <Save className="mr-2 h-4 w-4" />
-                                Save
-                              </Button>
-                              <Button
-                                variant={copiedStates['twitter'] ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() =>
-                                  copyToClipboard(
-                                    socialPostContent.twitter || '',
-                                    'twitter'
-                                  )
-                                }
-                              >
-                                {copiedStates['twitter'] ? (
-                                  <>
-                                    <Check className="w-4 h-4 mr-2" />
-                                    Copied!
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="w-4 h-4 mr-2" />
-                                    Copy
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="pt-6">
-                            <Textarea
-                              value={socialPostContent.twitter}
-                              onChange={(e) => setSocialPostContent(prev => ({ ...prev!, twitter: e.target.value }))}
-                              rows={4}
-                              className="w-full h-full font-mono text-sm resize-none"
-                            />
-                          </CardContent>
-                        </Card>
-                        <Card className="hover:shadow-xl transition-all duration-300 border-2 hover:border-red-500/30">
-                          <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-red-500/5 to-transparent">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-lg bg-red-500 flex items-center justify-center">
-                                <Building2 className="w-5 h-5 text-white" />
-                              </div>
-                              <h3 className="font-headline font-bold text-lg">Google Business Profile</h3>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ai"
-                                size="sm"
-                                onClick={() => openScheduleDialog(socialPostContent.googleBusiness || '', 'Google Business Post', ContentCategory.SOCIAL_MEDIA)}
-                                className="font-medium"
-                              >
-                                <Sparkles className="mr-2 h-4 w-4" />
-                                Schedule
-                              </Button>
-                              <Button variant="outline" size="sm" onClick={() => openSaveDialog(socialPostContent.googleBusiness || '', 'Social Post (Google Business Profile)')}>
-                                <Save className="mr-2 h-4 w-4" />
-                                Save
-                              </Button>
-                              <Button
-                                variant={copiedStates['googleBusiness'] ? 'default' : 'outline'}
-                                size="sm"
-                                onClick={() =>
-                                  copyToClipboard(
-                                    socialPostContent.googleBusiness || '',
-                                    'googleBusiness'
-                                  )
-                                }
-                              >
-                                {copiedStates['googleBusiness'] ? (
-                                  <>
-                                    <Check className="w-4 h-4 mr-2" />
-                                    Copied!
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="w-4 h-4 mr-2" />
-                                    Copy
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="pt-6">
-                            <Textarea
-                              value={socialPostContent.googleBusiness}
-                              onChange={(e) => setSocialPostContent(prev => ({ ...prev!, googleBusiness: e.target.value }))}
-                              rows={6}
-                              className="w-full h-full font-mono text-sm resize-none"
-                            />
-                          </CardContent>
-                        </Card>
-                      </>
-                      ) : (
-                      <div className="flex flex-col items-center justify-center py-12 text-center">
-                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                          <MessageSquare className="w-8 h-8 text-primary" />
-                        </div>
-                        <p className="text-muted-foreground text-lg">
-                          Your generated social media posts will appear here.
-                        </p>
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Posts will be optimized for LinkedIn, Facebook, X (Twitter), and Google Business Profile.
-                        </p>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                        <MessageSquare className="w-8 h-8 text-primary" />
                       </div>
+                      <p className="text-muted-foreground text-lg">
+                        Your generated social media posts will appear here.
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Posts will be optimized for LinkedIn, Facebook, X (Twitter), and Google Business Profile.
+                      </p>
+                    </div>
                   )}
-                      <ErrorDisplay message={socialState.message !== 'success' ? socialState.message : null} />
-                    </CardContent>
+                  <ErrorDisplay message={socialState.message !== 'success' ? socialState.message : null} />
+                </CardContent>
               </Card>
 
               {socialPostContent && (

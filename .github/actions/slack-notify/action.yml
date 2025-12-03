@@ -1,0 +1,207 @@
+name: "Slack Notification"
+description: "Send deployment and workflow notifications to Slack"
+inputs:
+  webhook-url:
+    description: "Slack webhook URL"
+    required: true
+  message-type:
+    description: "Type of message: info, success, error, urgent"
+    required: true
+    default: "info"
+  title:
+    description: "Notification title"
+    required: true
+  message:
+    description: "Notification message body"
+    required: true
+  environment:
+    description: "Deployment environment (development, staging, production)"
+    required: false
+  deployment-url:
+    description: "URL of the deployed application"
+    required: false
+  commit-sha:
+    description: "Git commit SHA"
+    required: false
+    default: ${{ github.sha }}
+  commit-message:
+    description: "Git commit message"
+    required: false
+  author:
+    description: "Commit author"
+    required: false
+    default: ${{ github.actor }}
+  mention-users:
+    description: "Comma-separated list of Slack user IDs to mention (for urgent notifications)"
+    required: false
+  workflow-url:
+    description: "URL to the GitHub Actions workflow run"
+    required: false
+    default: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Determine color and emoji
+      id: style
+      shell: bash
+      run: |
+        case "${{ inputs.message-type }}" in
+          success)
+            echo "color=#36a64f" >> $GITHUB_OUTPUT
+            echo "emoji=:white_check_mark:" >> $GITHUB_OUTPUT
+            ;;
+          error)
+            echo "color=#ff0000" >> $GITHUB_OUTPUT
+            echo "emoji=:x:" >> $GITHUB_OUTPUT
+            ;;
+          urgent)
+            echo "color=#ff6600" >> $GITHUB_OUTPUT
+            echo "emoji=:rotating_light:" >> $GITHUB_OUTPUT
+            ;;
+          *)
+            echo "color=#0066cc" >> $GITHUB_OUTPUT
+            echo "emoji=:information_source:" >> $GITHUB_OUTPUT
+            ;;
+        esac
+
+    - name: Build Slack payload
+      id: payload
+      shell: bash
+      run: |
+        # Start building the payload
+        PAYLOAD='{"attachments":[{"color":"${{ steps.style.outputs.color }}","blocks":['
+
+        # Header section
+        PAYLOAD+='{
+          "type": "header",
+          "text": {
+            "type": "plain_text",
+            "text": "${{ steps.style.outputs.emoji }} ${{ inputs.title }}"
+          }
+        },'
+
+        # Main message section
+        MESSAGE_TEXT="${{ inputs.message }}"
+        if [ -n "${{ inputs.mention-users }}" ]; then
+          IFS=',' read -ra USERS <<< "${{ inputs.mention-users }}"
+          for user in "${USERS[@]}"; do
+            MESSAGE_TEXT="<@${user}> ${MESSAGE_TEXT}"
+          done
+        fi
+
+        PAYLOAD+='{
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": "'"${MESSAGE_TEXT}"'"
+          }
+        }'
+
+        # Environment field (if provided)
+        if [ -n "${{ inputs.environment }}" ]; then
+          PAYLOAD+=',{
+            "type": "section",
+            "fields": [
+              {
+                "type": "mrkdwn",
+                "text": "*Environment:*\n${{ inputs.environment }}"
+              }
+            ]
+          }'
+        fi
+
+        # Deployment URL field (if provided)
+        if [ -n "${{ inputs.deployment-url }}" ]; then
+          PAYLOAD+=',{
+            "type": "section",
+            "fields": [
+              {
+                "type": "mrkdwn",
+                "text": "*Deployment URL:*\n<${{ inputs.deployment-url }}|View Application>"
+              }
+            ]
+          }'
+        fi
+
+        # Commit details section
+        COMMIT_SHORT="${{ inputs.commit-sha }}"
+        COMMIT_SHORT="${COMMIT_SHORT:0:7}"
+        COMMIT_MSG="${{ inputs.commit-message }}"
+        if [ -z "$COMMIT_MSG" ]; then
+          COMMIT_MSG="No commit message"
+        fi
+
+        PAYLOAD+=',{
+          "type": "section",
+          "fields": [
+            {
+              "type": "mrkdwn",
+              "text": "*Commit:*\n<${{ github.server_url }}/${{ github.repository }}/commit/${{ inputs.commit-sha }}|'"${COMMIT_SHORT}"'>"
+            },
+            {
+              "type": "mrkdwn",
+              "text": "*Author:*\n${{ inputs.author }}"
+            }
+          ]
+        }'
+
+        # Commit message section
+        PAYLOAD+=',{
+          "type": "section",
+          "text": {
+            "type": "mrkdwn",
+            "text": "*Commit Message:*\n```'"${COMMIT_MSG}"'```"
+          }
+        }'
+
+        # Actions section with workflow link
+        PAYLOAD+=',{
+          "type": "actions",
+          "elements": [
+            {
+              "type": "button",
+              "text": {
+                "type": "plain_text",
+                "text": "View Workflow"
+              },
+              "url": "${{ inputs.workflow-url }}"
+            }'
+
+        # Add deployment URL button if provided
+        if [ -n "${{ inputs.deployment-url }}" ]; then
+          PAYLOAD+=',{
+            "type": "button",
+            "text": {
+              "type": "plain_text",
+              "text": "Open Application"
+            },
+            "url": "${{ inputs.deployment-url }}",
+            "style": "primary"
+          }'
+        fi
+
+        PAYLOAD+=']}'
+
+        # Close the payload
+        PAYLOAD+=']}]}'
+
+        # Save to output (escape for JSON)
+        echo "payload<<EOF" >> $GITHUB_OUTPUT
+        echo "$PAYLOAD" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Send to Slack
+      shell: bash
+      run: |
+        curl -X POST \
+          -H 'Content-Type: application/json' \
+          -d '${{ steps.payload.outputs.payload }}' \
+          '${{ inputs.webhook-url }}'
+
+        if [ $? -eq 0 ]; then
+          echo "✅ Slack notification sent successfully"
+        else
+          echo "❌ Failed to send Slack notification"
+          exit 1
+        fi

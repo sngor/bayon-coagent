@@ -1,0 +1,344 @@
+name: "Email Notification"
+description: "Send deployment and workflow notifications via email"
+inputs:
+  smtp-server:
+    description: "SMTP server address"
+    required: true
+    default: "smtp.gmail.com"
+  smtp-port:
+    description: "SMTP server port"
+    required: true
+    default: "587"
+  smtp-username:
+    description: "SMTP username"
+    required: true
+  smtp-password:
+    description: "SMTP password or app password"
+    required: true
+  from-email:
+    description: "Sender email address"
+    required: true
+  to-emails:
+    description: "Comma-separated list of recipient email addresses"
+    required: true
+  subject:
+    description: "Email subject line"
+    required: true
+  message-type:
+    description: "Type of message: info, success, error, urgent"
+    required: true
+    default: "info"
+  title:
+    description: "Notification title"
+    required: true
+  message:
+    description: "Notification message body"
+    required: true
+  environment:
+    description: "Deployment environment (development, staging, production)"
+    required: false
+  deployment-url:
+    description: "URL of the deployed application"
+    required: false
+  commit-sha:
+    description: "Git commit SHA"
+    required: false
+    default: ${{ github.sha }}
+  commit-message:
+    description: "Git commit message"
+    required: false
+  author:
+    description: "Commit author"
+    required: false
+    default: ${{ github.actor }}
+  workflow-url:
+    description: "URL to the GitHub Actions workflow run"
+    required: false
+    default: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  include-logs:
+    description: "Include workflow logs in email"
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Determine styling
+      id: style
+      shell: bash
+      run: |
+        case "${{ inputs.message-type }}" in
+          success)
+            echo "color=#36a64f" >> $GITHUB_OUTPUT
+            echo "emoji=✅" >> $GITHUB_OUTPUT
+            echo "priority=normal" >> $GITHUB_OUTPUT
+            ;;
+          error)
+            echo "color=#ff0000" >> $GITHUB_OUTPUT
+            echo "emoji=❌" >> $GITHUB_OUTPUT
+            echo "priority=high" >> $GITHUB_OUTPUT
+            ;;
+          urgent)
+            echo "color=#ff6600" >> $GITHUB_OUTPUT
+            echo "emoji=🚨" >> $GITHUB_OUTPUT
+            echo "priority=urgent" >> $GITHUB_OUTPUT
+            ;;
+          *)
+            echo "color=#0066cc" >> $GITHUB_OUTPUT
+            echo "emoji=ℹ️" >> $GITHUB_OUTPUT
+            echo "priority=normal" >> $GITHUB_OUTPUT
+            ;;
+        esac
+
+    - name: Build HTML email
+      id: html
+      shell: bash
+      run: |
+        COMMIT_SHORT="${{ inputs.commit-sha }}"
+        COMMIT_SHORT="${COMMIT_SHORT:0:7}"
+        COMMIT_MSG="${{ inputs.commit-message }}"
+        if [ -z "$COMMIT_MSG" ]; then
+          COMMIT_MSG="No commit message"
+        fi
+
+        cat > email.html << 'EOF'
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+            }
+            .header {
+              background-color: ${{ steps.style.outputs.color }};
+              color: white;
+              padding: 20px;
+              border-radius: 8px 8px 0 0;
+              text-align: center;
+            }
+            .header h1 {
+              margin: 0;
+              font-size: 24px;
+            }
+            .content {
+              background-color: #f9f9f9;
+              padding: 20px;
+              border: 1px solid #ddd;
+              border-top: none;
+            }
+            .message {
+              background-color: white;
+              padding: 15px;
+              border-radius: 4px;
+              margin: 15px 0;
+            }
+            .details {
+              background-color: white;
+              padding: 15px;
+              border-radius: 4px;
+              margin: 15px 0;
+            }
+            .details table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            .details td {
+              padding: 8px;
+              border-bottom: 1px solid #eee;
+            }
+            .details td:first-child {
+              font-weight: bold;
+              width: 150px;
+              color: #666;
+            }
+            .button {
+              display: inline-block;
+              padding: 12px 24px;
+              background-color: ${{ steps.style.outputs.color }};
+              color: white;
+              text-decoration: none;
+              border-radius: 4px;
+              margin: 10px 5px;
+            }
+            .footer {
+              text-align: center;
+              padding: 20px;
+              color: #666;
+              font-size: 12px;
+              border-top: 1px solid #ddd;
+              margin-top: 20px;
+            }
+            .commit-message {
+              background-color: #f5f5f5;
+              padding: 10px;
+              border-left: 3px solid ${{ steps.style.outputs.color }};
+              font-family: 'Courier New', monospace;
+              font-size: 14px;
+              margin: 10px 0;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>${{ steps.style.outputs.emoji }} ${{ inputs.title }}</h1>
+          </div>
+          
+          <div class="content">
+            <div class="message">
+              <p>${{ inputs.message }}</p>
+            </div>
+            
+            <div class="details">
+              <table>
+        EOF
+
+        # Add environment if provided
+        if [ -n "${{ inputs.environment }}" ]; then
+          cat >> email.html << EOF
+                <tr>
+                  <td>Environment</td>
+                  <td><strong>${{ inputs.environment }}</strong></td>
+                </tr>
+        EOF
+        fi
+
+        # Add deployment URL if provided
+        if [ -n "${{ inputs.deployment-url }}" ]; then
+          cat >> email.html << EOF
+                <tr>
+                  <td>Deployment URL</td>
+                  <td><a href="${{ inputs.deployment-url }}">${{ inputs.deployment-url }}</a></td>
+                </tr>
+        EOF
+        fi
+
+        cat >> email.html << EOF
+                <tr>
+                  <td>Commit</td>
+                  <td><a href="${{ github.server_url }}/${{ github.repository }}/commit/${{ inputs.commit-sha }}">${COMMIT_SHORT}</a></td>
+                </tr>
+                <tr>
+                  <td>Author</td>
+                  <td>${{ inputs.author }}</td>
+                </tr>
+                <tr>
+                  <td>Repository</td>
+                  <td><a href="${{ github.server_url }}/${{ github.repository }}">${{ github.repository }}</a></td>
+                </tr>
+                <tr>
+                  <td>Workflow</td>
+                  <td><a href="${{ inputs.workflow-url }}">View Workflow Run</a></td>
+                </tr>
+              </table>
+            </div>
+            
+            <div class="commit-message">
+              <strong>Commit Message:</strong><br>
+              ${COMMIT_MSG}
+            </div>
+            
+            <div style="text-align: center; margin: 20px 0;">
+        EOF
+
+        # Add deployment URL button if provided
+        if [ -n "${{ inputs.deployment-url }}" ]; then
+          cat >> email.html << EOF
+              <a href="${{ inputs.deployment-url }}" class="button">Open Application</a>
+        EOF
+        fi
+
+        cat >> email.html << EOF
+              <a href="${{ inputs.workflow-url }}" class="button">View Workflow</a>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <p>This is an automated notification from GitHub Actions</p>
+            <p>Repository: ${{ github.repository }} | Run ID: ${{ github.run_id }}</p>
+          </div>
+        </body>
+        </html>
+        EOF
+
+        echo "html_file=email.html" >> $GITHUB_OUTPUT
+
+    - name: Send email
+      shell: bash
+      env:
+        SMTP_SERVER: ${{ inputs.smtp-server }}
+        SMTP_PORT: ${{ inputs.smtp-port }}
+        SMTP_USERNAME: ${{ inputs.smtp-username }}
+        SMTP_PASSWORD: ${{ inputs.smtp-password }}
+        FROM_EMAIL: ${{ inputs.from-email }}
+        TO_EMAILS: ${{ inputs.to-emails }}
+        SUBJECT: ${{ inputs.subject }}
+        PRIORITY: ${{ steps.style.outputs.priority }}
+      run: |
+        # Install required tools if not available
+        if ! command -v python3 &> /dev/null; then
+          echo "Python3 is required but not installed"
+          exit 1
+        fi
+
+        # Create Python script to send email
+        cat > send_email.py << 'PYTHON_EOF'
+        import smtplib
+        import os
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        # Get environment variables
+        smtp_server = os.environ['SMTP_SERVER']
+        smtp_port = int(os.environ['SMTP_PORT'])
+        username = os.environ['SMTP_USERNAME']
+        password = os.environ['SMTP_PASSWORD']
+        from_email = os.environ['FROM_EMAIL']
+        to_emails = os.environ['TO_EMAILS'].split(',')
+        subject = os.environ['SUBJECT']
+        priority = os.environ['PRIORITY']
+
+        # Read HTML content
+        with open('email.html', 'r') as f:
+            html_content = f.read()
+
+        # Create message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = from_email
+        msg['To'] = ', '.join(to_emails)
+
+        # Set priority
+        if priority == 'urgent':
+            msg['X-Priority'] = '1'
+            msg['Importance'] = 'high'
+        elif priority == 'high':
+            msg['X-Priority'] = '2'
+            msg['Importance'] = 'high'
+
+        # Attach HTML content
+        html_part = MIMEText(html_content, 'html')
+        msg.attach(html_part)
+
+        # Send email
+        try:
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(username, password)
+                server.send_message(msg)
+            print("✅ Email sent successfully")
+        except Exception as e:
+            print(f"❌ Failed to send email: {str(e)}")
+            exit(1)
+        PYTHON_EOF
+
+        # Execute Python script
+        python3 send_email.py
+
+        # Clean up
+        rm -f send_email.py email.html

@@ -1714,16 +1714,48 @@ export async function generateBlogPostAction(
     };
   }
 
+  const startTime = Date.now();
+
   try {
-    const result: GenerateBlogPostOutput = await generateBlogPost(
-      validatedFields.data as GenerateBlogPostInput
-    );
+    // Import caching and metrics utilities
+    const { withCache, getCache } = await import('@/lib/cache');
+    const { getMetrics } = await import('@/lib/metrics');
+    const metrics = getMetrics();
+
+    // Try to get from cache first
+    const cacheParams = { topic: validatedFields.data.topic };
+    const cached = getCache().get<GenerateBlogPostOutput>('blog-post', cacheParams);
+
+    let result: GenerateBlogPostOutput;
+
+    if (cached) {
+      console.log('✅ Cache hit for blog post:', validatedFields.data.topic);
+      metrics.trackCacheHit('blog-post');
+      result = cached;
+    } else {
+      console.log('⏳ Cache miss, generating blog post:', validatedFields.data.topic);
+      metrics.trackCacheMiss('blog-post');
+
+      // Generate new content with metrics tracking
+      result = await generateBlogPost(
+        validatedFields.data as GenerateBlogPostInput
+      );
+
+      // Store in cache
+      getCache().set('blog-post', cacheParams, result);
+    }
+
+    const generationTime = Date.now() - startTime;
+    metrics.trackGenerationTime('blog-post', generationTime);
+    metrics.trackGenerationSuccess('blog-post');
 
     console.log('Action returning result:', {
       hasBlogPost: !!result.blogPost,
       blogPostLength: result.blogPost?.length,
       hasHeaderImage: !!result.headerImage,
-      blogPostPreview: result.blogPost?.substring(0, 100)
+      blogPostPreview: result.blogPost?.substring(0, 100),
+      generationTime: `${generationTime}ms`,
+      cached: !!cached
     });
 
     // Validate the generated content
@@ -1756,6 +1788,11 @@ export async function generateBlogPostAction(
           strictMode: false,
         });
 
+        // Track quality score
+        if (validation.score) {
+          metrics.trackQualityScore('blog-post', validation.score);
+        }
+
         console.log('Validation scores:', {
           overall: validation.score,
           goalAlignment: validation.scoreBreakdown.goalAlignment,
@@ -1773,6 +1810,10 @@ export async function generateBlogPostAction(
       data: {
         ...result,
         validation,
+        _meta: {
+          generationTime,
+          cached: !!cached,
+        },
       },
       errors: {},
     };
@@ -1782,11 +1823,24 @@ export async function generateBlogPostAction(
       hasData: !!response.data,
       dataKeys: Object.keys(response.data || {}),
       hasValidation: !!validation,
+      cached: !!cached,
     });
 
     return response;
   } catch (error) {
+    const generationTime = Date.now() - startTime;
     const errorMessage = handleAWSError(error, 'An unexpected error occurred while generating the blog post.');
+
+    // Track failure
+    try {
+      const { getMetrics } = await import('@/lib/metrics');
+      const metrics = getMetrics();
+      metrics.trackGenerationTime('blog-post', generationTime);
+      metrics.trackGenerationFailure('blog-post', error instanceof Error ? error.name : 'Unknown');
+    } catch (metricsError) {
+      console.error('Failed to track metrics:', metricsError);
+    }
+
     return {
       message: `Failed to generate blog post: ${errorMessage}`,
       errors: {},

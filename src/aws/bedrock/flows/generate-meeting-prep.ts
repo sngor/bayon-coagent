@@ -9,11 +9,12 @@ import { getGuardrailsService, DEFAULT_GUARDRAILS_CONFIG } from '../guardrails';
 import {
     GenerateMeetingPrepInputSchema,
     GenerateMeetingPrepOutputSchema,
-    type GenerateMeetingPrepInput,
-    type GenerateMeetingPrepOutput,
 } from '@/ai/schemas/meeting-prep-schemas';
 
-export { type GenerateMeetingPrepInput, type GenerateMeetingPrepOutput };
+import type {
+    GenerateMeetingPrepInput,
+    GenerateMeetingPrepOutput,
+} from '@/ai/schemas/meeting-prep-schemas';
 
 const prompt = definePrompt({
     name: 'generateMeetingPrepPrompt',

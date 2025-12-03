@@ -10,11 +10,12 @@ import { getSearchClient } from '@/aws/search';
 import {
     RentalPotentialInputSchema,
     RentalPotentialOutputSchema,
-    type RentalPotentialInput,
-    type RentalPotentialOutput,
 } from '@/ai/schemas/rental-potential-schemas';
 
-export { type RentalPotentialInput, type RentalPotentialOutput };
+import type {
+    RentalPotentialInput,
+    RentalPotentialOutput,
+} from '@/ai/schemas/rental-potential-schemas';
 
 const rentalPotentialPrompt = definePrompt({
     name: 'rentalPotentialPrompt',

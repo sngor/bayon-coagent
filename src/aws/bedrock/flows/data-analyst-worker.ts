@@ -15,15 +15,15 @@ import { definePrompt, MODEL_CONFIGS } from '../flow-base';
 import {
   DataAnalystInputSchema,
   DataAnalystOutputSchema,
-  type DataAnalystInput,
-  type DataAnalystOutput,
+} from '@/ai/schemas/data-analyst-worker-schemas';
+import type {
+  DataAnalystInput,
+  DataAnalystOutput,
 } from '@/ai/schemas/data-analyst-worker-schemas';
 import { getSearchClient, type SearchResult } from '@/aws/search';
 import type { WorkerTask, WorkerResult } from '../worker-protocol';
 import { createSuccessResult, createErrorResult } from '../worker-protocol';
 import { getAgentProfileRepository, type AgentProfile } from '@/aws/dynamodb/agent-profile-repository';
-
-export { type DataAnalystInput, type DataAnalystOutput };
 
 /**
  * Data Analyst prompt that processes search results and generates analysis
@@ -98,51 +98,51 @@ export async function executeDataAnalystWorker(
 ): Promise<WorkerResult> {
   const startTime = Date.now();
   const startedAt = new Date().toISOString();
-  
+
   try {
     // Validate input
     const input = DataAnalystInputSchema.parse(task.input);
-    
+
     // Load agent profile if userId is provided in context
     let agentProfile: AgentProfile | null = null;
     if (task.context?.userId) {
       const profileRepo = getAgentProfileRepository();
       agentProfile = await profileRepo.getProfile(task.context.userId);
     }
-    
+
     // Perform web search if using Tavily or web data source
     let searchResults: SearchResult[] = [];
     let searchResultsText = '';
-    
+
     if (input.dataSource === 'tavily' || input.dataSource === 'web') {
       const searchClient = getSearchClient('tavily');
-      
+
       // Construct search query with context
       let searchQuery = input.query;
-      
+
       // Prioritize agent's primary market if profile is available
       if (agentProfile?.primaryMarket) {
         searchQuery += ` ${agentProfile.primaryMarket}`;
       } else if (input.context?.market) {
         searchQuery += ` ${input.context.market}`;
       }
-      
+
       if (input.context?.propertyType) {
         searchQuery += ` ${input.context.propertyType}`;
       }
-      
+
       // Perform search
       const searchResponse = await searchClient.search(searchQuery, {
         maxResults: 5,
         searchDepth: 'advanced',
         includeAnswer: true,
       });
-      
+
       searchResults = searchResponse.results;
-      
+
       // Format search results for AI consumption
       searchResultsText = searchClient.formatResultsForAI(searchResults, true);
-      
+
       // Add AI-generated answer if available
       if (searchResponse.answer) {
         searchResultsText = `AI Summary: ${searchResponse.answer}\n\n---\n\n${searchResultsText}`;
@@ -151,7 +151,7 @@ export async function executeDataAnalystWorker(
       // For other data sources, provide a placeholder
       searchResultsText = `Data source: ${input.dataSource}\nQuery: ${input.query}\n\nNote: This is a placeholder. In production, integrate with actual MLS or market report APIs.`;
     }
-    
+
     // Execute analysis prompt with agent profile
     const output = await dataAnalystPrompt({
       query: input.query,
@@ -159,27 +159,27 @@ export async function executeDataAnalystWorker(
       context: input.context || {},
       agentProfile: agentProfile || undefined,
     });
-    
+
     // Extract citations from search results
     const citations = searchResults.map(result => ({
       url: result.url,
       title: result.title,
       sourceType: input.dataSource,
     }));
-    
+
     // Merge with citations from output
     const allCitations = [
       ...citations,
       ...(output.sources || []),
     ];
-    
+
     // Remove duplicates based on URL
     const uniqueCitations = Array.from(
       new Map(allCitations.map(c => [c.url, c])).values()
     );
-    
+
     const executionTime = Date.now() - startTime;
-    
+
     return createSuccessResult(
       task.id,
       'data-analyst',
@@ -193,11 +193,11 @@ export async function executeDataAnalystWorker(
     );
   } catch (error) {
     const executionTime = Date.now() - startTime;
-    
+
     // Determine error type
     let errorType: 'VALIDATION_ERROR' | 'API_ERROR' | 'INTERNAL_ERROR' = 'INTERNAL_ERROR';
     let errorMessage = 'An unexpected error occurred during data analysis';
-    
+
     if (error instanceof z.ZodError) {
       errorType = 'VALIDATION_ERROR';
       errorMessage = `Input validation failed: ${error.errors.map(e => e.message).join(', ')}`;
@@ -207,7 +207,7 @@ export async function executeDataAnalystWorker(
       }
       errorMessage = error.message;
     }
-    
+
     return createErrorResult(
       task.id,
       'data-analyst',
@@ -240,12 +240,12 @@ export async function analyzeData(
     createdAt: new Date().toISOString(),
     status: 'in-progress',
   };
-  
+
   const result = await executeDataAnalystWorker(task);
-  
+
   if (result.status === 'error') {
     throw new Error(result.error?.message || 'Data analysis failed');
   }
-  
+
   return result.output as DataAnalystOutput;
 }

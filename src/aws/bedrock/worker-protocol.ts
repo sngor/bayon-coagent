@@ -17,7 +17,8 @@ export type WorkerAgentType =
   | 'content-generator'
   | 'market-forecaster'
   | 'search'
-  | 'knowledge-retriever';
+  | 'knowledge-retriever'
+  | 'image-analyzer';
 
 /**
  * Task status

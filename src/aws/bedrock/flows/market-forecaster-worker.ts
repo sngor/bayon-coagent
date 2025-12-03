@@ -15,14 +15,14 @@ import { definePrompt, MODEL_CONFIGS } from '../flow-base';
 import {
   MarketForecasterInputSchema,
   MarketForecasterOutputSchema,
-  type MarketForecasterInput,
-  type MarketForecasterOutput,
+} from '@/ai/schemas/market-forecaster-worker-schemas';
+import type {
+  MarketForecasterInput,
+  MarketForecasterOutput,
 } from '@/ai/schemas/market-forecaster-worker-schemas';
 import type { WorkerTask, WorkerResult } from '../worker-protocol';
 import { createSuccessResult, createErrorResult } from '../worker-protocol';
 import { getAgentProfileRepository, type AgentProfile } from '@/aws/dynamodb/agent-profile-repository';
-
-export { type MarketForecasterInput, type MarketForecasterOutput };
 
 /**
  * Market Forecaster prompt that generates predictions with qualifying language
@@ -113,23 +113,23 @@ export async function executeMarketForecasterWorker(
 ): Promise<WorkerResult> {
   const startTime = Date.now();
   const startedAt = new Date().toISOString();
-  
+
   try {
     // Validate input
     const input = MarketForecasterInputSchema.parse(task.input);
-    
+
     // Validate historical data is not empty
     if (!input.historicalData || input.historicalData.length === 0) {
       throw new Error('Historical data is required for market forecasting');
     }
-    
+
     // Load agent profile if userId is provided in context
     let agentProfile: AgentProfile | null = null;
     if (task.context?.userId) {
       const profileRepo = getAgentProfileRepository();
       agentProfile = await profileRepo.getProfile(task.context.userId);
     }
-    
+
     // Execute forecasting prompt with agent profile
     const output = await marketForecasterPrompt({
       ...input,
@@ -137,22 +137,22 @@ export async function executeMarketForecasterWorker(
       context: input.context || {},
       agentProfile: agentProfile || undefined,
     });
-    
+
     // Verify qualifying language is present in disclaimer
     const hasQualifyingLanguage = verifyQualifyingLanguage(output.disclaimer);
     if (!hasQualifyingLanguage) {
       // Inject additional qualifying language if missing
       output.disclaimer = enhanceDisclaimer(output.disclaimer);
     }
-    
+
     // Verify qualifying language in analysis
     const analysisHasQualifying = verifyQualifyingLanguage(output.analysis);
     if (!analysisHasQualifying) {
       output.analysis = enhanceAnalysis(output.analysis);
     }
-    
+
     const executionTime = Date.now() - startTime;
-    
+
     return createSuccessResult(
       task.id,
       'market-forecaster',
@@ -165,11 +165,11 @@ export async function executeMarketForecasterWorker(
     );
   } catch (error) {
     const executionTime = Date.now() - startTime;
-    
+
     // Determine error type
     let errorType: 'VALIDATION_ERROR' | 'API_ERROR' | 'INTERNAL_ERROR' = 'INTERNAL_ERROR';
     let errorMessage = 'An unexpected error occurred during market forecasting';
-    
+
     if (error instanceof z.ZodError) {
       errorType = 'VALIDATION_ERROR';
       errorMessage = `Input validation failed: ${error.errors.map(e => e.message).join(', ')}`;
@@ -179,7 +179,7 @@ export async function executeMarketForecasterWorker(
       }
       errorMessage = error.message;
     }
-    
+
     return createErrorResult(
       task.id,
       'market-forecaster',
@@ -212,13 +212,13 @@ export async function forecastMarket(
     createdAt: new Date().toISOString(),
     status: 'in-progress',
   };
-  
+
   const result = await executeMarketForecasterWorker(task);
-  
+
   if (result.status === 'error') {
     throw new Error(result.error?.message || 'Market forecasting failed');
   }
-  
+
   return result.output as MarketForecasterOutput;
 }
 
@@ -239,7 +239,7 @@ function verifyQualifyingLanguage(text: string): boolean {
     'subject to change',
     'market conditions',
   ];
-  
+
   const lowerText = text.toLowerCase();
   return qualifyingPhrases.some(phrase => lowerText.includes(phrase));
 }
@@ -249,7 +249,7 @@ function verifyQualifyingLanguage(text: string): boolean {
  */
 function enhanceDisclaimer(disclaimer: string): string {
   const additionalDisclaimer = '\n\nIMPORTANT: This forecast is based on historical trends and current market data. Market conditions can change rapidly, and past performance does not guarantee future results. This analysis should not be considered financial advice. Please consult with qualified financial advisors before making investment decisions.';
-  
+
   return disclaimer + additionalDisclaimer;
 }
 
@@ -258,12 +258,12 @@ function enhanceDisclaimer(disclaimer: string): string {
  */
 function enhanceAnalysis(analysis: string): string {
   const prefix = 'Based on historical trends and current market data, ';
-  
+
   // Check if analysis already starts with qualifying language
   const lowerAnalysis = analysis.toLowerCase();
   if (lowerAnalysis.startsWith('based on') || lowerAnalysis.startsWith('historical')) {
     return analysis;
   }
-  
+
   return prefix + analysis;
 }

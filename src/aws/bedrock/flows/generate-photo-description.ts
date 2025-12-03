@@ -11,11 +11,12 @@ import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
 import {
     GeneratePhotoDescriptionInputSchema,
     GeneratePhotoDescriptionOutputSchema,
-    type GeneratePhotoDescriptionInput,
-    type GeneratePhotoDescriptionOutput,
 } from '@/ai/schemas/photo-description-schemas';
 
-export { type GeneratePhotoDescriptionInput, type GeneratePhotoDescriptionOutput };
+import type {
+    GeneratePhotoDescriptionInput,
+    GeneratePhotoDescriptionOutput,
+} from '@/ai/schemas/photo-description-schemas';
 
 const photoDescriptionPrompt = definePrompt({
     name: 'generatePhotoDescriptionPrompt',

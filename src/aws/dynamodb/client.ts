@@ -8,12 +8,13 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { getConfig, getAWSCredentials } from '../config';
+import { getConnectionPoolManager } from '../performance/connection-pool';
 
 let dynamoDBClient: DynamoDBClient | null = null;
 let documentClient: DynamoDBDocumentClient | null = null;
 
 /**
- * Creates and configures a DynamoDB client
+ * Creates and configures a DynamoDB client with connection pooling
  */
 function createDynamoDBClient(): DynamoDBClient {
   // Browser-side check: DynamoDB should not be accessed from the browser
@@ -39,6 +40,23 @@ function createDynamoDBClient(): DynamoDBClient {
   // Add custom endpoint for local development
   if (config.dynamodb.endpoint) {
     clientConfig.endpoint = config.dynamodb.endpoint;
+  }
+
+  // Add optimized request handler with connection pooling
+  // Only in Node.js environment (not in browser or edge runtime)
+  if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+    try {
+      const poolManager = getConnectionPoolManager({
+        maxSockets: 50,
+        maxFreeSockets: 10,
+        keepAlive: true,
+        keepAliveTimeout: 60000,
+      });
+      clientConfig.requestHandler = poolManager.getRequestHandler();
+    } catch (error) {
+      // Fallback to default if connection pooling fails
+      console.warn('Failed to initialize connection pooling for DynamoDB:', error);
+    }
   }
 
   return new DynamoDBClient(clientConfig);

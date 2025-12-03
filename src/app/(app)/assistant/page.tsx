@@ -42,9 +42,12 @@ import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsL
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { getAgentProfile } from '@/app/profile-actions';
 import { useUser } from '@/aws/auth';
-import { MessageSquare, Info, Loader2, Settings, History, Plus, RotateCcw, Trash2, Edit2, Check, X, MoreVertical } from 'lucide-react';
+import { MessageSquare, Info, Loader2, Settings, History, Plus, RotateCcw, Trash2, Edit2, Check, X, MoreVertical, Cloud, HardDrive } from 'lucide-react';
 import type { AgentProfile } from '@/aws/dynamodb/agent-profile-repository';
 import Link from 'next/link';
+import { useChatHistory } from '@/hooks/use-chat-history';
+import { migrateChatHistoryToServer, hasLocalChatHistory, getLocalChatHistoryCount } from '@/lib/migrate-chat-history';
+import { toast } from '@/hooks/use-toast';
 
 export default function AssistantPage() {
     const { user } = useUser();
@@ -54,17 +57,23 @@ export default function AssistantPage() {
     const [currentChatId, setCurrentChatId] = useState<string | null>(null);
     const [chatMessages, setChatMessages] = useState<any[]>([]);
     const [chatKey, setChatKey] = useState<number>(0); // Force re-render of ChatInterface
-    const [chatHistory, setChatHistory] = useState<Array<{
-        id: string;
-        title: string;
-        lastMessage: string;
-        timestamp: string;
-        messageCount: number;
-        messages: any[];
-    }>>([]);
     const [editingChatId, setEditingChatId] = useState<string | null>(null);
     const [editingTitle, setEditingTitle] = useState<string>('');
     const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
+    const [showMigrationPrompt, setShowMigrationPrompt] = useState(false);
+    const [isMigrating, setIsMigrating] = useState(false);
+
+    // Use server-side chat history hook
+    const {
+        sessions: chatHistory,
+        currentSession,
+        isLoading: isLoadingHistory,
+        saveSession,
+        loadSession,
+        updateTitle,
+        deleteSession,
+        deleteAllSessions,
+    } = useChatHistory();
 
     // Load existing profile on mount
     useEffect(() => {
@@ -90,27 +99,48 @@ export default function AssistantPage() {
         loadProfile();
     }, [user]);
 
-    // Load chat history from localStorage on mount
+    // Check for localStorage data that needs migration
     useEffect(() => {
         if (user?.id && typeof window !== 'undefined') {
-            const savedHistory = localStorage.getItem(`chat-history-${user.id}`);
-            if (savedHistory) {
-                try {
-                    const parsedHistory = JSON.parse(savedHistory);
-                    setChatHistory(parsedHistory);
-                } catch (error) {
-                    console.error('Failed to load chat history:', error);
-                }
+            if (hasLocalChatHistory(user.id)) {
+                setShowMigrationPrompt(true);
             }
         }
     }, [user?.id]);
 
-    // Save chat history to localStorage whenever it changes
-    useEffect(() => {
-        if (user?.id && chatHistory.length > 0 && typeof window !== 'undefined') {
-            localStorage.setItem(`chat-history-${user.id}`, JSON.stringify(chatHistory));
+    // Handle migration from localStorage to server
+    const handleMigration = async () => {
+        if (!user?.id) return;
+
+        setIsMigrating(true);
+        try {
+            const result = await migrateChatHistoryToServer(user.id);
+
+            if (result.success) {
+                toast({
+                    title: '✨ Migration Complete!',
+                    description: `Successfully migrated ${result.migrated} chat sessions to cloud storage`,
+                });
+                setShowMigrationPrompt(false);
+                // Reload sessions to show migrated data
+                window.location.reload();
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Migration Failed',
+                    description: result.errors.join(', '),
+                });
+            }
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Migration Error',
+                description: error instanceof Error ? error.message : 'Unknown error',
+            });
+        } finally {
+            setIsMigrating(false);
         }
-    }, [chatHistory, user?.id]);
+    };
 
     // Initialize with a new chat on first load
     useEffect(() => {

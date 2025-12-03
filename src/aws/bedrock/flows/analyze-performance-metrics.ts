@@ -4,11 +4,12 @@ import { defineFlow, definePrompt, BEDROCK_MODELS } from '../flow-base';
 import {
     AnalyzePerformanceMetricsInputSchema,
     AnalyzePerformanceMetricsOutputSchema,
-    type AnalyzePerformanceMetricsInput,
-    type AnalyzePerformanceMetricsOutput,
 } from '@/ai/schemas/performance-metrics-schemas';
 
-export { type AnalyzePerformanceMetricsInput, type AnalyzePerformanceMetricsOutput };
+import type {
+    AnalyzePerformanceMetricsInput,
+    AnalyzePerformanceMetricsOutput,
+} from '@/ai/schemas/performance-metrics-schemas';
 
 const prompt = definePrompt({
     name: 'analyzePerformanceMetricsPrompt',

@@ -98,6 +98,9 @@ export type EntityType =
   | 'SavedKeyword'
   | 'ClientInvitation'
   | 'Announcement'
+  | 'EditingSession'
+  | 'EditSuggestion'
+  | 'EditingSummary'
   | 'ContentPerformance'
   | 'SystemConfig'
   | 'SystemConfigHistory'
@@ -118,7 +121,11 @@ export type EntityType =
   | 'LocationCheckIn'
   | 'Lead'
   | 'LeadInteraction'
-  | 'FollowUpReminder';
+  | 'FollowUpReminder'
+  | 'ChatSession'
+  | 'MemoryEntry'
+  | 'HandoffRecord'
+  | 'UserPreferences';
 
 /**
  * Base DynamoDB item structure

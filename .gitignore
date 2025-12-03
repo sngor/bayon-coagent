@@ -82,3 +82,35 @@ amplifytools.xcconfig
 .secret-*
 **.sample
 #amplify-do-not-edit-end
+
+# Working notes and documentation (temporary)
+AGENTCORE_*.md
+AGENT_ID_ISSUE.md
+DEPLOYMENT_*.md
+PHASE_*.md
+QUICK_DEPLOY.md
+UPDATE_AGENTCORE_AGENTS.md
+WHATS_NEXT.md
+FIX_AGENT_INSTRUCTIONS.md
+FINAL_RECOMMENDATION.md
+
+# Test files (root level)
+test-*.ts
+test-*.js
+test-*.tsx
+
+# Agent development files
+agents/
+
+# Deployment scripts (work in progress)
+update-agent-from-s3.sh
+cloudwatch-dashboard.json
+template-agentcore.yaml
+
+# Test routes
+src/app/test-agentcore/
+src/app/agentcore-test-actions.ts
+
+# Temporary cache and metrics
+src/lib/cache.ts
+src/lib/metrics.ts

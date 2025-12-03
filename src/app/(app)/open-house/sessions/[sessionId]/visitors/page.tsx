@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getOpenHouseSession, getSessionVisitors } from '../../../actions';
+import { getOpenHouseSession, getSessionVisitors } from '@/app/(app)/open-house/actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

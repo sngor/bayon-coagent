@@ -19,22 +19,16 @@ import {
    GenerateOpenHouseSocialPostsOutputSchema,
    GenerateOpenHouseEmailInviteInputSchema,
    GenerateOpenHouseEmailInviteOutputSchema,
-   type GenerateOpenHouseFlyerInput,
-   type GenerateOpenHouseFlyerOutput,
-   type GenerateOpenHouseSocialPostsInput,
-   type GenerateOpenHouseSocialPostsOutput,
-   type GenerateOpenHouseEmailInviteInput,
-   type GenerateOpenHouseEmailInviteOutput,
 } from '@/ai/schemas/open-house-marketing-schemas';
 
-export {
-   type GenerateOpenHouseFlyerInput,
-   type GenerateOpenHouseFlyerOutput,
-   type GenerateOpenHouseSocialPostsInput,
-   type GenerateOpenHouseSocialPostsOutput,
-   type GenerateOpenHouseEmailInviteInput,
-   type GenerateOpenHouseEmailInviteOutput,
-};
+import type {
+   GenerateOpenHouseFlyerInput,
+   GenerateOpenHouseFlyerOutput,
+   GenerateOpenHouseSocialPostsInput,
+   GenerateOpenHouseSocialPostsOutput,
+   GenerateOpenHouseEmailInviteInput,
+   GenerateOpenHouseEmailInviteOutput,
+} from '@/ai/schemas/open-house-marketing-schemas';
 
 // ============================================================================
 // FLYER GENERATION FLOW
