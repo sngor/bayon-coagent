@@ -110,7 +110,15 @@ export type EntityType =
   | 'SessionTemplate'
   | 'SessionPhoto'
   | 'SyncOperation'
-  | 'WebhookConfig';
+  | 'WebhookConfig'
+  | 'PropertyShare'
+  | 'MobileCapture'
+  | 'QuickAction'
+  | 'VoiceNote'
+  | 'LocationCheckIn'
+  | 'Lead'
+  | 'LeadInteraction'
+  | 'FollowUpReminder';
 
 /**
  * Base DynamoDB item structure

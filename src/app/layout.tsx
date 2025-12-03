@@ -6,6 +6,8 @@ import './globals.css';
 import { AWSClientProvider } from '@/aws/client-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { PerformanceMonitor } from '@/components/performance-monitor';
+import { PWAInstallPrompt } from '@/components/mobile/pwa-install-prompt';
+import { OfflineIndicator } from '@/components/mobile/offline-indicator';
 
 // Optimize font loading with Next.js font optimization
 const ptSans = PT_Sans({
@@ -104,6 +106,8 @@ export default function RootLayout({
             {children}
           </AWSClientProvider>
           <Toaster />
+          <PWAInstallPrompt />
+          <OfflineIndicator />
         </ThemeProvider>
         {process.env.NODE_ENV === 'development' && <PerformanceMonitor />}
       </body>

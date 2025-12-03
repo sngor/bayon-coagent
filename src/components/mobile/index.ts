@@ -1,69 +1,66 @@
 /**
- * Mobile Components Index
+ * Mobile Components Export
  * 
- * Central export point for all mobile-specific components.
- * Follows existing component patterns and uses mobile optimization utilities.
+ * Centralized exports for all mobile-specific components
  */
 
-// Quick Capture
-export { QuickCapture } from './quick-capture';
-export type { CapturedPhoto, QuickCaptureProps } from './quick-capture';
+// Performance Components
+export { ProgressiveImage } from './progressive-image';
+export type { ProgressiveImageProps } from './progressive-image';
 
-// Voice Memo
-export { VoiceMemo } from './voice-memo';
-export type { AudioRecording, GeneratedContent, VoiceMemoProps } from './voice-memo';
+export { CancellableOperation, useCancellableOperationUI } from './cancellable-operation';
+export type { CancellableOperationProps, UseCancellableOperationUIOptions } from './cancellable-operation';
 
-// Content Management
-export { ContentManagement } from './content-management';
-export { ContentTypeSelector } from './content-type-selector';
+export { ImageCompressor } from './image-compressor';
+export type { ImageCompressorProps } from './image-compressor';
 
-// Push Notifications
-export { default as NotificationPreferences } from './notification-preferences';
-export { default as InAppNotifications, NotificationBadge, useInAppNotifications } from './in-app-notifications';
+export { NavigationPrefetchProvider } from './navigation-prefetch-provider';
+export type { NavigationPrefetchProviderProps } from './navigation-prefetch-provider';
 
-// Property Comparison
-export { PropertyComparison } from './property-comparison';
-export { default as PropertyComparisonDemo } from './property-comparison-demo';
-export type { Property, SavedComparison, PropertyComparisonProps } from './property-comparison';
+// Mobile UI Components (Task 19)
+export { BottomSheet, BottomSheetTrigger } from './bottom-sheet';
 
-// Market Stats
-export { MarketStats, default as MarketStatsComponent } from './market-stats';
-export { default as MarketStatsTest } from './market-stats-test';
-export type { MarketStats as MarketStatsType, MarketStatsProps } from './market-stats';
+export {
+    SwipeableCard,
+    SwipeableCardStack,
+    SwipeableGallery
+} from './swipeable-card';
 
-// Meeting Prep
-export { default as MeetingPrep, MeetingPrepForm, MeetingMaterialsDisplay } from './meeting-prep';
-export type { MeetingPrepProps, MeetingPrepRequest, MeetingMaterials } from './meeting-prep';
+export {
+    TouchButton,
+    TouchButtonGroup,
+    FloatingActionButton,
+    SegmentedControl
+} from './touch-button';
+export type { TouchButtonProps } from './touch-button';
 
-// Open House Check-in
-export { default as OpenHouseCheckin } from './open-house-checkin';
-export type { OpenHouseCheckinProps, Visitor, OpenHouseSession, OpenHouseSummary } from './open-house-checkin';
+export {
+    MobileNav,
+    MobileNavDrawer,
+    MobileNavItem,
+    MobileTabBar
+} from './mobile-nav';
 
-// Sync Status and Offline Management
-export { SyncStatus, FloatingSyncStatus } from './sync-status';
-export { OfflineStatusIndicator, SimpleOfflineIndicator, useOfflineStatus } from './offline-status-indicator';
-export { BackgroundSyncStatus } from './background-sync-status';
+// Re-export existing mobile components (when implemented)
+// export { QuickCapture } from './quick-capture';
+// export { QuickActionsMenu } from './quick-actions-menu';
+// export { QuickShare } from './quick-share';
+// export { VoiceNoteRecorder } from './voice-note-recorder';
 
-// Conflict Resolution
-export { ConflictResolution } from './conflict-resolution';
-export { default as ConflictManager } from './conflict-manager';
-export { default as ConflictList } from './conflict-list';
+// Onboarding and Documentation
+export { MobileFeatureTour } from "./mobile-feature-tour";
+export type { MobileFeatureTourProps, TourStep } from "./mobile-feature-tour";
 
-// Photo Description Display
-export { PhotoDescriptionDisplay } from './photo-description-display';
-export type { PhotoDescription } from './photo-description-display';
+export { PermissionEducationDialog, usePermissionEducation } from "./permission-education-dialog";
+export type { PermissionEducationDialogProps, PermissionType, PermissionInfo } from "./permission-education-dialog";
 
-// Gesture Handling
-export { GestureDemo } from './gesture-demo';
+export { MobileHelpDocumentation } from "./mobile-help-documentation";
+export type { MobileHelpDocumentationProps, HelpArticle } from "./mobile-help-documentation";
 
-// Workflow Components
-export { VoiceMemoWorkflow, WorkflowProgress } from './voice-memo-workflow';
-export { QuickCaptureWorkflow } from './quick-capture-workflow';
+export { MobileOnboardingProvider, useMobileOnboarding } from "./mobile-onboarding-provider";
+export type { MobileOnboardingProviderProps, MobileOnboardingContextValue, MobileOnboardingState } from "./mobile-onboarding-provider";
+
+export * from "./mobile-feature-tooltips";
 
 // Demo Components
-export { QuickCaptureDemo } from './quick-capture-demo';
-export { VoiceMemoDemo } from './voice-memo-demo';
-export { SyncStatusDemo } from './sync-status-demo';
-export { ConflictDemo } from './conflict-demo';
-export { MobileStorageDemo } from './mobile-storage-demo';
-export { MarketStatsDemo } from './market-stats-demo';
+export { MobileOnboardingDemo } from "./mobile-onboarding-demo";

@@ -1305,3 +1305,73 @@ export function getOfflineSyncKeys(
     SK: `OFFLINE_SYNC#${operationId}`,
   };
 }
+
+/**
+ * Generates keys for PropertyShare
+ * Pattern: PK: USER#<userId>, SK: SHARE#<shareId>
+ */
+export function getPropertyShareKeys(
+  userId: string,
+  shareId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `SHARE#${shareId}`,
+  };
+}
+
+/**
+ * Generates keys for MobileCapture
+ * Pattern: PK: USER#<userId>, SK: CAPTURE#<captureId>
+ */
+export function getMobileCaptureKeys(
+  userId: string,
+  captureId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `CAPTURE#${captureId}`,
+  };
+}
+
+/**
+ * Generates keys for QuickAction
+ * Pattern: PK: USER#<userId>, SK: QUICKACTION#<actionId>
+ */
+export function getQuickActionKeys(
+  userId: string,
+  actionId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `QUICKACTION#${actionId}`,
+  };
+}
+
+/**
+ * Generates keys for VoiceNote
+ * Pattern: PK: USER#<userId>, SK: VOICENOTE#<noteId>
+ */
+export function getVoiceNoteKeys(
+  userId: string,
+  noteId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `VOICENOTE#${noteId}`,
+  };
+}
+
+/**
+ * Generates keys for LocationCheckIn
+ * Pattern: PK: USER#<userId>, SK: CHECKIN#<checkInId>
+ */
+export function getLocationCheckInKeys(
+  userId: string,
+  checkInId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `CHECKIN#${checkInId}`,
+  };
+}

@@ -83,6 +83,9 @@ export {
 // Photo Description Generation (Mobile Quick Capture)
 export { generatePhotoDescription, type GeneratePhotoDescriptionInput, type GeneratePhotoDescriptionOutput } from './generate-photo-description';
 
+// Property Photo Analysis (Mobile Quick Capture)
+export { analyzePropertyPhoto, analyzePropertyPhotoWithRetry } from './analyze-property-photo';
+
 // Audio Transcription (Mobile Voice Memo)
 export { transcribeAudio, type AudioTranscriptionInput, type AudioTranscriptionOutput } from './transcribe-audio';
 

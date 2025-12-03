@@ -10,6 +10,9 @@ export * from './bayon-assistant-schemas';
 // Export photo description schemas
 export * from './photo-description-schemas';
 
+// Export property photo analysis schemas
+export * from './property-photo-analysis-schemas';
+
 // Export audio transcription schemas
 export * from './audio-transcription-schemas';
 
