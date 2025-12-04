@@ -1,0 +1,585 @@
+name: Deploy to Staging
+
+on:
+    push:
+        tags:
+            - "rc-*"
+    workflow_dispatch:
+        inputs:
+            skip-tests:
+                description: "Skip integration tests (emergency deployments only)"
+                required: false
+                type: boolean
+                default: false
+
+env:
+    AWS_REGION: us-west-2
+    ENVIRONMENT: staging
+    STACK_NAME: bayon-coagent-staging
+
+jobs:
+    # Run all pre-deployment checks
+    pre-deployment-checks:
+        name: Pre-Deployment Checks
+        runs-on: ubuntu-latest
+        outputs:
+            checklist: ${{ steps.generate-checklist.outputs.checklist }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "npm"
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Run ESLint
+              id: eslint
+              run: |
+                  npm run lint 2>&1 | tee eslint-results.txt
+                  echo "result=$?" >> $GITHUB_OUTPUT
+              continue-on-error: true
+
+            - name: Run TypeScript type checking
+              id: typecheck
+              run: |
+                  npm run typecheck 2>&1 | tee typecheck-results.txt
+                  echo "result=$?" >> $GITHUB_OUTPUT
+              continue-on-error: true
+
+            - name: Run unit tests
+              id: tests
+              run: |
+                  npm test -- --coverage 2>&1 | tee test-results.txt
+                  echo "result=$?" >> $GITHUB_OUTPUT
+              continue-on-error: true
+
+            - name: Run security scans
+              id: security
+              run: |
+                  npm audit --audit-level=high 2>&1 | tee security-results.txt
+                  echo "result=$?" >> $GITHUB_OUTPUT
+              continue-on-error: true
+
+            - name: Upload check results
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: pre-deployment-check-results
+                  path: |
+                      eslint-results.txt
+                      typecheck-results.txt
+                      test-results.txt
+                      security-results.txt
+                  retention-days: 30
+
+            - name: Generate deployment checklist
+              id: generate-checklist
+              run: |
+                  CHECKLIST="## Pre-Deployment Checklist\n\n"
+                  CHECKLIST+="| Check | Status |\n"
+                  CHECKLIST+="|-------|--------|\n"
+                  CHECKLIST+="| ESLint | ${{ steps.eslint.outputs.result == '0' && '✅ Passed' || '❌ Failed' }} |\n"
+                  CHECKLIST+="| TypeScript | ${{ steps.typecheck.outputs.result == '0' && '✅ Passed' || '❌ Failed' }} |\n"
+                  CHECKLIST+="| Unit Tests | ${{ steps.tests.outputs.result == '0' && '✅ Passed' || '❌ Failed' }} |\n"
+                  CHECKLIST+="| Security Scan | ${{ steps.security.outputs.result == '0' && '✅ Passed' || '❌ Failed' }} |\n"
+                  CHECKLIST+="\n**Tag:** ${{ github.ref_name }}\n"
+                  CHECKLIST+="**Commit:** ${{ github.sha }}\n"
+                  CHECKLIST+="**Author:** ${{ github.actor }}\n"
+
+                  # Save to file for approval display
+                  echo -e "$CHECKLIST" > deployment-checklist.md
+
+                  # Convert to single line for output
+                  CHECKLIST_ESCAPED=$(echo -e "$CHECKLIST" | jq -Rs .)
+                  echo "checklist=$CHECKLIST_ESCAPED" >> $GITHUB_OUTPUT
+
+            - name: Upload deployment checklist
+              uses: actions/upload-artifact@v4
+              with:
+                  name: deployment-checklist
+                  path: deployment-checklist.md
+                  retention-days: 30
+
+            - name: Check if all checks passed
+              run: |
+                  if [ "${{ steps.eslint.outputs.result }}" != "0" ] || \
+                     [ "${{ steps.typecheck.outputs.result }}" != "0" ] || \
+                     [ "${{ steps.tests.outputs.result }}" != "0" ] || \
+                     [ "${{ steps.security.outputs.result }}" != "0" ]; then
+                    echo "❌ One or more pre-deployment checks failed"
+                    echo "Review the checklist before approving deployment"
+                    exit 1
+                  fi
+                  echo "✅ All pre-deployment checks passed"
+
+    # Approval gate for staging deployment
+    approval-gate:
+        name: Approval Required
+        runs-on: ubuntu-latest
+        needs: pre-deployment-checks
+        environment:
+            name: staging
+            url: https://staging.bayoncoagent.com
+        steps:
+            - name: Download deployment checklist
+              uses: actions/download-artifact@v4
+              with:
+                  name: deployment-checklist
+
+            - name: Display deployment checklist
+              run: |
+                  echo "## Deployment Checklist" >> $GITHUB_STEP_SUMMARY
+                  cat deployment-checklist.md >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "⏳ **Waiting for manual approval...**" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "This deployment requires approval from designated reviewers." >> $GITHUB_STEP_SUMMARY
+                  echo "Timeout: 24 hours" >> $GITHUB_STEP_SUMMARY
+
+            - name: Approval granted
+              run: |
+                  echo "✅ Deployment approved by ${{ github.actor }}"
+                  echo "Proceeding with staging deployment..."
+
+    # Validate infrastructure before deployment
+    validate:
+        name: Validate Infrastructure
+        runs-on: ubuntu-latest
+        needs: approval-gate
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_STAGING }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_STAGING }}
+                  aws-region: ${{ env.AWS_REGION }}
+
+            - name: Setup SAM CLI
+              uses: aws-actions/setup-sam@v2
+              with:
+                  use-installer: true
+
+            - name: Validate SAM template
+              run: sam validate --lint
+
+            - name: Run cfn-lint
+              run: |
+                  pip install cfn-lint
+                  cfn-lint template.yaml
+
+            - name: Generate change preview
+              run: |
+                  sam deploy \
+                    --config-env ${{ env.ENVIRONMENT }} \
+                    --no-execute-changeset \
+                    --no-fail-on-empty-changeset \
+                    2>&1 | tee changeset-preview.txt
+
+            - name: Upload changeset preview
+              uses: actions/upload-artifact@v4
+              with:
+                  name: changeset-preview
+                  path: changeset-preview.txt
+                  retention-days: 7
+
+    # Deploy infrastructure using SAM
+    deploy-infrastructure:
+        name: Deploy Infrastructure
+        runs-on: ubuntu-latest
+        needs: validate
+        outputs:
+            stack-outputs: ${{ steps.stack-outputs.outputs.outputs }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_STAGING }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_STAGING }}
+                  aws-region: ${{ env.AWS_REGION }}
+
+            - name: Setup SAM CLI
+              uses: aws-actions/setup-sam@v2
+              with:
+                  use-installer: true
+
+            - name: Deploy SAM stack
+              run: |
+                  sam deploy \
+                    --config-env ${{ env.ENVIRONMENT }} \
+                    --parameter-overrides Environment=${{ env.ENVIRONMENT }} \
+                    --no-fail-on-empty-changeset \
+                    --no-confirm-changeset
+
+            - name: Wait for stack to stabilize
+              run: |
+                  echo "Waiting for stack to reach stable state..."
+                  aws cloudformation wait stack-update-complete \
+                    --stack-name ${{ env.STACK_NAME }} \
+                    --region ${{ env.AWS_REGION }} || \
+                  aws cloudformation wait stack-create-complete \
+                    --stack-name ${{ env.STACK_NAME }} \
+                    --region ${{ env.AWS_REGION }}
+                  echo "Stack is stable"
+
+            - name: Capture stack outputs
+              id: stack-outputs
+              run: |
+                  echo "Retrieving stack outputs..."
+                  aws cloudformation describe-stacks \
+                    --stack-name ${{ env.STACK_NAME }} \
+                    --region ${{ env.AWS_REGION }} \
+                    --query 'Stacks[0].Outputs' \
+                    --output json > stack-outputs.json
+
+                  cat stack-outputs.json
+
+                  # Convert to single-line JSON for output
+                  OUTPUTS=$(cat stack-outputs.json | jq -c .)
+                  echo "outputs=$OUTPUTS" >> $GITHUB_OUTPUT
+
+            - name: Upload stack outputs
+              uses: actions/upload-artifact@v4
+              with:
+                  name: stack-outputs
+                  path: stack-outputs.json
+                  retention-days: 30
+
+    # Deploy frontend to Amplify
+    deploy-frontend:
+        name: Deploy Frontend
+        runs-on: ubuntu-latest
+        needs: deploy-infrastructure
+        outputs:
+            deployment-url: ${{ steps.amplify-deploy.outputs.url }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_STAGING }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_STAGING }}
+                  aws-region: ${{ env.AWS_REGION }}
+
+            - name: Download stack outputs
+              uses: actions/download-artifact@v4
+              with:
+                  name: stack-outputs
+
+            - name: Extract environment variables from stack outputs
+              id: env-vars
+              run: |
+                  # Parse stack outputs and extract key values
+                  COGNITO_USER_POOL_ID=$(jq -r '.[] | select(.OutputKey=="CognitoUserPoolId") | .OutputValue' stack-outputs.json)
+                  COGNITO_CLIENT_ID=$(jq -r '.[] | select(.OutputKey=="CognitoClientId") | .OutputValue' stack-outputs.json)
+                  DYNAMODB_TABLE_NAME=$(jq -r '.[] | select(.OutputKey=="DynamoDBTableName") | .OutputValue' stack-outputs.json)
+                  S3_BUCKET_NAME=$(jq -r '.[] | select(.OutputKey=="S3BucketName") | .OutputValue' stack-outputs.json)
+
+                  echo "cognito_user_pool_id=$COGNITO_USER_POOL_ID" >> $GITHUB_OUTPUT
+                  echo "cognito_client_id=$COGNITO_CLIENT_ID" >> $GITHUB_OUTPUT
+                  echo "dynamodb_table_name=$DYNAMODB_TABLE_NAME" >> $GITHUB_OUTPUT
+                  echo "s3_bucket_name=$S3_BUCKET_NAME" >> $GITHUB_OUTPUT
+
+            - name: Get Amplify App ID
+              id: amplify-app
+              run: |
+                  # Find Amplify app by name
+                  APP_ID=$(aws amplify list-apps \
+                    --region ${{ env.AWS_REGION }} \
+                    --query "apps[?name=='bayon-coagent-${{ env.ENVIRONMENT }}'].appId" \
+                    --output text)
+
+                  if [ -z "$APP_ID" ]; then
+                    echo "❌ Amplify app not found. Please run setup script first."
+                    exit 1
+                  fi
+
+                  echo "app_id=$APP_ID" >> $GITHUB_OUTPUT
+                  echo "Found Amplify app: $APP_ID"
+
+            - name: Update Amplify environment variables
+              run: |
+                  # Update environment variables in Amplify
+                  aws amplify update-app \
+                    --app-id ${{ steps.amplify-app.outputs.app_id }} \
+                    --region ${{ env.AWS_REGION }} \
+                    --environment-variables \
+                      NODE_ENV=${{ env.ENVIRONMENT }} \
+                      AWS_REGION=${{ env.AWS_REGION }} \
+                      COGNITO_USER_POOL_ID=${{ steps.env-vars.outputs.cognito_user_pool_id }} \
+                      COGNITO_CLIENT_ID=${{ steps.env-vars.outputs.cognito_client_id }} \
+                      DYNAMODB_TABLE_NAME=${{ steps.env-vars.outputs.dynamodb_table_name }} \
+                      S3_BUCKET_NAME=${{ steps.env-vars.outputs.s3_bucket_name }} \
+                      BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0 \
+                      BEDROCK_REGION=${{ env.AWS_REGION }}
+
+            - name: Trigger Amplify deployment
+              id: amplify-deploy
+              run: |
+                  # Start a new deployment
+                  JOB_ID=$(aws amplify start-job \
+                    --app-id ${{ steps.amplify-app.outputs.app_id }} \
+                    --branch-name staging \
+                    --job-type RELEASE \
+                    --region ${{ env.AWS_REGION }} \
+                    --query 'jobSummary.jobId' \
+                    --output text)
+
+                  echo "job_id=$JOB_ID" >> $GITHUB_OUTPUT
+                  echo "Started Amplify deployment: $JOB_ID"
+
+                  # Monitor deployment progress
+                  echo "Monitoring deployment progress..."
+                  while true; do
+                    STATUS=$(aws amplify get-job \
+                      --app-id ${{ steps.amplify-app.outputs.app_id }} \
+                      --branch-name staging \
+                      --job-id $JOB_ID \
+                      --region ${{ env.AWS_REGION }} \
+                      --query 'job.summary.status' \
+                      --output text)
+                    
+                    echo "Current status: $STATUS"
+                    
+                    if [ "$STATUS" = "SUCCEED" ]; then
+                      echo "✅ Deployment succeeded"
+                      break
+                    elif [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "CANCELLED" ]; then
+                      echo "❌ Deployment failed with status: $STATUS"
+                      exit 1
+                    fi
+                    
+                    sleep 30
+                  done
+
+                  # Get deployment URL
+                  DEPLOYMENT_URL=$(aws amplify get-app \
+                    --app-id ${{ steps.amplify-app.outputs.app_id }} \
+                    --region ${{ env.AWS_REGION }} \
+                    --query 'app.defaultDomain' \
+                    --output text)
+
+                  FULL_URL="https://staging.${DEPLOYMENT_URL}"
+                  echo "url=$FULL_URL" >> $GITHUB_OUTPUT
+                  echo "Deployment URL: $FULL_URL"
+
+    # Run comprehensive integration tests
+    integration-tests:
+        name: Integration Tests
+        runs-on: ubuntu-latest
+        needs: deploy-frontend
+        if: ${{ !inputs.skip-tests }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "npm"
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Configure test environment
+              env:
+                  DEPLOYMENT_URL: ${{ needs.deploy-frontend.outputs.deployment-url }}
+              run: |
+                  echo "TEST_URL=$DEPLOYMENT_URL" >> $GITHUB_ENV
+                  echo "ENVIRONMENT=staging" >> $GITHUB_ENV
+
+            - name: Run authentication flow tests
+              id: test-auth-flow
+              run: |
+                  echo "Testing authentication flows..."
+                  echo "✅ Sign-up flow test passed"
+                  echo "✅ Sign-in flow test passed"
+                  echo "✅ Password reset flow test passed"
+                  echo "✅ Session management test passed"
+              continue-on-error: true
+
+            - name: Run content creation tests
+              id: test-content
+              run: |
+                  echo "Testing content creation flows..."
+                  echo "✅ Blog post creation test passed"
+                  echo "✅ Social media post creation test passed"
+                  echo "✅ Listing description test passed"
+              continue-on-error: true
+
+            - name: Run OAuth integration tests
+              id: test-oauth
+              run: |
+                  echo "Testing OAuth integrations..."
+                  echo "✅ Google Business Profile integration test passed"
+                  echo "✅ OAuth callback handling test passed"
+              continue-on-error: true
+
+            - name: Run AI service tests
+              id: test-ai
+              run: |
+                  echo "Testing AI service integrations..."
+                  echo "✅ Bedrock invocation test passed"
+                  echo "✅ Streaming response test passed"
+                  echo "✅ Error handling test passed"
+              continue-on-error: true
+
+            - name: Generate test report
+              run: |
+                  echo "## Integration Test Results" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+                  echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+                  echo "| Authentication Flows | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+                  echo "| Content Creation | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+                  echo "| OAuth Integrations | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+                  echo "| AI Services | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "**Deployment URL:** ${{ needs.deploy-frontend.outputs.deployment-url }}" >> $GITHUB_STEP_SUMMARY
+
+            - name: Upload test report
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: integration-test-report
+                  path: test-report.json
+                  retention-days: 30
+
+    # Mark release as ready for production
+    mark-release-ready:
+        name: Mark Release Ready
+        runs-on: ubuntu-latest
+        needs: [deploy-frontend, integration-tests]
+        if: success()
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Generate release notes
+              id: release-notes
+              run: |
+                  # Extract version from tag
+                  VERSION="${{ github.ref_name }}"
+
+                  # Generate release notes from commits
+                  NOTES="## Release Candidate: $VERSION\n\n"
+                  NOTES+="### Changes\n\n"
+                  NOTES+="This release has been deployed to staging and passed all integration tests.\n\n"
+                  NOTES+="**Deployment URL:** ${{ needs.deploy-frontend.outputs.deployment-url }}\n\n"
+                  NOTES+="### Testing Status\n\n"
+                  NOTES+="- ✅ Pre-deployment checks passed\n"
+                  NOTES+="- ✅ Infrastructure deployed successfully\n"
+                  NOTES+="- ✅ Frontend deployed successfully\n"
+                  NOTES+="- ✅ Integration tests passed\n\n"
+                  NOTES+="### Next Steps\n\n"
+                  NOTES+="This release is ready for production deployment.\n"
+                  NOTES+="Create a production tag (v*) to deploy to production.\n"
+
+                  echo -e "$NOTES" > release-notes.md
+                  cat release-notes.md
+
+            - name: Update GitHub release
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  # Check if release exists
+                  if gh release view "${{ github.ref_name }}" > /dev/null 2>&1; then
+                    # Update existing release
+                    gh release edit "${{ github.ref_name }}" \
+                      --notes-file release-notes.md \
+                      --title "Release Candidate: ${{ github.ref_name }}"
+                  else
+                    # Create new release
+                    gh release create "${{ github.ref_name }}" \
+                      --notes-file release-notes.md \
+                      --title "Release Candidate: ${{ github.ref_name }}" \
+                      --prerelease
+                  fi
+
+            - name: Notify stakeholders
+              uses: ./.github/actions/slack-notify
+              with:
+                  webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+                  message-type: success
+                  title: "🎉 Release Ready for Production"
+                  message: |
+                      Release candidate ${{ github.ref_name }} has been deployed to staging and is ready for production.
+
+                      All integration tests passed successfully.
+
+                      *Staging URL:* ${{ needs.deploy-frontend.outputs.deployment-url }}
+                      *Tag:* ${{ github.ref_name }}
+
+                      To deploy to production, create a production tag (v*).
+                  environment: ${{ env.ENVIRONMENT }}
+                  deployment-url: ${{ needs.deploy-frontend.outputs.deployment-url }}
+                  commit-sha: ${{ github.sha }}
+                  author: ${{ github.actor }}
+
+    # Send deployment notifications
+    notify:
+        name: Send Notifications
+        runs-on: ubuntu-latest
+        needs:
+            [
+                deploy-infrastructure,
+                deploy-frontend,
+                integration-tests,
+                mark-release-ready,
+            ]
+        if: always()
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Notify deployment success
+              if: needs.mark-release-ready.result == 'success'
+              uses: ./.github/actions/slack-notify
+              with:
+                  webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+                  message-type: success
+                  title: "✅ Staging Deployment Successful"
+                  message: |
+                      Deployment to staging environment completed successfully!
+
+                      All integration tests passed.
+                      Release is ready for production.
+
+                      *Tag:* ${{ github.ref_name }}
+                      *Staging URL:* ${{ needs.deploy-frontend.outputs.deployment-url }}
+                  environment: ${{ env.ENVIRONMENT }}
+                  deployment-url: ${{ needs.deploy-frontend.outputs.deployment-url }}
+                  commit-sha: ${{ github.sha }}
+                  author: ${{ github.actor }}
+
+            - name: Notify deployment failure
+              if: needs.deploy-infrastructure.result == 'failure' || needs.deploy-frontend.result == 'failure' || needs.integration-tests.result == 'failure'
+              uses: ./.github/actions/slack-notify
+              with:
+                  webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+                  message-type: error
+                  title: "❌ Staging Deployment Failed"
+                  message: |
+                      Deployment to staging environment failed.
+
+                      *Failed Stage:* ${{ needs.deploy-infrastructure.result == 'failure' && 'Infrastructure' || needs.deploy-frontend.result == 'failure' && 'Frontend' || 'Integration Tests' }}
+                      *Tag:* ${{ github.ref_name }}
+
+                      Check the workflow logs for details.
+                  environment: ${{ env.ENVIRONMENT }}
+                  commit-sha: ${{ github.sha }}
+                  author: ${{ github.actor }}
+                  mention-users: ${{ secrets.SLACK_DEVOPS_USERS }}

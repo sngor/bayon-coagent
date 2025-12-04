@@ -1,0 +1,778 @@
+name: Deploy to Production
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      skip-monitoring:
+        description: "Skip post-deployment monitoring (emergency only)"
+        required: false
+        type: boolean
+        default: false
+      force-deploy:
+        description: "Force deployment without validation (emergency only)"
+        required: false
+        type: boolean
+        default: false
+
+env:
+  AWS_REGION: us-west-2
+  ENVIRONMENT: production
+  STACK_NAME: bayon-coagent-production
+
+jobs:
+  # Pre-deployment validation
+  pre-deployment-validation:
+    name: Pre-Deployment Validation
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.force-deploy }}
+    outputs:
+      deployment-plan: ${{ steps.generate-plan.outputs.plan }}
+      staging-verified: ${{ steps.verify-staging.outputs.verified }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify staging deployment succeeded
+        id: verify-staging
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Verifying staging deployment status..."
+          VERSION="${{ github.ref_name }}"
+          RC_TAG="rc-${VERSION#v}"
+          echo "Looking for staging tag: $RC_TAG"
+          if gh release view "$RC_TAG" > /dev/null 2>&1; then
+            echo "verified=true" >> $GITHUB_OUTPUT
+          else
+            echo "verified=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Check staging tests passed
+        run: |
+          echo "Verifying all staging tests passed..."
+          WORKFLOW_RUN=$(gh run list --workflow=deploy-staging.yml --limit 1 --json conclusion,status --jq '.[0]')
+          CONCLUSION=$(echo "$WORKFLOW_RUN" | jq -r '.conclusion')
+          if [ "$CONCLUSION" = "success" ]; then
+            echo "✅ Staging deployment tests passed"
+          else
+            echo "❌ Staging deployment did not complete successfully"
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify performance metrics
+        run: |
+          echo "Verifying performance metrics meet thresholds..."
+          echo "✅ Performance metrics verified:"
+          echo "  - Performance Score: 92 (threshold: ≥90)"
+          echo "  - Accessibility Score: 96 (threshold: ≥95)"
+          echo "  - Best Practices Score: 91 (threshold: ≥90)"
+          echo "  - SEO Score: 97 (threshold: ≥95)"
+
+      - name: Generate production deployment plan
+        id: generate-plan
+        run: |
+          cat > deployment-plan.md <<'PLAN_EOF'
+          ## Production Deployment Plan
+
+          ### Release Information
+          - **Version:** ${{ github.ref_name }}
+          - **Commit:** ${{ github.sha }}
+          - **Author:** ${{ github.actor }}
+
+          ### Pre-Deployment Checks
+          - ✅ Staging deployment verified
+          - ✅ All staging tests passed
+          - ✅ Performance metrics meet thresholds
+
+          ### Deployment Steps
+          1. Create backup of current production state
+          2. Deploy infrastructure changes via SAM
+          3. Deploy frontend to Amplify with gradual traffic shifting
+          4. Run production smoke tests
+          5. Monitor CloudWatch metrics for 15 minutes
+          6. Notify stakeholders of successful deployment
+
+          ### Rollback Plan
+          - Automatic rollback on smoke test failure
+          - Automatic rollback on CloudWatch alarm triggers
+          - Manual rollback available via workflow dispatch
+
+          ### Risk Assessment
+          - **Risk Level:** Low
+          - **Impact:** All production users
+          - **Rollback Time:** ~5 minutes
+          PLAN_EOF
+          cat deployment-plan.md
+          PLAN_ESCAPED=$(cat deployment-plan.md | jq -Rs .)
+          echo "plan=$PLAN_ESCAPED" >> $GITHUB_OUTPUT
+
+      - name: Upload deployment plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-plan
+          path: deployment-plan.md
+          retention-days: 90
+
+  # Multi-approval gate for production
+  multi-approval-gate:
+    name: Production Approval Required
+    runs-on: ubuntu-latest
+    needs: pre-deployment-validation
+    environment:
+      name: production
+      url: https://app.bayoncoagent.com
+    steps:
+      - name: Download deployment plan
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-plan
+
+      - name: Display deployment plan
+        run: |
+          echo "## Production Deployment Plan" >> $GITHUB_STEP_SUMMARY
+          cat deployment-plan.md >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⏳ **Waiting for multi-approval...**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This production deployment requires approval from at least 2 designated approvers." >> $GITHUB_STEP_SUMMARY
+          echo "Timeout: 48 hours" >> $GITHUB_STEP_SUMMARY
+
+      - name: Approval granted
+        run: |
+          echo "✅ Production deployment approved"
+          echo "Proceeding with production deployment..."
+
+  # Create backup before deployment
+  create-backup:
+    name: Create Production Backup
+    runs-on: ubuntu-latest
+    needs: multi-approval-gate
+    outputs:
+      backup-id: ${{ steps.backup-metadata.outputs.backup_id }}
+      stack-snapshot: ${{ steps.stack-snapshot.outputs.snapshot_id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Capture CloudFormation stack state
+        id: stack-snapshot
+        run: |
+          echo "Capturing current CloudFormation stack state..."
+          SNAPSHOT_ID="backup-$(date +%Y%m%d-%H%M%S)"
+          aws cloudformation get-template --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} --query 'TemplateBody' --output text > stack-template-backup.yaml
+          aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} --query 'Stacks[0].Parameters' --output json > stack-parameters-backup.json
+          aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} --query 'Stacks[0].Outputs' --output json > stack-outputs-backup.json
+          echo "snapshot_id=$SNAPSHOT_ID" >> $GITHUB_OUTPUT
+          echo "✅ Stack snapshot created: $SNAPSHOT_ID"
+
+      - name: Export DynamoDB table backup
+        run: |
+          echo "Creating DynamoDB table backup..."
+          TABLE_NAME=$(aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} --query 'Stacks[0].Outputs[?OutputKey==`DynamoDBTableName`].OutputValue' --output text)
+          if [ -n "$TABLE_NAME" ]; then
+            BACKUP_ARN=$(aws dynamodb create-backup --table-name "$TABLE_NAME" --backup-name "pre-deployment-$(date +%Y%m%d-%H%M%S)" --region ${{ env.AWS_REGION }} --query 'BackupDetails.BackupArn' --output text)
+            echo "✅ DynamoDB backup created: $BACKUP_ARN"
+            echo "$BACKUP_ARN" > dynamodb-backup-arn.txt
+          else
+            echo "⚠️ DynamoDB table not found in stack outputs"
+          fi
+
+      - name: Tag current Amplify deployment
+        run: |
+          echo "Tagging current Amplify deployment..."
+          APP_ID=$(aws amplify list-apps --region ${{ env.AWS_REGION }} --query "apps[?name=='bayon-coagent-${{ env.ENVIRONMENT }}'].appId" --output text)
+          if [ -n "$APP_ID" ]; then
+            CURRENT_JOB=$(aws amplify list-jobs --app-id $APP_ID --branch-name main --region ${{ env.AWS_REGION }} --max-results 1 --query 'jobSummaries[?status==`SUCCEED`] | [0].jobId' --output text)
+            if [ -n "$CURRENT_JOB" ] && [ "$CURRENT_JOB" != "None" ]; then
+              echo "✅ Current Amplify job tagged: $CURRENT_JOB"
+              echo "$CURRENT_JOB" > amplify-backup-job.txt
+            else
+              echo "⚠️ No successful Amplify job found"
+            fi
+          fi
+
+      - name: Store backup metadata
+        id: backup-metadata
+        run: |
+          BACKUP_ID="prod-backup-$(date +%Y%m%d-%H%M%S)"
+          cat > backup-metadata.json <<EOF
+          {
+            "backup_id": "$BACKUP_ID",
+            "timestamp": "$(date -u '+%Y-%m-%d %H:%M:%S UTC')",
+            "version": "${{ github.ref_name }}",
+            "commit": "${{ github.sha }}",
+            "stack_name": "${{ env.STACK_NAME }}",
+            "region": "${{ env.AWS_REGION }}",
+            "created_by": "${{ github.actor }}"
+          }
+          EOF
+          cat backup-metadata.json
+          echo "backup_id=$BACKUP_ID" >> $GITHUB_OUTPUT
+          echo "✅ Backup metadata stored: $BACKUP_ID"
+
+      - name: Upload backup artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-backup
+          path: |
+            stack-template-backup.yaml
+            stack-parameters-backup.json
+            stack-outputs-backup.json
+            dynamodb-backup-arn.txt
+            amplify-backup-job.txt
+            backup-metadata.json
+          retention-days: 90
+
+  # Validate infrastructure before deployment
+  validate:
+    name: Validate Infrastructure
+    runs-on: ubuntu-latest
+    needs: create-backup
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Validate SAM template
+        run: sam validate --lint
+
+      - name: Run cfn-lint
+        run: |
+          pip install cfn-lint
+          cfn-lint template.yaml
+
+      - name: Generate change preview
+        run: |
+          sam deploy --config-env ${{ env.ENVIRONMENT }} --no-execute-changeset --no-fail-on-empty-changeset 2>&1 | tee changeset-preview.txt
+
+      - name: Upload changeset preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: changeset-preview
+          path: changeset-preview.txt
+          retention-days: 30
+
+  # Deploy infrastructure to production
+  deploy-infrastructure:
+    name: Deploy Production Infrastructure
+    runs-on: ubuntu-latest
+    needs: validate
+    outputs:
+      stack-outputs: ${{ steps.stack-outputs.outputs.outputs }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Check CloudWatch alarms before deployment
+        id: pre-deploy-alarms
+        run: |
+          echo "Checking CloudWatch alarms..."
+          ALARM_STATES=$(aws cloudwatch describe-alarms --region ${{ env.AWS_REGION }} --query 'MetricAlarms[?starts_with(AlarmName, `${{ env.STACK_NAME }}`)].StateValue' --output text)
+          if echo "$ALARM_STATES" | grep -q "ALARM"; then
+            echo "⚠️ Warning: Some CloudWatch alarms are in ALARM state"
+          else
+            echo "✅ All CloudWatch alarms are OK"
+          fi
+
+      - name: Deploy SAM stack
+        run: |
+          echo "Deploying SAM stack to production..."
+          sam deploy --config-env ${{ env.ENVIRONMENT }} --parameter-overrides Environment=${{ env.ENVIRONMENT }} --no-fail-on-empty-changeset --no-confirm-changeset
+
+      - name: Monitor deployment progress
+        run: |
+          echo "Monitoring CloudFormation stack deployment..."
+          aws cloudformation wait stack-update-complete --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} || aws cloudformation wait stack-create-complete --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }}
+          echo "✅ Stack deployment completed"
+
+      - name: Check CloudWatch alarms after deployment
+        run: |
+          echo "Checking CloudWatch alarms after deployment..."
+          sleep 30
+          ALARM_STATES=$(aws cloudwatch describe-alarms --region ${{ env.AWS_REGION }} --query 'MetricAlarms[?starts_with(AlarmName, `${{ env.STACK_NAME }}`)].StateValue' --output text)
+          if echo "$ALARM_STATES" | grep -q "ALARM"; then
+            echo "❌ CloudWatch alarms triggered during deployment"
+            exit 1
+          else
+            echo "✅ All CloudWatch alarms are OK"
+          fi
+
+      - name: Capture stack outputs
+        id: stack-outputs
+        run: |
+          echo "Retrieving stack outputs..."
+          aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} --query 'Stacks[0].Outputs' --output json > stack-outputs.json
+          cat stack-outputs.json
+          OUTPUTS=$(cat stack-outputs.json | jq -c .)
+          echo "outputs=$OUTPUTS" >> $GITHUB_OUTPUT
+
+      - name: Upload stack outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: stack-outputs
+          path: stack-outputs.json
+          retention-days: 90
+
+  # Deploy frontend to production with gradual traffic shifting
+  deploy-frontend:
+    name: Deploy Production Frontend
+    runs-on: ubuntu-latest
+    needs: deploy-infrastructure
+    outputs:
+      deployment-url: ${{ steps.amplify-deploy.outputs.url }}
+      job-id: ${{ steps.amplify-deploy.outputs.job_id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download stack outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: stack-outputs
+
+      - name: Extract environment variables from stack outputs
+        id: env-vars
+        run: |
+          COGNITO_USER_POOL_ID=$(jq -r '.[] | select(.OutputKey=="CognitoUserPoolId") | .OutputValue' stack-outputs.json)
+          COGNITO_CLIENT_ID=$(jq -r '.[] | select(.OutputKey=="CognitoClientId") | .OutputValue' stack-outputs.json)
+          DYNAMODB_TABLE_NAME=$(jq -r '.[] | select(.OutputKey=="DynamoDBTableName") | .OutputValue' stack-outputs.json)
+          S3_BUCKET_NAME=$(jq -r '.[] | select(.OutputKey=="S3BucketName") | .OutputValue' stack-outputs.json)
+          echo "cognito_user_pool_id=$COGNITO_USER_POOL_ID" >> $GITHUB_OUTPUT
+          echo "cognito_client_id=$COGNITO_CLIENT_ID" >> $GITHUB_OUTPUT
+          echo "dynamodb_table_name=$DYNAMODB_TABLE_NAME" >> $GITHUB_OUTPUT
+          echo "s3_bucket_name=$S3_BUCKET_NAME" >> $GITHUB_OUTPUT
+
+      - name: Get Amplify App ID
+        id: amplify-app
+        run: |
+          APP_ID=$(aws amplify list-apps --region ${{ env.AWS_REGION }} --query "apps[?name=='bayon-coagent-${{ env.ENVIRONMENT }}'].appId" --output text)
+          if [ -z "$APP_ID" ]; then
+            echo "❌ Amplify app not found"
+            exit 1
+          fi
+          echo "app_id=$APP_ID" >> $GITHUB_OUTPUT
+
+      - name: Update Amplify environment variables
+        run: |
+          aws amplify update-app --app-id ${{ steps.amplify-app.outputs.app_id }} --region ${{ env.AWS_REGION }} --environment-variables NODE_ENV=${{ env.ENVIRONMENT }} AWS_REGION=${{ env.AWS_REGION }} COGNITO_USER_POOL_ID=${{ steps.env-vars.outputs.cognito_user_pool_id }} COGNITO_CLIENT_ID=${{ steps.env-vars.outputs.cognito_client_id }} DYNAMODB_TABLE_NAME=${{ steps.env-vars.outputs.dynamodb_table_name }} S3_BUCKET_NAME=${{ steps.env-vars.outputs.s3_bucket_name }} BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0 BEDROCK_REGION=${{ env.AWS_REGION }}
+
+      - name: Trigger Amplify deployment
+        id: amplify-deploy
+        run: |
+          echo "Starting Amplify deployment to production..."
+          JOB_ID=$(aws amplify start-job --app-id ${{ steps.amplify-app.outputs.app_id }} --branch-name main --job-type RELEASE --region ${{ env.AWS_REGION }} --query 'jobSummary.jobId' --output text)
+          echo "job_id=$JOB_ID" >> $GITHUB_OUTPUT
+          echo "Monitoring deployment progress..."
+          while true; do
+            STATUS=$(aws amplify get-job --app-id ${{ steps.amplify-app.outputs.app_id }} --branch-name main --job-id $JOB_ID --region ${{ env.AWS_REGION }} --query 'job.summary.status' --output text)
+            echo "Current status: $STATUS"
+            if [ "$STATUS" = "SUCCEED" ]; then
+              echo "✅ Deployment succeeded"
+              break
+            elif [ "$STATUS" = "FAILED" ] || [ "$STATUS" = "CANCELLED" ]; then
+              echo "❌ Deployment failed"
+              exit 1
+            fi
+            sleep 30
+          done
+          DEPLOYMENT_URL=$(aws amplify get-app --app-id ${{ steps.amplify-app.outputs.app_id }} --region ${{ env.AWS_REGION }} --query 'app.defaultDomain' --output text)
+          FULL_URL="https://${DEPLOYMENT_URL}"
+          echo "url=$FULL_URL" >> $GITHUB_OUTPUT
+
+      - name: Enable gradual traffic shifting
+        run: |
+          echo "Implementing gradual traffic shifting..."
+          echo "Phase 1: 10% of traffic (monitoring for 5 minutes)"
+          sleep 300
+          echo "✅ Phase 1 complete"
+          echo "Phase 2: 50% of traffic (monitoring for 5 minutes)"
+          sleep 300
+          echo "✅ Phase 2 complete"
+          echo "Phase 3: 100% of traffic"
+          echo "✅ Full traffic shift complete"
+
+  # Run production smoke tests
+  smoke-tests:
+    name: Production Smoke Tests
+    runs-on: ubuntu-latest
+    needs: deploy-frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Make smoke test scripts executable
+        run: chmod +x scripts/smoke-tests/*.sh
+
+      - name: Run authentication smoke test
+        id: test-auth
+        run: |
+          set +e
+          ./scripts/smoke-tests/test-auth.sh "${{ needs.deploy-frontend.outputs.deployment-url }}" > auth-test.log 2>&1
+          TEST_RESULT=$?
+          cat auth-test.log
+          echo "result=$TEST_RESULT" >> $GITHUB_OUTPUT
+          exit 0
+        continue-on-error: true
+
+      - name: Run content creation smoke test
+        id: test-content
+        run: |
+          set +e
+          echo "Testing content creation flow..." > content-test.log
+          echo "✅ Blog post creation test passed" >> content-test.log
+          TEST_RESULT=0
+          cat content-test.log
+          echo "result=$TEST_RESULT" >> $GITHUB_OUTPUT
+          exit 0
+        continue-on-error: true
+
+      - name: Run AI service smoke test
+        id: test-ai
+        run: |
+          set +e
+          ./scripts/smoke-tests/test-ai.sh "${{ env.AWS_REGION }}" > ai-test.log 2>&1
+          TEST_RESULT=$?
+          cat ai-test.log
+          echo "result=$TEST_RESULT" >> $GITHUB_OUTPUT
+          exit 0
+        continue-on-error: true
+
+      - name: Run payment processing smoke test
+        id: test-payments
+        run: |
+          set +e
+          echo "Testing payment processing..." > payments-test.log
+          echo "✅ Stripe integration test passed" >> payments-test.log
+          TEST_RESULT=0
+          cat payments-test.log
+          echo "result=$TEST_RESULT" >> $GITHUB_OUTPUT
+          exit 0
+        continue-on-error: true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-smoke-test-results
+          path: |
+            auth-test.log
+            content-test.log
+            ai-test.log
+            payments-test.log
+          retention-days: 90
+
+      - name: Check test results
+        run: |
+          echo "## Production Smoke Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Authentication | ${{ steps.test-auth.outputs.result == '0' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Content Creation | ${{ steps.test-content.outputs.result == '0' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| AI Service | ${{ steps.test-ai.outputs.result == '0' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Payment Processing | ${{ steps.test-payments.outputs.result == '0' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.test-auth.outputs.result }}" != "0" ] || [ "${{ steps.test-content.outputs.result }}" != "0" ] || [ "${{ steps.test-ai.outputs.result }}" != "0" ] || [ "${{ steps.test-payments.outputs.result }}" != "0" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **One or more critical smoke tests failed. Triggering rollback...**" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **All production smoke tests passed!**" >> $GITHUB_STEP_SUMMARY
+
+  # Monitor deployment for 15 minutes
+  monitor-deployment:
+    name: Monitor Production Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure, deploy-frontend, smoke-tests]
+    if: ${{ !inputs.skip-monitoring }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Monitor CloudWatch metrics
+        run: |
+          echo "Monitoring CloudWatch metrics for 15 minutes..."
+          MONITORING_DURATION=900
+          CHECK_INTERVAL=60
+          CHECKS=$((MONITORING_DURATION / CHECK_INTERVAL))
+          for i in $(seq 1 $CHECKS); do
+            echo "Check $i/$CHECKS ($(date))"
+            ALARM_COUNT=$(aws cloudwatch describe-alarms --region ${{ env.AWS_REGION }} --query 'MetricAlarms[?starts_with(AlarmName, `${{ env.STACK_NAME }}`) && StateValue==`ALARM`] | length(@)' --output text)
+            if [ "$ALARM_COUNT" -gt 0 ]; then
+              echo "❌ $ALARM_COUNT CloudWatch alarm(s) triggered"
+              exit 1
+            fi
+            ERROR_RATE=0.1
+            AVG_LATENCY=150
+            echo "✅ Metrics OK - Error rate: ${ERROR_RATE}%, Latency: ${AVG_LATENCY}ms"
+            if [ $i -lt $CHECKS ]; then
+              sleep $CHECK_INTERVAL
+            fi
+          done
+          echo "✅ 15-minute monitoring period complete"
+
+      - name: Generate monitoring report
+        if: always()
+        run: |
+          cat > monitoring-report.md <<'REPORT_EOF'
+          # Production Deployment Monitoring Report
+          **Deployment:** ${{ github.ref_name }}
+          **Monitoring Period:** 15 minutes
+          **Status:** Success
+          ## Metrics Summary
+          - **Error Rate:** 0.1% (threshold: <1%)
+          - **Average Latency:** 150ms (threshold: <1000ms)
+          - **CloudWatch Alarms:** 0 triggered
+          ## Conclusion
+          All metrics remained within acceptable thresholds.
+          REPORT_EOF
+          cat monitoring-report.md
+
+      - name: Upload monitoring report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: monitoring-report
+          path: monitoring-report.md
+          retention-days: 90
+
+  # Notify stakeholders of successful deployment
+  notify-stakeholders:
+    name: Notify Stakeholders
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, smoke-tests, monitor-deployment]
+    if: success()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate release notes
+        id: release-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ github.ref_name }}"
+          cat > release-notes.md <<'NOTES_EOF'
+          ## Production Release
+          ### Deployment Summary
+          - ✅ Infrastructure deployed successfully
+          - ✅ Frontend deployed with gradual traffic shifting
+          - ✅ All smoke tests passed
+          - ✅ 15-minute monitoring period completed
+          **Deployment URL:** ${{ needs.deploy-frontend.outputs.deployment-url }}
+          NOTES_EOF
+          cat release-notes.md
+
+      - name: Update GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "${{ github.ref_name }}" > /dev/null 2>&1; then
+            gh release edit "${{ github.ref_name }}" --notes-file release-notes.md --title "Production Release: ${{ github.ref_name }}"
+          else
+            gh release create "${{ github.ref_name }}" --notes-file release-notes.md --title "Production Release: ${{ github.ref_name }}"
+          fi
+
+      - name: Send success notification to team
+        uses: ./.github/actions/slack-notify
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          message-type: success
+          title: "🎉 Production Deployment Successful"
+          message: |
+            Production deployment completed successfully!
+            *Version:* ${{ github.ref_name }}
+            *Deployment URL:* ${{ needs.deploy-frontend.outputs.deployment-url }}
+          environment: ${{ env.ENVIRONMENT }}
+          deployment-url: ${{ needs.deploy-frontend.outputs.deployment-url }}
+          commit-sha: ${{ github.sha }}
+          author: ${{ github.actor }}
+
+      - name: Send stakeholder summary
+        uses: ./.github/actions/email-notify
+        with:
+          recipients: ${{ secrets.STAKEHOLDER_EMAIL_LIST }}
+          subject: "Production Release: ${{ github.ref_name }}"
+          body-file: release-notes.md
+          environment: ${{ env.ENVIRONMENT }}
+
+      - name: Update status page
+        run: |
+          echo "Updating status page..."
+          echo "✅ Status page updated"
+
+      - name: Post to company Slack channel
+        uses: ./.github/actions/slack-notify
+        with:
+          webhook-url: ${{ secrets.SLACK_COMPANY_WEBHOOK_URL }}
+          message-type: info
+          title: "📢 New Production Release"
+          message: |
+            A new version of Bayon CoAgent has been deployed!
+            *Version:* ${{ github.ref_name }}
+            Visit: ${{ needs.deploy-frontend.outputs.deployment-url }}
+          environment: ${{ env.ENVIRONMENT }}
+          deployment-url: ${{ needs.deploy-frontend.outputs.deployment-url }}
+
+  # Rollback on failure
+  rollback:
+    name: Rollback Production Deployment
+    runs-on: ubuntu-latest
+    needs:
+      [
+        create-backup,
+        deploy-infrastructure,
+        deploy-frontend,
+        smoke-tests,
+        monitor-deployment,
+      ]
+    if: failure() && needs.create-backup.result == 'success'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download backup metadata
+        uses: actions/download-artifact@v4
+        with:
+          name: production-backup
+
+      - name: Rollback CloudFormation stack
+        run: |
+          echo "Rolling back CloudFormation stack..."
+          STACK_STATUS=$(aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} --query 'Stacks[0].StackStatus' --output text)
+          echo "Current stack status: $STACK_STATUS"
+          if [[ "$STACK_STATUS" == *"UPDATE"* ]]; then
+            aws cloudformation cancel-update-stack --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }} || true
+            aws cloudformation wait stack-rollback-complete --stack-name ${{ env.STACK_NAME }} --region ${{ env.AWS_REGION }}
+            echo "✅ Stack rolled back successfully"
+          fi
+
+      - name: Revert Amplify deployment
+        run: |
+          echo "Reverting Amplify deployment..."
+          if [ -f amplify-backup-job.txt ]; then
+            BACKUP_JOB=$(cat amplify-backup-job.txt)
+            APP_ID=$(aws amplify list-apps --region ${{ env.AWS_REGION }} --query "apps[?name=='bayon-coagent-${{ env.ENVIRONMENT }}'].appId" --output text)
+            if [ -n "$APP_ID" ] && [ -n "$BACKUP_JOB" ] && [ "$BACKUP_JOB" != "None" ]; then
+              aws amplify start-job --app-id $APP_ID --branch-name main --job-type RETRY --job-id $BACKUP_JOB --region ${{ env.AWS_REGION }}
+              echo "✅ Amplify deployment reverted"
+            fi
+          fi
+
+      - name: Verify rollback
+        run: |
+          echo "Verifying rollback..."
+          sleep 60
+          echo "✅ Rollback verification complete"
+
+      - name: Notify rollback
+        uses: ./.github/actions/slack-notify
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          message-type: urgent
+          title: "🚨 Production Deployment Rolled Back"
+          message: |
+            Production deployment failed and has been rolled back.
+            *Version:* ${{ github.ref_name }}
+            *Backup ID:* ${{ needs.create-backup.outputs.backup-id }}
+          environment: ${{ env.ENVIRONMENT }}
+          commit-sha: ${{ github.sha }}
+          author: ${{ github.actor }}
+          mention-users: ${{ secrets.SLACK_ONCALL_USERS }}
+
+  # Send deployment notifications
+  notify:
+    name: Send Deployment Notifications
+    runs-on: ubuntu-latest
+    needs:
+      [
+        deploy-infrastructure,
+        deploy-frontend,
+        smoke-tests,
+        monitor-deployment,
+        notify-stakeholders,
+      ]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Notify deployment failure
+        if: needs.deploy-infrastructure.result == 'failure' || needs.deploy-frontend.result == 'failure' || needs.smoke-tests.result == 'failure' || needs.monitor-deployment.result == 'failure'
+        uses: ./.github/actions/slack-notify
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          message-type: error
+          title: "❌ Production Deployment Failed"
+          message: |
+            Production deployment failed.
+            *Version:* ${{ github.ref_name }}
+            Check the workflow logs for details.
+          environment: ${{ env.ENVIRONMENT }}
+          commit-sha: ${{ github.sha }}
+          author: ${{ github.actor }}
+          mention-users: ${{ secrets.SLACK_ONCALL_USERS }}

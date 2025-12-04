@@ -1,0 +1,105 @@
+name: Test Slack Notification
+
+on:
+    workflow_dispatch:
+        inputs:
+            message:
+                description: "Test message to send"
+                required: false
+                default: "✅ GitHub Actions Slack integration test successful!"
+
+jobs:
+    test-slack:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Send Test Notification to DevOps Channel
+              run: |
+                  CHANNEL="${{ secrets.SLACK_CHANNEL_DEVOPS }}"
+                  if [ -z "$CHANNEL" ]; then
+                    CHANNEL="#devops-alerts"
+                  fi
+
+                  curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
+                    -H 'Content-Type: application/json' \
+                    -d "{
+                      \"text\": \"${{ github.event.inputs.message }}\",
+                      \"channel\": \"$CHANNEL\",
+                      \"username\": \"GitHub Actions\",
+                      \"icon_emoji\": \":github:\",
+                      \"attachments\": [
+                        {
+                          \"color\": \"good\",
+                          \"fields\": [
+                            {
+                              \"title\": \"Repository\",
+                              \"value\": \"${{ github.repository }}\",
+                              \"short\": true
+                            },
+                            {
+                              \"title\": \"Triggered By\",
+                              \"value\": \"${{ github.actor }}\",
+                              \"short\": true
+                            },
+                            {
+                              \"title\": \"Workflow\",
+                              \"value\": \"${{ github.workflow }}\",
+                              \"short\": true
+                            },
+                            {
+                              \"title\": \"Run ID\",
+                              \"value\": \"<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|#${{ github.run_number }}>\",
+                              \"short\": true
+                            }
+                          ],
+                          \"footer\": \"GitHub Actions\",
+                          \"footer_icon\": \"https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png\",
+                          \"ts\": $(date +%s)
+                        }
+                      ]
+                    }"
+
+            - name: Send Test Notification to Team Channel
+              run: |
+                  CHANNEL="${{ secrets.SLACK_CHANNEL_TEAM }}"
+                  if [ -z "$CHANNEL" ]; then
+                    CHANNEL="#team-notifications"
+                  fi
+
+                  curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
+                    -H 'Content-Type: application/json' \
+                    -d "{
+                      \"text\": \"📢 Team notification test from GitHub Actions\",
+                      \"channel\": \"$CHANNEL\",
+                      \"username\": \"GitHub Actions\",
+                      \"icon_emoji\": \":rocket:\",
+                      \"attachments\": [
+                        {
+                          \"color\": \"#36a64f\",
+                          \"text\": \"This is a test notification to verify team channel integration.\",
+                          \"fields\": [
+                            {
+                              \"title\": \"Status\",
+                              \"value\": \"✅ Success\",
+                              \"short\": true
+                            },
+                            {
+                              \"title\": \"Environment\",
+                              \"value\": \"Test\",
+                              \"short\": true
+                            }
+                          ]
+                        }
+                      ]
+                    }"
+
+            - name: Test Summary
+              run: |
+                  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                  echo "✅ Slack notifications sent successfully!"
+                  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                  echo ""
+                  echo "Check your Slack channels:"
+                  echo "  - DevOps channel: ${{ secrets.SLACK_CHANNEL_DEVOPS }}"
+                  echo "  - Team channel: ${{ secrets.SLACK_CHANNEL_TEAM }}"
+                  echo ""
+                  echo "If you received both messages, Slack integration is working!"

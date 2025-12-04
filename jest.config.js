@@ -17,7 +17,15 @@ module.exports = {
         '!src/__tests__/**',
     ],
     coverageDirectory: 'coverage',
-    coverageReporters: ['text', 'lcov', 'html'],
+    coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
+    coverageThreshold: {
+        global: {
+            branches: 70,
+            functions: 70,
+            lines: 70,
+            statements: 70,
+        },
+    },
     setupFilesAfterEnv: ['<rootDir>/src/__tests__/mocks/setup.ts', '@testing-library/jest-dom'],
     testTimeout: 30000,
     transform: {

@@ -1,0 +1,399 @@
+name: Infrastructure Validation
+
+on:
+    push:
+        branches:
+            - main
+            - develop
+        paths:
+            - "template.yaml"
+            - "template-*.yaml"
+            - "samconfig.toml"
+            - "infrastructure/**"
+    pull_request:
+        branches:
+            - main
+            - develop
+        paths:
+            - "template.yaml"
+            - "template-*.yaml"
+            - "samconfig.toml"
+            - "infrastructure/**"
+    workflow_dispatch:
+
+jobs:
+    validate-sam-templates:
+        name: Validate SAM Templates
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+                  cache: "pip"
+
+            - name: Install AWS SAM CLI
+              run: |
+                  pip install aws-sam-cli
+                  sam --version
+
+            - name: Install cfn-lint
+              run: |
+                  pip install cfn-lint
+                  cfn-lint --version
+
+            - name: Validate main SAM template
+              id: validate-main
+              run: |
+                  echo "Validating template.yaml..."
+                  sam validate --template template.yaml --lint
+                  echo "✅ Main template validation passed"
+
+            - name: Validate additional SAM templates
+              id: validate-additional
+              run: |
+                  for template in template-*.yaml; do
+                    if [ -f "$template" ]; then
+                      echo "Validating $template..."
+                      sam validate --template "$template" --lint
+                      echo "✅ $template validation passed"
+                    fi
+                  done
+
+            - name: Run cfn-lint on main template
+              id: cfn-lint-main
+              run: |
+                  echo "Running cfn-lint on template.yaml..."
+                  cfn-lint template.yaml --format pretty
+                  echo "✅ Main template cfn-lint passed"
+
+            - name: Run cfn-lint on additional templates
+              id: cfn-lint-additional
+              run: |
+                  for template in template-*.yaml; do
+                    if [ -f "$template" ]; then
+                      echo "Running cfn-lint on $template..."
+                      cfn-lint "$template" --format pretty
+                      echo "✅ $template cfn-lint passed"
+                    fi
+                  done
+
+            - name: Upload validation results
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: validation-results
+                  path: |
+                      template.yaml
+                      template-*.yaml
+                      samconfig.toml
+                  retention-days: 30
+
+    preview-infrastructure-changes:
+        name: Preview Infrastructure Changes
+        runs-on: ubuntu-latest
+        needs: validate-sam-templates
+        if: github.event_name == 'pull_request'
+
+        strategy:
+            matrix:
+                environment: [development, production]
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+                  cache: "pip"
+
+            - name: Install AWS SAM CLI
+              run: |
+                  pip install aws-sam-cli
+                  sam --version
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  aws-access-key-id: ${{ secrets[format('AWS_ACCESS_KEY_ID_{0}', matrix.environment == 'development' && 'DEV' || 'PROD')] }}
+                  aws-secret-access-key: ${{ secrets[format('AWS_SECRET_ACCESS_KEY_{0}', matrix.environment == 'development' && 'DEV' || 'PROD')] }}
+                  aws-region: us-west-2
+
+            - name: Generate infrastructure change preview
+              id: preview
+              continue-on-error: true
+              run: |
+                  echo "Generating change preview for ${{ matrix.environment }} environment..."
+
+                  # Create changeset without executing
+                  sam deploy \
+                    --config-env ${{ matrix.environment }} \
+                    --no-execute-changeset \
+                    --no-confirm-changeset \
+                    2>&1 | tee changeset-${{ matrix.environment }}.log
+
+                  echo "preview_generated=true" >> $GITHUB_OUTPUT
+
+            - name: Extract changeset details
+              if: steps.preview.outputs.preview_generated == 'true'
+              id: extract-changes
+              run: |
+                  # Extract changeset name from logs
+                  CHANGESET_NAME=$(grep -oP 'Changeset created successfully. \K[a-zA-Z0-9-]+' changeset-${{ matrix.environment }}.log || echo "")
+
+                  if [ -n "$CHANGESET_NAME" ]; then
+                    echo "changeset_name=$CHANGESET_NAME" >> $GITHUB_OUTPUT
+                    echo "✅ Changeset created: $CHANGESET_NAME"
+                  else
+                    echo "⚠️ No changeset created (no changes detected)"
+                    echo "changeset_name=" >> $GITHUB_OUTPUT
+                  fi
+
+            - name: Get changeset details
+              if: steps.extract-changes.outputs.changeset_name != ''
+              run: |
+                  STACK_NAME="bayon-coagent-${{ matrix.environment }}"
+                  CHANGESET_NAME="${{ steps.extract-changes.outputs.changeset_name }}"
+
+                  echo "Fetching changeset details..."
+                  aws cloudformation describe-change-set \
+                    --stack-name "$STACK_NAME" \
+                    --change-set-name "$CHANGESET_NAME" \
+                    --output json > changeset-details-${{ matrix.environment }}.json
+
+                  # Format changes for display
+                  echo "## Infrastructure Changes for ${{ matrix.environment }}" > changes-${{ matrix.environment }}.md
+                  echo "" >> changes-${{ matrix.environment }}.md
+
+                  # Extract and format changes
+                  jq -r '.Changes[] | "- **\(.ResourceChange.Action)**: \(.ResourceChange.LogicalResourceId) (\(.ResourceChange.ResourceType))"' \
+                    changeset-details-${{ matrix.environment }}.json >> changes-${{ matrix.environment }}.md || echo "No changes detected" >> changes-${{ matrix.environment }}.md
+
+            - name: Delete changeset (cleanup)
+              if: steps.extract-changes.outputs.changeset_name != ''
+              continue-on-error: true
+              run: |
+                  STACK_NAME="bayon-coagent-${{ matrix.environment }}"
+                  CHANGESET_NAME="${{ steps.extract-changes.outputs.changeset_name }}"
+
+                  echo "Cleaning up changeset..."
+                  aws cloudformation delete-change-set \
+                    --stack-name "$STACK_NAME" \
+                    --change-set-name "$CHANGESET_NAME"
+
+            - name: Upload change preview
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: change-preview-${{ matrix.environment }}
+                  path: |
+                      changeset-${{ matrix.environment }}.log
+                      changeset-details-${{ matrix.environment }}.json
+                      changes-${{ matrix.environment }}.md
+                  retention-days: 30
+
+    comment-on-pr:
+        name: Comment Infrastructure Changes on PR
+        runs-on: ubuntu-latest
+        needs: preview-infrastructure-changes
+        if: github.event_name == 'pull_request'
+
+        steps:
+            - name: Download change previews
+              uses: actions/download-artifact@v4
+              with:
+                  pattern: change-preview-*
+                  merge-multiple: true
+
+            - name: Create PR comment
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const fs = require('fs');
+
+                      let comment = '## 🏗️ Infrastructure Change Preview\n\n';
+                      comment += 'This PR will make the following infrastructure changes:\n\n';
+
+                      // Read development changes
+                      try {
+                        const devChanges = fs.readFileSync('changes-development.md', 'utf8');
+                        comment += '### Development Environment\n\n';
+                        comment += devChanges + '\n\n';
+                      } catch (e) {
+                        comment += '### Development Environment\n\n';
+                        comment += '⚠️ No changes detected or preview failed\n\n';
+                      }
+
+                      // Read production changes
+                      try {
+                        const prodChanges = fs.readFileSync('changes-production.md', 'utf8');
+                        comment += '### Production Environment\n\n';
+                        comment += prodChanges + '\n\n';
+                      } catch (e) {
+                        comment += '### Production Environment\n\n';
+                        comment += '⚠️ No changes detected or preview failed\n\n';
+                      }
+
+                      comment += '---\n';
+                      comment += '💡 **Note**: These are preview changes only. No infrastructure has been modified.\n';
+                      comment += '📋 Full changeset details are available in the workflow artifacts.\n';
+
+                      // Find existing comment
+                      const { data: comments } = await github.rest.issues.listComments({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: context.issue.number,
+                      });
+
+                      const botComment = comments.find(comment => 
+                        comment.user.type === 'Bot' && 
+                        comment.body.includes('🏗️ Infrastructure Change Preview')
+                      );
+
+                      // Update or create comment
+                      if (botComment) {
+                        await github.rest.issues.updateComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          comment_id: botComment.id,
+                          body: comment
+                        });
+                      } else {
+                        await github.rest.issues.createComment({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: context.issue.number,
+                          body: comment
+                        });
+                      }
+
+    notify-on-failure:
+        name: Notify on Validation Failure
+        runs-on: ubuntu-latest
+        needs: [validate-sam-templates, preview-infrastructure-changes]
+        if: failure()
+
+        steps:
+            - name: Send Slack notification
+              if: env.SLACK_WEBHOOK_URL != ''
+              env:
+                  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+              run: |
+                  WORKFLOW_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+                  PAYLOAD=$(cat <<EOF
+                  {
+                    "text": "❌ Infrastructure Validation Failed",
+                    "blocks": [
+                      {
+                        "type": "header",
+                        "text": {
+                          "type": "plain_text",
+                          "text": "❌ Infrastructure Validation Failed"
+                        }
+                      },
+                      {
+                        "type": "section",
+                        "fields": [
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Repository:*\n${{ github.repository }}"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Branch:*\n${{ github.ref_name }}"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Triggered by:*\n${{ github.actor }}"
+                          },
+                          {
+                            "type": "mrkdwn",
+                            "text": "*Event:*\n${{ github.event_name }}"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "section",
+                        "text": {
+                          "type": "mrkdwn",
+                          "text": "*Commit:* ${{ github.event.head_commit.message || 'N/A' }}"
+                        }
+                      },
+                      {
+                        "type": "actions",
+                        "elements": [
+                          {
+                            "type": "button",
+                            "text": {
+                              "type": "plain_text",
+                              "text": "View Workflow"
+                            },
+                            "url": "$WORKFLOW_URL"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                  EOF
+                  )
+
+                  curl -X POST -H 'Content-type: application/json' \
+                    --data "$PAYLOAD" \
+                    "$SLACK_WEBHOOK_URL"
+
+            - name: Create GitHub issue on repeated failures
+              if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const title = '🚨 Infrastructure Validation Failing on Main Branch';
+                      const body = `
+                      ## Infrastructure Validation Failure
+
+                      The infrastructure validation workflow is failing on the main branch.
+
+                      **Details:**
+                      - Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+                      - Commit: ${{ github.sha }}
+                      - Author: ${{ github.actor }}
+                      - Message: ${{ github.event.head_commit.message }}
+
+                      **Action Required:**
+                      Please review the workflow logs and fix the infrastructure template issues.
+
+                      **Common Issues:**
+                      - SAM template syntax errors
+                      - CloudFormation best practice violations
+                      - Missing or invalid parameters
+                      - Resource naming conflicts
+
+                      ---
+                      *This issue was automatically created by the Infrastructure Validation workflow.*
+                      `;
+
+                      // Check if issue already exists
+                      const { data: issues } = await github.rest.issues.listForRepo({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        state: 'open',
+                        labels: 'infrastructure,ci-cd'
+                      });
+
+                      const existingIssue = issues.find(issue => issue.title === title);
+
+                      if (!existingIssue) {
+                        await github.rest.issues.create({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          title: title,
+                          body: body,
+                          labels: ['infrastructure', 'ci-cd', 'bug']
+                        });
+                      }

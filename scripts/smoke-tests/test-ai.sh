@@ -22,6 +22,7 @@ print_success() {
 
 print_error() {
     echo -e "${RED}✗ ${1}${NC}"
+    exit 1
 }
 
 print_warning() {
@@ -34,9 +35,8 @@ if ! command -v aws &> /dev/null; then
     exit 1
 fi
 
-# Get region
-read -p "Enter AWS region (default: us-west-2): " AWS_REGION
-AWS_REGION=${AWS_REGION:-us-west-2}
+# Get region from argument or environment variable
+AWS_REGION=${1:-${AWS_REGION:-us-west-2}}
 
 MODEL_ID="us.anthropic.claude-3-5-sonnet-20241022-v2:0"
 

@@ -22,6 +22,7 @@ print_success() {
 
 print_error() {
     echo -e "${RED}✗ ${1}${NC}"
+    exit 1
 }
 
 print_warning() {
@@ -34,9 +35,8 @@ if ! command -v aws &> /dev/null; then
     exit 1
 fi
 
-# Get environment
-read -p "Enter environment (development/production): " ENVIRONMENT
-ENVIRONMENT=${ENVIRONMENT:-production}
+# Get environment from argument or environment variable
+ENVIRONMENT=${1:-${ENVIRONMENT:-development}}
 
 TABLE_NAME="BayonCoAgent-${ENVIRONMENT}"
 

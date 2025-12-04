@@ -22,15 +22,17 @@ print_success() {
 
 print_error() {
     echo -e "${RED}✗ ${1}${NC}"
+    exit 1
 }
 
 # Get URL
 if [ -z "$1" ]; then
-    read -p "Enter application URL (e.g., https://your-domain.com): " APP_URL
-else
-    APP_URL=$1
+    echo "Usage: $0 <app-url>"
+    echo "Example: $0 https://your-domain.com"
+    exit 1
 fi
 
+APP_URL=$1
 APP_URL=${APP_URL%/}
 
 print_info "Testing authentication at: $APP_URL"
@@ -73,36 +75,13 @@ else
 fi
 
 echo ""
-print_info "=== Manual Authentication Tests ==="
-echo ""
-echo "Please perform the following manual tests:"
-echo ""
-echo "1. Sign Up"
-echo "   - Visit: $APP_URL/auth/signup"
-echo "   - Create new account with valid email"
-echo "   - Verify email confirmation sent"
-echo "   - Confirm email and verify account activated"
-echo ""
-echo "2. Sign In  "
-echo "   - Visit: $APP_URL/auth/login"
-echo "   - Log in with created account"
-echo "   - Verify redirect to dashboard"
-echo "   - Check user profile data loads"
-echo ""
-echo "3. OAuth Login (if configured)"
-echo "   - Try Google sign-in"
-echo "   - Verify account created/linked"
-echo "   - Verify redirect works"
-echo ""
-echo "4. Password Reset"
-echo "   - Click 'Forgot Password'"
-echo "   - Enter email address"
-echo "   - Verify reset email sent"
-echo "   - Complete password reset flow"
-echo ""
-echo "5. Sign Out"
-echo "   - Click sign out button"
-echo "   - Verify redirect to login"
-echo "   - Verify session cleared"
-echo ""
 print_success "Authentication smoke test complete!"
+echo ""
+print_info "=== Manual Authentication Tests (Optional) ==="
+echo ""
+echo "For comprehensive testing, perform these manual tests:"
+echo "1. Sign Up: Visit $APP_URL/auth/signup and create account"
+echo "2. Sign In: Visit $APP_URL/auth/login and verify login"
+echo "3. OAuth Login: Test Google sign-in if configured"
+echo "4. Password Reset: Test forgot password flow"
+echo "5. Sign Out: Verify session is cleared properly"
