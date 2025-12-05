@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { getUsersListAction, getAgentStatsAction, disableUserAction } from '@/features/admin/actions/admin-actions';
 import {
     Table,
@@ -34,11 +35,13 @@ import {
 import { useUserRole } from '@/hooks/use-user-role';
 import { RoleProtectedFeature } from '@/components/admin/role-protected-feature';
 import { RoleBadge } from '@/components/admin/role-badge';
+import { BulkOperationsPanel } from '@/components/admin/bulk-operations-panel';
 
 export default function AdminUsersPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
     const { toast } = useToast();
     const { isSuperAdmin } = useUserRole();
 
@@ -163,6 +166,46 @@ export default function AdminUsersPage() {
         }
     };
 
+    const handleToggleSelectAll = () => {
+        if (selectedUserIds.length === filteredUsers.length) {
+            setSelectedUserIds([]);
+        } else {
+            setSelectedUserIds(filteredUsers.map(u => u.id));
+        }
+    };
+
+    const handleToggleSelectUser = (userId: string) => {
+        setSelectedUserIds(prev =>
+            prev.includes(userId)
+                ? prev.filter(id => id !== userId)
+                : [...prev, userId]
+        );
+    };
+
+    const handleBulkOperationComplete = () => {
+        // Reload users after bulk operation
+        setSelectedUserIds([]);
+        const loadUsers = async () => {
+            try {
+                const sessionStr = localStorage.getItem('cognito_session');
+                let accessToken: string | undefined;
+                if (sessionStr) {
+                    const session = JSON.parse(sessionStr);
+                    accessToken = session.accessToken;
+                }
+
+                const result = await getUsersListAction(accessToken, undefined, undefined, { filterByTeam: true });
+
+                if (result.message === 'success') {
+                    setUsers(result.data || []);
+                }
+            } catch (error) {
+                console.error('Failed to reload users:', error);
+            }
+        };
+        loadUsers();
+    };
+
     const filteredUsers = getFilteredUsers();
 
     return (
@@ -174,14 +217,21 @@ export default function AdminUsersPage() {
                             <CardTitle className="text-xl">Team Members</CardTitle>
                             <CardDescription>View users in your teams</CardDescription>
                         </div>
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search users..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-10 w-64"
+                        <div className="flex items-center gap-4">
+                            <BulkOperationsPanel
+                                selectedUserIds={selectedUserIds}
+                                users={users}
+                                onComplete={handleBulkOperationComplete}
                             />
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search users..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="pl-10 w-64"
+                                />
+                            </div>
                         </div>
                     </div>
                 </CardHeader>
@@ -205,6 +255,12 @@ export default function AdminUsersPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
+                                        <TableHead className="w-12">
+                                            <Checkbox
+                                                checked={selectedUserIds.length === filteredUsers.length && filteredUsers.length > 0}
+                                                onCheckedChange={handleToggleSelectAll}
+                                            />
+                                        </TableHead>
                                         <TableHead>User</TableHead>
                                         <TableHead>Role</TableHead>
                                         <TableHead>Team</TableHead>
@@ -216,6 +272,12 @@ export default function AdminUsersPage() {
                                 <TableBody>
                                     {filteredUsers.map((user) => (
                                         <TableRow key={user.id}>
+                                            <TableCell>
+                                                <Checkbox
+                                                    checked={selectedUserIds.includes(user.id)}
+                                                    onCheckedChange={() => handleToggleSelectUser(user.id)}
+                                                />
+                                            </TableCell>
                                             <TableCell>
                                                 <div className="flex flex-col">
                                                     <span className="font-medium">{user.name || 'Unknown'}</span>

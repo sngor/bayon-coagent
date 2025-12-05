@@ -16,6 +16,11 @@ Parameters:
     Default: ""
     Description: Email address for CloudWatch alarms (optional)
 
+  SESFromEmail:
+    Type: String
+    Default: "noreply@bayoncoagent.com"
+    Description: Email address for sending notifications via SES
+
 Conditions:
   IsProduction: !Equals [!Ref Environment, production]
   HasAlarmEmail: !Not [!Equals [!Ref AlarmEmail, ""]]
@@ -3804,6 +3809,41 @@ Resources:
         Service: AdminService
         Function: AuditLogQuery
 
+  # Admin Metrics Aggregation Lambda (Hourly scheduled job)
+  AdminMetricsAggregationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-admin-metrics-aggregation-${Environment}
+      CodeUri: src/lambda/
+      Handler: admin-metrics-aggregation.handler
+      Runtime: nodejs22.x
+      Timeout: 900 # 15 minutes
+      MemorySize: 1024
+      Role: !GetAtt AdminServiceLambdaRole.Arn
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Events:
+        # Run hourly at the top of each hour
+        HourlySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 * * * ? *)
+            Description: Aggregate analytics metrics hourly
+            Input: !Sub |
+              {
+                "source": "aws.events",
+                "detail-type": "Scheduled Event",
+                "detail": {
+                  "jobType": "metrics-aggregation"
+                }
+              }
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: AdminService
+        Function: MetricsAggregation
+
   # ==========================================
   # Admin Service API Gateway Resources
   # ==========================================
@@ -5088,6 +5128,157 @@ Resources:
             }
           ]
         }
+
+  # ==========================================
+  # Admin Alert Processing
+  # ==========================================
+
+  # Admin Alert Processor Lambda Function
+  AdminAlertProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-admin-alert-processor-${Environment}
+      CodeUri: src/lambda/
+      Handler: admin-alert-processor.handler
+      Runtime: nodejs22.x
+      Timeout: 300
+      MemorySize: 512
+      Role: !GetAtt AdminServiceLambdaRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !Ref DynamoDBTable
+          SES_FROM_EMAIL: !Ref SESFromEmail
+          ENVIRONMENT: !Ref Environment
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: AdminAlertProcessor
+
+  # EventBridge Rule for Daily Digest
+  AdminDailyDigestRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-admin-daily-digest-${Environment}
+      Description: Triggers daily digest email for SuperAdmins
+      ScheduleExpression: cron(0 9 * * ? *) # 9 AM UTC daily
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt AdminAlertProcessorFunction.Arn
+          Id: AdminAlertProcessorTarget
+          Input: |
+            {
+              "detail-type": "Scheduled Event",
+              "detail": {
+                "type": "digest"
+              }
+            }
+
+  # Permission for EventBridge to invoke Lambda
+  AdminDailyDigestRulePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AdminAlertProcessorFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt AdminDailyDigestRule.Arn
+
+  # CloudWatch Alarm for High Error Rate
+  HighErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub bayon-coagent-high-error-rate-${Environment}
+      AlarmDescription: Triggers when API error rate exceeds 5%
+      MetricName: 5XXError
+      Namespace: AWS/ApiGateway
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AdminAlertSNSTopic
+
+  # CloudWatch Alarm for High Latency
+  HighLatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub bayon-coagent-high-latency-${Environment}
+      AlarmDescription: Triggers when API latency exceeds 2 seconds
+      MetricName: Latency
+      Namespace: AWS/ApiGateway
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 2000
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AdminAlertSNSTopic
+
+  # CloudWatch Alarm for DynamoDB Throttling
+  DynamoDBThrottlingAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub bayon-coagent-dynamodb-throttling-${Environment}
+      AlarmDescription: Triggers when DynamoDB requests are throttled
+      MetricName: UserErrors
+      Namespace: AWS/DynamoDB
+      Dimensions:
+        - Name: TableName
+          Value: !Ref DynamoDBTable
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AdminAlertSNSTopic
+
+  # SNS Topic for Admin Alerts
+  AdminAlertSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub bayon-coagent-admin-alerts-${Environment}
+      DisplayName: Bayon Coagent Admin Alerts
+      Subscription:
+        - Endpoint: !GetAtt AdminAlertProcessorFunction.Arn
+          Protocol: lambda
+
+  # Permission for SNS to invoke Lambda
+  AdminAlertSNSPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AdminAlertProcessorFunction
+      Action: lambda:InvokeFunction
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref AdminAlertSNSTopic
+
+  # EventBridge Rule for Threshold Violations
+  ThresholdViolationRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-threshold-violation-${Environment}
+      Description: Triggers when system thresholds are violated
+      EventPattern:
+        source:
+          - bayon.coagent
+        detail-type:
+          - Threshold Violation
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt AdminAlertProcessorFunction.Arn
+          Id: AdminAlertProcessorTarget
+
+  # Permission for EventBridge Threshold Rule to invoke Lambda
+  ThresholdViolationRulePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AdminAlertProcessorFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ThresholdViolationRule.Arn
 
 Outputs:
   UserPoolId:

@@ -30,6 +30,70 @@ import {
 import { getProfileKeys } from '@/aws/dynamodb/keys';
 import { getAnnouncementKeys } from '@/aws/dynamodb/extra-keys';
 import { sendInvitationEmail } from '@/lib/email-service';
+import { analyticsService, PlatformMetrics } from '@/services/admin/analytics-service';
+import { announcementService, Announcement, AnnouncementStats } from '@/services/admin/announcement-service';
+
+// ============================================
+// Analytics Actions
+// ============================================
+
+export async function getPlatformAnalytics(
+    startDate: string,
+    endDate: string
+): Promise<{ success: boolean; data?: PlatformMetrics; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        const metrics = await analyticsService.getPlatformMetrics(start, end);
+
+        return { success: true, data: metrics };
+    } catch (error: any) {
+        console.error('Error fetching platform analytics:', error);
+        return { success: false, error: error.message || 'Failed to fetch analytics' };
+    }
+}
+
+export async function getFeatureUsageStats(
+    startDate: string,
+    endDate: string
+): Promise<{ success: boolean; data?: Record<string, number>; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        const featureUsage = await analyticsService.getFeatureUsage(start, end);
+
+        return { success: true, data: featureUsage };
+    } catch (error: any) {
+        console.error('Error fetching feature usage stats:', error);
+        return { success: false, error: error.message || 'Failed to fetch feature usage' };
+    }
+}
+
+// ============================================
+// User Management Actions
+// ============================================
 
 export async function getUsersListAction(
     accessToken?: string,
@@ -1389,124 +1453,348 @@ export async function cancelInvitationAction(invitationId: string): Promise<{
 }
 
 // ============================================
+// ============================================
 // Announcement Actions
 // ============================================
 
+/**
+ * Creates a new announcement
+ */
 export async function createAnnouncementAction(
     title: string,
-    message: string,
-    priority: 'low' | 'medium' | 'high',
-    teamId?: string
+    content: string,
+    richContent: string | undefined,
+    targetAudience: 'all' | 'role' | 'custom',
+    targetValue: string[] | undefined,
+    deliveryMethod: 'email' | 'in_app' | 'both',
+    scheduledFor?: string
 ): Promise<{
-    message: string;
-    data?: any;
-    errors: any;
+    success: boolean;
+    data?: Announcement;
+    error?: string;
 }> {
     try {
         const currentUser = await getCurrentUserServer();
-        if (!currentUser) return { message: 'Not authenticated', errors: {} };
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
 
         const adminStatus = await checkAdminStatusAction(currentUser.id);
-        if (!adminStatus.isAdmin) return { message: 'Unauthorized', errors: {} };
-
-        const repository = getRepository();
-        const announcementId = Math.random().toString(36).substring(2, 15);
-        const timestamp = new Date().toISOString();
-
-        let targetTeamId = teamId;
-
-        if (adminStatus.role === 'admin') {
-            // Get admin's teams
-            const teamsResult = await repository.scan({
-                filterExpression: 'begins_with(PK, :pk) AND SK = :sk AND adminId = :adminId',
-                expressionAttributeValues: {
-                    ':pk': 'TEAM#',
-                    ':sk': 'CONFIG',
-                    ':adminId': currentUser.id
-                }
-            });
-            const adminTeamIds = teamsResult.items.map((t: any) => t.id);
-
-            if (teamId) {
-                if (!adminTeamIds.includes(teamId)) {
-                    return { message: 'Unauthorized: You can only post to your teams', errors: {} };
-                }
-            } else {
-                if (adminTeamIds.length > 0) {
-                    targetTeamId = adminTeamIds[0]; // Default to first team
-                } else {
-                    return { message: 'No team found for this admin', errors: {} };
-                }
-            }
-        } else if (adminStatus.role === 'super_admin') {
-            if (!targetTeamId) {
-                targetTeamId = 'GLOBAL';
-            }
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized' };
         }
 
-        if (!targetTeamId) {
-            return { message: 'Target team is required', errors: {} };
-        }
-
-        const keys = getAnnouncementKeys(targetTeamId, announcementId, timestamp);
-
-        // Get sender profile for name
-        const profileKeys = getProfileKeys(currentUser.id);
-        const profile = await repository.get<any>(profileKeys.PK, profileKeys.SK);
-        const senderName = profile?.name || currentUser.email || 'Admin';
-
-        const announcement = {
-            id: announcementId,
+        const announcement = await announcementService.createAnnouncement(
             title,
-            message,
-            priority,
-            senderId: currentUser.id,
-            senderName,
-            teamId: targetTeamId,
-            createdAt: timestamp,
-            type: 'Announcement' as const
-        };
+            content,
+            richContent,
+            targetAudience,
+            targetValue,
+            deliveryMethod,
+            currentUser.id,
+            scheduledFor
+        );
 
-        await repository.create(keys.PK, keys.SK, 'Announcement', announcement);
+        revalidatePath('/admin/announcements');
 
-        return { message: 'success', data: announcement, errors: {} };
+        return { success: true, data: announcement };
     } catch (error: any) {
         console.error('Error creating announcement:', error);
-        return { message: 'Failed to create announcement', errors: { system: error.message } };
+        return { success: false, error: error.message };
     }
 }
 
-export async function getAnnouncementsAction(
-    limit: number = 10,
-    teamId?: string
-): Promise<{
-    message: string;
-    data: any[];
-    errors: any;
+/**
+ * Gets all announcements with optional filtering
+ */
+export async function getAnnouncementsAction(options?: {
+    status?: 'draft' | 'scheduled' | 'sent' | 'failed';
+    limit?: number;
+    lastKey?: string;
+}): Promise<{
+    success: boolean;
+    data?: { announcements: Announcement[]; lastKey?: string };
+    error?: string;
 }> {
     try {
         const currentUser = await getCurrentUserServer();
-        if (!currentUser) return { message: 'Not authenticated', data: [], errors: {} };
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
 
-        const repository = getRepository();
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized' };
+        }
 
-        // For now, let's just fetch announcements for a specific team or GLOBAL
-        const targetTeamId = teamId || 'GLOBAL';
+        const result = await announcementService.getAnnouncements(options);
 
-        // Query by PK = TEAM#<teamId> and SK begins_with ANNOUNCEMENT#
-        const result = await repository.query(
-            `TEAM#${targetTeamId}`,
-            'ANNOUNCEMENT#',
-            {
-                limit,
-                scanIndexForward: false, // Newest first
-            }
-        );
-
-        return { message: 'success', data: result.items, errors: {} };
+        return { success: true, data: result };
     } catch (error: any) {
         console.error('Error fetching announcements:', error);
-        return { message: 'Failed to fetch announcements', data: [], errors: { system: error.message } };
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Gets a specific announcement by ID
+ */
+export async function getAnnouncementAction(
+    announcementId: string
+): Promise<{
+    success: boolean;
+    data?: Announcement;
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        const announcement = await announcementService.getAnnouncement(announcementId);
+
+        if (!announcement) {
+            return { success: false, error: 'Announcement not found' };
+        }
+
+        return { success: true, data: announcement };
+    } catch (error: any) {
+        console.error('Error fetching announcement:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Updates an announcement
+ */
+export async function updateAnnouncementAction(
+    announcementId: string,
+    updates: Partial<Announcement>
+): Promise<{
+    success: boolean;
+    data?: Announcement;
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        const announcement = await announcementService.updateAnnouncement(
+            announcementId,
+            updates,
+            currentUser.id
+        );
+
+        revalidatePath('/admin/announcements');
+
+        return { success: true, data: announcement };
+    } catch (error: any) {
+        console.error('Error updating announcement:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Sends an announcement immediately
+ */
+export async function sendAnnouncementAction(
+    announcementId: string
+): Promise<{
+    success: boolean;
+    data?: { sent: number; delivered: number; failed: number };
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        const result = await announcementService.sendAnnouncement(
+            announcementId,
+            currentUser.id
+        );
+
+        revalidatePath('/admin/announcements');
+
+        return {
+            success: true,
+            data: {
+                sent: result.sent,
+                delivered: result.delivered,
+                failed: result.failed,
+            },
+        };
+    } catch (error: any) {
+        console.error('Error sending announcement:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Cancels a scheduled announcement
+ */
+export async function cancelAnnouncementAction(
+    announcementId: string
+): Promise<{
+    success: boolean;
+    message: string;
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, message: '', error: 'Unauthorized' };
+        }
+
+        await announcementService.cancelScheduledAnnouncement(
+            announcementId,
+            currentUser.id
+        );
+
+        revalidatePath('/admin/announcements');
+
+        return { success: true, message: 'Announcement cancelled successfully' };
+    } catch (error: any) {
+        console.error('Error cancelling announcement:', error);
+        return { success: false, message: '', error: error.message };
+    }
+}
+
+/**
+ * Deletes an announcement
+ */
+export async function deleteAnnouncementAction(
+    announcementId: string
+): Promise<{
+    success: boolean;
+    message: string;
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, message: '', error: 'Unauthorized' };
+        }
+
+        await announcementService.deleteAnnouncement(
+            announcementId,
+            currentUser.id
+        );
+
+        revalidatePath('/admin/announcements');
+
+        return { success: true, message: 'Announcement deleted successfully' };
+    } catch (error: any) {
+        console.error('Error deleting announcement:', error);
+        return { success: false, message: '', error: error.message };
+    }
+}
+
+/**
+ * Gets announcement statistics
+ */
+export async function getAnnouncementStatsAction(
+    announcementId: string
+): Promise<{
+    success: boolean;
+    data?: AnnouncementStats;
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        const stats = await announcementService.getAnnouncementStats(announcementId);
+
+        return { success: true, data: stats };
+    } catch (error: any) {
+        console.error('Error fetching announcement stats:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Tracks announcement open
+ */
+export async function trackAnnouncementOpenAction(
+    announcementId: string
+): Promise<{
+    success: boolean;
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        await announcementService.trackOpen(announcementId, currentUser.id);
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error tracking announcement open:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Tracks announcement click
+ */
+export async function trackAnnouncementClickAction(
+    announcementId: string,
+    linkUrl?: string
+): Promise<{
+    success: boolean;
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        await announcementService.trackClick(announcementId, currentUser.id, linkUrl);
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error tracking announcement click:', error);
+        return { success: false, error: error.message };
     }
 }
 
@@ -1723,5 +2011,2245 @@ export async function getImpersonationStatusAction(): Promise<{
         };
     } catch (error) {
         return { isImpersonating: false };
+    }
+}
+
+// ============================================
+// User Activity Actions
+// ============================================
+
+import { userActivityService, UserActivity, UserActivityTimeline } from '@/services/admin/user-activity-service';
+
+export async function getAllUserActivity(options?: {
+    activityLevel?: 'active' | 'inactive' | 'dormant';
+    sortBy?: 'lastLogin' | 'totalSessions' | 'contentCreated';
+    limit?: number;
+    lastKey?: string;
+}): Promise<{
+    success: boolean;
+    data?: { users: UserActivity[]; lastKey?: string };
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        const result = await userActivityService.getAllUserActivity(options);
+
+        return { success: true, data: result };
+    } catch (error: any) {
+        console.error('Error fetching user activity:', error);
+        return { success: false, error: error.message || 'Failed to fetch user activity' };
+    }
+}
+
+export async function getUserActivityTimeline(
+    userId: string,
+    startDate?: string,
+    endDate?: string
+): Promise<{ success: boolean; data?: UserActivityTimeline; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        const start = startDate ? new Date(startDate) : undefined;
+        const end = endDate ? new Date(endDate) : undefined;
+
+        const timeline = await userActivityService.getUserActivityTimeline(userId, start, end);
+
+        return { success: true, data: timeline };
+    } catch (error: any) {
+        console.error('Error fetching user activity timeline:', error);
+        return { success: false, error: error.message || 'Failed to fetch activity timeline' };
+    }
+}
+
+export async function exportUserActivityData(
+    userIds?: string[]
+): Promise<{ success: boolean; data?: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        const csvContent = await userActivityService.exportUserActivity(userIds);
+
+        return { success: true, data: csvContent };
+    } catch (error: any) {
+        console.error('Error exporting user activity:', error);
+        return { success: false, error: error.message || 'Failed to export user activity' };
+    }
+}
+
+// ============================================
+// Content Moderation Actions
+// ============================================
+
+import { contentModerationService, ModerationItem } from '@/services/admin/content-moderation-service';
+
+export async function getContentForModeration(options?: {
+    status?: string;
+    contentType?: string;
+    userId?: string;
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+    lastKey?: string;
+}): Promise<{
+    success: boolean;
+    data?: { items: ModerationItem[]; lastKey?: string };
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        const result = await contentModerationService.getContentForModeration({
+            status: options?.status as any,
+            contentType: options?.contentType,
+            userId: options?.userId,
+            startDate: options?.startDate ? new Date(options.startDate) : undefined,
+            endDate: options?.endDate ? new Date(options.endDate) : undefined,
+            limit: options?.limit,
+            lastKey: options?.lastKey,
+        });
+
+        return { success: true, data: result };
+    } catch (error: any) {
+        console.error('Error fetching content for moderation:', error);
+        return { success: false, error: error.message || 'Failed to fetch content' };
+    }
+}
+
+export async function moderateContent(
+    contentId: string,
+    action: 'approve' | 'flag' | 'hide',
+    reason?: string
+): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, message: '', error: 'Unauthorized: Admin access required' };
+        }
+
+        switch (action) {
+            case 'approve':
+                await contentModerationService.approveContent(contentId, currentUser.id);
+                return { success: true, message: 'Content approved successfully' };
+
+            case 'flag':
+                if (!reason) {
+                    return { success: false, message: '', error: 'Reason is required for flagging content' };
+                }
+                await contentModerationService.flagContent(contentId, currentUser.id, reason);
+                return { success: true, message: 'Content flagged successfully' };
+
+            case 'hide':
+                if (!reason) {
+                    return { success: false, message: '', error: 'Reason is required for hiding content' };
+                }
+                await contentModerationService.hideContent(contentId, currentUser.id, reason);
+                return { success: true, message: 'Content hidden successfully' };
+
+            default:
+                return { success: false, message: '', error: 'Invalid action' };
+        }
+    } catch (error: any) {
+        console.error('Error moderating content:', error);
+        return { success: false, message: '', error: error.message || 'Failed to moderate content' };
+    }
+}
+
+
+// ============================================
+// Support Ticket Actions
+// ============================================
+
+import { supportTicketService, SupportTicket, TicketMessage } from '@/services/admin/support-ticket-service';
+
+export async function createSupportTicket(
+    subject: string,
+    description: string,
+    category: 'bug' | 'feature_request' | 'help' | 'billing' | 'other'
+): Promise<{ success: boolean; data?: SupportTicket; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        // Get user profile for name and email
+        const repository = getRepository();
+        const profileKeys = getProfileKeys(currentUser.id);
+        const profile: any = await repository.get(profileKeys.PK, profileKeys.SK);
+
+        const userName = profile?.Data?.name || currentUser.email || 'Unknown User';
+        const userEmail = currentUser.email || 'no-email@example.com';
+
+        const ticket = await supportTicketService.createTicket(
+            currentUser.id,
+            userName,
+            userEmail,
+            subject,
+            description,
+            category
+        );
+
+        return { success: true, data: ticket };
+    } catch (error: any) {
+        console.error('Error creating support ticket:', error);
+        return { success: false, error: error.message || 'Failed to create support ticket' };
+    }
+}
+
+export async function getSupportTickets(options?: {
+    status?: string;
+    priority?: string;
+    assignedTo?: string;
+    limit?: number;
+    lastKey?: string;
+}): Promise<{
+    success: boolean;
+    data?: { tickets: SupportTicket[]; lastKey?: string };
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        const result = await supportTicketService.getTickets(options);
+
+        return { success: true, data: result };
+    } catch (error: any) {
+        console.error('Error fetching support tickets:', error);
+        return { success: false, error: error.message || 'Failed to fetch support tickets' };
+    }
+}
+
+export async function getSupportTicket(
+    ticketId: string
+): Promise<{ success: boolean; data?: SupportTicket; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        const ticket = await supportTicketService.getTicket(ticketId);
+
+        if (!ticket) {
+            return { success: false, error: 'Ticket not found' };
+        }
+
+        return { success: true, data: ticket };
+    } catch (error: any) {
+        console.error('Error fetching support ticket:', error);
+        return { success: false, error: error.message || 'Failed to fetch support ticket' };
+    }
+}
+
+export async function respondToTicket(
+    ticketId: string,
+    message: string
+): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, message: '', error: 'Unauthorized: Admin access required' };
+        }
+
+        // Get admin profile for name
+        const repository = getRepository();
+        const profileKeys = getProfileKeys(currentUser.id);
+        const profile: any = await repository.get(profileKeys.PK, profileKeys.SK);
+        const adminName = profile?.Data?.name || currentUser.email || 'Admin';
+
+        await supportTicketService.addMessage(
+            ticketId,
+            currentUser.id,
+            adminName,
+            'admin',
+            message
+        );
+
+        // Update ticket status to in_progress if it's open
+        const ticket = await supportTicketService.getTicket(ticketId);
+        if (ticket && ticket.status === 'open') {
+            await supportTicketService.updateTicketStatus(ticketId, 'in_progress', currentUser.id);
+        }
+
+        return { success: true, message: 'Response sent successfully' };
+    } catch (error: any) {
+        console.error('Error responding to ticket:', error);
+        return { success: false, message: '', error: error.message || 'Failed to send response' };
+    }
+}
+
+export async function updateTicketStatus(
+    ticketId: string,
+    status: 'open' | 'in_progress' | 'waiting_user' | 'resolved' | 'closed',
+    resolutionNote?: string
+): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, message: '', error: 'Unauthorized: Admin access required' };
+        }
+
+        await supportTicketService.updateTicketStatus(ticketId, status, currentUser.id, resolutionNote);
+
+        return { success: true, message: 'Ticket status updated successfully' };
+    } catch (error: any) {
+        console.error('Error updating ticket status:', error);
+        return { success: false, message: '', error: error.message || 'Failed to update ticket status' };
+    }
+}
+
+export async function assignTicket(
+    ticketId: string,
+    adminId: string
+): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, message: '', error: 'Unauthorized: Admin access required' };
+        }
+
+        await supportTicketService.assignTicket(ticketId, adminId);
+
+        return { success: true, message: 'Ticket assigned successfully' };
+    } catch (error: any) {
+        console.error('Error assigning ticket:', error);
+        return { success: false, message: '', error: error.message || 'Failed to assign ticket' };
+    }
+}
+
+// ============================================
+// System Health Actions
+// ============================================
+
+import { systemHealthService, SystemHealthMetrics, ErrorLogEntry } from '@/services/admin/system-health-service';
+
+export async function getSystemHealthMetrics(): Promise<{
+    success: boolean;
+    data?: SystemHealthMetrics;
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const metrics = await systemHealthService.getSystemHealth();
+
+        return { success: true, data: metrics };
+    } catch (error: any) {
+        console.error('Error fetching system health metrics:', error);
+        return { success: false, error: error.message || 'Failed to fetch system health' };
+    }
+}
+
+export async function getErrorLogs(options?: {
+    errorType?: string;
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+}): Promise<{ success: boolean; data?: ErrorLogEntry[]; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const logs = await systemHealthService.getErrorLogs({
+            errorType: options?.errorType,
+            startDate: options?.startDate ? new Date(options.startDate) : undefined,
+            endDate: options?.endDate ? new Date(options.endDate) : undefined,
+            limit: options?.limit,
+        });
+
+        return { success: true, data: logs };
+    } catch (error: any) {
+        console.error('Error fetching error logs:', error);
+        return { success: false, error: error.message || 'Failed to fetch error logs' };
+    }
+}
+
+export async function getAWSServiceMetrics(
+    service: 'dynamodb' | 'bedrock' | 's3',
+    metricName: string,
+    startDate: string,
+    endDate: string
+): Promise<{ success: boolean; data?: Array<{ timestamp: number; value: number }>; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const metrics = await systemHealthService.getAWSMetrics(
+            service,
+            metricName,
+            new Date(startDate),
+            new Date(endDate)
+        );
+
+        return { success: true, data: metrics };
+    } catch (error: any) {
+        console.error('Error fetching AWS service metrics:', error);
+        return { success: false, error: error.message || 'Failed to fetch AWS metrics' };
+    }
+}
+
+// ============================================
+// Platform Configuration Actions
+// ============================================
+
+import { platformConfigService, FeatureFlag, PlatformSettings } from '@/services/admin/platform-config-service';
+
+export async function getFeatureFlags(): Promise<{
+    success: boolean;
+    data?: FeatureFlag[];
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const flags = await platformConfigService.getFeatureFlags();
+
+        return { success: true, data: flags };
+    } catch (error: any) {
+        console.error('Error fetching feature flags:', error);
+        return { success: false, error: error.message || 'Failed to fetch feature flags' };
+    }
+}
+
+export async function updateFeatureFlag(
+    flagId: string,
+    config: Partial<FeatureFlag>
+): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, message: '', error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        // Validate rollout percentage
+        if (config.rolloutPercentage !== undefined) {
+            if (config.rolloutPercentage < 0 || config.rolloutPercentage > 100) {
+                return { success: false, message: '', error: 'Rollout percentage must be between 0 and 100' };
+            }
+        }
+
+        await platformConfigService.setFeatureFlag(flagId, config, currentUser.id);
+
+        // Revalidate admin pages
+        revalidatePath('/admin/config/features');
+
+        return { success: true, message: 'Feature flag updated successfully' };
+    } catch (error: any) {
+        console.error('Error updating feature flag:', error);
+        return { success: false, message: '', error: error.message || 'Failed to update feature flag' };
+    }
+}
+
+export async function createFeatureFlag(
+    flagId: string,
+    name: string,
+    description: string,
+    enabled: boolean = false,
+    rolloutPercentage: number = 0,
+    targetUsers?: string[],
+    targetRoles?: string[]
+): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, message: '', error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        // Validate inputs
+        if (!flagId || !name) {
+            return { success: false, message: '', error: 'Flag ID and name are required' };
+        }
+
+        if (rolloutPercentage < 0 || rolloutPercentage > 100) {
+            return { success: false, message: '', error: 'Rollout percentage must be between 0 and 100' };
+        }
+
+        await platformConfigService.setFeatureFlag(
+            flagId,
+            {
+                name,
+                description,
+                enabled,
+                rolloutPercentage,
+                targetUsers,
+                targetRoles,
+            },
+            currentUser.id
+        );
+
+        // Revalidate admin pages
+        revalidatePath('/admin/config/features');
+
+        return { success: true, message: 'Feature flag created successfully' };
+    } catch (error: any) {
+        console.error('Error creating feature flag:', error);
+        return { success: false, message: '', error: error.message || 'Failed to create feature flag' };
+    }
+}
+
+export async function checkFeatureEnabled(
+    flagId: string,
+    userId: string,
+    userRole?: string
+): Promise<{ success: boolean; enabled: boolean; error?: string }> {
+    try {
+        const enabled = await platformConfigService.isFeatureEnabled(flagId, userId, userRole);
+
+        return { success: true, enabled };
+    } catch (error: any) {
+        console.error('Error checking feature flag:', error);
+        return { success: false, enabled: false, error: error.message || 'Failed to check feature flag' };
+    }
+}
+
+export async function getPlatformSettings(
+    category?: 'general' | 'ai' | 'billing' | 'email' | 'security'
+): Promise<{ success: boolean; data?: PlatformSettings[]; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const settings = await platformConfigService.getSettings(category);
+
+        return { success: true, data: settings };
+    } catch (error: any) {
+        console.error('Error fetching platform settings:', error);
+        return { success: false, error: error.message || 'Failed to fetch platform settings' };
+    }
+}
+
+export async function updatePlatformSetting(
+    category: 'general' | 'ai' | 'billing' | 'email' | 'security',
+    key: string,
+    value: any
+): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, message: '', error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        // Validate inputs
+        if (!category || !key) {
+            return { success: false, message: '', error: 'Category and key are required' };
+        }
+
+        // Basic validation for specific settings
+        if (category === 'ai' && key === 'max_tokens' && typeof value === 'number') {
+            if (value < 0 || value > 100000) {
+                return { success: false, message: '', error: 'Max tokens must be between 0 and 100000' };
+            }
+        }
+
+        await platformConfigService.updateSetting(category, key, value, currentUser.id);
+
+        // Revalidate admin pages
+        revalidatePath('/admin/config/settings');
+
+        return { success: true, message: 'Platform setting updated successfully' };
+    } catch (error: any) {
+        console.error('Error updating platform setting:', error);
+        return { success: false, message: '', error: error.message || 'Failed to update platform setting' };
+    }
+}
+
+// ============================================
+// Billing Actions
+// ============================================
+
+import { billingService, BillingDashboardMetrics, UserBillingInfo, PaymentFailure, BillingExportData } from '@/services/admin/billing-service';
+
+export async function getBillingDashboardMetrics(): Promise<{
+    success: boolean;
+    data?: BillingDashboardMetrics;
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const metrics = await billingService.getBillingDashboardMetrics();
+
+        return { success: true, data: metrics };
+    } catch (error: any) {
+        console.error('Error fetching billing dashboard metrics:', error);
+        return { success: false, error: error.message || 'Failed to fetch billing metrics' };
+    }
+}
+
+export async function getUserBillingInfo(
+    userId: string
+): Promise<{ success: boolean; data?: UserBillingInfo; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const billingInfo = await billingService.getUserBillingInfo(userId);
+
+        if (!billingInfo) {
+            return { success: false, error: 'User not found' };
+        }
+
+        return { success: true, data: billingInfo };
+    } catch (error: any) {
+        console.error('Error fetching user billing info:', error);
+        return { success: false, error: error.message || 'Failed to fetch user billing information' };
+    }
+}
+
+export async function getPaymentFailures(): Promise<{
+    success: boolean;
+    data?: PaymentFailure[];
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const failures = await billingService.getPaymentFailures();
+
+        return { success: true, data: failures };
+    } catch (error: any) {
+        console.error('Error fetching payment failures:', error);
+        return { success: false, error: error.message || 'Failed to fetch payment failures' };
+    }
+}
+
+export async function grantTrialExtension(
+    userId: string,
+    extensionDays: number,
+    reason: string
+): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, message: '', error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        // Validate inputs
+        if (extensionDays <= 0 || extensionDays > 365) {
+            return { success: false, message: '', error: 'Extension days must be between 1 and 365' };
+        }
+
+        if (!reason || reason.trim().length === 0) {
+            return { success: false, message: '', error: 'Reason is required' };
+        }
+
+        await billingService.grantTrialExtension(userId, extensionDays, currentUser.id, reason);
+
+        return { success: true, message: `Trial extended by ${extensionDays} days` };
+    } catch (error: any) {
+        console.error('Error granting trial extension:', error);
+        return { success: false, message: '', error: error.message || 'Failed to grant trial extension' };
+    }
+}
+
+export async function exportBillingData(
+    startDate: string,
+    endDate: string
+): Promise<{ success: boolean; data?: BillingExportData; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        // Validate date range
+        if (start > end) {
+            return { success: false, error: 'Start date must be before end date' };
+        }
+
+        const exportData = await billingService.exportBillingData(start, end);
+
+        return { success: true, data: exportData };
+    } catch (error: any) {
+        console.error('Error exporting billing data:', error);
+        return { success: false, error: error.message || 'Failed to export billing data' };
+    }
+}
+
+export async function retryPayment(
+    invoiceId: string
+): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, message: '', error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const success = await billingService.retryPayment(invoiceId);
+
+        if (success) {
+            return { success: true, message: 'Payment retry initiated successfully' };
+        } else {
+            return { success: false, message: '', error: 'Failed to retry payment. Invoice may not be in a retryable state.' };
+        }
+    } catch (error: any) {
+        console.error('Error retrying payment:', error);
+        return { success: false, message: '', error: error.message || 'Failed to retry payment' };
+    }
+}
+
+export async function cancelSubscription(
+    subscriptionId: string
+): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, message: '', error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        await billingService.cancelSubscription(subscriptionId, currentUser.id);
+
+        return { success: true, message: 'Subscription canceled successfully' };
+    } catch (error: any) {
+        console.error('Error canceling subscription:', error);
+        return { success: false, message: '', error: error.message || 'Failed to cancel subscription' };
+    }
+}
+
+// ============================================
+// Bulk Operations Actions
+// ============================================
+
+import { bulkOperationsService, BulkEmailTemplate } from '@/services/admin/bulk-operations-service';
+
+export async function sendBulkEmail(
+    userIds: string[],
+    subject: string,
+    body: string,
+    template?: string
+): Promise<{
+    success: boolean;
+    data?: { sent: number; failed: number };
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        // Validate inputs
+        if (!userIds || userIds.length === 0) {
+            return { success: false, error: 'No users selected' };
+        }
+
+        if (!subject || !body) {
+            return { success: false, error: 'Subject and body are required' };
+        }
+
+        // Apply template if provided
+        let emailBody = body;
+        if (template) {
+            // Apply predefined templates
+            switch (template) {
+                case 'welcome':
+                    emailBody = `
+                        <h1>Welcome to Bayon Coagent!</h1>
+                        <p>Hi {{name}},</p>
+                        ${body}
+                        <p>Best regards,<br>The Bayon Coagent Team</p>
+                    `;
+                    break;
+                case 'announcement':
+                    emailBody = `
+                        <h2>${subject}</h2>
+                        <p>Hi {{name}},</p>
+                        ${body}
+                        <p>Best regards,<br>The Bayon Coagent Team</p>
+                    `;
+                    break;
+                case 'plain':
+                default:
+                    emailBody = body;
+            }
+        }
+
+        const emailTemplate: BulkEmailTemplate = {
+            subject,
+            body: emailBody,
+        };
+
+        const result = await bulkOperationsService.sendBulkEmail(userIds, emailTemplate);
+
+        return {
+            success: true,
+            data: {
+                sent: result.successCount,
+                failed: result.failureCount,
+            },
+        };
+    } catch (error: any) {
+        console.error('Error sending bulk email:', error);
+        return { success: false, error: error.message || 'Failed to send bulk email' };
+    }
+}
+
+export async function exportBulkUserData(
+    userIds: string[],
+    fields: string[]
+): Promise<{ success: boolean; data?: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        // Validate inputs
+        if (!userIds || userIds.length === 0) {
+            return { success: false, error: 'No users selected' };
+        }
+
+        if (!fields || fields.length === 0) {
+            return { success: false, error: 'No fields selected' };
+        }
+
+        const result = await bulkOperationsService.exportUserData(userIds, fields);
+
+        if (result.csvContent) {
+            return {
+                success: true,
+                data: result.csvContent,
+            };
+        } else {
+            return {
+                success: false,
+                error: 'Failed to generate CSV content',
+            };
+        }
+    } catch (error: any) {
+        console.error('Error exporting bulk user data:', error);
+        return { success: false, error: error.message || 'Failed to export user data' };
+    }
+}
+
+export async function bulkRoleChange(
+    userIds: string[],
+    newRole: 'agent' | 'admin' | 'super_admin'
+): Promise<{
+    success: boolean;
+    data?: { updated: number; failed: number };
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        // Validate inputs
+        if (!userIds || userIds.length === 0) {
+            return { success: false, error: 'No users selected' };
+        }
+
+        if (!['agent', 'admin', 'super_admin'].includes(newRole)) {
+            return { success: false, error: 'Invalid role' };
+        }
+
+        const result = await bulkOperationsService.bulkRoleChange(
+            userIds,
+            newRole,
+            currentUser.id
+        );
+
+        return {
+            success: true,
+            data: {
+                updated: result.successCount,
+                failed: result.failureCount,
+            },
+        };
+    } catch (error: any) {
+        console.error('Error performing bulk role change:', error);
+        return { success: false, error: error.message || 'Failed to change roles' };
+    }
+}
+
+export async function getBulkOperationStatus(
+    operationId: string
+): Promise<{
+    success: boolean;
+    data?: any;
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        const result = await bulkOperationsService.getOperationStatus(operationId);
+
+        if (result) {
+            return { success: true, data: result };
+        } else {
+            return { success: false, error: 'Operation not found' };
+        }
+    } catch (error: any) {
+        console.error('Error getting bulk operation status:', error);
+        return { success: false, error: error.message || 'Failed to get operation status' };
+    }
+}
+
+export async function getRecentBulkOperations(
+    limit: number = 10
+): Promise<{
+    success: boolean;
+    data?: any[];
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        const operations = await bulkOperationsService.getRecentOperations(limit);
+
+        return { success: true, data: operations };
+    } catch (error: any) {
+        console.error('Error getting recent bulk operations:', error);
+        return { success: false, error: error.message || 'Failed to get recent operations' };
+    }
+}
+
+// ============================================
+// Audit Log Actions
+// ============================================
+
+import { auditLogService, AuditLogEntry, AuditLogFilter } from '@/services/admin/audit-log-service';
+
+export async function getAuditLogs(filter?: {
+    actionType?: string;
+    adminId?: string;
+    resourceType?: string;
+    resourceId?: string;
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+}): Promise<{
+    success: boolean;
+    data?: { entries: AuditLogEntry[]; lastKey?: string };
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        // Convert string dates to Date objects
+        const auditFilter: AuditLogFilter = {
+            ...filter,
+            startDate: filter?.startDate ? new Date(filter.startDate) : undefined,
+            endDate: filter?.endDate ? new Date(filter.endDate) : undefined,
+        };
+
+        const result = await auditLogService.getAuditLog(auditFilter);
+
+        return { success: true, data: result };
+    } catch (error: any) {
+        console.error('Error fetching audit logs:', error);
+        return { success: false, error: error.message || 'Failed to fetch audit logs' };
+    }
+}
+
+export async function exportAuditLogs(
+    filter?: {
+        actionType?: string;
+        adminId?: string;
+        resourceType?: string;
+        resourceId?: string;
+        startDate?: string;
+        endDate?: string;
+    },
+    format: 'json' | 'csv' = 'json'
+): Promise<{ success: boolean; data?: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        // Convert string dates to Date objects
+        const auditFilter: AuditLogFilter = {
+            ...filter,
+            startDate: filter?.startDate ? new Date(filter.startDate) : undefined,
+            endDate: filter?.endDate ? new Date(filter.endDate) : undefined,
+        };
+
+        const exportData = await auditLogService.exportAuditLog(auditFilter, format);
+
+        return { success: true, data: exportData };
+    } catch (error: any) {
+        console.error('Error exporting audit logs:', error);
+        return { success: false, error: error.message || 'Failed to export audit logs' };
+    }
+}
+
+export async function getAuditLogStats(
+    startDate: string,
+    endDate: string
+): Promise<{
+    success: boolean;
+    data?: {
+        totalActions: number;
+        actionsByType: Record<string, number>;
+        actionsByAdmin: Record<string, number>;
+        actionsByResource: Record<string, number>;
+    };
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        // Validate date range
+        if (start > end) {
+            return { success: false, error: 'Start date must be before end date' };
+        }
+
+        const stats = await auditLogService.getAuditLogStats(start, end);
+
+        return { success: true, data: stats };
+    } catch (error: any) {
+        console.error('Error fetching audit log stats:', error);
+        return { success: false, error: error.message || 'Failed to fetch audit log statistics' };
+    }
+}
+
+/**
+ * Helper function to create audit log entries from other actions
+ * This should be called internally by other admin actions
+ */
+export async function createAuditLogEntry(
+    entry: Omit<AuditLogEntry, 'auditId' | 'timestamp'>
+): Promise<void> {
+    try {
+        await auditLogService.createAuditLog(entry);
+    } catch (error) {
+        console.error('Error creating audit log entry:', error);
+        // Don't throw - audit logging should not block primary operations
+    }
+}
+
+// ============================================
+// Engagement Reporting Actions
+// ============================================
+
+import {
+    engagementReportingService,
+    EngagementReport,
+    FeatureAdoptionRate,
+    CohortRetentionData,
+    ContentCreationStats
+} from '@/services/admin/engagement-reporting-service';
+
+export async function getEngagementReport(
+    startDate: string,
+    endDate: string
+): Promise<{ success: boolean; data?: EngagementReport; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        const report = await engagementReportingService.createEngagementReport(start, end);
+
+        return { success: true, data: report };
+    } catch (error: any) {
+        console.error('Error generating engagement report:', error);
+        return { success: false, error: error.message || 'Failed to generate engagement report' };
+    }
+}
+
+export async function getFeatureAdoptionRates(
+    startDate: string,
+    endDate: string
+): Promise<{ success: boolean; data?: FeatureAdoptionRate[]; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        const adoptionRates = await engagementReportingService.calculateFeatureAdoption(start, end);
+
+        return { success: true, data: adoptionRates };
+    } catch (error: any) {
+        console.error('Error fetching feature adoption rates:', error);
+        return { success: false, error: error.message || 'Failed to fetch feature adoption rates' };
+    }
+}
+
+export async function getCohortRetentionData(
+    startDate: string,
+    endDate: string
+): Promise<{ success: boolean; data?: CohortRetentionData[]; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        const retentionData = await engagementReportingService.calculateCohortRetention(start, end);
+
+        return { success: true, data: retentionData };
+    } catch (error: any) {
+        console.error('Error fetching cohort retention data:', error);
+        return { success: false, error: error.message || 'Failed to fetch cohort retention data' };
+    }
+}
+
+export async function getContentCreationStats(
+    startDate: string,
+    endDate: string
+): Promise<{ success: boolean; data?: ContentCreationStats; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        const contentStats = await engagementReportingService.generateContentStats(start, end);
+
+        return { success: true, data: contentStats };
+    } catch (error: any) {
+        console.error('Error fetching content creation stats:', error);
+        return { success: false, error: error.message || 'Failed to fetch content creation stats' };
+    }
+}
+
+export async function exportEngagementReportPDF(
+    startDate: string,
+    endDate: string
+): Promise<{ success: boolean; data?: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        const report = await engagementReportingService.createEngagementReport(start, end);
+        const pdfBuffer = await engagementReportingService.exportReportAsPDF(report);
+
+        // Convert buffer to base64 for transmission
+        const base64PDF = pdfBuffer.toString('base64');
+
+        return { success: true, data: base64PDF };
+    } catch (error: any) {
+        console.error('Error exporting engagement report:', error);
+        return { success: false, error: error.message || 'Failed to export engagement report' };
+    }
+}
+
+// ============================================
+// API Key Management Actions
+// ============================================
+
+import { apiKeyService, APIKey, APIUsageMetrics, ThirdPartyIntegration, RateLimitAlert } from '@/services/admin/api-key-service';
+
+export async function generateAPIKey(
+    name: string,
+    permissions: string[]
+): Promise<{ success: boolean; data?: { keyId: string; plainKey: string; apiKey: APIKey }; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const result = await apiKeyService.generateAPIKey(name, permissions, currentUser.id);
+
+        return { success: true, data: result };
+    } catch (error: any) {
+        console.error('Error generating API key:', error);
+        return { success: false, error: error.message || 'Failed to generate API key' };
+    }
+}
+
+export async function getAllAPIKeys(options?: {
+    status?: 'active' | 'revoked';
+    limit?: number;
+    lastKey?: string;
+}): Promise<{ success: boolean; data?: { keys: APIKey[]; lastKey?: string }; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const result = await apiKeyService.getAllAPIKeys(options);
+
+        return { success: true, data: result };
+    } catch (error: any) {
+        console.error('Error fetching API keys:', error);
+        return { success: false, error: error.message || 'Failed to fetch API keys' };
+    }
+}
+
+export async function getAPIKeyUsage(
+    keyId: string
+): Promise<{ success: boolean; data?: APIUsageMetrics; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const usage = await apiKeyService.getAPIUsage(keyId);
+
+        if (!usage) {
+            return { success: false, error: 'API key not found' };
+        }
+
+        return { success: true, data: usage };
+    } catch (error: any) {
+        console.error('Error fetching API key usage:', error);
+        return { success: false, error: error.message || 'Failed to fetch API key usage' };
+    }
+}
+
+export async function revokeAPIKey(
+    keyId: string
+): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, message: '', error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        await apiKeyService.revokeAPIKey(keyId, currentUser.id);
+
+        return { success: true, message: 'API key revoked successfully' };
+    } catch (error: any) {
+        console.error('Error revoking API key:', error);
+        return { success: false, message: '', error: error.message || 'Failed to revoke API key' };
+    }
+}
+
+export async function getRateLimitAlerts(options?: {
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+}): Promise<{ success: boolean; data?: RateLimitAlert[]; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const startDate = options?.startDate ? new Date(options.startDate) : undefined;
+        const endDate = options?.endDate ? new Date(options.endDate) : undefined;
+
+        const alerts = await apiKeyService.getRateLimitAlerts({
+            startDate,
+            endDate,
+            limit: options?.limit,
+        });
+
+        return { success: true, data: alerts };
+    } catch (error: any) {
+        console.error('Error fetching rate limit alerts:', error);
+        return { success: false, error: error.message || 'Failed to fetch rate limit alerts' };
+    }
+}
+
+export async function getIntegrations(): Promise<{
+    success: boolean;
+    data?: ThirdPartyIntegration[];
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const integrations = await apiKeyService.getIntegrations();
+
+        return { success: true, data: integrations };
+    } catch (error: any) {
+        console.error('Error fetching integrations:', error);
+        return { success: false, error: error.message || 'Failed to fetch integrations' };
+    }
+}
+
+export async function updateIntegrationStatus(
+    integrationId: string,
+    status: 'active' | 'inactive' | 'error'
+): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, message: '', error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        await apiKeyService.updateIntegrationStatus(integrationId, status, currentUser.id);
+
+        return { success: true, message: 'Integration status updated successfully' };
+    } catch (error: any) {
+        console.error('Error updating integration status:', error);
+        return { success: false, message: '', error: error.message || 'Failed to update integration status' };
+    }
+}
+
+
+// ============================================
+// Feedback Management Actions
+// ============================================
+
+import { feedbackService, Feedback, FeedbackSummaryReport } from '@/services/admin/feedback-service';
+
+export async function createFeedbackAction(
+    feedbackText: string
+): Promise<{ success: boolean; data?: Feedback; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        // Get user profile for name and email
+        const repository = getRepository();
+        const profileKeys = getProfileKeys(currentUser.id);
+        const profile: any = await repository.get(profileKeys.PK, profileKeys.SK);
+
+        const userName = profile?.Data?.name || currentUser.email || 'Unknown User';
+        const userEmail = currentUser.email || 'no-email@example.com';
+
+        const feedback = await feedbackService.createFeedback(
+            currentUser.id,
+            userName,
+            userEmail,
+            feedbackText
+        );
+
+        return { success: true, data: feedback };
+    } catch (error: any) {
+        console.error('Error creating feedback:', error);
+        return { success: false, error: error.message || 'Failed to create feedback' };
+    }
+}
+
+export async function getFeedbackAction(options?: {
+    status?: string;
+    category?: string;
+    sentiment?: string;
+    userId?: string;
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+    lastKey?: string;
+}): Promise<{
+    success: boolean;
+    data?: { feedback: Feedback[]; lastKey?: string };
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        const result = await feedbackService.getFeedback({
+            status: options?.status,
+            category: options?.category,
+            sentiment: options?.sentiment,
+            userId: options?.userId,
+            startDate: options?.startDate ? new Date(options.startDate) : undefined,
+            endDate: options?.endDate ? new Date(options.endDate) : undefined,
+            limit: options?.limit,
+            lastKey: options?.lastKey,
+        });
+
+        return { success: true, data: result };
+    } catch (error: any) {
+        console.error('Error fetching feedback:', error);
+        return { success: false, error: error.message || 'Failed to fetch feedback' };
+    }
+}
+
+export async function getFeedbackByIdAction(
+    feedbackId: string
+): Promise<{ success: boolean; data?: Feedback; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        const feedback = await feedbackService.getFeedbackById(feedbackId);
+
+        if (!feedback) {
+            return { success: false, error: 'Feedback not found' };
+        }
+
+        return { success: true, data: feedback };
+    } catch (error: any) {
+        console.error('Error fetching feedback:', error);
+        return { success: false, error: error.message || 'Failed to fetch feedback' };
+    }
+}
+
+export async function categorizeFeedbackAction(
+    feedbackId: string,
+    category: 'bug' | 'feature_request' | 'general' | 'uncategorized'
+): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, message: '', error: 'Unauthorized: Admin access required' };
+        }
+
+        await feedbackService.categorizeFeedback(feedbackId, category, currentUser.id);
+
+        return { success: true, message: 'Feedback categorized successfully' };
+    } catch (error: any) {
+        console.error('Error categorizing feedback:', error);
+        return { success: false, message: '', error: error.message || 'Failed to categorize feedback' };
+    }
+}
+
+export async function respondToFeedbackAction(
+    feedbackId: string,
+    response: string
+): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, message: '', error: 'Unauthorized: Admin access required' };
+        }
+
+        // Get admin profile for name
+        const repository = getRepository();
+        const profileKeys = getProfileKeys(currentUser.id);
+        const profile: any = await repository.get(profileKeys.PK, profileKeys.SK);
+        const adminName = profile?.Data?.name || currentUser.email || 'Admin';
+
+        await feedbackService.respondToFeedback(feedbackId, currentUser.id, adminName, response);
+
+        return { success: true, message: 'Response sent successfully' };
+    } catch (error: any) {
+        console.error('Error responding to feedback:', error);
+        return { success: false, message: '', error: error.message || 'Failed to send response' };
+    }
+}
+
+export async function archiveFeedbackAction(
+    feedbackId: string
+): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, message: '', error: 'Unauthorized: Admin access required' };
+        }
+
+        await feedbackService.archiveFeedback(feedbackId);
+
+        return { success: true, message: 'Feedback archived successfully' };
+    } catch (error: any) {
+        console.error('Error archiving feedback:', error);
+        return { success: false, message: '', error: error.message || 'Failed to archive feedback' };
+    }
+}
+
+export async function generateFeedbackSummaryReportAction(options?: {
+    startDate?: string;
+    endDate?: string;
+}): Promise<{ success: boolean; data?: FeedbackSummaryReport; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) {
+            return { success: false, error: 'Unauthorized: Admin access required' };
+        }
+
+        const report = await feedbackService.generateSummaryReport({
+            startDate: options?.startDate ? new Date(options.startDate) : undefined,
+            endDate: options?.endDate ? new Date(options.endDate) : undefined,
+        });
+
+        return { success: true, data: report };
+    } catch (error: any) {
+        console.error('Error generating feedback summary report:', error);
+        return { success: false, error: error.message || 'Failed to generate feedback summary report' };
+    }
+}
+
+
+// ============================================
+// Maintenance Mode Actions
+// ============================================
+
+import { maintenanceModeService, MaintenanceWindow, MaintenanceBanner } from '@/services/admin/maintenance-mode-service';
+
+/**
+ * Schedules a new maintenance window
+ * Validates: Requirements 15.1
+ */
+export async function scheduleMaintenanceWindowAction(
+    title: string,
+    description: string,
+    startTime: string,
+    endTime: string
+): Promise<{ success: boolean; data?: MaintenanceWindow; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const window = await maintenanceModeService.scheduleMaintenanceWindow(
+            title,
+            description,
+            new Date(startTime).getTime(),
+            new Date(endTime).getTime(),
+            currentUser.id
+        );
+
+        revalidatePath('/admin/system/maintenance');
+
+        return { success: true, data: window };
+    } catch (error: any) {
+        console.error('Error scheduling maintenance window:', error);
+        return { success: false, error: error.message || 'Failed to schedule maintenance window' };
+    }
+}
+
+/**
+ * Gets all maintenance windows
+ * Validates: Requirements 15.3
+ */
+export async function getMaintenanceWindowsAction(options?: {
+    status?: 'scheduled' | 'active' | 'completed' | 'cancelled';
+    limit?: number;
+    lastKey?: string;
+}): Promise<{
+    success: boolean;
+    data?: { windows: MaintenanceWindow[]; lastKey?: string };
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const result = await maintenanceModeService.getMaintenanceWindows(options);
+
+        return { success: true, data: result };
+    } catch (error: any) {
+        console.error('Error fetching maintenance windows:', error);
+        return { success: false, error: error.message || 'Failed to fetch maintenance windows' };
+    }
+}
+
+/**
+ * Gets a specific maintenance window
+ */
+export async function getMaintenanceWindowAction(
+    windowId: string
+): Promise<{ success: boolean; data?: MaintenanceWindow; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const window = await maintenanceModeService.getMaintenanceWindow(windowId);
+
+        if (!window) {
+            return { success: false, error: 'Maintenance window not found' };
+        }
+
+        return { success: true, data: window };
+    } catch (error: any) {
+        console.error('Error fetching maintenance window:', error);
+        return { success: false, error: error.message || 'Failed to fetch maintenance window' };
+    }
+}
+
+/**
+ * Gets the current maintenance banner for display
+ * Validates: Requirements 15.1
+ */
+export async function getMaintenanceBannerAction(): Promise<{
+    success: boolean;
+    data?: MaintenanceBanner | null;
+    error?: string;
+}> {
+    try {
+        const banner = await maintenanceModeService.getMaintenanceBanner();
+
+        return { success: true, data: banner };
+    } catch (error: any) {
+        console.error('Error fetching maintenance banner:', error);
+        return { success: false, error: error.message || 'Failed to fetch maintenance banner' };
+    }
+}
+
+/**
+ * Checks if maintenance mode is currently active
+ * Validates: Requirements 15.2
+ */
+export async function isMaintenanceModeActiveAction(): Promise<{
+    success: boolean;
+    active: boolean;
+    error?: string;
+}> {
+    try {
+        const active = await maintenanceModeService.isMaintenanceModeActive();
+
+        return { success: true, active };
+    } catch (error: any) {
+        console.error('Error checking maintenance mode:', error);
+        return { success: false, active: false, error: error.message };
+    }
+}
+
+/**
+ * Enables maintenance mode immediately
+ * Validates: Requirements 15.2
+ */
+export async function enableMaintenanceModeAction(
+    title: string,
+    description: string,
+    durationMinutes: number
+): Promise<{ success: boolean; data?: MaintenanceWindow; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const window = await maintenanceModeService.enableMaintenanceMode(
+            title,
+            description,
+            durationMinutes,
+            currentUser.id
+        );
+
+        revalidatePath('/admin/system/maintenance');
+
+        return { success: true, data: window };
+    } catch (error: any) {
+        console.error('Error enabling maintenance mode:', error);
+        return { success: false, error: error.message || 'Failed to enable maintenance mode' };
+    }
+}
+
+/**
+ * Disables maintenance mode immediately
+ * Validates: Requirements 15.4
+ */
+export async function disableMaintenanceModeAction(): Promise<{
+    success: boolean;
+    message: string;
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, message: '', error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        await maintenanceModeService.disableMaintenanceMode(currentUser.id);
+
+        revalidatePath('/admin/system/maintenance');
+
+        return { success: true, message: 'Maintenance mode disabled successfully' };
+    } catch (error: any) {
+        console.error('Error disabling maintenance mode:', error);
+        return { success: false, message: '', error: error.message || 'Failed to disable maintenance mode' };
+    }
+}
+
+/**
+ * Completes a maintenance window
+ * Validates: Requirements 15.4
+ */
+export async function completeMaintenanceWindowAction(
+    windowId: string
+): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, message: '', error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        await maintenanceModeService.completeMaintenanceWindow(windowId, currentUser.id);
+
+        revalidatePath('/admin/system/maintenance');
+
+        return { success: true, message: 'Maintenance window completed successfully' };
+    } catch (error: any) {
+        console.error('Error completing maintenance window:', error);
+        return { success: false, message: '', error: error.message || 'Failed to complete maintenance window' };
+    }
+}
+
+/**
+ * Cancels a scheduled maintenance window
+ * Validates: Requirements 15.5
+ */
+export async function cancelMaintenanceWindowAction(
+    windowId: string
+): Promise<{ success: boolean; message: string; error?: string }> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, message: '', error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        await maintenanceModeService.cancelMaintenanceWindow(windowId, currentUser.id);
+
+        revalidatePath('/admin/system/maintenance');
+
+        return { success: true, message: 'Maintenance window cancelled successfully' };
+    } catch (error: any) {
+        console.error('Error cancelling maintenance window:', error);
+        return { success: false, message: '', error: error.message || 'Failed to cancel maintenance window' };
+    }
+}
+
+/**
+ * Gets upcoming maintenance windows (next 7 days)
+ */
+export async function getUpcomingMaintenanceWindowsAction(): Promise<{
+    success: boolean;
+    data?: MaintenanceWindow[];
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const windows = await maintenanceModeService.getUpcomingMaintenanceWindows();
+
+        return { success: true, data: windows };
+    } catch (error: any) {
+        console.error('Error fetching upcoming maintenance windows:', error);
+        return { success: false, error: error.message || 'Failed to fetch upcoming maintenance windows' };
+    }
+}
+
+/**
+ * Gets past maintenance windows
+ */
+export async function getPastMaintenanceWindowsAction(
+    limit: number = 20
+): Promise<{
+    success: boolean;
+    data?: MaintenanceWindow[];
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin || adminStatus.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized: SuperAdmin access required' };
+        }
+
+        const windows = await maintenanceModeService.getPastMaintenanceWindows(limit);
+
+        return { success: true, data: windows };
+    } catch (error: any) {
+        console.error('Error fetching past maintenance windows:', error);
+        return { success: false, error: error.message || 'Failed to fetch past maintenance windows' };
+    }
+}
+
+
+// ============================================
+// Alert Preferences Actions
+// ============================================
+
+import { getAlertPreferencesService, AlertPreferences } from '@/services/admin/alert-preferences-service';
+
+/**
+ * Gets alert preferences for the current SuperAdmin
+ */
+export async function getAlertPreferences(): Promise<{
+    success: boolean;
+    data?: AlertPreferences;
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        if (currentUser.role !== 'super_admin') {
+            return { success: false, error: 'Unauthorized - SuperAdmin access required' };
+        }
+
+        const service = getAlertPreferencesService();
+        const preferences = await service.getPreferences(currentUser.userId);
+
+        return { success: true, data: preferences };
+    } catch (error: any) {
+        console.error('Error getting alert preferences:', error);
+        return { success: false, error: error.message || 'Failed to get alert preferences' };
+    }
+}
+
+/**
+ * Updates alert preferences for the current SuperAdmin
+ */
+export async function updateAlertPreferences(
+    preferences: Partial<AlertPreferences>
+): Promise<{
+    success: boolean;
+    message: string;
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        if (currentUser.role !== 'super_admin') {
+            return { success: false, message: '', error: 'Unauthorized - SuperAdmin access required' };
+        }
+
+        const service = getAlertPreferencesService();
+        await service.updatePreferences(currentUser.userId, preferences);
+
+        return { success: true, message: 'Alert preferences updated successfully' };
+    } catch (error: any) {
+        console.error('Error updating alert preferences:', error);
+        return { success: false, message: '', error: error.message || 'Failed to update alert preferences' };
+    }
+}
+
+// ============================================
+// Email Notification Actions
+// ============================================
+
+import { getEmailNotificationService, EmailNotification } from '@/services/admin/email-notification-service';
+
+/**
+ * Gets email notification history
+ */
+export async function getEmailNotificationHistory(options?: {
+    type?: EmailNotification['type'];
+    status?: EmailNotification['status'];
+    limit?: number;
+}): Promise<{
+    success: boolean;
+    data?: EmailNotification[];
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+
+        if (!currentUser) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        if (currentUser.role !== 'super_admin' && currentUser.role !== 'admin') {
+            return { success: false, error: 'Unauthorized - Admin access required' };
+        }
+
+        const service = getEmailNotificationService();
+        const notifications = await service.getNotificationHistory(options);
+
+        return { success: true, data: notifications };
+    } catch (error: any) {
+        console.error('Error getting notification history:', error);
+        return { success: false, error: error.message || 'Failed to get notification history' };
+    }
+}
+
+/**
+ * Retries failed email notifications
+ */
+export async function retryFailedNotifications(): Promise<{
+    success: boolean;
+    message: string;
+    error?: string;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+
+        if (!currentUser) {
+            return { success: false, message: '', error: 'Not authenticated' };
+        }
+
+        if (currentUser.role !== 'super_admin') {
+            return { success: false, message: '', error: 'Unauthorized - SuperAdmin access required' };
+        }
+
+        const service = getEmailNotificationService();
+        await service.retryFailedNotifications();
+
+        return { success: true, message: 'Failed notifications queued for retry' };
+    } catch (error: any) {
+        console.error('Error retrying notifications:', error);
+        return { success: false, message: '', error: error.message || 'Failed to retry notifications' };
     }
 }

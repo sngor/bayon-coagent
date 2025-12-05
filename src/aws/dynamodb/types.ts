@@ -133,7 +133,21 @@ export type EntityType =
   | 'AIMonitoringJob'
   | 'AIVisibilityAlert'
   | 'WebsiteAnalysis'
-  | 'RoleAuditLog';
+  | 'RoleAuditLog'
+  | 'AnalyticsEvent'
+  | 'AggregatedMetrics'
+  | 'SupportTicket'
+  | 'TicketMessage'
+  | 'FeatureFlag'
+  | 'PlatformSetting'
+  | 'ContentModeration'
+  | 'AdminAuditLog'
+  | 'AdminAnnouncement'
+  | 'ABTestConfig'
+  | 'ABTestAssignment'
+  | 'MaintenanceWindow'
+  | 'APIKey'
+  | 'UserFeedback';
 
 /**
  * Base DynamoDB item structure

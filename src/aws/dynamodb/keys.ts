@@ -1650,3 +1650,440 @@ export function getUsersByRoleQueryKeys(role: string): { GSI1PK: string } {
     GSI1PK: `ROLE#${role}`,
   };
 }
+
+// ==================== Admin Platform Management Keys ====================
+
+/**
+ * Generates keys for AnalyticsEvent
+ * Pattern: PK: ANALYTICS#<date>, SK: EVENT#<timestamp>#<eventId>
+ * GSI1: PK: USER#<userId>, SK: EVENT#<timestamp>
+ * TTL: <timestamp + 90 days>
+ */
+export function getAnalyticsEventKeys(
+  date: string,
+  eventId: string,
+  timestamp: number,
+  userId?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+  TTL?: number;
+} {
+  const keys: DynamoDBKey & {
+    GSI1PK?: string;
+    GSI1SK?: string;
+    TTL?: number;
+  } = {
+    PK: `ANALYTICS#${date}`,
+    SK: `EVENT#${timestamp}#${eventId}`,
+    TTL: Math.floor(timestamp / 1000) + (90 * 24 * 60 * 60), // 90 days in seconds
+  };
+
+  // Add GSI1 keys for querying by user
+  if (userId) {
+    keys.GSI1PK = `USER#${userId}`;
+    keys.GSI1SK = `EVENT#${timestamp}`;
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for AggregatedMetrics
+ * Pattern: PK: METRICS#<date>, SK: DAILY
+ */
+export function getAggregatedMetricsKeys(date: string): DynamoDBKey {
+  return {
+    PK: `METRICS#${date}`,
+    SK: 'DAILY',
+  };
+}
+
+/**
+ * Generates keys for SupportTicket
+ * Pattern: PK: TICKET#<ticketId>, SK: METADATA
+ * GSI1: PK: TICKETS#<status>, SK: <priority>#<createdAt>
+ */
+export function getSupportTicketKeys(
+  ticketId: string,
+  status?: string,
+  priority?: string,
+  createdAt?: number
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `TICKET#${ticketId}`,
+    SK: 'METADATA',
+  };
+
+  // Add GSI1 keys for querying by status
+  if (status && priority && createdAt) {
+    keys.GSI1PK = `TICKETS#${status}`;
+    keys.GSI1SK = `${priority}#${createdAt}`;
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for TicketMessage
+ * Pattern: PK: TICKET#<ticketId>, SK: MESSAGE#<timestamp>#<messageId>
+ */
+export function getTicketMessageKeys(
+  ticketId: string,
+  messageId: string,
+  timestamp: number
+): DynamoDBKey {
+  return {
+    PK: `TICKET#${ticketId}`,
+    SK: `MESSAGE#${timestamp}#${messageId}`,
+  };
+}
+
+/**
+ * Generates keys for Feedback
+ * Pattern: PK: FEEDBACK#<feedbackId>, SK: METADATA
+ * GSI1: PK: FEEDBACK#ALL, SK: <createdAt>
+ */
+export function getFeedbackKeys(
+  feedbackId: string,
+  createdAt?: number
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `FEEDBACK#${feedbackId}`,
+    SK: 'METADATA',
+  };
+
+  // Add GSI1 keys for querying all feedback sorted by date
+  if (createdAt) {
+    keys.GSI1PK = 'FEEDBACK#ALL';
+    keys.GSI1SK = `${createdAt}`;
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for FeatureFlag
+ * Pattern: PK: CONFIG#FEATURE_FLAGS, SK: FLAG#<flagId>
+ */
+export function getFeatureFlagKeys(flagId: string): DynamoDBKey {
+  return {
+    PK: 'CONFIG#FEATURE_FLAGS',
+    SK: `FLAG#${flagId}`,
+  };
+}
+
+/**
+ * Generates keys for PlatformSetting
+ * Pattern: PK: CONFIG#SETTINGS, SK: SETTING#<category>#<key>
+ */
+export function getPlatformSettingKeys(
+  category: string,
+  key: string
+): DynamoDBKey {
+  return {
+    PK: 'CONFIG#SETTINGS',
+    SK: `SETTING#${category}#${key}`,
+  };
+}
+
+/**
+ * Generates keys for ContentModeration
+ * Pattern: PK: USER#<userId>, SK: CONTENT#<contentId>
+ * GSI1: PK: MODERATION#<status>, SK: <createdAt>
+ */
+export function getContentModerationKeys(
+  userId: string,
+  contentId: string,
+  status?: string,
+  createdAt?: number
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `CONTENT#${contentId}`,
+  };
+
+  // Add GSI1 keys for moderation queue
+  if (status && createdAt) {
+    keys.GSI1PK = `MODERATION#${status}`;
+    keys.GSI1SK = createdAt.toString();
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for AdminAuditLog
+ * Pattern: PK: AUDIT#<date>, SK: <timestamp>#<auditId>
+ * GSI1: PK: AUDIT#<adminId>, SK: <timestamp>
+ * GSI2: PK: AUDIT#<actionType>, SK: <timestamp>
+ */
+export function getAdminAuditLogKeys(
+  date: string,
+  auditId: string,
+  timestamp: number,
+  adminId?: string,
+  actionType?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+  GSI2PK?: string;
+  GSI2SK?: string;
+  TTL?: number;
+} {
+  const keys: DynamoDBKey & {
+    GSI1PK?: string;
+    GSI1SK?: string;
+    GSI2PK?: string;
+    GSI2SK?: string;
+    TTL?: number;
+  } = {
+    PK: `AUDIT#${date}`,
+    SK: `${timestamp}#${auditId}`,
+    TTL: Math.floor(timestamp / 1000) + (90 * 24 * 60 * 60), // 90 days retention
+  };
+
+  // Add GSI1 keys for querying by admin
+  if (adminId) {
+    keys.GSI1PK = `AUDIT#${adminId}`;
+    keys.GSI1SK = timestamp.toString();
+  }
+
+  // Add GSI2 keys for querying by action type
+  if (actionType) {
+    keys.GSI2PK = `AUDIT#${actionType}`;
+    keys.GSI2SK = timestamp.toString();
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for Announcement
+ * Pattern: PK: ANNOUNCEMENT#<targetAudience>, SK: <scheduledFor>#<announcementId>
+ * GSI1: PK: ANNOUNCEMENT#<announcementId>, SK: METADATA
+ */
+export function getAdminAnnouncementKeys(
+  announcementId: string,
+  targetAudience: string,
+  scheduledFor: number
+): DynamoDBKey & {
+  GSI1PK: string;
+  GSI1SK: string;
+} {
+  return {
+    PK: `ANNOUNCEMENT#${targetAudience}`,
+    SK: `${scheduledFor}#${announcementId}`,
+    GSI1PK: `ANNOUNCEMENT#${announcementId}`,
+    GSI1SK: 'METADATA',
+  };
+}
+
+/**
+ * Generates keys for ABTestConfig
+ * Pattern: PK: CONFIG#AB_TESTS, SK: TEST#<testId>
+ */
+export function getABTestConfigKeys(testId: string): DynamoDBKey {
+  return {
+    PK: 'CONFIG#AB_TESTS',
+    SK: `TEST#${testId}`,
+  };
+}
+
+/**
+ * Generates keys for ABTestAssignment
+ * Pattern: PK: USER#<userId>, SK: AB_TEST#<testId>
+ */
+export function getABTestAssignmentKeys(
+  userId: string,
+  testId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `AB_TEST#${testId}`,
+  };
+}
+
+/**
+ * Generates keys for MaintenanceWindow
+ * Pattern: PK: CONFIG#MAINTENANCE, SK: WINDOW#<windowId>
+ * GSI1: PK: MAINTENANCE#<status>, SK: <startTime>
+ */
+export function getMaintenanceWindowKeys(
+  windowId: string,
+  status?: string,
+  startTime?: number
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: 'CONFIG#MAINTENANCE',
+    SK: `WINDOW#${windowId}`,
+  };
+
+  // Add GSI1 keys for querying by status
+  if (status && startTime) {
+    keys.GSI1PK = `MAINTENANCE#${status}`;
+    keys.GSI1SK = startTime.toString();
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for APIKey
+ * Pattern: PK: CONFIG#API_KEYS, SK: KEY#<keyId>
+ * GSI1: PK: API_KEY#<hashedKey>, SK: METADATA
+ */
+export function getAPIKeyKeys(
+  keyId: string,
+  hashedKey?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: 'CONFIG#API_KEYS',
+    SK: `KEY#${keyId}`,
+  };
+
+  // Add GSI1 keys for key validation
+  if (hashedKey) {
+    keys.GSI1PK = `API_KEY#${hashedKey}`;
+    keys.GSI1SK = 'METADATA';
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for UserFeedback
+ * Pattern: PK: USER#<userId>, SK: FEEDBACK#<feedbackId>
+ * GSI1: PK: FEEDBACK#<category>, SK: <timestamp>
+ */
+export function getUserFeedbackKeys(
+  userId: string,
+  feedbackId: string,
+  category?: string,
+  timestamp?: number
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `FEEDBACK#${feedbackId}`,
+  };
+
+  // Add GSI1 keys for querying by category
+  if (category && timestamp) {
+    keys.GSI1PK = `FEEDBACK#${category}`;
+    keys.GSI1SK = timestamp.toString();
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for UserActivity summary
+ * Pattern: PK: USER_ACTIVITY#<userId>, SK: SUMMARY
+ * GSI1: PK: ACTIVITY_LEVEL#<level>, SK: <lastLogin>
+ */
+export function getUserActivitySummaryKeys(
+  userId: string,
+  activityLevel?: 'active' | 'inactive' | 'dormant',
+  lastLogin?: number
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER_ACTIVITY#${userId}`,
+    SK: 'SUMMARY',
+  };
+
+  // Add GSI1 keys for querying by activity level
+  if (activityLevel && lastLogin) {
+    keys.GSI1PK = `ACTIVITY_LEVEL#${activityLevel}`;
+    keys.GSI1SK = lastLogin.toString();
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for querying all user activity summaries
+ * Pattern: PK: USER_ACTIVITY_INDEX, SK: <userId>
+ * Used for scanning all user activities efficiently
+ */
+export function getUserActivityIndexKeys(userId: string): DynamoDBKey {
+  return {
+    PK: 'USER_ACTIVITY_INDEX',
+    SK: userId,
+  };
+}
+
+/**
+ * Generates keys for EmailNotification
+ * Pattern: PK: EMAIL_NOTIFICATION#<notificationId>, SK: METADATA
+ * GSI1: PK: EMAIL_NOTIFICATIONS, SK: <timestamp>
+ * GSI2: PK: EMAIL_NOTIFICATION#<type>, SK: <timestamp>
+ */
+export function getEmailNotificationKeys(
+  notificationId: string,
+  type?: string,
+  timestamp?: number
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+  GSI2PK?: string;
+  GSI2SK?: string;
+} {
+  const keys: DynamoDBKey & {
+    GSI1PK?: string;
+    GSI1SK?: string;
+    GSI2PK?: string;
+    GSI2SK?: string;
+  } = {
+    PK: `EMAIL_NOTIFICATION#${notificationId}`,
+    SK: 'METADATA',
+  };
+
+  // Add GSI1 keys for querying all notifications
+  if (timestamp) {
+    keys.GSI1PK = 'EMAIL_NOTIFICATIONS';
+    keys.GSI1SK = timestamp.toString();
+  }
+
+  // Add GSI2 keys for querying by type
+  if (type && timestamp) {
+    keys.GSI2PK = `EMAIL_NOTIFICATION#${type}`;
+    keys.GSI2SK = timestamp.toString();
+  }
+
+  return keys;
+}
+
+/**
+ * Admin key generators namespace
+ */
+export const generateAdminKeys = {
+  emailNotification: (notificationId: string) => ({
+    PK: `EMAIL_NOTIFICATION#${notificationId}`,
+    SK: 'METADATA',
+  }),
+  emailNotificationList: () => ({
+    PK: 'EMAIL_NOTIFICATIONS',
+    SK: '',
+  }),
+};

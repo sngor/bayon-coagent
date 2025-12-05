@@ -396,7 +396,13 @@ const adminNavItems = [
         label: 'Team Members',
         customIcon: false
     },
-
+    {
+        href: '/admin/analytics',
+        icon: BarChart3,
+        filledIcon: FilledIcons.BarChart3,
+        label: 'Analytics',
+        customIcon: false
+    },
     {
         href: '/admin/settings',
         icon: Settings,
