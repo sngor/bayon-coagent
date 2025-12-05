@@ -2,11 +2,24 @@
 
 import { cn } from '@/lib/utils/common';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, ServerCrash, ShieldAlert } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+/**
+ * StandardErrorDisplay - Consistent error messaging with appropriate severity levels
+ *
+ * @example
+ * <StandardErrorDisplay
+ *   title="Failed to Load"
+ *   message="Unable to fetch data. Please try again."
+ *   variant="error"
+ *   action={{ label: "Retry", onClick: handleRetry }}
+ * />
+ *
+ * Provides consistent error, warning, and info displays across the application
+ */
 export interface StandardErrorDisplayProps {
-    title?: string;
+    title: string;
     message: string;
     variant?: 'error' | 'warning' | 'info';
     action?: {
@@ -18,19 +31,19 @@ export interface StandardErrorDisplayProps {
 
 const variantConfig = {
     error: {
-        icon: ServerCrash,
-        title: 'Error',
-        variant: 'destructive' as const,
+        icon: AlertCircle,
+        alertVariant: 'destructive' as const,
+        colorClasses: 'border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive',
     },
     warning: {
-        icon: ShieldAlert,
-        title: 'Warning',
-        variant: 'default' as const,
+        icon: AlertTriangle,
+        alertVariant: 'default' as const,
+        colorClasses: 'border-warning/50 bg-warning/5 text-warning-foreground [&>svg]:text-warning',
     },
     info: {
-        icon: AlertCircle,
-        title: 'Information',
-        variant: 'default' as const,
+        icon: Info,
+        alertVariant: 'default' as const,
+        colorClasses: 'border-primary/50 bg-primary/5 text-foreground [&>svg]:text-primary',
     },
 };
 
@@ -46,21 +59,21 @@ export function StandardErrorDisplay({
 
     return (
         <Alert
-            variant={config.variant}
-            className={cn(className)}
+            variant={config.alertVariant}
+            className={cn(config.colorClasses, className)}
             role="alert"
             aria-live="assertive"
         >
             <Icon className="h-4 w-4" aria-hidden="true" />
-            <AlertTitle>{title || config.title}</AlertTitle>
+            <AlertTitle>{title}</AlertTitle>
             <AlertDescription className="mt-2">
-                {message}
+                <p className="mb-4">{message}</p>
                 {action && (
                     <Button
                         variant="outline"
                         size="sm"
                         onClick={action.onClick}
-                        className="mt-4"
+                        className="mt-2"
                     >
                         {action.label}
                     </Button>

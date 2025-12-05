@@ -2,6 +2,9 @@
 import type { NextConfig } from 'next';
 
 const withPWA = require('next-pwa');
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -362,4 +365,5 @@ const pwaConfig = process.env.NODE_ENV === 'production'
   })
   : (config: NextConfig) => config; // In development, just return the config as-is
 
-export default pwaConfig(nextConfig);
+// Apply bundle analyzer wrapper
+export default withBundleAnalyzer(pwaConfig(nextConfig));

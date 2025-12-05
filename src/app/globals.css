@@ -4,6 +4,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile optimizations */
+@import "../styles/mobile-optimizations.css";
+
+/* Animation utilities */
+@import "../styles/animations.css";
+
 body {
   font-family: var(--font-body);
 }

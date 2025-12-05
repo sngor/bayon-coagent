@@ -1,10 +1,14 @@
-'use client';
-
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { HubBreadcrumbsProps } from './types';
 import { cn } from '@/lib/utils/common';
 
+/**
+ * HubBreadcrumbs - Server Component
+ * 
+ * Converted from Client Component - no client-side interactivity needed.
+ * Pure presentational component that renders breadcrumb navigation.
+ */
 export function HubBreadcrumbs({ items, separator }: HubBreadcrumbsProps) {
     const Separator = separator || <ChevronRight className="h-4 w-4 text-muted-foreground" />;
 

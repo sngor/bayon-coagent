@@ -105,7 +105,8 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                 whileTap={{ scale: 0.9 }}
                 animate={{ rotate: isOpen ? 45 : 0 }}
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:shadow-2xl transition-shadow"
+                className="w-14 h-14 min-w-[56px] min-h-[56px] rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center hover:shadow-2xl transition-shadow touch-manipulation"
+                aria-label={isOpen ? "Close menu" : "Open menu"}
             >
                 {mainIcon || <Plus className="w-6 h-6" />}
             </motion.button>

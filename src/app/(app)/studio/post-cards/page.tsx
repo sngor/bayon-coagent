@@ -27,6 +27,10 @@ import {
     type SecuredLink
 } from '@/features/client-dashboards/actions/client-dashboard-actions';
 import { useUser } from '@/aws/auth';
+import { StandardFormField } from '@/components/standard/form-field';
+import { StandardLoadingState } from '@/components/standard/loading-state';
+import { StandardErrorDisplay } from '@/components/standard/error-display';
+import { StandardEmptyState } from '@/components/standard/empty-state';
 
 export default function PostCardsPage() {
     const { toast } = useToast();
@@ -38,6 +42,7 @@ export default function PostCardsPage() {
     const [referenceImage, setReferenceImage] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+    const [generationError, setGenerationError] = useState<string | null>(null);
 
     // QR Code State
     const { user } = useUser();
@@ -139,6 +144,7 @@ export default function PostCardsPage() {
 
         setIsGenerating(true);
         setGeneratedImage(null);
+        setGenerationError(null);
 
         try {
             const result = await generatePostCardAction({
@@ -159,17 +165,21 @@ export default function PostCardsPage() {
                     className: "bg-green-600 text-white border-none",
                 });
             } else {
+                const errorMsg = result.error || 'Failed to generate post card. Please try again.';
+                setGenerationError(errorMsg);
                 toast({
                     title: 'Generation Failed',
-                    description: result.error || 'Failed to generate post card. Please try again.',
+                    description: errorMsg,
                     variant: 'destructive',
                 });
             }
         } catch (error) {
             console.error('Generation error:', error);
+            const errorMsg = 'An unexpected error occurred. Please try again later.';
+            setGenerationError(errorMsg);
             toast({
                 title: 'System Error',
-                description: 'An unexpected error occurred. Please try again later.',
+                description: errorMsg,
                 variant: 'destructive',
             });
         } finally {
@@ -350,8 +360,11 @@ export default function PostCardsPage() {
                                         </RadioGroup>
 
                                         {qrCodeSource === 'dashboard' ? (
-                                            <div className="space-y-2">
-                                                <Label>Select Dashboard</Label>
+                                            <StandardFormField
+                                                label="Select Dashboard"
+                                                id="dashboard-select"
+                                                error={selectedDashboardId && !getDashboardLink(selectedDashboardId) ? "No active link found for this dashboard. Please generate one in the dashboard manager." : undefined}
+                                            >
                                                 <Select
                                                     value={selectedDashboardId}
                                                     onValueChange={setSelectedDashboardId}
@@ -368,24 +381,20 @@ export default function PostCardsPage() {
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
-                                                {selectedDashboardId && !getDashboardLink(selectedDashboardId) && (
-                                                    <p className="text-xs text-destructive">
-                                                        No active link found for this dashboard. Please generate one in the dashboard manager.
-                                                    </p>
-                                                )}
-                                            </div>
+                                            </StandardFormField>
                                         ) : (
-                                            <div className="space-y-2">
-                                                <Label>Custom URL or Text</Label>
+                                            <StandardFormField
+                                                label="Custom URL or Text"
+                                                id="custom-qr-link"
+                                                helpText="Enter your website, contact info, or any other link."
+                                            >
                                                 <Input
+                                                    id="custom-qr-link"
                                                     placeholder="https://your-website.com"
                                                     value={customQrLink}
                                                     onChange={(e) => setCustomQrLink(e.target.value)}
                                                 />
-                                                <p className="text-xs text-muted-foreground">
-                                                    Enter your website, contact info, or any other link.
-                                                </p>
-                                            </div>
+                                            </StandardFormField>
                                         )}
                                     </div>
                                 )}
@@ -403,8 +412,11 @@ export default function PostCardsPage() {
 
                             {/* Recipient & Style */}
                             <div className="grid grid-cols-1 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="recipient">Recipient Name (Optional)</Label>
+                                <StandardFormField
+                                    label="Recipient Name (Optional)"
+                                    id="recipient"
+                                    helpText="Personalize the card with a recipient name"
+                                >
                                     <Input
                                         id="recipient"
                                         placeholder="e.g. The Smith Family"
@@ -412,16 +424,21 @@ export default function PostCardsPage() {
                                         onChange={(e) => setRecipient(e.target.value)}
                                         className="bg-muted/30"
                                     />
-                                </div>
+                                </StandardFormField>
                                 <div className="space-y-2">
-                                    <Label htmlFor="style">Visual Style</Label>
-                                    <Input
+                                    <StandardFormField
+                                        label="Visual Style"
                                         id="style"
-                                        placeholder="e.g. Modern, Classic, Watercolor..."
-                                        value={style}
-                                        onChange={(e) => setStyle(e.target.value)}
-                                        className="bg-muted/30"
-                                    />
+                                        helpText="Choose or enter a custom style"
+                                    >
+                                        <Input
+                                            id="style"
+                                            placeholder="e.g. Modern, Classic, Watercolor..."
+                                            value={style}
+                                            onChange={(e) => setStyle(e.target.value)}
+                                            className="bg-muted/30"
+                                        />
+                                    </StandardFormField>
                                     <StyleSelector value={style} onChange={setStyle} />
                                 </div>
                             </div>
@@ -443,6 +460,7 @@ export default function PostCardsPage() {
                                                 accept="image/*"
                                                 className="hidden"
                                                 onChange={handleImageUpload}
+                                                aria-label="Upload reference image"
                                             />
                                             <div className="flex flex-col items-center gap-2">
                                                 <div className="p-3 bg-muted rounded-full">
@@ -479,31 +497,34 @@ export default function PostCardsPage() {
                             <Separator />
 
                             {/* Prompt Input */}
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="prompt" className="text-base font-semibold">Description</Label>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 text-xs text-blue-600 hover:text-blue-700"
-                                        onClick={enhancePrompt}
-                                        disabled={!prompt}
-                                    >
-                                        <Wand2 className="h-3 w-3 mr-1" />
-                                        Enhance Prompt
-                                    </Button>
+                            <StandardFormField
+                                label="Description"
+                                id="prompt"
+                                required
+                                helpText="Tip: Be specific about lighting, mood, and architectural details for best results."
+                            >
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-end">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 text-xs text-blue-600 hover:text-blue-700"
+                                            onClick={enhancePrompt}
+                                            disabled={!prompt}
+                                        >
+                                            <Wand2 className="h-3 w-3 mr-1" />
+                                            Enhance Prompt
+                                        </Button>
+                                    </div>
+                                    <Textarea
+                                        id="prompt"
+                                        placeholder="Describe the scene in detail. For example: 'A beautiful modern house with a sold sign in the front yard, sunny day, blue sky, lush green grass'..."
+                                        className="h-32 resize-none bg-muted/30 focus:bg-background transition-colors"
+                                        value={prompt}
+                                        onChange={(e) => setPrompt(e.target.value)}
+                                    />
                                 </div>
-                                <Textarea
-                                    id="prompt"
-                                    placeholder="Describe the scene in detail. For example: 'A beautiful modern house with a sold sign in the front yard, sunny day, blue sky, lush green grass'..."
-                                    className="h-32 resize-none bg-muted/30 focus:bg-background transition-colors"
-                                    value={prompt}
-                                    onChange={(e) => setPrompt(e.target.value)}
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    Tip: Be specific about lighting, mood, and architectural details for best results.
-                                </p>
-                            </div>
+                            </StandardFormField>
                         </CardContent>
                         <CardFooter className="pt-2 pb-6">
                             <Button
@@ -545,18 +566,31 @@ export default function PostCardsPage() {
                         </CardHeader>
                         <CardContent className="flex-1 p-0 relative flex items-center justify-center bg-muted/5">
                             {isGenerating ? (
-                                <div className="text-center space-y-6 p-8 animate-in fade-in duration-500">
-                                    <div className="relative mx-auto h-24 w-24">
-                                        <div className="absolute inset-0 rounded-full border-4 border-primary/20"></div>
-                                        <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
-                                        <Sparkles className="absolute inset-0 m-auto h-8 w-8 text-primary animate-pulse" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <h3 className="text-xl font-semibold">Creating your design...</h3>
-                                        <p className="text-muted-foreground max-w-xs mx-auto">
-                                            AI is composing the image, adjusting lighting, and applying styles. This usually takes about 10-15 seconds.
-                                        </p>
-                                    </div>
+                                <div className="p-8">
+                                    <StandardLoadingState
+                                        variant="spinner"
+                                        size="lg"
+                                        text="Creating your design..."
+                                    />
+                                    <p className="text-muted-foreground text-center mt-4 max-w-xs mx-auto">
+                                        AI is composing the image, adjusting lighting, and applying styles. This usually takes about 10-15 seconds.
+                                    </p>
+                                </div>
+
+                            ) : generationError ? (
+                                <div className="p-8 w-full max-w-md">
+                                    <StandardErrorDisplay
+                                        title="Generation Failed"
+                                        message={generationError}
+                                        variant="error"
+                                        action={{
+                                            label: "Try Again",
+                                            onClick: () => {
+                                                setGenerationError(null);
+                                                handleGenerate();
+                                            }
+                                        }}
+                                    />
                                 </div>
 
                             ) : generatedImage ? (
@@ -584,15 +618,13 @@ export default function PostCardsPage() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="text-center p-12 max-w-md mx-auto">
-                                    <div className="bg-background rounded-full p-6 w-24 h-24 mx-auto mb-6 shadow-sm flex items-center justify-center border">
-                                        <Sparkles className="h-10 w-10 text-primary/40" />
-                                    </div>
-                                    <h3 className="text-xl font-semibold mb-2">Ready to Create?</h3>
-                                    <p className="text-muted-foreground mb-8">
-                                        Select a card type, choose a style, and describe your vision to generate a unique, professional post card.
-                                    </p>
-                                    <div className="grid grid-cols-2 gap-3 text-sm text-left">
+                                <div className="p-12 w-full max-w-md mx-auto">
+                                    <StandardEmptyState
+                                        icon={Sparkles}
+                                        title="Ready to Create?"
+                                        description="Select a card type, choose a style, and describe your vision to generate a unique, professional post card."
+                                    />
+                                    <div className="grid grid-cols-2 gap-3 text-sm text-left mt-8">
                                         <div className="bg-background p-3 rounded border shadow-sm">
                                             <span className="font-medium block mb-1">Try:</span>
                                             "Luxury modern living room with floor to ceiling windows, sunset view"

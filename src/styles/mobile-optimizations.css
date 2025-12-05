@@ -1,0 +1,463 @@
+/**
+ * Mobile Optimizations
+ * 
+ * This file contains mobile-specific optimizations including:
+ * - Touch target size enforcement (44x44px minimum)
+ * - Momentum scrolling for iOS
+ * - Touch feedback and active states
+ * - Mobile-specific layout adjustments
+ * 
+ * Requirements: 9.1, 9.2, 9.3, 9.4, 9.5
+ */
+
+@layer components {
+  /* ============================================
+     Touch Target Size Enforcement (Requirement 9.1)
+     Ensures all interactive elements meet 44x44px minimum
+     ============================================ */
+
+  /* Base touch target class */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Touch target variants */
+  .touch-target-sm {
+    min-height: 40px;
+    min-width: 40px;
+    touch-action: manipulation;
+  }
+
+  .touch-target-lg {
+    min-height: 48px;
+    min-width: 48px;
+    touch-action: manipulation;
+  }
+
+  /* Ensure all buttons meet touch target requirements */
+  button:not(.touch-target-override),
+  [role="button"]:not(.touch-target-override),
+  a[role="button"]:not(.touch-target-override) {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Icon-only buttons need explicit width */
+  button[aria-label]:not([aria-label=""]):not(:has(span)):not(:has(div)),
+  [role="button"][aria-label]:not([aria-label=""]):not(:has(span)):not(
+      :has(div)
+    ) {
+    min-width: 44px;
+  }
+
+  /* Links should have adequate touch targets */
+  a:not(.touch-target-override) {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    touch-action: manipulation;
+  }
+
+  /* Tab triggers */
+  [role="tab"] {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Checkbox and radio inputs with labels */
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 24px;
+    min-width: 24px;
+    touch-action: manipulation;
+  }
+
+  /* Ensure label click areas are large enough */
+  label:has(input[type="checkbox"]),
+  label:has(input[type="radio"]) {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  /* ============================================
+     Momentum Scrolling (Requirement 9.2)
+     Smooth scrolling on iOS devices
+     ============================================ */
+
+  /* Enable momentum scrolling globally */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Scrollable containers */
+  .scroll-container,
+  .overflow-auto,
+  .overflow-scroll,
+  .overflow-x-auto,
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Prevent scroll chaining on modals and overlays */
+  [role="dialog"],
+  [role="alertdialog"],
+  .modal,
+  .drawer {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ============================================
+     Touch Feedback (Requirement 9.4)
+     Visual feedback for touch interactions
+     ============================================ */
+
+  /* Active state for all interactive elements */
+  .touch-feedback {
+    transition: transform 0.1s ease-out, background-color 0.1s ease-out;
+  }
+
+  .touch-feedback:active {
+    transform: scale(0.97);
+    background-color: hsl(var(--accent));
+  }
+
+  /* Button active states with scale */
+  button:not(.no-touch-feedback):active,
+  [role="button"]:not(.no-touch-feedback):active {
+    transform: scale(0.97);
+    transition: transform 0.1s ease-out;
+  }
+
+  /* Link active states */
+  a:not(.no-touch-feedback):active {
+    opacity: 0.7;
+    transition: opacity 0.1s ease-out;
+  }
+
+  /* Card/container active states */
+  .card-interactive:active,
+  .container-interactive:active {
+    transform: scale(0.99);
+    transition: transform 0.1s ease-out;
+  }
+
+  /* Ripple effect container */
+  .touch-ripple {
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Tab active states */
+  [role="tab"]:active {
+    transform: scale(0.97);
+    transition: transform 0.1s ease-out;
+  }
+
+  /* ============================================
+     Mobile Layout Optimizations (Requirement 9.3, 9.5)
+     Responsive spacing and layout adjustments
+     ============================================ */
+
+  /* Mobile-specific spacing utilities */
+  @media (max-width: 768px) {
+    /* Reduce padding on mobile */
+    .mobile-padding-sm {
+      padding: 0.75rem;
+    }
+
+    .mobile-padding-md {
+      padding: 1rem;
+    }
+
+    .mobile-padding-lg {
+      padding: 1.5rem;
+    }
+
+    /* Adjust container padding */
+    .container-padding-md {
+      padding: 1rem;
+    }
+
+    .container-padding-lg {
+      padding: 1.5rem;
+    }
+
+    .container-padding-xl {
+      padding: 2rem;
+    }
+
+    /* Stack elements on mobile */
+    .mobile-stack {
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* Full width on mobile */
+    .mobile-full-width {
+      width: 100%;
+    }
+
+    /* Hide on mobile */
+    .mobile-hidden {
+      display: none;
+    }
+
+    /* Show only on mobile */
+    .mobile-only {
+      display: block;
+    }
+
+    /* Adjust text sizes for mobile */
+    .text-display-hero {
+      font-size: 2rem;
+      line-height: 1.2;
+    }
+
+    .text-display-large {
+      font-size: 1.75rem;
+      line-height: 1.3;
+    }
+
+    /* Increase touch target spacing */
+    .mobile-touch-spacing {
+      gap: 0.75rem;
+    }
+
+    /* Larger tap targets for critical actions */
+    .mobile-primary-action {
+      min-height: 48px;
+      font-size: 1rem;
+      padding: 0.75rem 1.5rem;
+    }
+  }
+
+  /* Hide mobile-only on desktop */
+  @media (min-width: 769px) {
+    .mobile-only {
+      display: none;
+    }
+  }
+
+  /* ============================================
+     Touch-Optimized Components
+     ============================================ */
+
+  /* Touch-optimized input fields */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  input[type="number"],
+  textarea,
+  select {
+    min-height: 44px;
+    font-size: 16px; /* Prevents zoom on iOS */
+    touch-action: manipulation;
+  }
+
+  /* Touch-optimized select dropdowns */
+  select {
+    min-height: 44px;
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    touch-action: manipulation;
+  }
+
+  /* Touch-optimized switches and toggles */
+  [role="switch"] {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Touch-optimized sliders */
+  input[type="range"] {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  /* ============================================
+     Prevent Unwanted Touch Behaviors
+     ============================================ */
+
+  /* Prevent text selection on interactive elements */
+  button,
+  [role="button"],
+  [role="tab"],
+  [role="switch"] {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Prevent callout on long press */
+  button,
+  [role="button"],
+  a {
+    -webkit-touch-callout: none;
+  }
+
+  /* Prevent double-tap zoom on buttons */
+  button,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+
+  /* ============================================
+     Mobile-Specific Hover States
+     Only apply hover effects on devices that support hover
+     ============================================ */
+
+  @media (hover: hover) and (pointer: fine) {
+    /* Desktop hover effects */
+    .hover-lift:hover {
+      transform: translateY(-2px);
+    }
+
+    .hover-scale:hover {
+      transform: scale(1.02);
+    }
+  }
+
+  /* Remove hover effects on touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    .hover-lift:hover,
+    .hover-scale:hover {
+      transform: none;
+    }
+
+    /* Use active states instead */
+    .hover-lift:active {
+      transform: scale(0.98);
+    }
+
+    .hover-scale:active {
+      transform: scale(0.98);
+    }
+  }
+
+  /* ============================================
+     Accessibility Enhancements for Touch
+     ============================================ */
+
+  /* Focus visible for keyboard navigation */
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  a:focus-visible,
+  [role="tab"]:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Remove default focus outline for mouse/touch */
+  button:focus:not(:focus-visible),
+  [role="button"]:focus:not(:focus-visible),
+  a:focus:not(:focus-visible),
+  [role="tab"]:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* ============================================
+     Performance Optimizations for Touch
+     ============================================ */
+
+  /* GPU acceleration for touch interactions */
+  button,
+  [role="button"],
+  .touch-feedback,
+  .touch-ripple {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform;
+  }
+
+  /* Optimize animations for touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    * {
+      animation-duration: 0.2s !important;
+      transition-duration: 0.2s !important;
+    }
+
+    /* Disable complex animations on mobile */
+    .animate-shimmer,
+    .animate-gradient-shift,
+    .shimmer-gradient {
+      animation: none !important;
+    }
+  }
+}
+
+/* ============================================
+   Mobile-Specific Utilities
+   ============================================ */
+
+@layer utilities {
+  /* Touch manipulation utility */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+
+  /* Prevent touch actions */
+  .touch-none {
+    touch-action: none;
+  }
+
+  /* Enable pan gestures */
+  .touch-pan-x {
+    touch-action: pan-x;
+  }
+
+  .touch-pan-y {
+    touch-action: pan-y;
+  }
+
+  /* Momentum scrolling utility */
+  .momentum-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* Prevent overscroll */
+  .no-overscroll {
+    overscroll-behavior: none;
+  }
+
+  /* Safe area insets for notched devices */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .safe-area-inset {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}

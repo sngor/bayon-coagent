@@ -114,3 +114,7 @@ src/app/agentcore-test-actions.ts
 # Temporary cache and metrics
 src/lib/cache.ts
 src/lib/metrics.ts
+
+# Bundle size tracking
+.bundle-size-history.json
+lighthouse-results/

@@ -1,11 +1,15 @@
-'use client';
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import type { AEOScore } from '@/lib/types/aeo-types';
 
+/**
+ * AEOScoreCard - Server Component
+ * 
+ * Converted from Client Component - no client-side interactivity needed.
+ * Pure presentational component that displays AEO score data.
+ */
 interface AEOScoreCardProps {
     score: AEOScore;
 }
