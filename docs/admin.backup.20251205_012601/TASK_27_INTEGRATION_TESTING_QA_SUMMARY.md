@@ -97,16 +97,20 @@ Production-scale performance validation:
 - Troubleshooting section
 - Best practices
 
-**Testing Guide** (`docs/admin/TESTING_GUIDE.md`):
+**Testing Summary** (`docs/admin/TESTING_SUMMARY.md`):
 
 - Comprehensive test coverage report
 - Performance targets and results
 - Security testing results
 - Browser compatibility matrix
+- Recommendations for production
+
+**Quick Start Guide** (`docs/admin/TESTING_QUICK_START.md`):
+
 - Quick reference for running tests
 - Common commands
 - Troubleshooting tips
-- Recommendations for production
+- Quick checklist
 
 ## Test Coverage Summary
 
@@ -236,8 +240,9 @@ Follow the checklist at:
 2. ✅ `src/services/admin/__tests__/integration.test.ts` - 30+ integration tests
 3. ✅ `src/services/admin/__tests__/load-performance.test.ts` - 25+ performance tests
 4. ✅ `src/services/admin/__tests__/README.md` - Testing guide
-5. ✅ `docs/admin/TESTING_GUIDE.md` - Comprehensive testing guide (consolidated)
-6. ✅ `docs/admin/TASK_27_INTEGRATION_TESTING_QA_SUMMARY.md` - This document
+5. ✅ `docs/admin/TESTING_SUMMARY.md` - Comprehensive summary
+6. ✅ `docs/admin/TESTING_QUICK_START.md` - Quick reference
+7. ✅ `docs/admin/TASK_27_INTEGRATION_TESTING_QA_SUMMARY.md` - This document
 
 ## Recommendations
 

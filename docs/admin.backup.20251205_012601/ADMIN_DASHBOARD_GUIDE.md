@@ -289,6 +289,6 @@ When reporting issues, include:
 
 - [Role Management Procedures](./ROLE_MANAGEMENT_PROCEDURES.md) - Detailed procedures for managing roles
 - [Security Considerations](./SECURITY_CONSIDERATIONS.md) - Security best practices
-- [API Reference](./API_REFERENCE.md) - Server action reference
+- [API Documentation](./API_DOCUMENTATION.md) - Server action reference
 - [Error Handling Quick Reference](./ERROR_HANDLING_QUICK_REFERENCE.md) - Troubleshooting guide
 - [First User Bootstrap](./FIRST_USER_BOOTSTRAP.md) - First user setup process

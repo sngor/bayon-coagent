@@ -5,6 +5,7 @@ Welcome to the Bayon CoAgent documentation!
 ## 🎯 Quick Start
 
 **New to the codebase?** Start here:
+
 1. Read [`CODEBASE_ORGANIZATION.md`](./CODEBASE_ORGANIZATION.md) - Complete guide to the codebase structure
 2. Check the project [`README.md`](../README.md) - Project overview and setup
 3. Review [`.agent/workflows/`](../.agent/workflows/) - Common procedures and workflows
@@ -12,6 +13,7 @@ Welcome to the Bayon CoAgent documentation!
 ## 📚 Main Documentation
 
 ### Structure & Organization
+
 - **[CODEBASE_ORGANIZATION.md](./CODEBASE_ORGANIZATION.md)** - ⭐ **START HERE**
   - Complete guide to the feature-based architecture
   - Directory structure and organization
@@ -20,6 +22,7 @@ Welcome to the Bayon CoAgent documentation!
   - Troubleshooting and best practices
 
 ### AI & Models
+
 - **[AI_MODEL_README.md](./AI_MODEL_README.md)** - AI model overview
 - **[AI_MODEL_MIGRATION_GUIDE.md](./AI_MODEL_MIGRATION_GUIDE.md)** - Genkit to Bedrock migration
 - **[AI_MODEL_DECISION_TREE.md](./AI_MODEL_DECISION_TREE.md)** - Model selection guide
@@ -27,12 +30,14 @@ Welcome to the Bayon CoAgent documentation!
 - **[AI_MODEL_OPTIMIZATION_RECOMMENDATIONS.md](./AI_MODEL_OPTIMIZATION_RECOMMENDATIONS.md)** - Optimization tips
 
 ### Features
+
 - **[CLIENT_GIFTING_SYSTEM.md](./CLIENT_GIFTING_SYSTEM.md)** - Client gifting feature
 - **[COACHING_MODE.md](./COACHING_MODE.md)** - AI coaching mode
 - **[VOICE_ROLEPLAY_FEATURE.md](./VOICE_ROLEPLAY_FEATURE.md)** - Voice roleplay
 - **[features/](./features/)** - Individual feature docs
 
 ### Infrastructure & Deployment
+
 - **[deployment/](./deployment/)** - Deployment guides
 - **[api-gateway-microservices.md](./api-gateway-microservices.md)** - API Gateway setup
 - **[api-versioning-strategy.md](./api-versioning-strategy.md)** - API versioning
@@ -41,6 +46,7 @@ Welcome to the Bayon CoAgent documentation!
 - **[sqs-queue-implementation.md](./sqs-queue-implementation.md)** - SQS queues
 
 ### UI & Components
+
 - **[design-system/](./design-system/)** - Design system documentation
 - **[component-library.md](./component-library.md)** - Component reference
 - **[animation-implementation-guide.md](./animation-implementation-guide.md)** - Animations
@@ -48,22 +54,36 @@ Welcome to the Bayon CoAgent documentation!
 - **[container-styling-guide.md](./container-styling-guide.md)** - Container patterns
 
 ### Best Practices
+
 - **[best-practices.md](./best-practices.md)** - General best practices
 - **[standardization-guide.md](./standardization-guide.md)** - Code standards
 - **[refactoring-checklist.md](./refactoring-checklist.md)** - Refactoring guide
 - **[feature-toggles.md](./feature-toggles.md)** - Feature flags
 
 ### Security
+
 - **[SECURITY.md](./SECURITY.md)** - Security overview
 - **[client-portal-security.md](./client-portal-security.md)** - Client portal security
 - **[client-portal-authentication.md](./client-portal-authentication.md)** - Authentication
 
 ### Testing
+
 - **[mobile-testing-checklist.md](./mobile-testing-checklist.md)** - Mobile testing
 - **[mobile-test-report.md](./mobile-test-report.md)** - Test results
 - **[xray-service-map-testing.md](./xray-service-map-testing.md)** - X-Ray tracing
 
+### Admin Platform
+
+- **[admin/](./admin/)** - Admin platform documentation
+  - [Admin README](./admin/README.md) - Entry point for admin docs
+  - [User Guide](./admin/USER_GUIDE.md) - For platform admins
+  - [API Reference](./admin/API_REFERENCE.md) - For API integration
+  - [Developer Guide](./admin/DEVELOPER_GUIDE.md) - For feature development
+  - [Testing Guide](./admin/TESTING_GUIDE.md) - For QA and testing
+  - [Migration Guide](./admin/MIGRATION_GUIDE.md) - Documentation reorganization guide
+
 ### Other
+
 - **[guides/](./guides/)** - How-to guides
 - **[quick-reference/](./quick-reference/)** - Quick reference sheets
 - **[archive/](./archive/)** - Archived docs
@@ -81,23 +101,32 @@ Common procedures and workflows are in [`.agent/workflows/`](../.agent/workflows
 ### By Role
 
 **Developer (New to Codebase):**
+
 1. CODEBASE_ORGANIZATION.md
 2. best-practices.md
 3. quick-reference.md
 
 **Designer:**
+
 1. design-system/
 2. component-library.md
 3. animation-implementation-guide.md
 
 **DevOps:**
+
 1. deployment/
 2. aws-local-development.md
 3. secrets-management.md
 
 **QA/Tester:**
+
 1. mobile-testing-checklist.md
 2. device-testing.md
+
+**Admin/Platform Manager:**
+
+1. admin/README.md
+2. admin/USER_GUIDE.md
 
 ### By Task
 
@@ -123,9 +152,20 @@ Common procedures and workflows are in [`.agent/workflows/`](../.agent/workflows
 **Need to test?**
 → mobile-testing-checklist.md
 
+**Managing the admin platform?**
+→ admin/README.md
+→ admin/USER_GUIDE.md
+
+**Integrating with admin APIs?**
+→ admin/API_REFERENCE.md
+
+**Developing admin features?**
+→ admin/DEVELOPER_GUIDE.md
+
 ## 📝 Contributing to Docs
 
 When adding documentation:
+
 1. Use clear, descriptive filenames
 2. Add an entry to this README
 3. Include a table of contents for long docs
@@ -135,6 +175,7 @@ When adding documentation:
 ## 🔍 Finding Information
 
 **Can't find what you need?**
+
 1. Check this README's table of contents
 2. Search the docs folder: `grep -r "your topic" docs/`
 3. Check `.agent/workflows/` for procedures
