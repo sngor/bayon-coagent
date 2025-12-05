@@ -1610,3 +1610,43 @@ export function getWebsiteAnalysisKeys(
     SK: timestamp ? `WEBSITE_ANALYSIS#${timestamp}` : 'WEBSITE_ANALYSIS#latest',
   };
 }
+
+// ==================== Admin Role Management Keys ====================
+
+/**
+ * Generates keys for RoleAuditLog
+ * Pattern: PK: USER#<userId>, SK: AUDIT#<timestamp>#<auditId>
+ * GSI1: PK: AUDIT#ROLE_CHANGE, SK: <timestamp> (for querying all role changes)
+ */
+export function getRoleAuditKeys(
+  userId: string,
+  auditId: string,
+  timestamp: number
+): DynamoDBKey & { GSI1PK: string; GSI1SK: string } {
+  return {
+    PK: `USER#${userId}`,
+    SK: `AUDIT#${timestamp}#${auditId}`,
+    GSI1PK: 'AUDIT#ROLE_CHANGE',
+    GSI1SK: timestamp.toString(),
+  };
+}
+
+/**
+ * Generates keys for querying all role audit logs using GSI1
+ * Pattern: GSI1PK: AUDIT#ROLE_CHANGE, GSI1SK: <timestamp>
+ */
+export function getRoleAuditQueryKeys(): { GSI1PK: string } {
+  return {
+    GSI1PK: 'AUDIT#ROLE_CHANGE',
+  };
+}
+
+/**
+ * Generates keys for querying users by role using GSI
+ * Pattern: GSI1PK: ROLE#<role>, GSI1SK: USER#<userId>
+ */
+export function getUsersByRoleQueryKeys(role: string): { GSI1PK: string } {
+  return {
+    GSI1PK: `ROLE#${role}`,
+  };
+}

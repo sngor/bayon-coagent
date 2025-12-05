@@ -3748,6 +3748,243 @@ export class DynamoDBRepository {
       scanIndexForward: false, // Most recent first
     });
   }
+
+  // ==================== Admin Role Management Methods ====================
+
+  /**
+   * Updates a user's role in their profile
+   * @param userId - The user's ID
+   * @param role - The new role to assign
+   * @param assignedBy - The ID of the admin assigning the role
+   * @throws DynamoDBError if the operation fails
+   */
+  async updateUserRole(
+    userId: string,
+    role: string,
+    assignedBy: string
+  ): Promise<void> {
+    try {
+      await withRetry(async () => {
+        const client = getDocumentClient();
+        const timestamp = Date.now();
+
+        const command = new UpdateCommand({
+          TableName: this.tableName,
+          Key: {
+            PK: `USER#${userId}`,
+            SK: 'PROFILE',
+          },
+          UpdateExpression:
+            'SET #data.#role = :role, #data.#roleAssignedAt = :roleAssignedAt, #data.#roleAssignedBy = :roleAssignedBy, #updatedAt = :updatedAt',
+          ExpressionAttributeNames: {
+            '#data': 'Data',
+            '#role': 'role',
+            '#roleAssignedAt': 'roleAssignedAt',
+            '#roleAssignedBy': 'roleAssignedBy',
+            '#updatedAt': 'UpdatedAt',
+          },
+          ExpressionAttributeValues: {
+            ':role': role,
+            ':roleAssignedAt': timestamp,
+            ':roleAssignedBy': assignedBy,
+            ':updatedAt': timestamp,
+          },
+        });
+
+        await client.send(command);
+      }, this.retryOptions);
+    } catch (error) {
+      throw wrapDynamoDBError(error);
+    }
+  }
+
+  /**
+   * Creates a role audit log entry
+   * @param auditLog - The audit log entry to create
+   * @throws DynamoDBError if the operation fails
+   */
+  async createRoleAuditLog(auditLog: {
+    auditId: string;
+    timestamp: number;
+    actingAdminId: string;
+    actingAdminEmail: string;
+    affectedUserId: string;
+    affectedUserEmail: string;
+    oldRole: string;
+    newRole: string;
+    ipAddress: string;
+    userAgent: string;
+    action: 'assign' | 'revoke';
+  }): Promise<void> {
+    try {
+      await withRetry(async () => {
+        const client = getDocumentClient();
+
+        const command = new PutCommand({
+          TableName: this.tableName,
+          Item: {
+            PK: `USER#${auditLog.affectedUserId}`,
+            SK: `AUDIT#${auditLog.timestamp}#${auditLog.auditId}`,
+            GSI1PK: 'AUDIT#ROLE_CHANGE',
+            GSI1SK: `${auditLog.timestamp}`,
+            EntityType: 'RoleAuditLog',
+            Data: auditLog,
+            CreatedAt: auditLog.timestamp,
+            UpdatedAt: auditLog.timestamp,
+          },
+        });
+
+        await client.send(command);
+      }, this.retryOptions);
+    } catch (error) {
+      throw wrapDynamoDBError(error);
+    }
+  }
+
+  /**
+   * Queries role audit logs with pagination and filtering
+   * @param options - Query options including filters and pagination
+   * @returns Query result with audit logs and pagination info
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryRoleAuditLogs(options: {
+    userId?: string;
+    limit?: number;
+    exclusiveStartKey?: DynamoDBKey;
+    startDate?: number;
+    endDate?: number;
+  }): Promise<QueryResult<any>> {
+    try {
+      return await withRetry(async () => {
+        const client = getDocumentClient();
+        const limit = options.limit || 100;
+
+        let queryCommand;
+
+        if (options.userId) {
+          // Query by specific user
+          const keyConditionExpression = options.startDate && options.endDate
+            ? 'PK = :pk AND SK BETWEEN :startSk AND :endSk'
+            : 'PK = :pk AND begins_with(SK, :skPrefix)';
+
+          const expressionAttributeValues: any = {
+            ':pk': `USER#${options.userId}`,
+          };
+
+          if (options.startDate && options.endDate) {
+            expressionAttributeValues[':startSk'] = `AUDIT#${options.startDate}#`;
+            expressionAttributeValues[':endSk'] = `AUDIT#${options.endDate}#`;
+          } else {
+            expressionAttributeValues[':skPrefix'] = 'AUDIT#';
+          }
+
+          queryCommand = new QueryCommand({
+            TableName: this.tableName,
+            KeyConditionExpression: keyConditionExpression,
+            ExpressionAttributeValues: expressionAttributeValues,
+            Limit: limit,
+            ExclusiveStartKey: options.exclusiveStartKey,
+            ScanIndexForward: false, // Sort by timestamp descending (most recent first)
+          });
+        } else {
+          // Query all audit logs using GSI1
+          const keyConditionExpression = options.startDate && options.endDate
+            ? 'GSI1PK = :gsi1pk AND GSI1SK BETWEEN :startSk AND :endSk'
+            : 'GSI1PK = :gsi1pk';
+
+          const expressionAttributeValues: any = {
+            ':gsi1pk': 'AUDIT#ROLE_CHANGE',
+          };
+
+          if (options.startDate && options.endDate) {
+            expressionAttributeValues[':startSk'] = `${options.startDate}`;
+            expressionAttributeValues[':endSk'] = `${options.endDate}`;
+          }
+
+          queryCommand = new QueryCommand({
+            TableName: this.tableName,
+            IndexName: 'GSI1',
+            KeyConditionExpression: keyConditionExpression,
+            ExpressionAttributeValues: expressionAttributeValues,
+            Limit: limit,
+            ExclusiveStartKey: options.exclusiveStartKey,
+            ScanIndexForward: false, // Sort by timestamp descending (most recent first)
+          });
+        }
+
+        const response = await client.send(queryCommand);
+
+        const items = (response.Items || []).map((item: any) => item.Data);
+
+        return {
+          items,
+          lastEvaluatedKey: response.LastEvaluatedKey,
+          count: items.length,
+        };
+      }, this.retryOptions);
+    } catch (error) {
+      throw wrapDynamoDBError(error);
+    }
+  }
+
+  /**
+   * Gets a user profile with role information
+   * @param userId - The user's ID
+   * @returns The user profile or null if not found
+   * @throws DynamoDBError if the operation fails
+   */
+  async getUserProfile(userId: string): Promise<any | null> {
+    return this.get(`USER#${userId}`, 'PROFILE');
+  }
+
+  /**
+   * Queries all users with a specific role
+   * Note: This requires a GSI on the role field, which needs to be added to the table
+   * For now, this will scan the table and filter by role (less efficient)
+   * @param role - The role to filter by
+   * @param options - Query options
+   * @returns Query result with user profiles
+   * @throws DynamoDBError if the operation fails
+   */
+  async queryUsersByRole(
+    role: string,
+    options?: QueryOptions
+  ): Promise<QueryResult<any>> {
+    try {
+      return await withRetry(async () => {
+        const client = getDocumentClient();
+        const limit = options?.limit || 50;
+
+        // Scan for user profiles with the specified role
+        const command = new ScanCommand({
+          TableName: this.tableName,
+          FilterExpression: 'SK = :sk AND #data.#role = :role',
+          ExpressionAttributeNames: {
+            '#data': 'Data',
+            '#role': 'role',
+          },
+          ExpressionAttributeValues: {
+            ':sk': 'PROFILE',
+            ':role': role,
+          },
+          Limit: limit,
+          ExclusiveStartKey: options?.exclusiveStartKey,
+        });
+
+        const response = await client.send(command);
+
+        const items = (response.Items || []).map((item: any) => item.Data);
+
+        return {
+          items,
+          lastEvaluatedKey: response.LastEvaluatedKey,
+          count: items.length,
+        };
+      }, this.retryOptions);
+    } catch (error) {
+      throw wrapDynamoDBError(error);
+    }
+  }
 }
 
 // Export a singleton instance

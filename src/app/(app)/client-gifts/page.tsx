@@ -41,7 +41,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 import { HubLayout } from '@/components/hub/hub-layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 

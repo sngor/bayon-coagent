@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/real-estate-icons';
 import { useFeatureToggles } from '@/lib/feature-toggles';
 import { ICON_SIZES } from '@/lib/constants/icon-sizes';
+import { useAdmin } from '@/contexts/admin-context';
 
 // Filled icon variants for active states - matching the exact shapes of outlined icons
 const FilledIcons = {
@@ -309,6 +310,14 @@ const regularNavItems = [
         label: 'Open House',
         featureId: 'open-house'
     },
+    {
+        href: '/admin',
+        icon: Shield,
+        filledIcon: FilledIcons.Shield,
+        label: 'Admin',
+        featureId: null,
+        adminOnly: true // Special flag to show only for admins
+    },
 ];
 
 // Super Admin navigation
@@ -407,6 +416,7 @@ const adminNavItems = [
 export function DynamicNavigation() {
     const pathname = usePathname();
     const { features } = useFeatureToggles();
+    const { isAdmin, isSuperAdmin } = useAdmin();
 
     // Create a map of enabled features for quick lookup
     const enabledFeatures = new Set(
@@ -425,6 +435,10 @@ export function DynamicNavigation() {
         navItems = adminNavItems;
     } else {
         navItems = regularNavItems.filter(item => {
+            // Check admin-only items
+            if ((item as any).adminOnly && !isAdmin && !isSuperAdmin) {
+                return false;
+            }
             // Dashboard has no featureId, always show it
             if (!item.featureId) return true;
             // Check if the feature is enabled

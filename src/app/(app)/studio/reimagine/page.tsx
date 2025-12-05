@@ -54,7 +54,7 @@ import type {
 } from '@/ai/schemas/reimagine-schemas';
 import { cn } from '@/lib/utils/common';
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 
 // Workflow states - simplified to 3 states
 type WorkflowState =
@@ -452,8 +452,8 @@ export default function ReimagineToolkitPage() {
                                 <p className="text-muted-foreground">Transform property photos with AI</p>
                             </div>
                             {(() => {
-                                const pageConfig = getPageConfig('/studio/reimagine');
-                                return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                                const pageMetadata = getPageMetadata('/studio/reimagine');
+                                return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
                             })()}
                         </div>
                     </CardHeader>

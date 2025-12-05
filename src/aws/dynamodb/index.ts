@@ -30,6 +30,13 @@ export type {
   UpdateOptions,
 } from './types';
 
+// Admin Role Management Types
+export type {
+  UserRole,
+  UserProfile,
+  RoleAuditLog,
+} from './admin-types';
+
 // Key generation functions
 export {
   getUserProfileKeys,
@@ -61,6 +68,7 @@ export {
   getCMAReportKeys,
   getDashboardDocumentKeys,
   getDocumentDownloadLogKeys,
+  getRoleAuditKeys,
 } from './keys';
 
 // Error handling

@@ -22,7 +22,7 @@ import { Search, Calendar, FileText, Plus, Library } from 'lucide-react';
 import { useUser } from '@/aws/auth';
 import type { ResearchReport } from '@/lib/types/common/common';
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 import Link from 'next/link';
 
 export default function ResearchReportsPage() {
@@ -80,8 +80,8 @@ export default function ResearchReportsPage() {
                                 </Button>
                             </Link>
                             {(() => {
-                                const pageConfig = getPageConfig('/intelligence/reports');
-                                return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                                const pageMetadata = getPageMetadata('/intelligence/reports');
+                                return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
                             })()}
                         </div>
                     </div>

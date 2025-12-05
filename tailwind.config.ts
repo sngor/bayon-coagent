@@ -96,6 +96,16 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				ai: {
+					'blue-light': 'hsl(var(--ai-blue-light))',
+					blue: 'hsl(var(--ai-blue))',
+					'blue-deep': 'hsl(var(--ai-blue-deep))',
+					'gold-light': 'hsl(var(--ai-gold-light))',
+					gold: 'hsl(var(--ai-gold))',
+					'gold-deep': 'hsl(var(--ai-gold-deep))',
+					white: 'hsl(var(--ai-white))',
+					shimmer: 'hsl(var(--ai-shimmer))'
 				}
 			},
 			borderRadius: {

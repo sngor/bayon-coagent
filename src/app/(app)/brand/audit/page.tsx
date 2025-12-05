@@ -72,7 +72,7 @@ import { FirstTimeUseEmptyState } from '@/components/ui/empty-states';
 import { Celebration } from '@/components/ui/celebration';
 import { AIOperationProgress, useAIOperation } from '@/components/ui/ai-operation-progress';
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 import type { WebsiteAnalysisResult } from '@/ai/schemas/website-analysis-schemas';
 import { AnalysisResultsDisplay } from '@/components/website-analysis-results-display';
 import { WebsiteHistoricalTrendChart } from '@/components/website-historical-trend-chart';
@@ -792,8 +792,8 @@ export default function BrandAuditPage() {
                                     <div className="flex items-center justify-between mb-2">
                                         <h3 className="text-2xl font-bold font-headline">Your Brand Score</h3>
                                         {(() => {
-                                            const pageConfig = getPageConfig('/brand/audit');
-                                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                                            const pageMetadata = getPageMetadata('/brand/audit');
+                                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
                                         })()}
                                     </div>
                                     <p className="text-muted-foreground">

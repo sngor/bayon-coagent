@@ -41,6 +41,7 @@ import {
 import { useFavorites, type FavoriteItem } from '@/hooks/use-favorites';
 import { cn } from '@/lib/utils/common';
 import { toast } from '@/hooks/use-toast';
+import { getAllPages, getPagesByCategory, getPageMetadata } from '@/lib/page-metadata';
 
 // Icon mapping
 const iconMap = {
@@ -66,8 +67,34 @@ const iconMap = {
     Calendar: CalendarIcon
 };
 
-// Available pages that can be added to favorites
-export const AVAILABLE_PAGES = [
+/**
+ * @deprecated Use getPageMetadata from @/lib/page-metadata instead
+ * This is kept for backward compatibility only
+ */
+export const AVAILABLE_PAGES = getAllPages().map(page => ({
+    ...page,
+    category: getCategoryForPage(page.href)
+}));
+
+function getCategoryForPage(href: string): string {
+    if (href === '/dashboard' || href === '/assistant') return 'Overview';
+    if (href.startsWith('/studio')) return 'Studio';
+    if (href.startsWith('/brand')) return 'Brand';
+    if (href.startsWith('/research') || href.startsWith('/knowledge')) return 'Research';
+    if (href.startsWith('/intelligence')) return 'Market';
+    if (href.startsWith('/tools')) return 'Tools';
+    if (href.startsWith('/library')) return 'Library';
+    if (href.startsWith('/client')) return 'Client Management';
+    if (href.startsWith('/learning')) return 'Learning';
+    if (href.startsWith('/settings') || href.startsWith('/integrations')) return 'Settings';
+    return 'Other';
+}
+
+/**
+ * Legacy page list - DO NOT ADD NEW PAGES HERE
+ * Add new pages to src/lib/page-metadata.ts instead
+ */
+const LEGACY_PAGES = [
     {
         id: 'dashboard',
         title: 'Dashboard',
@@ -280,8 +307,19 @@ export const AVAILABLE_PAGES = [
     }
 ];
 
+/**
+ * Get page configuration for a given path
+ * @deprecated Use getPageMetadata from @/lib/page-metadata instead
+ */
 export function getPageConfig(path: string) {
-    return AVAILABLE_PAGES.find(page => page.href === path);
+    const metadata = getPageMetadata(path);
+    if (metadata) {
+        return {
+            ...metadata,
+            category: getCategoryForPage(metadata.href)
+        };
+    }
+    return undefined;
 }
 
 export function DashboardQuickActions() {
@@ -397,7 +435,7 @@ export function DashboardQuickActions() {
                                         </h4>
                                         <div className="space-y-1">
                                             {pages.map((page) => {
-                                                const Icon = iconMap[page.icon as keyof typeof iconMap];
+                                                const Icon = iconMap[page.icon as keyof typeof iconMap] || Zap;
                                                 const isFavorited = favorites.some(f => f.id === page.id);
 
                                                 return (

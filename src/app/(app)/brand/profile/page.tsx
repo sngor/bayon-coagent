@@ -41,7 +41,7 @@ import { FeaturedTestimonialSelector } from '@/components/featured-testimonial-s
 import type { Testimonial } from '@/lib/types/common/common';
 import { CardGradientMesh } from '@/components/ui/gradient-mesh';
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 
 const initialBioState = {
     message: '',
@@ -269,8 +269,8 @@ function ProfileForm({ profile, onInputChange, onSave, isSaving, isLoading, bioF
                         <CardTitle className="font-headline flex items-center justify-between">
                             <GradientText text="Profile Information" />
                             {(() => {
-                                const pageConfig = getPageConfig('/brand/profile');
-                                return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                                const pageMetadata = getPageMetadata('/brand/profile');
+                                return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
                             })()}
                         </CardTitle>
                         <CardDescription>

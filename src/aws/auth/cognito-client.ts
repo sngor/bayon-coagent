@@ -14,12 +14,17 @@ import {
   GetUserCommand,
   ConfirmSignUpCommand,
   ResendConfirmationCodeCommand,
+  AdminUpdateUserAttributesCommand,
+  AdminGetUserCommand,
   AuthFlowType,
   SignUpCommandOutput,
   InitiateAuthCommandOutput,
   GetUserCommandOutput,
+  AdminGetUserCommandOutput,
+  AttributeType,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { getConfig, getAWSCredentials } from '../config';
+import { UserRole } from '../dynamodb/admin-types';
 
 export interface CognitoUser {
   id: string;
@@ -46,6 +51,7 @@ export interface SignUpResult {
 export class CognitoAuthClient {
   private client: CognitoIdentityProviderClient;
   private clientId: string;
+  private userPoolId: string;
 
   constructor() {
     const config = getConfig();
@@ -70,6 +76,7 @@ export class CognitoAuthClient {
     });
 
     this.clientId = config.cognito.clientId;
+    this.userPoolId = config.cognito.userPoolId;
   }
 
   /**
@@ -389,6 +396,87 @@ export class CognitoAuthClient {
   private clearSession(): void {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('cognito_session');
+    }
+  }
+
+  /**
+   * Updates a user's custom role attribute (Admin operation)
+   * Requires admin credentials
+   */
+  async updateUserRole(userId: string, role: UserRole): Promise<void> {
+    try {
+      const command = new AdminUpdateUserAttributesCommand({
+        UserPoolId: this.userPoolId,
+        Username: userId,
+        UserAttributes: [
+          {
+            Name: 'custom:role',
+            Value: role,
+          },
+        ],
+      });
+
+      await this.client.send(command);
+    } catch (error) {
+      throw this.handleError(error, 'Failed to update user role');
+    }
+  }
+
+  /**
+   * Gets a user's role from Cognito attributes (Admin operation)
+   * Requires admin credentials
+   */
+  async getUserRole(userId: string): Promise<UserRole> {
+    try {
+      const command = new AdminGetUserCommand({
+        UserPoolId: this.userPoolId,
+        Username: userId,
+      });
+
+      const response: AdminGetUserCommandOutput = await this.client.send(command);
+
+      if (!response.UserAttributes) {
+        return 'user'; // Default role
+      }
+
+      const roleAttr = response.UserAttributes.find(
+        (attr) => attr.Name === 'custom:role'
+      );
+
+      if (!roleAttr || !roleAttr.Value) {
+        return 'user'; // Default role
+      }
+
+      // Validate the role value
+      const role = roleAttr.Value as UserRole;
+      if (role !== 'user' && role !== 'admin' && role !== 'superadmin') {
+        return 'user'; // Default to user if invalid
+      }
+
+      return role;
+    } catch (error) {
+      throw this.handleError(error, 'Failed to get user role');
+    }
+  }
+
+  /**
+   * Admin operation: Update user attributes
+   * Requires admin credentials
+   */
+  async adminUpdateUserAttributes(
+    userId: string,
+    attributes: Array<{ Name: string; Value: string }>
+  ): Promise<void> {
+    try {
+      const command = new AdminUpdateUserAttributesCommand({
+        UserPoolId: this.userPoolId,
+        Username: userId,
+        UserAttributes: attributes as AttributeType[],
+      });
+
+      await this.client.send(command);
+    } catch (error) {
+      throw this.handleError(error, 'Failed to update user attributes');
     }
   }
 

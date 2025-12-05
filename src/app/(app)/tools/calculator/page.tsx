@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default function MortgageCalculatorPage() {
@@ -33,8 +33,8 @@ export default function MortgageCalculatorPage() {
                             <CardDescription>Calculate payments and rates</CardDescription>
                         </div>
                         {(() => {
-                            const pageConfig = getPageConfig('/tools/calculator');
-                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                            const pageMetadata = getPageMetadata('/tools/calculator');
+                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
                         })()}
                     </div>
                 </CardHeader>

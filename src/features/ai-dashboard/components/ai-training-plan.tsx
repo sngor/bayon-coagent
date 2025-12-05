@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
 import { cn } from '@/lib/utils/common';
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 
 export interface AITrainingPlanProps {
     className?: string;
@@ -220,8 +220,8 @@ export function AITrainingPlan({ className }: AITrainingPlanProps = {}) {
                                 </div>
                             </div>
                             {(() => {
-                                const pageConfig = getPageConfig('/learning/ai-plan');
-                                return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                                const pageMetadata = getPageMetadata('/learning/ai-plan');
+                                return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
                             })()}
                         </div>
                     </CardHeader>

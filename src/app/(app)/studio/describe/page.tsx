@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Home, Sparkles } from 'lucide-react';
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 
 export default function ListingDescriptionGeneratorPage() {
   const [activeMode, setActiveMode] = useState('generate');
@@ -46,8 +46,8 @@ export default function ListingDescriptionGeneratorPage() {
               <p className="text-muted-foreground">Generate and optimize listing descriptions</p>
             </div>
             {(() => {
-              const pageConfig = getPageConfig('/studio/describe');
-              return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+              const pageMetadata = getPageMetadata('/studio/describe');
+              return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
             })()}
           </div>
         </CardHeader>

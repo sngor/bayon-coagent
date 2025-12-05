@@ -5,10 +5,14 @@ import { useMemo } from 'react';
 import { HubLayout } from './hub-layout';
 import { HubLayoutProps } from './types';
 import { FavoritesButton } from '@/components/favorites-button';
-import { type FavoriteItem } from '@/hooks/use-favorites';
+import { getPageMetadata } from '@/lib/page-metadata';
 
-// Page metadata for favorites
-const PAGE_METADATA: Record<string, Omit<FavoriteItem, 'addedAt'>> = {
+/**
+ * Hub layout with automatic pin button integration
+ * Uses centralized page metadata to prevent duplicate pins
+ * @deprecated - Use getPageMetadata from @/lib/page-metadata instead
+ */
+const LEGACY_PAGE_METADATA = {
     '/dashboard': {
         id: 'dashboard',
         title: 'Dashboard',
@@ -221,7 +225,7 @@ export function HubLayoutWithFavorites({
     const pathname = usePathname();
 
     const pageMetadata = useMemo(() => {
-        return PAGE_METADATA[pathname];
+        return getPageMetadata(pathname);
     }, [pathname]);
 
     const enhancedActions = useMemo(() => {

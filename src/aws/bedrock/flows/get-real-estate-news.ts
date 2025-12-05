@@ -14,8 +14,6 @@ import {
   type GetRealEstateNewsOutput,
 } from '@/ai/schemas/real-estate-news-schemas';
 
-export type { GetRealEstateNewsInput, GetRealEstateNewsOutput };
-
 
 
 const getRealEstateNewsFlow = defineFlow(

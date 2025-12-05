@@ -57,7 +57,7 @@ import { cn } from '@/lib/utils/common';
 import { Celebration } from '@/components/ui/celebration';
 
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 
 type GeneratePlanState = {
   message: string;
@@ -247,8 +247,8 @@ export default function MarketingPlanPage() {
                 <CardDescription>AI-generated marketing plans</CardDescription>
               </div>
               {(() => {
-                const pageConfig = getPageConfig('/brand/strategy');
-                return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                const pageMetadata = getPageMetadata('/brand/strategy');
+                return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
               })()}
             </div>
             <div className="text-center">

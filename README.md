@@ -1,5 +1,14 @@
 # Co-agent Marketer
 
+[![CI](https://github.com/YOUR_ORG/bayon-coagent/workflows/CI/badge.svg)](https://github.com/YOUR_ORG/bayon-coagent/actions/workflows/ci.yml)
+[![Security](https://github.com/YOUR_ORG/bayon-coagent/workflows/Security/badge.svg)](https://github.com/YOUR_ORG/bayon-coagent/actions/workflows/security.yml)
+[![codecov](https://codecov.io/gh/YOUR_ORG/bayon-coagent/branch/main/graph/badge.svg)](https://codecov.io/gh/YOUR_ORG/bayon-coagent)
+[![Known Vulnerabilities](https://snyk.io/test/github/YOUR_ORG/bayon-coagent/badge.svg)](https://snyk.io/test/github/YOUR_ORG/bayon-coagent)
+
+[![Deploy Dev](https://github.com/YOUR_ORG/bayon-coagent/workflows/Deploy%20Dev/badge.svg)](https://github.com/YOUR_ORG/bayon-coagent/actions/workflows/deploy-dev.yml)
+[![Deploy Staging](https://github.com/YOUR_ORG/bayon-coagent/workflows/Deploy%20Staging/badge.svg)](https://github.com/YOUR_ORG/bayon-coagent/actions/workflows/deploy-staging.yml)
+[![Deploy Production](https://github.com/YOUR_ORG/bayon-coagent/workflows/Deploy%20Production/badge.svg)](https://github.com/YOUR_ORG/bayon-coagent/actions/workflows/deploy-production.yml)
+
 Co-agent Marketer is an integrated success platform for real estate agents, built with Next.js and AWS. It provides a suite of tools to help agents build their online authority, track their market position, and generate high-quality marketing content.
 
 ## 📚 Documentation
@@ -462,6 +471,66 @@ TAVILY_API_KEY=your-tavily-api-key
 ```
 
 **Note**: Never commit `.env.local` or `.env.production` to version control. Use AWS Secrets Manager or Parameter Store for production secrets.
+
+## CI/CD Pipeline
+
+The project uses GitHub Actions for continuous integration and deployment across multiple environments.
+
+### Workflows
+
+- **CI**: Code quality checks, tests, and build verification on every push/PR
+- **Security**: Dependency scanning, secrets detection, and SAST analysis
+- **Deploy Dev**: Automatic deployment to development on merge to `develop`
+- **Deploy Staging**: Approval-gated deployment to staging on `rc-*` tags
+- **Deploy Production**: Multi-approval deployment to production on `v*` tags
+- **Performance**: Lighthouse audits for performance monitoring
+- **Preview**: Temporary preview environments for pull requests
+
+### Deployment Process
+
+**Development** (Automatic):
+
+```bash
+git checkout develop
+git merge feature/your-feature
+git push origin develop
+# Automatically deploys to development environment
+```
+
+**Staging** (Requires 1 approval):
+
+```bash
+git tag -a rc-1.2.0 -m "Release candidate 1.2.0"
+git push origin rc-1.2.0
+# Requires DevOps approval, then deploys to staging
+```
+
+**Production** (Requires 2 approvals):
+
+```bash
+git tag -a v1.2.0 -m "Release 1.2.0"
+git push origin v1.2.0
+# Requires 2 approvals, then deploys to production
+```
+
+### Documentation
+
+- [Pipeline Architecture](./docs/cicd/pipeline-architecture.md) - Complete CI/CD architecture
+- [Deployment Runbook](./docs/cicd/deployment-runbook.md) - Step-by-step deployment procedures
+- [Rollback Runbook](./docs/cicd/rollback-runbook.md) - Emergency rollback procedures
+- [GitHub Setup Guide](./docs/cicd/github-setup-guide.md) - Initial GitHub configuration
+
+### Workflow Files
+
+All workflow files are in `.github/workflows/`:
+
+- [`ci.yml`](.github/workflows/ci.yml) - Quality checks and tests
+- [`security.yml`](.github/workflows/security.yml) - Security scanning
+- [`deploy-dev.yml`](.github/workflows/deploy-dev.yml) - Development deployment
+- [`deploy-staging.yml`](.github/workflows/deploy-staging.yml) - Staging deployment
+- [`deploy-production.yml`](.github/workflows/deploy-production.yml) - Production deployment
+- [`performance.yml`](.github/workflows/performance.yml) - Performance testing
+- [`rollback.yml`](.github/workflows/rollback.yml) - Emergency rollback
 
 ## 📖 Complete Documentation
 

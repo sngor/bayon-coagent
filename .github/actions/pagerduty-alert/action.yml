@@ -1,0 +1,268 @@
+name: "PagerDuty Alert"
+description: "Create PagerDuty incidents for critical failures and alerts"
+inputs:
+  integration-key:
+    description: "PagerDuty integration key (routing key)"
+    required: true
+  event-action:
+    description: "Event action: trigger, acknowledge, or resolve"
+    required: true
+    default: "trigger"
+  severity:
+    description: "Incident severity: critical, error, warning, or info"
+    required: true
+    default: "critical"
+  summary:
+    description: "Brief summary of the incident"
+    required: true
+  source:
+    description: "Source of the incident"
+    required: false
+    default: "GitHub Actions"
+  component:
+    description: "Component affected (e.g., CI/CD Pipeline, Deployment)"
+    required: false
+    default: "CI/CD Pipeline"
+  group:
+    description: "Logical grouping of the incident"
+    required: false
+  class:
+    description: "Class/type of the incident"
+    required: false
+  environment:
+    description: "Deployment environment (development, staging, production)"
+    required: false
+  workflow-url:
+    description: "URL to the GitHub Actions workflow run"
+    required: false
+    default: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  commit-sha:
+    description: "Git commit SHA"
+    required: false
+    default: ${{ github.sha }}
+  triggered-by:
+    description: "User who triggered the workflow"
+    required: false
+    default: ${{ github.actor }}
+  custom-details:
+    description: "Additional custom details as JSON string"
+    required: false
+  dedup-key:
+    description: "Deduplication key to prevent duplicate incidents"
+    required: false
+
+outputs:
+  incident-key:
+    description: "PagerDuty incident key (dedup_key)"
+    value: ${{ steps.create-incident.outputs.incident-key }}
+  status:
+    description: "Status of the PagerDuty API call (success or failure)"
+    value: ${{ steps.create-incident.outputs.status }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Validate inputs
+      id: validate
+      shell: bash
+      run: |
+        # Validate severity
+        case "${{ inputs.severity }}" in
+          critical|error|warning|info)
+            echo "✅ Valid severity: ${{ inputs.severity }}"
+            ;;
+          *)
+            echo "❌ Invalid severity: ${{ inputs.severity }}"
+            echo "Must be one of: critical, error, warning, info"
+            exit 1
+            ;;
+        esac
+
+        # Validate event action
+        case "${{ inputs.event-action }}" in
+          trigger|acknowledge|resolve)
+            echo "✅ Valid event action: ${{ inputs.event-action }}"
+            ;;
+          *)
+            echo "❌ Invalid event action: ${{ inputs.event-action }}"
+            echo "Must be one of: trigger, acknowledge, resolve"
+            exit 1
+            ;;
+        esac
+
+    - name: Build custom details
+      id: custom-details
+      shell: bash
+      run: |
+        # Start with base custom details
+        CUSTOM_DETAILS='{'
+
+        # Add environment if provided
+        if [ -n "${{ inputs.environment }}" ]; then
+          CUSTOM_DETAILS+='"environment": "${{ inputs.environment }}",'
+        fi
+
+        # Add workflow details
+        CUSTOM_DETAILS+='"workflow_url": "${{ inputs.workflow-url }}",'
+        CUSTOM_DETAILS+='"commit_sha": "${{ inputs.commit-sha }}",'
+        CUSTOM_DETAILS+='"triggered_by": "${{ inputs.triggered-by }}",'
+        CUSTOM_DETAILS+='"repository": "${{ github.repository }}",'
+        CUSTOM_DETAILS+='"branch": "${{ github.ref_name }}",'
+        CUSTOM_DETAILS+='"run_id": "${{ github.run_id }}",'
+        CUSTOM_DETAILS+='"run_number": "${{ github.run_number }}"'
+
+        # Merge with additional custom details if provided
+        if [ -n "${{ inputs.custom-details }}" ]; then
+          # Remove trailing comma and closing brace
+          CUSTOM_DETAILS="${CUSTOM_DETAILS%}"
+          CUSTOM_DETAILS+=','
+          
+          # Add custom details (remove opening brace)
+          ADDITIONAL='${{ inputs.custom-details }}'
+          ADDITIONAL="${ADDITIONAL#\{}"
+          CUSTOM_DETAILS+="${ADDITIONAL}"
+        else
+          CUSTOM_DETAILS+='}'
+        fi
+
+        # Save to output
+        echo "custom_details<<EOF" >> $GITHUB_OUTPUT
+        echo "$CUSTOM_DETAILS" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Generate dedup key
+      id: dedup
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.dedup-key }}" ]; then
+          echo "dedup_key=${{ inputs.dedup-key }}" >> $GITHUB_OUTPUT
+        else
+          # Generate dedup key from workflow and environment
+          DEDUP_KEY="${{ github.workflow }}-${{ inputs.environment }}-${{ github.run_id }}"
+          echo "dedup_key=${DEDUP_KEY}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Build PagerDuty payload
+      id: payload
+      shell: bash
+      run: |
+        # Build the complete payload
+        PAYLOAD='{
+          "routing_key": "${{ inputs.integration-key }}",
+          "event_action": "${{ inputs.event-action }}",
+          "dedup_key": "${{ steps.dedup.outputs.dedup_key }}",
+          "payload": {
+            "summary": "${{ inputs.summary }}",
+            "severity": "${{ inputs.severity }}",
+            "source": "${{ inputs.source }}"'
+
+        # Add optional payload fields
+        if [ -n "${{ inputs.component }}" ]; then
+          PAYLOAD+=',
+            "component": "${{ inputs.component }}"'
+        fi
+
+        if [ -n "${{ inputs.group }}" ]; then
+          PAYLOAD+=',
+            "group": "${{ inputs.group }}"'
+        fi
+
+        if [ -n "${{ inputs.class }}" ]; then
+          PAYLOAD+=',
+            "class": "${{ inputs.class }}"'
+        fi
+
+        # Add custom details
+        PAYLOAD+=',
+            "custom_details": ${{ steps.custom-details.outputs.custom_details }}'
+
+        # Close payload object
+        PAYLOAD+='
+          },
+          "links": [{
+            "href": "${{ inputs.workflow-url }}",
+            "text": "View GitHub Actions Workflow"
+          }]'
+
+        # Add images for visual context
+        PAYLOAD+=',
+          "images": [{
+            "src": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+            "href": "${{ inputs.workflow-url }}",
+            "alt": "GitHub Actions"
+          }]'
+
+        # Close main payload
+        PAYLOAD+='
+        }'
+
+        # Save to output
+        echo "payload<<EOF" >> $GITHUB_OUTPUT
+        echo "$PAYLOAD" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Create PagerDuty incident
+      id: create-incident
+      shell: bash
+      run: |
+        echo "Creating PagerDuty incident..."
+        echo "Event Action: ${{ inputs.event-action }}"
+        echo "Severity: ${{ inputs.severity }}"
+        echo "Summary: ${{ inputs.summary }}"
+        echo ""
+
+        # Send to PagerDuty Events API v2
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST https://events.pagerduty.com/v2/enqueue \
+          -H 'Content-Type: application/json' \
+          -d '${{ steps.payload.outputs.payload }}')
+
+        # Extract HTTP status code
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        RESPONSE_BODY=$(echo "$RESPONSE" | sed '$d')
+
+        echo "HTTP Status: $HTTP_CODE"
+        echo "Response: $RESPONSE_BODY"
+
+        # Check if successful
+        if [ "$HTTP_CODE" -eq 202 ]; then
+          echo "status=success" >> $GITHUB_OUTPUT
+          echo "✅ PagerDuty incident created successfully"
+          
+          # Extract dedup_key from response
+          INCIDENT_KEY=$(echo "$RESPONSE_BODY" | grep -o '"dedup_key":"[^"]*"' | cut -d'"' -f4)
+          if [ -n "$INCIDENT_KEY" ]; then
+            echo "incident-key=$INCIDENT_KEY" >> $GITHUB_OUTPUT
+            echo "Incident Key: $INCIDENT_KEY"
+          fi
+          
+          # Add to step summary
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+        ## 🚨 PagerDuty Incident Created
+
+        **Status:** ✅ Success
+        **Severity:** ${{ inputs.severity }}
+        **Summary:** ${{ inputs.summary }}
+        **Incident Key:** ${INCIDENT_KEY}
+        **Environment:** ${{ inputs.environment }}
+
+        [View Workflow](${{ inputs.workflow-url }})
+        EOF
+        else
+          echo "status=failure" >> $GITHUB_OUTPUT
+          echo "❌ Failed to create PagerDuty incident"
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response: $RESPONSE_BODY"
+          
+          # Add to step summary
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+        ## ❌ PagerDuty Incident Failed
+
+        **Status:** Failed
+        **HTTP Code:** $HTTP_CODE
+        **Error:** Failed to create incident
+
+        Please check PagerDuty integration key and try again.
+        EOF
+          
+          exit 1
+        fi

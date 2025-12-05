@@ -221,6 +221,9 @@ import type { Profile, AIMention, AIVisibilityScore, AIMonitoringConfig, AIMonit
 import { aggregateNeighborhoodData } from '@/lib/alerts/neighborhood-profile-data-aggregation';
 import { v4 as uuidv4 } from 'uuid';
 import { FeatureToggle } from '@/lib/feature-toggles';
+import { getCognitoClient } from '@/aws/auth/cognito-client';
+import { ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { getTableName } from '@/aws/dynamodb/client';
 
 const guideSchema = z.object({
   targetMarket: z.string().min(3, 'Target market is required.'),
@@ -8538,6 +8541,115 @@ export async function getWebsiteAnalysisHistoryAction(
       message: errorMessage,
       data: null,
       errors: { system: error.message },
+    };
+  }
+}
+
+/**
+ * Bootstrap first user with SuperAdmin role
+ * This action is called after user signup to determine if the user is the first user
+ * and should be assigned the SuperAdmin role automatically.
+ * 
+ * @param userId - The Cognito user ID (sub)
+ * @param email - The user's email address
+ * @param givenName - The user's first name
+ * @param familyName - The user's last name
+ * @returns Success status and assigned role
+ */
+export async function bootstrapFirstUserAction(
+  userId: string,
+  email: string,
+  givenName?: string,
+  familyName?: string
+): Promise<{
+  message: string;
+  data?: { role: 'user' | 'admin' | 'superadmin'; isFirstUser: boolean };
+  errors: Record<string, string[]>;
+}> {
+  try {
+    const repository = getRepository();
+    const cognitoClient = getCognitoClient();
+
+    // Query DynamoDB to count existing users
+    // We'll scan for all items with PK starting with USER# and SK = PROFILE
+    const scanCommand = new ScanCommand({
+      TableName: getTableName(),
+      FilterExpression: 'begins_with(PK, :userPrefix) AND SK = :profileSK',
+      ExpressionAttributeValues: {
+        ':userPrefix': 'USER#',
+        ':profileSK': 'PROFILE',
+      },
+      Select: 'COUNT',
+    });
+
+    const { getDocumentClient } = await import('@/aws/dynamodb/client');
+    const client = getDocumentClient();
+    const scanResult = await client.send(scanCommand);
+    const userCount = scanResult.Count || 0;
+
+    // Determine role: first user gets SuperAdmin, others get User
+    const isFirstUser = userCount === 0;
+    const role: 'user' | 'admin' | 'superadmin' = isFirstUser ? 'superadmin' : 'user';
+
+    // Update Cognito with the role
+    await cognitoClient.updateUserRole(userId, role);
+
+    // Create user profile in DynamoDB with role
+    const profileKeys = getUserProfileKeys(userId);
+    const now = Date.now();
+
+    await repository.create(profileKeys.PK, profileKeys.SK, 'UserProfile', {
+      userId,
+      email,
+      givenName,
+      familyName,
+      role,
+      roleAssignedAt: now,
+      roleAssignedBy: isFirstUser ? 'system' : undefined,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // If this is the first user (SuperAdmin), create an audit log entry
+    if (isFirstUser) {
+      const auditId = uuidv4();
+      const { getRoleAuditKeys } = await import('@/aws/dynamodb/keys');
+      const auditKeys = getRoleAuditKeys(userId, auditId, now);
+
+      await repository.create(auditKeys.PK, auditKeys.SK, 'RoleAuditLog', {
+        auditId,
+        timestamp: now,
+        actingAdminId: 'system',
+        actingAdminEmail: 'system@bayon.ai',
+        affectedUserId: userId,
+        affectedUserEmail: email,
+        oldRole: 'user',
+        newRole: 'superadmin',
+        ipAddress: 'system',
+        userAgent: 'bootstrap',
+        action: 'assign',
+      }, {
+        GSI1PK: auditKeys.GSI1PK,
+        GSI1SK: auditKeys.GSI1SK,
+      });
+
+      console.log(`✅ First user bootstrapped as SuperAdmin: ${userId} (${email})`);
+    } else {
+      console.log(`✅ User created with default role: ${userId} (${email})`);
+    }
+
+    return {
+      message: 'success',
+      data: { role, isFirstUser },
+      errors: {},
+    };
+  } catch (error: any) {
+    console.error('Failed to bootstrap user:', error);
+    const errorMessage = handleAWSError(error, 'Failed to initialize user account');
+    return {
+      message: errorMessage,
+      data: undefined,
+      errors: { system: [error.message || 'Unknown error'] },
     };
   }
 }

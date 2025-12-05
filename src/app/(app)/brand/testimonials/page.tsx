@@ -10,7 +10,7 @@ import { StandardLoadingSpinner } from '@/components/standard';
 import { GradientText, Typewriter } from '@/components/ui/text-animations';
 import { CardGradientMesh } from '@/components/ui/gradient-mesh';
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 import type { Testimonial, TestimonialRequest } from '@/lib/types/common/common';
 import { TestimonialList } from '@/components/testimonial-list';
 import { TestimonialForm, type TestimonialFormData } from '@/components/testimonial-form';
@@ -250,8 +250,8 @@ export default function TestimonialsPage() {
                                 <GradientText text="Client Testimonials" />
                             </div>
                             {(() => {
-                                const pageConfig = getPageConfig('/brand/testimonials');
-                                return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                                const pageMetadata = getPageMetadata('/brand/testimonials');
+                                return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
                             })()}
                         </CardTitle>
                         <CardDescription>

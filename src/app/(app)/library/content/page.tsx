@@ -65,7 +65,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PageHeader } from '@/components/page-header';
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 
 
 
@@ -772,8 +772,8 @@ export default function LibraryPage() {
                             <CardDescription>Manage your created content</CardDescription>
                         </div>
                         {(() => {
-                            const pageConfig = getPageConfig('/library/content');
-                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                            const pageMetadata = getPageMetadata('/library/content');
+                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
                         })()}
                     </div>
                 </CardHeader>

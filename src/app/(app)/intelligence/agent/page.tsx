@@ -30,6 +30,8 @@ import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
 import { saveResearchReportAction } from '@/app/actions';
 import { researchWithKnowledgeBaseAction } from '@/app/research-rag-actions';
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageMetadata } from '@/lib/page-metadata';
 
 interface ResearchReport {
   id: string;
@@ -465,6 +467,12 @@ export default function ResearchAgentPage() {
             description="Ask any question and get comprehensive, source-backed insights"
             icon={Search}
             variant="card"
+            actions={
+              (() => {
+                const pageMetadata = getPageMetadata('/intelligence/agent');
+                return pageMetadata ? <FavoritesButton item={pageMetadata} variant="outline" size="sm" /> : null;
+              })()
+            }
           >
             <div className="space-y-6">
               {/* RAG Settings */}

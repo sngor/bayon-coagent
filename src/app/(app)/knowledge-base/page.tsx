@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { StandardEmptyState } from '@/components/standard/empty-state';
 import { useUser } from '@/aws/auth';
@@ -166,8 +166,8 @@ export default function KnowledgeBasePage() {
                             <CardDescription>A centralized library of all your saved AI-generated research reports.</CardDescription>
                         </div>
                         {(() => {
-                            const pageConfig = getPageConfig('/knowledge-base');
-                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                            const pageMetadata = getPageMetadata('/knowledge-base');
+                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
                         })()}
                     </div>
                 </CardHeader>

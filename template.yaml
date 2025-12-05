@@ -85,6 +85,9 @@ Resources:
         - Name: businessName
           AttributeDataType: String
           Mutable: true
+        - Name: role
+          AttributeDataType: String
+          Mutable: true
       Policies:
         PasswordPolicy:
           MinimumLength: 8

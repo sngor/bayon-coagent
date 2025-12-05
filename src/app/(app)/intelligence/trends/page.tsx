@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { PageHeader } from '@/components/page-header';
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 
 export default function MarketTrendsPage() {
@@ -35,8 +35,8 @@ export default function MarketTrendsPage() {
                             <CardDescription>Life event predictions and market trends</CardDescription>
                         </div>
                         {(() => {
-                            const pageConfig = getPageConfig('/intelligence/trends');
-                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                            const pageMetadata = getPageMetadata('/intelligence/trends');
+                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
                         })()}
                     </div>
                 </CardHeader>

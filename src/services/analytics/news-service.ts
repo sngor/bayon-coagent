@@ -3,7 +3,8 @@
  * Reduces NewsAPI costs and improves performance
  */
 
-import { getRealEstateNews, type GetRealEstateNewsInput, type GetRealEstateNewsOutput } from '@/aws/bedrock/flows/get-real-estate-news';
+import { getRealEstateNews } from '@/aws/bedrock/flows/get-real-estate-news';
+import type { GetRealEstateNewsInput, GetRealEstateNewsOutput } from '@/ai/schemas/real-estate-news-schemas';
 import { NEWS_CONFIG } from '@/lib/constants/news-config';
 
 interface CachedNews {

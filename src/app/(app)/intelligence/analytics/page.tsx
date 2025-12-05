@@ -2,8 +2,12 @@
 
 import { TrendingUp, BarChart3, PieChart, LineChart, Activity, Target } from 'lucide-react';
 import { ComingSoonGrid, StepList } from '@/components/ui/reusable';
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageMetadata } from '@/lib/page-metadata';
 
 export default function MarketAnalyticsPage() {
+    const pageMetadata = getPageMetadata('/intelligence/analytics');
+
     const analyticsFeatures = [
         {
             icon: TrendingUp,
@@ -69,6 +73,16 @@ export default function MarketAnalyticsPage() {
 
     return (
         <div className="space-y-8">
+            {pageMetadata && (
+                <div className="flex items-center justify-between mb-6">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">Market Analytics</h1>
+                        <p className="text-muted-foreground">Advanced market analysis and performance tracking</p>
+                    </div>
+                    <FavoritesButton item={pageMetadata} variant="outline" size="sm" />
+                </div>
+            )}
+
             <ComingSoonGrid cards={analyticsFeatures} />
 
             <StepList

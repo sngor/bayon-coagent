@@ -67,6 +67,8 @@ import { useFeatureToggle } from '@/lib/feature-toggles';
 import { NotificationCenter } from '@/lib/notifications/components';
 import { SubtleGradientMesh } from '@/components/ui/gradient-mesh';
 import { ImpersonationBanner } from '@/components/impersonation-banner';
+import { RoleBadge } from '@/components/admin/role-badge';
+import { UserRole } from '@/aws/dynamodb/admin-types';
 
 function AppLoadingScreen() {
   return <SessionLoading />;
@@ -136,6 +138,11 @@ function UserDropdownContent({ profile, user, userName, getInitials, handleSignO
     else if (mode === 'super_admin') router.push('/super-admin');
   };
 
+  // Get user role for badge display
+  const userRole = (isAdmin || isSuperAdmin)
+    ? (isSuperAdmin ? 'superadmin' : 'admin')
+    : 'user';
+
   return (
     <DropdownMenuContent align="end" className="w-64">
       <DropdownMenuLabel>
@@ -149,6 +156,12 @@ function UserDropdownContent({ profile, user, userName, getInitials, handleSignO
           <div className="flex flex-col space-y-1 min-w-0 flex-1">
             <p className="text-sm font-semibold leading-none truncate">{userName}</p>
             <p className="text-xs leading-none text-muted-foreground truncate">{user?.email}</p>
+            {/* Role Badge */}
+            {(isAdmin || isSuperAdmin) && (
+              <div className="mt-1">
+                <RoleBadge role={userRole as UserRole} size="sm" />
+              </div>
+            )}
           </div>
         </div>
       </DropdownMenuLabel>

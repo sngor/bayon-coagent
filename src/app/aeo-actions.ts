@@ -5,7 +5,22 @@
  */
 
 import { revalidatePath } from 'next/cache';
-import { analyzeAEO } from '@/aws/bedrock/flows/aeo-analysis';
+import { analyzeAEO as analyzeAEOProfile } from '@/aws/bedrock/flows/aeo-analysis';
+import {
+    analyzeAEO,
+    optimizeForAEO,
+    quickAEOCheck,
+    generateAEOFAQ,
+} from '@/aws/bedrock/aeo-optimizer';
+import type {
+    AEOAnalysis,
+    AEOOptimizationResult,
+} from '@/aws/bedrock/aeo-optimizer';
+import type {
+    AEOAnalysisInput,
+    AEOScore,
+    AEORecommendation,
+} from '@/ai/schemas/aeo-schemas';
 import {
     saveAEOAnalysis,
     getLatestAEOScore,
@@ -18,11 +33,8 @@ import {
 import { getRepository } from '@/aws/dynamodb/repository';
 import { getUserProfileKeys } from '@/aws/dynamodb/keys';
 import type {
-    AEOScore,
-    AEORecommendation,
     AEOMention,
     AEOHistoryEntry,
-    AEOAnalysisRequest,
 } from '@/lib/types/aeo-types';
 
 interface ActionResponse<T = any> {
@@ -54,7 +66,7 @@ export async function runAEOAnalysis(userId: string): Promise<ActionResponse<{
         }
 
         // Build analysis request
-        const analysisRequest: AEOAnalysisRequest = {
+        const analysisRequest: AEOAnalysisInput = {
             userId,
             agentName: profile.name || profile.agentName || 'Unknown Agent',
             businessName: profile.businessName,
@@ -66,8 +78,7 @@ export async function runAEOAnalysis(userId: string): Promise<ActionResponse<{
                 profile.instagramUrl,
                 profile.linkedinUrl,
                 profile.twitterUrl,
-            ].filter(Boolean),
-            reviewCount: profile.reviewCount,
+            ].filter(Boolean) as string[],
             averageRating: profile.averageRating,
             hasSchemaMarkup: profile.hasSchemaMarkup,
             napConsistency: profile.napConsistency,
@@ -76,7 +87,7 @@ export async function runAEOAnalysis(userId: string): Promise<ActionResponse<{
         console.log('Running AEO analysis for:', analysisRequest.agentName);
 
         // Run analysis
-        const result = await analyzeAEO(analysisRequest);
+        const result = await analyzeAEOProfile(analysisRequest);
 
         // Save results
         const analysisId = `analysis_${Date.now()}`;
@@ -247,6 +258,90 @@ export async function getAEOStats(userId: string): Promise<ActionResponse<{
         return {
             success: false,
             error: error.message || 'Failed to get AEO statistics',
+        };
+    }
+}
+
+/**
+ * Analyze content for AEO optimization (for content optimization panel)
+ */
+export async function analyzeAEOAction(
+    content: string,
+    contentType: 'blog' | 'article' | 'faq' | 'guide' = 'blog'
+): Promise<{ message: string; data?: AEOAnalysis }> {
+    try {
+        const analysis = await analyzeAEO(content, contentType);
+        return {
+            message: 'success',
+            data: analysis,
+        };
+    } catch (error: any) {
+        console.error('AEO content analysis failed:', error);
+        return {
+            message: error.message || 'Failed to analyze content for AEO',
+        };
+    }
+}
+
+/**
+ * Optimize content for AEO (for content optimization panel)
+ */
+export async function optimizeForAEOAction(
+    content: string,
+    contentType: 'blog' | 'article' | 'faq' | 'guide' = 'blog',
+    targetKeywords?: string[]
+): Promise<{ message: string; data?: AEOOptimizationResult }> {
+    try {
+        const result = await optimizeForAEO(content, contentType, targetKeywords);
+        return {
+            message: 'success',
+            data: result,
+        };
+    } catch (error: any) {
+        console.error('AEO content optimization failed:', error);
+        return {
+            message: error.message || 'Failed to optimize content for AEO',
+        };
+    }
+}
+
+/**
+ * Quick AEO check for content
+ */
+export async function quickAEOCheckAction(
+    content: string
+): Promise<{ message: string; data?: { score: number; issues: string[]; quickFixes: string[] } }> {
+    try {
+        const result = await quickAEOCheck(content);
+        return {
+            message: 'success',
+            data: result,
+        };
+    } catch (error: any) {
+        console.error('Quick AEO check failed:', error);
+        return {
+            message: error.message || 'Failed to perform quick AEO check',
+        };
+    }
+}
+
+/**
+ * Generate AEO-optimized FAQ section
+ */
+export async function generateAEOFAQAction(
+    content: string,
+    numQuestions: number = 5
+): Promise<{ message: string; data?: { question: string; answer: string }[] }> {
+    try {
+        const faqs = await generateAEOFAQ(content, numQuestions);
+        return {
+            message: 'success',
+            data: faqs,
+        };
+    } catch (error: any) {
+        console.error('AEO FAQ generation failed:', error);
+        return {
+            message: error.message || 'Failed to generate AEO FAQ',
         };
     }
 }

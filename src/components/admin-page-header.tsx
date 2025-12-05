@@ -70,6 +70,16 @@ const pageHeaders = {
         title: 'Audit Logs',
         description: 'View and filter system audit logs',
         icon: FileText
+    },
+    '/admin/audit': {
+        title: 'Role Audit Log',
+        description: 'Track all role assignments and revocations',
+        icon: Shield
+    },
+    '/admin/users': {
+        title: 'Team Members',
+        description: 'View and manage team members',
+        icon: Users
     }
 };
 

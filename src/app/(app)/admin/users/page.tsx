@@ -21,6 +21,7 @@ import {
     Shield,
     CheckCircle,
     Eye,
+    UserCog,
 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -30,12 +31,16 @@ import {
     SheetHeader,
     SheetTitle,
 } from "@/components/ui/sheet";
+import { useUserRole } from '@/hooks/use-user-role';
+import { RoleProtectedFeature } from '@/components/admin/role-protected-feature';
+import { RoleBadge } from '@/components/admin/role-badge';
 
 export default function AdminUsersPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
+    const { isSuperAdmin } = useUserRole();
 
     // Agent Details State
     const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -262,6 +267,27 @@ export default function AdminUsersPage() {
                                                             disabled={user.role === 'admin' || user.role === 'super_admin'} // Prevent disabling admins for now, or add logic to check if self
                                                         />
                                                     </div>
+                                                    <RoleProtectedFeature
+                                                        requiredRole="superadmin"
+                                                        renderDisabled
+                                                        showTooltip
+                                                        tooltipMessage="Only SuperAdmins can manage user roles"
+                                                    >
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                // TODO: Open role management dialog
+                                                                toast({
+                                                                    title: "Coming Soon",
+                                                                    description: "Role management dialog will be implemented in a future task",
+                                                                });
+                                                            }}
+                                                        >
+                                                            <UserCog className="w-4 h-4 mr-2" />
+                                                            Manage Role
+                                                        </Button>
+                                                    </RoleProtectedFeature>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
@@ -304,9 +330,7 @@ export default function AdminUsersPage() {
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-medium text-muted-foreground mb-1">Role</h4>
-                                    <Badge variant={selectedUser.role === 'admin' ? 'default' : 'secondary'}>
-                                        {selectedUser.role === 'admin' ? 'Admin' : 'Agent'}
-                                    </Badge>
+                                    <RoleBadge role={selectedUser.role || 'user'} size="sm" />
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-medium text-muted-foreground mb-1">Team</h4>

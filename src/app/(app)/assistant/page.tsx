@@ -11,7 +11,7 @@ import { StandardPageLayout } from '@/components/standard';
 import { ChatInterface, AgentProfilePreview } from '@/components/bayon-assistant';
 
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -330,8 +330,8 @@ export default function AssistantPage() {
                             <CardDescription>Chat with your AI assistant</CardDescription>
                         </div>
                         {(() => {
-                            const pageConfig = getPageConfig('/assistant');
-                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                            const pageMetadata = getPageMetadata('/assistant');
+                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
                         })()}
                     </div>
                 </CardHeader>

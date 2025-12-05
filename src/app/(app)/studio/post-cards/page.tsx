@@ -11,7 +11,7 @@ import { generatePostCardAction } from '@/features/content-engine/actions/post-c
 import { useToast } from '@/hooks/use-toast';
 import NextImage from 'next/image';
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 import { CardTypeSelector } from './card-type-selector';
 import { StyleSelector } from './style-selector';
 import { Badge } from '@/components/ui/badge';
@@ -260,8 +260,8 @@ export default function PostCardsPage() {
                     </p>
                 </div>
                 {(() => {
-                    const pageConfig = getPageConfig('/studio/post-cards');
-                    return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                    const pageMetadata = getPageMetadata('/studio/post-cards');
+                    return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
                 })()}
             </div>
 

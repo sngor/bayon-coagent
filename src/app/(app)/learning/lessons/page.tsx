@@ -23,7 +23,7 @@ import { Quiz } from '@/components/quiz';
 // Removed framer-motion to improve performance
 import { cn } from '@/lib/utils/common';
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 
 export default function TrainingLessonsPage() {
     const { user } = useUser();
@@ -258,8 +258,8 @@ export default function TrainingLessonsPage() {
                                     </div>
                                 )}
                                 {(() => {
-                                    const pageConfig = getPageConfig('/learning/lessons');
-                                    return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                                    const pageMetadata = getPageMetadata('/learning/lessons');
+                                    return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
                                 })()}
                             </div>
                         </div>

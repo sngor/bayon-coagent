@@ -112,7 +112,7 @@ import { ProjectSelector } from '@/components/project-selector';
 import { ContentCategory, TemplateConfiguration } from '@/lib/types/content-workflow-types';
 import { PageHeader } from '@/components/ui/page-header';
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 import { SEOAnalysisCard } from '@/components/seo-analysis-card';
 import { MetaDescriptionEditor } from '@/components/meta-description-editor';
 import { KeywordSuggestionPanel } from '@/components/keyword-suggestion-panel';
@@ -1330,8 +1330,8 @@ export default function ContentEnginePage() {
               <p className="text-muted-foreground">Create blog posts and articles</p>
             </div>
             {(() => {
-              const pageConfig = getPageConfig('/studio/write');
-              return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+              const pageMetadata = getPageMetadata('/studio/write');
+              return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
             })()}
           </div>
         </CardHeader>

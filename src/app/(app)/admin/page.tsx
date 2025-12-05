@@ -21,6 +21,9 @@ import {
 } from 'lucide-react';
 import { getAdminDashboardStats, getRecentActivityAction } from '@/features/admin/actions/admin-actions';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/use-user-role';
+import { RoleProtectedFeature } from '@/components/admin/role-protected-feature';
+import { RoleBadge } from '@/components/admin/role-badge';
 
 export default function AdminDashboardPage() {
     const [stats, setStats] = useState<any>({
@@ -31,6 +34,7 @@ export default function AdminDashboardPage() {
     const [recentActivity, setRecentActivity] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
+    const { role, isSuperAdmin, isAdmin } = useUserRole();
 
     useEffect(() => {
         async function loadData() {
@@ -65,7 +69,10 @@ export default function AdminDashboardPage() {
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Admin Dashboard</h2>
+                    <div className="flex items-center gap-3 mb-2">
+                        <h2 className="text-3xl font-bold tracking-tight">Admin Dashboard</h2>
+                        <RoleBadge role={role} size="md" />
+                    </div>
                     <p className="text-muted-foreground">Manage your team and organization settings</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -155,7 +162,7 @@ export default function AdminDashboardPage() {
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-4 relative z-10">
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 <Button variant="outline" asChild className="h-auto py-4 flex flex-col gap-2 hover:bg-purple-50 dark:hover:bg-purple-950/50">
                                     <Link href="/admin/users">
                                         <Users className="h-6 w-6 text-purple-600" />
@@ -174,6 +181,19 @@ export default function AdminDashboardPage() {
                                         <span>Announcements</span>
                                     </Link>
                                 </Button>
+                                <RoleProtectedFeature
+                                    requiredRole="superadmin"
+                                    renderDisabled
+                                    showTooltip
+                                    tooltipMessage="Audit Log is only accessible to SuperAdmins"
+                                >
+                                    <Button variant="outline" asChild className="h-auto py-4 flex flex-col gap-2 hover:bg-green-50 dark:hover:bg-green-950/50">
+                                        <Link href="/admin/audit">
+                                            <Shield className="h-6 w-6 text-green-600" />
+                                            <span>Audit Log</span>
+                                        </Link>
+                                    </Button>
+                                </RoleProtectedFeature>
                             </div>
                         </CardContent>
                     </CardGradientMesh>

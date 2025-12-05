@@ -30,7 +30,7 @@ import type { ResearchReport } from '@/lib/types/common/common';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 
 type ResearchInitialState = {
   message: string;
@@ -235,8 +235,8 @@ export default function ResearchAgentPage() {
               <p className="text-muted-foreground">Delegate deep-dive research. Your AI agent will compile a comprehensive report that you can save to your knowledge base.</p>
             </div>
             {(() => {
-              const pageConfig = getPageConfig('/research-agent');
-              return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+              const pageMetadata = getPageMetadata('/research-agent');
+              return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
             })()}
           </div>
           <CardTitle className="font-headline">New Research Task</CardTitle>

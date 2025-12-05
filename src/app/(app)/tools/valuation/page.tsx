@@ -28,7 +28,7 @@ import { useUser } from '@/aws/auth';
 import { cn } from '@/lib/utils/common';
 
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 
 type ValuationInitialState = {
     message: string;
@@ -209,8 +209,8 @@ ${state.data.disclaimer}
                     <div className="flex items-center justify-between w-full">
                         <span className="font-headline">Property Valuation</span>
                         {(() => {
-                            const pageConfig = getPageConfig('/tools/valuation');
-                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                            const pageMetadata = getPageMetadata('/tools/valuation');
+                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
                         })()}
                     </div>
                 }

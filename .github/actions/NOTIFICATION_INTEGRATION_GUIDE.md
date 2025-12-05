@@ -6,6 +6,7 @@ This guide shows how to integrate the Slack and Email notification actions into 
 
 - **Slack Notification** (`.github/actions/slack-notify`)
 - **Email Notification** (`.github/actions/email-notify`)
+- **PagerDuty Alert** (`.github/actions/pagerduty-alert`)
 
 ## Quick Start
 
@@ -31,6 +32,12 @@ SMTP_USERNAME: SMTP username
 SMTP_PASSWORD: SMTP password or app password
 FROM_EMAIL: Sender email address
 ONCALL_EMAILS: Comma-separated emails for urgent alerts
+```
+
+**For PagerDuty:**
+
+```
+PAGERDUTY_INTEGRATION_KEY: PagerDuty Events API v2 integration key (routing key)
 ```
 
 ### 2. Use in Workflows
@@ -322,6 +329,24 @@ jobs:
           message: "CRITICAL: Rollback failed. Manual intervention required immediately."
           environment: ${{ inputs.environment }}
           mention-users: ${{ secrets.SLACK_ONCALL_USERS }}
+
+      # Escalate to PagerDuty for critical failures
+      - name: Escalate to PagerDuty
+        if: failure() && secrets.PAGERDUTY_INTEGRATION_KEY != ''
+        uses: ./.github/actions/pagerduty-alert
+        with:
+          integration-key: ${{ secrets.PAGERDUTY_INTEGRATION_KEY }}
+          severity: critical
+          summary: "CRITICAL: Rollback Failed - ${{ inputs.environment }}"
+          environment: ${{ inputs.environment }}
+          component: "Rollback System"
+          group: "rollback"
+          class: "deployment"
+          custom-details: |
+            {
+              "triggered_by": "${{ github.actor }}",
+              "reason": "Rollback workflow failed"
+            }
 ```
 
 ### Performance Testing Workflow
@@ -477,8 +502,52 @@ jobs:
 4. Monitor notification delivery
 5. Adjust notification strategy based on team feedback
 
+### Critical Failure Escalation
+
+For critical failures that require immediate attention, use PagerDuty in addition to Slack and email:
+
+```yaml
+- name: Notify via Slack
+  if: failure()
+  uses: ./.github/actions/slack-notify
+  with:
+    webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+    message-type: "urgent"
+    title: "Production Deployment Failed"
+    message: "Critical failure - PagerDuty incident created"
+    environment: production
+
+- name: Send email alert
+  if: failure()
+  uses: ./.github/actions/email-notify
+  with:
+    smtp-server: ${{ secrets.SMTP_SERVER }}
+    to-emails: ${{ secrets.ONCALL_EMAILS }}
+    subject: "🚨 Production Deployment Failed"
+    message-type: "urgent"
+    title: "Critical Failure"
+    message: "Production deployment failed. Check PagerDuty for incident details."
+
+- name: Create PagerDuty incident
+  if: failure() && secrets.PAGERDUTY_INTEGRATION_KEY != ''
+  uses: ./.github/actions/pagerduty-alert
+  with:
+    integration-key: ${{ secrets.PAGERDUTY_INTEGRATION_KEY }}
+    severity: critical
+    summary: "Production deployment failed"
+    environment: production
+    component: "Deployment Pipeline"
+    custom-details: |
+      {
+        "deployment_id": "${{ github.run_id }}",
+        "commit_sha": "${{ github.sha }}",
+        "error": "Deployment workflow failed"
+      }
+```
+
 ## Related Documentation
 
 - [Slack Notification Action](./slack-notify/README.md)
 - [Email Notification Action](./email-notify/README.md)
+- [PagerDuty Alert Action](./pagerduty-alert/README.md)
 - [GitHub Actions Secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets)

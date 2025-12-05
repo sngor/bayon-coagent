@@ -70,7 +70,7 @@ import {
     getConnectedChannelsAction
 } from '@/features/content-engine/actions/content-workflow-actions';
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 import { PostCard } from './post-card';
 interface CalendarFilters {
     channels: PublishChannelType[];
@@ -577,8 +577,8 @@ export default function LibraryCalendarPage() {
                             </CardDescription>
                         </div>
                         {(() => {
-                            const pageConfig = getPageConfig('/brand/calendar');
-                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                            const pageMetadata = getPageMetadata('/brand/calendar');
+                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
                         })()}
                     </div>
                 </CardHeader>

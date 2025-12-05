@@ -315,6 +315,30 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
         try {
             await confirmSignUp(userEmail, verificationCode);
 
+            // Bootstrap user with appropriate role (first user gets SuperAdmin)
+            if (userId) {
+                try {
+                    const { bootstrapFirstUserAction } = await import('@/app/actions');
+                    const bootstrapResult = await bootstrapFirstUserAction(
+                        userId,
+                        userEmail,
+                        signUpState.data?.givenName,
+                        signUpState.data?.familyName
+                    );
+
+                    if (bootstrapResult.message === 'success' && bootstrapResult.data?.isFirstUser) {
+                        toast({
+                            variant: "success",
+                            title: "Welcome, SuperAdmin!",
+                            description: "You're the first user and have been granted SuperAdmin privileges.",
+                        });
+                    }
+                } catch (bootstrapError) {
+                    console.error('Failed to bootstrap user:', bootstrapError);
+                    // Don't block the signup flow if bootstrap fails
+                }
+            }
+
             setSuccess('Account verified successfully! Redirecting to dashboard...');
             toast({
                 variant: "success",
@@ -343,6 +367,30 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                 title: "Plan selected",
                 description: `${SUBSCRIPTION_PLANS[plan].name} plan selected. Payment skipped in development.`,
             });
+
+            // Bootstrap user with appropriate role before sign in
+            if (userId) {
+                try {
+                    const { bootstrapFirstUserAction } = await import('@/app/actions');
+                    const bootstrapResult = await bootstrapFirstUserAction(
+                        userId,
+                        userEmail,
+                        signUpState.data?.givenName,
+                        signUpState.data?.familyName
+                    );
+
+                    if (bootstrapResult.message === 'success' && bootstrapResult.data?.isFirstUser) {
+                        toast({
+                            variant: "success",
+                            title: "Welcome, SuperAdmin!",
+                            description: "You're the first user and have been granted SuperAdmin privileges.",
+                        });
+                    }
+                } catch (bootstrapError) {
+                    console.error('Failed to bootstrap user:', bootstrapError);
+                    // Don't block the signup flow if bootstrap fails
+                }
+            }
 
             // In development, skip to verification or auto-sign in
             if (userEmail && userPassword) {

@@ -132,7 +132,8 @@ export type EntityType =
   | 'AIMonitoringConfig'
   | 'AIMonitoringJob'
   | 'AIVisibilityAlert'
-  | 'WebsiteAnalysis';
+  | 'WebsiteAnalysis'
+  | 'RoleAuditLog';
 
 /**
  * Base DynamoDB item structure

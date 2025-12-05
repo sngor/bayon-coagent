@@ -54,7 +54,7 @@ import {
 } from '@/features/client-dashboards/actions/client-dashboard-actions';
 import { formatDistanceToNow } from 'date-fns';
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 
 // Helper function to format dates
 function formatDate(timestamp: number): string {
@@ -312,8 +312,8 @@ export default function ClientDashboardsPage() {
                             </CardDescription>
                         </div>
                         {(() => {
-                            const pageConfig = getPageConfig('/client-dashboards');
-                            return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                            const pageMetadata = getPageMetadata('/client-dashboards');
+                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
                         })()}
                     </div>
                 </CardHeader>

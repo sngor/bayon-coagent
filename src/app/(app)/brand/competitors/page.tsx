@@ -50,7 +50,7 @@ import { toast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { FavoritesButton } from '@/components/favorites-button';
-import { getPageConfig } from '@/components/dashboard-quick-actions';
+import { getPageMetadata } from '@/lib/page-metadata';
 import {
   AnimatedTabs as Tabs,
   AnimatedTabsContent as TabsContent,
@@ -340,8 +340,8 @@ export default function CompetitiveAnalysisPage() {
                 <div className="flex items-center justify-between w-full">
                   <span className="font-headline">AI Competitor Discovery</span>
                   {(() => {
-                    const pageConfig = getPageConfig('/brand/competitors');
-                    return pageConfig ? <FavoritesButton item={pageConfig} /> : null;
+                    const pageMetadata = getPageMetadata('/brand/competitors');
+                    return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
                   })()}
                 </div>
               }

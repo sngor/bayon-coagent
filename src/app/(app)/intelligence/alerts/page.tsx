@@ -9,12 +9,15 @@ import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUnreadAlertCount } from '@/hooks/use-unread-alert-count';
 import { Badge } from '@/components/ui/badge';
+import { FavoritesButton } from '@/components/favorites-button';
+import { getPageMetadata } from '@/lib/page-metadata';
 
 import { useToast } from '@/hooks/use-toast';
 
 export default function MarketAlertsPage() {
     const { unreadCount } = useUnreadAlertCount();
     const { toast } = useToast();
+    const pageMetadata = getPageMetadata('/intelligence/alerts');
 
     const handleGuideClick = () => {
         toast({
@@ -58,6 +61,9 @@ export default function MarketAlertsPage() {
                 description="Stay informed about important market changes and opportunities"
                 icon={Bell}
                 variant="default"
+                actions={
+                    pageMetadata && <FavoritesButton item={pageMetadata} variant="outline" size="sm" />
+                }
             >
                 <AlertsContent />
             </ContentSection>
