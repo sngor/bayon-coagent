@@ -8,14 +8,12 @@ import { uploadAgentDocument, analyzeAgentDocumentRedFlags } from '@/features/in
 import { useToast } from '@/hooks/use-toast';
 import { marked } from 'marked';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 
 export default function DocumentScannerPage() {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisResult, setAnalysisResult] = useState<{ summary: string; documentTitle: string } | null>(null);
     const { toast } = useToast();
-    const pageMetadata = getPageMetadata('/tools/document-scanner');
 
     const handleUploadFn = async (file: File) => {
         const formData = new FormData();
@@ -73,14 +71,11 @@ export default function DocumentScannerPage() {
 
     return (
         <div className="space-y-8 max-w-5xl mx-auto">
-            <div className="flex items-start justify-between gap-4">
-                <div className="space-y-2">
-                    <h2 className="text-2xl font-bold tracking-tight">Smart Document Scanner</h2>
-                    <p className="text-muted-foreground">
-                        Instantly analyze HOA documents, Seller Disclosures, and contracts for potential risks and "red flags".
-                    </p>
-                </div>
-                {pageMetadata && <FavoritesButton item={pageMetadata} variant="outline" size="sm" />}
+            <div className="space-y-2">
+                <h2 className="text-2xl font-bold tracking-tight">Smart Document Scanner</h2>
+                <p className="text-muted-foreground">
+                    Instantly analyze HOA documents, Seller Disclosures, and contracts for potential risks and "red flags".
+                </p>
             </div>
 
             <div className="grid gap-8 md:grid-cols-[1fr_1.5fr]">

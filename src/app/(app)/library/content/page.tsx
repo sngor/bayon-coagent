@@ -64,8 +64,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PageHeader } from '@/components/page-header';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 
 
 
@@ -766,15 +765,9 @@ export default function LibraryPage() {
         <div className="space-y-6" key={refreshKey}>
             <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="font-headline text-2xl">Content Library</CardTitle>
-                            <CardDescription>Manage your created content</CardDescription>
-                        </div>
-                        {(() => {
-                            const pageMetadata = getPageMetadata('/library/content');
-                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-                        })()}
+                    <div>
+                        <CardTitle className="font-headline text-2xl">Content Library</CardTitle>
+                        <CardDescription>Manage your created content</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent>

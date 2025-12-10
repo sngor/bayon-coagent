@@ -8,6 +8,34 @@
 import { DynamoDBKey } from './types';
 
 /**
+ * Extended key interfaces for different GSI patterns
+ */
+export interface DynamoDBKeyWithGSI1 extends DynamoDBKey {
+  GSI1PK?: string;
+  GSI1SK?: string;
+}
+
+export interface DynamoDBKeyWithGSI2 extends DynamoDBKey {
+  GSI2PK?: string;
+  GSI2SK?: string;
+}
+
+export interface DynamoDBKeyWithMultipleGSI extends DynamoDBKey {
+  GSI1PK?: string;
+  GSI1SK?: string;
+  GSI2PK?: string;
+  GSI2SK?: string;
+  GSI3PK?: string;
+  GSI3SK?: string;
+  GSI4PK?: string;
+  GSI4SK?: string;
+}
+
+export interface DynamoDBKeyWithTTL extends DynamoDBKey {
+  TTL?: number;
+}
+
+/**
  * Generates keys for UserProfile
  * Pattern: PK: USER#<userId>, SK: PROFILE
  */
@@ -198,8 +226,26 @@ export function extractUserIdFromPK(pk: string): string | null {
  * Helper function to extract entity ID from SK
  */
 export function extractEntityIdFromSK(sk: string): string | null {
-  const match = sk.match(/^[A-Z]+#(.+)$/);
+  const match = sk.match(/^[A-Z_]+#(.+)$/);
   return match ? match[1] : null;
+}
+
+/**
+ * Helper function to extract entity type from SK
+ */
+export function extractEntityTypeFromSK(sk: string): string | null {
+  const match = sk.match(/^([A-Z_]+)#/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Validates that a key follows the expected pattern
+ */
+export function validateKeyPattern(key: DynamoDBKey): boolean {
+  const pkPattern = /^[A-Z_]+#.+$/;
+  const skPattern = /^([A-Z_]+#.+|[A-Z_]+)$/;
+
+  return pkPattern.test(key.PK) && skPattern.test(key.SK);
 }
 
 /**
@@ -2087,3 +2133,152 @@ export const generateAdminKeys = {
     SK: '',
   }),
 };
+
+// ==================== Guided Workflows Keys ====================
+
+/**
+ * Generates keys for WorkflowInstance
+ * Pattern: PK: USER#<userId>, SK: WORKFLOW_INSTANCE#<instanceId>
+ * GSI1: PK: USER#<userId>, GSI1SK: STATUS#<status>#<lastActiveAt>
+ */
+export function getWorkflowInstanceKeys(
+  userId: string,
+  instanceId: string,
+  status?: string,
+  lastActiveAt?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `WORKFLOW_INSTANCE#${instanceId}`,
+  };
+
+  // Add GSI1 keys for status filtering
+  if (status && lastActiveAt) {
+    keys.GSI1PK = `USER#${userId}`;
+    keys.GSI1SK = `STATUS#${status}#${lastActiveAt}`;
+  }
+
+  return keys;
+}
+
+// ==================== User Onboarding Keys ====================
+
+/**
+ * Generates keys for OnboardingState
+ * Pattern: PK: USER#<userId>, SK: ONBOARDING#STATE
+ * GSI1: PK: ONBOARDING#INCOMPLETE, SK: <lastAccessedAt> (for querying incomplete onboardings)
+ */
+export function getOnboardingStateKeys(
+  userId: string,
+  isComplete?: boolean,
+  lastAccessedAt?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: 'ONBOARDING#STATE',
+  };
+
+  // Add GSI1 keys for querying incomplete onboardings
+  if (isComplete === false && lastAccessedAt) {
+    keys.GSI1PK = 'ONBOARDING#INCOMPLETE';
+    keys.GSI1SK = lastAccessedAt;
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for OnboardingAnalytics
+ * Pattern: PK: USER#<userId>, SK: ONBOARDING#ANALYTICS#<timestamp>#<eventId>
+ * GSI1: PK: ANALYTICS#ONBOARDING#<eventType>, SK: <timestamp> (for aggregating by event type)
+ */
+export function getOnboardingAnalyticsKeys(
+  userId: string,
+  eventId: string,
+  timestamp: string,
+  eventType?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `ONBOARDING#ANALYTICS#${timestamp}#${eventId}`,
+  };
+
+  // Add GSI1 keys for querying by event type
+  if (eventType) {
+    keys.GSI1PK = `ANALYTICS#ONBOARDING#${eventType}`;
+    keys.GSI1SK = timestamp;
+  }
+
+  return keys;
+}
+
+// ==================== Key Factory Functions ====================
+
+/**
+ * Factory function for creating user-scoped entity keys
+ * Reduces boilerplate for common USER#<userId> patterns
+ */
+export function createUserEntityKeys(
+  userId: string,
+  entityType: string,
+  entityId: string
+): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: `${entityType}#${entityId}`,
+  };
+}
+
+/**
+ * Factory function for creating timestamped keys
+ * Common pattern for time-series data
+ */
+export function createTimestampedKeys(
+  prefix: string,
+  identifier: string,
+  timestamp: string | number,
+  entityId?: string
+): DynamoDBKey {
+  const sk = entityId
+    ? `${identifier}#${timestamp}#${entityId}`
+    : `${identifier}#${timestamp}`;
+
+  return {
+    PK: prefix,
+    SK: sk,
+  };
+}
+
+/**
+ * Factory function for creating GSI keys with consistent patterns
+ */
+export function createGSIKeys(
+  baseKeys: DynamoDBKey,
+  gsiConfig: {
+    gsi1?: { pk: string; sk?: string };
+    gsi2?: { pk: string; sk?: string };
+  }
+): DynamoDBKeyWithMultipleGSI {
+  const keys: DynamoDBKeyWithMultipleGSI = { ...baseKeys };
+
+  if (gsiConfig.gsi1) {
+    keys.GSI1PK = gsiConfig.gsi1.pk;
+    if (gsiConfig.gsi1.sk) keys.GSI1SK = gsiConfig.gsi1.sk;
+  }
+
+  if (gsiConfig.gsi2) {
+    keys.GSI2PK = gsiConfig.gsi2.pk;
+    if (gsiConfig.gsi2.sk) keys.GSI2SK = gsiConfig.gsi2.sk;
+  }
+
+  return keys;
+}

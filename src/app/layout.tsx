@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { PT_Sans, Playfair_Display } from 'next/font/google';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
+import '../styles/mobile-optimizations.css';
+import '../styles/animations.css';
 import { AWSClientProvider } from '@/aws/client-provider';
 import { ThemeProvider } from '@/components/theme-provider';
 import { PerformanceMonitor } from '@/components/performance-monitor';

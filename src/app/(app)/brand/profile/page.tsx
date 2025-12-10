@@ -29,19 +29,18 @@ import { JsonLdDisplay } from '@/components/json-ld-display';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
 import { generateBioAction, saveContentAction } from '@/app/actions';
-import { Save, User, Building2, Award, Phone, Share2 } from 'lucide-react';
+import { Save, User, Building2, Award, Phone, Share2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsList as TabsList, AnimatedTabsTrigger as TabsTrigger } from '@/components/ui/animated-tabs';
 
 import { ProfileCompletionChecklist } from '@/components/profile-completion-banner';
-import { StandardLoadingSpinner } from '@/components/standard';
+import { StandardLoadingState } from '@/components/standard';
 import { STICKY_POSITIONS } from '@/lib/utils/common';
 import { FeaturedTestimonialSelector } from '@/components/featured-testimonial-selector';
 import type { Testimonial } from '@/lib/types/common/common';
 import { CardGradientMesh } from '@/components/ui/gradient-mesh';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 
 const initialBioState = {
     message: '',
@@ -79,7 +78,7 @@ function SaveButton({ content, type }: { content: string, type: string }) {
         <Button variant="outline" size="sm" onClick={handleSave} disabled={isPending}>
             {isPending ? (
                 <>
-                    <StandardLoadingSpinner size="sm" className="mr-2" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Saving...
                 </>
             ) : (
@@ -266,12 +265,8 @@ function ProfileForm({ profile, onInputChange, onSave, isSaving, isLoading, bioF
             <Card className="overflow-hidden">
                 <CardGradientMesh>
                     <CardHeader className="pb-6 relative z-10">
-                        <CardTitle className="font-headline flex items-center justify-between">
+                        <CardTitle className="font-headline">
                             <GradientText text="Profile Information" />
-                            {(() => {
-                                const pageMetadata = getPageMetadata('/brand/profile');
-                                return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-                            })()}
                         </CardTitle>
                         <CardDescription>
                             <Typewriter
@@ -643,7 +638,7 @@ export default function ProfilePage() {
                 <TabsContent value="profile" className="mt-8">
                     {isLoading ? (
                         <div className="flex items-center justify-center py-12">
-                            <StandardLoadingSpinner size="lg" className="mr-3" />
+                            <Loader2 className="mr-3 h-8 w-8 animate-spin text-primary" />
                             <span className="text-muted-foreground">Loading your profile...</span>
                         </div>
                     ) : (
@@ -672,7 +667,7 @@ export default function ProfilePage() {
                 <TabsContent value="testimonials" className="mt-8">
                     {isLoadingTestimonials ? (
                         <div className="flex items-center justify-center py-12">
-                            <StandardLoadingSpinner size="lg" className="mr-3" />
+                            <Loader2 className="mr-3 h-8 w-8 animate-spin text-primary" />
                             <span className="text-muted-foreground">Loading testimonials...</span>
                         </div>
                     ) : (

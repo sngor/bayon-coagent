@@ -218,7 +218,7 @@ interface HubLayoutWithFavoritesProps extends HubLayoutProps {
 }
 
 export function HubLayoutWithFavorites({
-    enableFavorites = true,
+    enableFavorites = false, // Disabled by default - use dashboard quick actions instead
     actions,
     ...props
 }: HubLayoutWithFavoritesProps) {

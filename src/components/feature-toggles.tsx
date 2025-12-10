@@ -15,7 +15,10 @@ import {
     RotateCcw,
     AlertTriangle,
     Info,
-    Search
+    Search,
+    Users,
+    DoorOpen,
+    MessagesSquare
 } from 'lucide-react';
 import { AISparkleIcon } from '@/components/ui/real-estate-icons';
 import { useFeatureToggles, type FeatureToggle } from '@/lib/feature-toggles';
@@ -31,6 +34,9 @@ const iconMap = {
     'Library': Library,
     'GraduationCap': GraduationCap,
     'MessageSquare': MessageSquare,
+    'MessagesSquare': MessagesSquare,
+    'Users': Users,
+    'DoorOpen': DoorOpen,
 };
 
 export function FeatureToggles() {

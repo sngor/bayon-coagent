@@ -147,7 +147,10 @@ export type EntityType =
   | 'ABTestAssignment'
   | 'MaintenanceWindow'
   | 'APIKey'
-  | 'UserFeedback';
+  | 'UserFeedback'
+  | 'WorkflowInstance'
+  | 'OnboardingState'
+  | 'OnboardingAnalytics';
 
 /**
  * Base DynamoDB item structure

@@ -18,7 +18,7 @@ import { STRIPE_CONFIG } from '@/lib/constants/stripe-config';
 
 // Initialize Stripe client
 const stripe = new Stripe(STRIPE_CONFIG.secretKey, {
-    apiVersion: '2024-11-20.acacia',
+    apiVersion: '2025-11-17.clover',
 });
 
 export interface BillingDashboardMetrics {
@@ -102,6 +102,168 @@ export interface BillingExportData {
 }
 
 export class BillingService {
+    /**
+     * Advanced search for customers, subscriptions, and payments
+     * Uses Stripe's list APIs with filtering
+     * 
+     * @param resourceType - The type of Stripe resource to search
+     * @param params - Additional parameters for the Stripe API
+     * @returns Promise<Array<any>> - Array of search results with metadata
+     * @throws {BillingError} When search operation fails
+     */
+    async searchBillingData(
+        resourceType: 'customers' | 'subscriptions' | 'payment_intents' | 'invoices',
+        params: Record<string, any> = {}
+    ): Promise<Array<any>> {
+        try {
+            let results;
+
+            switch (resourceType) {
+                case 'customers':
+                    results = await stripe.customers.list({ limit: 50, ...params });
+                    break;
+                case 'subscriptions':
+                    results = await stripe.subscriptions.list({ limit: 50, ...params });
+                    break;
+                case 'payment_intents':
+                    results = await stripe.paymentIntents.list({ limit: 50, ...params });
+                    break;
+                case 'invoices':
+                    results = await stripe.invoices.list({ limit: 50, ...params });
+                    break;
+                default:
+                    throw new Error(`Unsupported resource type: ${resourceType}`);
+            }
+
+            return results.data.map((item: any) => ({
+                id: item.id,
+                type: resourceType,
+                created: item.created,
+                ...item,
+            }));
+        } catch (error) {
+            console.error('Error searching billing data:', error);
+            throw new Error('Failed to search billing data');
+        }
+    }
+
+    /**
+     * Search customers by various criteria
+     */
+    async searchCustomers(criteria: {
+        email?: string;
+        domain?: string;
+        name?: string;
+        metadata?: Record<string, string>;
+    }) {
+        try {
+            const params: Record<string, any> = {};
+
+            if (criteria.email) {
+                params.email = criteria.email;
+            }
+
+            const results = await this.searchBillingData('customers', params);
+
+            // Client-side filtering for criteria not supported by Stripe API
+            return results.filter((customer: any) => {
+                if (criteria.domain && customer.email && !customer.email.includes(criteria.domain)) {
+                    return false;
+                }
+                if (criteria.name && customer.name && !customer.name.toLowerCase().includes(criteria.name.toLowerCase())) {
+                    return false;
+                }
+                if (criteria.metadata) {
+                    for (const [key, value] of Object.entries(criteria.metadata)) {
+                        if (!customer.metadata?.[key] || customer.metadata[key] !== value) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            });
+        } catch (error) {
+            console.error('Error searching customers:', error);
+            throw new Error('Failed to search customers');
+        }
+    }
+
+    /**
+     * Search subscriptions by status, plan, or customer
+     */
+    async searchSubscriptions(criteria: {
+        status?: 'active' | 'canceled' | 'past_due' | 'trialing';
+        customerId?: string;
+        priceId?: string;
+    }) {
+        try {
+            const params: Record<string, any> = {};
+
+            if (criteria.status) {
+                params.status = criteria.status;
+            }
+
+            if (criteria.customerId) {
+                params.customer = criteria.customerId;
+            }
+
+            const results = await this.searchBillingData('subscriptions', params);
+
+            // Filter by price if specified
+            if (criteria.priceId) {
+                return results.filter((sub: any) =>
+                    sub.items?.data?.some((item: any) => item.price.id === criteria.priceId)
+                );
+            }
+
+            return results;
+        } catch (error) {
+            console.error('Error searching subscriptions:', error);
+            throw new Error('Failed to search subscriptions');
+        }
+    }
+
+    /**
+     * Search payment intents by amount, status, or customer
+     */
+    async searchPayments(criteria: {
+        status?: 'succeeded' | 'requires_payment_method' | 'requires_action';
+        customerId?: string;
+        amountGreaterThan?: number;
+        amountLessThan?: number;
+        currency?: string;
+    }) {
+        try {
+            const params: Record<string, any> = {};
+
+            if (criteria.customerId) {
+                params.customer = criteria.customerId;
+            }
+
+            const results = await this.searchBillingData('payment_intents', params);
+
+            // Client-side filtering for criteria not supported by Stripe list API
+            return results.filter((payment: any) => {
+                if (criteria.status && payment.status !== criteria.status) {
+                    return false;
+                }
+                if (criteria.amountGreaterThan && payment.amount < criteria.amountGreaterThan * 100) {
+                    return false;
+                }
+                if (criteria.amountLessThan && payment.amount > criteria.amountLessThan * 100) {
+                    return false;
+                }
+                if (criteria.currency && payment.currency !== criteria.currency) {
+                    return false;
+                }
+                return true;
+            });
+        } catch (error) {
+            console.error('Error searching payments:', error);
+            throw new Error('Failed to search payments');
+        }
+    }
+
     /**
      * Gets billing dashboard metrics
      * Requirements: 7.1
@@ -202,11 +364,21 @@ export class BillingService {
             const repository = getRepository();
 
             // Get user profile from DynamoDB
-            const profile = await repository.get(`USER#${userId}`, 'PROFILE');
+            const profileRecord = await repository.get(`USER#${userId}`, 'PROFILE');
 
-            if (!profile) {
+            if (!profileRecord?.Data) {
                 return null;
             }
+
+            const profile = profileRecord.Data as {
+                email?: string;
+                name?: string;
+                customerId?: string;
+                subscriptionId?: string;
+                subscriptionStatus?: string;
+                subscriptionPriceId?: string;
+                subscriptionCurrentPeriodEnd?: string;
+            };
 
             const userBillingInfo: UserBillingInfo = {
                 userId,

@@ -1,12 +1,13 @@
 /**
- * Intelligence Layer
+ * Intelligence Module
  * 
- * Exports for proactive intelligence, opportunity detection,
- * trend analysis, and recommendation systems.
+ * Exports all cross-hub intelligence functionality
  */
 
-export * from './types';
-export * from './trend-analyzer';
-export * from './opportunity-detector';
-export * from './gap-identifier';
-export * from './recommendation-engine';
+export * from './cross-hub-coordinator';
+export {
+    getCrossHubCoordinator,
+    type IntelligenceInsight,
+    type InsightType,
+    type CrossHubWorkflow
+} from './cross-hub-coordinator';

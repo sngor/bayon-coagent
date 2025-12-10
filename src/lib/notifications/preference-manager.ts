@@ -18,6 +18,7 @@ import {
     safeValidate,
     notificationPreferencesSchema,
 } from "./schemas";
+import { getNotificationRepository } from "./repository";
 
 /**
  * Preference change log entry
@@ -56,6 +57,47 @@ export interface ChannelFilterResult {
  * Handles preference validation, merging, change tracking, and channel filtering.
  */
 export class PreferenceManager {
+    private repository = getNotificationRepository();
+    // ============================================================================
+    // Preference Storage
+    // ============================================================================
+
+    /**
+     * Gets user notification preferences
+     * Validates Requirements: 3.2
+     * 
+     * @param userId User ID
+     * @returns User preferences or default preferences if not found
+     */
+    async getPreferences(userId: string): Promise<NotificationPreferences> {
+        return await this.repository.getUserPreferences(userId);
+    }
+
+    /**
+     * Updates user notification preferences
+     * Validates Requirements: 3.2
+     * 
+     * @param userId User ID
+     * @param preferences Partial preference updates
+     * @returns Updated preferences
+     */
+    async updatePreferences(
+        userId: string,
+        preferences: Partial<NotificationPreferences>
+    ): Promise<NotificationPreferences> {
+        // Get current preferences
+        const currentPreferences = await this.getPreferences(userId);
+
+        // Merge and validate preferences
+        const mergedPreferences = this.mergePreferences(currentPreferences, preferences);
+
+        // Update in repository
+        await this.repository.updateUserPreferences(userId, mergedPreferences);
+
+        // Return updated preferences
+        return await this.getPreferences(userId);
+    }
+
     // ============================================================================
     // Default Preferences
     // ============================================================================

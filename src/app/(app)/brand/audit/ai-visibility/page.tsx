@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { StandardPageLayout } from '@/components/standard';
+import { PageLayout } from '@/components/layouts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sparkles, TrendingUp, Loader2, AlertCircle } from 'lucide-react';
@@ -127,21 +127,21 @@ export default function AIVisibilityPage() {
 
     if (isUserLoading || isLoading) {
         return (
-            <StandardPageLayout
+            <PageLayout
                 title="AI Visibility"
                 description="Optimize your presence in AI search engines"
             >
                 <div className="flex items-center justify-center py-12">
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
-            </StandardPageLayout>
+            </PageLayout>
         );
     }
 
     // Show empty state if no analysis has been run
     if (!score && !isAnalyzing) {
         return (
-            <StandardPageLayout
+            <PageLayout
                 title="AI Visibility"
                 description="Optimize your presence in AI search engines"
             >
@@ -161,12 +161,12 @@ export default function AIVisibilityPage() {
                         },
                     }}
                 />
-            </StandardPageLayout>
+            </PageLayout>
         );
     }
 
     return (
-        <StandardPageLayout
+        <PageLayout
             title="AI Visibility"
             description="Optimize your presence in AI search engines"
             actions={
@@ -285,6 +285,6 @@ export default function AIVisibilityPage() {
                 {/* Schema Markup Generator */}
                 {profile && <SchemaMarkupGenerator profile={profile} />}
             </div>
-        </StandardPageLayout>
+        </PageLayout>
     );
 }

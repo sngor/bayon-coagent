@@ -2,7 +2,9 @@
 
 import { HubLayoutWithFavorites } from '@/components/hub/hub-layout-with-favorites';
 import { FeatureGuard } from '@/components/feature-guard';
+import { EnhancedAgentIntegration } from '@/components/enhanced-agents';
 import { Search, FileText, BookOpen, TrendingUp, Newspaper, Bell, Target, BarChart3 } from 'lucide-react';
+import { AISparkleIcon } from '@/components/ui/real-estate-icons';
 
 const researchTabs = [
     { id: 'agent', label: 'Research', href: '/intelligence/agent', icon: Search },
@@ -21,11 +23,16 @@ export default function ResearchLayout({ children }: { children: React.ReactNode
             <HubLayoutWithFavorites
                 title="Intelligence Hub"
                 description="AI-powered research, market intelligence, and insights for real estate professionals"
-                icon={Search}
+                icon={AISparkleIcon}
                 tabs={researchTabs}
                 tabsVariant="pills"
             >
                 {children}
+                <EnhancedAgentIntegration
+                    hubContext="market"
+                    position="bottom-right"
+                    showNotifications={true}
+                />
             </HubLayoutWithFavorites>
         </FeatureGuard>
     );

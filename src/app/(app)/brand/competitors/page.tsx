@@ -49,8 +49,7 @@ import { findCompetitorsAction, getKeywordRankingsAction, saveCompetitorAction }
 import { toast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 import {
   AnimatedTabs as Tabs,
   AnimatedTabsContent as TabsContent,
@@ -336,15 +335,7 @@ export default function CompetitiveAnalysisPage() {
         <TabsContent value="competitors" className="space-y-8 mt-6">
           <div className="space-y-8">
             <StandardCard
-              title={
-                <div className="flex items-center justify-between w-full">
-                  <span className="font-headline">AI Competitor Discovery</span>
-                  {(() => {
-                    const pageMetadata = getPageMetadata('/brand/competitors');
-                    return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-                  })()}
-                </div>
-              }
+              title="AI Competitor Discovery"
               description="Use AI to automatically discover top competitors in your market based on your profile."
             >
               <form action={findFormAction} className="space-y-4">
@@ -470,7 +461,7 @@ export default function CompetitiveAnalysisPage() {
                           <TableRow>
                             <TableCell colSpan={5} className="text-center py-8">
                               <StandardEmptyState
-                                icon={<Search className="h-16 w-16 text-muted-foreground" />}
+                                icon={Search}
                                 title="No Competitors Yet"
                                 description="Add competitors manually or use AI discovery to find top agents in your market."
                                 action={{

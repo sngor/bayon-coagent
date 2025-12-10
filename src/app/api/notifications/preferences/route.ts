@@ -78,3 +78,8 @@ export async function POST(request: NextRequest) {
         );
     }
 }
+
+export async function PUT(request: NextRequest) {
+    // PUT method should work the same as POST for updating preferences
+    return POST(request);
+}

@@ -69,8 +69,7 @@ import {
     getOptimalTimesAction,
     getConnectedChannelsAction
 } from '@/features/content-engine/actions/content-workflow-actions';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 import { PostCard } from './post-card';
 interface CalendarFilters {
     channels: PublishChannelType[];
@@ -564,22 +563,16 @@ export default function LibraryCalendarPage() {
             {/* Header */}
             <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="font-headline text-2xl">Content Calendar</CardTitle>
-                            <CardDescription>
-                                Schedule and manage your content across all channels
-                                {isMultiSelectMode && selectedItems.size > 0 && (
-                                    <span className="ml-2">
-                                        • {selectedItems.size} item{selectedItems.size !== 1 ? 's' : ''} selected
-                                    </span>
-                                )}
-                            </CardDescription>
-                        </div>
-                        {(() => {
-                            const pageMetadata = getPageMetadata('/brand/calendar');
-                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-                        })()}
+                    <div>
+                        <CardTitle className="font-headline text-2xl">Content Calendar</CardTitle>
+                        <CardDescription>
+                            Schedule and manage your content across all channels
+                            {isMultiSelectMode && selectedItems.size > 0 && (
+                                <span className="ml-2">
+                                    • {selectedItems.size} item{selectedItems.size !== 1 ? 's' : ''} selected
+                                </span>
+                            )}
+                        </CardDescription>
                     </div>
                 </CardHeader>
             </Card>

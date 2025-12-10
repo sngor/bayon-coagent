@@ -29,8 +29,10 @@ import {
     GraduationCap,
     MessageSquare,
     Users,
-    Trash2
+    Trash2,
+    DoorOpen
 } from 'lucide-react';
+import { AISparkleIcon } from '@/components/ui/real-estate-icons';
 import {
     Dialog,
     DialogContent,
@@ -96,11 +98,13 @@ export default function AdminFeaturesPage() {
             case 'Wand2': return <Wand2 className="h-5 w-5 text-purple-600" />;
             case 'Target': return <Target className="h-5 w-5 text-red-600" />;
             case 'Search': return <Search className="h-5 w-5 text-blue-600" />;
+            case 'AISparkleIcon': return <AISparkleIcon className="h-5 w-5 text-blue-600" />;
             case 'Calculator': return <Calculator className="h-5 w-5 text-orange-600" />;
             case 'Library': return <Library className="h-5 w-5 text-indigo-600" />;
             case 'GraduationCap': return <GraduationCap className="h-5 w-5 text-yellow-600" />;
             case 'MessageSquare': return <MessageSquare className="h-5 w-5 text-green-600" />;
             case 'Users': return <Users className="h-5 w-5 text-teal-600" />;
+            case 'DoorOpen': return <DoorOpen className="h-5 w-5 text-amber-600" />;
             default: return <Zap className="h-5 w-5 text-gray-600" />;
         }
     };
@@ -475,14 +479,15 @@ export default function AdminFeaturesPage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="Zap">Zap</SelectItem>
-                                        <SelectItem value="Wand2">Wand2</SelectItem>
-                                        <SelectItem value="Target">Target</SelectItem>
-                                        <SelectItem value="Search">Search</SelectItem>
-                                        <SelectItem value="Calculator">Calculator</SelectItem>
+                                        <SelectItem value="Wand2">Wand2 (Studio)</SelectItem>
+                                        <SelectItem value="Target">Target (Brand)</SelectItem>
+                                        <SelectItem value="AISparkleIcon">AI Sparkle (Intelligence)</SelectItem>
+                                        <SelectItem value="Calculator">Calculator (Tools)</SelectItem>
                                         <SelectItem value="Library">Library</SelectItem>
-                                        <SelectItem value="GraduationCap">GraduationCap</SelectItem>
-                                        <SelectItem value="MessageSquare">MessageSquare</SelectItem>
-                                        <SelectItem value="Users">Users</SelectItem>
+                                        <SelectItem value="GraduationCap">Graduation Cap (Learning)</SelectItem>
+                                        <SelectItem value="MessageSquare">Message Square (Assistant)</SelectItem>
+                                        <SelectItem value="Users">Users (Clients)</SelectItem>
+                                        <SelectItem value="DoorOpen">Door Open (Open House)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -561,14 +566,15 @@ export default function AdminFeaturesPage() {
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="Zap">Zap</SelectItem>
-                                            <SelectItem value="Wand2">Wand2</SelectItem>
-                                            <SelectItem value="Target">Target</SelectItem>
-                                            <SelectItem value="Search">Search</SelectItem>
-                                            <SelectItem value="Calculator">Calculator</SelectItem>
+                                            <SelectItem value="Wand2">Wand2 (Studio)</SelectItem>
+                                            <SelectItem value="Target">Target (Brand)</SelectItem>
+                                            <SelectItem value="AISparkleIcon">AI Sparkle (Intelligence)</SelectItem>
+                                            <SelectItem value="Calculator">Calculator (Tools)</SelectItem>
                                             <SelectItem value="Library">Library</SelectItem>
-                                            <SelectItem value="GraduationCap">GraduationCap</SelectItem>
-                                            <SelectItem value="MessageSquare">MessageSquare</SelectItem>
-                                            <SelectItem value="Users">Users</SelectItem>
+                                            <SelectItem value="GraduationCap">Graduation Cap (Learning)</SelectItem>
+                                            <SelectItem value="MessageSquare">Message Square (Assistant)</SelectItem>
+                                            <SelectItem value="Users">Users (Clients)</SelectItem>
+                                            <SelectItem value="DoorOpen">Door Open (Open House)</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

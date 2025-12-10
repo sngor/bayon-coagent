@@ -22,6 +22,7 @@ import {
     Calculator,
     FileText,
     DoorOpen,
+    CreditCard,
 } from 'lucide-react';
 import {
     HouseIcon,
@@ -220,6 +221,17 @@ const FilledIcons = {
             <line x1="10" y1="9" x2="8" y2="9" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
         </svg>
     ),
+    CreditCard: ({ ...props }) => (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            {...props}
+        >
+            <rect width="20" height="14" x="2" y="5" rx="2" />
+            <line x1="2" y1="10" x2="22" y2="10" stroke="rgba(255,255,255,0.3)" strokeWidth="2" />
+        </svg>
+    ),
     DoorOpen: ({ ...props }) => (
         <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -227,11 +239,15 @@ const FilledIcons = {
             fill="currentColor"
             {...props}
         >
-            <path d="M13 4h3a2 2 0 0 1 2 2v14" />
-            <path d="M2 20h3" />
-            <path d="M13 20h9" />
-            <path d="M10 12v.01" stroke="currentColor" strokeWidth="2" fill="none" />
-            <path d="M13 4.562v15.157a1 1 0 0 1-.553.894l-4.553 2.277a1 1 0 0 1-1.447-.894V5.562a2 2 0 0 1 1.105-1.788l4.553-2.277a1 1 0 0 1 1.447.894" />
+            {/* Door frame */}
+            <path d="M16 4h2a2 2 0 0 1 2 2v14h-4V4z" />
+            {/* Floor lines */}
+            <rect x="2" y="19" width="3" height="2" />
+            <rect x="13" y="19" width="9" height="2" />
+            {/* Door panel (main filled area) */}
+            <path d="M13 4.562v15.157a1 1 0 0 1-.553.894l-4.553 2.277a1 1 0 0 1-1.447-.894V5.562a2 2 0 0 1 1.105-1.788l4.553-2.277a1 1 0 0 1 1.447.894z" />
+            {/* Door handle */}
+            <circle cx="10" cy="12" r="1" fill="rgba(255,255,255,0.4)" />
         </svg>
     ),
 };
@@ -376,6 +392,13 @@ const superAdminNavItems = [
         icon: FileText,
         filledIcon: FilledIcons.FileText,
         label: 'Audit Logs',
+        customIcon: false
+    },
+    {
+        href: '/super-admin/billing',
+        icon: CreditCard,
+        filledIcon: FilledIcons.CreditCard,
+        label: 'Billing Management',
         customIcon: false
     },
 ];

@@ -14,8 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Home, Sparkles } from 'lucide-react';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 
 export default function ListingDescriptionGeneratorPage() {
   const [activeMode, setActiveMode] = useState('generate');
@@ -40,15 +39,9 @@ export default function ListingDescriptionGeneratorPage() {
       {/* Mode Selector */}
       <Card>
         <CardHeader className="pb-0">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold font-headline">Listing Descriptions</h1>
-              <p className="text-muted-foreground">Generate and optimize listing descriptions</p>
-            </div>
-            {(() => {
-              const pageMetadata = getPageMetadata('/studio/describe');
-              return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-            })()}
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold font-headline">Listing Descriptions</h1>
+            <p className="text-muted-foreground">Generate and optimize listing descriptions</p>
           </div>
         </CardHeader>
         <CardContent className="pt-6">

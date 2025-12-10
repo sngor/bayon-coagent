@@ -29,8 +29,7 @@ import { saveResearchReportAction } from '@/app/actions';
 import type { ResearchReport } from '@/lib/types/common/common';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 
 type ResearchInitialState = {
   message: string;
@@ -229,15 +228,9 @@ export default function ResearchAgentPage() {
     <div className="animate-fade-in-up space-y-8">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold font-headline">AI Research Agent</h1>
-              <p className="text-muted-foreground">Delegate deep-dive research. Your AI agent will compile a comprehensive report that you can save to your knowledge base.</p>
-            </div>
-            {(() => {
-              const pageMetadata = getPageMetadata('/research-agent');
-              return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-            })()}
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold font-headline">AI Research Agent</h1>
+            <p className="text-muted-foreground">Delegate deep-dive research. Your AI agent will compile a comprehensive report that you can save to your knowledge base.</p>
           </div>
           <CardTitle className="font-headline">New Research Task</CardTitle>
           <CardDescription>

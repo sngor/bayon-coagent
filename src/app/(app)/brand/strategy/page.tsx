@@ -38,6 +38,7 @@ import {
   PartyPopper,
   AlertCircle,
   RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import {
   AISparkleIcon,
@@ -56,8 +57,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils/common';
 import { Celebration } from '@/components/ui/celebration';
 
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 
 type GeneratePlanState = {
   message: string;
@@ -241,15 +241,9 @@ export default function MarketingPlanPage() {
       <div className="space-y-8">
         <Card className="text-center">
           <CardHeader>
-            <div className="flex items-center justify-between mb-6 text-left">
-              <div>
-                <CardTitle className="font-headline text-2xl">Marketing Strategy</CardTitle>
-                <CardDescription>AI-generated marketing plans</CardDescription>
-              </div>
-              {(() => {
-                const pageMetadata = getPageMetadata('/brand/strategy');
-                return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-              })()}
+            <div className="mb-6 text-left">
+              <CardTitle className="font-headline text-2xl">Marketing Strategy</CardTitle>
+              <CardDescription>AI-generated marketing plans</CardDescription>
             </div>
             <div className="text-center">
               <h2 className="font-headline text-3xl font-bold">Ready to Grow Your Brand?</h2>
@@ -334,7 +328,7 @@ export default function MarketingPlanPage() {
       {!isPlanLoading && !displayPlan && !isGenerating && (
         <div className="space-y-8">
           <StandardEmptyState
-            icon={<AISparkleIcon className="h-16 w-16 text-primary" />}
+            icon={AISparkleIcon}
             title="Your Marketing Success Starts Here"
             description="Get a personalized strategy that's built around your strengths and opportunities. We'll analyze your brand and competitors to create an action plan that actually works for your market."
             action={{

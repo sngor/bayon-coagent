@@ -8,11 +8,11 @@ import { cn } from '@/lib/utils/common';
  *
  * @example
  * <ContentWrapper maxWidth="default">
- *   {/* Content */}
- * </ContentWrapper >
+ *   {/\* Content *\/}
+ * </ContentWrapper>
  *
  * @requirements 8.1
-    */
+ */
 export interface ContentWrapperProps {
     children: React.ReactNode;
     maxWidth?: 'default' | 'wide' | 'narrow' | 'full';

@@ -53,8 +53,7 @@ import {
     type SecuredLink
 } from '@/features/client-dashboards/actions/client-dashboard-actions';
 import { formatDistanceToNow } from 'date-fns';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 
 // Helper function to format dates
 function formatDate(timestamp: number): string {
@@ -311,10 +310,6 @@ export default function ClientDashboardsPage() {
                                 Create and manage personalized client portals
                             </CardDescription>
                         </div>
-                        {(() => {
-                            const pageMetadata = getPageMetadata('/client-dashboards');
-                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-                        })()}
                     </div>
                 </CardHeader>
             </Card>

@@ -2,6 +2,7 @@
 
 import { HubLayoutWithFavorites } from '@/components/hub/hub-layout-with-favorites';
 import { FeatureGuard } from '@/components/feature-guard';
+import { EnhancedAgentIntegration } from '@/components/enhanced-agents';
 import { Wand2, PenTool, Image, Sparkles, Gift, Home } from 'lucide-react';
 
 const studioTabs = [
@@ -23,6 +24,11 @@ export default function StudioLayout({ children }: { children: React.ReactNode }
                 tabsVariant="pills"
             >
                 {children}
+                <EnhancedAgentIntegration
+                    hubContext="studio"
+                    position="bottom-right"
+                    showNotifications={true}
+                />
             </HubLayoutWithFavorites>
         </FeatureGuard>
     );

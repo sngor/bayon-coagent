@@ -93,9 +93,6 @@ function StickyHeaderTitle() {
 
   return (
     <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
-      {headerInfo.icon && (
-        <headerInfo.icon className={ICON_SIZES.lg} />
-      )}
       <h2 className="text-lg font-semibold font-headline text-foreground truncate whitespace-nowrap">
         {headerInfo.title}
       </h2>

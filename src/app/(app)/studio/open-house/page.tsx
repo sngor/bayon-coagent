@@ -8,8 +8,7 @@ import { OpenHouseMarketingForm } from '@/components/open-house/open-house-marke
 import { FlyerGenerator } from '@/components/open-house/flyer-generator';
 import { SocialPostGenerator } from '@/components/open-house/social-post-generator';
 import { EmailInviteGenerator } from '@/components/open-house/email-invite-generator';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 
 /**
  * Studio Hub - Open House Marketing Materials Page
@@ -24,19 +23,15 @@ import { getPageMetadata } from '@/lib/page-metadata';
 export default function OpenHouseMarketingPage() {
     const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('flyer');
-    const pageMetadata = getPageMetadata('/studio/open-house');
 
     return (
         <div className="space-y-6">
             {/* Page Header */}
-            <div className="flex items-start justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Open House Marketing</h1>
-                    <p className="text-muted-foreground mt-2">
-                        Create professional marketing materials for your open house sessions
-                    </p>
-                </div>
-                {pageMetadata && <FavoritesButton item={pageMetadata} variant="outline" size="sm" />}
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">Open House Marketing</h1>
+                <p className="text-muted-foreground mt-2">
+                    Create professional marketing materials for your open house sessions
+                </p>
             </div>
 
             {/* Session Selection */}

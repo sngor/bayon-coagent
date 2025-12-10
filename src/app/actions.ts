@@ -1010,9 +1010,19 @@ const renovationROISchema = z.object({
 
 export async function runResearchAgentAction(prevState: any, formData: FormData): Promise<{
   message: string;
-  data: (RunResearchAgentOutput & { reportId?: string }) | null;
+  data: (RunResearchAgentOutput & { reportId?: string; source?: string }) | null;
   errors: any;
 }> {
+  // Get current user
+  const user = await getCurrentUserServer();
+  if (!user) {
+    return {
+      message: 'Authentication required',
+      errors: { auth: 'Please sign in to use the research agent' },
+      data: null,
+    };
+  }
+
   const validatedFields = researchAgentSchema.safeParse({
     topic: formData.get('topic'),
   });
@@ -1027,12 +1037,53 @@ export async function runResearchAgentAction(prevState: any, formData: FormData)
   }
 
   try {
+    console.log('🔍 Starting enhanced research with Strands-inspired capabilities...');
+
+    // Try enhanced research service first
+    try {
+      const { runEnhancedResearch } = await import('@/services/strands/enhanced-research-service');
+
+      const enhancedResult = await runEnhancedResearch(
+        validatedFields.data.topic,
+        user.id,
+        {
+          searchDepth: 'advanced',
+          includeMarketAnalysis: true,
+          includeRecommendations: true,
+          targetAudience: 'agents',
+        }
+      );
+
+      if (enhancedResult.success && enhancedResult.report) {
+        console.log('✅ Enhanced research completed successfully');
+
+        return {
+          message: 'success',
+          data: {
+            report: enhancedResult.report,
+            citations: enhancedResult.citations || [],
+            source: enhancedResult.source || 'enhanced-research-agent',
+          },
+          errors: {},
+        };
+      }
+    } catch (enhancedError) {
+      console.warn('⚠️ Enhanced research failed, using standard Bedrock:', enhancedError);
+    }
+
+    // Fallback to original Bedrock implementation
+    console.log('🔄 Using standard Bedrock research agent');
     const result = await runResearchAgent({ topic: validatedFields.data.topic });
+
     return {
       message: 'success',
-      data: result,
+      data: {
+        ...result,
+        source: 'bedrock-agent',
+      },
       errors: {},
     };
+
   } catch (error) {
     const errorMessage = handleAWSError(error, 'An unexpected error occurred during research.');
     return {
@@ -8650,6 +8701,235 @@ export async function bootstrapFirstUserAction(
       message: errorMessage,
       data: undefined,
       errors: { system: [error.message || 'Unknown error'] },
+    };
+  }
+}
+
+// ============================================================================
+// ONBOARDING ACTIONS
+// ============================================================================
+
+/**
+ * Get onboarding state for a user
+ */
+export async function getOnboardingStateAction(userId: string): Promise<{
+  message: string;
+  data: any | null;
+  errors: any;
+}> {
+  try {
+    // Direct DynamoDB access to avoid service layer issues
+    const { DynamoDBRepository } = await import('@/aws/dynamodb/repository');
+    const { getOnboardingStateKeys } = await import('@/aws/dynamodb/keys');
+
+    const repository = new DynamoDBRepository();
+    const keys = getOnboardingStateKeys(userId);
+    const state = await repository.get(keys.PK, keys.SK);
+
+    return {
+      message: 'Onboarding state retrieved successfully',
+      data: state,
+      errors: null,
+    };
+  } catch (error: any) {
+    console.error('[ONBOARDING_ACTION] Error getting onboarding state:', error);
+    return {
+      message: 'Failed to get onboarding state',
+      data: null,
+      errors: error.message || 'Unknown error occurred',
+    };
+  }
+}
+
+/**
+ * Initialize onboarding for a user
+ */
+export async function initializeOnboardingAction(
+  userId: string,
+  flowType: 'user' | 'admin'
+): Promise<{
+  message: string;
+  data: any | null;
+  errors: any;
+}> {
+  try {
+    // Create a complete onboarding state with all required fields
+    const now = new Date().toISOString();
+    const state = {
+      userId,
+      flowType,
+      currentStep: 0, // Should be number, not string
+      completedSteps: [],
+      skippedSteps: [], // Required field that was missing
+      isComplete: false,
+      startedAt: now, // Required field that was missing
+      lastAccessedAt: now,
+      metadata: {}, // Optional but good to have
+    };
+
+    // Save to DynamoDB
+    const { DynamoDBRepository } = await import('@/aws/dynamodb/repository');
+    const { getOnboardingStateKeys } = await import('@/aws/dynamodb/keys');
+
+    const repository = new DynamoDBRepository();
+    const keys = getOnboardingStateKeys(userId, false, now);
+
+    const item = {
+      PK: keys.PK,
+      SK: keys.SK,
+      EntityType: 'OnboardingState',
+      Data: state,
+      CreatedAt: Date.now(),
+      UpdatedAt: Date.now(),
+      GSI1PK: keys.GSI1PK,
+      GSI1SK: keys.GSI1SK,
+    };
+
+    await repository.put(item);
+
+    return {
+      message: 'Onboarding initialized successfully',
+      data: state,
+      errors: null,
+    };
+  } catch (error: any) {
+    console.error('[ONBOARDING_ACTION] Error initializing onboarding:', error);
+    return {
+      message: 'Failed to initialize onboarding',
+      data: null,
+      errors: error.message || 'Unknown error occurred',
+    };
+  }
+}
+
+/**
+ * Complete an onboarding step
+ */
+export async function completeOnboardingStepAction(
+  userId: string,
+  stepId: string
+): Promise<{
+  message: string;
+  data: any | null;
+  errors: any;
+}> {
+  try {
+    // Get current state
+    const { DynamoDBRepository } = await import('@/aws/dynamodb/repository');
+    const { getOnboardingStateKeys } = await import('@/aws/dynamodb/keys');
+
+    const repository = new DynamoDBRepository();
+    const keys = getOnboardingStateKeys(userId);
+    let state = await repository.get(keys.PK, keys.SK);
+
+    if (!state) {
+      return {
+        message: 'Onboarding state not found',
+        data: null,
+        errors: 'Please initialize onboarding first',
+      };
+    }
+
+    // Update state
+    const now = new Date().toISOString();
+    const updatedState = {
+      ...state,
+      completedSteps: [...(state.completedSteps || []), stepId],
+      lastAccessedAt: now,
+    };
+
+    // Save updated state
+    const item = {
+      PK: keys.PK,
+      SK: keys.SK,
+      EntityType: 'OnboardingState',
+      Data: updatedState,
+      CreatedAt: state.CreatedAt || Date.now(), // Preserve original creation time
+      UpdatedAt: Date.now(),
+      GSI1PK: keys.GSI1PK,
+      GSI1SK: keys.GSI1SK,
+    };
+
+    await repository.put(item);
+
+    return {
+      message: 'Onboarding step completed successfully',
+      data: updatedState,
+      errors: null,
+    };
+  } catch (error: any) {
+    console.error('[ONBOARDING_ACTION] Error completing onboarding step:', error);
+    return {
+      message: 'Failed to complete onboarding step',
+      data: null,
+      errors: error.message || 'Unknown error occurred',
+    };
+  }
+}
+
+/**
+ * Skip an onboarding step
+ */
+export async function skipOnboardingStepAction(
+  userId: string,
+  stepId: string
+): Promise<{
+  message: string;
+  data: any | null;
+  errors: any;
+}> {
+  try {
+    // Get current state
+    const { DynamoDBRepository } = await import('@/aws/dynamodb/repository');
+    const { getOnboardingStateKeys } = await import('@/aws/dynamodb/keys');
+
+    const repository = new DynamoDBRepository();
+    const keys = getOnboardingStateKeys(userId);
+    let state = await repository.get(keys.PK, keys.SK);
+
+    if (!state) {
+      return {
+        message: 'Onboarding state not found',
+        data: null,
+        errors: 'Please initialize onboarding first',
+      };
+    }
+
+    // Update state
+    const now = new Date().toISOString();
+    const updatedState = {
+      ...state,
+      skippedSteps: [...(state.skippedSteps || []), stepId],
+      // Remove from completed steps if it was there
+      completedSteps: (state.completedSteps || []).filter((id: string) => id !== stepId),
+      lastAccessedAt: now,
+    };
+
+    // Save updated state
+    const item = {
+      PK: keys.PK,
+      SK: keys.SK,
+      EntityType: 'OnboardingState',
+      Data: updatedState,
+      CreatedAt: state.CreatedAt || Date.now(), // Preserve original creation time
+      UpdatedAt: Date.now(),
+      GSI1PK: keys.GSI1PK,
+      GSI1SK: keys.GSI1SK,
+    };
+
+    await repository.put(item);
+
+    return {
+      message: 'Onboarding step skipped successfully',
+      data: updatedState,
+      errors: null,
+    };
+  } catch (error: any) {
+    console.error('[ONBOARDING_ACTION] Error skipping onboarding step:', error);
+    return {
+      message: 'Failed to skip onboarding step',
+      data: null,
+      errors: error.message || 'Unknown error occurred',
     };
   }
 }

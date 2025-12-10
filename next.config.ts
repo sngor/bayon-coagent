@@ -67,6 +67,8 @@ const nextConfig: NextConfig = {
 
   // Turbopack configuration (moved from experimental.turbo)
   turbopack: {
+    // Set the correct root directory to silence the warning
+    root: __dirname,
     rules: {
       // Handle PWA-related files
       '*.worker.js': {
@@ -219,7 +221,7 @@ const pwaConfig = process.env.NODE_ENV === 'production'
     disable: false,
     register: true,
     skipWaiting: true,
-    sw: 'sw-custom.js', // Use our custom service worker
+    sw: 'sw.js', // Use the default service worker name
     fallbacks: {
       document: '/offline', // Fallback page when offline
     },
@@ -363,7 +365,7 @@ const pwaConfig = process.env.NODE_ENV === 'production'
       },
     ],
   })
-  : (config: NextConfig) => config; // In development, just return the config as-is
+  : (config: NextConfig) => config; // In development, don't apply PWA at all
 
 // Apply bundle analyzer wrapper
 export default withBundleAnalyzer(pwaConfig(nextConfig));

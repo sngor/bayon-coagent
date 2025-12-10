@@ -71,8 +71,7 @@ import { useFormStatus } from 'react-dom';
 import { FirstTimeUseEmptyState } from '@/components/ui/empty-states';
 import { Celebration } from '@/components/ui/celebration';
 import { AIOperationProgress, useAIOperation } from '@/components/ui/ai-operation-progress';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 import type { WebsiteAnalysisResult } from '@/ai/schemas/website-analysis-schemas';
 import { AnalysisResultsDisplay } from '@/components/website-analysis-results-display';
 import { WebsiteHistoricalTrendChart } from '@/components/website-historical-trend-chart';
@@ -789,12 +788,8 @@ export default function BrandAuditPage() {
                             {/* Score Explanation */}
                             <div className="space-y-6">
                                 <div>
-                                    <div className="flex items-center justify-between mb-2">
+                                    <div className="mb-2">
                                         <h3 className="text-2xl font-bold font-headline">Your Brand Score</h3>
-                                        {(() => {
-                                            const pageMetadata = getPageMetadata('/brand/audit');
-                                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-                                        })()}
                                     </div>
                                     <p className="text-muted-foreground">
                                         Your Brand Score is a comprehensive measure of your online authority and consistency.
@@ -1656,7 +1651,7 @@ export default function BrandAuditPage() {
                                 ) : (
                                     !isLoadingReviews && (
                                         <StandardEmptyState
-                                            icon={<MessageSquareQuote className="h-12 w-12 text-muted-foreground" />}
+                                            icon={MessageSquareQuote}
                                             title="No Reviews Yet"
                                             description="Your imported reviews will appear here. Connect your Google Business Profile or import reviews from Zillow to get started."
                                             action={{

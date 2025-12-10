@@ -27,8 +27,7 @@ import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
 import { cn } from '@/lib/utils/common';
 
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 
 type ValuationInitialState = {
     message: string;
@@ -205,15 +204,7 @@ ${state.data.disclaimer}
         <div className="space-y-8">
 
             <StandardCard
-                title={
-                    <div className="flex items-center justify-between w-full">
-                        <span className="font-headline">Property Valuation</span>
-                        {(() => {
-                            const pageMetadata = getPageMetadata('/tools/valuation');
-                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-                        })()}
-                    </div>
-                }
+                title="Property Valuation"
                 description="Get an instant, AI-powered market valuation based on a property description or address."
             >
                 <form action={formAction} className="space-y-4">

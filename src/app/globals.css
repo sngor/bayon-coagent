@@ -4,12 +4,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Mobile optimizations */
-@import "../styles/mobile-optimizations.css";
-
-/* Animation utilities */
-@import "../styles/animations.css";
-
 body {
   font-family: var(--font-body);
 }
@@ -3089,4 +3083,11 @@ body {
   -moz-transition: none !important;
   -o-transition: none !important;
   transition: none !important;
+}
+
+/* Required field indicator */
+.required::after {
+  content: " *";
+  color: hsl(var(--destructive));
+  font-weight: 600;
 }

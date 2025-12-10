@@ -11,8 +11,7 @@ import { generateTrainingPlanAction, saveTrainingPlanAction } from '@/app/action
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
 import { cn } from '@/lib/utils/common';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 
 export interface AITrainingPlanProps {
     className?: string;
@@ -219,10 +218,6 @@ export function AITrainingPlan({ className }: AITrainingPlanProps = {}) {
                                     </CardDescription>
                                 </div>
                             </div>
-                            {(() => {
-                                const pageMetadata = getPageMetadata('/learning/ai-plan');
-                                return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-                            })()}
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-6">

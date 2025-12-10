@@ -15,529 +15,525 @@
  * - Delay utilities
  */
 
-@layer utilities {
-  /* ============================================
-     FADE ANIMATIONS
-     ============================================ */
+/* ============================================
+   FADE ANIMATIONS
+   ============================================ */
 
-  .animate-fade-in-fast {
-    animation: fade-in var(--transition-fast) cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity;
-  }
+.animate-fade-in-fast {
+  animation: fade-in var(--transition-fast) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity;
+}
 
-  .animate-fade-in-base {
-    animation: fade-in var(--transition-base) cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity;
-  }
+.animate-fade-in-base {
+  animation: fade-in var(--transition-base) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity;
+}
 
-  .animate-fade-in-slow {
-    animation: fade-in var(--transition-slow) cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity;
-  }
+.animate-fade-in-slow {
+  animation: fade-in var(--transition-slow) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity;
+}
 
-  .animate-fade-out-fast {
-    animation: fade-out var(--transition-fast) cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity;
-  }
+.animate-fade-out-fast {
+  animation: fade-out var(--transition-fast) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity;
+}
 
-  .animate-fade-out-base {
-    animation: fade-out var(--transition-base) cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity;
-  }
+.animate-fade-out-base {
+  animation: fade-out var(--transition-base) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity;
+}
 
-  /* ============================================
+/* ============================================
      SLIDE ANIMATIONS
      ============================================ */
 
-  .animate-slide-up-fast {
-    animation: fade-in-up var(--transition-fast) cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-slide-up-fast {
+  animation: fade-in-up var(--transition-fast) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  .animate-slide-up-base {
-    animation: fade-in-up var(--transition-base) cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-slide-up-base {
+  animation: fade-in-up var(--transition-base) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  .animate-slide-up-slow {
-    animation: fade-in-up var(--transition-slow) cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-slide-up-slow {
+  animation: fade-in-up var(--transition-slow) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  .animate-slide-down-fast {
-    animation: slide-down var(--transition-fast) cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-slide-down-fast {
+  animation: slide-down var(--transition-fast) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  .animate-slide-down-base {
-    animation: slide-down var(--transition-base) cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-slide-down-base {
+  animation: slide-down var(--transition-base) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  .animate-slide-left-fast {
-    animation: slide-in-left var(--transition-fast) cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-slide-left-fast {
+  animation: slide-in-left var(--transition-fast) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  .animate-slide-left-base {
-    animation: slide-in-left var(--transition-base) cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-slide-left-base {
+  animation: slide-in-left var(--transition-base) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  .animate-slide-right-fast {
-    animation: slide-in-right var(--transition-fast)
-      cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-slide-right-fast {
+  animation: slide-in-right var(--transition-fast) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  .animate-slide-right-base {
-    animation: slide-in-right var(--transition-base)
-      cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-slide-right-base {
+  animation: slide-in-right var(--transition-base) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  /* ============================================
+/* ============================================
      SCALE ANIMATIONS
      ============================================ */
 
-  .animate-scale-in-fast {
-    animation: scale-in var(--transition-fast) cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-scale-in-fast {
+  animation: scale-in var(--transition-fast) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  .animate-scale-in-base {
-    animation: scale-in var(--transition-base) cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-scale-in-base {
+  animation: scale-in var(--transition-base) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  .animate-scale-in-slow {
-    animation: scale-in var(--transition-slow) cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-scale-in-slow {
+  animation: scale-in var(--transition-slow) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  /* ============================================
+/* ============================================
      BOUNCE ANIMATIONS
      ============================================ */
 
-  .animate-bounce-in-fast {
-    animation: bounce-in 400ms var(--transition-bounce);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-bounce-in-fast {
+  animation: bounce-in 400ms var(--transition-bounce);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  .animate-bounce-in-base {
-    animation: bounce-in 600ms var(--transition-bounce);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-bounce-in-base {
+  animation: bounce-in 600ms var(--transition-bounce);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  .animate-bounce-in-slow {
-    animation: bounce-in 800ms var(--transition-bounce);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-bounce-in-slow {
+  animation: bounce-in 800ms var(--transition-bounce);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  .animate-elastic-fast {
-    animation: elastic-bounce 600ms var(--transition-elastic);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-elastic-fast {
+  animation: elastic-bounce 600ms var(--transition-elastic);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  .animate-elastic-base {
-    animation: elastic-bounce 800ms var(--transition-elastic);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-elastic-base {
+  animation: elastic-bounce 800ms var(--transition-elastic);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  /* ============================================
+/* ============================================
      ROTATE ANIMATIONS
      ============================================ */
 
-  .animate-rotate-in-fast {
-    animation: rotate-in var(--transition-fast) cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-rotate-in-fast {
+  animation: rotate-in var(--transition-fast) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  .animate-rotate-in-base {
-    animation: rotate-in var(--transition-base) cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.animate-rotate-in-base {
+  animation: rotate-in var(--transition-base) cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  /* ============================================
+/* ============================================
      DURATION UTILITIES
      ============================================ */
 
-  .duration-fast {
-    animation-duration: var(--transition-fast);
-    transition-duration: var(--transition-fast);
-  }
+.duration-fast {
+  animation-duration: var(--transition-fast);
+  transition-duration: var(--transition-fast);
+}
 
-  .duration-base {
-    animation-duration: var(--transition-base);
-    transition-duration: var(--transition-base);
-  }
+.duration-base {
+  animation-duration: var(--transition-base);
+  transition-duration: var(--transition-base);
+}
 
-  .duration-slow {
-    animation-duration: var(--transition-slow);
-    transition-duration: var(--transition-slow);
-  }
+.duration-slow {
+  animation-duration: var(--transition-slow);
+  transition-duration: var(--transition-slow);
+}
 
-  .duration-smooth {
-    animation-duration: var(--transition-smooth);
-    transition-duration: var(--transition-smooth);
-  }
+.duration-smooth {
+  animation-duration: var(--transition-smooth);
+  transition-duration: var(--transition-smooth);
+}
 
-  /* ============================================
+/* ============================================
      EASING UTILITIES
      ============================================ */
 
-  .ease-default {
-    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  }
+.ease-default {
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
 
-  .ease-bounce {
-    animation-timing-function: var(--transition-bounce);
-    transition-timing-function: var(--transition-bounce);
-  }
+.ease-bounce {
+  animation-timing-function: var(--transition-bounce);
+  transition-timing-function: var(--transition-bounce);
+}
 
-  .ease-elastic {
-    animation-timing-function: var(--transition-elastic);
-    transition-timing-function: var(--transition-elastic);
-  }
+.ease-elastic {
+  animation-timing-function: var(--transition-elastic);
+  transition-timing-function: var(--transition-elastic);
+}
 
-  .ease-spring {
-    animation-timing-function: var(--transition-spring);
-    transition-timing-function: var(--transition-spring);
-  }
+.ease-spring {
+  animation-timing-function: var(--transition-spring);
+  transition-timing-function: var(--transition-spring);
+}
 
-  /* ============================================
+/* ============================================
      DELAY UTILITIES
      ============================================ */
 
-  .delay-0 {
-    animation-delay: 0ms;
-    transition-delay: 0ms;
-  }
+.delay-0 {
+  animation-delay: 0ms;
+  transition-delay: 0ms;
+}
 
-  .delay-75 {
-    animation-delay: 75ms;
-    transition-delay: 75ms;
-  }
+.delay-75 {
+  animation-delay: 75ms;
+  transition-delay: 75ms;
+}
 
-  .delay-150 {
-    animation-delay: 150ms;
-    transition-delay: 150ms;
-  }
+.delay-150 {
+  animation-delay: 150ms;
+  transition-delay: 150ms;
+}
 
-  .delay-300 {
-    animation-delay: 300ms;
-    transition-delay: 300ms;
-  }
+.delay-300 {
+  animation-delay: 300ms;
+  transition-delay: 300ms;
+}
 
-  .delay-500 {
-    animation-delay: 500ms;
-    transition-delay: 500ms;
-  }
+.delay-500 {
+  animation-delay: 500ms;
+  transition-delay: 500ms;
+}
 
-  .delay-700 {
-    animation-delay: 700ms;
-    transition-delay: 700ms;
-  }
+.delay-700 {
+  animation-delay: 700ms;
+  transition-delay: 700ms;
+}
 
-  .delay-1000 {
-    animation-delay: 1000ms;
-    transition-delay: 1000ms;
-  }
+.delay-1000 {
+  animation-delay: 1000ms;
+  transition-delay: 1000ms;
+}
 
-  /* ============================================
+/* ============================================
      STAGGER UTILITIES (for lists)
      ============================================ */
 
-  .stagger-children > * {
-    animation: stagger-fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
-    will-change: opacity, transform;
-    backface-visibility: hidden;
-  }
+.stagger-children > * {
+  animation: stagger-fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
 
-  .stagger-children > *:nth-child(1) {
-    animation-delay: 50ms;
-  }
-  .stagger-children > *:nth-child(2) {
-    animation-delay: 100ms;
-  }
-  .stagger-children > *:nth-child(3) {
-    animation-delay: 150ms;
-  }
-  .stagger-children > *:nth-child(4) {
-    animation-delay: 200ms;
-  }
-  .stagger-children > *:nth-child(5) {
-    animation-delay: 250ms;
-  }
-  .stagger-children > *:nth-child(6) {
-    animation-delay: 300ms;
-  }
-  .stagger-children > *:nth-child(7) {
-    animation-delay: 350ms;
-  }
-  .stagger-children > *:nth-child(8) {
-    animation-delay: 400ms;
-  }
-  .stagger-children > *:nth-child(9) {
-    animation-delay: 450ms;
-  }
-  .stagger-children > *:nth-child(10) {
-    animation-delay: 500ms;
-  }
+.stagger-children > *:nth-child(1) {
+  animation-delay: 50ms;
+}
+.stagger-children > *:nth-child(2) {
+  animation-delay: 100ms;
+}
+.stagger-children > *:nth-child(3) {
+  animation-delay: 150ms;
+}
+.stagger-children > *:nth-child(4) {
+  animation-delay: 200ms;
+}
+.stagger-children > *:nth-child(5) {
+  animation-delay: 250ms;
+}
+.stagger-children > *:nth-child(6) {
+  animation-delay: 300ms;
+}
+.stagger-children > *:nth-child(7) {
+  animation-delay: 350ms;
+}
+.stagger-children > *:nth-child(8) {
+  animation-delay: 400ms;
+}
+.stagger-children > *:nth-child(9) {
+  animation-delay: 450ms;
+}
+.stagger-children > *:nth-child(10) {
+  animation-delay: 500ms;
+}
 
-  /* ============================================
+/* ============================================
      HOVER ANIMATIONS
      ============================================ */
 
-  .hover-lift {
-    transition: transform var(--transition-base),
-      box-shadow var(--transition-base);
-    will-change: transform, box-shadow;
-  }
+.hover-lift {
+  transition: transform var(--transition-base),
+    box-shadow var(--transition-base);
+  will-change: transform, box-shadow;
+}
 
-  .hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-  }
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
 
-  .hover-lift-lg {
-    transition: transform var(--transition-base),
-      box-shadow var(--transition-base);
-    will-change: transform, box-shadow;
-  }
+.hover-lift-lg {
+  transition: transform var(--transition-base),
+    box-shadow var(--transition-base);
+  will-change: transform, box-shadow;
+}
 
-  .hover-lift-lg:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
-  }
+.hover-lift-lg:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
 
-  .hover-scale {
-    transition: transform var(--transition-base);
-    will-change: transform;
-    backface-visibility: hidden;
-  }
+.hover-scale {
+  transition: transform var(--transition-base);
+  will-change: transform;
+  backface-visibility: hidden;
+}
 
-  .hover-scale:hover {
-    transform: scale(1.02);
-  }
+.hover-scale:hover {
+  transform: scale(1.02);
+}
 
-  .hover-scale-lg {
-    transition: transform var(--transition-base);
-    will-change: transform;
-    backface-visibility: hidden;
-  }
+.hover-scale-lg {
+  transition: transform var(--transition-base);
+  will-change: transform;
+  backface-visibility: hidden;
+}
 
-  .hover-scale-lg:hover {
-    transform: scale(1.05);
-  }
+.hover-scale-lg:hover {
+  transform: scale(1.05);
+}
 
-  .hover-glow {
-    transition: box-shadow var(--transition-base);
-    will-change: box-shadow;
-  }
+.hover-glow {
+  transition: box-shadow var(--transition-base);
+  will-change: box-shadow;
+}
 
-  .hover-glow:hover {
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
-  }
+.hover-glow:hover {
+  box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+}
 
-  /* ============================================
+/* ============================================
      FOCUS ANIMATIONS
      ============================================ */
 
-  .focus-ring {
-    transition: box-shadow var(--transition-fast);
+.focus-ring {
+  transition: box-shadow var(--transition-fast);
+}
+
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.5);
+}
+
+.focus-ring-animated:focus-visible {
+  outline: none;
+  animation: focus-ring-expand 0.3s ease-out;
+}
+
+/* ============================================
+     ACTIVE STATE ANIMATIONS
+     ============================================ */
+
+.active-press {
+  transition: transform var(--transition-fast);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.active-press:active {
+  transform: scale(0.95);
+}
+
+.active-press-lg {
+  transition: transform var(--transition-fast);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.active-press-lg:active {
+  transform: scale(0.9);
+}
+
+/* ============================================
+     LOADING ANIMATIONS
+     ============================================ */
+
+.animate-pulse-slow {
+  animation: pulse-success 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  will-change: opacity, transform;
+}
+
+.animate-pulse-base {
+  animation: pulse-success 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  will-change: opacity, transform;
+}
+
+.animate-pulse-fast {
+  animation: pulse-success 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  will-change: opacity, transform;
+}
+
+.animate-spin-slow {
+  animation: light-ray-rotate 2s linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.animate-spin-base {
+  animation: light-ray-rotate 1s linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.animate-spin-fast {
+  animation: light-ray-rotate 0.5s linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* ============================================
+     REDUCED MOTION SUPPORT
+     ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  /* Disable all animations */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 
+  /* Reset animated elements to their final state */
+  .animate-fade-in-fast,
+  .animate-fade-in-base,
+  .animate-fade-in-slow,
+  .animate-fade-in,
+  .animate-fade-in-up,
+  .animate-slide-up-fast,
+  .animate-slide-up-base,
+  .animate-slide-up-slow,
+  .animate-slide-down-fast,
+  .animate-slide-down-base,
+  .animate-slide-left-fast,
+  .animate-slide-left-base,
+  .animate-slide-right-fast,
+  .animate-slide-right-base,
+  .animate-slide-in-right,
+  .animate-slide-in-left,
+  .animate-slide-down,
+  .animate-scale-in-fast,
+  .animate-scale-in-base,
+  .animate-scale-in-slow,
+  .animate-scale-in,
+  .animate-bounce-in-fast,
+  .animate-bounce-in-base,
+  .animate-bounce-in-slow,
+  .animate-bounce-in,
+  .animate-elastic-fast,
+  .animate-elastic-base,
+  .animate-elastic-bounce,
+  .animate-rotate-in-fast,
+  .animate-rotate-in-base,
+  .animate-rotate-in,
+  .animate-page-transition {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Disable hover effects */
+  .hover-lift:hover,
+  .hover-lift-lg:hover {
+    transform: none;
+  }
+
+  .hover-scale:hover,
+  .hover-scale-lg:hover {
+    transform: none;
+  }
+
+  /* Disable active effects */
+  .active-press:active,
+  .active-press-lg:active {
+    transform: none;
+  }
+
+  /* Keep focus rings for accessibility */
   .focus-ring:focus-visible {
-    outline: none;
     box-shadow: 0 0 0 3px hsl(var(--ring) / 0.5);
   }
 
   .focus-ring-animated:focus-visible {
-    outline: none;
-    animation: focus-ring-expand 0.3s ease-out;
+    animation: none;
+    box-shadow: 0 0 0 3px hsl(var(--ring) / 0.5);
   }
 
-  /* ============================================
-     ACTIVE STATE ANIMATIONS
-     ============================================ */
-
-  .active-press {
-    transition: transform var(--transition-fast);
-    will-change: transform;
-    backface-visibility: hidden;
-  }
-
-  .active-press:active {
-    transform: scale(0.95);
-  }
-
-  .active-press-lg {
-    transition: transform var(--transition-fast);
-    will-change: transform;
-    backface-visibility: hidden;
-  }
-
-  .active-press-lg:active {
-    transform: scale(0.9);
-  }
-
-  /* ============================================
-     LOADING ANIMATIONS
-     ============================================ */
-
-  .animate-pulse-slow {
-    animation: pulse-success 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    will-change: opacity, transform;
-  }
-
-  .animate-pulse-base {
-    animation: pulse-success 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    will-change: opacity, transform;
-  }
-
+  /* Simplify loading animations to opacity changes only */
+  .animate-pulse-slow,
+  .animate-pulse-base,
   .animate-pulse-fast {
-    animation: pulse-success 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    will-change: opacity, transform;
+    animation: none !important;
+    opacity: 0.7;
   }
 
-  .animate-spin-slow {
-    animation: light-ray-rotate 2s linear infinite;
-    will-change: transform;
-    backface-visibility: hidden;
-  }
-
-  .animate-spin-base {
-    animation: light-ray-rotate 1s linear infinite;
-    will-change: transform;
-    backface-visibility: hidden;
-  }
-
+  .animate-spin-slow,
+  .animate-spin-base,
   .animate-spin-fast {
-    animation: light-ray-rotate 0.5s linear infinite;
-    will-change: transform;
-    backface-visibility: hidden;
+    animation: none !important;
   }
 
-  /* ============================================
-     REDUCED MOTION SUPPORT
-     ============================================ */
-
-  @media (prefers-reduced-motion: reduce) {
-    /* Disable all animations */
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
-    }
-
-    /* Reset animated elements to their final state */
-    .animate-fade-in-fast,
-    .animate-fade-in-base,
-    .animate-fade-in-slow,
-    .animate-fade-in,
-    .animate-fade-in-up,
-    .animate-slide-up-fast,
-    .animate-slide-up-base,
-    .animate-slide-up-slow,
-    .animate-slide-down-fast,
-    .animate-slide-down-base,
-    .animate-slide-left-fast,
-    .animate-slide-left-base,
-    .animate-slide-right-fast,
-    .animate-slide-right-base,
-    .animate-slide-in-right,
-    .animate-slide-in-left,
-    .animate-slide-down,
-    .animate-scale-in-fast,
-    .animate-scale-in-base,
-    .animate-scale-in-slow,
-    .animate-scale-in,
-    .animate-bounce-in-fast,
-    .animate-bounce-in-base,
-    .animate-bounce-in-slow,
-    .animate-bounce-in,
-    .animate-elastic-fast,
-    .animate-elastic-base,
-    .animate-elastic-bounce,
-    .animate-rotate-in-fast,
-    .animate-rotate-in-base,
-    .animate-rotate-in,
-    .animate-page-transition {
-      animation: none !important;
-      opacity: 1;
-      transform: none;
-    }
-
-    /* Disable hover effects */
-    .hover-lift:hover,
-    .hover-lift-lg:hover {
-      transform: none;
-    }
-
-    .hover-scale:hover,
-    .hover-scale-lg:hover {
-      transform: none;
-    }
-
-    /* Disable active effects */
-    .active-press:active,
-    .active-press-lg:active {
-      transform: none;
-    }
-
-    /* Keep focus rings for accessibility */
-    .focus-ring:focus-visible {
-      box-shadow: 0 0 0 3px hsl(var(--ring) / 0.5);
-    }
-
-    .focus-ring-animated:focus-visible {
-      animation: none;
-      box-shadow: 0 0 0 3px hsl(var(--ring) / 0.5);
-    }
-
-    /* Simplify loading animations to opacity changes only */
-    .animate-pulse-slow,
-    .animate-pulse-base,
-    .animate-pulse-fast {
-      animation: none !important;
-      opacity: 0.7;
-    }
-
-    .animate-spin-slow,
-    .animate-spin-base,
-    .animate-spin-fast {
-      animation: none !important;
-    }
-
-    /* Disable stagger animations */
-    .stagger-children > * {
-      animation: none !important;
-      opacity: 1;
-      transform: none;
-    }
+  /* Disable stagger animations */
+  .stagger-children > * {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
   }
 }

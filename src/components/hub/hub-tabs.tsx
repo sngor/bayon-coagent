@@ -79,15 +79,15 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default', isStic
 
         const variantStyles = {
             default: {
-                tab: 'border-b-2 border-transparent hover:border-muted-foreground/50 data-[active=true]:border-primary data-[active=true]:text-primary',
+                tab: 'border-b-2 border-transparent hover:border-muted-foreground/50 data-[active=true]:border-[#535353] data-[active=true]:text-[#535353] dark:data-[active=true]:border-white dark:data-[active=true]:text-white',
                 container: ''
             },
             pills: {
-                tab: 'rounded-full hover:bg-accent hover:text-accent-foreground data-[active=true]:bg-primary data-[active=true]:text-primary-foreground',
+                tab: 'rounded-full hover:bg-accent hover:text-accent-foreground data-[active=true]:bg-[#535353] data-[active=true]:text-white dark:data-[active=true]:bg-white dark:data-[active=true]:text-[#535353]',
                 container: ''
             },
             underline: {
-                tab: 'border-b-2 border-transparent hover:text-foreground data-[active=true]:border-primary data-[active=true]:text-foreground',
+                tab: 'border-b-2 border-transparent hover:text-foreground data-[active=true]:border-[#535353] data-[active=true]:text-foreground dark:data-[active=true]:border-white',
                 container: ''
             }
         };

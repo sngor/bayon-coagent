@@ -66,7 +66,7 @@ const PageHeader = React.forwardRef<HTMLDivElement, PageHeaderProps>(
                 isHub ? "" : "p-2 bg-primary/10 rounded-lg"
               )} aria-hidden="true">
                 <Icon className={cn(
-                  "text-primary",
+                  "text-foreground",
                   isHub ? "h-8 w-8" : isCompact ? "w-5 h-5" : "w-6 h-6"
                 )} />
               </div>

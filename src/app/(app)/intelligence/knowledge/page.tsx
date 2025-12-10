@@ -7,8 +7,7 @@ import { Input } from '@/components/ui/input';
 import { DocumentUpload } from '@/components/knowledge-base/document-upload';
 import { DocumentList } from '@/components/knowledge-base/document-list';
 import { Document } from '@/components/knowledge-base/document-card';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 import {
     Dialog,
     DialogContent,
@@ -30,7 +29,6 @@ export default function KnowledgeBasePage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
-    const pageMetadata = getPageMetadata('/intelligence/knowledge');
 
     const fetchDocuments = async () => {
         setIsLoading(true);
@@ -287,7 +285,6 @@ export default function KnowledgeBasePage() {
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    {pageMetadata && <FavoritesButton item={pageMetadata} variant="outline" size="sm" />}
                     <Button variant="outline" onClick={() => setShowLinkDialog(true)} className="gap-2">
                         <LinkIcon className="h-4 w-4" />
                         Add Link

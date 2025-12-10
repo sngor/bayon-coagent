@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 
 import { useToast } from '@/hooks/use-toast';
 
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default function ROIPage() {
@@ -30,10 +29,6 @@ export default function ROIPage() {
                             <CardTitle className="font-headline text-2xl">ROI Calculator</CardTitle>
                             <CardDescription>Analyze investment returns</CardDescription>
                         </div>
-                        {(() => {
-                            const pageMetadata = getPageMetadata('/tools/roi');
-                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-                        })()}
                     </div>
                 </CardHeader>
             </Card>

@@ -10,8 +10,7 @@ import { Loader2, Sparkles, Download, Share2, Wand2, RefreshCw, ImagePlus, Trash
 import { generatePostCardAction } from '@/features/content-engine/actions/post-card-actions';
 import { useToast } from '@/hooks/use-toast';
 import NextImage from 'next/image';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 import { CardTypeSelector } from './card-type-selector';
 import { StyleSelector } from './style-selector';
 import { Badge } from '@/components/ui/badge';
@@ -262,17 +261,11 @@ export default function PostCardsPage() {
     return (
         <div className="w-full space-y-8 pb-12">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold font-headline tracking-tight">Post Card Studio</h1>
-                    <p className="text-muted-foreground mt-1">
-                        Design stunning, personalized real estate post cards in seconds with AI.
-                    </p>
-                </div>
-                {(() => {
-                    const pageMetadata = getPageMetadata('/studio/post-cards');
-                    return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-                })()}
+            <div>
+                <h1 className="text-3xl font-bold font-headline tracking-tight">Post Card Studio</h1>
+                <p className="text-muted-foreground mt-1">
+                    Design stunning, personalized real estate post cards in seconds with AI.
+                </p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

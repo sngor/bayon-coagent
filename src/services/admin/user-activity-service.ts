@@ -17,6 +17,8 @@ import {
     normalizePaginationOptions,
     createPaginatedResult,
     QueryCache,
+} from './pagination-service';
+import {
     getCacheService,
     CacheKeys,
     CacheTTL,
@@ -52,10 +54,11 @@ export interface UserActivityTimeline {
 export class UserActivityService {
     private repository: DynamoDBRepository;
     private cache = getCacheService();
-    private queryCache = new QueryCache<UserActivity>(CacheTTL.USER_ACTIVITY);
+    private queryCache: QueryCache<UserActivity>;
 
     constructor() {
         this.repository = new DynamoDBRepository();
+        this.queryCache = new QueryCache<UserActivity>(CacheTTL.USER_ACTIVITY);
     }
 
     /**

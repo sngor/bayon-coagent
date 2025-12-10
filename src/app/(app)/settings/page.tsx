@@ -24,8 +24,7 @@ import { FeatureToggles } from '@/components/feature-toggles';
 import { NotificationSettings } from '@/lib/notifications/components';
 import { ProfileImageUpload } from '@/components/profile-image-upload';
 import { updateProfilePhotoUrlAction } from '@/app/actions';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 
 function formatTimestamp(timestamp: number): string {
     const now = Date.now();
@@ -137,7 +136,6 @@ function getActivityConfig(activity: any) {
 export default function SettingsPage() {
     const { user } = useUser();
     const { theme, setTheme } = useTheme();
-    const pageMetadata = getPageMetadata('/settings');
     const { toast } = useToast();
     const { preferences, updatePreference } = useAccessibility();
     const [recentActivity, setRecentActivity] = useState<any[]>([]);
@@ -410,14 +408,6 @@ export default function SettingsPage() {
     return (
         <>
             <div className="animate-fade-in-up space-y-6">
-                <div className="flex items-center justify-between mb-6">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-                        <p className="text-muted-foreground">Manage your account and preferences</p>
-                    </div>
-                    {pageMetadata && <FavoritesButton item={pageMetadata} variant="outline" size="sm" />}
-                </div>
-
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                     <TabsList className="overflow-x-auto">
                         <TabsTrigger value="account">

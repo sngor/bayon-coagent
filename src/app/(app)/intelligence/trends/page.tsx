@@ -10,8 +10,7 @@ import { Button } from '@/components/ui/button';
 
 import { useToast } from '@/hooks/use-toast';
 import { PageHeader } from '@/components/page-header';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 
 export default function MarketTrendsPage() {
@@ -29,15 +28,9 @@ export default function MarketTrendsPage() {
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="font-headline text-2xl">Market Trends</CardTitle>
-                            <CardDescription>Life event predictions and market trends</CardDescription>
-                        </div>
-                        {(() => {
-                            const pageMetadata = getPageMetadata('/intelligence/trends');
-                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-                        })()}
+                    <div>
+                        <CardTitle className="font-headline text-2xl">Market Trends</CardTitle>
+                        <CardDescription>Life event predictions and market trends</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent>

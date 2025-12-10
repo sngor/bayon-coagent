@@ -13,11 +13,11 @@ import { cn } from '@/lib/utils/common';
  *   headerAction={<Button variant="ghost">View All</Button>}
  *   variant="elevated"
  * >
- *   {/* Content */}
- * </SectionContainer >
+ *   {/\* Content *\/}
+ * </SectionContainer>
  *
  * @requirements 8.1
-    */
+ */
 export interface SectionContainerProps {
     title?: string;
     description?: string;

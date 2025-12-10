@@ -5,28 +5,26 @@
  * 
  * Core Web Vitals:
  * - LCP (Largest Contentful Paint): Measures loading performance
- * - FID (First Input Delay): Measures interactivity
+ * - INP (Interaction to Next Paint): Measures responsiveness (replaces FID)
  * - CLS (Cumulative Layout Shift): Measures visual stability
  * - FCP (First Contentful Paint): Measures perceived load speed
  * - TTFB (Time to First Byte): Measures server response time
- * - INP (Interaction to Next Paint): Measures responsiveness
  * 
  * @see https://web.dev/vitals/
  */
 
-import { onCLS, onFCP, onFID, onINP, onLCP, onTTFB, type Metric } from 'web-vitals';
+import { onCLS, onFCP, onINP, onLCP, onTTFB, type Metric } from 'web-vitals';
 
 // Thresholds for Core Web Vitals (in milliseconds or score)
 export const WEB_VITALS_THRESHOLDS = {
     LCP: { good: 2500, needsImprovement: 4000 },
-    FID: { good: 100, needsImprovement: 300 },
     CLS: { good: 0.1, needsImprovement: 0.25 },
     FCP: { good: 1800, needsImprovement: 3000 },
     TTFB: { good: 800, needsImprovement: 1800 },
     INP: { good: 200, needsImprovement: 500 },
 } as const;
 
-export type WebVitalMetricName = 'CLS' | 'FCP' | 'FID' | 'INP' | 'LCP' | 'TTFB';
+export type WebVitalMetricName = 'CLS' | 'FCP' | 'INP' | 'LCP' | 'TTFB';
 
 export interface WebVitalMetric {
     name: WebVitalMetricName;
@@ -140,7 +138,6 @@ export function initWebVitals(): void {
     // Track all Core Web Vitals
     onCLS(handleMetric);
     onFCP(handleMetric);
-    onFID(handleMetric);
     onINP(handleMetric);
     onLCP(handleMetric);
     onTTFB(handleMetric);
@@ -155,7 +152,7 @@ export async function getCurrentMetrics(): Promise<WebVitalMetric[]> {
     return new Promise((resolve) => {
         const metrics: WebVitalMetric[] = [];
         let collected = 0;
-        const total = 6; // Number of metrics we're tracking
+        const total = 5; // Number of metrics we're tracking
 
         const collectMetric = (metric: Metric) => {
             metrics.push({
@@ -176,7 +173,6 @@ export async function getCurrentMetrics(): Promise<WebVitalMetric[]> {
         // Collect all metrics
         onCLS(collectMetric, { reportAllChanges: true });
         onFCP(collectMetric);
-        onFID(collectMetric);
         onINP(collectMetric, { reportAllChanges: true });
         onLCP(collectMetric, { reportAllChanges: true });
         onTTFB(collectMetric);

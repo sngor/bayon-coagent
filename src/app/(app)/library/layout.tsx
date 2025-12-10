@@ -2,6 +2,7 @@
 
 import { HubLayoutWithFavorites } from '@/components/hub/hub-layout-with-favorites';
 import { FeatureGuard } from '@/components/feature-guard';
+import { EnhancedAgentIntegration } from '@/components/enhanced-agents';
 import { Library, FileText, BarChart3, Image, Bookmark, Home, Calendar } from 'lucide-react';
 
 const libraryTabs = [
@@ -26,6 +27,11 @@ export default function LibraryLayout({
                 tabsVariant="pills"
             >
                 {children}
+                <EnhancedAgentIntegration
+                    hubContext="library"
+                    position="bottom-right"
+                    showNotifications={true}
+                />
             </HubLayoutWithFavorites>
         </FeatureGuard>
     );

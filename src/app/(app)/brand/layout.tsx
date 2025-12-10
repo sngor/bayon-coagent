@@ -2,6 +2,7 @@
 
 import { HubLayoutWithFavorites } from '@/components/hub/hub-layout-with-favorites';
 import { FeatureGuard } from '@/components/feature-guard';
+import { EnhancedAgentIntegration } from '@/components/enhanced-agents';
 import { Target, User, Shield, Users, Zap, Calendar, MessageSquareQuote, Sparkles } from 'lucide-react';
 
 const brandTabs = [
@@ -25,6 +26,11 @@ export default function BrandLayout({ children }: { children: React.ReactNode })
                 tabsVariant="pills"
             >
                 {children}
+                <EnhancedAgentIntegration
+                    hubContext="brand"
+                    position="bottom-right"
+                    showNotifications={true}
+                />
             </HubLayoutWithFavorites>
         </FeatureGuard>
     );

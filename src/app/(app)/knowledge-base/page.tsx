@@ -4,8 +4,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { StandardEmptyState } from '@/components/standard/empty-state';
 import { useUser } from '@/aws/auth';
@@ -160,15 +159,9 @@ export default function KnowledgeBasePage() {
         <div className="animate-fade-in-up space-y-8">
             <Card className="mb-6">
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="font-headline text-2xl">Knowledge Base</CardTitle>
-                            <CardDescription>A centralized library of all your saved AI-generated research reports.</CardDescription>
-                        </div>
-                        {(() => {
-                            const pageMetadata = getPageMetadata('/knowledge-base');
-                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-                        })()}
+                    <div>
+                        <CardTitle className="font-headline text-2xl">Knowledge Base</CardTitle>
+                        <CardDescription>A centralized library of all your saved AI-generated research reports.</CardDescription>
                     </div>
                 </CardHeader>
                 {!isLoading && reports && reports.length > 0 && (

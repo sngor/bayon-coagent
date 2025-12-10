@@ -53,8 +53,7 @@ import type {
     EditParams,
 } from '@/ai/schemas/reimagine-schemas';
 import { cn } from '@/lib/utils/common';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 
 // Workflow states - simplified to 3 states
 type WorkflowState =
@@ -446,15 +445,9 @@ export default function ReimagineToolkitPage() {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <Card className="mb-6">
                     <CardHeader className="pb-0">
-                        <div className="flex items-center justify-between mb-6">
-                            <div>
-                                <h1 className="text-2xl font-bold font-headline">Reimagine Image Toolkit</h1>
-                                <p className="text-muted-foreground">Transform property photos with AI</p>
-                            </div>
-                            {(() => {
-                                const pageMetadata = getPageMetadata('/studio/reimagine');
-                                return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-                            })()}
+                        <div className="mb-6">
+                            <h1 className="text-2xl font-bold font-headline">Reimagine Image Toolkit</h1>
+                            <p className="text-muted-foreground">Transform property photos with AI</p>
                         </div>
                     </CardHeader>
                     <CardContent className="pt-6">

@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { email, priceId, userId } = await request.json();
+        const { email, priceId, userId, couponId } = await request.json();
 
         if (!email || !priceId || !userId) {
             return NextResponse.json(
@@ -52,8 +52,8 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        // Create subscription
-        const subscription = await stripe.subscriptions.create({
+        // Create subscription with optional coupon
+        const subscriptionParams: Stripe.SubscriptionCreateParams = {
             customer: customer.id,
             items: [{ price: priceId }],
             payment_behavior: 'default_incomplete',
@@ -65,7 +65,14 @@ export async function POST(request: NextRequest) {
             metadata: {
                 userId,
             },
-        });
+        };
+
+        // Add coupon if provided (using discounts array for newer API)
+        if (couponId) {
+            subscriptionParams.discounts = [{ coupon: couponId }];
+        }
+
+        const subscription = await stripe.subscriptions.create(subscriptionParams);
 
         const invoice = subscription.latest_invoice as Stripe.Invoice;
         const paymentIntentField = (invoice as any).payment_intent;

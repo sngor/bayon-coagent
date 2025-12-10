@@ -111,8 +111,7 @@ import { TemplateSaveModal } from '@/components/template-save-modal';
 import { ProjectSelector } from '@/components/project-selector';
 import { ContentCategory, TemplateConfiguration } from '@/lib/types/content-workflow-types';
 import { PageHeader } from '@/components/ui/page-header';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 import { SEOAnalysisCard } from '@/components/seo-analysis-card';
 import { MetaDescriptionEditor } from '@/components/meta-description-editor';
 import { KeywordSuggestionPanel } from '@/components/keyword-suggestion-panel';
@@ -1324,15 +1323,9 @@ export default function ContentEnginePage() {
       {/* Content Type Selector */}
       <Card className="animate-slide-in-top">
         <CardHeader className="pb-0">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold font-headline">Write Content</h1>
-              <p className="text-muted-foreground">Create blog posts and articles</p>
-            </div>
-            {(() => {
-              const pageMetadata = getPageMetadata('/studio/write');
-              return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-            })()}
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold font-headline">Write Content</h1>
+            <p className="text-muted-foreground">Create blog posts and articles</p>
           </div>
         </CardHeader>
         <CardContent className="pt-6">

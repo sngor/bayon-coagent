@@ -17,14 +17,7 @@ export const metadata = {
 
 export default function SequencesPage() {
     return (
-        <div className="container mx-auto py-6 space-y-6">
-            <div className="space-y-2">
-                <h1 className="text-3xl font-bold">Follow-up Sequences</h1>
-                <p className="text-muted-foreground">
-                    Create automated follow-up sequences to engage with open house visitors over time
-                </p>
-            </div>
-
+        <div className="space-y-6">
             <Suspense fallback={<SequencesLoadingSkeleton />}>
                 <SequencesContent />
             </Suspense>

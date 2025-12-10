@@ -9,8 +9,7 @@ import { toast } from '@/hooks/use-toast';
 import { StandardLoadingSpinner } from '@/components/standard';
 import { GradientText, Typewriter } from '@/components/ui/text-animations';
 import { CardGradientMesh } from '@/components/ui/gradient-mesh';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 import type { Testimonial, TestimonialRequest } from '@/lib/types/common/common';
 import { TestimonialList } from '@/components/testimonial-list';
 import { TestimonialForm, type TestimonialFormData } from '@/components/testimonial-form';
@@ -244,15 +243,9 @@ export default function TestimonialsPage() {
             <Card className="overflow-hidden">
                 <CardGradientMesh>
                     <CardHeader className="pb-6 relative z-10">
-                        <CardTitle className="font-headline flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <MessageSquareQuote className="h-6 w-6 text-primary" />
-                                <GradientText text="Client Testimonials" />
-                            </div>
-                            {(() => {
-                                const pageMetadata = getPageMetadata('/brand/testimonials');
-                                return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-                            })()}
+                        <CardTitle className="font-headline flex items-center gap-3">
+                            <MessageSquareQuote className="h-6 w-6 text-primary" />
+                            <GradientText text="Client Testimonials" />
                         </CardTitle>
                         <CardDescription>
                             <Typewriter

@@ -11,15 +11,13 @@ import { NewsServiceMonitor } from '@/components/news-service-monitor';
 import { Newspaper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NEWS_CONFIG } from '@/lib/constants/news-config';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 
 import { useToast } from '@/hooks/use-toast';
 
 export default function MarketNewsPage() {
     const { toast } = useToast();
     const [newsLocation, setNewsLocation] = useState('');
-    const pageMetadata = getPageMetadata('/intelligence/news');
 
     const handleGuideClick = () => {
         toast({
@@ -72,9 +70,7 @@ export default function MarketNewsPage() {
                 description="Stay updated with the latest real estate news and market trends"
                 icon={Newspaper}
                 variant="card"
-                actions={
-                    pageMetadata && <FavoritesButton item={pageMetadata} variant="outline" size="sm" />
-                }
+
             >
                 <NewsFilters
                     onFilterChange={setNewsLocation}

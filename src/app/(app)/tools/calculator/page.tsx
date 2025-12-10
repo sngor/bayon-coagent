@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 
 import { useToast } from '@/hooks/use-toast';
 
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default function MortgageCalculatorPage() {
@@ -27,15 +26,9 @@ export default function MortgageCalculatorPage() {
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="font-headline text-2xl">Mortgage Calculator</CardTitle>
-                            <CardDescription>Calculate payments and rates</CardDescription>
-                        </div>
-                        {(() => {
-                            const pageMetadata = getPageMetadata('/tools/calculator');
-                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-                        })()}
+                    <div>
+                        <CardTitle className="font-headline text-2xl">Mortgage Calculator</CardTitle>
+                        <CardDescription>Calculate payments and rates</CardDescription>
                     </div>
                 </CardHeader>
             </Card>

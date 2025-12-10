@@ -9,9 +9,9 @@
 import { useState, useEffect } from 'react';
 import { StandardPageLayout } from '@/components/standard';
 import { ChatInterface, AgentProfilePreview } from '@/components/bayon-assistant';
+import { EnhancedAgentIntegration } from '@/components/enhanced-agents';
 
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -324,48 +324,12 @@ export default function AssistantPage() {
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <CardTitle className="font-headline text-2xl">AI Assistant</CardTitle>
-                            <CardDescription>Chat with your AI assistant</CardDescription>
-                        </div>
-                        {(() => {
-                            const pageMetadata = getPageMetadata('/assistant');
-                            return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-                        })()}
+                    <div>
+                        <CardTitle className="font-headline text-2xl">AI Assistant</CardTitle>
+                        <CardDescription>Chat with your AI assistant</CardDescription>
                     </div>
                 </CardHeader>
             </Card>
-            {/* Profile Setup Alert */}
-            {!profile && (
-                <GlassCard blur="lg" tint="light" className="border-l-4 border-l-primary animate-fade-in">
-                    <GlassCardContent className="py-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center animate-pulse">
-                                    <Info className="h-5 w-5 text-primary" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-medium">🚀 Personalize your AI experience</p>
-                                    <p className="text-xs text-muted-foreground">Set up your profile to get responses tailored to your market and expertise</p>
-                                </div>
-                            </div>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                asChild
-                                className="hover:bg-primary hover:text-primary-foreground transition-all duration-200 hover:scale-105"
-                            >
-                                <Link href="/brand/profile">
-                                    <Settings className="h-4 w-4 mr-2" />
-                                    <span>Setup Profile</span>
-                                </Link>
-                            </Button>
-                        </div>
-                    </GlassCardContent>
-                </GlassCard>
-            )}
-
             {/* Chat Controls */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'chat' | 'history')}>
@@ -586,6 +550,12 @@ export default function AssistantPage() {
                     </AlertDialog>
                 </TabsContent>
             </Tabs>
+            {/* Enhanced Agent Integration */}
+            <EnhancedAgentIntegration
+                hubContext="assistant"
+                position="bottom-left"
+                showNotifications={true}
+            />
         </div>
     );
 }

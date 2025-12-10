@@ -44,7 +44,7 @@ export const DEFAULT_FEATURES: FeatureToggle[] = [
         id: 'research',
         name: 'Intelligence Hub',
         description: 'AI-powered research and market intelligence - Research, Trends, News, Analytics, Reports',
-        icon: 'Search',
+        icon: 'AISparkleIcon',
         enabled: true,
         category: 'hub'
     },
@@ -84,7 +84,7 @@ export const DEFAULT_FEATURES: FeatureToggle[] = [
         id: 'assistant',
         name: 'AI Assistant',
         description: 'Chat-based AI assistant for real-time help',
-        icon: 'MessageSquare',
+        icon: 'MessagesSquare',
         enabled: true,
         category: 'feature'
     },
@@ -92,7 +92,7 @@ export const DEFAULT_FEATURES: FeatureToggle[] = [
         id: 'open-house',
         name: 'Open House',
         description: 'Manage open house sessions and visitor check-ins',
-        icon: 'Home',
+        icon: 'DoorOpen',
         enabled: true,
         category: 'feature'
     }

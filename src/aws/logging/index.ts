@@ -26,13 +26,16 @@
 
 export {
   Logger,
-  LogLevel,
-  LogContext,
-  LogEntry,
   logger,
   createLogger,
   generateCorrelationId,
   withCorrelationId,
+} from './logger';
+
+export type {
+  LogLevel,
+  LogContext,
+  LogEntry,
 } from './logger';
 
 export {

@@ -155,10 +155,16 @@ export function SequencesContent() {
     return (
         <>
             <div className="space-y-6">
-                {/* Actions */}
-                <div className="flex justify-end">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-2xl font-headline font-bold">Follow-up Sequences</h2>
+                        <p className="text-muted-foreground">
+                            Create automated follow-up sequences to engage with open house visitors over time
+                        </p>
+                    </div>
                     <Button onClick={handleCreateClick}>
-                        <Plus className="mr-2 h-4 w-4" />
+                        <Plus className="h-4 w-4 mr-2" />
                         Create Sequence
                     </Button>
                 </div>

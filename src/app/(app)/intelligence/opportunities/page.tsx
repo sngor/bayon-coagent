@@ -11,13 +11,11 @@ import { LifeEventAlert } from '@/lib/alerts/types';
 import { Users, MapPin, Calendar, TrendingUp, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 
 export default function InvestmentOpportunityIdentificationPage() {
   const [highIntentLeads, setHighIntentLeads] = useState<LifeEventAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const pageMetadata = getPageMetadata('/intelligence/opportunities');
 
   useEffect(() => {
     const fetchHighIntentLeads = async () => {
@@ -86,7 +84,6 @@ export default function InvestmentOpportunityIdentificationPage() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {pageMetadata && <FavoritesButton item={pageMetadata} variant="outline" size="sm" />}
               <Button variant="outline" size="sm" asChild>
                 <Link href="/market/alerts">
                   View All <ExternalLink className="ml-2 h-4 w-4" />

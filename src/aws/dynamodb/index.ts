@@ -69,6 +69,22 @@ export {
   getDashboardDocumentKeys,
   getDocumentDownloadLogKeys,
   getRoleAuditKeys,
+  getWorkflowInstanceKeys,
+  getOnboardingStateKeys,
+  getAnalyticsEventKeys,
+  getAggregatedMetricsKeys,
+  getSupportTicketKeys,
+  getTicketMessageKeys,
+  getFeedbackKeys,
+  getFeatureFlagKeys,
+  getPlatformSettingKeys,
+  getContentModerationKeys,
+  getAdminAuditLogKeys,
+  getAPIKeyKeys,
+  getUserActivitySummaryKeys,
+  getUserActivityIndexKeys,
+  getMaintenanceWindowKeys,
+  generateAdminKeys,
 } from './keys';
 
 // Error handling

@@ -12,13 +12,7 @@
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { performance } from 'perf_hooks';
 
-// Import the modules first
-import { bulkSchedule } from '@/services/publishing/scheduling-service';
-import { getAnalyticsForTimeRange, TimeRangePreset } from '@/services/analytics/analytics-service';
-import { ContentCalendar } from '@/features/content-calendar/components/content-calendar';
-import { AnalyticsDashboard } from '@/components/analytics-dashboard';
-
-// Mock the services and components
+// Mock the services and components BEFORE importing
 jest.mock('@/services/publishing/scheduling-service', () => ({
     bulkSchedule: jest.fn(),
 }));
@@ -33,13 +27,19 @@ jest.mock('@/services/analytics/analytics-service', () => ({
     },
 }));
 
-jest.mock('@/components/content-calendar', () => ({
+jest.mock('@/features/content-calendar/components/content-calendar', () => ({
     ContentCalendar: jest.fn(),
 }));
 
 jest.mock('@/components/analytics-dashboard', () => ({
     AnalyticsDashboard: jest.fn(),
 }));
+
+// Import the modules after mocking
+import { bulkSchedule } from '@/services/publishing/scheduling-service';
+import { getAnalyticsForTimeRange, TimeRangePreset } from '@/services/analytics/analytics-service';
+import { ContentCalendar } from '@/features/content-calendar/components/content-calendar';
+import { AnalyticsDashboard } from '@/components/analytics-dashboard';
 import {
     ScheduledContent,
     BulkScheduleItem,
@@ -147,6 +147,12 @@ function generateAnalyticsData(count: number): TypeAnalytics[] {
         }))
     }));
 }
+
+// Get typed mocked functions
+const mockedBulkSchedule = jest.mocked(bulkSchedule);
+const mockedGetAnalytics = jest.mocked(getAnalyticsForTimeRange);
+const mockedContentCalendar = jest.mocked(ContentCalendar);
+const mockedAnalyticsDashboard = jest.mocked(AnalyticsDashboard);
 
 describe('Content Workflow Performance Tests', () => {
     beforeEach(() => {

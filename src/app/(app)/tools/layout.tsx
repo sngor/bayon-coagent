@@ -2,6 +2,7 @@
 
 import { HubLayoutWithFavorites } from '@/components/hub/hub-layout-with-favorites';
 import { FeatureGuard } from '@/components/feature-guard';
+import { EnhancedAgentIntegration } from '@/components/enhanced-agents';
 import { Calculator, Wrench, DollarSign, FileSearch } from 'lucide-react';
 
 const toolsTabs = [
@@ -22,6 +23,11 @@ export default function ToolsLayout({ children }: { children: React.ReactNode })
                 tabsVariant="pills"
             >
                 {children}
+                <EnhancedAgentIntegration
+                    hubContext="tools"
+                    position="bottom-right"
+                    showNotifications={true}
+                />
             </HubLayoutWithFavorites>
         </FeatureGuard>
     );

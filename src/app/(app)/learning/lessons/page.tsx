@@ -22,8 +22,7 @@ import { marketingModules, closingModules, professionalExcellenceModules, allMod
 import { Quiz } from '@/components/quiz';
 // Removed framer-motion to improve performance
 import { cn } from '@/lib/utils/common';
-import { FavoritesButton } from '@/components/favorites-button';
-import { getPageMetadata } from '@/lib/page-metadata';
+
 
 export default function TrainingLessonsPage() {
     const { user } = useUser();
@@ -248,20 +247,14 @@ export default function TrainingLessonsPage() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                {completedModules.size === allModules.length && (
-                                    <div className="animate-in zoom-in spin-in-180 duration-500">
-                                        <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 px-4 py-2 text-sm">
-                                            <Trophy className="h-4 w-4 mr-2" />
-                                            Expert Level
-                                        </Badge>
-                                    </div>
-                                )}
-                                {(() => {
-                                    const pageMetadata = getPageMetadata('/learning/lessons');
-                                    return pageMetadata ? <FavoritesButton item={pageMetadata} /> : null;
-                                })()}
-                            </div>
+                            {completedModules.size === allModules.length && (
+                                <div className="animate-in zoom-in spin-in-180 duration-500">
+                                    <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 px-4 py-2 text-sm">
+                                        <Trophy className="h-4 w-4 mr-2" />
+                                        Expert Level
+                                    </Badge>
+                                </div>
+                            )}
                         </div>
                     </CardHeader>
                     <CardContent className="relative space-y-6">
