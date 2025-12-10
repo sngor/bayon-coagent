@@ -200,6 +200,12 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { getRepository } from '@/aws/dynamodb/repository';
 import {
+  createSuccessResponse,
+  createErrorResponse,
+  createValidationErrorResponse,
+  validateFormData
+} from '@/lib/server-action-utils';
+import {
   getAgentProfileKeys,
   getProfileKeys,
   getUserProfileKeys,
@@ -303,39 +309,31 @@ const handleAWSError = (error: any, defaultMessage: string): string => {
 }
 
 export async function generateGuideAction(prevState: any, formData: FormData) {
-  const validatedFields = guideSchema.safeParse({
+  // Convert FormData to object for validation
+  const formObject = {
     targetMarket: formData.get('targetMarket'),
     pillarTopic: formData.get('pillarTopic'),
     idxFeedUrl: formData.get('idxFeedUrl'),
-  });
+  };
 
-  if (!validatedFields.success) {
-    return {
-      message: 'Validation failed',
-      errors: validatedFields.error.flatten().fieldErrors,
-      data: prevState.data,
-    };
+  const validation = validateFormData(guideSchema, formData);
+
+  if (!validation.success) {
+    return createValidationErrorResponse(validation.error, prevState.data);
   }
 
   try {
     const result = await generateNeighborhoodGuide(
-      validatedFields.data as GenerateNeighborhoodGuideInput
+      validation.data as GenerateNeighborhoodGuideInput
     );
-    return {
-      message: 'success',
-      data: {
-        guide: result.neighborhoodGuide,
-        idxFeedUrl: validatedFields.data.idxFeedUrl,
-      },
-      errors: {},
-    };
+
+    return createSuccessResponse({
+      guide: result.neighborhoodGuide,
+      idxFeedUrl: validation.data.idxFeedUrl,
+    });
   } catch (error) {
     const errorMessage = handleAWSError(error, 'An unexpected error occurred while generating the guide.');
-    return {
-      message: `Failed to generate guide: ${errorMessage}`,
-      errors: {},
-      data: prevState.data,
-    };
+    return createErrorResponse(`Failed to generate guide: ${errorMessage}`, {}, prevState.data);
   }
 }
 
@@ -2335,16 +2333,22 @@ export async function checkAdminStatusAction(userId: string): Promise<{
       return { isAdmin: false, error: 'User ID required' };
     }
 
-    // TEMPORARY OVERRIDE: Grant admin access to your specific user ID
+    // TEMPORARY OVERRIDE: Grant admin access to specific user IDs
     // This ensures admin access even if the database role isn't set yet
-    if (userId === '28619310-e041-70fe-03bd-897627fb5a4d') {
+    const adminUserIds = [
+      '28619310-e041-70fe-03bd-897627fb5a4d', // Original admin
+      'f8b1b3a0-9081-7018-175c-37b5df71148f'  // Current user
+    ];
+
+    if (adminUserIds.includes(userId)) {
+
       return {
         isAdmin: true,
         role: 'super_admin',
         profileData: {
           id: userId,
           role: 'super_admin',
-          email: 'ngorlong@gmail.com',
+          email: userId === '28619310-e041-70fe-03bd-897627fb5a4d' ? 'ngorlong@gmail.com' : 'admin@example.com',
           adminSince: new Date().toISOString(),
           override: true,
         },
@@ -2353,11 +2357,8 @@ export async function checkAdminStatusAction(userId: string): Promise<{
 
     const repository = getRepository();
     const profileKeys = getProfileKeys(userId);
-    console.log('Fetching profile for admin check:', profileKeys);
-
     const result = await repository.get(profileKeys.PK, profileKeys.SK);
     const profileData = result;
-    console.log('Profile data found:', profileData ? 'Yes' : 'No', (profileData as any)?.role);
 
     // Check for admin role OR specific email override
     const email = profileData?.email;
@@ -2366,7 +2367,7 @@ export async function checkAdminStatusAction(userId: string): Promise<{
     const role = profileData?.role || 'user';
     const isAdmin = role === 'admin' || role === 'super_admin' || isSuperAdminEmail;
 
-    console.log('Admin check result:', { isAdmin, role, isSuperAdminEmail });
+
 
     if (isSuperAdminEmail && role !== 'super_admin') {
       // Auto-promote to super_admin if not already
@@ -8928,6 +8929,40 @@ export async function skipOnboardingStepAction(
     console.error('[ONBOARDING_ACTION] Error skipping onboarding step:', error);
     return {
       message: 'Failed to skip onboarding step',
+      data: null,
+      errors: error.message || 'Unknown error occurred',
+    };
+  }
+}
+
+/**
+ * Reset onboarding for a user
+ */
+export async function resetOnboardingAction(userId: string): Promise<{
+  message: string;
+  data: null;
+  errors: string | null;
+}> {
+  try {
+    // Delete the onboarding state from DynamoDB
+    const { DynamoDBRepository } = await import('@/aws/dynamodb/repository');
+    const { getOnboardingStateKeys } = await import('@/aws/dynamodb/keys');
+
+    const repository = new DynamoDBRepository();
+    const keys = getOnboardingStateKeys(userId);
+
+    await repository.delete(keys.PK, keys.SK);
+
+    return {
+      message: 'Onboarding reset successfully',
+      data: null,
+      errors: null,
+    };
+  } catch (error: any) {
+    console.error('[ONBOARDING_ACTION] Error resetting onboarding:', error);
+
+    return {
+      message: 'Failed to reset onboarding',
       data: null,
       errors: error.message || 'Unknown error occurred',
     };

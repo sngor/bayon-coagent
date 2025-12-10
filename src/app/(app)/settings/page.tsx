@@ -24,6 +24,7 @@ import { FeatureToggles } from '@/components/feature-toggles';
 import { NotificationSettings } from '@/lib/notifications/components';
 import { ProfileImageUpload } from '@/components/profile-image-upload';
 import { updateProfilePhotoUrlAction } from '@/app/actions';
+import { onboardingService } from '@/services/onboarding';
 
 
 function formatTimestamp(timestamp: number): string {
@@ -146,6 +147,9 @@ export default function SettingsPage() {
     const [profilePhotoUrl, setProfilePhotoUrl] = useState('');
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
     const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+    // Onboarding reset state
+    const [isResettingOnboarding, setIsResettingOnboarding] = useState(false);
 
     // Google connection state
     const [isGoogleConnected, setIsGoogleConnected] = useState(false);
@@ -405,6 +409,29 @@ export default function SettingsPage() {
         }
     };
 
+    // Handle onboarding reset
+    const handleResetOnboarding = async () => {
+        if (!user) return;
+
+        setIsResettingOnboarding(true);
+        try {
+            await onboardingService.resetOnboarding(user.id);
+            toast({
+                title: 'Onboarding Reset',
+                description: 'Your onboarding progress has been reset. You can start the setup process again.',
+            });
+        } catch (error) {
+            console.error('Error resetting onboarding:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to reset onboarding. Please try again.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsResettingOnboarding(false);
+        }
+    };
+
     return (
         <>
             <div className="animate-fade-in-up space-y-6">
@@ -539,11 +566,36 @@ export default function SettingsPage() {
                                 <CardTitle className="text-destructive">Danger Zone</CardTitle>
                                 <CardDescription>Irreversible account actions</CardDescription>
                             </CardHeader>
-                            <CardContent>
-                                <Button variant="destructive" className="gap-2">
-                                    <Trash2 className="h-4 w-4" />
-                                    Delete Account
-                                </Button>
+                            <CardContent className="space-y-4">
+                                <div className="flex items-center justify-between p-4 border border-amber-200 dark:border-amber-800 rounded-lg bg-amber-50 dark:bg-amber-950/20">
+                                    <div>
+                                        <h4 className="font-medium text-amber-900 dark:text-amber-100">Reset Onboarding</h4>
+                                        <p className="text-sm text-amber-700 dark:text-amber-300">
+                                            Clear your onboarding progress and start the setup process again
+                                        </p>
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        className="gap-2 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                                        onClick={handleResetOnboarding}
+                                        disabled={isResettingOnboarding}
+                                    >
+                                        {isResettingOnboarding ? (
+                                            <>
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                Resetting...
+                                            </>
+                                        ) : (
+                                            'Reset Onboarding'
+                                        )}
+                                    </Button>
+                                </div>
+                                <div className="pt-4 border-t border-destructive/20">
+                                    <Button variant="destructive" className="gap-2">
+                                        <Trash2 className="h-4 w-4" />
+                                        Delete Account
+                                    </Button>
+                                </div>
                             </CardContent>
                         </Card>
                     </TabsContent>

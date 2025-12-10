@@ -1,10 +1,37 @@
 import { type FavoriteItem } from '@/hooks/use-favorites';
+import { type IconName } from '@/lib/icon-utils';
+
+/**
+ * Page metadata type with proper icon typing
+ */
+export type PageMetadata = Omit<FavoriteItem, 'addedAt'> & {
+    icon: IconName;
+};
+
+/**
+ * Hub categories for organizing pages
+ */
+export const HUB_CATEGORIES = [
+    'Overview',
+    'Studio',
+    'Brand',
+    'Research',
+    'Market',
+    'Tools',
+    'Library',
+    'Client Management',
+    'Learning',
+    'Settings',
+    'Other'
+] as const;
+
+export type HubCategory = typeof HUB_CATEGORIES[number];
 
 /**
  * Centralized page metadata registry for pin/favorites functionality
  * This ensures consistency across the application and prevents duplicate pins
  */
-export const PAGE_METADATA: Record<string, Omit<FavoriteItem, 'addedAt'>> = {
+export const PAGE_METADATA: Record<string, PageMetadata> = {
     // Overview
     '/dashboard': {
         id: 'dashboard',
@@ -128,9 +155,38 @@ export const PAGE_METADATA: Record<string, Omit<FavoriteItem, 'addedAt'>> = {
         gradient: 'from-orange-500 to-orange-600'
     },
 
-    // Research Hub (legacy routes)
-    '/research-agent': {
+    // Research Hub
+    '/research/agent': {
         id: 'research-agent',
+        title: 'Research Agent',
+        description: 'AI-powered market research',
+        href: '/research/agent',
+        icon: 'Search',
+        color: 'bg-green-500',
+        gradient: 'from-green-500 to-green-600'
+    },
+    '/research/reports': {
+        id: 'research-reports',
+        title: 'Research Reports',
+        description: 'View saved research reports',
+        href: '/research/reports',
+        icon: 'FileText',
+        color: 'bg-teal-500',
+        gradient: 'from-teal-500 to-teal-600'
+    },
+    '/research/knowledge': {
+        id: 'research-knowledge',
+        title: 'Knowledge Base',
+        description: 'Access research materials',
+        href: '/research/knowledge',
+        icon: 'BookOpen',
+        color: 'bg-teal-500',
+        gradient: 'from-teal-500 to-teal-600'
+    },
+
+    // Legacy Research Routes (for backward compatibility)
+    '/research-agent': {
+        id: 'research-agent-legacy',
         title: 'Research Agent',
         description: 'AI-powered market research',
         href: '/research-agent',
@@ -139,7 +195,7 @@ export const PAGE_METADATA: Record<string, Omit<FavoriteItem, 'addedAt'>> = {
         gradient: 'from-green-500 to-green-600'
     },
     '/knowledge-base': {
-        id: 'research-knowledge',
+        id: 'knowledge-base-legacy',
         title: 'Knowledge Base',
         description: 'Access research and news',
         href: '/knowledge-base',
@@ -148,7 +204,36 @@ export const PAGE_METADATA: Record<string, Omit<FavoriteItem, 'addedAt'>> = {
         gradient: 'from-teal-500 to-teal-600'
     },
 
-    // Intelligence Hub (Market)
+    // Market Hub (Intelligence)
+    '/market/insights': {
+        id: 'market-insights',
+        title: 'Market Insights',
+        description: 'Market trends and analysis',
+        href: '/market/insights',
+        icon: 'TrendingUp',
+        color: 'bg-violet-500',
+        gradient: 'from-violet-500 to-violet-600'
+    },
+    '/market/opportunities': {
+        id: 'market-opportunities',
+        title: 'Market Opportunities',
+        description: 'Investment opportunities',
+        href: '/market/opportunities',
+        icon: 'TrendingUp',
+        color: 'bg-green-500',
+        gradient: 'from-green-500 to-green-600'
+    },
+    '/market/analytics': {
+        id: 'market-analytics',
+        title: 'Market Analytics',
+        description: 'Advanced market analysis',
+        href: '/market/analytics',
+        icon: 'BarChart3',
+        color: 'bg-purple-500',
+        gradient: 'from-purple-500 to-purple-600'
+    },
+
+    // Intelligence Hub (Legacy Market Routes)
     '/intelligence/agent': {
         id: 'intelligence-agent',
         title: 'Research Agent',
@@ -297,6 +382,15 @@ export const PAGE_METADATA: Record<string, Omit<FavoriteItem, 'addedAt'>> = {
         color: 'bg-orange-500',
         gradient: 'from-orange-500 to-orange-600'
     },
+    '/library/listings': {
+        id: 'library-listings',
+        title: 'Listings Library',
+        description: 'Manage property listings',
+        href: '/library/listings',
+        icon: 'Building',
+        color: 'bg-slate-500',
+        gradient: 'from-slate-500 to-slate-600'
+    },
 
     // Client Management
     '/client-dashboards': {
@@ -318,7 +412,7 @@ export const PAGE_METADATA: Record<string, Omit<FavoriteItem, 'addedAt'>> = {
         gradient: 'from-pink-500 to-pink-600'
     },
 
-    // Learning
+    // Learning & Training
     '/learning/lessons': {
         id: 'learning-lessons',
         title: 'Learning Center',
@@ -360,65 +454,68 @@ export const PAGE_METADATA: Record<string, Omit<FavoriteItem, 'addedAt'>> = {
 };
 
 /**
+ * Get category for a page based on its href
+ * Centralized logic for consistent categorization
+ */
+export function getCategoryForPage(href: string): HubCategory {
+    if (href === '/dashboard' || href === '/assistant') return 'Overview';
+    if (href.startsWith('/studio')) return 'Studio';
+    if (href.startsWith('/brand')) return 'Brand';
+    if (href.startsWith('/research') || href.startsWith('/knowledge')) return 'Research';
+    if (href.startsWith('/intelligence') || href.startsWith('/market')) return 'Market';
+    if (href.startsWith('/tools')) return 'Tools';
+    if (href.startsWith('/library')) return 'Library';
+    if (href.startsWith('/client')) return 'Client Management';
+    if (href.startsWith('/learning')) return 'Learning';
+    if (href.startsWith('/settings') || href.startsWith('/integrations')) return 'Settings';
+    return 'Other';
+}
+
+/**
  * Get page metadata by path
  * Returns undefined if path is not registered
  */
-export function getPageMetadata(path: string): Omit<FavoriteItem, 'addedAt'> | undefined {
+export function getPageMetadata(path: string): PageMetadata | undefined {
     return PAGE_METADATA[path];
 }
 
 /**
  * Get all available pages for the quick actions dialog
  */
-export function getAllPages() {
+export function getAllPages(): PageMetadata[] {
     return Object.values(PAGE_METADATA);
 }
 
 /**
- * Get pages by category
+ * Get pages organized by category
+ * Only returns categories that have pages
  */
-export function getPagesByCategory() {
-    const categories: Record<string, Array<Omit<FavoriteItem, 'addedAt'>>> = {
-        'Overview': [],
-        'Studio': [],
-        'Brand': [],
-        'Research': [],
-        'Market': [],
-        'Tools': [],
-        'Library': [],
-        'Client Management': [],
-        'Learning': [],
-        'Settings': []
-    };
+export function getPagesByCategory(): Record<HubCategory, PageMetadata[]> {
+    const categories = HUB_CATEGORIES.reduce((acc, category) => {
+        acc[category] = [];
+        return acc;
+    }, {} as Record<HubCategory, PageMetadata[]>);
 
     Object.values(PAGE_METADATA).forEach(page => {
-        const path = page.href;
-
-        if (path === '/dashboard' || path === '/assistant') {
-            categories['Overview'].push(page);
-        } else if (path.startsWith('/studio')) {
-            categories['Studio'].push(page);
-        } else if (path.startsWith('/brand')) {
-            categories['Brand'].push(page);
-        } else if (path.startsWith('/research') || path.startsWith('/knowledge')) {
-            categories['Research'].push(page);
-        } else if (path.startsWith('/intelligence')) {
-            categories['Market'].push(page);
-        } else if (path.startsWith('/tools')) {
-            categories['Tools'].push(page);
-        } else if (path.startsWith('/library')) {
-            categories['Library'].push(page);
-        } else if (path.startsWith('/client')) {
-            categories['Client Management'].push(page);
-        } else if (path.startsWith('/learning')) {
-            categories['Learning'].push(page);
-        } else if (path.startsWith('/settings') || path.startsWith('/integrations')) {
-            categories['Settings'].push(page);
-        }
+        const category = getCategoryForPage(page.href);
+        categories[category].push(page);
     });
 
     // Remove empty categories
     return Object.fromEntries(
         Object.entries(categories).filter(([_, pages]) => pages.length > 0)
+    ) as Record<HubCategory, PageMetadata[]>;
+}
+
+/**
+ * Search pages by title and description
+ */
+export function searchPages(query: string): PageMetadata[] {
+    if (!query.trim()) return getAllPages();
+
+    const lowercaseQuery = query.toLowerCase();
+    return getAllPages().filter(page =>
+        page.title.toLowerCase().includes(lowercaseQuery) ||
+        page.description.toLowerCase().includes(lowercaseQuery)
     );
 }

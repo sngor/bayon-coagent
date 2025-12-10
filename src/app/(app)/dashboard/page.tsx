@@ -456,7 +456,7 @@ export default function DashboardPage() {
                                     title="Performance Overview"
                                     description="Track your progress and key metrics"
                                     icon={Activity}
-                                    className="bg-gradient-to-br from-background to-muted/20"
+                                    className="bg-gradient-to-br to-muted/20"
                                 >
                                     {isLoadingProfile ? (
                                         <LoadingState variant="dashboard" count={1} className="mb-4" />
@@ -594,7 +594,7 @@ export default function DashboardPage() {
                                             </Badge>
                                         </div>
                                     ) : undefined}
-                                    className="bg-gradient-to-br from-background to-orange-500/5"
+                                    className="bg-gradient-to-br to-orange-500/5"
                                 >
                                     {isPlanLoading || areCompetitorsLoading || isAuditLoading ? (
                                         <LoadingState variant="list" count={2} />
@@ -682,7 +682,7 @@ export default function DashboardPage() {
                                     title="Reputation Snapshot"
                                     description="Your client testimonials and reviews"
                                     icon={Star}
-                                    className="bg-gradient-to-br from-background to-yellow-500/5"
+                                    className="bg-gradient-to-br to-yellow-500/5"
                                 >
                                     {isLoadingStats ? (
                                         <LoadingState variant="card" count={3} className="mb-4 md:mb-6" />

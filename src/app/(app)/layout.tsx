@@ -7,16 +7,12 @@ import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
   SidebarProvider,
   SidebarInset,
   SidebarTrigger,
   SidebarFooter,
   SidebarToggle,
 } from '@/components/ui/sidebar';
-import { ICON_SIZES } from '@/lib/constants/icon-sizes';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,30 +24,16 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  User,
   PanelLeft,
   LogOut,
-  GraduationCap,
   Settings,
-  Library,
-  Target,
-  Wand2,
-  MessageSquare,
-  Bell,
   HelpCircle,
-  Calculator,
-  BarChart3,
   Shield,
   ArrowLeft,
-  FileText,
 } from 'lucide-react';
-import {
-  HouseIcon,
-  AISparkleIcon,
-} from '@/components/ui/real-estate-icons';
 import Link from 'next/link';
-import { usePathname, useRouter, redirect } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
+import { useRouter, redirect } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useUser, useAuthMethods } from '@/aws/auth/use-user';
 import { PageTransition } from '@/components/page-transition';
 import { TooltipProvider } from '@/contexts/tooltip-context';
@@ -63,7 +45,6 @@ import { StickyHeaderProvider, useStickyHeader } from '@/hooks/use-sticky-header
 import { SessionLoading } from '@/components/session-loading';
 import { FeedbackButton } from '@/components/feedback-button';
 import { DynamicNavigation } from '@/components/dynamic-navigation';
-import { useFeatureToggle } from '@/lib/feature-toggles';
 import { NotificationCenter } from '@/lib/notifications/components';
 import { SubtleGradientMesh } from '@/components/ui/gradient-mesh';
 import { ImpersonationBanner } from '@/components/impersonation-banner';
@@ -115,6 +96,50 @@ function AdminModeBadge() {
   );
 }
 
+function AdminModeControls({
+  isAdmin,
+  isSuperAdmin,
+  adminMode,
+  onModeSwitch
+}: {
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
+  adminMode: 'user' | 'admin' | 'super_admin';
+  onModeSwitch: (mode: 'user' | 'admin' | 'super_admin') => void;
+}) {
+  if (!isAdmin && !isSuperAdmin) return null;
+
+  return (
+    <>
+      <DropdownMenuSeparator />
+
+      {/* Exit Admin Mode */}
+      {adminMode !== 'user' && (
+        <DropdownMenuItem onClick={() => onModeSwitch('user')} className="cursor-pointer">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          <span>{adminMode === 'super_admin' ? 'Exit Super Admin Mode' : 'Exit Admin Mode'}</span>
+        </DropdownMenuItem>
+      )}
+
+      {/* Enter Admin Mode */}
+      {adminMode !== 'admin' && (
+        <DropdownMenuItem onClick={() => onModeSwitch('admin')} className="cursor-pointer">
+          <Shield className="mr-2 h-4 w-4" />
+          <span>Enter Admin Mode</span>
+        </DropdownMenuItem>
+      )}
+
+      {/* Enter Super Admin Mode */}
+      {isSuperAdmin && adminMode !== 'super_admin' && (
+        <DropdownMenuItem onClick={() => onModeSwitch('super_admin')} className="cursor-pointer">
+          <Shield className="mr-2 h-4 w-4 text-orange-600" />
+          <span>Enter Super Admin Mode</span>
+        </DropdownMenuItem>
+      )}
+    </>
+  );
+}
+
 function UserDropdownContent({ profile, user, userName, getInitials, handleSignOut }: {
   profile: any;
   user: any;
@@ -125,8 +150,7 @@ function UserDropdownContent({ profile, user, userName, getInitials, handleSignO
   const { isAdmin, isSuperAdmin, adminMode, toggleAdminMode } = useAdmin();
   const router = useRouter();
 
-  // Debug logging
-  console.log('[UserDropdownContent] Admin status:', { isAdmin, isSuperAdmin, adminMode, userId: user?.id });
+
 
   const handleModeSwitch = (mode: 'user' | 'admin' | 'super_admin') => {
     toggleAdminMode(mode);
@@ -177,35 +201,12 @@ function UserDropdownContent({ profile, user, userName, getInitials, handleSignO
       </DropdownMenuItem>
 
       {/* Admin Mode Toggles */}
-      {(isAdmin || isSuperAdmin) && (
-        <>
-          <DropdownMenuSeparator />
-
-          {/* Exit Admin Mode */}
-          {adminMode !== 'user' && (
-            <DropdownMenuItem onClick={() => handleModeSwitch('user')} className="cursor-pointer">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              <span>{adminMode === 'super_admin' ? 'Exit Super Admin Mode' : 'Exit Admin Mode'}</span>
-            </DropdownMenuItem>
-          )}
-
-          {/* Enter Admin Mode */}
-          {adminMode !== 'admin' && (
-            <DropdownMenuItem onClick={() => handleModeSwitch('admin')} className="cursor-pointer">
-              <Shield className="mr-2 h-4 w-4" />
-              <span>Enter Admin Mode</span>
-            </DropdownMenuItem>
-          )}
-
-          {/* Enter Super Admin Mode */}
-          {isSuperAdmin && adminMode !== 'super_admin' && (
-            <DropdownMenuItem onClick={() => handleModeSwitch('super_admin')} className="cursor-pointer">
-              <Shield className="mr-2 h-4 w-4 text-orange-600" />
-              <span>Enter Super Admin Mode</span>
-            </DropdownMenuItem>
-          )}
-        </>
-      )}
+      <AdminModeControls
+        isAdmin={isAdmin}
+        isSuperAdmin={isSuperAdmin}
+        adminMode={adminMode}
+        onModeSwitch={handleModeSwitch}
+      />
       <DropdownMenuSeparator />
       <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
         <LogOut className="mr-2 h-4 w-4" />
@@ -226,7 +227,6 @@ function UserDropdownContent({ profile, user, userName, getInitials, handleSignO
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
   const [isMounted, setIsMounted] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { user, isUserLoading } = useUser();
@@ -234,12 +234,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   // Fetch user profile data using the same approach as dashboard
   const [profile, setProfile] = useState<any>(null);
-  const [isProfileLoading, setIsProfileLoading] = useState(true);
 
   useEffect(() => {
     const loadProfile = async () => {
       if (!user?.id) {
-        setIsProfileLoading(false);
         return;
       }
 
@@ -252,8 +250,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('Failed to load profile:', error);
-      } finally {
-        setIsProfileLoading(false);
       }
     };
 

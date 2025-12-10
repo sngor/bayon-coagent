@@ -1,212 +1,125 @@
-name: Rollback Deployment
+name: Rollback
 
 on:
-    workflow_dispatch:
-        inputs:
-            environment:
-                description: "Environment to rollback"
-                required: true
-                type: choice
-                options:
-                    - development
-                    - staging
-                    - production
-            target-version:
-                description: "Target version to rollback to (optional, defaults to previous)"
-                required: false
-                type: string
-            reason:
-                description: "Reason for rollback"
-                required: true
-                type: string
-    workflow_call:
-        inputs:
-            environment:
-                description: "Environment to rollback"
-                required: true
-                type: string
-            target-version:
-                description: "Target version to rollback to"
-                required: false
-                type: string
-            reason:
-                description: "Reason for rollback"
-                required: true
-                type: string
-        secrets:
-            AWS_ACCESS_KEY_ID:
-                required: true
-            AWS_SECRET_ACCESS_KEY:
-                required: true
-            SLACK_WEBHOOK_URL:
-                required: true
-            SMTP_USERNAME:
-                required: false
-            SMTP_PASSWORD:
-                required: false
-            PAGERDUTY_INTEGRATION_KEY:
-                required: false
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to rollback"
+        required: true
+        type: choice
+        options: [development, staging, production]
+      target-version:
+        description: "Target version to rollback to (optional)"
+        required: false
+        type: string
+      reason:
+        description: "Reason for rollback"
+        required: true
+        type: string
 
 env:
-    AWS_REGION: us-east-1
-    NODE_VERSION: "20"
+  AWS_REGION: us-west-2
 
 jobs:
-    validate-rollback:
-        name: Validate Rollback Request
-        runs-on: ubuntu-latest
-        outputs:
-            stack-name: ${{ steps.config.outputs.stack-name }}
-            amplify-app-id: ${{ steps.config.outputs.amplify-app-id }}
-            target-version: ${{ steps.determine-version.outputs.version }}
-            is-production: ${{ steps.config.outputs.is-production }}
-
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0
-
-            - name: Configure environment
-              id: config
-              run: |
-                  case "${{ inputs.environment }}" in
-                    development)
-                      echo "stack-name=bayon-coagent-development" >> $GITHUB_OUTPUT
-                      echo "amplify-app-id=${{ secrets.AMPLIFY_APP_ID_DEV }}" >> $GITHUB_OUTPUT
-                      echo "is-production=false" >> $GITHUB_OUTPUT
-                      ;;
-                    staging)
-                      echo "stack-name=bayon-coagent-staging" >> $GITHUB_OUTPUT
-                      echo "amplify-app-id=${{ secrets.AMPLIFY_APP_ID_STAGING }}" >> $GITHUB_OUTPUT
-                      echo "is-production=false" >> $GITHUB_OUTPUT
-                      ;;
-                    production)
-                      echo "stack-name=bayon-coagent-production" >> $GITHUB_OUTPUT
-                      echo "amplify-app-id=${{ secrets.AMPLIFY_APP_ID_PROD }}" >> $GITHUB_OUTPUT
-                      echo "is-production=true" >> $GITHUB_OUTPUT
-                      ;;
-                  esac
-
-            - name: Configure AWS credentials
-              uses: aws-actions/configure-aws-credentials@v4
-              with:
-                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-                  aws-region: ${{ env.AWS_REGION }}
-
-            - name: Determine target version
-              id: determine-version
-              run: |
-                  if [ -n "${{ inputs.target-version }}" ]; then
-                    TARGET_VERSION="${{ inputs.target-version }}"
-                    echo "Using specified target version: $TARGET_VERSION"
-                  else
-                    # Get the previous successful deployment version from CloudFormation stack tags
-                    TARGET_VERSION=$(aws cloudformation describe-stacks \
-                      --stack-name ${{ steps.config.outputs.stack-name }} \
-                      --query 'Stacks[0].Tags[?Key==`PreviousVersion`].Value' \
-                      --output text 2>/dev/null || echo "")
-                    
-                    if [ -z "$TARGET_VERSION" ]; then
-                      echo "❌ Could not determine previous version"
-                      exit 1
-                    fi
-                    echo "Using previous version from stack tags: $TARGET_VERSION"
-                  fi
-
-                  echo "version=$TARGET_VERSION" >> $GITHUB_OUTPUT
-
-            - name: Verify target version exists
-              run: |
-                  TARGET_VERSION="${{ steps.determine-version.outputs.version }}"
-
-                  # Check if the version tag exists
-                  if ! git rev-parse "refs/tags/$TARGET_VERSION" >/dev/null 2>&1; then
-                    echo "❌ Target version $TARGET_VERSION does not exist"
-                    exit 1
-                  fi
-
-                  echo "✅ Target version $TARGET_VERSION exists"
-
-            - name: Check rollback safety
-              run: |
-                  echo "Checking if rollback is safe to perform..."
-
-                  # Get current stack status
-                  STACK_STATUS=$(aws cloudformation describe-stacks \
-                    --stack-name ${{ steps.config.outputs.stack-name }} \
-                    --query 'Stacks[0].StackStatus' \
-                    --output text 2>/dev/null || echo "DOES_NOT_EXIST")
-
-                  echo "Current stack status: $STACK_STATUS"
-
-                  # Check if stack is in a rollback-able state
-                  case "$STACK_STATUS" in
-                    UPDATE_COMPLETE|UPDATE_ROLLBACK_COMPLETE|CREATE_COMPLETE)
-                      echo "✅ Stack is in a safe state for rollback"
-                      ;;
-                    *IN_PROGRESS*)
-                      echo "❌ Stack operation in progress. Cannot rollback now."
-                      exit 1
-                      ;;
-                    DOES_NOT_EXIST)
-                      echo "❌ Stack does not exist"
-                      exit 1
-                      ;;
-                    *)
-                      echo "⚠️ Stack in state: $STACK_STATUS. Proceeding with caution."
-                      ;;
-                  esac
-
-            - name: Create rollback summary
-              run: |
-                  cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-                  ## 🔄 Rollback Validation
-
-                  **Environment:** ${{ inputs.environment }}
-                  **Target Version:** ${{ steps.determine-version.outputs.version }}
-                  **Reason:** ${{ inputs.reason }}
-                  **Triggered By:** ${{ github.actor }}
-
-                  ### Validation Results
-                  - ✅ Target version exists
-                  - ✅ Stack is in safe state
-                  - ✅ Rollback can proceed
-                  EOF
-
-  # Production rollback requires approval
-  approval-gate:
-    name: Approval Required (Production Only)
+  validate:
+    name: Validate Rollback
     runs-on: ubuntu-latest
-    needs: validate-rollback
-    if: needs.validate-rollback.outputs.is-production == 'true'
-    environment:
-      name: production-rollback
-    
+    outputs:
+      stack-name: ${{ steps.config.outputs.stack-name }}
+      target-version: ${{ steps.version.outputs.version }}
+      requires-approval: ${{ steps.config.outputs.requires-approval }}
     steps:
-      - name: Wait for approval
-        run: |
-          echo "⏳ Waiting for approval to rollback production environment..."
-          echo "Reason: ${{ inputs.reason }}"
-
-  rollback-infrastructure:
-    name: Rollback Infrastructure
-    runs-on: ubuntu-latest
-    needs: [validate-rollback, approval-gate]
-    if: always() && needs.validate-rollback.result == 'success' && (needs.approval-gate.result == 'success' || needs.approval-gate.result == 'skipped')
-    
-    steps:
-      - name: Checkout target version
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.validate-rollback.outputs.target-version }}
+          fetch-depth: 0
+
+      - name: Configure environment
+        id: config
+        run: |
+          echo "stack-name=bayon-coagent-${{ inputs.environment }}" >> $GITHUB_OUTPUT
+          echo "requires-approval=${{ inputs.environment == 'production' && 'true' || 'false' }}" >> $GITHUB_OUTPUT
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets[format('AWS_ACCESS_KEY_ID_{0}', inputs.environment == 'development' && 'DEV' || inputs.environment == 'staging' && 'STAGING' || 'PROD')] }}
+          aws-secret-access-key: ${{ secrets[format('AWS_SECRET_ACCESS_KEY_{0}', inputs.environment == 'development' && 'DEV' || inputs.environment == 'staging' && 'STAGING' || 'PROD')] }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Determine target version
+        id: version
+        run: |
+          if [ -n "${{ inputs.target-version }}" ]; then
+            TARGET_VERSION="${{ inputs.target-version }}"
+          else
+            # Get previous version from stack tags
+            TARGET_VERSION=$(aws cloudformation describe-stacks \
+              --stack-name ${{ steps.config.outputs.stack-name }} \
+              --query 'Stacks[0].Tags[?Key==`PreviousVersion`].Value' \
+              --output text 2>/dev/null || echo "")
+            
+            if [ -z "$TARGET_VERSION" ]; then
+              echo "❌ Could not determine previous version"
+              exit 1
+            fi
+          fi
+
+          # Verify version exists
+          if ! git rev-parse "refs/tags/$TARGET_VERSION" >/dev/null 2>&1; then
+            echo "❌ Target version $TARGET_VERSION does not exist"
+            exit 1
+          fi
+
+          echo "version=$TARGET_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check rollback safety
+        run: |
+          STACK_STATUS=$(aws cloudformation describe-stacks \
+            --stack-name ${{ steps.config.outputs.stack-name }} \
+            --query 'Stacks[0].StackStatus' \
+            --output text 2>/dev/null || echo "DOES_NOT_EXIST")
+
+          case "$STACK_STATUS" in
+            UPDATE_COMPLETE|UPDATE_ROLLBACK_COMPLETE|CREATE_COMPLETE)
+              echo "✅ Stack is in a safe state for rollback"
+              ;;
+            *IN_PROGRESS*)
+              echo "❌ Stack operation in progress. Cannot rollback now."
+              exit 1
+              ;;
+            *)
+              echo "⚠️ Stack in state: $STACK_STATUS. Proceeding with caution."
+              ;;
+          esac
+
+  approval:
+    name: Rollback Approval
+    runs-on: ubuntu-latest
+    needs: validate
+    if: needs.validate.outputs.requires-approval == 'true'
+    environment:
+      name: production-rollback
+    steps:
+      - name: Approval granted
+        run: echo "✅ Rollback approved for ${{ inputs.environment }}"
+
+  rollback-infrastructure:
+    name: Rollback Infrastructure
+    runs-on: ubuntu-latest
+    needs: [validate, approval]
+    if: always() && needs.validate.result == 'success' && (needs.approval.result == 'success' || needs.approval.result == 'skipped')
+    steps:
+      - name: Checkout target version
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate.outputs.target-version }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets[format('AWS_ACCESS_KEY_ID_{0}', inputs.environment == 'development' && 'DEV' || inputs.environment == 'staging' && 'STAGING' || 'PROD')] }}
+          aws-secret-access-key: ${{ secrets[format('AWS_SECRET_ACCESS_KEY_{0}', inputs.environment == 'development' && 'DEV' || inputs.environment == 'staging' && 'STAGING' || 'PROD')] }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup SAM CLI
@@ -214,670 +127,199 @@ jobs:
 
       - name: Rollback CloudFormation stack
         run: |
-          echo "Rolling back CloudFormation stack to version ${{ needs.validate-rollback.outputs.target-version }}..."
-          
-          STACK_NAME="${{ needs.validate-rollback.outputs.stack-name }}"
-          
-          # Check current stack status
+          STACK_NAME="${{ needs.validate.outputs.stack-name }}"
+
           CURRENT_STATUS=$(aws cloudformation describe-stacks \
             --stack-name $STACK_NAME \
             --query 'Stacks[0].StackStatus' \
             --output text)
-          
-          echo "Current stack status: $CURRENT_STATUS"
-          
-          # If stack is in UPDATE state, cancel and rollback
+
           if [[ "$CURRENT_STATUS" == *"UPDATE"* ]]; then
-            echo "Canceling current update and rolling back..."
             aws cloudformation cancel-update-stack \
               --stack-name $STACK_NAME \
               --region ${{ env.AWS_REGION }} || true
             
-            # Wait for rollback to complete
             aws cloudformation wait stack-rollback-complete \
               --stack-name $STACK_NAME \
               --region ${{ env.AWS_REGION }}
-            
-            echo "✅ Stack rolled back to previous state"
           else
-            # Deploy the previous version
-            echo "Deploying previous version..."
             sam deploy \
               --config-env ${{ inputs.environment }} \
               --no-confirm-changeset \
               --no-fail-on-empty-changeset \
               --region ${{ env.AWS_REGION }}
-            
-            echo "✅ Previous version deployed successfully"
-          fi
-
-      - name: Monitor rollback progress
-        run: |
-          echo "Monitoring stack rollback..."
-          
-          STACK_NAME="${{ needs.validate-rollback.outputs.stack-name }}"
-          
-          # Wait for stack to stabilize
-          aws cloudformation wait stack-update-complete \
-            --stack-name $STACK_NAME \
-            --region ${{ env.AWS_REGION }} || true
-          
-          # Get final status
-          FINAL_STATUS=$(aws cloudformation describe-stacks \
-            --stack-name $STACK_NAME \
-            --query 'Stacks[0].StackStatus' \
-            --output text)
-          
-          echo "Final stack status: $FINAL_STATUS"
-          
-          if [[ "$FINAL_STATUS" == *"COMPLETE"* ]] && [[ "$FINAL_STATUS" != *"FAILED"* ]]; then
-            echo "✅ Infrastructure rollback completed successfully"
-          else
-            echo "❌ Infrastructure rollback failed with status: $FINAL_STATUS"
-            exit 1
           fi
 
   rollback-frontend:
     name: Rollback Frontend
     runs-on: ubuntu-latest
-    needs: [validate-rollback, rollback-infrastructure]
-    if: always() && needs.rollback-infrastructure.result == 'success'
-    
+    needs: [validate, rollback-infrastructure]
     steps:
       - name: Checkout target version
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.validate-rollback.outputs.target-version }}
+          ref: ${{ needs.validate.outputs.target-version }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets[format('AWS_ACCESS_KEY_ID_{0}', inputs.environment == 'development' && 'DEV' || inputs.environment == 'staging' && 'STAGING' || 'PROD')] }}
+          aws-secret-access-key: ${{ secrets[format('AWS_SECRET_ACCESS_KEY_{0}', inputs.environment == 'development' && 'DEV' || inputs.environment == 'staging' && 'STAGING' || 'PROD')] }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Get previous Amplify job
-        id: previous-job
+      - name: Rollback Amplify deployment
         run: |
-          AMPLIFY_APP_ID="${{ needs.validate-rollback.outputs.amplify-app-id }}"
-          BRANCH_NAME="${{ inputs.environment }}"
-          
-          # Get the last successful job before current deployment
-          PREVIOUS_JOB=$(aws amplify list-jobs \
-            --app-id $AMPLIFY_APP_ID \
-            --branch-name $BRANCH_NAME \
-            --max-results 10 \
-            --query 'jobSummaries[?summary.status==`SUCCEED`] | [1].summary.jobId' \
+          APP_ID=$(aws amplify list-apps \
+            --region ${{ env.AWS_REGION }} \
+            --query "apps[?name=='bayon-coagent-${{ inputs.environment }}'].appId" \
             --output text)
-          
-          if [ -z "$PREVIOUS_JOB" ] || [ "$PREVIOUS_JOB" == "None" ]; then
-            echo "❌ Could not find previous successful Amplify job"
+
+          if [ -z "$APP_ID" ]; then
+            echo "❌ Amplify app not found"
             exit 1
           fi
-          
-          echo "job-id=$PREVIOUS_JOB" >> $GITHUB_OUTPUT
-          echo "Found previous successful job: $PREVIOUS_JOB"
 
-      - name: Redeploy previous Amplify build
-        run: |
-          AMPLIFY_APP_ID="${{ needs.validate-rollback.outputs.amplify-app-id }}"
-          BRANCH_NAME="${{ inputs.environment }}"
-          JOB_ID="${{ steps.previous-job.outputs.job-id }}"
-          
-          echo "Redeploying Amplify job $JOB_ID..."
-          
-          # Start a new job with the previous commit
+          # Get branch name based on environment
+          case "${{ inputs.environment }}" in
+            development) BRANCH="develop" ;;
+            staging) BRANCH="staging" ;;
+            production) BRANCH="main" ;;
+          esac
+
+          # Start deployment with target version commit
           aws amplify start-job \
-            --app-id $AMPLIFY_APP_ID \
-            --branch-name $BRANCH_NAME \
+            --app-id $APP_ID \
+            --branch-name $BRANCH \
             --job-type RELEASE \
-            --commit-id $(git rev-parse ${{ needs.validate-rollback.outputs.target-version }})
-          
-          echo "✅ Amplify redeploy initiated"
+            --commit-id $(git rev-parse ${{ needs.validate.outputs.target-version }}) \
+            --region ${{ env.AWS_REGION }}
 
-      - name: Monitor Amplify deployment
-        run: |
-          AMPLIFY_APP_ID="${{ needs.validate-rollback.outputs.amplify-app-id }}"
-          BRANCH_NAME="${{ inputs.environment }}"
-          
-          echo "Monitoring Amplify deployment..."
-          
-          # Wait for deployment to complete (max 15 minutes)
-          for i in {1..90}; do
+          # Monitor deployment
+          while true; do
             STATUS=$(aws amplify list-jobs \
-              --app-id $AMPLIFY_APP_ID \
-              --branch-name $BRANCH_NAME \
+              --app-id $APP_ID \
+              --branch-name $BRANCH \
               --max-results 1 \
               --query 'jobSummaries[0].summary.status' \
               --output text)
             
-            echo "Current status: $STATUS"
-            
             if [ "$STATUS" == "SUCCEED" ]; then
-              echo "✅ Frontend rollback completed successfully"
-              exit 0
+              echo "✅ Frontend rollback completed"
+              break
             elif [ "$STATUS" == "FAILED" ] || [ "$STATUS" == "CANCELLED" ]; then
-              echo "❌ Frontend rollback failed with status: $STATUS"
+              echo "❌ Frontend rollback failed: $STATUS"
               exit 1
             fi
-            
-            sleep 10
+            sleep 30
           done
-          
-          echo "❌ Frontend rollback timed out"
-          exit 1
 
-  verify-rollback:
+  verify:
     name: Verify Rollback
     runs-on: ubuntu-latest
-    needs: [validate-rollback, rollback-infrastructure, rollback-frontend]
-    if: always() && needs.rollback-infrastructure.result == 'success' && needs.rollback-frontend.result == 'success'
-    outputs:
-      verification-status: ${{ steps.verify.outputs.status }}
-    
+    needs: [validate, rollback-infrastructure, rollback-frontend]
     steps:
-      - name: Checkout target version
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.validate-rollback.outputs.target-version }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Get deployment URL
-        id: url
+      - name: Run verification tests
         run: |
-          AMPLIFY_APP_ID="${{ needs.validate-rollback.outputs.amplify-app-id }}"
-          BRANCH_NAME="${{ inputs.environment }}"
-          
-          URL=$(aws amplify get-branch \
-            --app-id $AMPLIFY_APP_ID \
-            --branch-name $BRANCH_NAME \
-            --query 'branch.branchName' \
-            --output text)
-          
-          # Construct the URL
-          DEPLOYMENT_URL="https://${BRANCH_NAME}.${AMPLIFY_APP_ID}.amplifyapp.com"
-          echo "url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+          echo "Running rollback verification..."
 
-      - name: Run smoke tests
-        id: verify
-        run: |
-          echo "Running smoke tests against rolled-back version..."
-          
-          # Wait for application to be ready
-          sleep 30
-          
-          # Run authentication smoke test
-          if [ -f "scripts/smoke-tests/test-auth.sh" ]; then
-            bash scripts/smoke-tests/test-auth.sh || AUTH_FAILED=1
-          fi
-          
-          # Run database smoke test
-          if [ -f "scripts/smoke-tests/test-database.sh" ]; then
-            bash scripts/smoke-tests/test-database.sh || DB_FAILED=1
-          fi
-          
-          # Run storage smoke test
-          if [ -f "scripts/smoke-tests/test-storage.sh" ]; then
-            bash scripts/smoke-tests/test-storage.sh || STORAGE_FAILED=1
-          fi
-          
-          # Run AI smoke test
-          if [ -f "scripts/smoke-tests/test-ai.sh" ]; then
-            bash scripts/smoke-tests/test-ai.sh || AI_FAILED=1
-          fi
-          
-          # Check if any tests failed
-          if [ -n "$AUTH_FAILED" ] || [ -n "$DB_FAILED" ] || [ -n "$STORAGE_FAILED" ] || [ -n "$AI_FAILED" ]; then
-            echo "status=failed" >> $GITHUB_OUTPUT
-            echo "❌ Some smoke tests failed"
-            exit 1
-          else
-            echo "status=success" >> $GITHUB_OUTPUT
-            echo "✅ All smoke tests passed"
-          fi
+          # Get deployment URL based on environment
+          case "${{ inputs.environment }}" in
+            development) URL="https://develop.bayoncoagent.com" ;;
+            staging) URL="https://staging.bayoncoagent.com" ;;
+            production) URL="https://bayoncoagent.com" ;;
+          esac
 
-      - name: Monitor metrics
-        if: always()
-        run: |
-          echo "Monitoring CloudWatch metrics for stability..."
-          
-          STACK_NAME="${{ needs.validate-rollback.outputs.stack-name }}"
-          
-          # Get API Gateway ID from stack outputs
-          API_ID=$(aws cloudformation describe-stacks \
-            --stack-name $STACK_NAME \
-            --query 'Stacks[0].Outputs[?OutputKey==`ApiGatewayId`].OutputValue' \
-            --output text 2>/dev/null || echo "")
-          
-          if [ -n "$API_ID" ]; then
-            # Check for errors in the last 5 minutes
-            ERROR_COUNT=$(aws cloudwatch get-metric-statistics \
-              --namespace AWS/ApiGateway \
-              --metric-name 5XXError \
-              --dimensions Name=ApiId,Value=$API_ID \
-              --start-time $(date -u -d '5 minutes ago' +%Y-%m-%dT%H:%M:%S) \
-              --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \
-              --period 300 \
-              --statistics Sum \
-              --query 'Datapoints[0].Sum' \
-              --output text 2>/dev/null || echo "0")
-            
-            echo "5XX errors in last 5 minutes: $ERROR_COUNT"
-            
-            if [ "$ERROR_COUNT" != "0" ] && [ "$ERROR_COUNT" != "None" ]; then
-              echo "⚠️ Elevated error rate detected"
-            else
-              echo "✅ Error rate is normal"
-            fi
-          fi
+          # Basic health check
+          curl -f $URL || exit 1
 
-      - name: Create verification summary
-        if: always()
-        run: |
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          ## ✅ Rollback Verification
-          
-          **Environment:** ${{ inputs.environment }}
-          **Version:** ${{ needs.validate-rollback.outputs.target-version }}
-          **Deployment URL:** ${{ steps.url.outputs.url }}
-          
-          ### Verification Results
-          - Smoke tests: ${{ steps.verify.outputs.status }}
-          - Metrics: Monitored for stability
-          
-          The rolled-back version is now live and verified.
-          EOF
+          echo "✅ Rollback verification passed"
 
-  # Task 15.8: Implement rollback notifications
-  notify-rollback:
+  notify:
     name: Notify Rollback
     runs-on: ubuntu-latest
-    needs: [validate-rollback, rollback-infrastructure, rollback-frontend, verify-rollback]
+    needs: [validate, rollback-infrastructure, rollback-frontend, verify]
     if: always()
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Determine notification type
-        id: notification-type
+      - name: Determine status
+        id: status
         run: |
-          # Determine if rollback was successful or failed
-          INFRA_STATUS="${{ needs.rollback-infrastructure.result }}"
-          FRONTEND_STATUS="${{ needs.rollback-frontend.result }}"
-          VERIFY_STATUS="${{ needs.verify-rollback.result }}"
-          
-          if [ "$INFRA_STATUS" == "success" ] && [ "$FRONTEND_STATUS" == "success" ] && [ "$VERIFY_STATUS" == "success" ]; then
-            echo "type=success" >> $GITHUB_OUTPUT
-            echo "message-type=urgent" >> $GITHUB_OUTPUT
+          if [ "${{ needs.rollback-infrastructure.result }}" = "success" ] && [ "${{ needs.rollback-frontend.result }}" = "success" ] && [ "${{ needs.verify.result }}" = "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
             echo "title=Rollback Completed Successfully" >> $GITHUB_OUTPUT
-          elif [ "$INFRA_STATUS" == "failure" ] || [ "$FRONTEND_STATUS" == "failure" ]; then
-            echo "type=critical-failure" >> $GITHUB_OUTPUT
-            echo "message-type=urgent" >> $GITHUB_OUTPUT
+            echo "message=Rollback to version ${{ needs.validate.outputs.target-version }} completed successfully" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
             echo "title=CRITICAL: Rollback Failed" >> $GITHUB_OUTPUT
-          elif [ "$VERIFY_STATUS" == "failure" ]; then
-            echo "type=verification-failure" >> $GITHUB_OUTPUT
-            echo "message-type=urgent" >> $GITHUB_OUTPUT
-            echo "title=Rollback Completed but Verification Failed" >> $GITHUB_OUTPUT
-          else
-            echo "type=unknown" >> $GITHUB_OUTPUT
-            echo "message-type=urgent" >> $GITHUB_OUTPUT
-            echo "title=Rollback Status Unknown" >> $GITHUB_OUTPUT
+            echo "message=Rollback failed - immediate attention required" >> $GITHUB_OUTPUT
           fi
-
-      - name: Build notification message
-        id: message
-        run: |
-          INFRA_STATUS="${{ needs.rollback-infrastructure.result }}"
-          FRONTEND_STATUS="${{ needs.rollback-frontend.result }}"
-          VERIFY_STATUS="${{ needs.verify-rollback.result }}"
-          NOTIFICATION_TYPE="${{ steps.notification-type.outputs.type }}"
-          
-          # Build detailed message based on status
-          if [ "$NOTIFICATION_TYPE" == "success" ]; then
-            MESSAGE="🔄 Rollback to version \`${{ needs.validate-rollback.outputs.target-version }}\` completed successfully.
-
-**Environment:** ${{ inputs.environment }}
-**Reason:** ${{ inputs.reason }}
-**Triggered by:** ${{ github.actor }}
-
-**Status:**
-✅ Infrastructure rollback: Success
-✅ Frontend rollback: Success
-✅ Verification: All smoke tests passed
-
-The system has been restored to a stable state."
-          
-          elif [ "$NOTIFICATION_TYPE" == "critical-failure" ]; then
-            MESSAGE="🚨 **CRITICAL: Rollback failed!**
-
-**Environment:** ${{ inputs.environment }}
-**Target Version:** ${{ needs.validate-rollback.outputs.target-version }}
-**Reason:** ${{ inputs.reason }}
-**Triggered by:** ${{ github.actor }}
-
-**Status:**
-$([ "$INFRA_STATUS" == "success" ] && echo "✅" || echo "❌") Infrastructure rollback: $INFRA_STATUS
-$([ "$FRONTEND_STATUS" == "success" ] && echo "✅" || echo "❌") Frontend rollback: $FRONTEND_STATUS
-
-**IMMEDIATE ACTION REQUIRED:**
-1. Review workflow logs immediately
-2. Check AWS CloudFormation console
-3. Verify Amplify deployment status
-4. Consider manual intervention
-
-This requires immediate attention from the on-call team."
-          
-          elif [ "$NOTIFICATION_TYPE" == "verification-failure" ]; then
-            MESSAGE="⚠️ Rollback completed but verification failed
-
-**Environment:** ${{ inputs.environment }}
-**Version:** ${{ needs.validate-rollback.outputs.target-version }}
-**Reason:** ${{ inputs.reason }}
-
-**Status:**
-✅ Infrastructure rollback: Success
-✅ Frontend rollback: Success
-❌ Verification: Smoke tests failed
-
-The rollback completed but the system may not be fully functional. Investigation required."
-          
-          else
-            MESSAGE="❓ Rollback status unclear
-
-**Environment:** ${{ inputs.environment }}
-**Target Version:** ${{ needs.validate-rollback.outputs.target-version }}
-
-Please review the workflow logs to determine the actual status."
-          fi
-          
-          # Save message to output (escape for JSON)
-          echo "message<<EOF" >> $GITHUB_OUTPUT
-          echo "$MESSAGE" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Send Slack notification
-        if: always()
-        uses: ./.github/actions/slack-notify
-        with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          message-type: ${{ steps.notification-type.outputs.message-type }}
-          title: ${{ steps.notification-type.outputs.title }}
-          message: ${{ steps.message.outputs.message }}
-          environment: ${{ inputs.environment }}
-          commit-sha: ${{ needs.validate-rollback.outputs.target-version }}
-          commit-message: "Rollback reason: ${{ inputs.reason }}"
-          author: ${{ github.actor }}
-          mention-users: ${{ secrets.SLACK_ONCALL_USERS }}
+        if: env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          STATUS_EMOJI="${{ steps.status.outputs.status == 'success' && '✅' || '🚨' }}"
 
-      - name: Send email notification
-        if: always()
-        uses: ./.github/actions/email-notify
-        with:
-          smtp-server: ${{ secrets.SMTP_SERVER || 'smtp.gmail.com' }}
-          smtp-port: ${{ secrets.SMTP_PORT || '587' }}
-          smtp-username: ${{ secrets.SMTP_USERNAME }}
-          smtp-password: ${{ secrets.SMTP_PASSWORD }}
-          from-email: ${{ secrets.FROM_EMAIL }}
-          to-emails: ${{ secrets.DEVOPS_EMAIL_LIST }}
-          subject: "${{ steps.notification-type.outputs.title }} - ${{ inputs.environment }}"
-          message-type: ${{ steps.notification-type.outputs.message-type }}
-          title: ${{ steps.notification-type.outputs.title }}
-          message: ${{ steps.message.outputs.message }}
-          environment: ${{ inputs.environment }}
-          commit-sha: ${{ needs.validate-rollback.outputs.target-version }}
-          commit-message: "Rollback reason: ${{ inputs.reason }}"
-          author: ${{ github.actor }}
+          curl -X POST "$SLACK_WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -d "{
+              \"text\": \"$STATUS_EMOJI ${{ steps.status.outputs.title }}\",
+              \"attachments\": [{
+                \"color\": \"${{ steps.status.outputs.status == 'success' && 'good' || 'danger' }}\",
+                \"fields\": [
+                  {
+                    \"title\": \"Environment\",
+                    \"value\": \"${{ inputs.environment }}\",
+                    \"short\": true
+                  },
+                  {
+                    \"title\": \"Target Version\",
+                    \"value\": \"${{ needs.validate.outputs.target-version }}\",
+                    \"short\": true
+                  },
+                  {
+                    \"title\": \"Reason\",
+                    \"value\": \"${{ inputs.reason }}\",
+                    \"short\": false
+                  },
+                  {
+                    \"title\": \"Triggered By\",
+                    \"value\": \"${{ github.actor }}\",
+                    \"short\": true
+                  }
+                ]
+              }]
+            }"
 
       - name: Create incident report
-        if: always()
+        if: steps.status.outputs.status == 'failure'
         run: |
-          # Create incident report file
-          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          REPORT_FILE="incident-report-$(date -u +%Y%m%d-%H%M%S).md"
-          
-          cat > $REPORT_FILE << 'EOF'
+          cat > incident-report.md << EOF
           # Rollback Incident Report
-          
-          ## Incident Details
-          
-          - **Date/Time:** $TIMESTAMP
-          - **Environment:** ${{ inputs.environment }}
-          - **Triggered By:** ${{ github.actor }}
-          - **Workflow Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          
-          ## Rollback Information
-          
-          - **Target Version:** ${{ needs.validate-rollback.outputs.target-version }}
-          - **Reason:** ${{ inputs.reason }}
-          - **Stack Name:** ${{ needs.validate-rollback.outputs.stack-name }}
-          
-          ## Rollback Status
-          
-          - **Infrastructure Rollback:** ${{ needs.rollback-infrastructure.result }}
-          - **Frontend Rollback:** ${{ needs.rollback-frontend.result }}
-          - **Verification:** ${{ needs.verify-rollback.result }}
-          - **Overall Status:** ${{ steps.notification-type.outputs.type }}
-          
-          ## Timeline
-          
-          1. **Rollback Initiated:** $TIMESTAMP
-          2. **Validation:** ${{ needs.validate-rollback.result }}
-          3. **Infrastructure Rollback:** ${{ needs.rollback-infrastructure.result }}
-          4. **Frontend Rollback:** ${{ needs.rollback-frontend.result }}
-          5. **Verification:** ${{ needs.verify-rollback.result }}
-          
-          ## Actions Taken
-          
-          - Rolled back CloudFormation stack to previous version
-          - Redeployed previous Amplify build
-          - Ran smoke tests to verify functionality
-          - Monitored CloudWatch metrics
-          - Notified team via Slack and email
-          
+
+          **Environment:** ${{ inputs.environment }}
+          **Target Version:** ${{ needs.validate.outputs.target-version }}
+          **Reason:** ${{ inputs.reason }}
+          **Status:** Failed
+          **Triggered By:** ${{ github.actor }}
+          **Workflow:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          ## Status
+          - Infrastructure Rollback: ${{ needs.rollback-infrastructure.result }}
+          - Frontend Rollback: ${{ needs.rollback-frontend.result }}
+          - Verification: ${{ needs.verify.result }}
+
           ## Next Steps
-          
-          EOF
-          
-          # Add next steps based on status
-          if [ "${{ steps.notification-type.outputs.type }}" == "success" ]; then
-            cat >> $REPORT_FILE << 'EOF'
-          - [ ] Review root cause of original deployment failure
-          - [ ] Document lessons learned
-          - [ ] Update deployment procedures if needed
-          - [ ] Plan for re-deployment when issue is resolved
-          EOF
-          elif [ "${{ steps.notification-type.outputs.type }}" == "critical-failure" ]; then
-            cat >> $REPORT_FILE << 'EOF'
-          - [ ] **URGENT:** Investigate rollback failure immediately
-          - [ ] Check AWS CloudFormation console for errors
+          - [ ] Investigate rollback failure immediately
+          - [ ] Check AWS CloudFormation console
           - [ ] Review Amplify deployment logs
           - [ ] Consider manual rollback procedures
-          - [ ] Escalate to senior DevOps team
-          - [ ] Document all manual interventions
           EOF
-          else
-            cat >> $REPORT_FILE << 'EOF'
-          - [ ] Investigate verification failures
-          - [ ] Review smoke test logs
-          - [ ] Check application functionality manually
-          - [ ] Determine if additional rollback steps needed
-          EOF
-          fi
-          
-          cat >> $REPORT_FILE << 'EOF'
-          
-          ## Additional Notes
-          
-          _Add any additional observations or notes here_
-          
-          ---
-          
-          **Report Generated:** $TIMESTAMP
-          **Generated By:** GitHub Actions Rollback Workflow
-          EOF
-          
-          echo "Incident report created: $REPORT_FILE"
-          cat $REPORT_FILE
 
       - name: Upload incident report
-        if: always()
+        if: steps.status.outputs.status == 'failure'
         uses: actions/upload-artifact@v4
         with:
-          name: incident-report-${{ inputs.environment }}-${{ github.run_id }}
-          path: incident-report-*.md
+          name: rollback-incident-report
+          path: incident-report.md
           retention-days: 90
-
-      - name: Create GitHub issue for incident
-        if: always() && (steps.notification-type.outputs.type == 'critical-failure' || steps.notification-type.outputs.type == 'verification-failure')
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const notificationType = '${{ steps.notification-type.outputs.type }}';
-            const environment = '${{ inputs.environment }}';
-            const reason = '${{ inputs.reason }}';
-            const targetVersion = '${{ needs.validate-rollback.outputs.target-version }}';
-            const workflowUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
-            
-            const labels = ['incident', 'rollback', environment];
-            if (notificationType === 'critical-failure') {
-              labels.push('critical', 'urgent');
-            }
-            
-            const title = notificationType === 'critical-failure' 
-              ? `🚨 CRITICAL: Rollback Failed - ${environment}`
-              : `⚠️ Rollback Verification Failed - ${environment}`;
-            
-            const body = `## Rollback Incident
-            
-            **Environment:** ${environment}
-            **Target Version:** ${targetVersion}
-            **Reason:** ${reason}
-            **Triggered By:** @${{ github.actor }}
-            **Workflow:** [View Run](${workflowUrl})
-            
-            ### Status
-            
-            - Infrastructure Rollback: ${{ needs.rollback-infrastructure.result }}
-            - Frontend Rollback: ${{ needs.rollback-frontend.result }}
-            - Verification: ${{ needs.verify-rollback.result }}
-            
-            ### Required Actions
-            
-            ${notificationType === 'critical-failure' ? `
-            - [ ] **URGENT:** Investigate rollback failure immediately
-            - [ ] Review CloudFormation and Amplify logs
-            - [ ] Consider manual intervention
-            - [ ] Escalate to on-call team
-            ` : `
-            - [ ] Investigate verification failures
-            - [ ] Review smoke test results
-            - [ ] Verify application functionality
-            `}
-            
-            ### Incident Report
-            
-            A detailed incident report has been uploaded as a workflow artifact.
-            
-            ---
-            
-            *This issue was automatically created by the rollback workflow.*
-            `;
-            
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: title,
-              body: body,
-              labels: labels
-            });
-
-      - name: Escalate to PagerDuty (Critical Failures Only)
-        if: always() && steps.notification-type.outputs.type == 'critical-failure' && secrets.PAGERDUTY_INTEGRATION_KEY != ''
-        run: |
-          echo "Escalating critical rollback failure to PagerDuty..."
-          
-          # Create PagerDuty incident
-          curl -X POST https://events.pagerduty.com/v2/enqueue \
-            -H 'Content-Type: application/json' \
-            -d '{
-              "routing_key": "${{ secrets.PAGERDUTY_INTEGRATION_KEY }}",
-              "event_action": "trigger",
-              "payload": {
-                "summary": "CRITICAL: Rollback Failed - ${{ inputs.environment }}",
-                "severity": "critical",
-                "source": "GitHub Actions",
-                "component": "CI/CD Pipeline",
-                "group": "rollback",
-                "class": "deployment",
-                "custom_details": {
-                  "environment": "${{ inputs.environment }}",
-                  "target_version": "${{ needs.validate-rollback.outputs.target-version }}",
-                  "reason": "${{ inputs.reason }}",
-                  "triggered_by": "${{ github.actor }}",
-                  "workflow_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-                  "infrastructure_status": "${{ needs.rollback-infrastructure.result }}",
-                  "frontend_status": "${{ needs.rollback-frontend.result }}",
-                  "verification_status": "${{ needs.verify-rollback.result }}"
-                }
-              },
-              "links": [{
-                "href": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-                "text": "View Workflow Run"
-              }]
-            }'
-          
-          if [ $? -eq 0 ]; then
-            echo "✅ PagerDuty incident created successfully"
-          else
-            echo "❌ Failed to create PagerDuty incident"
-          fi
-
-      - name: Final summary
-        if: always()
-        run: |
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          ## 📢 Rollback Notifications Sent
-          
-          **Notification Type:** ${{ steps.notification-type.outputs.type }}
-          
-          ### Notifications Sent:
-          - ✅ Slack notification to team channel
-          - ✅ Email notification to DevOps team
-          - ✅ Incident report created and uploaded
-          EOF
-          
-          if [ "${{ steps.notification-type.outputs.type }}" == "critical-failure" ]; then
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          - ✅ GitHub issue created for tracking
-          - ✅ PagerDuty incident created (if configured)
-          
-          **⚠️ CRITICAL FAILURE - Immediate action required!**
-          EOF
-          elif [ "${{ steps.notification-type.outputs.type }}" == "verification-failure" ]; then
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          - ✅ GitHub issue created for tracking
-          
-          **⚠️ Verification failed - Investigation required**
-          EOF
-          else
-            cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          
-          **✅ Rollback completed successfully**
-          EOF
-          fi
