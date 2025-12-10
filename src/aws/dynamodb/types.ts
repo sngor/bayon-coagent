@@ -5,12 +5,63 @@
  */
 
 /**
- * Entity types that can be stored in DynamoDB
+ * Entity type categories for better organization
  */
-export type EntityType =
+export type UserEntityType =
   | 'UserProfile'
   | 'RealEstateAgentProfile'
   | 'AgentProfile'
+  | 'UserPreferences'
+  | 'LoginSession'
+  | 'OAuthToken'
+  | 'PersonalizationProfile';
+
+export type ContentEntityType =
+  | 'SavedContent'
+  | 'Project'
+  | 'ResearchReport'
+  | 'MarketingPlan'
+  | 'Template'
+  | 'ImageMetadata'
+  | 'EditRecord'
+  | 'VisionAnalysis';
+
+export type AdminEntityType =
+  | 'PromotionCampaign'
+  | 'AuditLog'
+  | 'EmailNotification'
+  | 'UserActivitySummary'
+  | 'UserActivityIndex'
+  | 'SyncRecord'
+  | 'RetryRecord'
+  | 'AlertPreferences'
+  | 'BulkOperationResult'
+  | 'BulkOperationIndex'
+  | 'AdminAuditLog'
+  | 'AdminAnnouncement'
+  | 'SystemConfig'
+  | 'SystemConfigHistory';
+
+export type BusinessEntityType =
+  | 'Team'
+  | 'TeamMember'
+  | 'Organization'
+  | 'Invitation'
+  | 'Listing'
+  | 'MLSConnection'
+  | 'SocialConnection'
+  | 'SocialPost'
+  | 'Lead'
+  | 'LeadInteraction';
+
+/**
+ * Entity types that can be stored in DynamoDB
+ */
+export type EntityType =
+  | UserEntityType
+  | ContentEntityType
+  | AdminEntityType
+  | BusinessEntityType
   | 'AgentDocument'
   | 'Review'
   | 'BrandAudit'
@@ -150,7 +201,17 @@ export type EntityType =
   | 'UserFeedback'
   | 'WorkflowInstance'
   | 'OnboardingState'
-  | 'OnboardingAnalytics';
+  | 'OnboardingAnalytics'
+  | 'PromotionCampaign'
+  | 'AuditLog'
+  | 'EmailNotification'
+  | 'UserActivitySummary'
+  | 'UserActivityIndex'
+  | 'SyncRecord'
+  | 'RetryRecord'
+  | 'AlertPreferences'
+  | 'BulkOperationResult'
+  | 'BulkOperationIndex';
 
 /**
  * Base DynamoDB item structure

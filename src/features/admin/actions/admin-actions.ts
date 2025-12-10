@@ -1133,6 +1133,58 @@ export async function updateFeatureAction(prevState: any, formData: FormData): P
     }
 }
 
+export async function toggleFeatureAction(
+    featureId: string,
+    enabled: boolean
+): Promise<{
+    message: string;
+    errors: any;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) return { message: 'Not authenticated', errors: {} };
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) return { message: 'Unauthorized', errors: {} };
+
+        const repository = getRepository();
+        await repository.update(`FEATURE#${featureId}`, 'CONFIG', {
+            enabled,
+            updatedAt: new Date().toISOString()
+        });
+
+        revalidatePath('/super-admin/features');
+        return { message: 'success', errors: {} };
+    } catch (error: any) {
+        console.error('Error toggling feature:', error);
+        return { message: 'Failed to toggle feature', errors: { system: error.message } };
+    }
+}
+
+export async function deleteFeatureAction(
+    featureId: string
+): Promise<{
+    message: string;
+    errors: any;
+}> {
+    try {
+        const currentUser = await getCurrentUserServer();
+        if (!currentUser) return { message: 'Not authenticated', errors: {} };
+
+        const adminStatus = await checkAdminStatusAction(currentUser.id);
+        if (!adminStatus.isAdmin) return { message: 'Unauthorized', errors: {} };
+
+        const repository = getRepository();
+        await repository.delete(`FEATURE#${featureId}`, 'CONFIG');
+
+        revalidatePath('/super-admin/features');
+        return { message: 'success', errors: {} };
+    } catch (error: any) {
+        console.error('Error deleting feature:', error);
+        return { message: 'Failed to delete feature', errors: { system: error.message } };
+    }
+}
+
 export async function createUserAction(
     email: string,
     name: string,

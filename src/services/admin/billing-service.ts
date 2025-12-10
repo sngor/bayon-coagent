@@ -364,13 +364,21 @@ export class BillingService {
             const repository = getRepository();
 
             // Get user profile from DynamoDB
-            const profileRecord = await repository.get(`USER#${userId}`, 'PROFILE');
+            const profile = await repository.get<{
+                email?: string;
+                name?: string;
+                customerId?: string;
+                subscriptionId?: string;
+                subscriptionStatus?: string;
+                subscriptionPriceId?: string;
+                subscriptionCurrentPeriodEnd?: string;
+            }>(`USER#${userId}`, 'PROFILE');
 
-            if (!profileRecord?.Data) {
+            if (!profile) {
                 return null;
             }
 
-            const profile = profileRecord.Data as {
+            const profileData = profile as {
                 email?: string;
                 name?: string;
                 customerId?: string;
@@ -382,21 +390,21 @@ export class BillingService {
 
             const userBillingInfo: UserBillingInfo = {
                 userId,
-                email: profile.email || '',
-                name: profile.name || '',
-                customerId: profile.customerId,
-                subscriptionId: profile.subscriptionId,
-                subscriptionStatus: profile.subscriptionStatus,
-                subscriptionPriceId: profile.subscriptionPriceId,
-                currentPeriodEnd: profile.subscriptionCurrentPeriodEnd,
+                email: profileData.email || '',
+                name: profileData.name || '',
+                customerId: profileData.customerId,
+                subscriptionId: profileData.subscriptionId,
+                subscriptionStatus: profileData.subscriptionStatus,
+                subscriptionPriceId: profileData.subscriptionPriceId,
+                currentPeriodEnd: profileData.subscriptionCurrentPeriodEnd,
                 paymentHistory: [],
                 totalSpent: 0,
             };
 
             // If user has a Stripe customer ID, get additional details
-            if (profile.customerId) {
+            if (profileData.customerId) {
                 try {
-                    const customer = await stripe.customers.retrieve(profile.customerId, {
+                    const customer = await stripe.customers.retrieve(profileData.customerId, {
                         expand: ['invoice_settings.default_payment_method'],
                     });
 
@@ -416,26 +424,26 @@ export class BillingService {
                         }
                     }
                 } catch (error) {
-                    console.warn(`Failed to retrieve customer ${profile.customerId}:`, error);
+                    console.warn(`Failed to retrieve customer ${profileData.customerId}:`, error);
                 }
             }
 
             // If user has a subscription, get subscription details
-            if (profile.subscriptionId) {
+            if (profileData.subscriptionId) {
                 try {
                     const subscription = await stripe.subscriptions.retrieve(
-                        profile.subscriptionId
+                        profileData.subscriptionId
                     );
 
                     userBillingInfo.subscriptionPlan =
                         subscription.items.data[0]?.price.nickname || 'Unknown';
                     userBillingInfo.currentPeriodStart = new Date(
-                        subscription.current_period_start * 1000
+                        (subscription as any).current_period_start * 1000
                     ).toISOString();
                     userBillingInfo.currentPeriodEnd = new Date(
-                        subscription.current_period_end * 1000
+                        (subscription as any).current_period_end * 1000
                     ).toISOString();
-                    userBillingInfo.cancelAtPeriodEnd = subscription.cancel_at_period_end;
+                    userBillingInfo.cancelAtPeriodEnd = (subscription as any).cancel_at_period_end;
 
                     if (subscription.trial_end) {
                         userBillingInfo.trialEnd = new Date(
@@ -445,7 +453,7 @@ export class BillingService {
 
                     // Get payment history from invoices
                     const invoices = await stripe.invoices.list({
-                        subscription: profile.subscriptionId,
+                        subscription: profileData.subscriptionId,
                         limit: 50,
                     });
 
@@ -463,7 +471,7 @@ export class BillingService {
                         .reduce((sum, inv) => sum + inv.amount_paid / 100, 0);
                 } catch (error) {
                     console.warn(
-                        `Failed to retrieve subscription ${profile.subscriptionId}:`,
+                        `Failed to retrieve subscription ${profileData.subscriptionId}:`,
                         error
                     );
                 }
@@ -494,7 +502,7 @@ export class BillingService {
             for (const invoice of invoices.data) {
                 // Only include invoices with failed payment attempts
                 if (invoice.attempt_count > 0) {
-                    const subscription = invoice.subscription as Stripe.Subscription | null;
+                    const subscription = (invoice as any).subscription as Stripe.Subscription | null;
                     const customer = invoice.customer as Stripe.Customer | null;
 
                     if (subscription && customer && !customer.deleted) {
@@ -541,7 +549,10 @@ export class BillingService {
             const repository = getRepository();
 
             // Get user profile
-            const profile = await repository.get(`USER#${userId}`, 'PROFILE');
+            const profile = await repository.get<{
+                subscriptionId?: string;
+                trialEnd?: string;
+            }>(`USER#${userId}`, 'PROFILE');
 
             if (!profile) {
                 throw new Error('User not found');
@@ -557,7 +568,7 @@ export class BillingService {
             );
 
             // Calculate new trial end date
-            const currentTrialEnd = subscription.trial_end || Math.floor(Date.now() / 1000);
+            const currentTrialEnd = (subscription as any).trial_end || Math.floor(Date.now() / 1000);
             const newTrialEnd = currentTrialEnd + extensionDays * 24 * 60 * 60;
 
             // Update subscription with new trial end
@@ -571,11 +582,11 @@ export class BillingService {
             });
 
             // Create audit log
-            await repository.create({
-                PK: 'AUDIT#BILLING',
-                SK: `${Date.now()}#${userId}`,
-                EntityType: 'AuditLog',
-                Data: {
+            await repository.create(
+                'AUDIT#BILLING',
+                `${Date.now()}#${userId}`,
+                'AuditLog',
+                {
                     action: 'trial_extension',
                     adminId,
                     userId,
@@ -583,8 +594,8 @@ export class BillingService {
                     reason,
                     newTrialEnd: new Date(newTrialEnd * 1000).toISOString(),
                     timestamp: Date.now(),
-                },
-            });
+                }
+            );
 
             console.log(
                 `Trial extended for user ${userId} by ${extensionDays} days by admin ${adminId}`
@@ -630,18 +641,18 @@ export class BillingService {
                     let userEmail = customer.email || '';
 
                     // If we don't have userId in customer metadata, try to find it from subscription
-                    if (!userId && charge.invoice) {
+                    if (!userId && (charge as any).invoice) {
                         try {
                             const invoice = await stripe.invoices.retrieve(
-                                charge.invoice as string,
+                                (charge as any).invoice as string,
                                 { expand: ['subscription'] }
                             );
-                            const subscription = invoice.subscription as Stripe.Subscription | null;
+                            const subscription = (invoice as any).subscription as Stripe.Subscription | null;
                             if (subscription) {
                                 userId = subscription.metadata?.userId || '';
                             }
                         } catch (error) {
-                            console.warn(`Failed to retrieve invoice ${charge.invoice}:`, error);
+                            console.warn(`Failed to retrieve invoice ${(charge as any).invoice}:`, error);
                         }
                     }
 
@@ -761,18 +772,18 @@ export class BillingService {
                 });
 
                 // Create audit log
-                await repository.create({
-                    PK: 'AUDIT#BILLING',
-                    SK: `${Date.now()}#${userId}`,
-                    EntityType: 'AuditLog',
-                    Data: {
+                await repository.create(
+                    'AUDIT#BILLING',
+                    `${Date.now()}#${userId}`,
+                    'AuditLog',
+                    {
                         action: 'subscription_canceled',
                         adminId,
                         userId,
                         subscriptionId,
                         timestamp: Date.now(),
-                    },
-                });
+                    }
+                );
             }
 
             console.log(`Subscription ${subscriptionId} canceled by admin ${adminId}`);
@@ -780,6 +791,314 @@ export class BillingService {
             console.error('Error canceling subscription:', error);
             throw new Error('Failed to cancel subscription');
         }
+    }
+
+    /**
+     * Gets comprehensive billing analytics data with real estate seasonality insights
+     */
+    async getBillingAnalytics(timeRange: string = '30d'): Promise<any> {
+        try {
+            // Calculate date range
+            const now = new Date();
+            let startDate: Date;
+            let previousStartDate: Date;
+
+            switch (timeRange) {
+                case '7d':
+                    startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    previousStartDate = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+                    break;
+                case '90d':
+                    startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+                    previousStartDate = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+                    break;
+                case '1y':
+                    startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+                    previousStartDate = new Date(now.getTime() - 730 * 24 * 60 * 60 * 1000);
+                    break;
+                default: // 30d
+                    startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    previousStartDate = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+            }
+
+            // Get current period revenue
+            const currentCharges = await stripe.charges.list({
+                limit: 100,
+                created: {
+                    gte: Math.floor(startDate.getTime() / 1000),
+                    lte: Math.floor(now.getTime() / 1000),
+                },
+            });
+
+            // Get previous period revenue for comparison
+            const previousCharges = await stripe.charges.list({
+                limit: 100,
+                created: {
+                    gte: Math.floor(previousStartDate.getTime() / 1000),
+                    lte: Math.floor(startDate.getTime() / 1000),
+                },
+            });
+
+            const currentRevenue = currentCharges.data
+                .filter(charge => charge.status === 'succeeded')
+                .reduce((sum, charge) => sum + charge.amount / 100, 0);
+
+            const previousRevenue = previousCharges.data
+                .filter(charge => charge.status === 'succeeded')
+                .reduce((sum, charge) => sum + charge.amount / 100, 0);
+
+            const revenueGrowthPercentage = previousRevenue > 0
+                ? ((currentRevenue - previousRevenue) / previousRevenue) * 100
+                : 0;
+
+            // Get subscription trends
+            const currentSubscriptions = await stripe.subscriptions.list({
+                limit: 100,
+                created: {
+                    gte: Math.floor(startDate.getTime() / 1000),
+                },
+                status: 'all',
+            });
+
+            const newSubscriptions = currentSubscriptions.data.filter(sub =>
+                sub.status === 'active' || sub.status === 'trialing'
+            ).length;
+
+            const canceledSubscriptions = currentSubscriptions.data.filter(sub =>
+                sub.status === 'canceled'
+            ).length;
+
+            // Get payment metrics
+            const paymentIntents = await stripe.paymentIntents.list({
+                limit: 100,
+                created: {
+                    gte: Math.floor(startDate.getTime() / 1000),
+                },
+            });
+
+            const successfulPayments = paymentIntents.data.filter(pi => pi.status === 'succeeded');
+            const totalPayments = paymentIntents.data.length;
+            const successRate = totalPayments > 0 ? (successfulPayments.length / totalPayments) * 100 : 0;
+
+            const averageTransactionValue = successfulPayments.length > 0
+                ? successfulPayments.reduce((sum, pi) => sum + pi.amount / 100, 0) / successfulPayments.length
+                : 0;
+
+            // Get customer segments (simplified - based on subscription plans)
+            const allSubscriptions = await stripe.subscriptions.list({
+                limit: 100,
+                status: 'active',
+                expand: ['data.items.data.price'],
+            });
+
+            const customerSegments = this.calculateCustomerSegments(allSubscriptions.data);
+
+            // Get monthly data for trends (last 6 months)
+            const monthlyData = await this.getMonthlyTrends();
+
+            return {
+                revenueGrowth: {
+                    current: currentRevenue,
+                    previous: previousRevenue,
+                    percentage: revenueGrowthPercentage,
+                },
+                subscriptionTrends: {
+                    newSubscriptions,
+                    canceledSubscriptions,
+                    netGrowth: newSubscriptions - canceledSubscriptions,
+                },
+                paymentMetrics: {
+                    successRate,
+                    averageTransactionValue,
+                    totalTransactions: totalPayments,
+                },
+                customerSegments,
+                monthlyData,
+            };
+
+        } catch (error) {
+            console.error('Error getting billing analytics:', error);
+            throw new Error('Failed to retrieve billing analytics');
+        }
+    }
+
+    /**
+     * Calculate customer segments based on subscription data
+     * Tailored for real estate agent platform
+     */
+    private calculateCustomerSegments(subscriptions: any[]): Array<{
+        segment: string;
+        count: number;
+        revenue: number;
+        percentage: number;
+    }> {
+        const segments = new Map<string, { count: number; revenue: number }>();
+
+        subscriptions.forEach(subscription => {
+            const price = subscription.items.data[0]?.price;
+            if (!price) return;
+
+            const amount = price.unit_amount / 100;
+            let segment = 'Other';
+
+            // Real estate agent-specific segmentation
+            if (amount <= 29) {
+                segment = 'Solo Agents (Starter)';
+            } else if (amount <= 79) {
+                segment = 'Professional Agents';
+            } else if (amount <= 149) {
+                segment = 'Top Producers';
+            } else if (amount <= 299) {
+                segment = 'Team Leaders';
+            } else {
+                segment = 'Brokerages & Enterprise';
+            }
+
+            const existing = segments.get(segment) || { count: 0, revenue: 0 };
+            segments.set(segment, {
+                count: existing.count + 1,
+                revenue: existing.revenue + amount,
+            });
+        });
+
+        const totalRevenue = Array.from(segments.values()).reduce((sum, seg) => sum + seg.revenue, 0);
+
+        return Array.from(segments.entries()).map(([segment, data]) => ({
+            segment,
+            count: data.count,
+            revenue: data.revenue,
+            percentage: totalRevenue > 0 ? (data.revenue / totalRevenue) * 100 : 0,
+        }));
+    }
+
+    /**
+     * Get monthly trends for the last 6 months
+     */
+    private async getMonthlyTrends(): Promise<Array<{
+        month: string;
+        revenue: number;
+        subscriptions: number;
+        churn: number;
+    }>> {
+        const months = [];
+        const now = new Date();
+
+        for (let i = 5; i >= 0; i--) {
+            const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+
+            // Get charges for the month
+            const charges = await stripe.charges.list({
+                limit: 100,
+                created: {
+                    gte: Math.floor(monthStart.getTime() / 1000),
+                    lte: Math.floor(monthEnd.getTime() / 1000),
+                },
+            });
+
+            const monthRevenue = charges.data
+                .filter(charge => charge.status === 'succeeded')
+                .reduce((sum, charge) => sum + charge.amount / 100, 0);
+
+            // Get subscriptions created in this month
+            const subscriptions = await stripe.subscriptions.list({
+                limit: 100,
+                created: {
+                    gte: Math.floor(monthStart.getTime() / 1000),
+                    lte: Math.floor(monthEnd.getTime() / 1000),
+                },
+            });
+
+            // Get canceled subscriptions for churn calculation
+            const allCanceledSubs = await stripe.subscriptions.list({
+                limit: 100,
+                status: 'canceled',
+            });
+
+            // Filter by cancellation date manually since Stripe doesn't support canceled_at filter
+            const canceledSubs = {
+                data: allCanceledSubs.data.filter(sub => {
+                    if (!sub.canceled_at) return false;
+                    const canceledTime = sub.canceled_at * 1000;
+                    return canceledTime >= monthStart.getTime() && canceledTime <= monthEnd.getTime();
+                })
+            };
+
+            // Calculate churn rate (simplified)
+            const totalSubs = subscriptions.data.length;
+            const churnRate = totalSubs > 0 ? (canceledSubs.data.length / totalSubs) * 100 : 0;
+
+            months.push({
+                month: monthStart.toLocaleDateString('en-US', { month: 'short' }),
+                revenue: monthRevenue,
+                subscriptions: totalSubs,
+                churn: churnRate,
+            });
+        }
+
+        return months;
+    }
+
+    /**
+     * Get real estate seasonal insights for billing patterns
+     */
+    async getSeasonalInsights(): Promise<{
+        currentSeason: string;
+        seasonalTrends: Array<{
+            season: string;
+            months: string[];
+            expectedGrowth: number;
+            description: string;
+        }>;
+        recommendations: string[];
+    }> {
+        const now = new Date();
+        const month = now.getMonth() + 1; // 1-12
+
+        let currentSeason = 'Winter Planning';
+        if (month >= 3 && month <= 5) currentSeason = 'Spring Buying Season';
+        else if (month >= 6 && month <= 8) currentSeason = 'Summer Peak';
+        else if (month >= 9 && month <= 11) currentSeason = 'Fall Market';
+
+        const seasonalTrends = [
+            {
+                season: 'Spring Buying Season',
+                months: ['March', 'April', 'May'],
+                expectedGrowth: 25,
+                description: 'Peak home buying activity drives agent subscriptions'
+            },
+            {
+                season: 'Summer Peak',
+                months: ['June', 'July', 'August'],
+                expectedGrowth: 15,
+                description: 'Maximum listing activity and content creation needs'
+            },
+            {
+                season: 'Fall Market',
+                months: ['September', 'October', 'November'],
+                expectedGrowth: 10,
+                description: 'Opportunity capture and year-end planning'
+            },
+            {
+                season: 'Winter Planning',
+                months: ['December', 'January', 'February'],
+                expectedGrowth: -5,
+                description: 'Strategic planning and preparation for spring'
+            }
+        ];
+
+        const recommendations = [
+            'Launch spring promotion campaigns in February',
+            'Focus on content creation tools during summer peak',
+            'Emphasize market analysis features in fall',
+            'Promote annual plans during winter planning season'
+        ];
+
+        return {
+            currentSeason,
+            seasonalTrends,
+            recommendations
+        };
     }
 }
 

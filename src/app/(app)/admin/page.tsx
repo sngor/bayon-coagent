@@ -38,7 +38,7 @@ import {
 import { useUserRole } from '@/hooks/use-user-role';
 import { RoleProtectedFeature } from '@/components/admin/role-protected-feature';
 import { RoleBadge } from '@/components/admin/role-badge';
-import { Calendar } from '@/components/ui/calendar';
+
 import { getAdminDashboardStats, getRecentActivityAction } from '@/features/admin';
 import { useToast } from '@/hooks/use-toast';
 import { AdminActivity } from '@/types/admin';
@@ -68,7 +68,7 @@ export default function AdminDashboardPage() {
         try {
             const [statsResult, activityResult] = await Promise.all([
                 getAdminDashboardStats({ filterByTeam: true }),
-                getRecentActivityAction(10)
+                getRecentActivityAction(10, { filterByTeam: true })
             ]);
 
             if (statsResult.message === 'success' && statsResult.data) {
@@ -264,10 +264,10 @@ export default function AdminDashboardPage() {
                                     <div className="mt-2 bg-muted rounded-full h-2 overflow-hidden">
                                         <div
                                             className={`bg-blue-600 h-2 rounded-full transition-all duration-500 ${activeUserPercentage >= 100 ? 'w-full' :
-                                                    activeUserPercentage >= 75 ? 'w-3/4' :
-                                                        activeUserPercentage >= 50 ? 'w-1/2' :
-                                                            activeUserPercentage >= 25 ? 'w-1/4' :
-                                                                activeUserPercentage > 0 ? 'w-1/12' : 'w-0'
+                                                activeUserPercentage >= 75 ? 'w-3/4' :
+                                                    activeUserPercentage >= 50 ? 'w-1/2' :
+                                                        activeUserPercentage >= 25 ? 'w-1/4' :
+                                                            activeUserPercentage > 0 ? 'w-1/12' : 'w-0'
                                                 }`}
                                         />
                                     </div>
@@ -289,7 +289,6 @@ export default function AdminDashboardPage() {
                                     <div className="text-3xl font-bold">{stats.newSignups24h || 0}</div>
                                     <div className="flex items-center justify-between mt-3">
                                         <div className="flex items-center gap-2">
-                                            <Calendar className="h-4 w-4 text-muted-foreground" />
                                             <span className="text-sm text-muted-foreground">Last 24 hours</span>
                                         </div>
                                         {teamGrowthRate > 0 && (

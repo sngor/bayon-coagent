@@ -29,7 +29,7 @@ export function useAdminStats() {
         try {
             const [statsResult, activityResult] = await Promise.all([
                 getAdminDashboardStats({ filterByTeam: true }),
-                getRecentActivityAction(10)
+                getRecentActivityAction(10, { filterByTeam: true })
             ]);
 
             if (statsResult.message === 'success' && statsResult.data) {

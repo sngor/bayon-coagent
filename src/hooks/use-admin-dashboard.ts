@@ -1,77 +1,95 @@
-import { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
+/**
+ * Admin Dashboard Hook
+ * Centralized state management for admin dashboard
+ */
+
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { AdminDashboardStats, AdminActivity } from '@/lib/types/admin';
 import { getAdminDashboardStats, getRecentActivityAction } from '@/features/admin/actions/admin-actions';
-import { AdminDashboardStats, AdminActivity } from '@/types/admin';
 
 interface UseAdminDashboardReturn {
     stats: AdminDashboardStats;
     recentActivity: AdminActivity[];
-    isLoading: boolean;
+    loading: boolean;
     error: string | null;
-    refetch: () => Promise<void>;
+    refreshStats: () => Promise<void>;
+    refreshActivity: () => Promise<void>;
+    refreshAll: () => Promise<void>;
 }
 
 export function useAdminDashboard(): UseAdminDashboardReturn {
     const [stats, setStats] = useState<AdminDashboardStats>({
         totalUsers: 0,
-        activeUsers: 0,
-        newSignups24h: 0,
-        pendingInvitations: 0,
-        systemStatus: 'Checking...',
-        openTickets: 0,
-        pendingContent: 0,
-        errorRate: 0,
-        alerts: []
+        totalFeedback: 0,
+        pendingFeedback: 0,
+        totalAiRequests: 0,
+        totalAiCosts: 0,
+        activeFeatures: 0,
+        betaFeatures: 0,
+        systemStatus: 'Checking...'
     });
+
     const [recentActivity, setRecentActivity] = useState<AdminActivity[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const { toast } = useToast();
 
-    const fetchData = async () => {
+    const refreshStats = useCallback(async () => {
         try {
-            setIsLoading(true);
-            setError(null);
-
-            const [statsResult, activityResult] = await Promise.all([
-                getAdminDashboardStats({ filterByTeam: true }),
-                getRecentActivityAction(10, { filterByTeam: true })
-            ]);
-
-            if (statsResult.message === 'success' && statsResult.data) {
-                setStats(statsResult.data);
+            const result = await getAdminDashboardStats();
+            if (result.message === 'success' && result.data) {
+                setStats(result.data);
+                setError(null);
             } else {
-                throw new Error('Failed to load dashboard stats');
-            }
-
-            if (activityResult.message === 'success' && activityResult.data) {
-                setRecentActivity(activityResult.data);
-            } else {
-                throw new Error('Failed to load recent activity');
+                setError('Failed to load dashboard stats');
             }
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to load dashboard data';
-            setError(errorMessage);
-            console.error('Failed to load admin data:', err);
-            toast({
-                title: 'Error',
-                description: errorMessage,
-                variant: 'destructive',
-            });
-        } finally {
-            setIsLoading(false);
+            console.error('Failed to load admin stats:', err);
+            setError('Failed to load dashboard stats');
         }
-    };
+    }, []);
+
+    const refreshActivity = useCallback(async () => {
+        try {
+            const result = await getRecentActivityAction();
+            if (result.message === 'success' && result.data) {
+                setRecentActivity(result.data);
+                setError(null);
+            } else {
+                setError('Failed to load recent activity');
+            }
+        } catch (err) {
+            console.error('Failed to load recent activity:', err);
+            setError('Failed to load recent activity');
+        }
+    }, []);
+
+    const refreshAll = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            await Promise.all([refreshStats(), refreshActivity()]);
+        } catch (err) {
+            console.error('Failed to refresh dashboard data:', err);
+            setError('Failed to refresh dashboard data');
+        } finally {
+            setLoading(false);
+        }
+    }, [refreshStats, refreshActivity]);
 
     useEffect(() => {
-        fetchData();
-    }, []);
+        refreshAll();
+    }, [refreshAll]);
 
     return {
         stats,
         recentActivity,
-        isLoading,
+        loading,
         error,
-        refetch: fetchData
+        refreshStats,
+        refreshActivity,
+        refreshAll
     };
 }

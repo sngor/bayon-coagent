@@ -1,106 +1,104 @@
 /**
- * Admin Promotions API Route
+ * Promotion Management API Route
  * 
- * Manages seasonal promotions and coupon campaigns for real estate agents.
+ * Handles creation and management of seasonal promotions
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { promotionService } from '@/services/admin/promotion-service';
+import { NextResponse } from 'next/server';
+import { stripeIntegrationService } from '@/services/admin/stripe-integration';
+import { withAdminAuth, AuthenticatedRequest } from '@/lib/admin/auth-middleware';
 
-export async function GET(request: NextRequest) {
+async function handleGetPromotions(request: AuthenticatedRequest) {
     try {
+
         const { searchParams } = new URL(request.url);
         const action = searchParams.get('action');
 
-        // Validate action parameter
-        const validActions = ['active', 'seasonal-suggestions', 'analytics'] as const;
-        if (!action || !validActions.includes(action as any)) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: 'Invalid action parameter',
-                    validActions
-                },
-                { status: 400 }
-            );
+        if (action === 'seasonal-suggestions') {
+            const suggestions = stripeIntegrationService.getSeasonalSuggestions();
+            return NextResponse.json({
+                success: true,
+                suggestions,
+            });
         }
 
-        let result;
-        switch (action) {
-            case 'active':
-                result = await promotionService.getActivePromotions();
-                return NextResponse.json({
-                    success: true,
-                    data: { promotions: result }
-                });
-
-            case 'seasonal-suggestions':
-                result = promotionService.getSeasonalSuggestions();
-                return NextResponse.json({
-                    success: true,
-                    data: { suggestions: result }
-                });
-
-            case 'analytics':
-                result = await promotionService.getMarketSegmentAnalytics();
-                return NextResponse.json({
-                    success: true,
-                    data: { analytics: result }
-                });
+        if (action === 'active') {
+            // In a real implementation, this would fetch from database
+            // For now, return empty array
+            return NextResponse.json({
+                success: true,
+                promotions: [],
+            });
         }
-    } catch (error) {
-        console.error('Error in promotions GET:', error);
+
         return NextResponse.json(
-            {
-                success: false,
-                error: 'Failed to retrieve promotions data',
-                details: error instanceof Error ? error.message : 'Unknown error'
-            },
+            { success: false, error: 'Invalid action parameter' },
+            { status: 400 }
+        );
+
+    } catch (error: any) {
+        console.error('Error in promotions GET API:', error);
+        return NextResponse.json(
+            { success: false, error: error.message || 'Internal server error' },
             { status: 500 }
         );
     }
 }
 
-export async function POST(request: NextRequest) {
+async function handlePostPromotions(request: AuthenticatedRequest) {
     try {
-        const { action, ...data } = await request.json();
-        const adminId = 'admin-user'; // In real app, get from auth context
+        const body = await request.json();
+        const { action, seasonType, customDiscount, campaignId } = body;
 
-        switch (action) {
-            case 'create-campaign':
-                const campaign = await promotionService.createPromotionCampaign(data, adminId);
-                return NextResponse.json({ campaign });
-
-            case 'create-seasonal':
-                const { seasonType, customDiscount } = data;
-                const seasonalCampaign = await promotionService.createSeasonalPromotion(
-                    seasonType,
-                    customDiscount,
-                    adminId
-                );
-                return NextResponse.json({ campaign: seasonalCampaign });
-
-            case 'deactivate':
-                const { campaignId } = data;
-                await promotionService.deactivatePromotion(campaignId, adminId);
-                return NextResponse.json({ success: true });
-
-            case 'analytics':
-                const { campaignId: analyticsId } = data;
-                const campaignAnalytics = await promotionService.getPromotionAnalytics(analyticsId);
-                return NextResponse.json({ analytics: campaignAnalytics });
-
-            default:
+        if (action === 'create-seasonal') {
+            if (!seasonType) {
                 return NextResponse.json(
-                    { error: 'Invalid action parameter' },
+                    { success: false, error: 'Season type is required' },
                     { status: 400 }
                 );
+            }
+
+            const campaign = await stripeIntegrationService.createSeasonalPromotion(
+                seasonType,
+                customDiscount
+            );
+
+            return NextResponse.json({
+                success: true,
+                campaign,
+            });
         }
-    } catch (error) {
-        console.error('Error in promotions POST:', error);
+
+        if (action === 'deactivate') {
+            if (!campaignId) {
+                return NextResponse.json(
+                    { success: false, error: 'Campaign ID is required' },
+                    { status: 400 }
+                );
+            }
+
+            await stripeIntegrationService.deactivatePromotion(campaignId);
+
+            return NextResponse.json({
+                success: true,
+                message: 'Promotion deactivated successfully',
+            });
+        }
+
         return NextResponse.json(
-            { error: 'Failed to process promotion request' },
+            { success: false, error: 'Invalid action' },
+            { status: 400 }
+        );
+
+    } catch (error: any) {
+        console.error('Error in promotions POST API:', error);
+        return NextResponse.json(
+            { success: false, error: error.message || 'Internal server error' },
             { status: 500 }
         );
     }
 }
+
+// Export with admin authentication middleware
+export const GET = withAdminAuth(handleGetPromotions, { requireSuperAdmin: true });
+export const POST = withAdminAuth(handlePostPromotions, { requireSuperAdmin: true });

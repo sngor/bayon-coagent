@@ -19,6 +19,8 @@ import {
     Megaphone,
     DollarSign,
     Key,
+    Wrench,
+    Headphones,
 } from 'lucide-react';
 import {
     HouseIcon,
@@ -26,9 +28,10 @@ import {
 } from '@/components/ui/real-estate-icons';
 import { NavigationConfig } from './types';
 
-// Navigation configuration
+// Navigation configuration - Reorganized for better user flow
 export const NAVIGATION_CONFIG: NavigationConfig = {
     regular: [
+        // Core Overview
         {
             href: '/dashboard',
             icon: HouseIcon,
@@ -38,12 +41,23 @@ export const NAVIGATION_CONFIG: NavigationConfig = {
             featureId: null
         },
         {
+            href: '/assistant',
+            icon: MessagesSquare,
+            filledIcon: MessagesSquare,
+            label: 'Assistant',
+            featureId: 'assistant'
+        },
+
+        // Brand Building & Strategy (Primary workflow)
+        {
             href: '/brand',
             icon: Target,
             filledIcon: Target,
             label: 'Brand',
             featureId: 'brand'
         },
+
+        // Content Creation (Core feature)
         {
             href: '/studio',
             icon: Wand2,
@@ -51,14 +65,18 @@ export const NAVIGATION_CONFIG: NavigationConfig = {
             label: 'Studio',
             featureId: 'studio'
         },
+
+        // Research & Intelligence (Supporting content creation)
         {
             href: '/intelligence',
             icon: AISparkleIcon,
             filledIcon: AISparkleIcon,
-            label: 'Intelligence',
+            label: 'Research',
             customIcon: true,
             featureId: 'research'
         },
+
+        // Deal Analysis Tools
         {
             href: '/tools',
             icon: Calculator,
@@ -66,6 +84,8 @@ export const NAVIGATION_CONFIG: NavigationConfig = {
             label: 'Tools',
             featureId: 'tools'
         },
+
+        // Content Management
         {
             href: '/library',
             icon: Library,
@@ -73,6 +93,8 @@ export const NAVIGATION_CONFIG: NavigationConfig = {
             label: 'Library',
             featureId: 'library'
         },
+
+        // Client Management
         {
             href: '/client-dashboards',
             icon: Users,
@@ -80,20 +102,8 @@ export const NAVIGATION_CONFIG: NavigationConfig = {
             label: 'Clients',
             featureId: 'client-dashboards'
         },
-        {
-            href: '/learning',
-            icon: GraduationCap,
-            filledIcon: GraduationCap,
-            label: 'Learning',
-            featureId: 'training'
-        },
-        {
-            href: '/assistant',
-            icon: MessagesSquare,
-            filledIcon: MessagesSquare,
-            label: 'Assistant',
-            featureId: 'assistant'
-        },
+
+        // Additional Features
         {
             href: '/open-house',
             icon: DoorOpen,
@@ -101,13 +111,14 @@ export const NAVIGATION_CONFIG: NavigationConfig = {
             label: 'Open House',
             featureId: 'open-house'
         },
+
+        // Learning & Support
         {
-            href: '/admin',
-            icon: Shield,
-            filledIcon: Shield,
-            label: 'Admin',
-            featureId: null,
-            adminOnly: true
+            href: '/learning',
+            icon: GraduationCap,
+            filledIcon: GraduationCap,
+            label: 'Learning',
+            featureId: 'training'
         },
     ],
     admin: [
@@ -198,7 +209,7 @@ export const NAVIGATION_CONFIG: NavigationConfig = {
             href: '/super-admin',
             icon: Shield,
             filledIcon: Shield,
-            label: 'Super Admin Dashboard'
+            label: 'Dashboard'
         },
         {
             href: '/super-admin/users',
@@ -213,10 +224,34 @@ export const NAVIGATION_CONFIG: NavigationConfig = {
             label: 'Teams'
         },
         {
+            href: '/super-admin/announcements',
+            icon: Megaphone,
+            filledIcon: Megaphone,
+            label: 'Announcements'
+        },
+        {
+            href: '/super-admin/support',
+            icon: Headphones,
+            filledIcon: Headphones,
+            label: 'Support'
+        },
+        {
             href: '/super-admin/feedback',
             icon: MessageSquare,
             filledIcon: MessageSquare,
             label: 'Feedback'
+        },
+        {
+            href: '/super-admin/content',
+            icon: Flag,
+            filledIcon: Flag,
+            label: 'Content Moderation'
+        },
+        {
+            href: '/super-admin/integrations',
+            icon: Key,
+            filledIcon: Key,
+            label: 'API & Integrations'
         },
         {
             href: '/super-admin/analytics',
@@ -229,6 +264,12 @@ export const NAVIGATION_CONFIG: NavigationConfig = {
             icon: Activity,
             filledIcon: Activity,
             label: 'System Health'
+        },
+        {
+            href: '/super-admin/system',
+            icon: Wrench,
+            filledIcon: Wrench,
+            label: 'System Config'
         },
         {
             href: '/super-admin/features',

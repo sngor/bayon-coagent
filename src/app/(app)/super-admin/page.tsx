@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CardGradientMesh } from '@/components/ui/gradient-mesh';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { getAdminDashboardStats, getRecentActivityAction } from '@/features/admin/actions/admin-actions';
+import { ManagementAreaCard } from '@/components/admin/management-area-card';
+import { useAdminDashboard } from '@/hooks/use-admin-dashboard';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
     Users,
     MessageSquare,
@@ -16,59 +16,36 @@ import {
     Activity,
     Shield,
     TrendingUp,
-    AlertCircle,
     CheckCircle,
     Clock,
     ArrowRight,
     Zap,
     DollarSign,
     Server,
-    Cpu,
     Database,
     Globe,
     AlertTriangle
 } from 'lucide-react';
 
 export default function AdminPage() {
-    const [stats, setStats] = useState({
-        totalUsers: 0,
-        totalFeedback: 0,
-        pendingFeedback: 0,
-        totalAiRequests: 0,
-        totalAiCosts: 0,
-        activeFeatures: 0,
-        betaFeatures: 0,
-        systemStatus: 'Checking...'
-    });
-    const [recentActivity, setRecentActivity] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        async function loadData() {
-            try {
-                const [statsResult, activityResult] = await Promise.all([
-                    getAdminDashboardStats(),
-                    getRecentActivityAction()
-                ]);
-
-                if (statsResult.message === 'success' && statsResult.data) {
-                    setStats(statsResult.data);
-                }
-
-                if (activityResult.message === 'success' && activityResult.data) {
-                    setRecentActivity(activityResult.data);
-                }
-            } catch (error) {
-                console.error('Failed to load admin data', error);
-            } finally {
-                setLoading(false);
-            }
-        }
-        loadData();
-    }, []);
+    const {
+        stats,
+        recentActivity,
+        loading,
+        error,
+        refreshAll
+    } = useAdminDashboard();
 
     return (
         <div className="space-y-8">
+            {/* Error State */}
+            {error && (
+                <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
+
             {/* System Status Banner */}
             <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50 rounded-xl border border-green-200 dark:border-green-800">
                 <div className="flex items-center gap-3">
@@ -83,12 +60,23 @@ export default function AdminPage() {
                         <p className="text-sm text-green-700 dark:text-green-300">Last checked: Just now</p>
                     </div>
                 </div>
-                <Button variant="outline" size="sm" asChild className="border-green-300 hover:bg-green-100 dark:border-green-700 dark:hover:bg-green-900/50">
-                    <Link href="/super-admin/health">
-                        View Details
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={refreshAll}
+                        disabled={loading}
+                        className="border-green-300 hover:bg-green-100 dark:border-green-700 dark:hover:bg-green-900/50"
+                    >
+                        {loading ? 'Refreshing...' : 'Refresh'}
+                    </Button>
+                    <Button variant="outline" size="sm" asChild className="border-green-300 hover:bg-green-100 dark:border-green-700 dark:hover:bg-green-900/50">
+                        <Link href="/super-admin/health">
+                            View Details
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                </div>
             </div>
 
             {/* Key Metrics Grid */}
@@ -390,6 +378,92 @@ export default function AdminPage() {
                                         <ArrowRight className="ml-2 h-4 w-4" />
                                     </Link>
                                 </Button>
+                            </CardContent>
+                        </CardGradientMesh>
+                    </Card>
+
+                    {/* Support & Communication */}
+                    <Card className="group hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer overflow-hidden bg-background/50 border-primary/20">
+                        <CardGradientMesh>
+                            <CardHeader className="relative z-10">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-red-100 dark:bg-red-900/50 rounded-xl group-hover:bg-red-200 dark:group-hover:bg-red-800/50 transition-colors">
+                                        <MessageSquare className="h-6 w-6 text-red-600 dark:text-red-400" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-lg">Support & Communication</CardTitle>
+                                        <CardDescription>Tickets & announcements</CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-4 relative z-10">
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div className="text-center p-3 bg-red-50 dark:bg-red-950/50 rounded-lg">
+                                        <div className="font-bold text-lg">{stats.pendingFeedback}</div>
+                                        <div className="text-muted-foreground">Tickets</div>
+                                    </div>
+                                    <div className="text-center p-3 bg-pink-50 dark:bg-pink-950/50 rounded-lg">
+                                        <div className="font-bold text-lg">3</div>
+                                        <div className="text-muted-foreground">Announcements</div>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Button variant="outline" asChild className="w-full group-hover:bg-red-50 dark:group-hover:bg-red-950/50">
+                                        <Link href="/super-admin/support">
+                                            Support Tickets
+                                            <ArrowRight className="ml-2 h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                    <Button variant="outline" asChild className="w-full group-hover:bg-red-50 dark:group-hover:bg-red-950/50">
+                                        <Link href="/super-admin/announcements">
+                                            Announcements
+                                            <ArrowRight className="ml-2 h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </CardGradientMesh>
+                    </Card>
+
+                    {/* System & Integrations */}
+                    <Card className="group hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer overflow-hidden bg-background/50 border-primary/20">
+                        <CardGradientMesh>
+                            <CardHeader className="relative z-10">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl group-hover:bg-indigo-200 dark:group-hover:bg-indigo-800/50 transition-colors">
+                                        <Zap className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-lg">System & Integrations</CardTitle>
+                                        <CardDescription>APIs & system health</CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-4 relative z-10">
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div className="text-center p-3 bg-indigo-50 dark:bg-indigo-950/50 rounded-lg">
+                                        <div className="font-bold text-lg">6</div>
+                                        <div className="text-muted-foreground">APIs</div>
+                                    </div>
+                                    <div className="text-center p-3 bg-cyan-50 dark:bg-cyan-950/50 rounded-lg">
+                                        <div className="font-bold text-lg">100%</div>
+                                        <div className="text-muted-foreground">Uptime</div>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Button variant="outline" asChild className="w-full group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+                                        <Link href="/super-admin/integrations">
+                                            API Integrations
+                                            <ArrowRight className="ml-2 h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                    <Button variant="outline" asChild className="w-full group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+                                        <Link href="/super-admin/health">
+                                            System Health
+                                            <ArrowRight className="ml-2 h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                </div>
                             </CardContent>
                         </CardGradientMesh>
                     </Card>
