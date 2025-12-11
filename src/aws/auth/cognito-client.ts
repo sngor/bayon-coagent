@@ -57,18 +57,10 @@ export class CognitoAuthClient {
     const config = getConfig();
     const credentials = getAWSCredentials();
 
-    console.log('Environment Variables:', {
-      AWS_REGION: process.env.AWS_REGION,
-      NEXT_PUBLIC_AWS_REGION: process.env.NEXT_PUBLIC_AWS_REGION,
-      USE_LOCAL_AWS: process.env.USE_LOCAL_AWS,
-      NODE_ENV: process.env.NODE_ENV,
-    });
-
+    // Debug logging (can be removed in production)
     console.log('Cognito Config:', {
       region: config.region,
       endpoint: config.cognito.endpoint,
-      clientId: config.cognito.clientId,
-      userPoolId: config.cognito.userPoolId,
       environment: config.environment,
     });
 
@@ -174,16 +166,7 @@ export class CognitoAuthClient {
    */
   async signIn(email: string, password: string): Promise<AuthSession> {
     try {
-      const resolvedRegion = typeof this.client.config.region === 'function'
-        ? await this.client.config.region()
-        : this.client.config.region;
-
-      console.log('SignIn attempt with:', {
-        clientId: this.clientId,
-        userPoolId: this.userPoolId,
-        email: email,
-        region: resolvedRegion,
-      });
+      // Debug logging removed - login working correctly
 
       const command = new InitiateAuthCommand({
         AuthFlow: AuthFlowType.USER_PASSWORD_AUTH,

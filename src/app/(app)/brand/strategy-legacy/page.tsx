@@ -31,6 +31,7 @@ import {
   PartyPopper,
   AlertCircle,
   RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 import {
   AISparkleIcon,
@@ -94,10 +95,7 @@ export default function MarketingPlanPage() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
 
-  const [state, formAction] = useActionState<GeneratePlanState, FormData>(
-    generateMarketingPlanAction,
-    initialPlanState
-  );
+  const [state, formAction] = useActionState(generateMarketingPlanAction, initialPlanState);
 
   // Generation steps for progress indicator
   const generationSteps = [
@@ -305,7 +303,7 @@ export default function MarketingPlanPage() {
       {!isPlanLoading && !displayPlan && !isGenerating && (
         <div className="space-y-6">
           <StandardEmptyState
-            icon={<AISparkleIcon className="h-16 w-16 text-primary" />}
+            icon={Sparkles}
             title="Your Marketing Success Starts Here"
             description="Let AI analyze your brand presence and competitive landscape to create a personalized, actionable marketing plan. Get strategic recommendations tailored to your unique position in the market."
             action={{

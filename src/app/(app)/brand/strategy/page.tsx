@@ -39,6 +39,7 @@ import {
   AlertCircle,
   RefreshCw,
   Loader2,
+  Sparkles,
 } from 'lucide-react';
 import {
   AISparkleIcon,
@@ -328,7 +329,7 @@ export default function MarketingPlanPage() {
       {!isPlanLoading && !displayPlan && !isGenerating && (
         <div className="space-y-8">
           <StandardEmptyState
-            icon={AISparkleIcon}
+            icon={Sparkles}
             title="Your Marketing Success Starts Here"
             description="Get a personalized strategy that's built around your strengths and opportunities. We'll analyze your brand and competitors to create an action plan that actually works for your market."
             action={{

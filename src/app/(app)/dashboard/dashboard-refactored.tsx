@@ -4,6 +4,7 @@ import { useMemo, useCallback } from 'react';
 import { useUser } from '@/aws/auth';
 import { useDashboardData } from '@/hooks/use-dashboard-data';
 import { useDashboardMetrics } from '@/hooks/use-dashboard-metrics';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataGrid } from '@/components/ui';
 import { InvitationBanner } from '@/components/invitation-banner';
 import { ProfileCompletionBanner } from '@/components/profile-completion-banner';
@@ -19,8 +20,7 @@ import {
     ReputationSnapshotSection,
     TodaysFocusSection
 } from '@/components/dashboard/dashboard-sections';
-import { WelcomeSection } from '@/components/dashboard/welcome-section';
-import { AnnouncementsSection } from '@/components/dashboard/announcements-section';
+
 import { toast } from '@/hooks/use-toast';
 
 export default function DashboardPage() {
@@ -74,10 +74,14 @@ export default function DashboardPage() {
                     {/* Welcome Section for New Users */}
                     {!isLoading && metrics.completionPercentage < 100 && (
                         <DashboardSectionWrapper title="Welcome" description="Get started with Bayon Coagent">
-                            <WelcomeSection
-                                completionPercentage={metrics.completionPercentage}
-                                firstName={dashboardData?.agentProfile?.name?.split(' ')[0]}
-                            />
+                            <div className="p-6 text-center">
+                                <h3 className="text-lg font-semibold mb-2">
+                                    Welcome{dashboardData?.agentProfile?.name ? `, ${dashboardData.agentProfile.name.split(' ')[0]}` : ''}!
+                                </h3>
+                                <p className="text-muted-foreground mb-4">
+                                    Your profile is {metrics.completionPercentage}% complete. Let's finish setting up your brand presence.
+                                </p>
+                            </div>
                         </DashboardSectionWrapper>
                     )}
 
@@ -127,11 +131,13 @@ export default function DashboardPage() {
                                     ) : (
                                         <PerformanceOverviewSection
                                             isLoading={false}
-                                            agentProfile={dashboardData?.agentProfile || null}
-                                            completionPercentage={metrics.completionPercentage}
-                                            planStepsCount={metrics.planStepsCount}
-                                            competitorsCount={dashboardData?.competitors?.length || 0}
-                                            brandAuditCompleted={!!dashboardData?.brandAudit}
+                                            data={{
+                                                agentProfile: dashboardData?.agentProfile || null,
+                                                completionPercentage: metrics.completionPercentage,
+                                                planStepsCount: metrics.planStepsCount,
+                                                competitorsCount: dashboardData?.competitors?.length || 0,
+                                                brandAuditCompleted: !!dashboardData?.brandAudit
+                                            }}
                                         />
                                     )}
                                 </div>
@@ -145,7 +151,9 @@ export default function DashboardPage() {
                                     ) : (
                                         <PriorityActionsSection
                                             isLoading={false}
-                                            latestPlan={dashboardData?.latestPlan || null}
+                                            data={{
+                                                latestPlan: dashboardData?.latestPlan || null
+                                            }}
                                         />
                                     )}
                                 </div>
@@ -158,13 +166,15 @@ export default function DashboardPage() {
                                 ) : (
                                     <ReputationSnapshotSection
                                         isLoading={false}
-                                        metrics={{
-                                            averageRating: metrics.averageRating,
-                                            totalReviews: metrics.totalReviews,
-                                            recentReviewsCount: metrics.recentReviewsCount,
-                                            parsedAverageRating: metrics.parsedAverageRating,
+                                        data={{
+                                            metrics: {
+                                                averageRating: metrics.averageRating,
+                                                totalReviews: metrics.totalReviews,
+                                                recentReviewsCount: metrics.recentReviewsCount,
+                                                parsedAverageRating: metrics.parsedAverageRating,
+                                            },
+                                            recentReviews: dashboardData?.recentReviews || []
                                         }}
-                                        recentReviews={dashboardData?.recentReviews || []}
                                     />
                                 )}
                             </DashboardSectionWrapper>
@@ -182,16 +192,28 @@ export default function DashboardPage() {
 
                             {/* Announcements */}
                             {dashboardData?.announcements && dashboardData.announcements.length > 0 && (
-                                <AnnouncementsSection
-                                    announcements={dashboardData.announcements}
-                                    isLoading={isLoading}
-                                />
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Announcements</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="space-y-2">
+                                            {dashboardData.announcements.map((announcement: any, index: number) => (
+                                                <div key={index} className="p-3 bg-muted rounded-lg">
+                                                    <p className="text-sm">{announcement.message || announcement.title}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </CardContent>
+                                </Card>
                             )}
 
                             {/* Today's Focus */}
                             <TodaysFocusSection
                                 isLoading={isLoading}
-                                suggestedSteps={metrics.suggestedSteps}
+                                data={{
+                                    suggestedSteps: metrics.suggestedSteps
+                                }}
                             />
                         </div>
                     </DataGrid>

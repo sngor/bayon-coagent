@@ -526,7 +526,7 @@ export default function ContentEnginePage() {
       if (tab === 'blog-post') {
         setBlogTopic(topicFromSession);
       } else if (tab === 'social') {
-        setSocialPostContent((prevState: any) => ({ ...prevState!, topic: topicFromSession }));
+        setSocialPostContent((prevState: SocialPostContentWithTopic | null) => ({ ...prevState!, topic: topicFromSession }));
       }
       sessionStorage.removeItem('genkit-topic');
     }
@@ -1435,7 +1435,7 @@ export default function ContentEnginePage() {
                       placeholder="e.g., 'The benefits of using a real estate agent for first-time homebuyers'"
                       rows={5}
                       value={socialPostContent?.topic || ''}
-                      onChange={e => setSocialPostContent((prev: any) => ({ ...prev, topic: e.target.value } as SocialPostContentWithTopic))}
+                      onChange={e => setSocialPostContent((prev: SocialPostContentWithTopic | null) => ({ ...prev, topic: e.target.value } as SocialPostContentWithTopic))}
                     />
                     {socialState.errors?.topic && (
                       <p className="text-sm text-destructive">
@@ -1522,7 +1522,7 @@ export default function ContentEnginePage() {
                         <CardContent className="pt-6">
                           <Textarea
                             value={socialPostContent.linkedin}
-                            onChange={(e) => setSocialPostContent((prev: any) => ({ ...prev!, linkedin: e.target.value }))}
+                            onChange={(e) => setSocialPostContent((prev: SocialPostContentWithTopic | null) => ({ ...prev!, linkedin: e.target.value }))}
                             rows={6}
                             className="w-full h-full font-mono text-sm resize-none"
                           />
@@ -1568,7 +1568,7 @@ export default function ContentEnginePage() {
                         <CardContent className="pt-6">
                           <Textarea
                             value={socialPostContent.facebook}
-                            onChange={(e) => setSocialPostContent((prev: any) => ({ ...prev!, facebook: e.target.value }))}
+                            onChange={(e) => setSocialPostContent((prev: SocialPostContentWithTopic | null) => ({ ...prev!, facebook: e.target.value }))}
                             rows={6}
                             className="w-full h-full font-mono text-sm resize-none"
                           />
@@ -1614,7 +1614,7 @@ export default function ContentEnginePage() {
                         <CardContent className="pt-6">
                           <Textarea
                             value={socialPostContent.twitter}
-                            onChange={(e) => setSocialPostContent(prev => ({ ...prev!, twitter: e.target.value }))}
+                            onChange={(e) => setSocialPostContent((prev: SocialPostContentWithTopic | null) => ({ ...prev!, twitter: e.target.value }))}
                             rows={4}
                             className="w-full h-full font-mono text-sm resize-none"
                           />

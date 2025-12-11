@@ -20,7 +20,7 @@ import {
 import { StandardSkeleton } from '@/components/ui/reusable';
 import { Search, Calendar, FileText, Plus, Library } from 'lucide-react';
 import { useUser } from '@/aws/auth';
-import type { ResearchReport } from '@/lib/types/common/common';
+import type { ResearchReport } from '@/lib/types/common';
 
 import Link from 'next/link';
 

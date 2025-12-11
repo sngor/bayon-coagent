@@ -10,7 +10,6 @@ export default function LibraryMediaPage() {
                 icon={Image}
                 title="Media Library Coming Soon"
                 description="Manage your images, videos, and documents all in one place. This feature is currently in development."
-                variant="card"
             />
         </div>
     );

@@ -9,7 +9,7 @@ import { TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 import { useToast } from '@/hooks/use-toast';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/ui/page-header';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 

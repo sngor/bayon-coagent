@@ -41,14 +41,28 @@ frontend:
   phases:
     preBuild:
       commands:
+        - echo "Node.js version:"
+        - node --version
+        - echo "NPM version:"
+        - npm --version
+        - echo "Available memory:"
+        - free -h || echo "Memory info not available"
+        - echo "Setting Node.js options for memory..."
+        - export NODE_OPTIONS="--max-old-space-size=8192 --max-semi-space-size=512"
+        - echo "Cleaning npm cache..."
+        - npm cache clean --force
         - echo "Installing dependencies..."
-        - npm ci
+        - npm ci --prefer-offline --no-audit --progress=false --loglevel=error
+        - echo "Dependencies installed successfully"
 
     build:
       commands:
         - echo "Building Next.js application..."
         - echo "NODE_ENV=$NODE_ENV"
+        - export NODE_OPTIONS="--max-old-space-size=8192 --max-semi-space-size=512"
+        - echo "Starting build process..."
         - npm run build
+        - echo "Build completed successfully"
 
   artifacts:
     baseDirectory: .next

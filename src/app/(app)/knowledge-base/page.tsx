@@ -3,13 +3,13 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/ui/page-header';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { StandardEmptyState } from '@/components/standard/empty-state';
 import { useUser } from '@/aws/auth';
 import { useQuery } from '@/aws/dynamodb/hooks';
-import type { ResearchReport } from '@/lib/types/common/common';
+import type { ResearchReport } from '@/lib/types/common';
 import { deleteResearchReportAction } from '@/app/actions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Library, Calendar, Trash2, Search } from 'lucide-react';
@@ -264,7 +264,7 @@ export default function KnowledgeBasePage() {
 
             {!isLoading && (!reports || reports.length === 0) && (
                 <StandardEmptyState
-                    icon={<Library className="h-16 w-16 text-muted-foreground" />}
+                    icon={Library}
                     title="Your Knowledge Base is Empty"
                     description="You haven't saved any research reports yet. Start by creating your first research report."
                     action={{

@@ -34,7 +34,7 @@ export default function DashboardLayout({
         const fetchProfile = async () => {
             const result = await getDashboardData(user.id);
             if (result.success && result.data?.agentProfile) {
-                setAgentProfile(result.data.agentProfile);
+                setAgentProfile(result.data.agentProfile as Profile);
             }
         };
 

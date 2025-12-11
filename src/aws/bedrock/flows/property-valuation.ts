@@ -7,6 +7,7 @@
 import { z } from 'zod';
 import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
 import { getSearchClient } from '@/aws/search';
+import { MLSGridService } from '@/services/mls/mls-grid-service';
 import {
     PropertyValuationInputSchema,
     PropertyValuationOutputSchema,
@@ -73,23 +74,86 @@ Return a JSON response with all required fields as specified above.`,
 });
 
 /**
- * Find comparable properties within specified radius and time frame
+ * Find comparable properties using MLS Grid data with web search fallback
  * Requirements: 5.2 - Valuations use nearby recent comparables (1 mile radius, 6 months)
  */
 async function findComparableProperties(
     propertyDescription: string,
-    radiusMiles: number = 1,
+    radiusMiles: number = 5, // Increased radius for MLS Grid demo data
     monthsBack: number = 6
 ): Promise<string> {
-    const searchClient = getSearchClient();
-
     try {
-        // Calculate date range for comparable sales
+        // First, try to get real MLS data
+        const mlsService = new MLSGridService();
+        const locationInfo = MLSGridService.extractLocationFromDescription(propertyDescription);
+
+        if (locationInfo.city && locationInfo.state) {
+            console.log(`Searching MLS Grid for comparables in ${locationInfo.city}, ${locationInfo.state}`);
+
+            // Extract property details from description for better matching
+            const bedsMatch = propertyDescription.match(/(\d+)[-\s]*(bed|bedroom)/i);
+            const bathsMatch = propertyDescription.match(/(\d+)[-\s]*(bath|bathroom)/i);
+            const sqftMatch = propertyDescription.match(/(\d+,?\d*)\s*(sq\.?\s*ft|square\s*feet)/i);
+
+            const minBeds = bedsMatch ? Math.max(1, parseInt(bedsMatch[1]) - 1) : undefined;
+            const maxBeds = bedsMatch ? parseInt(bedsMatch[1]) + 1 : undefined;
+            const minBaths = bathsMatch ? Math.max(1, parseInt(bathsMatch[1]) - 1) : undefined;
+            const maxBaths = bathsMatch ? parseInt(bathsMatch[1]) + 1 : undefined;
+
+            let minSqft: number | undefined;
+            let maxSqft: number | undefined;
+            if (sqftMatch) {
+                const sqft = parseInt(sqftMatch[1].replace(',', ''));
+                minSqft = Math.max(500, sqft - 500);
+                maxSqft = sqft + 500;
+            }
+
+            const comparables = await mlsService.findComparableProperties(
+                locationInfo.city,
+                locationInfo.state,
+                locationInfo.propertyType,
+                minBeds,
+                maxBeds,
+                minBaths,
+                maxBaths,
+                minSqft,
+                maxSqft,
+                radiusMiles,
+                monthsBack
+            );
+
+            if (comparables.length > 0) {
+                const mlsData = `REAL MLS COMPARABLE SALES DATA (${comparables.length} properties found):
+
+${comparables.map((comp, index) => `
+${index + 1}. ${comp.address}
+   Sale Price: $${comp.price.toLocaleString()}
+   ${comp.sqft ? `Square Feet: ${comp.sqft.toLocaleString()}` : ''}
+   ${comp.beds ? `Bedrooms: ${comp.beds}` : ''}
+   ${comp.baths ? `Bathrooms: ${comp.baths}` : ''}
+   ${comp.saleDate ? `Sale Date: ${comp.saleDate}` : ''}
+   ${comp.pricePerSqft ? `Price/SqFt: $${comp.pricePerSqft}` : ''}
+`).join('\n')}
+
+MARKET STATISTICS:
+- Average Sale Price: $${Math.round(comparables.reduce((sum, c) => sum + c.price, 0) / comparables.length).toLocaleString()}
+- Price Range: $${Math.min(...comparables.map(c => c.price)).toLocaleString()} - $${Math.max(...comparables.map(c => c.price)).toLocaleString()}
+${comparables.some(c => c.pricePerSqft) ? `- Average Price/SqFt: $${Math.round(comparables.filter(c => c.pricePerSqft).reduce((sum, c) => sum + (c.pricePerSqft || 0), 0) / comparables.filter(c => c.pricePerSqft).length)}` : ''}
+
+Data Source: MLS Grid (Real Estate Multiple Listing Service)`;
+
+                return mlsData;
+            }
+        }
+
+        // Fallback to web search if MLS data not available
+        console.log('Falling back to web search for comparable properties');
+        const searchClient = getSearchClient();
+
         const sixMonthsAgo = new Date();
         sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - monthsBack);
         const dateStr = sixMonthsAgo.toISOString().split('T')[0];
 
-        // Search for comparable properties sold within radius and time frame
         const comparableQuery = `${propertyDescription} comparable properties sold within ${radiusMiles} mile radius since ${dateStr} recent sales`;
 
         const result = await searchClient.search(comparableQuery, {
@@ -99,27 +163,74 @@ async function findComparableProperties(
             includeImages: false,
         });
 
-        return searchClient.formatResultsForAI(result.results, true);
+        return `WEB SEARCH COMPARABLE PROPERTIES DATA:
+${searchClient.formatResultsForAI(result.results, true)}
+
+Note: This data is from web search. For more accurate valuations, MLS data would be preferred.`;
+
     } catch (error) {
         console.warn('Comparable property search failed:', error);
-        return `Unable to find comparable properties within ${radiusMiles} mile radius from the last ${monthsBack} months. Please use general market data.`;
+        return `Unable to find comparable properties within ${radiusMiles} mile radius from the last ${monthsBack} months. Please use general market data for valuation.`;
     }
 }
 
 /**
- * Enhance market trends analysis with detailed market conditions
+ * Enhance market trends analysis with MLS Grid data and web search fallback
  * Requirements: 5.2, 5.3 - Enhanced market trends analysis
  */
 async function enhanceMarketTrendsAnalysis(propertyDescription: string): Promise<string> {
-    const searchClient = getSearchClient();
-
     try {
-        // Extract location from property description
+        // First, try to get real MLS market data
+        const mlsService = new MLSGridService();
+        const locationInfo = MLSGridService.extractLocationFromDescription(propertyDescription);
+
+        if (locationInfo.city && locationInfo.state) {
+            console.log(`Getting MLS Grid market analysis for ${locationInfo.city}, ${locationInfo.state}`);
+
+            const marketAnalysis = await mlsService.getMarketAnalysis(
+                locationInfo.city,
+                locationInfo.state,
+                locationInfo.propertyType,
+                6 // 6 months of data
+            );
+
+            const mlsMarketData = `REAL MLS MARKET ANALYSIS DATA:
+
+CURRENT MARKET CONDITIONS:
+- Market Status: ${marketAnalysis.marketCondition}
+- Active Listings: ${marketAnalysis.totalListings}
+- Average List Price: $${marketAnalysis.averagePrice.toLocaleString()}
+- Median Price: $${marketAnalysis.medianPrice.toLocaleString()}
+- Average Days on Market: ${marketAnalysis.averageDaysOnMarket} days
+- Price Range: $${marketAnalysis.priceRange.min.toLocaleString()} - $${marketAnalysis.priceRange.max.toLocaleString()}
+
+PROPERTY TYPE DISTRIBUTION:
+${Object.entries(marketAnalysis.propertyTypes)
+                    .map(([type, count]) => `- ${type}: ${count} properties`)
+                    .join('\n')}
+
+MARKET INSIGHTS:
+${marketAnalysis.marketCondition === 'Seller\'s Market'
+                    ? '- Low inventory and quick sales favor sellers\n- Properties selling faster than average\n- Potential for competitive bidding'
+                    : marketAnalysis.marketCondition === 'Buyer\'s Market'
+                        ? '- Higher inventory gives buyers more options\n- Properties taking longer to sell\n- More negotiating power for buyers'
+                        : '- Balanced supply and demand\n- Normal market conditions\n- Fair pricing for both buyers and sellers'
+                }
+
+Data Source: MLS Grid (Real Estate Multiple Listing Service)
+Location: ${locationInfo.city}, ${locationInfo.state}`;
+
+            return mlsMarketData;
+        }
+
+        // Fallback to web search if MLS data not available
+        console.log('Falling back to web search for market trends');
+        const searchClient = getSearchClient();
+
         const location = propertyDescription.includes(',')
             ? propertyDescription.split(',').slice(-2).join(',').trim()
             : propertyDescription;
 
-        // Search for comprehensive market trends
         const trendQueries = [
             `${location} real estate market trends 2024 median price days on market`,
             `${location} housing inventory levels supply demand 2024`,
@@ -138,36 +249,47 @@ async function enhanceMarketTrendsAnalysis(propertyDescription: string): Promise
         const searchResults = await Promise.all(searchPromises);
         const allResults = searchResults.flatMap(result => result.results);
 
-        return searchClient.formatResultsForAI(allResults, true);
+        return `WEB SEARCH MARKET TRENDS DATA:
+${searchClient.formatResultsForAI(allResults, true)}
+
+Note: This data is from web search. For more accurate market analysis, MLS data would be preferred.`;
+
     } catch (error) {
         console.warn('Market trends analysis failed:', error);
-        return 'Unable to retrieve detailed market trends. Please use general market conditions.';
+        return 'Unable to retrieve detailed market trends. Please use general market conditions for analysis.';
     }
 }
 
 /**
- * Calculate confidence level based on data availability
+ * Calculate confidence level based on data availability and quality
  * Requirements: 5.3 - Add confidence level calculation
  */
 function calculateConfidenceLevel(
     comparableData: string,
     marketTrendsData: string
 ): 'high' | 'medium' | 'low' {
-    // Check if we have substantial comparable data
+    // Check if we have MLS data (higher quality)
+    const hasMLSComparables = comparableData.includes('REAL MLS COMPARABLE SALES DATA');
+    const hasMLSMarketData = marketTrendsData.includes('REAL MLS MARKET ANALYSIS DATA');
+
+    // Check if we have substantial data
     const hasComparables = comparableData.length > 200 &&
         !comparableData.includes('Unable to find comparable');
 
-    // Check if we have substantial market trends data
     const hasMarketTrends = marketTrendsData.length > 200 &&
         !marketTrendsData.includes('Unable to retrieve');
 
-    // Determine confidence level
-    if (hasComparables && hasMarketTrends) {
-        return 'high';
+    // Determine confidence level with MLS data preference
+    if (hasMLSComparables && hasMLSMarketData) {
+        return 'high'; // Both MLS sources available
+    } else if (hasMLSComparables || hasMLSMarketData) {
+        return 'high'; // At least one MLS source available
+    } else if (hasComparables && hasMarketTrends) {
+        return 'medium'; // Web search data available
     } else if (hasComparables || hasMarketTrends) {
-        return 'medium';
+        return 'medium'; // Limited web search data
     } else {
-        return 'low';
+        return 'low'; // No substantial data available
     }
 }
 
@@ -179,9 +301,9 @@ const propertyValuationFlow = defineFlow(
     },
     async (input) => {
         try {
-            // Step 1: Find comparable properties (1 mile radius, 6 months)
-            // Requirements: 5.2
-            const comparableData = await findComparableProperties(input.propertyDescription, 1, 6);
+            // Step 1: Find comparable properties (5 mile radius for demo data, 6 months)
+            // Requirements: 5.2 - Enhanced with MLS Grid integration
+            const comparableData = await findComparableProperties(input.propertyDescription, 5, 6);
 
             // Step 2: Enhance market trends analysis
             // Requirements: 5.2, 5.3

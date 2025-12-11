@@ -20,7 +20,7 @@ import {
     CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { useUser } from '@/aws/auth';
-import type { SavedContent, Project } from '@/lib/types/common/common';
+import type { SavedContent, Project } from '@/lib/types/common';
 import {
     createProjectAction,
     moveContentToProjectAction,
@@ -63,7 +63,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { PageHeader } from '@/components/page-header';
+import { PageHeader } from '@/components/ui/page-header';
 
 
 
