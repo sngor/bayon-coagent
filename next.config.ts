@@ -143,26 +143,6 @@ const nextConfig: NextConfig = {
   webpack: (config, { dev, isServer }) => {
     // Reduce memory usage during build
     if (!dev) {
-      config.optimization = {
-        ...config.optimization,
-        // Reduce memory usage by limiting concurrent processing
-        splitChunks: {
-          ...config.optimization.splitChunks,
-          maxAsyncRequests: 6,
-          maxInitialRequests: 4,
-          cacheGroups: {
-            ...config.optimization.splitChunks?.cacheGroups,
-            // Separate large libraries into their own chunks
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              chunks: 'all',
-              maxSize: 244000, // 244KB max chunk size
-            },
-          },
-        },
-      };
-
       // Disable source maps in production to save memory
       config.devtool = false;
 
