@@ -24,8 +24,13 @@ const nextConfig: NextConfig = {
 
 
 
-  // Note: Only NEXT_PUBLIC_ prefixed variables are exposed to the browser
-  // Server-side variables are handled in getAWSConfig() function
+  // Explicitly define environment variables for client-side access
+  env: {
+    NEXT_PUBLIC_USER_POOL_ID: process.env.NEXT_PUBLIC_USER_POOL_ID,
+    NEXT_PUBLIC_USER_POOL_CLIENT_ID: process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID,
+    NEXT_PUBLIC_AWS_REGION: process.env.NEXT_PUBLIC_AWS_REGION,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+  },
 
 
 
