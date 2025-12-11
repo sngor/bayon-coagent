@@ -58,8 +58,17 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '20mb',
     },
-    // Memory optimizations for build
+    // Build optimizations
     webpackBuildWorker: false, // Disable webpack build worker to reduce memory usage
+    turbo: {
+      // Enable Turbopack optimizations
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
   },
 
   // Turbopack configuration (moved from experimental.turbo)
@@ -143,11 +152,19 @@ const nextConfig: NextConfig = {
   webpack: (config, { dev, isServer }) => {
     // Reduce memory usage during build
     if (!dev) {
-      // Disable source maps in production to save memory
+      // Disable source maps in production to save memory and build time
       config.devtool = false;
 
       // Reduce memory usage by limiting parallel processing
       config.parallelism = 1;
+
+      // Enable filesystem caching for faster subsequent builds
+      config.cache = {
+        type: 'filesystem',
+        buildDependencies: {
+          config: [__filename],
+        },
+      };
     }
 
     // Exclude test files and large development files from build to reduce memory usage

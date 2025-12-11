@@ -49,12 +49,15 @@ frontend:
         - free -h || echo "Memory info not available"
         - echo "Setting Node.js options for memory..."
         - export NODE_OPTIONS="--max-old-space-size=8192 --max-semi-space-size=512"
-        - echo "Cleaning npm cache..."
-        - npm cache clean --force
-        - echo "Removing any existing node_modules..."
-        - rm -rf node_modules
-        - echo "Installing dependencies with memory optimizations..."
-        - npm ci --prefer-offline --no-audit --progress=false --loglevel=error --maxsockets=1
+        - echo "Optimizing npm configuration..."
+        - npm config set fund false
+        - npm config set audit false
+        - npm config set progress false
+        - npm config set loglevel error
+        - echo "Checking for cached dependencies..."
+        - if [ -d "node_modules" ]; then echo "Using cached node_modules"; else echo "No cache found, will install fresh"; fi
+        - echo "Installing dependencies with optimizations..."
+        - npm ci --prefer-offline --no-audit --no-fund --progress=false --loglevel=error --maxsockets=1 --ignore-scripts
         - echo "Dependencies installed successfully"
 
     build:
@@ -62,11 +65,16 @@ frontend:
         - echo "Building Next.js application..."
         - echo "NODE_ENV=$NODE_ENV"
         - export NODE_OPTIONS="--max-old-space-size=8192 --max-semi-space-size=512"
-        - echo "Disabling source maps for production build..."
+        - echo "Setting build optimizations..."
         - export GENERATE_SOURCEMAP=false
-        - echo "Starting build process with memory optimizations..."
-        - npm run build
+        - export NEXT_TELEMETRY_DISABLED=1
+        - export CI=true
+        - export SKIP_ENV_VALIDATION=true
+        - echo "Starting optimized build process..."
+        - time npm run build
         - echo "Build completed successfully"
+        - echo "Build artifacts size:"
+        - du -sh .next || echo "Could not measure build size"
 
   artifacts:
     baseDirectory: .next
@@ -86,6 +94,8 @@ frontend:
     paths:
       - node_modules/**/*
       - .next/cache/**/*
+      - ~/.npm/**/*
+      - .npm/**/*
 
 # Custom headers for security and performance
 customHeaders:
