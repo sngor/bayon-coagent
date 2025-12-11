@@ -135,7 +135,18 @@ export function getAWSConfig(): AWSConfig {
   const isLocal = environment === 'local';
   const region = process.env.NEXT_PUBLIC_AWS_REGION || process.env.AWS_REGION || 'us-east-1';
 
-  return {
+  // Debug logging for config creation
+  console.error('🔧 Creating AWS Config:', {
+    environment,
+    isLocal,
+    region,
+    'process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID': process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID,
+    'process.env.COGNITO_CLIENT_ID': process.env.COGNITO_CLIENT_ID,
+    'typeof window': typeof window,
+    'NODE_ENV': process.env.NODE_ENV
+  });
+
+  const config = {
     region,
     environment,
     appUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
@@ -207,6 +218,15 @@ export function getAWSConfig(): AWSConfig {
       endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
   };
+
+  // Log the final config values
+  console.error('🔧 Final Config Created:', {
+    'cognito.userPoolId': config.cognito.userPoolId,
+    'cognito.clientId': config.cognito.clientId,
+    'cognito.clientId.length': config.cognito.clientId?.length || 0
+  });
+
+  return config;
 }
 
 /**
