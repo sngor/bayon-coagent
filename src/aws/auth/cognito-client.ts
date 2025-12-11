@@ -62,7 +62,28 @@ export class CognitoAuthClient {
       region: config.region,
       endpoint: config.cognito.endpoint,
       environment: config.environment,
+      userPoolId: config.cognito.userPoolId,
+      clientId: config.cognito.clientId ? '***SET***' : '***EMPTY***',
     });
+
+    // Validate critical configuration
+    if (!config.cognito.clientId) {
+      console.error('CRITICAL: Cognito Client ID is empty!', {
+        'process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID': process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || '(not set)',
+        'process.env.COGNITO_CLIENT_ID': process.env.COGNITO_CLIENT_ID || '(not set)',
+        'NODE_ENV': process.env.NODE_ENV,
+      });
+      throw new Error('Cognito Client ID is not configured. Check environment variables.');
+    }
+
+    if (!config.cognito.userPoolId) {
+      console.error('CRITICAL: Cognito User Pool ID is empty!', {
+        'process.env.NEXT_PUBLIC_USER_POOL_ID': process.env.NEXT_PUBLIC_USER_POOL_ID || '(not set)',
+        'process.env.COGNITO_USER_POOL_ID': process.env.COGNITO_USER_POOL_ID || '(not set)',
+        'NODE_ENV': process.env.NODE_ENV,
+      });
+      throw new Error('Cognito User Pool ID is not configured. Check environment variables.');
+    }
 
     this.client = new CognitoIdentityProviderClient({
       region: String(config.region), // Ensure region is a string
@@ -555,6 +576,22 @@ export function getCognitoClient(): CognitoAuthClient {
  */
 export function resetCognitoClient(): void {
   cognitoClient = null;
+}
+
+/**
+ * Force refresh the Cognito client configuration
+ * Useful when environment variables are loaded after initial config
+ */
+export function refreshCognitoClient(): void {
+  // Reset the cached config first
+  const { resetConfig } = require('@/aws/config');
+  resetConfig();
+
+  // Reset the client instance
+  cognitoClient = null;
+
+  // Get a fresh instance (will be created with new config)
+  getCognitoClient();
 }
 
 /**
