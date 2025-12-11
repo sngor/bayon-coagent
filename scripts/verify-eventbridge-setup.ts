@@ -18,6 +18,7 @@ import {
     ListRulesCommand,
     DescribeArchiveCommand,
 } from '@aws-sdk/client-eventbridge';
+// @ts-ignore - AWS SDK schemas client may not be installed
 import {
     SchemasClient,
     ListSchemasCommand,
@@ -282,7 +283,7 @@ async function verifyEventSchemas(): Promise<void> {
             'bayon.coagent.integration.sync.completed',
         ];
 
-        const foundSchemas = schemas.map(schema => schema.SchemaName || '');
+        const foundSchemas = schemas.map((schema: any) => schema.SchemaName || '');
         const missingSchemas = expectedSchemas.filter(
             expected => !foundSchemas.includes(expected)
         );

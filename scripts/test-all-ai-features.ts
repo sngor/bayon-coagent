@@ -16,7 +16,7 @@ import { generateAgentBio } from '../src/aws/bedrock/flows/generate-agent-bio';
 async function testAllFeatures() {
   console.log('🧪 Testing All AI Features\n');
   console.log('═'.repeat(60));
-  
+
   let passed = 0;
   let failed = 0;
 
@@ -24,7 +24,7 @@ async function testAllFeatures() {
   console.log('\n1️⃣  Testing Listing Description Generator...');
   try {
     const result = await generateListingDescription({
-      propertyDetails: '3-bed, 2-bath home with pool and mountain views',
+      property_details: '3-bed, 2-bath home with pool and mountain views',
     });
     if (result.description && result.description.length > 50) {
       console.log('   ✅ PASSED - Generated description');
@@ -44,8 +44,10 @@ async function testAllFeatures() {
     const result = await generateSocialMediaPost({
       topic: 'Spring home buying season tips',
       tone: 'Professional',
+      platforms: ['linkedin', 'twitter', 'facebook'],
+      numberOfVariations: 1,
     });
-    if (result.linkedin && result.twitter && result.facebook) {
+    if (result.variations && result.variations.length > 0 && result.variations[0].linkedin && result.variations[0].twitter && result.variations[0].facebook) {
       console.log('   ✅ PASSED - Generated all platform posts');
       passed++;
     } else {

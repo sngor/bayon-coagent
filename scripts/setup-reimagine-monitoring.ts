@@ -59,9 +59,9 @@ async function setupAlarms(): Promise<void> {
     region: config.region,
     credentials: credentials.accessKeyId && credentials.secretAccessKey
       ? {
-          accessKeyId: credentials.accessKeyId,
-          secretAccessKey: credentials.secretAccessKey,
-        }
+        accessKeyId: credentials.accessKeyId,
+        secretAccessKey: credentials.secretAccessKey,
+      }
       : undefined,
   });
 
@@ -71,8 +71,8 @@ async function setupAlarms(): Promise<void> {
   for (const alarm of reimagineAlarms) {
     try {
       const command = new PutMetricAlarmCommand({
-        AlarmName: alarm.alarmName,
-        AlarmDescription: alarm.alarmDescription,
+        AlarmName: alarm.name,
+        AlarmDescription: alarm.description,
         MetricName: alarm.metricName,
         Namespace: alarm.namespace,
         Statistic: alarm.statistic,
@@ -81,15 +81,15 @@ async function setupAlarms(): Promise<void> {
         Threshold: alarm.threshold,
         ComparisonOperator: alarm.comparisonOperator,
         TreatMissingData: alarm.treatMissingData,
-        Dimensions: alarm.dimensions as Dimension[],
+        Dimensions: alarm.dimensions ? Object.entries(alarm.dimensions).map(([Name, Value]) => ({ Name, Value })) : [],
         ...(SNS_TOPIC_ARN ? { AlarmActions: [SNS_TOPIC_ARN] } : {}),
       });
 
       await client.send(command);
-      console.log(`✅ Created alarm: ${alarm.alarmName}`);
+      console.log(`✅ Created alarm: ${alarm.name}`);
       successCount++;
     } catch (error) {
-      console.error(`❌ Failed to create alarm ${alarm.alarmName}:`, error);
+      console.error(`❌ Failed to create alarm ${alarm.name}:`, error);
       failureCount++;
     }
   }
@@ -117,9 +117,9 @@ async function verifySetup(): Promise<void> {
     region: config.region,
     credentials: credentials.accessKeyId && credentials.secretAccessKey
       ? {
-          accessKeyId: credentials.accessKeyId,
-          secretAccessKey: credentials.secretAccessKey,
-        }
+        accessKeyId: credentials.accessKeyId,
+        secretAccessKey: credentials.secretAccessKey,
+      }
       : undefined,
   });
 
@@ -150,7 +150,7 @@ async function printUsageInstructions(): Promise<void> {
   console.log('   - Go to CloudWatch Console > Dashboards');
   console.log('   - Select "Reimagine-Image-Toolkit"');
   console.log('   - View real-time metrics and charts');
-  
+
   console.log('\n2. Metrics Available:');
   console.log('   - Operation counts (upload, edit, download, analysis)');
   console.log('   - Processing times by edit type');
@@ -158,7 +158,7 @@ async function printUsageInstructions(): Promise<void> {
   console.log('   - Error rates and counts');
   console.log('   - Storage usage and growth');
   console.log('   - Token usage by model');
-  
+
   console.log('\n3. Alarms:');
   if (SETUP_ALARMS) {
     console.log('   - Alarms are configured and active');
@@ -166,14 +166,14 @@ async function printUsageInstructions(): Promise<void> {
   } else {
     console.log('   - Alarms not configured (set SETUP_ALARMS=true to enable)');
   }
-  
+
   console.log('\n4. Querying Metrics Programmatically:');
   console.log('   ```typescript');
   console.log('   import { getMetricsClient } from "@/aws/logging";');
   console.log('   const client = getMetricsClient();');
   console.log('   await client.recordOperation({ ... });');
   console.log('   ```');
-  
+
   console.log('\n5. Tracking Operations:');
   console.log('   ```typescript');
   console.log('   import { trackOperation } from "@/aws/logging";');

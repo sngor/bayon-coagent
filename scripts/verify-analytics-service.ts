@@ -118,9 +118,9 @@ try {
     }
 
     // Check instance methods
-    if (analyticsService.trackPublication &&
-        analyticsService.getContentAnalytics &&
-        analyticsService.getAnalyticsByType) {
+    if (typeof analyticsService.trackPublication === 'function' &&
+        typeof analyticsService.getContentAnalytics === 'function' &&
+        typeof analyticsService.getAnalyticsByType === 'function') {
         checks.instanceMethods = true;
         console.log('✅ analyticsService instance has required methods');
     } else {

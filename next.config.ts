@@ -3,7 +3,7 @@ import type { NextConfig } from 'next';
 
 const withPWA = require('next-pwa');
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
-  enabled: process.env.ANALYZE === 'true',
+  enabled: false, // Temporarily disable to reduce build memory usage
 });
 
 const nextConfig: NextConfig = {
@@ -18,6 +18,9 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true, // Temporarily ignore ESLint errors for deployment
   },
+
+  // Standard page extensions (test files excluded via webpack rules)
+  pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
 
 
 
@@ -55,6 +58,8 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '20mb',
     },
+    // Memory optimizations for build
+    webpackBuildWorker: false, // Disable webpack build worker to reduce memory usage
   },
 
   // Turbopack configuration (moved from experimental.turbo)
@@ -134,6 +139,51 @@ const nextConfig: NextConfig = {
   // Enable compression
   compress: true,
 
+  // Webpack optimizations for memory usage
+  webpack: (config, { dev, isServer }) => {
+    // Reduce memory usage during build
+    if (!dev) {
+      config.optimization = {
+        ...config.optimization,
+        // Reduce memory usage by limiting concurrent processing
+        splitChunks: {
+          ...config.optimization.splitChunks,
+          maxAsyncRequests: 6,
+          maxInitialRequests: 4,
+          cacheGroups: {
+            ...config.optimization.splitChunks?.cacheGroups,
+            // Separate large libraries into their own chunks
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              chunks: 'all',
+              maxSize: 244000, // 244KB max chunk size
+            },
+          },
+        },
+      };
+
+      // Disable source maps in production to save memory
+      config.devtool = false;
+
+      // Reduce memory usage by limiting parallel processing
+      config.parallelism = 1;
+    }
+
+    // Exclude test files and large development files from build to reduce memory usage
+    config.module.rules.push({
+      test: /\.(test|spec)\.(js|jsx|ts|tsx)$/,
+      loader: 'ignore-loader',
+    });
+
+    config.module.rules.push({
+      test: /\/__tests__\//,
+      loader: 'ignore-loader',
+    });
+
+    return config;
+  },
+
   // Security headers
   // Requirements: 10.1, 10.2, 10.3 (Data Security and Protection)
   async headers() {
@@ -206,8 +256,8 @@ const nextConfig: NextConfig = {
 };
 
 // Configure PWA with Service Worker for offline functionality
-// Only apply PWA config in production to avoid Turbopack conflicts
-const pwaConfig = process.env.NODE_ENV === 'production'
+// Temporarily disable PWA to reduce build memory usage
+const pwaConfig = false && process.env.NODE_ENV === 'production'
   ? withPWA({
     dest: 'public',
     disable: false,

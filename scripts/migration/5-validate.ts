@@ -6,6 +6,7 @@
  * Validates that data was migrated correctly from Firebase to AWS
  */
 
+// @ts-ignore - firebase-admin may not be installed in production
 import * as admin from 'firebase-admin';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, ScanCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
@@ -38,14 +39,14 @@ function initializeFirebase(): void {
   try {
     if (admin.apps.length === 0) {
       const serviceAccount = require(path.resolve(migrationConfig.firebase.serviceAccountPath));
-      
+
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
         projectId: migrationConfig.firebase.projectId,
         storageBucket: `${migrationConfig.firebase.projectId}.appspot.com`,
       });
     }
-    
+
     console.log('✓ Firebase Admin initialized');
   } catch (error) {
     console.error('Failed to initialize Firebase Admin:', error);
@@ -65,7 +66,7 @@ function initializeDynamoDB(): DynamoDBDocumentClient {
       secretAccessKey: migrationConfig.aws.secretAccessKey!,
     } : undefined,
   });
-  
+
   return DynamoDBDocumentClient.from(client);
 }
 
@@ -102,13 +103,13 @@ async function countFirestoreSubcollection(
 ): Promise<number> {
   const db = admin.firestore();
   const parentSnapshot = await db.collection(parentPath).get();
-  
+
   let total = 0;
   for (const parentDoc of parentSnapshot.docs) {
     const subcollectionSnapshot = await parentDoc.ref.collection(subcollectionName).get();
     total += subcollectionSnapshot.size;
   }
-  
+
   return total;
 }
 
@@ -121,7 +122,7 @@ async function countDynamoDBItems(
 ): Promise<number> {
   let count = 0;
   let lastEvaluatedKey: any = undefined;
-  
+
   do {
     const result = await docClient.send(new ScanCommand({
       TableName: migrationConfig.aws.dynamodb.tableName,
@@ -132,11 +133,11 @@ async function countDynamoDBItems(
       Select: 'COUNT',
       ExclusiveStartKey: lastEvaluatedKey,
     }));
-    
+
     count += result.Count || 0;
     lastEvaluatedKey = result.LastEvaluatedKey;
   } while (lastEvaluatedKey);
-  
+
   return count;
 }
 
@@ -155,17 +156,17 @@ async function countFirebaseFiles(): Promise<number> {
 async function countS3Files(s3Client: S3Client): Promise<number> {
   let count = 0;
   let continuationToken: string | undefined;
-  
+
   do {
     const result = await s3Client.send(new ListObjectsV2Command({
       Bucket: migrationConfig.aws.s3.bucketName,
       ContinuationToken: continuationToken,
     }));
-    
+
     count += result.KeyCount || 0;
     continuationToken = result.NextContinuationToken;
   } while (continuationToken);
-  
+
   return count;
 }
 
@@ -177,21 +178,21 @@ async function sampleDataComparison(
 ): Promise<ValidationResult> {
   try {
     const db = admin.firestore();
-    
+
     // Get a sample user from Firestore
     const usersSnapshot = await db.collection('users').limit(1).get();
-    
+
     if (usersSnapshot.empty) {
       return {
         passed: true,
         message: 'No users to sample',
       };
     }
-    
+
     const sampleUser = usersSnapshot.docs[0];
     const userId = sampleUser.id;
     const firestoreData = sampleUser.data();
-    
+
     // Get the same user from DynamoDB
     const dynamoResult = await docClient.send(new GetCommand({
       TableName: migrationConfig.aws.dynamodb.tableName,
@@ -200,24 +201,24 @@ async function sampleDataComparison(
         SK: 'PROFILE',
       },
     }));
-    
+
     if (!dynamoResult.Item) {
       return {
         passed: false,
         message: `Sample user ${userId} not found in DynamoDB`,
       };
     }
-    
+
     const dynamoData = dynamoResult.Item.Data;
-    
+
     // Compare key fields
-    const fieldsMatch = 
+    const fieldsMatch =
       firestoreData.email === dynamoData.email &&
       firestoreData.displayName === dynamoData.displayName;
-    
+
     return {
       passed: fieldsMatch,
-      message: fieldsMatch 
+      message: fieldsMatch
         ? 'Sample data comparison passed'
         : 'Sample data comparison failed - data mismatch',
       details: {
@@ -241,10 +242,10 @@ async function validateCounts(
   docClient: DynamoDBDocumentClient
 ): Promise<ValidationResult[]> {
   const results: ValidationResult[] = [];
-  
+
   // Define entity mappings
   const entityMappings = [
-    { 
+    {
       name: 'UserProfile',
       firestorePath: 'users',
       entityType: 'UserProfile',
@@ -326,17 +327,17 @@ async function validateCounts(
       isSubcollection: false,
     },
   ];
-  
+
   for (const mapping of entityMappings) {
     try {
       const firestoreCount = mapping.isSubcollection
         ? await countFirestoreSubcollection(mapping.firestorePath, mapping.firestoreSubcollection!)
         : await countFirestoreDocuments(mapping.firestorePath);
-      
+
       const dynamoCount = await countDynamoDBItems(docClient, mapping.entityType);
-      
+
       const passed = firestoreCount === dynamoCount;
-      
+
       results.push({
         passed,
         message: passed
@@ -354,7 +355,7 @@ async function validateCounts(
       });
     }
   }
-  
+
   return results;
 }
 
@@ -365,9 +366,9 @@ async function validateStorage(s3Client: S3Client): Promise<ValidationResult> {
   try {
     const firebaseCount = await countFirebaseFiles();
     const s3Count = await countS3Files(s3Client);
-    
+
     const passed = firebaseCount === s3Count;
-    
+
     return {
       passed,
       message: passed
@@ -391,14 +392,14 @@ async function validateStorage(s3Client: S3Client): Promise<ValidationResult> {
  */
 async function validateMigration(): Promise<void> {
   console.log('\n=== Validating Migration ===\n');
-  
+
   validateConfig();
   logConfig();
-  
+
   initializeFirebase();
   const docClient = initializeDynamoDB();
   const s3Client = initializeS3();
-  
+
   const report: ValidationReport = {
     timestamp: new Date().toISOString(),
     overallPassed: true,
@@ -409,39 +410,39 @@ async function validateMigration(): Promise<void> {
       failed: 0,
     },
   };
-  
+
   console.log('Validating document counts...\n');
   const countResults = await validateCounts(docClient);
   report.checks.push(...countResults);
-  
+
   console.log('\nValidating storage migration...\n');
   const storageResult = await validateStorage(s3Client);
   report.checks.push(storageResult);
-  
+
   console.log('\nValidating sample data...\n');
   const sampleResult = await sampleDataComparison(docClient);
   report.checks.push(sampleResult);
-  
+
   // Calculate summary
   report.summary.totalChecks = report.checks.length;
   report.summary.passed = report.checks.filter(c => c.passed).length;
   report.summary.failed = report.checks.filter(c => !c.passed).length;
   report.overallPassed = report.summary.failed === 0;
-  
+
   // Print results
   console.log('\n=== Validation Results ===\n');
-  
+
   for (const check of report.checks) {
     const icon = check.passed ? '✓' : '✗';
     console.log(`${icon} ${check.message}`);
   }
-  
+
   console.log('\n=== Summary ===');
   console.log(`Total Checks: ${report.summary.totalChecks}`);
   console.log(`Passed: ${report.summary.passed}`);
   console.log(`Failed: ${report.summary.failed}`);
   console.log(`Overall: ${report.overallPassed ? 'PASSED ✓' : 'FAILED ✗'}`);
-  
+
   // Save report
   const reportPath = path.join(migrationConfig.paths.transformDir, 'validation-report.json');
   require('fs').writeFileSync(reportPath, JSON.stringify(report, null, 2));

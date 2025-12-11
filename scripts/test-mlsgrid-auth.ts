@@ -7,14 +7,22 @@
 const token = 'a16ac59151786a60b9063240ebec1c169ae8b4d0';
 const baseUrl = 'https://api.mlsgrid.com/v2';
 
-async function testAuthMethod(method: string, headers: Record<string, string>) {
+async function testAuthMethod(method: string, headers: Record<string, string | undefined>) {
     console.log(`\nTesting: ${method}`);
     console.log('Headers:', JSON.stringify(headers, null, 2));
+
+    // Filter out undefined values
+    const cleanHeaders: Record<string, string> = {};
+    Object.entries(headers).forEach(([key, value]) => {
+        if (value !== undefined) {
+            cleanHeaders[key] = value;
+        }
+    });
 
     try {
         const response = await fetch(`${baseUrl}/Property?$top=1`, {
             method: 'GET',
-            headers,
+            headers: cleanHeaders,
         });
 
         console.log(`Status: ${response.status} ${response.statusText}`);

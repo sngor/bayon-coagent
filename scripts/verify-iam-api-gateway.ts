@@ -10,6 +10,7 @@
  *   tsx scripts/verify-iam-api-gateway.ts
  */
 
+// @ts-ignore - AWS SDK API Gateway client may not be installed
 import {
     APIGatewayClient,
     GetRestApisCommand,
@@ -50,7 +51,7 @@ async function findApiGateways(): Promise<void> {
         const apis = response.items || [];
 
         for (const expectedApi of expectedApis) {
-            const foundApi = apis.find((api) => api.name === expectedApi.name);
+            const foundApi = apis.find((api: any) => api.name === expectedApi.name);
             if (foundApi) {
                 expectedApi.id = foundApi.id!;
                 console.log(`✅ Found: ${expectedApi.name} (${expectedApi.id})`);

@@ -6,7 +6,7 @@
  * Run with: npx tsx scripts/test-testimonial-reminders.ts
  */
 
-import { sendTestimonialReminders, expireOldTestimonialRequests } from '../src/services/testimonial-reminder-service';
+import { sendTestimonialReminders, expireOldTestimonialRequests } from '../src/services/notifications/testimonial-reminder-service';
 
 async function main() {
     console.log('🔔 Testimonial Reminder System Test\n');
@@ -35,7 +35,7 @@ async function main() {
 
             if (reminderResult.errors.length > 0) {
                 console.log(`   ⚠️  Errors encountered: ${reminderResult.errors.length}`);
-                reminderResult.errors.forEach((error, i) => {
+                reminderResult.errors.forEach((error: string, i: number) => {
                     console.log(`      ${i + 1}. ${error}`);
                 });
             }
@@ -52,7 +52,7 @@ async function main() {
 
             if (expirationResult.errors.length > 0) {
                 console.log(`   ⚠️  Errors encountered: ${expirationResult.errors.length}`);
-                expirationResult.errors.forEach((error, i) => {
+                expirationResult.errors.forEach((error: string, i: number) => {
                     console.log(`      ${i + 1}. ${error}`);
                 });
             }

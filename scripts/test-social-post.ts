@@ -16,6 +16,8 @@ async function testSocialPost() {
   const input = {
     topic: 'Tips for first-time homebuyers in a competitive market',
     tone: 'Professional' as const,
+    platforms: ['linkedin', 'twitter', 'facebook'],
+    numberOfVariations: 1,
   };
 
   try {
@@ -28,19 +30,19 @@ async function testSocialPost() {
     console.log('✅ Success!\n');
     console.log('📱 Generated Posts:');
     console.log('═'.repeat(60));
-    
+
     console.log('\n📘 LinkedIn:');
     console.log('─'.repeat(60));
-    console.log(result.linkedin);
-    
+    console.log(result.variations[0]?.linkedin || 'Not generated');
+
     console.log('\n🐦 Twitter/X:');
     console.log('─'.repeat(60));
-    console.log(result.twitter);
-    
+    console.log(result.variations[0]?.twitter || 'Not generated');
+
     console.log('\n📱 Facebook:');
     console.log('─'.repeat(60));
-    console.log(result.facebook);
-    
+    console.log(result.variations[0]?.facebook || 'Not generated');
+
     console.log('\n═'.repeat(60));
     console.log('\n✨ Social media post generation is working!\n');
 

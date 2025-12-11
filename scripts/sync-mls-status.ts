@@ -16,7 +16,7 @@
  * - 5.1: Detect status changes within 15 minutes
  */
 
-import { syncAllMLSConnections } from '../src/app/mls-status-sync-actions';
+import { syncAllMLSConnections } from '../src/features/integrations/actions/mls-status-sync-actions';
 
 async function main() {
     console.log('Starting MLS status sync job...');

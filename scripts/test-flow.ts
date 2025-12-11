@@ -16,11 +16,11 @@ async function testFlow() {
   console.log('🧪 Testing Listing Description Flow...\n');
 
   const input = {
-    propertyDetails: 'Beautiful 3-bedroom, 2-bathroom home in a quiet neighborhood. Features include hardwood floors, updated kitchen, and large backyard.',
+    property_details: 'Beautiful 3-bedroom, 2-bathroom home in a quiet neighborhood. Features include hardwood floors, updated kitchen, and large backyard.',
   };
 
   try {
-    console.log('📝 Input:', input.propertyDetails);
+    console.log('📝 Input:', input.property_details);
     console.log('\n⏳ Generating description...\n');
 
     const result = await generateListingDescription(input);
@@ -35,14 +35,14 @@ async function testFlow() {
   } catch (error: any) {
     console.log('❌ Flow failed\n');
     console.log('Error:', error.message);
-    
+
     if (error.message.includes('validation') || error.message.includes('invalid')) {
       console.log('\n💡 This might be due to:');
       console.log('   - Model ID not using inference profile (should have us. prefix)');
       console.log('   - Model not enabled in Bedrock console');
       console.log('   - Invalid AWS credentials\n');
     }
-    
+
     process.exit(1);
   }
 }

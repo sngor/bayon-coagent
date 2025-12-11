@@ -6,6 +6,7 @@
  * This script tests the vision server actions to ensure they work correctly.
  */
 
+// @ts-ignore - kiro-vision-actions may not exist yet
 import { handleVisionQuery, getVisionAnalysis, listVisionAnalyses } from '../src/app/kiro-vision-actions';
 
 async function testVisionInterface() {

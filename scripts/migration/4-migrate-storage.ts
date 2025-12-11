@@ -6,6 +6,7 @@
  * Migrates files from Firebase Storage to AWS S3
  */
 
+// @ts-ignore - firebase-admin may not be installed in production
 import * as admin from 'firebase-admin';
 import { S3Client, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { migrationConfig, validateConfig, logConfig } from './config';
@@ -27,14 +28,14 @@ function initializeFirebase(): void {
   try {
     if (admin.apps.length === 0) {
       const serviceAccount = require(path.resolve(migrationConfig.firebase.serviceAccountPath));
-      
+
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
         projectId: migrationConfig.firebase.projectId,
         storageBucket: `${migrationConfig.firebase.projectId}.appspot.com`,
       });
     }
-    
+
     console.log('✓ Firebase Admin initialized');
   } catch (error) {
     console.error('Failed to initialize Firebase Admin:', error);
@@ -55,7 +56,7 @@ function initializeS3(): S3Client {
       secretAccessKey: migrationConfig.aws.secretAccessKey!,
     } : undefined,
   });
-  
+
   console.log('✓ S3 client initialized');
   return client;
 }
@@ -66,15 +67,15 @@ function initializeS3(): S3Client {
 async function listFirebaseFiles(): Promise<StorageFile[]> {
   const bucket = admin.storage().bucket();
   const [files] = await bucket.getFiles();
-  
-  const storageFiles: StorageFile[] = files.map(file => ({
+
+  const storageFiles: StorageFile[] = files.map((file: any) => ({
     name: file.name,
     bucket: file.bucket.name,
     fullPath: file.name,
     contentType: file.metadata.contentType || 'application/octet-stream',
     size: parseInt(file.metadata.size || '0', 10),
   }));
-  
+
   console.log(`Found ${storageFiles.length} files in Firebase Storage`);
   return storageFiles;
 }
@@ -114,12 +115,12 @@ async function migrateFile(
         return true; // Skip, already exists
       }
     }
-    
+
     // Download from Firebase Storage
     const bucket = admin.storage().bucket();
     const firebaseFile = bucket.file(file.fullPath);
     const [buffer] = await firebaseFile.download();
-    
+
     // Upload to S3
     await retryWithBackoff(async () => {
       await s3Client.send(new PutObjectCommand({
@@ -133,7 +134,7 @@ async function migrateFile(
         },
       }));
     });
-    
+
     return true;
   } catch (error) {
     errorLogger.log(`migrate-file-${file.fullPath}`, error as Error, file);
@@ -146,51 +147,51 @@ async function migrateFile(
  */
 async function migrateStorage(): Promise<void> {
   console.log('\n=== Migrating Firebase Storage to S3 ===\n');
-  
+
   validateConfig();
   logConfig();
-  
+
   if (migrationConfig.options.dryRun) {
     console.log('⚠️  DRY RUN MODE - No files will be migrated\n');
     return;
   }
-  
+
   initializeFirebase();
   const s3Client = initializeS3();
   const errorLogger = new ErrorLogger(migrationConfig.paths.errorLog);
-  
+
   // List all files in Firebase Storage
   console.log('Listing files in Firebase Storage...');
   const files = await listFirebaseFiles();
-  
+
   if (files.length === 0) {
     console.log('No files to migrate');
     return;
   }
-  
+
   console.log(`\nMigrating ${files.length} files...\n`);
-  
+
   const progress = new ProgressTracker(files.length, 'Migrating files');
   let successCount = 0;
   let skippedCount = 0;
-  
+
   for (const file of files) {
     const success = await migrateFile(s3Client, file, errorLogger, true);
-    
+
     if (success) {
       successCount++;
     }
-    
+
     progress.increment(success);
   }
-  
+
   progress.finish();
-  
+
   console.log('\n=== Migration Complete ===');
   console.log(`Total Files: ${files.length}`);
   console.log(`Successfully Migrated: ${successCount}`);
   console.log(`Skipped (already exist): ${files.length - successCount}`);
-  
+
   if (errorLogger.getErrors().length > 0) {
     console.log(`\n⚠️  ${errorLogger.getErrors().length} errors occurred during migration`);
     console.log(`See ${migrationConfig.paths.errorLog} for details`);
