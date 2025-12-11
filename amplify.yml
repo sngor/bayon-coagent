@@ -65,11 +65,16 @@ frontend:
         - echo "Building Next.js application..."
         - echo "NODE_ENV=$NODE_ENV"
         - export NODE_OPTIONS="--max-old-space-size=8192 --max-semi-space-size=512"
+        - echo "Loading production environment variables..."
+        - if [ -f ".env.production" ]; then export $(cat .env.production | grep -v '^#' | xargs); fi
         - echo "Setting build optimizations..."
         - export GENERATE_SOURCEMAP=false
         - export NEXT_TELEMETRY_DISABLED=1
         - export CI=true
         - export SKIP_ENV_VALIDATION=true
+        - echo "Verifying critical environment variables..."
+        - echo "COGNITO_CLIENT_ID is set: $([ -n "$COGNITO_CLIENT_ID" ] && echo "YES" || echo "NO")"
+        - echo "COGNITO_USER_POOL_ID is set: $([ -n "$COGNITO_USER_POOL_ID" ] && echo "YES" || echo "NO")"
         - echo "Starting optimized build process..."
         - time npm run build
         - echo "Build completed successfully"
