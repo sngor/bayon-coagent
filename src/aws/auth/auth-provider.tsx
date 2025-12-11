@@ -48,11 +48,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
     useEffect(() => {
         // Only create on client-side to ensure environment variables are available
         if (typeof window !== 'undefined' && !cognitoClient) {
-            console.log('🔍 Creating CognitoClient on client-side...');
-            const client = getCognitoClient();
-            setCognitoClient(client);
+            try {
+                console.error('🔍 Creating CognitoClient on client-side...');
+                const client = getCognitoClient();
+                console.error('🔍 CognitoClient created successfully:', !!client);
+                setCognitoClient(client);
+            } catch (error) {
+                console.error('🔍 Failed to create CognitoClient:', error);
+            }
         }
     }, [cognitoClient]);
+
+    // Load session when cognitoClient becomes available
+    useEffect(() => {
+        if (cognitoClient) {
+            console.error('🔍 CognitoClient ready, loading session...');
+            loadSession();
+        }
+    }, [cognitoClient, loadSession]);
 
     /**
      * Load the current session and user on mount
@@ -61,6 +74,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
             setIsLoading(true);
             setError(null);
+
+            // Wait for cognitoClient to be ready
+            if (!cognitoClient) {
+                console.error('🔍 loadSession: CognitoClient not ready yet');
+                setIsLoading(false);
+                return;
+            }
 
             const currentSession = await cognitoClient.getSession();
 
