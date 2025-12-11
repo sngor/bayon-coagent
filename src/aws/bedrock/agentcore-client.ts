@@ -35,11 +35,16 @@ export class AgentCoreClient {
         const config = getConfig();
         const credentials = getAWSCredentials();
 
-        this.client = new BedrockAgentRuntimeClient({
+        const clientConfig: any = {
             region: config.bedrock.region,
             credentials,
-            endpoint: config.bedrock.endpoint,
-        });
+        };
+
+        if (config.bedrock.endpoint) {
+            clientConfig.endpoint = config.bedrock.endpoint;
+        }
+
+        this.client = new BedrockAgentRuntimeClient(clientConfig);
     }
 
     /**

@@ -40,9 +40,9 @@ export async function getAdminStatus(userId?: string): Promise<AdminStatus> {
         const profileKeys = getProfileKeys(targetUserId);
         const profileData = await repository.get(profileKeys.PK, profileKeys.SK);
 
-        const email = profileData?.email;
+        const email = (profileData as any)?.email;
         const isSuperAdminEmail = email === 'ngorlong@gmail.com';
-        const role: AdminRole = profileData?.role || 'user';
+        const role: AdminRole = (profileData as any)?.role || 'user';
         const isAdmin = role === 'admin' || role === 'super_admin' || isSuperAdminEmail;
 
         // Auto-promote super admin email if needed

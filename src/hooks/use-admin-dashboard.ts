@@ -6,7 +6,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { AdminDashboardStats, AdminActivity } from '@/lib/types/admin';
+import { AdminDashboardStats, AdminAlert } from '@/types/admin';
+import { AdminActivity } from '@/lib/types/admin';
 import { getAdminDashboardStats, getRecentActivityAction } from '@/features/admin/actions/admin-actions';
 
 interface UseAdminDashboardReturn {
@@ -22,13 +23,14 @@ interface UseAdminDashboardReturn {
 export function useAdminDashboard(): UseAdminDashboardReturn {
     const [stats, setStats] = useState<AdminDashboardStats>({
         totalUsers: 0,
-        totalFeedback: 0,
-        pendingFeedback: 0,
-        totalAiRequests: 0,
-        totalAiCosts: 0,
-        activeFeatures: 0,
-        betaFeatures: 0,
-        systemStatus: 'Checking...'
+        activeUsers: 0,
+        newSignups24h: 0,
+        pendingInvitations: 0,
+        systemStatus: 'Checking...',
+        openTickets: 0,
+        pendingContent: 0,
+        errorRate: 0,
+        alerts: []
     });
 
     const [recentActivity, setRecentActivity] = useState<AdminActivity[]>([]);

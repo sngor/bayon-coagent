@@ -17,7 +17,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { AgentCore, AgentStrand, AgentMemory } from './agent-core';
+import { AgentCore } from './agent-core';
 import type { WorkerTask, WorkerResult } from './worker-protocol';
 
 // Collaboration Layer
@@ -83,7 +83,7 @@ import { SocialMediaScheduler } from './integration/social-media-scheduler';
 import { CRMConnector } from './integration/crm-connector';
 import { CampaignGenerator } from './integration/campaign-generator';
 import { AnalyticsIntegrator } from './integration/analytics-integrator';
-import { WorkflowAutomationSystem } from './integration/workflow-automation';
+import { WorkflowAutomationEngine } from './integration/workflow-automation';
 
 /**
  * Enhanced AgentCore with all integrated components
@@ -92,69 +92,69 @@ export class EnhancedAgentCore extends EventEmitter {
     private agentCore: AgentCore;
 
     // Collaboration Components
-    private handoffManager: HandoffManager;
-    private sharedContextPool: SharedContextPool;
-    private dependencyTracker: DependencyTracker;
-    private parallelExecutor: ParallelExecutor;
+    private handoffManager!: HandoffManager;
+    private sharedContextPool!: SharedContextPool;
+    private dependencyTracker!: DependencyTracker;
+    private parallelExecutor!: ParallelExecutor;
 
     // Learning Components
-    private preferenceEngine: PreferenceEngine;
+    private preferenceEngine!: PreferenceEngine;
 
     // Specialization Components
-    private specializationManager: StrandSpecializationManager;
+    private specializationManager!: StrandSpecializationManager;
 
     // Intelligence Components
-    private trendAnalyzer: TrendAnalyzer;
-    private gapIdentifier: GapIdentifier;
-    private recommendationEngine: RecommendationEngine;
+    private trendAnalyzer!: TrendAnalyzer;
+    private gapIdentifier!: GapIdentifier;
+    private recommendationEngine!: RecommendationEngine;
 
     // Multi-Modal Components
-    private imageAnalysisStrand: ImageAnalysisStrand;
-    private videoScriptGenerator: VideoScriptGenerator;
-    private audioContentCreator: AudioContentCreator;
-    private documentProcessor: DocumentProcessor;
-    private crossModalChecker: CrossModalConsistencyChecker;
+    private imageAnalysisStrand!: ImageAnalysisStrand;
+    private videoScriptGenerator!: VideoScriptGenerator;
+    private audioContentCreator!: AudioContentCreator;
+    private documentProcessor!: DocumentProcessor;
+    private crossModalChecker!: CrossModalConsistencyChecker;
 
     // Competitive Intelligence Components
-    private competitorMonitor: CompetitorMonitor;
-    private gapAnalyzer: GapAnalyzer;
-    private differentiationEngine: DifferentiationEngine;
-    private benchmarkTracker: BenchmarkTracker;
-    private advantageCapitalizer: AdvantageCapitalizer;
+    private competitorMonitor!: CompetitorMonitor;
+    private gapAnalyzer!: GapAnalyzer;
+    private differentiationEngine!: DifferentiationEngine;
+    private benchmarkTracker!: BenchmarkTracker;
+    private advantageCapitalizer!: AdvantageCapitalizer;
 
     // Memory Components
-    private longTermMemory: LongTermMemoryStore;
-    private semanticSearch: SemanticSearchEngine;
+    private longTermMemory!: LongTermMemoryStore;
+    private semanticSearch!: SemanticSearchEngine;
 
     // Quality Assurance Components
-    private qualityAssurance: QualityAssuranceStrand;
-    private factChecker: FactChecker;
-    private complianceValidator: ComplianceValidator;
-    private seoOptimizer: SEOOptimizer;
+    private qualityAssurance!: QualityAssuranceStrand;
+    private factChecker!: FactChecker;
+    private complianceValidator!: ComplianceValidator;
+    private seoOptimizer!: SEOOptimizer;
 
     // Analytics Components
-    private performanceTracker: PerformanceTracker;
-    private costMonitor: CostMonitor;
-    private roiTracker: ROITracker;
+    private performanceTracker!: PerformanceTracker;
+    private costMonitor!: CostMonitor;
+    private roiTracker!: ROITracker;
 
     // Routing Components
-    private adaptiveRouter: AdaptiveRouter;
-    private fallbackManager: FallbackManager;
-    private loadBalancer: LoadBalancer;
-    private priorityQueue: PriorityQueueManager;
+    private adaptiveRouter!: AdaptiveRouter;
+    private fallbackManager!: FallbackManager;
+    private loadBalancer!: LoadBalancer;
+    private priorityQueue!: PriorityQueueManager;
 
     // Collaborative Editing Components
-    private conversationalEditor: ConversationalEditor;
-    private versionControl: VersionControlSystem;
-    private styleTransfer: StyleTransferEngine;
-    private refinementLearning: RefinementLearningSystem;
+    private conversationalEditor!: ConversationalEditor;
+    private versionControl!: VersionControlSystem;
+    private styleTransfer!: StyleTransferEngine;
+    private refinementLearning!: RefinementLearningSystem;
 
     // Integration Components
-    private socialMediaScheduler: SocialMediaScheduler;
-    private crmConnector: CRMConnector;
-    private campaignGenerator: CampaignGenerator;
-    private analyticsIntegrator: AnalyticsIntegrator;
-    private workflowAutomation: WorkflowAutomationSystem;
+    private socialMediaScheduler!: SocialMediaScheduler;
+    private crmConnector!: CRMConnector;
+    private campaignGenerator!: CampaignGenerator;
+    private analyticsIntegrator!: AnalyticsIntegrator;
+    private workflowAutomation!: WorkflowAutomationEngine;
 
     constructor() {
         super();
@@ -190,14 +190,15 @@ export class EnhancedAgentCore extends EventEmitter {
         this.parallelExecutor = new ParallelExecutor();
 
         // Connect handoff manager to AgentCore
-        this.handoffManager.on('handoff-initiated', async (context) => {
-            const toStrand = await this.agentCore.allocateTask(context.nextTask);
-            await this.handoffManager.executeHandoff(
-                context.fromStrand,
-                toStrand,
-                context.handoffContext
-            );
-        });
+        // TODO: Add event handling if HandoffManager extends EventEmitter
+        // this.handoffManager.on('handoff-initiated', async (context: any) => {
+        //     const toStrand = await this.agentCore.allocateTask(context.nextTask);
+        //     await this.handoffManager.executeHandoff(
+        //         context.fromStrand,
+        //         toStrand,
+        //         context.handoffContext
+        //     );
+        // });
     }
 
     /**
@@ -207,9 +208,10 @@ export class EnhancedAgentCore extends EventEmitter {
         this.preferenceEngine = new PreferenceEngine();
 
         // Connect preference engine to task execution
-        this.preferenceEngine.on('preferences-updated', (userId, preferences) => {
-            this.emit('user-preferences-updated', userId, preferences);
-        });
+        // TODO: Add event handling if PreferenceEngine extends EventEmitter
+        // this.preferenceEngine.on('preferences-updated', (userId: any, preferences: any) => {
+        //     this.emit('user-preferences-updated', userId, preferences);
+        // });
     }
 
     /**
@@ -219,9 +221,10 @@ export class EnhancedAgentCore extends EventEmitter {
         this.specializationManager = new StrandSpecializationManager();
 
         // Connect specialization manager to AgentCore
-        this.specializationManager.on('specialist-created', (strand) => {
-            this.emit('specialist-strand-created', strand);
-        });
+        // TODO: Add event handling if StrandSpecializationManager extends EventEmitter
+        // this.specializationManager.on('specialist-created', (strand: any) => {
+        //     this.emit('specialist-strand-created', strand);
+        // });
     }
 
     /**
@@ -233,9 +236,10 @@ export class EnhancedAgentCore extends EventEmitter {
         this.recommendationEngine = new RecommendationEngine();
 
         // Connect intelligence components
-        this.trendAnalyzer.on('trend-identified', (trend) => {
-            this.emit('market-trend-detected', trend);
-        });
+        // TODO: Add event handling if TrendAnalyzer extends EventEmitter
+        // this.trendAnalyzer.on('trend-identified', (trend: any) => {
+        //     this.emit('market-trend-detected', trend);
+        // });
     }
 
     /**
@@ -260,9 +264,10 @@ export class EnhancedAgentCore extends EventEmitter {
         this.advantageCapitalizer = new AdvantageCapitalizer();
 
         // Connect competitive intelligence
-        this.competitorMonitor.on('competitor-activity', (activity) => {
-            this.emit('competitive-insight', activity);
-        });
+        // TODO: Add event handling when CompetitorMonitor extends EventEmitter
+        // this.competitorMonitor.on('competitor-activity', (activity) => {
+        //     this.emit('competitive-insight', activity);
+        // });
     }
 
     /**
@@ -273,9 +278,10 @@ export class EnhancedAgentCore extends EventEmitter {
         this.semanticSearch = new SemanticSearchEngine();
 
         // Connect memory to strands
-        this.longTermMemory.on('memory-persisted', (strandId, memory) => {
-            this.emit('strand-memory-saved', strandId, memory);
-        });
+        // TODO: Add event handling when LongTermMemoryStore extends EventEmitter
+        // this.longTermMemory.on('memory-persisted', (strandId, memory) => {
+        //     this.emit('strand-memory-saved', strandId, memory);
+        // });
     }
 
     /**
@@ -288,27 +294,29 @@ export class EnhancedAgentCore extends EventEmitter {
         this.seoOptimizer = new SEOOptimizer();
 
         // Connect QA to task completion
-        this.qualityAssurance.on('validation-complete', (result) => {
-            this.emit('quality-check-complete', result);
-        });
+        // TODO: Add event handling when QualityAssuranceStrand extends EventEmitter
+        // this.qualityAssurance.on('validation-complete', (result) => {
+        //     this.emit('quality-check-complete', result);
+        // });
     }
 
     /**
      * Initialize Analytics Layer
      */
     private initializeAnalyticsLayer(): void {
-        this.performanceTracker = new PerformanceTracker();
-        this.costMonitor = new CostMonitor();
-        this.roiTracker = new ROITracker();
+        this.performanceTracker = new PerformanceTracker({ tableName: 'performance-metrics' });
+        this.costMonitor = new CostMonitor({ tableName: 'cost-metrics' });
+        this.roiTracker = new ROITracker({ tableName: 'roi-metrics' });
 
         // Connect analytics to task execution
-        this.performanceTracker.on('metrics-updated', (metrics) => {
-            this.emit('performance-metrics', metrics);
-        });
+        // TODO: Add event handling when PerformanceTracker extends EventEmitter
+        // this.performanceTracker.on('metrics-updated', (metrics) => {
+        //     this.emit('performance-metrics', metrics);
+        // });
 
-        this.costMonitor.on('cost-alert', (alert) => {
-            this.emit('cost-threshold-exceeded', alert);
-        });
+        // this.costMonitor.on('cost-alert', (alert) => {
+        //     this.emit('cost-threshold-exceeded', alert);
+        // });
     }
 
     /**
@@ -321,13 +329,14 @@ export class EnhancedAgentCore extends EventEmitter {
         this.priorityQueue = new PriorityQueueManager();
 
         // Connect routing to AgentCore
-        this.adaptiveRouter.on('routing-decision', (decision) => {
-            this.emit('task-routed', decision);
-        });
+        // TODO: Add event handling when AdaptiveRouter extends EventEmitter
+        // this.adaptiveRouter.on('routing-decision', (decision) => {
+        //     this.emit('task-routed', decision);
+        // });
 
-        this.fallbackManager.on('fallback-triggered', (context) => {
-            this.emit('fallback-executed', context);
-        });
+        // this.fallbackManager.on('fallback-triggered', (context) => {
+        //     this.emit('fallback-executed', context);
+        // });
     }
 
     /**
@@ -340,9 +349,10 @@ export class EnhancedAgentCore extends EventEmitter {
         this.refinementLearning = new RefinementLearningSystem();
 
         // Connect editing to learning
-        this.conversationalEditor.on('edit-applied', (edit) => {
-            this.refinementLearning.recordRefinement(edit);
-        });
+        // TODO: Add event handling when ConversationalEditor extends EventEmitter
+        // this.conversationalEditor.on('edit-applied', (edit) => {
+        //     this.refinementLearning.recordRefinement(edit);
+        // });
     }
 
     /**
@@ -353,16 +363,17 @@ export class EnhancedAgentCore extends EventEmitter {
         this.crmConnector = new CRMConnector();
         this.campaignGenerator = new CampaignGenerator();
         this.analyticsIntegrator = new AnalyticsIntegrator();
-        this.workflowAutomation = new WorkflowAutomationSystem();
+        this.workflowAutomation = new WorkflowAutomationEngine();
 
         // Connect integrations
-        this.socialMediaScheduler.on('post-scheduled', (post) => {
-            this.emit('content-scheduled', post);
-        });
+        // TODO: Add event handling when SocialMediaScheduler extends EventEmitter
+        // this.socialMediaScheduler.on('post-scheduled', (post) => {
+        //     this.emit('content-scheduled', post);
+        // });
 
-        this.workflowAutomation.on('workflow-complete', (result) => {
-            this.emit('automated-workflow-complete', result);
-        });
+        // this.workflowAutomation.on('workflow-complete', (result) => {
+        //     this.emit('automated-workflow-complete', result);
+        // });
     }
 
     /**
@@ -370,12 +381,14 @@ export class EnhancedAgentCore extends EventEmitter {
      */
     private wireEventHandlers(): void {
         // AgentCore events
-        this.agentCore.on('task-allocated', async (task, strand) => {
+        this.agentCore.on('task-allocated', async (task: any, strand: any) => {
             // Track performance
-            await this.performanceTracker.trackTaskStart(task.id, strand.id);
+            // TODO: Implement trackTaskStart method
+            // await this.performanceTracker.trackTaskStart(task.id, strand.id);
 
             // Track cost
-            await this.costMonitor.trackOperationStart(task.id, strand.type);
+            // TODO: Implement trackOperationStart method
+            // await this.costMonitor.trackOperationStart(task.id, strand.type);
 
             // Apply user preferences
             const preferences = await this.preferenceEngine.getPreferences(task.userId || '');
@@ -384,30 +397,29 @@ export class EnhancedAgentCore extends EventEmitter {
             }
         });
 
-        this.agentCore.on('task-completed', async (result, strand) => {
+        this.agentCore.on('task-completed', async (result: any, strand: any) => {
             // Update performance metrics
-            await this.performanceTracker.trackTaskComplete(result.taskId, strand.id, result);
+            // TODO: Implement trackTaskComplete method
+            // await this.performanceTracker.trackTaskComplete(result.taskId, strand.id, result);
 
             // Update cost tracking
-            await this.costMonitor.trackOperationComplete(result.taskId, result.metadata);
+            // TODO: Implement trackOperationComplete method
+            // await this.costMonitor.trackOperationComplete(result.taskId, result.metadata);
 
             // Update strand metrics
             this.agentCore.updateStrandMetrics(strand.id, result);
 
             // Run quality assurance if needed
             if (result.status === 'success' && result.output) {
-                const qaResult = await this.qualityAssurance.validateContent(
-                    result.output,
-                    ['factual', 'compliance', 'seo']
-                );
+                const qaResult = await this.qualityAssurance.validateContent(result.output);
 
-                if (!qaResult.passed) {
+                if (qaResult && qaResult.finalRecommendation === 'reject') {
                     this.emit('quality-issues-detected', result.taskId, qaResult);
                 }
             }
 
             // Check for handoff opportunities
-            const nextTask = await this.handoffManager.identifyNextStrand(
+            const nextTask = this.handoffManager.identifyNextStrand(
                 result.taskId,
                 result,
                 this.agentCore.getAllStrands()
@@ -422,21 +434,23 @@ export class EnhancedAgentCore extends EventEmitter {
         });
 
         // Collaboration events
-        this.handoffManager.on('handoff-complete', (context) => {
-            this.emit('strand-handoff-complete', context);
-        });
+        // TODO: Add event handling when HandoffManager extends EventEmitter
+        // this.handoffManager.on('handoff-complete', (context) => {
+        //     this.emit('strand-handoff-complete', context);
+        // });
 
-        this.parallelExecutor.on('parallel-execution-complete', (results) => {
-            this.emit('parallel-tasks-complete', results);
-        });
+        // this.parallelExecutor.on('parallel-execution-complete', (results) => {
+        //     this.emit('parallel-tasks-complete', results);
+        // });
 
         // Intelligence events
         // OpportunityDetector integration will be added when implemented
 
         // Memory events
-        this.longTermMemory.on('memory-consolidated', (strandId, summary) => {
-            this.emit('memory-optimized', strandId, summary);
-        });
+        // TODO: Add event handling when LongTermMemoryStore extends EventEmitter
+        // this.longTermMemory.on('memory-consolidated', (strandId, summary) => {
+        //     this.emit('memory-optimized', strandId, summary);
+        // });
     }
 
     /**
@@ -445,23 +459,27 @@ export class EnhancedAgentCore extends EventEmitter {
     async executeTask(task: WorkerTask): Promise<WorkerResult> {
         try {
             // Add to priority queue
-            await this.priorityQueue.enqueue(task);
+            this.priorityQueue.enqueue(task);
 
             // Get next task from queue
-            const queuedTask = await this.priorityQueue.dequeue();
+            const queuedTask = this.priorityQueue.dequeue();
             if (!queuedTask) {
                 throw new Error('Task queue is empty');
             }
 
             // Route task using adaptive router
             const routingDecision = await this.adaptiveRouter.routeTask(
-                queuedTask,
+                task, // Use original task instead of queuedTask
                 this.agentCore.getAllStrands(),
-                {}
+                {
+                    userId: (task as any).userId || 'anonymous',
+                    priority: (task as any).priority || 'normal',
+                    humanReviewAvailable: false
+                }
             );
 
             // Allocate to selected strand
-            const strand = await this.agentCore.allocateTask(queuedTask);
+            const strand = await this.agentCore.allocateTask(task);
 
             // Load long-term memory
             const memory = await this.longTermMemory.retrieveMemory(strand.id);
@@ -471,17 +489,20 @@ export class EnhancedAgentCore extends EventEmitter {
 
             // Execute task (this would call the actual worker)
             // For now, we'll emit an event
-            this.emit('task-executing', queuedTask, strand);
+            this.emit('task-executing', task, strand);
 
             // Simulate result (in real implementation, this would come from worker)
             const result: WorkerResult = {
-                taskId: queuedTask.id,
+                taskId: task.id,
                 status: 'success',
                 output: {},
+                workerType: task.type,
                 metadata: {
                     executionTime: 1000,
-                    model: strand.capabilities.preferredModel || 'default',
+                    modelId: strand.capabilities.preferredModel || 'default',
                     tokensUsed: 500,
+                    startedAt: new Date().toISOString(),
+                    completedAt: new Date().toISOString(),
                 },
             };
 
@@ -491,14 +512,15 @@ export class EnhancedAgentCore extends EventEmitter {
             return result;
         } catch (error) {
             // Handle with fallback manager
-            const fallbackResult = await this.fallbackManager.handleFailure(
-                task,
-                error as Error
-            );
+            // TODO: Implement handleFailure method
+            // const fallbackResult = await this.fallbackManager.handleFailure(
+            //     task,
+            //     error as Error
+            // );
 
-            if (fallbackResult) {
-                return fallbackResult;
-            }
+            // if (fallbackResult) {
+            //     return fallbackResult;
+            // }
 
             throw error;
         }

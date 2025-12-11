@@ -37,7 +37,13 @@ export async function generateBlogPostWithService(
     // If async service is disabled or not available, use direct Bedrock
     if (!useAsyncService || !process.env.AI_JOB_REQUEST_QUEUE_URL) {
         onProgress?.('Generating blog post...');
-        return generateBlogPost(input, { userId });
+        // Transform input to match Bedrock schema
+        const bedrockInput = {
+            topic: input.topic,
+            includeWebSearch: true,
+            searchDepth: 'advanced' as const
+        };
+        return generateBlogPost(bedrockInput);
     }
 
     try {
@@ -71,7 +77,12 @@ export async function generateBlogPostWithService(
         onProgress?.('Falling back to direct generation...');
 
         // Fallback to direct Bedrock call
-        return generateBlogPost(input, { userId });
+        const bedrockInput = {
+            topic: input.topic,
+            includeWebSearch: true,
+            searchDepth: 'advanced' as const
+        };
+        return generateBlogPost(bedrockInput);
     }
 }
 
@@ -93,7 +104,14 @@ export async function generateSocialMediaPostWithService(
 
     if (!useAsyncService || !process.env.AI_JOB_REQUEST_QUEUE_URL) {
         onProgress?.('Generating social media post...');
-        return generateSocialMediaPost(input, { userId });
+        // Transform input to match Bedrock schema
+        const bedrockInput = {
+            topic: input.topic,
+            tone: input.tone || 'professional',
+            platforms: [input.platform],
+            numberOfVariations: 1
+        };
+        return generateSocialMediaPost(bedrockInput);
     }
 
     try {
@@ -123,7 +141,13 @@ export async function generateSocialMediaPostWithService(
         console.error('AI Service error, falling back to direct Bedrock:', error);
         onProgress?.('Falling back to direct generation...');
 
-        return generateSocialMediaPost(input, { userId });
+        const bedrockInput = {
+            topic: input.topic,
+            tone: input.tone || 'professional',
+            platforms: [input.platform],
+            numberOfVariations: 1
+        };
+        return generateSocialMediaPost(bedrockInput);
     }
 }
 
@@ -148,7 +172,12 @@ export async function generateListingDescriptionWithService(
 
     if (!useAsyncService || !process.env.AI_JOB_REQUEST_QUEUE_URL) {
         onProgress?.('Generating listing description...');
-        return generateListingDescription(input, { userId });
+        // Transform input to match Bedrock schema
+        const propertyDetails = `${input.propertyType} with ${input.bedrooms} bedrooms, ${input.bathrooms} bathrooms, ${input.squareFeet} sq ft, priced at $${input.price.toLocaleString()}. Located at ${input.address}${input.neighborhood ? ` in ${input.neighborhood}` : ''}${input.features ? `. Features: ${input.features.join(', ')}` : ''}.`;
+        const bedrockInput = {
+            propertyDetails: propertyDetails
+        };
+        return generateListingDescription(bedrockInput);
     }
 
     try {
@@ -178,7 +207,11 @@ export async function generateListingDescriptionWithService(
         console.error('AI Service error, falling back to direct Bedrock:', error);
         onProgress?.('Falling back to direct generation...');
 
-        return generateListingDescription(input, { userId });
+        const propertyDetails = `${input.propertyType} with ${input.bedrooms} bedrooms, ${input.bathrooms} bathrooms, ${input.squareFeet} sq ft, priced at $${input.price.toLocaleString()}. Located at ${input.address}${input.neighborhood ? ` in ${input.neighborhood}` : ''}${input.features ? `. Features: ${input.features.join(', ')}` : ''}.`;
+        const bedrockInput = {
+            propertyDetails: propertyDetails
+        };
+        return generateListingDescription(bedrockInput);
     }
 }
 
@@ -204,7 +237,15 @@ export async function generateMarketUpdateWithService(
 
     if (!useAsyncService || !process.env.AI_JOB_REQUEST_QUEUE_URL) {
         onProgress?.('Generating market update...');
-        return generateMarketUpdate(input, { userId });
+        // Transform input to match Bedrock schema
+        const bedrockInput = {
+            location: input.location,
+            timePeriod: input.timeframe === 'weekly' ? 'This Week' :
+                input.timeframe === 'monthly' ? 'This Month' :
+                    input.timeframe === 'quarterly' ? 'This Quarter' : 'Current Period',
+            audience: 'real estate professionals and clients'
+        };
+        return generateMarketUpdate(bedrockInput);
     }
 
     try {
@@ -234,6 +275,13 @@ export async function generateMarketUpdateWithService(
         console.error('AI Service error, falling back to direct Bedrock:', error);
         onProgress?.('Falling back to direct generation...');
 
-        return generateMarketUpdate(input, { userId });
+        const bedrockInput = {
+            location: input.location,
+            timePeriod: input.timeframe === 'weekly' ? 'This Week' :
+                input.timeframe === 'monthly' ? 'This Month' :
+                    input.timeframe === 'quarterly' ? 'This Quarter' : 'Current Period',
+            audience: 'real estate professionals and clients'
+        };
+        return generateMarketUpdate(bedrockInput);
     }
 }

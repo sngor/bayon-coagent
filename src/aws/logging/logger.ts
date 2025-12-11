@@ -295,3 +295,18 @@ export function withCorrelationId<T extends (...args: any[]) => any>(
     }
   }) as T;
 }
+/**
+ * Convenience function for logging info messages
+ * @deprecated Use logger.info() instead
+ */
+export function logInfo(message: string, context?: LogContext): void {
+  logger.info(message, context);
+}
+
+/**
+ * Convenience function for logging error messages
+ * @deprecated Use logger.error() instead
+ */
+export function logError(message: string, error?: Error, context?: LogContext): void {
+  logger.error(message, error, context);
+}

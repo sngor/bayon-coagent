@@ -65,7 +65,7 @@ import { type OAuthTokenData } from '@/aws/dynamodb';
 import { getOAuthTokensAction } from '@/features/integrations/actions/oauth-actions';
 import { useUser } from '@/aws/auth';
 import { useItem, useQuery } from '@/aws/dynamodb/hooks';
-import type { Profile, Review, BrandAudit as BrandAuditType, ReviewAnalysis } from '@/lib/types/common/common';
+import type { Profile, Review, BrandAudit as BrandAuditType, ReviewAnalysis } from '@/lib/types/common';
 import { runNapAuditAction, getZillowReviewsAction, analyzeReviewSentimentAction, analyzeMultipleReviewsAction } from '@/app/actions';
 import { toast } from '@/hooks/use-toast';
 import { JsonLdDisplay } from '@/components/json-ld-display';
@@ -96,7 +96,7 @@ const initialAuditState: InitialAuditState = {
 };
 
 type ZillowReview = {
-    authorName: string;
+    author: string;
     rating: number;
     comment: string;
     date: string;
@@ -206,14 +206,17 @@ function AnalyzeSentimentButton() {
 }
 
 function FetchedReviewCard({ review }: { review: ZillowReview }) {
-    const [sentimentState, sentimentFormAction] = useActionState(analyzeReviewSentimentAction, initialSentimentState);
+    const [sentimentState, sentimentFormAction] = useActionState(
+        (state: any, payload: FormData) => analyzeReviewSentimentAction(state, payload),
+        initialSentimentState
+    );
 
     return (
         <Card className="bg-secondary/30">
             <CardHeader>
                 <div className="flex justify-between items-start">
                     <div>
-                        <p className="font-semibold">{review.authorName}</p>
+                        <p className="font-semibold">{review.author}</p>
                         <p className="text-sm text-muted-foreground">{new Date(review.date).toLocaleDateString()}</p>
                     </div>
                 </div>
@@ -268,9 +271,18 @@ const isDifferent = (val1?: string, val2?: string) => {
 export default function BrandAuditPage() {
     const { user, isUserLoading } = useUser();
 
-    const [auditState, auditFormAction] = useActionState(runNapAuditAction, initialAuditState);
-    const [zillowState, zillowFormAction] = useActionState(getZillowReviewsAction, initialZillowReviewState);
-    const [bulkAnalysisState, bulkAnalysisFormAction] = useActionState(analyzeMultipleReviewsAction, initialBulkAnalysisState);
+    const [auditState, auditFormAction] = useActionState(
+        (state: any, payload: FormData) => runNapAuditAction(state, payload),
+        initialAuditState
+    );
+    const [zillowState, zillowFormAction] = useActionState(
+        (state: any, payload: FormData) => getZillowReviewsAction(state, payload),
+        initialZillowReviewState
+    );
+    const [bulkAnalysisState, bulkAnalysisFormAction] = useActionState(
+        (state: any, payload: FormData) => analyzeMultipleReviewsAction(state, payload),
+        initialBulkAnalysisState
+    );
 
     const [reviewToDelete, setReviewToDelete] = useState<Review | null>(null);
     const [showCelebration, setShowCelebration] = useState(false);

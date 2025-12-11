@@ -6,7 +6,7 @@
  */
 
 import { DynamoDBRepository } from './repository';
-import { getSEOAnalysisKeys } from './keys';
+import { getSEOAnalysisKeys } from './index';
 import type { SEORecommendation } from '@/lib/seo/recommendations';
 
 export interface SEOAnalysis {

@@ -19,10 +19,10 @@ interface ActionCardProps {
     icon: LucideIcon;
     iconColor: string;
     iconBgColor: string;
-    hoverColor: string;
+    hoverColor?: string;
     badge?: string;
     badgeColor?: string;
-    actions: ActionItem[];
+    actions: readonly ActionItem[];
 }
 
 export function ActionCard({

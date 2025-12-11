@@ -454,11 +454,9 @@ class ImageAnalysisTools {
             const timestamp = new Date().toISOString();
             const analysisId = `image_analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-            const analysisItem = {
-                PK: `USER#${userId}`,
-                SK: `IMAGE_ANALYSIS#${analysisId}`,
-                GSI1PK: `USER#${userId}`,
-                GSI1SK: `IMAGE_ANALYSIS#${timestamp}`,
+            const pk = `USER#${userId}`;
+            const sk = `IMAGE_ANALYSIS#${analysisId}`;
+            const analysisData = {
                 id: analysisId,
                 userId,
                 type: 'image-analysis',
@@ -471,7 +469,10 @@ class ImageAnalysisTools {
                 source: 'image-analysis-agent'
             };
 
-            await repository.create(analysisItem);
+            await repository.create(pk, sk, 'VisionAnalysis', analysisData, {
+                GSI1PK: `USER#${userId}`,
+                GSI1SK: `IMAGE_ANALYSIS#${timestamp}`
+            });
 
             return `✅ Analysis saved to library! Analysis ID: ${analysisId}`;
         } catch (error) {

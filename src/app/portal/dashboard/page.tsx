@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { ClientDashboardView } from '@/components/client-dashboard/client-dashboard-view';
 import { getRepository } from '@/aws/dynamodb/repository';
-import { getClientDashboardKeys } from '@/aws/dynamodb/keys';
+import { getClientDashboardKeys } from '@/aws/dynamodb';
 import { ClientDashboard } from '@/features/client-dashboards/actions/client-dashboard-actions';
 
 export const dynamic = 'force-dynamic';

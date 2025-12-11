@@ -73,3 +73,8 @@ export {
     StandardCard,
     type StandardCardProps,
 } from './card';
+
+export {
+    StandardPageLayout,
+    type StandardPageLayoutProps,
+} from './page-layout';

@@ -156,7 +156,7 @@ async function testMemberEndpoint(): Promise<TestResult> {
     try {
         const params = new URLSearchParams({
             '$top': '1',
-            '$select': 'MemberKey,MemberMlsId,MemberFirstName,MemberLastName,OfficeMlsId,OfficeName',
+            '$select': 'MemberKey,MemberMlsId,MemberFirstName,MemberLastName,OfficeMlsId',
         });
 
         const response = await fetch(`${MLSGRID_API_URL}/Member?${params.toString()}`, {
@@ -197,7 +197,7 @@ async function testMemberEndpoint(): Promise<TestResult> {
 }
 
 async function testMediaEndpoint(): Promise<TestResult> {
-    console.log('📸 Testing Media endpoint...\n');
+    console.log('📸 Testing Media via Property expansion (MLS Grid v2 requirement)...\n');
 
     if (!MLSGRID_ACCESS_TOKEN) {
         return {
@@ -208,16 +208,20 @@ async function testMediaEndpoint(): Promise<TestResult> {
     }
 
     try {
+        // In MLS Grid v2, Media must be accessed via Property expansion
         const params = new URLSearchParams({
-            '$top': '5',
-            '$select': 'MediaKey,ResourceRecordKey,MediaURL,MediaCategory,Order',
+            '$filter': 'MlgCanView eq true',
+            '$top': '1',
+            '$select': 'ListingKey,ListingId,UnparsedAddress',
+            '$expand': 'Media',
         });
 
-        const response = await fetch(`${MLSGRID_API_URL}/Media?${params.toString()}`, {
+        const response = await fetch(`${MLSGRID_API_URL}/Property?${params.toString()}`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${MLSGRID_ACCESS_TOKEN}`,
                 'Accept': 'application/json',
+                'Accept-Encoding': 'gzip,deflate',
             },
         });
 
@@ -231,14 +235,16 @@ async function testMediaEndpoint(): Promise<TestResult> {
         }
 
         const data = await response.json();
-        const media = data.value || [];
+        const properties = data.value || [];
+        const mediaCount = properties.reduce((total: number, prop: any) => total + (prop.Media?.length || 0), 0);
 
         return {
             test: 'Media Endpoint',
             success: true,
             data: {
-                count: media.length,
-                sample: media[0] || null,
+                propertiesWithMedia: properties.filter((p: any) => p.Media?.length > 0).length,
+                totalMediaItems: mediaCount,
+                sample: properties[0]?.Media?.[0] || null,
             },
         };
     } catch (error) {

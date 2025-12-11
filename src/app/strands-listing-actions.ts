@@ -294,7 +294,7 @@ export async function optimizeListingDescriptionAction(
         console.log('🏠 Starting listing description optimization...');
 
         // Extract key features from original description (simple approach)
-        const keyFeatures = this.extractKeyFeatures(originalDescription);
+        const keyFeatures = extractKeyFeatures(originalDescription);
 
         const result = await generateSimpleListingDescription(
             propertyType,

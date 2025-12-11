@@ -2,7 +2,7 @@
 
 import { getCurrentUserServer } from '@/aws/auth/server-auth';
 import { getRepository } from '@/aws/dynamodb/repository';
-import { getPropertyShareKeys } from '@/aws/dynamodb/keys';
+import { getPropertyShareKeys } from '@/aws/dynamodb';
 import {
     createShareRecord,
     formatSMSMessage,

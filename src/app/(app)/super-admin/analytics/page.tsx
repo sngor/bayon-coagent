@@ -1,5 +1,8 @@
 'use client';
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+
 import { AnalyticsOverview } from '@/components/analytics/analytics-overview';
 import { createPerformanceTracker } from '@/aws/bedrock/analytics/performance-tracker';
 import { createCostMonitor } from '@/aws/bedrock/analytics/cost-monitor';

@@ -6,7 +6,7 @@
  */
 
 import { DynamoDBRepository } from './repository';
-import { getWorkflowInstanceKeys } from './keys';
+import { getWorkflowInstanceKeys } from './index';
 import {
     WorkflowInstance,
     WorkflowStatus,

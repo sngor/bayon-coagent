@@ -1,6 +1,6 @@
 'use client';
 
-import { StandardPageLayout } from '@/components/standard';
+import { StandardPageLayout } from '@/components/standard/page-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { Button } from '@/components/ui/button';

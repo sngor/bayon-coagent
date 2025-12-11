@@ -227,11 +227,9 @@ class StrandsOnboardingService {
                 }
             };
 
-            const onboardingItem = {
-                PK: `USER#${userId}`,
-                SK: 'STRANDS_ONBOARDING',
-                GSI1PK: `USER#${userId}`,
-                GSI1SK: `STRANDS_ONBOARDING#${timestamp}`,
+            const pk = `USER#${userId}`;
+            const sk = 'STRANDS_ONBOARDING';
+            const onboardingData = {
                 id: `strands_onboarding_${userId}`,
                 userId,
                 type: 'strands-onboarding',
@@ -241,7 +239,10 @@ class StrandsOnboardingService {
                 source: 'strands-onboarding-service'
             };
 
-            await repository.create(onboardingItem);
+            await repository.create(pk, sk, 'OnboardingState', onboardingData, {
+                GSI1PK: `USER#${userId}`,
+                GSI1SK: `STRANDS_ONBOARDING#${timestamp}`
+            });
 
             console.log('✅ Strands onboarding initialized for user:', userId);
             return onboardingState;
@@ -260,11 +261,11 @@ class StrandsOnboardingService {
             const repository = getRepository();
             const result = await repository.get(`USER#${userId}`, 'STRANDS_ONBOARDING');
 
-            if (!result || !result.data) {
+            if (!result) {
                 return null;
             }
 
-            return result.data as StrandsOnboardingState;
+            return result as StrandsOnboardingState;
 
         } catch (error) {
             console.error('❌ Failed to get Strands onboarding state:', error);
@@ -294,8 +295,8 @@ class StrandsOnboardingService {
             }
 
             // Update current step to next step
-            const stepConfig = STRANDS_ONBOARDING_STEPS[step];
-            if (stepConfig.nextStep) {
+            const stepConfig = STRANDS_ONBOARDING_STEPS[step as keyof typeof STRANDS_ONBOARDING_STEPS];
+            if (stepConfig?.nextStep) {
                 state.currentStep = stepConfig.nextStep as StrandsOnboardingStep;
             }
 
@@ -427,8 +428,8 @@ class StrandsOnboardingService {
             const allSteps = Object.keys(STRANDS_ONBOARDING_STEPS) as StrandsOnboardingStep[];
             const progress = (state.completedSteps.length / allSteps.length) * 100;
 
-            const currentStepConfig = STRANDS_ONBOARDING_STEPS[state.currentStep];
-            const nextStep = currentStepConfig.nextStep as StrandsOnboardingStep | null;
+            const currentStepConfig = STRANDS_ONBOARDING_STEPS[state.currentStep as keyof typeof STRANDS_ONBOARDING_STEPS];
+            const nextStep = currentStepConfig?.nextStep as StrandsOnboardingStep | null;
 
             const completedFeatures = Object.entries(state.featuresUsed)
                 .filter(([_, used]) => used)

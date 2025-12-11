@@ -7,20 +7,11 @@
  */
 
 import { useState, useEffect } from 'react';
-import { StandardPageLayout } from '@/components/standard';
-import { ChatInterface, AgentProfilePreview } from '@/components/bayon-assistant';
+import { ChatInterface } from '@/components/bayon-assistant';
 import { EnhancedAgentIntegration } from '@/components/enhanced-agents';
-
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -31,23 +22,17 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-    GlassCard,
-    GlassCardHeader,
-    GlassCardTitle,
-    GlassCardDescription,
-    GlassCardContent,
-} from '@/components/ui/glass-card';
 import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsList as TabsList, AnimatedTabsTrigger as TabsTrigger } from '@/components/ui/animated-tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { getAgentProfile } from '@/app/profile-actions';
 import { useUser } from '@/aws/auth';
-import { MessageSquare, Info, Loader2, Settings, History, Plus, RotateCcw, Trash2, Edit2, Check, X, MoreVertical, Cloud, HardDrive } from 'lucide-react';
+import { MessageSquare, Info, Loader2, History, Plus, RotateCcw, Trash2, Edit2, Check, X } from 'lucide-react';
 import type { AgentProfile } from '@/aws/dynamodb/agent-profile-repository';
-import Link from 'next/link';
 import { useChatHistory } from '@/hooks/use-chat-history';
-import { migrateChatHistoryToServer, hasLocalChatHistory, getLocalChatHistoryCount } from '@/lib/migrate-chat-history';
+import { migrateChatHistoryToServer, hasLocalChatHistory } from '@/lib/migrate-chat-history';
 import { toast } from '@/hooks/use-toast';
+import type { ChatSession, ChatMessage } from '@/app/chat-history-actions';
+import type { Message } from '@/components/bayon-assistant/chat-interface';
 
 export default function AssistantPage() {
     const { user } = useUser();
@@ -55,20 +40,15 @@ export default function AssistantPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'chat' | 'history'>('chat');
     const [currentChatId, setCurrentChatId] = useState<string | null>(null);
-    const [chatMessages, setChatMessages] = useState<any[]>([]);
+    const [chatMessages, setChatMessages] = useState<Message[]>([]);
     const [chatKey, setChatKey] = useState<number>(0); // Force re-render of ChatInterface
     const [editingChatId, setEditingChatId] = useState<string | null>(null);
     const [editingTitle, setEditingTitle] = useState<string>('');
     const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
-    const [showMigrationPrompt, setShowMigrationPrompt] = useState(false);
-    const [isMigrating, setIsMigrating] = useState(false);
 
     // Use server-side chat history hook
     const {
         sessions: chatHistory,
-        currentSession,
-        isLoading: isLoadingHistory,
-        saveSession,
         loadSession,
         updateTitle,
         deleteSession,
@@ -103,44 +83,19 @@ export default function AssistantPage() {
     useEffect(() => {
         if (user?.id && typeof window !== 'undefined') {
             if (hasLocalChatHistory(user.id)) {
-                setShowMigrationPrompt(true);
+                // Auto-migrate if needed
+                migrateChatHistoryToServer(user.id).then((result) => {
+                    if (result.success) {
+                        toast({
+                            title: '✨ Migration Complete!',
+                            description: `Successfully migrated ${result.migrated} chat sessions to cloud storage`,
+                        });
+                        window.location.reload();
+                    }
+                }).catch(console.error);
             }
         }
     }, [user?.id]);
-
-    // Handle migration from localStorage to server
-    const handleMigration = async () => {
-        if (!user?.id) return;
-
-        setIsMigrating(true);
-        try {
-            const result = await migrateChatHistoryToServer(user.id);
-
-            if (result.success) {
-                toast({
-                    title: '✨ Migration Complete!',
-                    description: `Successfully migrated ${result.migrated} chat sessions to cloud storage`,
-                });
-                setShowMigrationPrompt(false);
-                // Reload sessions to show migrated data
-                window.location.reload();
-            } else {
-                toast({
-                    variant: 'destructive',
-                    title: 'Migration Failed',
-                    description: result.errors.join(', '),
-                });
-            }
-        } catch (error) {
-            toast({
-                variant: 'destructive',
-                title: 'Migration Error',
-                description: error instanceof Error ? error.message : 'Unknown error',
-            });
-        } finally {
-            setIsMigrating(false);
-        }
-    };
 
     // Initialize with a new chat on first load
     useEffect(() => {
@@ -150,25 +105,7 @@ export default function AssistantPage() {
         }
     }, [currentChatId, isLoading]);
 
-    const handleProfileUpdate = (updatedProfile: AgentProfile) => {
-        setProfile(updatedProfile);
-    };
-
     const handleNewChat = () => {
-        // Save current chat to history if it exists and has messages
-        if (currentChatId && chatMessages.length > 0) {
-            const lastMessage = chatMessages[chatMessages.length - 1];
-            const newHistoryItem = {
-                id: currentChatId,
-                title: `Chat ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
-                lastMessage: lastMessage?.content || "No messages",
-                timestamp: new Date().toISOString(),
-                messageCount: chatMessages.length,
-                messages: [...chatMessages]
-            };
-            setChatHistory(prev => [newHistoryItem, ...prev]);
-        }
-
         // Start new chat
         const newChatId = `chat-${Date.now()}`;
         setCurrentChatId(newChatId);
@@ -178,74 +115,31 @@ export default function AssistantPage() {
     };
 
     const handleEndChat = () => {
-        if (currentChatId && chatMessages.length > 0) {
-            // Save current chat to history
-            const lastMessage = chatMessages[chatMessages.length - 1];
-            const newHistoryItem = {
-                id: currentChatId,
-                title: `Chat ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
-                lastMessage: lastMessage?.content || "Chat ended",
-                timestamp: new Date().toISOString(),
-                messageCount: chatMessages.length,
-                messages: [...chatMessages]
-            };
-            setChatHistory(prev => [newHistoryItem, ...prev]);
-        }
         setCurrentChatId(null);
         setChatMessages([]);
         setChatKey(prev => prev + 1); // Force ChatInterface to re-render
     };
 
-    const handleLoadChat = (chatId: string) => {
-        // Save current chat first if it exists and has messages
-        if (currentChatId && chatMessages.length > 0 && currentChatId !== chatId) {
-            const lastMessage = chatMessages[chatMessages.length - 1];
-            const newHistoryItem = {
-                id: currentChatId,
-                title: `Chat ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`,
-                lastMessage: lastMessage?.content || "No messages",
-                timestamp: new Date().toISOString(),
-                messageCount: chatMessages.length,
-                messages: [...chatMessages]
-            };
-            setChatHistory(prev => [newHistoryItem, ...prev]);
-        }
-
-        // Load the selected chat
-        const selectedChat = chatHistory.find(chat => chat.id === chatId);
-        if (selectedChat) {
+    const handleLoadChat = async (chatId: string) => {
+        // Load the selected chat from server
+        const session = await loadSession(chatId);
+        if (session) {
             setCurrentChatId(chatId);
-            setChatMessages(selectedChat.messages || []);
+            // Convert ChatMessage[] to Message[]
+            const messages: Message[] = session.messages.map(msg => ({
+                id: `${msg.timestamp}-${msg.role}`,
+                role: msg.role,
+                content: msg.content,
+                timestamp: msg.timestamp,
+            }));
+            setChatMessages(messages);
             setChatKey(prev => prev + 1); // Force ChatInterface to re-render
         }
         setActiveTab('chat');
     };
 
-    const handleMessageSent = (message: any) => {
-        setChatMessages(prev => {
-            const newMessages = [...prev, message];
-
-            // Auto-update current chat in history if it exists
-            if (currentChatId) {
-                setChatHistory(prevHistory => {
-                    const existingChatIndex = prevHistory.findIndex(chat => chat.id === currentChatId);
-                    if (existingChatIndex >= 0) {
-                        const updatedHistory = [...prevHistory];
-                        updatedHistory[existingChatIndex] = {
-                            ...updatedHistory[existingChatIndex],
-                            lastMessage: message.content,
-                            timestamp: new Date().toISOString(),
-                            messageCount: newMessages.length,
-                            messages: newMessages
-                        };
-                        return updatedHistory;
-                    }
-                    return prevHistory;
-                });
-            }
-
-            return newMessages;
-        });
+    const handleMessageSent = (message: Message) => {
+        setChatMessages(prev => [...prev, message]);
 
         // Auto-generate chat ID if this is the first message
         if (!currentChatId) {
@@ -254,8 +148,8 @@ export default function AssistantPage() {
         }
     };
 
-    const handleDeleteChat = (chatId: string) => {
-        setChatHistory(prev => prev.filter(chat => chat.id !== chatId));
+    const handleDeleteChat = async (chatId: string) => {
+        await deleteSession(chatId);
         setDeletingChatId(null);
 
         // If we're deleting the current chat, reset to new chat
@@ -271,15 +165,9 @@ export default function AssistantPage() {
         setEditingTitle(currentTitle);
     };
 
-    const handleSaveRename = () => {
+    const handleSaveRename = async () => {
         if (editingChatId && editingTitle.trim()) {
-            setChatHistory(prev =>
-                prev.map(chat =>
-                    chat.id === editingChatId
-                        ? { ...chat, title: editingTitle.trim() }
-                        : chat
-                )
-            );
+            await updateTitle(editingChatId, editingTitle.trim());
         }
         setEditingChatId(null);
         setEditingTitle('');
@@ -290,11 +178,8 @@ export default function AssistantPage() {
         setEditingTitle('');
     };
 
-    const handleClearAllHistory = () => {
-        setChatHistory([]);
-        if (user?.id) {
-            localStorage.removeItem(`chat-history-${user.id}`);
-        }
+    const handleClearAllHistory = async () => {
+        await deleteAllSessions();
     };
 
     if (!user) {
@@ -470,7 +355,7 @@ export default function AssistantPage() {
                                                     </p>
                                                     <div className="flex items-center gap-2 mt-1">
                                                         <p className="text-xs text-muted-foreground">
-                                                            {new Date(chat.timestamp).toLocaleDateString()}
+                                                            {new Date(chat.updatedAt).toLocaleDateString()}
                                                         </p>
                                                         <span className="text-xs text-muted-foreground">•</span>
                                                         <div className="flex items-center gap-1">

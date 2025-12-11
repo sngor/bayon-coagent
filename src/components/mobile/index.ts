@@ -64,3 +64,13 @@ export * from "./mobile-feature-tooltips";
 
 // Demo Components
 export { MobileOnboardingDemo } from "./mobile-onboarding-demo";
+
+// Additional Mobile Components
+export { MeetingPrep } from "./meeting-prep";
+export type { MeetingPrepProps } from "./meeting-prep";
+
+export { OpenHouseCheckin } from "./open-house-checkin";
+export type { OpenHouseCheckinProps } from "./open-house-checkin";
+
+export { BackgroundSyncStatus } from "./background-sync-status";
+export type { BackgroundSyncStatusProps } from "./background-sync-status";

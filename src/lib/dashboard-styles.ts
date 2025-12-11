@@ -42,7 +42,10 @@ export function getDashboardCardClass(
     }
 
     if (type in dashboardCardStyles) {
-        baseClasses.push(dashboardCardStyles[type]);
+        const styleValue = dashboardCardStyles[type];
+        if (typeof styleValue === 'string') {
+            baseClasses.push(styleValue);
+        }
     }
 
     return cn(baseClasses, additionalClasses);

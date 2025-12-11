@@ -125,10 +125,10 @@ export default function ClientGiftsCalendarPage() {
     };
 
     const hubTabs = [
-        { label: 'Gift Packages', href: '/client-gifts', icon: Gift },
-        { label: 'Templates', href: '/client-gifts/templates', icon: Package },
-        { label: 'Calendar', href: '/client-gifts/calendar', icon: CalendarIcon },
-        { label: 'Analytics', href: '/client-gifts/analytics', icon: CheckCircle2 },
+        { id: 'packages', label: 'Gift Packages', href: '/client-gifts', icon: Gift },
+        { id: 'templates', label: 'Templates', href: '/client-gifts/templates', icon: Package },
+        { id: 'calendar', label: 'Calendar', href: '/client-gifts/calendar', icon: CalendarIcon },
+        { id: 'analytics', label: 'Analytics', href: '/client-gifts/analytics', icon: CheckCircle2 },
     ];
 
     return (

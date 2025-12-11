@@ -6,7 +6,7 @@
  */
 
 import dynamic from 'next/dynamic';
-import { ComponentType } from 'react';
+import React, { ComponentType } from 'react';
 
 // ============================================================================
 // Mobile Component Lazy Loading
@@ -90,7 +90,7 @@ export function createMobileDynamic<P = {}>(
     }
 ) {
     return dynamic(loader, {
-        loading: options?.loading,
+        loading: options?.loading ? () => React.createElement(options.loading!) : undefined,
         ssr: options?.ssr ?? false,
     });
 }

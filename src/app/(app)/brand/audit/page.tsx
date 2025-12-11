@@ -296,15 +296,15 @@ export default function BrandAuditPage() {
     const { user, isUserLoading } = useUser();
 
     const [auditState, auditFormAction] = useActionState(
-        (state: InitialAuditState, payload: FormData) => runNapAuditAction(state, payload),
+        (state: any, payload: FormData) => runNapAuditAction(state, payload),
         initialAuditState
     );
     const [zillowState, zillowFormAction] = useActionState(
-        (state: ZillowReviewState, payload: FormData) => getZillowReviewsAction(state, payload),
+        (state: any, payload: FormData) => getZillowReviewsAction(state, payload),
         initialZillowReviewState
     );
     const [bulkAnalysisState, bulkAnalysisFormAction] = useActionState(
-        (state: BulkAnalysisState, payload: FormData) => analyzeMultipleReviewsAction(state, payload),
+        (state: any, payload: FormData) => analyzeMultipleReviewsAction(state, payload),
         initialBulkAnalysisState
     );
 
@@ -381,10 +381,6 @@ export default function BrandAuditPage() {
                 variant: 'destructive',
                 title: 'Incomplete Profile',
                 description: `Please complete your profile (${missingFields.join(', ')}) before analyzing your website.`,
-                action: {
-                    label: 'Go to Profile',
-                    onClick: () => window.location.href = '/brand/profile',
-                },
             });
             return;
         }
@@ -402,7 +398,6 @@ export default function BrandAuditPage() {
                 name: agentProfileData.name || '',
                 address: agentProfileData.address || '',
                 phone: agentProfileData.phone || '',
-                email: agentProfileData.email || '',
             };
             formData.append('profileData', JSON.stringify(profileData));
 

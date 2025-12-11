@@ -36,7 +36,7 @@ import { AdminDashboardMetrics } from '@/components/admin/admin-dashboard-metric
 
 export default function AdminDashboardPage() {
     const { role } = useUserRole();
-    const { stats, recentActivity, isLoading, refetch } = useAdminDashboard();
+    const { stats, recentActivity, loading: isLoading, refreshAll: refetch } = useAdminDashboard();
 
     // Memoized calculations
     const teamGrowthRate = useMemo(() => {

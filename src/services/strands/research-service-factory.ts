@@ -115,7 +115,7 @@ export class ResearchServiceFactory {
 
         for (const serviceType of fallbackChain) {
             try {
-                const service = this.getService(serviceType);
+                const service = await this.getService(serviceType);
                 const result = await service.execute(input);
 
                 if (result.success) {

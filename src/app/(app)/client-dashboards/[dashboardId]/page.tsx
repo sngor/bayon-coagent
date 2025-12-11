@@ -53,7 +53,7 @@ import {
     deleteDashboard,
 } from '@/features/client-dashboards/actions/client-dashboard-actions';
 import { generateClientNudges, type ClientNudge } from '@/features/client-dashboards/actions/client-nudge-actions';
-import type { PropertyValuationOutput } from '@/aws/bedrock/flows/property-valuation';
+import type { PropertyValuationOutput } from '@/aws/bedrock/flows';
 
 import {
     Select,

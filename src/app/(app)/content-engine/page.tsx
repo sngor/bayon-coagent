@@ -83,7 +83,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { type GenerateSocialMediaPostOutput } from '@/aws/bedrock/flows/generate-social-media-post';
+import { type GenerateSocialMediaPostOutput } from '@/aws/bedrock/flows';
 import { useWebAI } from '@/hooks/useWebAI';
 import {
   Accordion,
@@ -92,7 +92,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { useUser } from '@/aws/auth';
-import type { Project } from '@/lib/types/common/common';
+import type { Project } from '@/lib/types/common';
 import { cn } from '@/lib/utils/common';
 import { StandardErrorDisplay } from '@/components/standard/error-display';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -526,7 +526,7 @@ export default function ContentEnginePage() {
       if (tab === 'blog-post') {
         setBlogTopic(topicFromSession);
       } else if (tab === 'social') {
-        setSocialPostContent(prevState => ({ ...prevState!, topic: topicFromSession }));
+        setSocialPostContent((prevState: any) => ({ ...prevState!, topic: topicFromSession }));
       }
       sessionStorage.removeItem('genkit-topic');
     }
@@ -925,9 +925,9 @@ export default function ContentEnginePage() {
                       name="location"
                       placeholder="e.g., Seattle, WA"
                     />
-                    {marketUpdateState.errors?.location && (
+                    {(marketUpdateState.errors as any)?.location && (
                       <p className="text-sm text-destructive">
-                        {marketUpdateState.errors.location[0]}
+                        {(marketUpdateState.errors as any).location[0]}
                       </p>
                     )}
                   </div>
@@ -938,9 +938,9 @@ export default function ContentEnginePage() {
                       name="timePeriod"
                       type="date"
                     />
-                    {marketUpdateState.errors?.timePeriod && (
+                    {(marketUpdateState.errors as any)?.timePeriod && (
                       <p className="text-sm text-destructive">
-                        {marketUpdateState.errors.timePeriod[0]}
+                        {(marketUpdateState.errors as any).timePeriod[0]}
                       </p>
                     )}
                   </div>

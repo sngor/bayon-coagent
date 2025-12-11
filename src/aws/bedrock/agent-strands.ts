@@ -223,7 +223,7 @@ Prioritize insights that have proven valuable in similar past analyses.`,
 
                 // Keep only top 10 successful approaches
                 pattern.successfulApproaches = pattern.successfulApproaches
-                    .sort((a, b) => b.confidence - a.confidence)
+                    .sort((a: any, b: any) => b.confidence - a.confidence)
                     .slice(0, 10);
             }
 
@@ -506,7 +506,7 @@ Provide detailed analysis of personalization applied and quality assessment.`,
 
                 // Keep only top 20 successful patterns
                 brandPattern.successfulPatterns = brandPattern.successfulPatterns
-                    .sort((a, b) => b.qualityScore - a.qualityScore)
+                    .sort((a: any, b: any) => b.qualityScore - a.qualityScore)
                     .slice(0, 20);
             }
 
@@ -606,7 +606,7 @@ export class MarketForecasterStrand {
             )
             .slice(0, 10)
             .map(task => ({
-                predictions: task.output.predictions,
+                predictions: task.output?.predictions || [],
                 timeframe: task.input.timeframe,
                 timestamp: task.timestamp,
             }));

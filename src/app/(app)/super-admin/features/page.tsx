@@ -127,7 +127,7 @@ export default function AdminFeaturesPage() {
     const totalCount = coreFeatures.length;
     const activePercentage = totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 0;
 
-    const handleCreate = async (formData: FormData) => {
+    const handleCreate = (formData: FormData) => {
         startTransition(async () => {
             const result = await createFeatureAction(null, formData);
             if (result.message === 'success') {
@@ -139,7 +139,7 @@ export default function AdminFeaturesPage() {
         });
     };
 
-    const handleUpdate = async (formData: FormData) => {
+    const handleUpdate = (formData: FormData) => {
         startTransition(async () => {
             const result = await updateFeatureAction(null, formData);
             if (result.message === 'success') {

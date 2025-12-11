@@ -33,7 +33,7 @@ export interface MetricConfig {
     getSubtitleIcon?: (stats: AdminDashboardStats) => typeof Users;
     getSubtitleColor?: (stats: AdminDashboardStats) => string;
     getActionLabel?: (stats: AdminDashboardStats) => string;
-    getActionHref?: (stats: AdminDashboardStats) => string;
+    getActionHref?: (stats: AdminDashboardStats) => string | undefined;
     getActionColor?: (stats: AdminDashboardStats) => string;
     requiresRole?: 'superadmin';
 }

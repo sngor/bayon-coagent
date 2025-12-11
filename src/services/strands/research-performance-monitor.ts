@@ -33,7 +33,7 @@ class ResearchPerformanceMonitor {
         const metric: PerformanceMetrics = {
             requestId,
             userId,
-            topic: topic.substring(0, 100), // Truncate for storage
+            topic: topic.length > 100 ? topic.substring(0, 100) : topic, // Truncate for storage
             startTime: Date.now(),
             success: false,
             source: 'strands',
@@ -148,7 +148,7 @@ class ResearchPerformanceMonitor {
                 return;
             }
 
-            const { CloudWatchClient, PutMetricDataCommand } = await import('@aws-sdk/client-cloudwatch');
+            const { CloudWatchClient, PutMetricDataCommand, StandardUnit } = await import('@aws-sdk/client-cloudwatch');
 
             const cloudwatch = new CloudWatchClient({
                 region: process.env.AWS_REGION || 'us-east-2',
@@ -158,7 +158,7 @@ class ResearchPerformanceMonitor {
                 {
                     MetricName: 'ResearchRequestDuration',
                     Value: metric.duration!,
-                    Unit: 'Milliseconds',
+                    Unit: StandardUnit.Milliseconds,
                     Timestamp: new Date(metric.startTime),
                     Dimensions: [
                         { Name: 'Source', Value: metric.source },
@@ -169,7 +169,7 @@ class ResearchPerformanceMonitor {
                 {
                     MetricName: 'ResearchRequestCount',
                     Value: 1,
-                    Unit: 'Count',
+                    Unit: StandardUnit.Count,
                     Timestamp: new Date(metric.startTime),
                     Dimensions: [
                         { Name: 'Source', Value: metric.source },
@@ -181,7 +181,7 @@ class ResearchPerformanceMonitor {
                 {
                     MetricName: 'ResearchErrorRate',
                     Value: metric.success ? 0 : 1,
-                    Unit: 'Count',
+                    Unit: StandardUnit.Count,
                     Timestamp: new Date(metric.startTime),
                     Dimensions: [
                         { Name: 'Source', Value: metric.source },
@@ -195,7 +195,8 @@ class ResearchPerformanceMonitor {
                 metricData.push({
                     MetricName: 'CacheHitRate',
                     Value: metric.cacheHit ? 1 : 0,
-                    Unit: 'Count',
+                    Unit: StandardUnit.Count,
+                    Timestamp: new Date(metric.startTime),
                     Dimensions: [{ Name: 'Source', Value: metric.source }],
                 });
             }
@@ -205,7 +206,8 @@ class ResearchPerformanceMonitor {
                 metricData.push({
                     MetricName: 'ReportLength',
                     Value: metric.reportLength,
-                    Unit: 'Count',
+                    Unit: StandardUnit.Count,
+                    Timestamp: new Date(metric.startTime),
                     Dimensions: [{ Name: 'Source', Value: metric.source }],
                 });
             }
@@ -214,7 +216,8 @@ class ResearchPerformanceMonitor {
                 metricData.push({
                     MetricName: 'CitationCount',
                     Value: metric.citationCount,
-                    Unit: 'Count',
+                    Unit: StandardUnit.Count,
+                    Timestamp: new Date(metric.startTime),
                     Dimensions: [{ Name: 'Source', Value: metric.source }],
                 });
             }

@@ -251,11 +251,9 @@ Market Outlook:
             const timestamp = new Date().toISOString();
             const contentId = `content_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-            const contentItem = {
-                PK: `USER#${userId}`,
-                SK: `CONTENT#${contentId}`,
-                GSI1PK: `USER#${userId}`,
-                GSI1SK: `CONTENT#${timestamp}`,
+            const pk = `USER#${userId}`;
+            const sk = `CONTENT#${contentId}`;
+            const contentData = {
                 id: contentId,
                 userId,
                 type: 'content',
@@ -268,7 +266,10 @@ Market Outlook:
                 source: 'content-studio-agent'
             };
 
-            await repository.create(contentItem);
+            await repository.create(pk, sk, 'SavedContent', contentData, {
+                GSI1PK: `USER#${userId}`,
+                GSI1SK: `CONTENT#${timestamp}`
+            });
 
             return `✅ Content saved to library! Content ID: ${contentId}`;
         } catch (error) {

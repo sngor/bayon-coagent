@@ -6,7 +6,8 @@ on:
 jobs:
     test-dev:
         runs-on: ubuntu-latest
-        environment: development
+        environment:
+            name: development
         steps:
             - name: Test Development Environment
               run: |
@@ -20,7 +21,8 @@ jobs:
 
     test-staging:
         runs-on: ubuntu-latest
-        environment: staging
+        environment:
+            name: staging
         needs: test-dev
         steps:
             - name: Test Staging Environment
@@ -37,7 +39,8 @@ jobs:
 
     test-prod:
         runs-on: ubuntu-latest
-        environment: production
+        environment:
+            name: production
         needs: test-staging
         steps:
             - name: Test Production Environment

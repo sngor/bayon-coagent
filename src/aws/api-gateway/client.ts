@@ -156,7 +156,7 @@ export class ApiGatewayClient {
      * Build request headers with defaults
      */
     private buildHeaders(customHeaders?: Record<string, string>): Record<string, string> {
-        const defaultHeaders = {
+        const defaultHeaders: Record<string, string> = {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'X-Trace-Id': this.generateTraceId(),

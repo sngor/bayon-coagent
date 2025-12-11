@@ -2282,3 +2282,16 @@ export function createGSIKeys(
 
   return keys;
 }
+
+// ==================== Alias Functions for Compatibility ====================
+
+/**
+ * Alias functions for backward compatibility
+ */
+export const getTestimonialKeys = getTestimonialRequestKeys;
+export const getClientDashboardKeys = getUserClientDashboardKeys;
+export const getSecuredLinkKeys = getUserSecuredLinkKeys;
+export const getDashboardAnalyticsKeys = getUserDashboardAnalyticsKeys;
+export const getCMAReportKeys = getUserCMAReportKeys;
+export const getDashboardDocumentKeys = getUserDashboardDocumentKeys;
+export const getDocumentDownloadLogKeys = getUserDocumentDownloadLogKeys;

@@ -1,6 +1,6 @@
 'use client';
 
-import { StandardPageLayout } from '@/components/standard';
+import { StandardPageLayout } from '@/components/standard/page-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnimatedChart } from '@/components/ui/animated-chart';
 
@@ -47,6 +47,12 @@ export default function AnimatedChartDemoPage() {
                             dataKey="value"
                             xAxisKey="month"
                             height={300}
+                            config={{
+                                value: {
+                                    label: "Value",
+                                    color: "hsl(var(--chart-1))",
+                                },
+                            }}
                         />
                     </CardContent>
                 </Card>
@@ -63,6 +69,12 @@ export default function AnimatedChartDemoPage() {
                             dataKey="value"
                             xAxisKey="name"
                             height={300}
+                            config={{
+                                value: {
+                                    label: "Value",
+                                    color: "hsl(var(--chart-2))",
+                                },
+                            }}
                         />
                     </CardContent>
                 </Card>
@@ -79,6 +91,16 @@ export default function AnimatedChartDemoPage() {
                             dataKey="views"
                             xAxisKey="date"
                             height={300}
+                            config={{
+                                views: {
+                                    label: "Views",
+                                    color: "hsl(var(--chart-3))",
+                                },
+                                clicks: {
+                                    label: "Clicks",
+                                    color: "hsl(var(--chart-4))",
+                                },
+                            }}
                         />
                     </CardContent>
                 </Card>

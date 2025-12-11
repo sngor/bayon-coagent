@@ -32,7 +32,7 @@ import {
     getPendingInvitationsAction,
     cancelInvitationAction
 } from '@/features/admin/actions/admin-actions';
-import { Invitation } from '@/lib/organization-types';
+import { Invitation } from '@/lib/types/organization-types';
 
 interface TeamMember {
     id: string;

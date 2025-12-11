@@ -12,7 +12,7 @@
  */
 
 import { DynamoDBRepository } from '@/aws/dynamodb/repository';
-import { getOnboardingStateKeys } from '@/aws/dynamodb/keys';
+import { getOnboardingStateKeys } from '@/aws/dynamodb';
 import type { DynamoDBItem } from '@/aws/dynamodb/types';
 import type {
     OnboardingState,

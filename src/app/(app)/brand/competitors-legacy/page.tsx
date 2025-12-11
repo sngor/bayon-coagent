@@ -36,7 +36,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/common';
 import { ArrowUp, ArrowDown, Minus, Star, PlusCircle, Sparkles, Loader2, Search } from 'lucide-react';
-import type { Competitor, KeywordRanking, Profile, Review } from '@/lib/types/common/common';
+import type { Review } from '@/lib/types/common/common';
+import type { KeywordRanking, Profile, Competitor } from '@/lib/types/common';
 import { useUser } from '@/aws/auth';
 import { useItem, useQuery } from '@/aws/dynamodb/hooks';
 import { getProfileKeys } from '@/aws/dynamodb/keys';
@@ -47,6 +48,16 @@ import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+
+// Type for competitor suggestions from AI flow
+type CompetitorSuggestion = {
+  name: string;
+  agency: string;
+  reviewCount: number;
+  avgRating: number;
+  socialFollowers: number;
+  domainAuthority: number;
+};
 
 const chartConfig = {
   reviewCount: {
@@ -61,15 +72,6 @@ const chartConfig = {
     color: 'hsl(var(--muted))',
   },
 };
-
-type CompetitorSuggestion = {
-  name: string;
-  agency: string;
-  reviewCount: number;
-  avgRating: number;
-  socialFollowers: number;
-  domainAuthority: number;
-}
 
 type FindCompetitorsState = {
   message: string;
@@ -124,7 +126,10 @@ export default function CompetitiveAnalysisPage() {
   const [selectedCompetitor, setSelectedCompetitor] = useState<Competitor | null>(null);
 
   const [findState, findFormAction] = useActionState(findCompetitorsAction, initialFindCompetitorsState);
-  const [rankingState, rankingFormAction] = useActionState(getKeywordRankingsAction, initialKeywordRankingsState);
+  const [rankingState, rankingFormAction] = useActionState(
+    (state: any, payload: FormData) => getKeywordRankingsAction(state, payload),
+    initialKeywordRankingsState
+  );
 
   // Memoize DynamoDB keys
   const profilePK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
@@ -147,10 +152,10 @@ export default function CompetitiveAnalysisPage() {
       id: user.id,
       name: agentProfileData.name || 'You',
       agency: agentProfileData.agencyName || 'Your Agency',
-      reviewCount: agentProfileData.reviewCount || 0,
-      avgRating: agentProfileData.avgRating || 0,
-      socialFollowers: agentProfileData.socialFollowers || 0,
-      domainAuthority: agentProfileData.domainAuthority || 0,
+      reviewCount: 0, // Profile doesn't have reviewCount, would need to be fetched separately
+      avgRating: 0, // Profile doesn't have avgRating, would need to be calculated
+      socialFollowers: 0, // Profile doesn't have socialFollowers, would need to be fetched
+      domainAuthority: 0, // Profile doesn't have domainAuthority, would need to be calculated
       isYou: true,
     };
   }, [agentProfileData, user]);
@@ -190,8 +195,8 @@ export default function CompetitiveAnalysisPage() {
     try {
       const result = await saveCompetitorAction(
         suggestion.name,
-        suggestion.website,
-        suggestion.description
+        '', // website not provided by AI flow
+        suggestion.agency // use agency as description
       );
 
       if (result.message === 'Competitor saved successfully') {
@@ -435,7 +440,7 @@ export default function CompetitiveAnalysisPage() {
               <div className="space-y-2">
                 <Label htmlFor="keyword">Keyword to Analyze</Label>
                 <Input id="keyword" name="keyword" placeholder="e.g., best real estate agent Seattle" />
-                {rankingState.errors?.keyword && <p className="text-sm text-destructive">{rankingState.errors.keyword[0]}</p>}
+                {(rankingState.errors as any)?.keyword && <p className="text-sm text-destructive">{(rankingState.errors as any).keyword[0]}</p>}
               </div>
               <input type="hidden" name="location" value={agentProfileData?.address || ''} />
               <TrackRankingsButton disabled={isRankingDisabled} />

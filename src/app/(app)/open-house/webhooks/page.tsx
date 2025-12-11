@@ -1,4 +1,7 @@
 import { Suspense } from 'react';
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
 import { WebhookConfigurationComponent } from '@/components/open-house/webhook-configuration';
 import { WebhookDeliveryLogComponent } from '@/components/open-house/webhook-delivery-log';
 import {

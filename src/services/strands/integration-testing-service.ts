@@ -1150,11 +1150,9 @@ class IntegrationTestingService {
             const repository = getRepository();
             const timestamp = new Date().toISOString();
 
-            const testItem = {
-                PK: `USER#${config.userId}`,
-                SK: `TEST#${testId}`,
-                GSI1PK: `USER#${config.userId}`,
-                GSI1SK: `TEST#${timestamp}`,
+            const pk = `USER#${config.userId}`;
+            const sk = `TEST#${testId}`;
+            const testData = {
                 id: testId,
                 userId: config.userId,
                 type: 'test-result',
@@ -1172,7 +1170,10 @@ class IntegrationTestingService {
                 source: 'integration-testing-service'
             };
 
-            await repository.create(testItem);
+            await repository.create(pk, sk, 'AnalyticsEvent', testData, {
+                GSI1PK: `USER#${config.userId}`,
+                GSI1SK: `TEST#${timestamp}`
+            });
         } catch (error) {
             console.error('Failed to save test results:', error);
             // Don't fail the test if saving fails

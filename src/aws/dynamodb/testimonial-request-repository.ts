@@ -6,11 +6,9 @@
  */
 
 import { DynamoDBRepository } from './repository';
-import { getTestimonialRequestKeys } from './keys';
+import { getTestimonialRequestKeys } from './index';
 import { QueryOptions, QueryResult } from './types';
 import { TestimonialRequest } from '@/lib/types/common/common';
-import { randomBytes } from 'crypto';
-
 const repository = new DynamoDBRepository();
 
 /**
@@ -18,7 +16,12 @@ const repository = new DynamoDBRepository();
  * @returns A unique token string
  */
 function generateSubmissionToken(): string {
-    return randomBytes(32).toString('hex');
+    // Generate a random token using timestamp and random values
+    const timestamp = Date.now().toString(36);
+    const randomPart = Math.random().toString(36).substring(2, 15) +
+        Math.random().toString(36).substring(2, 15) +
+        Math.random().toString(36).substring(2, 15);
+    return `${timestamp}_${randomPart}`;
 }
 
 /**

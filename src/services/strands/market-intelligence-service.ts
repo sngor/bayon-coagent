@@ -404,11 +404,9 @@ class MarketIntelligenceTools {
             const timestamp = new Date().toISOString();
             const reportId = `market_analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-            const reportItem = {
-                PK: `USER#${userId}`,
-                SK: `REPORT#${reportId}`,
-                GSI1PK: `USER#${userId}`,
-                GSI1SK: `REPORT#${timestamp}`,
+            const pk = `USER#${userId}`;
+            const sk = `REPORT#${reportId}`;
+            const reportData = {
                 id: reportId,
                 userId,
                 type: 'market-analysis',
@@ -421,7 +419,10 @@ class MarketIntelligenceTools {
                 source: 'market-intelligence-agent'
             };
 
-            await repository.create(reportItem);
+            await repository.create(pk, sk, 'ResearchReport', reportData, {
+                GSI1PK: `USER#${userId}`,
+                GSI1SK: `REPORT#${timestamp}`
+            });
 
             return `✅ Analysis saved to library! Report ID: ${reportId}`;
         } catch (error) {

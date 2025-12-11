@@ -6,7 +6,7 @@
  */
 
 import { DynamoDBRepository } from './repository';
-import { getSavedKeywordKeys } from './keys';
+import { getSavedKeywordKeys } from './index';
 import type { SavedKeyword } from '@/lib/types/common';
 
 export class KeywordRepository {

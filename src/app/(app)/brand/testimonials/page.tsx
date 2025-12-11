@@ -10,7 +10,7 @@ import { StandardLoadingSpinner } from '@/components/standard';
 import { GradientText, Typewriter } from '@/components/ui/text-animations';
 import { CardGradientMesh } from '@/components/ui/gradient-mesh';
 
-import type { Testimonial, TestimonialRequest } from '@/lib/types/common/common';
+import type { Testimonial, TestimonialRequest } from '@/lib/types/common';
 import { TestimonialList } from '@/components/testimonial-list';
 import { TestimonialForm, type TestimonialFormData } from '@/components/testimonial-form';
 import { TestimonialRequestForm } from '@/components/testimonial-request-form';

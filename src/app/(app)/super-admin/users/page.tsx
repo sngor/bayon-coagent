@@ -540,16 +540,40 @@ export default function AdminUsersPage() {
                         </div>
 
                         <TabsContent value="all" className="space-y-4">
-                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} onDisableUser={handleDisableUser} onImpersonate={handleImpersonate} />
+                            <UserTableComponent
+                                users={filteredUsers}
+                                loading={loading}
+                                onEditRole={handleEditRole}
+                                onDisableUser={handleDisableUser}
+                                onImpersonate={handleImpersonate}
+                            />
                         </TabsContent>
                         <TabsContent value="active" className="space-y-4">
-                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} onDisableUser={handleDisableUser} onImpersonate={handleImpersonate} />
+                            <UserTableComponent
+                                users={filteredUsers}
+                                loading={loading}
+                                onEditRole={handleEditRole}
+                                onDisableUser={handleDisableUser}
+                                onImpersonate={handleImpersonate}
+                            />
                         </TabsContent>
                         <TabsContent value="inactive" className="space-y-4">
-                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} onDisableUser={handleDisableUser} onImpersonate={handleImpersonate} />
+                            <UserTableComponent
+                                users={filteredUsers}
+                                loading={loading}
+                                onEditRole={handleEditRole}
+                                onDisableUser={handleDisableUser}
+                                onImpersonate={handleImpersonate}
+                            />
                         </TabsContent>
                         <TabsContent value="premium" className="space-y-4">
-                            <UserTable users={filteredUsers} loading={loading} onEditRole={handleEditRole} onDisableUser={handleDisableUser} onImpersonate={handleImpersonate} />
+                            <UserTableComponent
+                                users={filteredUsers}
+                                loading={loading}
+                                onEditRole={handleEditRole}
+                                onDisableUser={handleDisableUser}
+                                onImpersonate={handleImpersonate}
+                            />
                         </TabsContent>
                     </Tabs>
                 </CardContent>
@@ -763,7 +787,7 @@ export default function AdminUsersPage() {
     );
 }
 
-function UserTable({ users, loading, onEditRole, onDisableUser, onImpersonate }: {
+function UserTableComponent({ users, loading, onEditRole, onDisableUser, onImpersonate }: {
     users: any[],
     loading: boolean,
     onEditRole: (user: any) => void,

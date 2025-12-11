@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Profile } from '@/lib/types/common/common';
+import type { Profile } from '@/lib/types/common';
 import { JsonLdDisplay } from '@/components/json-ld-display';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
@@ -137,7 +137,7 @@ function ProfessionalDetailsSection({ profile, onInputChange }: { profile: Parti
             <StandardFormField
                 label="Certifications"
                 id="certifications"
-                hint="Add your certifications (e.g., CRS, ABR, GRI)"
+                helpText="Add your certifications (e.g., CRS, ABR, GRI)"
             >
                 <Input
                     id="certifications"
@@ -175,7 +175,7 @@ function BioSection({ profile, onInputChange, bioFormAction }: { profile: Partia
             <StandardFormField
                 label=""
                 id="bio"
-                hint={isGenerateDisabled ? "Complete your name, agency, and years of experience to enable AI bio generation" : undefined}
+                helpText={isGenerateDisabled ? "Complete your name, agency, and years of experience to enable AI bio generation" : undefined}
             >
                 <Textarea
                     id="bio"
@@ -224,14 +224,14 @@ function ContactSection({ profile, onInputChange }: { profile: Partial<Profile>,
                 label="Primary Business Address"
                 id="address"
                 required
-                hint="This helps clients find you and improves your local search ranking"
+                helpText="This helps clients find you and improves your local search ranking"
             >
                 <Input id="address" name="address" value={profile.address || ''} onChange={onInputChange} placeholder="123 Main St, Seattle, WA 98101" />
             </StandardFormField>
             <StandardFormField
                 label="Zillow Email"
                 id="zillowEmail"
-                hint="We'll use this to import your Zillow reviews"
+                helpText="We'll use this to import your Zillow reviews"
             >
                 <Input id="zillowEmail" name="zillowEmail" type="email" value={profile.zillowEmail || ''} onChange={onInputChange} placeholder="your-email@zillow-premier-agent.com" />
             </StandardFormField>

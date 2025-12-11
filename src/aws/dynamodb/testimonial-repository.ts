@@ -6,7 +6,7 @@
  */
 
 import { DynamoDBRepository } from './repository';
-import { getTestimonialKeys } from './keys';
+import { getTestimonialKeys } from './index';
 import { QueryOptions, QueryResult } from './types';
 import { Testimonial } from '@/lib/types/common/common';
 

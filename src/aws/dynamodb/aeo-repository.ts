@@ -11,7 +11,7 @@ import {
     getAEORecommendationKeys,
     getAEOAnalysisKeys,
     getAEOCompetitorScoreKeys,
-} from './keys';
+} from './index';
 import type {
     AEOScore,
     AEOMention,

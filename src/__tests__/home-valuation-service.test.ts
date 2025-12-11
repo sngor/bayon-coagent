@@ -89,10 +89,11 @@ describe('Home Valuation Service - Core Functionality', () => {
     describe('Data Structures', () => {
         it('should support HomeValuation entity type', async () => {
             // Verify HomeValuation is a valid entity type
-            const { EntityType } = await import('@/aws/dynamodb/types');
+            const types = await import('@/aws/dynamodb/types');
 
             // The EntityType should include 'HomeValuation'
             // This is verified by TypeScript compilation
+            expect(typeof types).toBe('object');
             expect(true).toBe(true);
         });
     });

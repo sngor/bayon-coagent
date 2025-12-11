@@ -34,7 +34,7 @@ export * from './collaboration';
 export * from './learning';
 
 // Specialization Layer
-export * from './specialization';
+// export * from './specialization'; // Commented out due to PerformanceSnapshot conflict
 
 // Intelligence Layer
 export * from './intelligence';
@@ -51,8 +51,8 @@ export * from './memory';
 // Quality Assurance Layer
 export * from './quality-assurance';
 
-// Analytics Layer
-export * from './analytics';
+// Analytics Layer  
+// export * from './analytics'; // Commented out due to PerformanceMetrics conflict
 
 // Routing Layer
 export * from './routing';

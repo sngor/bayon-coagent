@@ -41,7 +41,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/common';
 import { Star, PlusCircle, Search } from 'lucide-react';
-import type { Competitor, KeywordRanking, Profile, Review, AIVisibilityScore, AIMention } from '@/lib/types/common/common';
+import type { Review, AIVisibilityScore, AIMention } from '@/lib/types/common/common';
+import type { KeywordRanking, Profile, Competitor } from '@/lib/types/common';
 import { useUser } from '@/aws/auth';
 import { useItem, useQuery } from '@/aws/dynamodb/hooks';
 import { CompetitorForm } from '@/components/competitor-form';
@@ -343,7 +344,7 @@ export default function CompetitiveAnalysisPage() {
                   <StandardFormField
                     label="Your Agent Name"
                     id="name"
-                    hint="Enter your full name"
+                    helpText="Enter your full name"
                     error={(findState.errors as any)?.name?.[0]}
                   >
                     <Input
@@ -357,7 +358,7 @@ export default function CompetitiveAnalysisPage() {
                   <StandardFormField
                     label="Your Agency Name"
                     id="agencyName"
-                    hint="Enter your agency or brokerage name"
+                    helpText="Enter your agency or brokerage name"
                     error={(findState.errors as any)?.agencyName?.[0]}
                   >
                     <Input
@@ -373,7 +374,7 @@ export default function CompetitiveAnalysisPage() {
                 <StandardFormField
                   label="Your Location"
                   id="address"
-                  hint="Enter your city and state (e.g., Seattle, WA)"
+                  helpText="Enter your city and state (e.g., Seattle, WA)"
                   error={(findState.errors as any)?.address?.[0]}
                 >
                   <Input
@@ -570,7 +571,7 @@ export default function CompetitiveAnalysisPage() {
                       label="Keyword to Analyze"
                       id="keyword"
                       error={(rankingState.errors as any)?.keyword?.[0]}
-                      hint="Enter a local search term to analyze"
+                      helpText="Enter a local search term to analyze"
                     >
                       <Input id="keyword" name="keyword" placeholder="e.g., best real estate agent Seattle" />
                     </StandardFormField>

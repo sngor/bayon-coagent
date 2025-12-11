@@ -328,9 +328,19 @@ class BrandStrategyTools {
      * Generate SWOT analysis
      */
     static generateSWOTAnalysis(
-        agentProfile: any,
+        agentProfile: {
+            experience?: number;
+            specialization?: string;
+            location: string;
+            name: string;
+        },
         competitiveData: string,
-        marketPosition: any
+        marketPosition: {
+            currentPosition: string;
+            targetPosition: string;
+            differentiators: string[];
+            opportunities: string[];
+        }
     ): {
         strengths: string[];
         weaknesses: string[];
@@ -377,8 +387,18 @@ class BrandStrategyTools {
      */
     static createActionPlan(
         strategyType: string,
-        marketPosition: any,
-        contentStrategy: any
+        marketPosition: {
+            currentPosition: string;
+            targetPosition: string;
+            differentiators: string[];
+            opportunities: string[];
+        },
+        contentStrategy: {
+            contentPillars: string[];
+            contentTypes: string[];
+            publishingSchedule: string;
+            keyMessages: string[];
+        }
     ): Array<{
         phase: string;
         timeline: string;
@@ -446,7 +466,7 @@ class BrandStrategyTools {
      * Save strategy to user's library
      */
     static async saveStrategyToLibrary(
-        strategy: any,
+        strategy: BrandStrategyOutput,
         strategyType: string,
         userId: string,
         agentName: string
@@ -456,11 +476,9 @@ class BrandStrategyTools {
             const timestamp = new Date().toISOString();
             const strategyId = `brand_strategy_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-            const strategyItem = {
-                PK: `USER#${userId}`,
-                SK: `STRATEGY#${strategyId}`,
-                GSI1PK: `USER#${userId}`,
-                GSI1SK: `STRATEGY#${timestamp}`,
+            const pk = `USER#${userId}`;
+            const sk = `STRATEGY#${strategyId}`;
+            const strategyData = {
                 id: strategyId,
                 userId,
                 type: 'brand-strategy',
@@ -473,7 +491,10 @@ class BrandStrategyTools {
                 source: 'brand-strategy-agent'
             };
 
-            await repository.create(strategyItem);
+            await repository.create(pk, sk, 'MarketingPlan', strategyData, {
+                GSI1PK: `USER#${userId}`,
+                GSI1SK: `STRATEGY#${timestamp}`
+            });
 
             return `✅ Strategy saved to library! Strategy ID: ${strategyId}`;
         } catch (error) {
@@ -505,7 +526,12 @@ The ${location} real estate market features a diverse competitive landscape with
 `;
     }
 
-    private static assessCurrentPosition(agentProfile: any): string {
+    private static assessCurrentPosition(agentProfile: {
+        experience?: number;
+        specialization?: string;
+        location: string;
+        name: string;
+    }): string {
         const { experience, specialization } = agentProfile;
 
         if (!experience || experience < 2) {
@@ -519,7 +545,12 @@ The ${location} real estate market features a diverse competitive landscape with
         }
     }
 
-    private static identifyTargetPosition(agentProfile: any, competitiveData: string): string {
+    private static identifyTargetPosition(agentProfile: {
+        experience?: number;
+        specialization?: string;
+        location: string;
+        name: string;
+    }, competitiveData: string): string {
         const { specialization, location } = agentProfile;
 
         if (specialization?.includes('luxury')) {
@@ -533,7 +564,12 @@ The ${location} real estate market features a diverse competitive landscape with
         }
     }
 
-    private static generateDifferentiators(agentProfile: any): string[] {
+    private static generateDifferentiators(agentProfile: {
+        experience?: number;
+        specialization?: string;
+        location: string;
+        name: string;
+    }): string[] {
         return [
             "Personalized service with dedicated attention to each client",
             "Deep local market knowledge and community connections",
@@ -544,7 +580,12 @@ The ${location} real estate market features a diverse competitive landscape with
         ];
     }
 
-    private static identifyOpportunities(agentProfile: any, competitiveData: string): string[] {
+    private static identifyOpportunities(agentProfile: {
+        experience?: number;
+        specialization?: string;
+        location: string;
+        name: string;
+    }, competitiveData: string): string[] {
         return [
             "Capture growing first-time buyer market segment",
             "Develop niche expertise in underserved market areas",
@@ -622,11 +663,41 @@ class BrandStrategyTemplates {
     static generateMarketingPlan(data: {
         agentName: string;
         location: string;
-        marketPosition: any;
-        competitiveAnalysis: any;
-        contentStrategy: any;
-        actionPlan: any[];
-        swotAnalysis: any;
+        marketPosition: {
+            currentPosition: string;
+            targetPosition: string;
+            differentiators: string[];
+            opportunities: string[];
+        };
+        competitiveAnalysis: {
+            directCompetitors: Array<{
+                name: string;
+                strengths: string[];
+                weaknesses: string[];
+                marketShare?: string;
+            }>;
+            marketGaps: string[];
+            competitiveAdvantages: string[];
+        };
+        contentStrategy: {
+            contentPillars: string[];
+            contentTypes: string[];
+            publishingSchedule: string;
+            keyMessages: string[];
+        };
+        actionPlan: Array<{
+            phase: string;
+            timeline: string;
+            actions: string[];
+            priority: 'high' | 'medium' | 'low';
+            resources?: string;
+        }>;
+        swotAnalysis: {
+            strengths: string[];
+            weaknesses: string[];
+            opportunities: string[];
+            threats: string[];
+        };
     }): string {
         return `# Comprehensive Marketing Plan: ${data.agentName}
 
@@ -642,13 +713,13 @@ This comprehensive marketing plan positions ${data.agentName} as ${data.marketPo
 
 ## Key Differentiators
 
-${data.marketPosition.differentiators.map(diff => `• ${diff}`).join('\n')}
+${data.marketPosition.differentiators.map((diff: string) => `• ${diff}`).join('\n')}
 
 ## Competitive Landscape Analysis
 
 ### Direct Competitors
 
-${data.competitiveAnalysis.directCompetitors.map(comp => `
+${data.competitiveAnalysis.directCompetitors.map((comp: any) => `
 **${comp.name}** ${comp.marketShare ? `(${comp.marketShare} market share)` : ''}
 - *Strengths:* ${comp.strengths.join(', ')}
 - *Weaknesses:* ${comp.weaknesses.join(', ')}
@@ -656,39 +727,39 @@ ${data.competitiveAnalysis.directCompetitors.map(comp => `
 
 ### Market Gaps & Opportunities
 
-${data.competitiveAnalysis.marketGaps.map(gap => `• ${gap}`).join('\n')}
+${data.competitiveAnalysis.marketGaps.map((gap: string) => `• ${gap}`).join('\n')}
 
 ### Our Competitive Advantages
 
-${data.competitiveAnalysis.competitiveAdvantages.map(adv => `• ${adv}`).join('\n')}
+${data.competitiveAnalysis.competitiveAdvantages.map((adv: string) => `• ${adv}`).join('\n')}
 
 ## SWOT Analysis
 
 ### Strengths
-${data.swotAnalysis.strengths.map(s => `• ${s}`).join('\n')}
+${data.swotAnalysis.strengths.map((s: string) => `• ${s}`).join('\n')}
 
 ### Weaknesses
-${data.swotAnalysis.weaknesses.map(w => `• ${w}`).join('\n')}
+${data.swotAnalysis.weaknesses.map((w: string) => `• ${w}`).join('\n')}
 
 ### Opportunities
-${data.swotAnalysis.opportunities.map(o => `• ${o}`).join('\n')}
+${data.swotAnalysis.opportunities.map((o: string) => `• ${o}`).join('\n')}
 
 ### Threats
-${data.swotAnalysis.threats.map(t => `• ${t}`).join('\n')}
+${data.swotAnalysis.threats.map((t: string) => `• ${t}`).join('\n')}
 
 ## Content Marketing Strategy
 
 ### Content Pillars
-${data.contentStrategy.contentPillars.map(pillar => `• ${pillar}`).join('\n')}
+${data.contentStrategy.contentPillars.map((pillar: string) => `• ${pillar}`).join('\n')}
 
 ### Content Types & Distribution
-${data.contentStrategy.contentTypes.map(type => `• ${type}`).join('\n')}
+${data.contentStrategy.contentTypes.map((type: string) => `• ${type}`).join('\n')}
 
 ### Publishing Schedule
 ${data.contentStrategy.publishingSchedule}
 
 ### Key Messages
-${data.contentStrategy.keyMessages.map(msg => `• "${msg}"`).join('\n')}
+${data.contentStrategy.keyMessages.map((msg: string) => `• "${msg}"`).join('\n')}
 
 ## Implementation Roadmap
 
@@ -698,7 +769,7 @@ ${data.actionPlan.map(phase => `
 **Priority:** ${phase.priority.toUpperCase()}
 
 **Key Actions:**
-${phase.actions.map(action => `• ${action}`).join('\n')}
+${phase.actions.map((action: string) => `• ${action}`).join('\n')}
 
 ${phase.resources ? `**Required Resources:** ${phase.resources}` : ''}
 `).join('\n')}
@@ -758,9 +829,28 @@ This marketing plan provides a comprehensive roadmap for establishing ${data.age
     static generateBrandPositioning(data: {
         agentName: string;
         location: string;
-        marketPosition: any;
-        competitiveAnalysis: any;
-        swotAnalysis: any;
+        marketPosition: {
+            currentPosition: string;
+            targetPosition: string;
+            differentiators: string[];
+            opportunities: string[];
+        };
+        competitiveAnalysis: {
+            directCompetitors: Array<{
+                name: string;
+                strengths: string[];
+                weaknesses: string[];
+                marketShare?: string;
+            }>;
+            marketGaps: string[];
+            competitiveAdvantages: string[];
+        };
+        swotAnalysis: {
+            strengths: string[];
+            weaknesses: string[];
+            opportunities: string[];
+            threats: string[];
+        };
     }): string {
         return `# Brand Positioning Strategy: ${data.agentName}
 
@@ -779,14 +869,14 @@ ${data.agentName} is ${data.marketPosition.targetPosition} who delivers ${data.m
 ## Unique Value Proposition
 
 ### Primary Differentiators
-${data.marketPosition.differentiators.map((diff, index) => `${index + 1}. ${diff}`).join('\n')}
+${data.marketPosition.differentiators.map((diff: string, index: number) => `${index + 1}. ${diff}`).join('\n')}
 
 ### Competitive Advantages
-${data.competitiveAnalysis.competitiveAdvantages.slice(0, 3).map((adv, index) => `${index + 1}. ${adv}`).join('\n')}
+${data.competitiveAnalysis.competitiveAdvantages.slice(0, 3).map((adv: string, index: number) => `${index + 1}. ${adv}`).join('\n')}
 
 ## Market Opportunities
 
-${data.marketPosition.opportunities.map(opp => `• ${opp}`).join('\n')}
+${data.marketPosition.opportunities.map((opp: string) => `• ${opp}`).join('\n')}
 
 ## Brand Personality & Voice
 
@@ -874,7 +964,12 @@ ${data.marketPosition.opportunities.map(opp => `• ${opp}`).join('\n')}
     }
 
     // Helper method
-    private static getPositioningGap(marketPosition: any): string {
+    private static getPositioningGap(marketPosition: {
+        currentPosition: string;
+        targetPosition: string;
+        differentiators: string[];
+        opportunities: string[];
+    }): string {
         return "Opportunity to strengthen market presence through enhanced digital marketing, thought leadership content, and strategic community involvement";
     }
 }
@@ -945,7 +1040,7 @@ class BrandStrategyAgent {
 
             // Step 5: Generate SWOT analysis
             let swotAnalysis = undefined;
-            if (input.includeSWOTAnalysis) {
+            if (input.includeSWOTAnalysis && marketPosition) {
                 swotAnalysis = this.tools.generateSWOTAnalysis(
                     {
                         name: input.agentName,
@@ -960,7 +1055,7 @@ class BrandStrategyAgent {
 
             // Step 6: Create action plan
             let actionPlan = undefined;
-            if (input.includeActionPlan) {
+            if (input.includeActionPlan && marketPosition && contentStrategy) {
                 actionPlan = this.tools.createActionPlan(
                     input.strategyType,
                     marketPosition,
@@ -1021,13 +1116,17 @@ class BrandStrategyAgent {
             let strategyId: string | undefined;
             const saveResult = await this.tools.saveStrategyToLibrary(
                 {
+                    success: true,
                     strategy,
                     marketPosition,
                     competitiveAnalysis,
                     contentStrategy,
                     actionPlan,
                     swotAnalysis,
-                    recommendations
+                    recommendations,
+                    userId: input.userId,
+                    timestamp: new Date().toISOString(),
+                    source: 'brand-strategy-service'
                 },
                 input.strategyType,
                 input.userId,
@@ -1094,6 +1193,13 @@ export async function generateMarketingPlan(
         agentName,
         location,
         userId,
+        brandPersonality: 'professional-expert',
+        includeCompetitorAnalysis: true,
+        includeMarketResearch: true,
+        includeContentStrategy: true,
+        includeSWOTAnalysis: true,
+        includeActionPlan: true,
+        targetClientTypes: ['buyers', 'sellers'],
         ...options,
     });
 }
@@ -1109,6 +1215,13 @@ export async function analyzeBrandPositioning(
         agentName,
         location,
         userId,
+        brandPersonality: 'professional-expert',
+        includeCompetitorAnalysis: true,
+        includeMarketResearch: true,
+        includeContentStrategy: true,
+        includeSWOTAnalysis: true,
+        includeActionPlan: true,
+        targetClientTypes: ['buyers', 'sellers'],
         ...options,
     });
 }
@@ -1125,7 +1238,12 @@ export async function analyzeCompetitiveLandscape(
         location,
         userId,
         specialization,
+        brandPersonality: 'professional-expert',
         includeCompetitorAnalysis: true,
         includeMarketResearch: true,
+        includeContentStrategy: true,
+        includeSWOTAnalysis: true,
+        includeActionPlan: true,
+        targetClientTypes: ['buyers', 'sellers'],
     });
 }

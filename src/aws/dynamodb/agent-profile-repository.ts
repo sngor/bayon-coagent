@@ -462,3 +462,13 @@ export function getAgentProfileRepository(): AgentProfileRepository {
 export function resetAgentProfileRepository(): void {
   agentProfileRepositoryInstance = null;
 }
+
+/**
+ * Convenience function to get an agent profile by user ID
+ * @param userId - The user ID to get the profile for
+ * @returns The agent profile or null if not found
+ */
+export async function getAgentProfile(userId: string): Promise<AgentProfile | null> {
+  const repository = getAgentProfileRepository();
+  return await repository.getProfile(userId);
+}
