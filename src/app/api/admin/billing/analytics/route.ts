@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAdminAuth, AuthenticatedRequest } from '@/lib/admin/auth-middleware';
-import { billingService } from '@/services/admin/billing-service';
 import { z } from 'zod';
+
+import { billingService } from '@/services/admin/billing-service';
 
 // Input validation schema
 const analyticsQuerySchema = z.object({

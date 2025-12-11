@@ -36,9 +36,9 @@ export const SUBSCRIPTION_PLANS = {
             'Priority Support',
         ],
     },
-    enterprise: {
-        name: 'Enterprise',
-        priceId: process.env.NEXT_PUBLIC_STRIPE_ENTERPRISE_PRICE_ID || '',
+    omnia: {
+        name: 'Omnia',
+        priceId: process.env.NEXT_PUBLIC_STRIPE_OMNIA_PRICE_ID || '',
         price: 199,
         interval: 'month',
         features: [

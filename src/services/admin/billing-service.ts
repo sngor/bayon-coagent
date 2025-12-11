@@ -16,10 +16,20 @@ import Stripe from 'stripe';
 import { getRepository } from '@/aws/dynamodb/repository';
 import { STRIPE_CONFIG } from '@/lib/constants/stripe-config';
 
-// Initialize Stripe client
-const stripe = new Stripe(STRIPE_CONFIG.secretKey, {
-    apiVersion: '2025-11-17.clover',
-});
+// Lazy initialization of Stripe client
+let stripe: Stripe | null = null;
+
+function getStripeClient(): Stripe {
+    if (!stripe) {
+        if (!STRIPE_CONFIG.secretKey) {
+            throw new Error('Stripe secret key is not configured');
+        }
+        stripe = new Stripe(STRIPE_CONFIG.secretKey, {
+            apiVersion: '2025-11-17.clover',
+        });
+    }
+    return stripe;
+}
 
 export interface BillingDashboardMetrics {
     totalRevenue: number;
@@ -116,6 +126,7 @@ export class BillingService {
         params: Record<string, any> = {}
     ): Promise<Array<any>> {
         try {
+            const stripe = getStripeClient();
             let results;
 
             switch (resourceType) {
