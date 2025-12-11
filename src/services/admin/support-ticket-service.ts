@@ -8,7 +8,7 @@ import { DynamoDBRepository } from '@/aws/dynamodb/repository';
 import {
     getSupportTicketKeys,
     getTicketMessageKeys,
-} from '@/aws/dynamodb/keys';
+} from '@/aws/dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import { QueryCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { getDocumentClient } from '@/aws/dynamodb/client';

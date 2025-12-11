@@ -951,9 +951,9 @@ export default function ContentEnginePage() {
                       name="audience"
                       placeholder="e.g., First-time buyers"
                     />
-                    {marketUpdateState.errors?.audience && (
+                    {(marketUpdateState.errors as any)?.audience && (
                       <p className="text-sm text-destructive">
-                        {marketUpdateState.errors.audience[0]}
+                        {(marketUpdateState.errors as any).audience[0]}
                       </p>
                     )}
                   </div>
@@ -1435,7 +1435,7 @@ export default function ContentEnginePage() {
                       placeholder="e.g., 'The benefits of using a real estate agent for first-time homebuyers'"
                       rows={5}
                       value={socialPostContent?.topic || ''}
-                      onChange={e => setSocialPostContent(prev => ({ ...prev, topic: e.target.value } as SocialPostContentWithTopic))}
+                      onChange={e => setSocialPostContent((prev: any) => ({ ...prev, topic: e.target.value } as SocialPostContentWithTopic))}
                     />
                     {socialState.errors?.topic && (
                       <p className="text-sm text-destructive">
@@ -1522,7 +1522,7 @@ export default function ContentEnginePage() {
                         <CardContent className="pt-6">
                           <Textarea
                             value={socialPostContent.linkedin}
-                            onChange={(e) => setSocialPostContent(prev => ({ ...prev!, linkedin: e.target.value }))}
+                            onChange={(e) => setSocialPostContent((prev: any) => ({ ...prev!, linkedin: e.target.value }))}
                             rows={6}
                             className="w-full h-full font-mono text-sm resize-none"
                           />
@@ -1568,7 +1568,7 @@ export default function ContentEnginePage() {
                         <CardContent className="pt-6">
                           <Textarea
                             value={socialPostContent.facebook}
-                            onChange={(e) => setSocialPostContent(prev => ({ ...prev!, facebook: e.target.value }))}
+                            onChange={(e) => setSocialPostContent((prev: any) => ({ ...prev!, facebook: e.target.value }))}
                             rows={6}
                             className="w-full h-full font-mono text-sm resize-none"
                           />

@@ -7,13 +7,13 @@ import { Home, Bed, Bath, Maximize, MapPin, Phone, Mail } from 'lucide-react';
 import { trackShareEngagementAction } from '@/app/mobile-actions';
 
 interface SharePageProps {
-    params: {
+    params: Promise<{
         shareId: string;
-    };
-    searchParams: {
+    }>;
+    searchParams: Promise<{
         property?: string;
         user?: string;
-    };
+    }>;
 }
 
 async function getShareData(shareId: string, userId?: string) {
@@ -50,8 +50,8 @@ async function getPropertyData(propertyId: string, userId?: string) {
 }
 
 export default async function SharePage({ params, searchParams }: SharePageProps) {
-    const { shareId } = params;
-    const { property: propertyId, user: userId } = searchParams;
+    const { shareId } = await params;
+    const { property: propertyId, user: userId } = await searchParams;
 
     // Track view
     if (userId) {

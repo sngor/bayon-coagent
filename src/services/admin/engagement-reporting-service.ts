@@ -6,7 +6,7 @@
  */
 
 import { DynamoDBRepository } from '@/aws/dynamodb/repository';
-import { getAnalyticsEventKeys, getAggregatedMetricsKeys } from '@/aws/dynamodb/keys';
+import { getAnalyticsEventKeys, getAggregatedMetricsKeys } from '@/aws/dynamodb';
 import { QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { getDocumentClient } from '@/aws/dynamodb/client';
 

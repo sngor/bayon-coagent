@@ -7,7 +7,7 @@
  */
 
 import { DynamoDBRepository } from '@/aws/dynamodb/repository';
-import { getAdminAuditLogKeys } from '@/aws/dynamodb/keys';
+import { getAdminAuditLogKeys } from '@/aws/dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface AuditLogEntry {

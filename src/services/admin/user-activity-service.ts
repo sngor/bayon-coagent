@@ -10,7 +10,7 @@ import {
     getUserActivitySummaryKeys,
     getUserActivityIndexKeys,
     getAnalyticsEventKeys,
-} from '@/aws/dynamodb/keys';
+} from '@/aws/dynamodb';
 import { QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { getDocumentClient } from '@/aws/dynamodb/client';
 import {

@@ -1,28 +1,21 @@
-export interface AdminDashboardStats {
-    totalUsers: number;
-    activeUsers: number;
-    newSignups24h: number;
-    pendingInvitations: number;
-    systemStatus: string;
-    openTickets: number;
-    pendingContent: number;
-    errorRate: number;
-    alerts: AdminAlert[];
-}
-
-export interface AdminAlert {
-    message: string;
-    severity: 'info' | 'warning' | 'critical';
-    action?: {
-        href: string;
-        label: string;
-    };
-}
-
-export interface AdminActivity {
+// Shared types for admin functionality
+export interface Team {
     id: string;
-    description: string;
-    timestamp: string;
-    userId?: string;
-    type: 'user_action' | 'system_event' | 'admin_action';
+    name: string;
+    adminId: string;
+    memberCount?: number;
+    createdAt: string;
+}
+
+export interface User {
+    id: string;
+    name?: string;
+    email: string;
+    role: 'admin' | 'super_admin' | 'user';
+}
+
+export interface AdminActionResult<T = any> {
+    message: string;
+    data?: T;
+    errors?: string[];
 }

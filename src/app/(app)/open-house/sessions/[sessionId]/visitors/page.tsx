@@ -10,20 +10,21 @@ import { FollowUpGenerator } from '@/components/open-house/follow-up-generator';
 import { FollowUpHistory } from '@/components/open-house/follow-up-history';
 
 interface VisitorsPageProps {
-    params: {
+    params: Promise<{
         sessionId: string;
-    };
+    }>;
 }
 
 export default async function VisitorsPage({ params }: VisitorsPageProps) {
-    const { session, error } = await getOpenHouseSession(params.sessionId);
+    const { sessionId } = await params;
+    const { session, error } = await getOpenHouseSession(sessionId);
 
     if (error || !session) {
         notFound();
     }
 
     // Fetch visitors for the session
-    const { visitors } = await getSessionVisitors(params.sessionId);
+    const { visitors } = await getSessionVisitors(sessionId);
 
     return (
         <div className="space-y-6">
@@ -186,12 +187,12 @@ export default async function VisitorsPage({ params }: VisitorsPageProps) {
             {visitors.length > 0 && (
                 <>
                     <FollowUpGenerator
-                        sessionId={params.sessionId}
+                        sessionId={sessionId}
                         visitors={visitors}
                     />
 
                     <FollowUpHistory
-                        sessionId={params.sessionId}
+                        sessionId={sessionId}
                         visitors={visitors}
                     />
                 </>

@@ -41,8 +41,7 @@ import { RoleBadge } from '@/components/admin/role-badge';
 
 import { getAdminDashboardStats, getRecentActivityAction } from '@/features/admin';
 import { useToast } from '@/hooks/use-toast';
-import { AdminActivity } from '@/types/admin';
-import { AdminDashboardStats } from '@/types/admin';
+import { AdminActivity, AdminDashboardStats } from '@/lib/types/admin';
 
 export default function AdminDashboardPage() {
     const [stats, setStats] = useState<AdminDashboardStats>({
@@ -54,7 +53,13 @@ export default function AdminDashboardPage() {
         openTickets: 0,
         pendingContent: 0,
         errorRate: 0,
-        alerts: []
+        alerts: [],
+        totalFeedback: 0,
+        pendingFeedback: 0,
+        totalAiRequests: 0,
+        totalAiCosts: 0,
+        activeFeatures: 0,
+        betaFeatures: 0
     });
     const [recentActivity, setRecentActivity] = useState<AdminActivity[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -322,7 +327,7 @@ export default function AdminDashboardPage() {
                                                     View tickets
                                                 </Link>
                                             </Button>
-                                            {stats.openTickets > 0 && (
+                                            {(stats.openTickets || 0) > 0 && (
                                                 <div className="inline-flex items-center px-2 py-1 rounded-md bg-red-100 dark:bg-red-900/20 text-xs font-medium text-red-700 dark:text-red-300">
                                                     Urgent
                                                 </div>

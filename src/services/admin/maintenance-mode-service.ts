@@ -6,8 +6,100 @@
  */
 
 import { DynamoDBRepository } from '@/aws/dynamodb/repository';
-import { getMaintenanceWindowKeys } from '@/aws/dynamodb/keys';
+import { getMaintenanceWindowKeys } from '@/aws/dynamodb';
 import { v4 as uuidv4 } from 'uuid';
+import { getCacheService, CacheKeys, CacheTTL } from './cache-service';
+import { z } from 'zod';
+
+/**
+ * Input validation schemas
+ */
+export const CreateMaintenanceWindowSchema = z.object({
+    title: z.string().min(1, 'Title is required').max(100, 'Title too long'),
+    description: z.string().min(1, 'Description is required').max(500, 'Description too long'),
+    startTime: z.number().int().positive('Start time must be positive'),
+    endTime: z.number().int().positive('End time must be positive'),
+    adminId: z.string().min(1, 'Admin ID is required'),
+});
+
+export const EnableMaintenanceModeSchema = z.object({
+    title: z.string().min(1, 'Title is required').max(100, 'Title too long'),
+    description: z.string().min(1, 'Description is required').max(500, 'Description too long'),
+    durationMinutes: z.number().int().min(1, 'Duration must be at least 1 minute').max(1440, 'Duration cannot exceed 24 hours'),
+    adminId: z.string().min(1, 'Admin ID is required'),
+});
+
+export type CreateMaintenanceWindowInput = z.infer<typeof CreateMaintenanceWindowSchema>;
+export type EnableMaintenanceModeInput = z.infer<typeof EnableMaintenanceModeSchema>;
+
+/**
+ * Custom error types for better error handling
+ */
+export class MaintenanceWindowError extends Error {
+    constructor(message: string, public code: string) {
+        super(message);
+        this.name = 'MaintenanceWindowError';
+    }
+}
+
+export class MaintenanceWindowNotFoundError extends MaintenanceWindowError {
+    constructor(windowId: string) {
+        super(`Maintenance window not found: ${windowId}`, 'WINDOW_NOT_FOUND');
+    }
+}
+
+export class InvalidMaintenanceWindowStatusError extends MaintenanceWindowError {
+    constructor(currentStatus: string, allowedStatuses: string[]) {
+        super(
+            `Invalid window status: ${currentStatus}. Expected: ${allowedStatuses.join(', ')}`,
+            'INVALID_STATUS'
+        );
+    }
+}
+
+export class InvalidTimeRangeError extends MaintenanceWindowError {
+    constructor(message: string) {
+        super(message, 'INVALID_TIME_RANGE');
+    }
+}
+
+/**
+ * Validation utilities for maintenance windows
+ */
+class MaintenanceWindowValidator {
+    static validateScheduleTime(startTime: number, endTime: number): void {
+        const now = Date.now();
+
+        if (startTime <= now) {
+            throw new InvalidTimeRangeError('Start time must be in the future');
+        }
+
+        if (endTime <= startTime) {
+            throw new InvalidTimeRangeError('End time must be after start time');
+        }
+
+        // Add reasonable limits
+        const maxDuration = 24 * 60 * 60 * 1000; // 24 hours
+        if (endTime - startTime > maxDuration) {
+            throw new InvalidTimeRangeError('Maintenance window cannot exceed 24 hours');
+        }
+    }
+
+    static validateWindowExists(window: MaintenanceWindow | null, windowId: string): asserts window is MaintenanceWindow {
+        if (!window) {
+            throw new MaintenanceWindowNotFoundError(windowId);
+        }
+    }
+
+    static validateWindowStatus(
+        window: MaintenanceWindow,
+        allowedStatuses: MaintenanceWindow['status'][]
+    ): void {
+        if (!allowedStatuses.includes(window.status)) {
+            throw new InvalidMaintenanceWindowStatusError(window.status, allowedStatuses);
+        }
+    }
+}
 
 export interface MaintenanceWindow {
     windowId: string;
@@ -31,60 +123,144 @@ export interface MaintenanceBanner {
     endTime: number;
 }
 
-export class MaintenanceModeService {
+/**
+ * Repository layer for maintenance window data operations
+ */
+class MaintenanceWindowRepository {
     private repository: DynamoDBRepository;
 
     constructor() {
         this.repository = new DynamoDBRepository();
     }
 
+    async create(window: MaintenanceWindow): Promise<void> {
+        const keys = getMaintenanceWindowKeys(window.windowId, window.status, window.startTime);
+        await this.repository.create(
+            keys.PK,
+            keys.SK,
+            'MaintenanceWindow',
+            window
+        );
+    }
+
+    async get(windowId: string): Promise<MaintenanceWindow | null> {
+        const keys = getMaintenanceWindowKeys(windowId);
+        return await this.repository.get<MaintenanceWindow>(keys.PK, keys.SK);
+    }
+
+    async update(windowId: string, updates: Partial<MaintenanceWindow>): Promise<void> {
+        const keys = getMaintenanceWindowKeys(windowId);
+        await this.repository.update(keys.PK, keys.SK, {
+            ...updates,
+            updatedAt: Date.now(),
+        });
+    }
+
+    async queryByStatus(
+        status: MaintenanceWindow['status'],
+        limit: number = 50,
+        lastKey?: string
+    ): Promise<{ windows: MaintenanceWindow[]; lastKey?: string }> {
+        const result = await this.repository.query<MaintenanceWindow>(
+            `MAINTENANCE#${status}`,
+            '',
+            limit,
+            lastKey,
+            'GSI1'
+        );
+
+        return {
+            windows: result.items,
+            lastKey: result.lastKey,
+        };
+    }
+
+    async queryAll(
+        limit: number = 50,
+        lastKey?: string
+    ): Promise<{ windows: MaintenanceWindow[]; lastKey?: string }> {
+        const result = await this.repository.query<MaintenanceWindow>(
+            'CONFIG#MAINTENANCE',
+            'WINDOW#',
+            limit,
+            lastKey
+        );
+
+        return {
+            windows: result.items,
+            lastKey: result.lastKey,
+        };
+    }
+}
+
+export class MaintenanceModeService {
+    private windowRepository: MaintenanceWindowRepository;
+    private repository: DynamoDBRepository;
+    private cache = getCacheService();
+
+    constructor() {
+        this.windowRepository = new MaintenanceWindowRepository();
+        this.repository = new DynamoDBRepository();
+    }
+
+    /**
+     * Gets current maintenance status with caching
+     * Cache for 30 seconds to reduce database load
+     */
+    async isMaintenanceModeActive(): Promise<boolean> {
+        const cacheKey = 'maintenance:active';
+
+        const cached = this.cache.get<boolean>(cacheKey);
+        if (cached !== undefined) {
+            return cached;
+        }
+
+        const currentWindow = await this.getCurrentMaintenanceWindow();
+        const isActive = currentWindow !== null;
+
+        // Cache for 30 seconds
+        this.cache.set(cacheKey, isActive, 30);
+        return isActive;
+    }
+
+    /**
+     * Invalidates maintenance cache when status changes
+     */
+    private invalidateMaintenanceCache(): void {
+        this.cache.delete('maintenance:active');
+        this.cache.delete('maintenance:banner');
+    }
+
     /**
      * Schedules a new maintenance window
      * Validates: Requirements 15.1
      */
-    async scheduleMaintenanceWindow(
-        title: string,
-        description: string,
-        startTime: number,
-        endTime: number,
-        adminId: string
-    ): Promise<MaintenanceWindow> {
+    async scheduleMaintenanceWindow(input: CreateMaintenanceWindowInput): Promise<MaintenanceWindow> {
+        // Validate input with Zod schema
+        const validatedInput = CreateMaintenanceWindowSchema.parse(input);
+
+        // Additional business logic validation
+        MaintenanceWindowValidator.validateScheduleTime(validatedInput.startTime, validatedInput.endTime);
+
         const windowId = uuidv4();
         const now = Date.now();
 
-        // Validate times
-        if (startTime <= now) {
-            throw new Error('Start time must be in the future');
-        }
-
-        if (endTime <= startTime) {
-            throw new Error('End time must be after start time');
-        }
-
         const window: MaintenanceWindow = {
             windowId,
-            title,
-            description,
-            startTime,
-            endTime,
+            title: validatedInput.title.trim(),
+            description: validatedInput.description.trim(),
+            startTime: validatedInput.startTime,
+            endTime: validatedInput.endTime,
             status: 'scheduled',
-            createdBy: adminId,
+            createdBy: validatedInput.adminId,
             createdAt: now,
             updatedAt: now,
             notificationsSent: false,
             completionNotificationSent: false,
         };
 
-        const keys = getMaintenanceWindowKeys(windowId, 'scheduled', startTime);
-
-        await this.repository.create(
-            keys.PK,
-            keys.SK,
-            'MaintenanceWindow',
-            window,
-            keys.GSI1PK,
-            keys.GSI1SK
-        );
+        await this.windowRepository.create(window);
+        this.invalidateMaintenanceCache();
 
         return window;
     }

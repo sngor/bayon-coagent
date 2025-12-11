@@ -9,9 +9,9 @@ import { CheckInSource } from '@/lib/open-house/types';
 import { getPublicOpenHouseSession } from '@/app/(app)/open-house/actions';
 
 interface QRCheckInPageProps {
-    params: {
+    params: Promise<{
         sessionId: string;
-    };
+    }>;
 }
 
 /**
@@ -23,7 +23,8 @@ interface QRCheckInPageProps {
  * Requirements: 4.2, 4.3, 4.5
  */
 export default async function QRCheckInPage({ params }: QRCheckInPageProps) {
-    const { session, error } = await getPublicOpenHouseSession(params.sessionId);
+    const { sessionId } = await params;
+    const { session, error } = await getPublicOpenHouseSession(sessionId);
 
     if (error || !session) {
         notFound();

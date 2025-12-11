@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { logInfo, logError } from '@/aws/logging/logger';
+import { logger } from '@/aws/logging/logger';
 
 export const runtime = 'edge';
 
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Log the metric
-        logInfo('Web Vital Metric', {
+        logger.info('Web Vital Metric', {
             metric: payload.metric,
             value: payload.value,
             rating: payload.rating,
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
         // For now, we'll just acknowledge receipt
         return NextResponse.json({ success: true }, { status: 200 });
     } catch (error) {
-        logError('Failed to process web vitals', error);
+        logger.error('Failed to process web vitals', error as Error);
         return NextResponse.json(
             { error: 'Internal server error' },
             { status: 500 }

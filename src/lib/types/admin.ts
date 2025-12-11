@@ -6,6 +6,20 @@
 // Dashboard Stats
 export interface AdminDashboardStats {
     totalUsers: number;
+    activeUsers?: number;
+    newSignups24h?: number;
+    pendingInvitations?: number;
+    openTickets?: number;
+    pendingContent?: number;
+    errorRate?: number;
+    alerts?: Array<{
+        message: string;
+        severity: 'info' | 'warning' | 'critical';
+        action?: {
+            label: string;
+            href: string;
+        };
+    }>;
     totalFeedback: number;
     pendingFeedback: number;
     totalAiRequests: number;

@@ -1,5 +1,5 @@
 import { getRepository } from "@/aws/dynamodb/repository";
-import { getAPIKeyKeys } from "@/aws/dynamodb/keys";
+import { getAPIKeyKeys } from "@/aws/dynamodb";
 import crypto from "crypto";
 
 export interface APIKey {
@@ -81,16 +81,14 @@ export class APIKeyService {
             permissions,
         };
 
-        // Store the API key
+        // Store the API key using proper repository method
         const keys = getAPIKeyKeys(keyId);
-        await this.repository.put({
-            PK: keys.PK,
-            SK: keys.SK,
-            EntityType: "APIKey",
-            Data: apiKey,
-            GSI1PK: "APIKEYS#ACTIVE",
-            GSI1SK: `${apiKey.createdAt}`,
-        });
+        await this.repository.create(
+            keys.PK,
+            keys.SK,
+            "APIKey",
+            apiKey
+        );
 
         // Create audit log
         await this.createAuditLog({
@@ -121,16 +119,13 @@ export class APIKeyService {
         const keyHash = this.hashAPIKey(plainKey);
 
         // Query all active API keys and find matching hash
-        const result = await this.repository.query({
-            IndexName: "GSI1",
-            KeyConditionExpression: "GSI1PK = :pk",
-            ExpressionAttributeValues: {
-                ":pk": "APIKEYS#ACTIVE",
-            },
-        });
+        const result = await this.repository.query<APIKey>(
+            "APIKEYS#ACTIVE",
+            ""
+        );
 
-        const matchingKey = result.Items?.find(
-            (item) => item.Data.keyHash === keyHash && item.Data.status === "active"
+        const matchingKey = result.items.find(
+            (item) => item.keyHash === keyHash && item.status === "active"
         );
 
         if (!matchingKey) {
@@ -138,9 +133,9 @@ export class APIKeyService {
         }
 
         // Update last used timestamp
-        await this.updateLastUsed(matchingKey.Data.keyId);
+        await this.updateLastUsed(matchingKey.keyId);
 
-        return matchingKey.Data as APIKey;
+        return matchingKey;
     }
 
     /**
@@ -148,17 +143,8 @@ export class APIKeyService {
      */
     private async updateLastUsed(keyId: string): Promise<void> {
         const keys = getAPIKeyKeys(keyId);
-        await this.repository.update({
-            PK: keys.PK,
-            SK: keys.SK,
-            UpdateExpression: "SET #data.#lastUsed = :timestamp",
-            ExpressionAttributeNames: {
-                "#data": "Data",
-                "#lastUsed": "lastUsed",
-            },
-            ExpressionAttributeValues: {
-                ":timestamp": Date.now(),
-            },
+        await this.repository.update(keys.PK, keys.SK, {
+            lastUsed: Date.now(),
         });
     }
 

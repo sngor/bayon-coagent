@@ -3,6 +3,9 @@ import { FileText } from 'lucide-react';
 import { listSessionTemplates } from '../actions';
 import { TemplatesContent } from './templates-content';
 
+// Force dynamic rendering due to cookies usage
+export const dynamic = 'force-dynamic';
+
 export default async function TemplatesPage() {
     const { templates, error } = await listSessionTemplates();
 

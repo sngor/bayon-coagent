@@ -9,7 +9,7 @@ import { DynamoDBRepository } from '@/aws/dynamodb/repository';
 import {
     getAnalyticsEventKeys,
     getAggregatedMetricsKeys,
-} from '@/aws/dynamodb/keys';
+} from '@/aws/dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import { BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
 import { getDocumentClient } from '@/aws/dynamodb/client';

@@ -980,19 +980,7 @@ export function getDocumentDownloadLogKeys(
 
 // ==================== Testimonial & SEO Features Keys ====================
 
-/**
- * Generates keys for Testimonial
- * Pattern: PK: USER#<userId>, SK: TESTIMONIAL#<testimonialId>
- */
-export function getTestimonialKeys(
-  userId: string,
-  testimonialId: string
-): DynamoDBKey {
-  return {
-    PK: `USER#${userId}`,
-    SK: `TESTIMONIAL#${testimonialId}`,
-  };
-}
+
 
 /**
  * Generates keys for TestimonialRequest
@@ -2289,9 +2277,3 @@ export function createGSIKeys(
  * Alias functions for backward compatibility
  */
 export const getTestimonialKeys = getTestimonialRequestKeys;
-export const getClientDashboardKeys = getUserClientDashboardKeys;
-export const getSecuredLinkKeys = getUserSecuredLinkKeys;
-export const getDashboardAnalyticsKeys = getUserDashboardAnalyticsKeys;
-export const getCMAReportKeys = getUserCMAReportKeys;
-export const getDashboardDocumentKeys = getUserDashboardDocumentKeys;
-export const getDocumentDownloadLogKeys = getUserDocumentDownloadLogKeys;

@@ -5,13 +5,14 @@ import { SessionFilters } from '@/components/open-house/session-filters';
 import { SessionsContent } from './sessions-content';
 
 interface SessionsPageProps {
-    searchParams: {
+    searchParams: Promise<{
         status?: 'all' | 'scheduled' | 'active' | 'completed' | 'cancelled';
-    };
+    }>;
 }
 
 export default async function SessionsPage({ searchParams }: SessionsPageProps) {
-    const status = searchParams.status || 'all';
+    const resolvedSearchParams = await searchParams;
+    const status = resolvedSearchParams.status || 'all';
     const { sessions, error } = await getOpenHouseSessions(status);
 
     return (

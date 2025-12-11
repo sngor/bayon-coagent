@@ -66,7 +66,12 @@ export { exchangeGoogleToken, type ExchangeGoogleTokenInput, type ExchangeGoogle
 export { generateHeaderImage, type GenerateHeaderImageInput, type GenerateHeaderImageOutput } from './generate-header-image';
 
 // Listing Description
-export { generateListingDescription, type GenerateListingDescriptionInput, type GenerateListingDescriptionOutput } from './listing-description-generator';
+export {
+    generateNewListingDescription,
+    optimizeListingDescription,
+    generateListingDescription,
+    type ListingDescriptionOutput
+} from './listing-description-generator';
 
 // MLS Listing Description Flow (with vision support)
 export {

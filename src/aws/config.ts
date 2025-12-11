@@ -133,7 +133,7 @@ function getEnvironment(): Environment {
 export function getAWSConfig(): AWSConfig {
   const environment = getEnvironment();
   const isLocal = environment === 'local';
-  const region = process.env.AWS_REGION || 'us-east-1';
+  const region = process.env.NEXT_PUBLIC_AWS_REGION || process.env.AWS_REGION || 'us-east-1';
 
   return {
     region,

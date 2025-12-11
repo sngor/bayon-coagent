@@ -4,6 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { BookOpen, LayoutDashboard, Settings, Sparkles } from "lucide-react"
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+
 export default function GuidePage() {
     return (
         <GuideLayout

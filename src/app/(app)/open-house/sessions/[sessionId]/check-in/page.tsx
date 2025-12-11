@@ -9,13 +9,14 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckInSource } from '@/lib/open-house/types';
 
 interface CheckInPageProps {
-    params: {
+    params: Promise<{
         sessionId: string;
-    };
+    }>;
 }
 
 export default async function CheckInPage({ params }: CheckInPageProps) {
-    const { session, error } = await getOpenHouseSession(params.sessionId);
+    const { sessionId } = await params;
+    const { session, error } = await getOpenHouseSession(sessionId);
 
     if (error || !session) {
         notFound();

@@ -9,7 +9,7 @@ import { DynamoDBRepository } from '@/aws/dynamodb/repository';
 import {
     getContentModerationKeys,
     getAdminAuditLogKeys,
-} from '@/aws/dynamodb/keys';
+} from '@/aws/dynamodb';
 import { sendEmail } from '@/aws/ses/client';
 import { v4 as uuidv4 } from 'uuid';
 import { QueryCommand } from '@aws-sdk/lib-dynamodb';

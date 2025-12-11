@@ -6,7 +6,7 @@
  */
 
 import { DynamoDBRepository } from '@/aws/dynamodb/repository';
-import { getProfileKeys } from '@/aws/dynamodb/keys';
+import { getProfileKeys } from '@/aws/dynamodb';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 import { getConfig, getAWSCredentials } from '@/aws/config';
 import { asyncJobService, AsyncJob } from './async-job-service';

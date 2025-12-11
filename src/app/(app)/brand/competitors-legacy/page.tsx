@@ -395,7 +395,6 @@ export default function CompetitiveAnalysisPage() {
                 data={chartData}
                 layout="vertical"
                 margin={{ left: 10, right: 30 }}
-                animationDuration={500}
               >
                 <CartesianGrid horizontal={false} />
                 <YAxis

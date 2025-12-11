@@ -81,7 +81,7 @@ export default function AdminDashboardPage() {
             {/* Active Alerts */}
             {stats.alerts && stats.alerts.length > 0 && (
                 <div className="space-y-3">
-                    {stats.alerts.map((alert, index: number) => (
+                    {stats.alerts.map((alert: any, index: number) => (
                         <Alert key={index} variant={alert.severity === 'critical' ? 'destructive' : 'default'}>
                             <AlertTriangle className="h-4 w-4" />
                             <AlertDescription>

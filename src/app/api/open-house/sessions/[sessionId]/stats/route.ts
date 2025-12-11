@@ -11,7 +11,7 @@ import { OpenHouseSession } from '@/lib/open-house/types';
  */
 export async function GET(
     request: NextRequest,
-    { params }: { params: { sessionId: string } }
+    { params }: { params: Promise<{ sessionId: string }> }
 ) {
     try {
         // Authenticate user
@@ -23,7 +23,7 @@ export async function GET(
             );
         }
 
-        const { sessionId } = params;
+        const { sessionId } = await params;
 
         if (!sessionId) {
             return NextResponse.json(

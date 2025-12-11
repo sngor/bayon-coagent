@@ -272,15 +272,15 @@ export default function BrandAuditPage() {
     const { user, isUserLoading } = useUser();
 
     const [auditState, auditFormAction] = useActionState(
-        (state: any, payload: FormData) => runNapAuditAction(state, payload),
+        runNapAuditAction,
         initialAuditState
     );
-    const [zillowState, zillowFormAction] = useActionState(
-        (state: any, payload: FormData) => getZillowReviewsAction(state, payload),
+    const [zillowState, zillowFormAction] = useActionState<ZillowReviewState, FormData>(
+        getZillowReviewsAction,
         initialZillowReviewState
     );
     const [bulkAnalysisState, bulkAnalysisFormAction] = useActionState(
-        (state: any, payload: FormData) => analyzeMultipleReviewsAction(state, payload),
+        analyzeMultipleReviewsAction,
         initialBulkAnalysisState
     );
 

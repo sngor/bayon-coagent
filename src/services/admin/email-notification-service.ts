@@ -18,7 +18,7 @@
 import { sendEmail, sendBulkTemplatedEmail, upsertEmailTemplate } from '@/aws/ses/client';
 import { getConfig } from '@/aws/config';
 import { getRepository } from '@/aws/dynamodb/repository';
-import { generateAdminKeys } from '@/aws/dynamodb/keys';
+import { generateAdminKeys } from '@/aws/dynamodb';
 
 export interface EmailNotification {
     notificationId: string;

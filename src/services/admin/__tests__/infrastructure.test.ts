@@ -13,7 +13,7 @@ import {
     getPlatformSettingKeys,
     getContentModerationKeys,
     getAdminAuditLogKeys,
-} from '@/aws/dynamodb/keys';
+} from '@/aws/dynamodb';
 
 describe('Admin Infrastructure - Key Generation', () => {
     describe('Analytics Event Keys', () => {

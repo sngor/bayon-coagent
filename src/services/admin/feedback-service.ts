@@ -5,7 +5,7 @@
  */
 
 import { DynamoDBRepository } from '@/aws/dynamodb/repository';
-import { getFeedbackKeys } from '@/aws/dynamodb/keys';
+import { getFeedbackKeys } from '@/aws/dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import { QueryCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { getDocumentClient } from '@/aws/dynamodb/client';

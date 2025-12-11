@@ -94,7 +94,10 @@ export default function MarketingPlanPage() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
 
-  const [state, formAction] = useActionState(generateMarketingPlanAction, initialPlanState);
+  const [state, formAction] = useActionState<GeneratePlanState, FormData>(
+    generateMarketingPlanAction,
+    initialPlanState
+  );
 
   // Generation steps for progress indicator
   const generationSteps = [
@@ -191,12 +194,11 @@ export default function MarketingPlanPage() {
     }
   }, [displayPlan, isGenerating]);
 
-  const handleFormSubmit = async (formData: FormData) => {
+  const handleFormSubmit = () => {
     setIsGenerating(true);
     setShowPlan(false);
     setGenerationError(null);
     setGenerationStep(0);
-    formAction(formData);
   };
 
   const handleRetry = () => {
@@ -231,7 +233,7 @@ export default function MarketingPlanPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={handleFormSubmit}>
+          <form action={formAction} onSubmit={handleFormSubmit}>
             <input type="hidden" name="userId" value={user?.id || ''} />
             <input type="hidden" name="brandAudit" value={JSON.stringify(brandAuditData || { results: [] })} />
             <input type="hidden" name="competitors" value={JSON.stringify(competitorsData || [])} />

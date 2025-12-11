@@ -26,13 +26,14 @@ import { ExportDialog } from '@/components/open-house/export-dialog';
 import { SessionPhotoGallery } from '@/components/open-house/session-photo-gallery';
 
 interface SessionDetailPageProps {
-    params: {
+    params: Promise<{
         sessionId: string;
-    };
+    }>;
 }
 
 export default async function SessionDetailPage({ params }: SessionDetailPageProps) {
-    const { session, error } = await getOpenHouseSession(params.sessionId);
+    const { sessionId } = await params;
+    const { session, error } = await getOpenHouseSession(sessionId);
 
     if (error || !session) {
         notFound();
@@ -40,7 +41,7 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
 
     // Get visitors for active sessions
     const { visitors = [] } = session.status === 'active'
-        ? await getSessionVisitors(params.sessionId)
+        ? await getSessionVisitors(sessionId)
         : { visitors: [] };
 
     // Get analytics for performance comparison (only for active sessions)

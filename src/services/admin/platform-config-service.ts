@@ -8,7 +8,7 @@ import { DynamoDBRepository } from '@/aws/dynamodb/repository';
 import {
     getFeatureFlagKeys,
     getPlatformSettingKeys,
-} from '@/aws/dynamodb/keys';
+} from '@/aws/dynamodb';
 import { getCacheService, CacheKeys, CacheTTL } from './cache-service';
 
 export interface FeatureFlag {
