@@ -46,7 +46,7 @@ frontend:
         - echo "NPM version:"
         - npm --version
         - echo "Available memory:"
-        - free -h || echo "Memory info not available"
+        - 'free -h || echo "Memory info not available"'
         - echo "Setting Node.js options for memory..."
         - export NODE_OPTIONS="--max-old-space-size=8192 --max-semi-space-size=512"
         - echo "Optimizing npm configuration..."
@@ -55,7 +55,7 @@ frontend:
         - npm config set progress false
         - npm config set loglevel error
         - echo "Checking for cached dependencies..."
-        - if [ -d "node_modules" ]; then echo "Using cached node_modules"; else echo "No cache found, will install fresh"; fi
+        - 'if [ -d "node_modules" ]; then echo "Using cached node_modules"; else echo "No cache found, will install fresh"; fi'
         - echo "Installing dependencies with optimizations..."
         - npm ci --prefer-offline --no-audit --no-fund --progress=false --loglevel=error --maxsockets=1 --ignore-scripts
         - echo "Dependencies installed successfully"
@@ -65,21 +65,16 @@ frontend:
         - echo "Building Next.js application..."
         - echo "NODE_ENV=$NODE_ENV"
         - export NODE_OPTIONS="--max-old-space-size=8192 --max-semi-space-size=512"
-        - echo "Loading production environment variables..."
-        - if [ -f ".env.production" ]; then export $(cat .env.production | grep -v '^#' | xargs); fi
         - echo "Setting build optimizations..."
         - export GENERATE_SOURCEMAP=false
         - export NEXT_TELEMETRY_DISABLED=1
         - export CI=true
         - export SKIP_ENV_VALIDATION=true
-        - echo "Verifying critical environment variables..."
-        - echo "COGNITO_CLIENT_ID is set: $([ -n "$COGNITO_CLIENT_ID" ] && echo "YES" || echo "NO")"
-        - echo "COGNITO_USER_POOL_ID is set: $([ -n "$COGNITO_USER_POOL_ID" ] && echo "YES" || echo "NO")"
         - echo "Starting optimized build process..."
         - time npm run build
         - echo "Build completed successfully"
         - echo "Build artifacts size:"
-        - du -sh .next || echo "Could not measure build size"
+        - 'du -sh .next || echo "Could not measure build size"'
 
   artifacts:
     baseDirectory: .next
