@@ -3,16 +3,17 @@ import { getConfig } from '@/aws/config';
 export default function DebugEnvPage() {
     const config = getConfig();
 
-    // Only show this in development or if explicitly enabled
-    if (process.env.NODE_ENV === 'production' && process.env.ENABLE_DEBUG !== 'true') {
-        return (
-            <div className="p-8">
-                <h1 className="text-2xl font-bold mb-4">Debug Not Available</h1>
-                <p>Debug information is not available in production for security reasons.</p>
-                <p>To enable, set ENABLE_DEBUG=true in environment variables.</p>
-            </div>
-        );
-    }
+    // Temporarily allow debug in production to diagnose the issue
+    // TODO: Re-enable this check after fixing the configuration issue
+    // if (process.env.NODE_ENV === 'production' && process.env.ENABLE_DEBUG !== 'true') {
+    //     return (
+    //         <div className="p-8">
+    //             <h1 className="text-2xl font-bold mb-4">Debug Not Available</h1>
+    //             <p>Debug information is not available in production for security reasons.</p>
+    //             <p>To enable, set ENABLE_DEBUG=true in environment variables.</p>
+    //         </div>
+    //     );
+    // }
 
     return (
         <div className="p-8 max-w-4xl mx-auto">

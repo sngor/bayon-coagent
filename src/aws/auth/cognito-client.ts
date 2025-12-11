@@ -566,7 +566,9 @@ let cognitoClient: CognitoAuthClient | null = null;
  */
 export function getCognitoClient(): CognitoAuthClient {
   if (!cognitoClient) {
+    console.log('Creating new CognitoAuthClient instance...');
     cognitoClient = new CognitoAuthClient();
+    console.log('CognitoAuthClient created with clientId:', cognitoClient.clientId || 'EMPTY');
   }
   return cognitoClient;
 }
