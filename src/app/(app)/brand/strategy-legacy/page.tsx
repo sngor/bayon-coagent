@@ -95,7 +95,13 @@ export default function MarketingPlanPage() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
 
-  const [state, formAction] = useActionState(generateMarketingPlanAction, initialPlanState);
+  // Wrapper function to ensure proper typing
+  const wrappedAction = async (prevState: GeneratePlanState, formData: FormData): Promise<GeneratePlanState> => {
+    const result = await generateMarketingPlanAction(prevState, formData);
+    return result as GeneratePlanState;
+  };
+
+  const [state, formAction] = useActionState(wrappedAction, initialPlanState);
 
   // Generation steps for progress indicator
   const generationSteps = [

@@ -161,6 +161,17 @@ const nextConfig: NextConfig = {
       loader: 'ignore-loader',
     });
 
+    // Temporarily exclude heavy demo and admin pages to reduce build memory
+    config.module.rules.push({
+      test: /\/demos\//,
+      loader: 'ignore-loader',
+    });
+
+    config.module.rules.push({
+      test: /\/super-admin\//,
+      loader: 'ignore-loader',
+    });
+
     return config;
   },
 

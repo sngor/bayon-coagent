@@ -118,3 +118,5 @@ src/lib/metrics.ts
 # Bundle size tracking
 .bundle-size-history.json
 lighthouse-results/
+# Temporary build exclusions
+.build-excluded/
