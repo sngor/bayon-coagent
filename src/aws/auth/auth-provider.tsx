@@ -106,12 +106,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setError(null);
 
             // Debug logging
-            console.log('AuthProvider: Starting sign-in process');
-            console.log('AuthProvider: CognitoClient instance:', {
+            console.log('🔍 AuthProvider: Starting sign-in process');
+            console.log('🔍 AuthProvider: CognitoClient instance:', {
                 hasClient: !!cognitoClient,
                 clientId: cognitoClient?.clientId || 'NOT SET',
                 userPoolId: cognitoClient?.userPoolId || 'NOT SET'
             });
+
+            // Force log to make sure it appears
+            alert(`DEBUG: ClientId = ${cognitoClient?.clientId || 'EMPTY'}`);
+
+            console.log('🔍 About to call cognitoClient.signIn...');
 
             const newSession = await cognitoClient.signIn(email, password);
             setSession(newSession);

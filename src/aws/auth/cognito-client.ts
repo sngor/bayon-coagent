@@ -222,6 +222,24 @@ export class CognitoAuthClient {
 
       return session;
     } catch (error) {
+      // Enhanced error logging for debugging
+      console.error('SIGN IN ERROR DETAILS:', {
+        error: error,
+        clientId: this.clientId,
+        userPoolId: this.userPoolId,
+        hasClient: !!this.client,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error'
+      });
+
+      // If clientId is empty, log environment variables
+      if (!this.clientId) {
+        console.error('CLIENT ID IS EMPTY! Environment check:', {
+          'process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID': process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID,
+          'process.env.COGNITO_CLIENT_ID': process.env.COGNITO_CLIENT_ID,
+          'NODE_ENV': process.env.NODE_ENV
+        });
+      }
+
       throw this.handleError(error, 'Failed to sign in');
     }
   }
