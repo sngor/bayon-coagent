@@ -42,30 +42,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
-    // Create CognitoClient lazily on client-side only
-    const [cognitoClient, setCognitoClient] = useState<any>(null);
-
-    useEffect(() => {
-        // Only create on client-side to ensure environment variables are available
-        if (typeof window !== 'undefined' && !cognitoClient) {
-            try {
-                console.error('🔍 Creating CognitoClient on client-side...');
-                const client = getCognitoClient();
-                console.error('🔍 CognitoClient created successfully:', !!client);
-                setCognitoClient(client);
-            } catch (error) {
-                console.error('🔍 Failed to create CognitoClient:', error);
-            }
-        }
-    }, [cognitoClient]);
-
-    // Load session when cognitoClient becomes available
-    useEffect(() => {
-        if (cognitoClient) {
-            console.error('🔍 CognitoClient ready, loading session...');
-            loadSession();
-        }
-    }, [cognitoClient, loadSession]);
+    const cognitoClient = getCognitoClient();
 
     /**
      * Load the current session and user on mount
@@ -74,13 +51,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
             setIsLoading(true);
             setError(null);
-
-            // Wait for cognitoClient to be ready
-            if (!cognitoClient) {
-                console.error('🔍 loadSession: CognitoClient not ready yet');
-                setIsLoading(false);
-                return;
-            }
 
             const currentSession = await cognitoClient.getSession();
 
@@ -135,32 +105,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setIsLoading(true);
             setError(null);
 
-            // Ensure we have a CognitoClient
-            let clientToUse = cognitoClient;
-            if (!clientToUse) {
-                console.log('🔍 CognitoClient not ready, creating now...');
-                clientToUse = getCognitoClient();
-                setCognitoClient(clientToUse);
-            }
-
-            // Debug logging
-            console.log('🔍 AuthProvider: Starting sign-in process');
-            console.log('🔍 AuthProvider: CognitoClient instance:', {
-                hasClient: !!clientToUse,
-                clientId: clientToUse?.clientId || 'NOT SET',
-                userPoolId: clientToUse?.userPoolId || 'NOT SET'
-            });
-
-            // Force log to make sure it appears
-            alert(`DEBUG: ClientId = ${clientToUse?.clientId || 'EMPTY'}`);
-
-            console.log('🔍 About to call cognitoClient.signIn...');
-
-            const newSession = await clientToUse.signIn(email, password);
+            const newSession = await cognitoClient.signIn(email, password);
             setSession(newSession);
 
             // Fetch user information
-            const currentUser = await clientToUse.getCurrentUser(newSession.accessToken);
+            const currentUser = await cognitoClient.getCurrentUser(newSession.accessToken);
             // Set session cookie for server-side authentication
             try {
                 const { setSessionCookieAction } = await import('@/app/actions');

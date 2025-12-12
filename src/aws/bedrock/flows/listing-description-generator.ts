@@ -101,15 +101,24 @@ const enhancedListingDescriptionFlow = defineFlow(
     outputSchema: ListingDescriptionOutputSchema,
   },
   async (input) => {
+    // Ensure all required properties are set with defaults
+    const enhancedInput: EnhancedListingInput = {
+      ...input,
+      includeMarketContext: input.includeMarketContext ?? true,
+      competitiveAnalysis: input.competitiveAnalysis ?? true,
+      writingStyle: input.writingStyle ?? 'professional',
+      targetAudience: input.targetAudience ?? 'families',
+    };
+
     try {
-      console.log(`🏠 Generating enhanced listing description for ${input.address.street}`);
+      console.log(`🏠 Generating enhanced listing description for ${enhancedInput.address.street}`);
 
       // Step 1: Gather market context and competitive analysis
-      const marketContext = await gatherMarketContext(input);
+      const marketContext = await gatherMarketContext(enhancedInput);
 
       // Step 2: Generate the listing description with market context
       const result = await listingDescriptionPrompt({
-        ...input,
+        ...enhancedInput,
         marketContext,
         hasMLSData: marketContext.includes('MLS Grid'),
       });
@@ -124,7 +133,7 @@ const enhancedListingDescriptionFlow = defineFlow(
       console.error('Enhanced listing description generation failed:', error);
 
       // Fallback to basic description generation
-      return generateBasicListingDescription(input);
+      return generateBasicListingDescription(enhancedInput);
     }
   }
 );
@@ -257,11 +266,19 @@ export async function generateNewListingDescription(input: GenerateNewListingInp
       squareFeet: parseInt(input.squareFeet || '0') || 0,
       propertyType: input.propertyType,
       features: input.keyFeatures.split(',').map(f => f.trim()),
-      writingStyle: input.writingStyle as any || 'professional',
-      targetAudience: input.buyerPersona as any || 'families',
+      writingStyle: (input.writingStyle as 'professional' | 'luxury' | 'family-friendly' | 'investment' | 'modern') || 'professional',
+      targetAudience: (input.buyerPersona as 'first-time-buyers' | 'families' | 'investors' | 'luxury-buyers' | 'downsizers') || 'families',
+      includeMarketContext: true,
+      competitiveAnalysis: true,
     };
 
-    const result = await enhancedListingDescriptionFlow.execute(enhancedInput);
+    const result = await enhancedListingDescriptionFlow.execute({
+      ...enhancedInput,
+      includeMarketContext: enhancedInput.includeMarketContext ?? true,
+      competitiveAnalysis: enhancedInput.competitiveAnalysis ?? true,
+      writingStyle: enhancedInput.writingStyle ?? 'professional',
+      targetAudience: enhancedInput.targetAudience ?? 'families',
+    });
 
     return {
       success: true,
@@ -340,6 +357,8 @@ export async function generateListingDescription(input: GenerateListingDescripti
       features: [details], // Use full details as features
       writingStyle: 'professional',
       targetAudience: 'families',
+      includeMarketContext: true,
+      competitiveAnalysis: true,
     };
 
     return await enhancedListingDescriptionFlow.execute(enhancedInput);
@@ -355,4 +374,5 @@ export async function generateListingDescription(input: GenerateListingDescripti
   }
 }
 
-export type { ListingDescriptionOutput };
+// Types are exported from @/ai/schemas/listing-description-schemas
+// Import them directly from there in consuming files

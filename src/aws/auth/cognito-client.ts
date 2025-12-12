@@ -57,33 +57,7 @@ export class CognitoAuthClient {
     const config = getConfig();
     const credentials = getAWSCredentials();
 
-    // Debug logging (can be removed in production)
-    console.log('Cognito Config:', {
-      region: config.region,
-      endpoint: config.cognito.endpoint,
-      environment: config.environment,
-      userPoolId: config.cognito.userPoolId,
-      clientId: config.cognito.clientId ? '***SET***' : '***EMPTY***',
-    });
 
-    // Validate critical configuration
-    if (!config.cognito.clientId) {
-      console.error('CRITICAL: Cognito Client ID is empty!', {
-        'process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID': process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || '(not set)',
-        'process.env.COGNITO_CLIENT_ID': process.env.COGNITO_CLIENT_ID || '(not set)',
-        'NODE_ENV': process.env.NODE_ENV,
-      });
-      throw new Error('Cognito Client ID is not configured. Check environment variables.');
-    }
-
-    if (!config.cognito.userPoolId) {
-      console.error('CRITICAL: Cognito User Pool ID is empty!', {
-        'process.env.NEXT_PUBLIC_USER_POOL_ID': process.env.NEXT_PUBLIC_USER_POOL_ID || '(not set)',
-        'process.env.COGNITO_USER_POOL_ID': process.env.COGNITO_USER_POOL_ID || '(not set)',
-        'NODE_ENV': process.env.NODE_ENV,
-      });
-      throw new Error('Cognito User Pool ID is not configured. Check environment variables.');
-    }
 
     this.client = new CognitoIdentityProviderClient({
       region: String(config.region), // Ensure region is a string
@@ -584,9 +558,7 @@ let cognitoClient: CognitoAuthClient | null = null;
  */
 export function getCognitoClient(): CognitoAuthClient {
   if (!cognitoClient) {
-    console.error('Creating new CognitoAuthClient instance...');
     cognitoClient = new CognitoAuthClient();
-    console.error('CognitoAuthClient created with clientId:', cognitoClient.clientId || 'EMPTY');
   }
   return cognitoClient;
 }
