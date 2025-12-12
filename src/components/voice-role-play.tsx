@@ -10,6 +10,7 @@ import { getGeminiApiKeyAction } from '@/app/actions';
 import { Mic, MicOff, Volume2, VolumeX, Loader2, Sparkles, User, Pause, Play, Lightbulb } from 'lucide-react';
 import type { RolePlayScenario } from '@/lib/constants/training-data';
 import { Modality } from '@google/genai';
+import { VoiceDiagnostics } from '@/components/voice-diagnostics';
 
 export interface VoiceRolePlayProps {
     scenario: RolePlayScenario;
@@ -103,7 +104,7 @@ Start the conversation by greeting the agent and briefly mentioning your situati
 
             try {
                 await connect(apiKey, {
-                    model: 'gemini-2.0-flash-exp',
+                    model: 'models/gemini-2.5-flash-native-audio-preview-09-2025',
                     systemInstruction,
                     responseModalities: [Modality.AUDIO],
                     voiceName: getVoiceForGender(scenario.persona.gender),
@@ -189,14 +190,45 @@ Start the conversation by greeting the agent and briefly mentioning your situati
                                 </p>
                             </div>
                         </div>
-                        <Button
-                            onClick={handleEndSession}
-                            variant="outline"
-                            size="sm"
-                            className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
-                        >
-                            End Session
-                        </Button>
+                        <div className="flex gap-2">
+                            {!isConnected && apiKey && (
+                                <Button
+                                    onClick={() => {
+                                        const systemInstruction = `You are roleplaying as ${scenario.persona.name}, a real estate client. 
+
+Background: ${scenario.persona.background}
+Personality: ${scenario.persona.personality}
+Goals: ${scenario.persona.goals.join(', ')}
+Concerns: ${scenario.persona.concerns.join(', ')}
+Communication Style: ${scenario.persona.communicationStyle}
+
+Stay in character throughout the conversation. Respond naturally as this persona would, with appropriate emotions and reactions. The agent you're speaking with is practicing their real estate skills, so be realistic but also provide opportunities for them to demonstrate their expertise.
+
+Start the conversation by greeting the agent and briefly mentioning your situation.`;
+
+                                        connect(apiKey, {
+                                            model: 'models/gemini-2.5-flash-native-audio-preview-09-2025',
+                                            systemInstruction,
+                                            responseModalities: [Modality.AUDIO],
+                                            voiceName: getVoiceForGender(scenario.persona.gender),
+                                        });
+                                    }}
+                                    variant="outline"
+                                    size="sm"
+                                    className="hover:bg-primary/10 hover:text-primary hover:border-primary"
+                                >
+                                    Reconnect
+                                </Button>
+                            )}
+                            <Button
+                                onClick={handleEndSession}
+                                variant="outline"
+                                size="sm"
+                                className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
+                            >
+                                End Session
+                            </Button>
+                        </div>
                     </div>
                 }
             >
@@ -205,20 +237,36 @@ Start the conversation by greeting the agent and briefly mentioning your situati
                     {/* Connection Status */}
                     <div className={`relative overflow-hidden rounded-xl p-4 border transition-all duration-300 ${isConnected
                         ? 'bg-emerald-50/50 dark:bg-emerald-950/10 border-emerald-200 dark:border-emerald-800'
-                        : 'bg-gray-50/50 dark:bg-gray-900/10 border-gray-200 dark:border-gray-800'
+                        : error
+                            ? 'bg-red-50/50 dark:bg-red-950/10 border-red-200 dark:border-red-800'
+                            : 'bg-gray-50/50 dark:bg-gray-900/10 border-gray-200 dark:border-gray-800'
                         }`}>
                         <div className="flex items-center gap-3">
                             <div className="relative flex h-3 w-3">
                                 {isConnected && (
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                 )}
-                                <span className={`relative inline-flex rounded-full h-3 w-3 ${isConnected ? 'bg-emerald-500' : 'bg-gray-400'}`}></span>
+                                <span className={`relative inline-flex rounded-full h-3 w-3 ${isConnected
+                                    ? 'bg-emerald-500'
+                                    : error
+                                        ? 'bg-red-500'
+                                        : 'bg-gray-400'
+                                    }`}></span>
                             </div>
                             <div>
                                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</p>
                                 <p className="text-sm font-bold">
-                                    {isConnected ? 'Live Connection' : 'Disconnected'}
+                                    {isConnected
+                                        ? 'Live Connection'
+                                        : error
+                                            ? 'Connection Error'
+                                            : 'Disconnected'}
                                 </p>
+                                {error && (
+                                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                                        {error.includes('reconnect') ? 'Reconnecting...' : 'Check connection'}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -370,6 +418,37 @@ Start the conversation by greeting the agent and briefly mentioning your situati
                     </div>
                 </div>
             </div>
+
+            {/* Diagnostics Panel - Show when there are connection issues */}
+            {(error || !isConnected) && (
+                <VoiceDiagnostics
+                    isConnected={isConnected}
+                    error={error}
+                    onRunDiagnostics={() => {
+                        // Run basic diagnostics
+                        if (apiKey) {
+                            const systemInstruction = `You are roleplaying as ${scenario.persona.name}, a real estate client. 
+
+Background: ${scenario.persona.background}
+Personality: ${scenario.persona.personality}
+Goals: ${scenario.persona.goals.join(', ')}
+Concerns: ${scenario.persona.concerns.join(', ')}
+Communication Style: ${scenario.persona.communicationStyle}
+
+Stay in character throughout the conversation. Respond naturally as this persona would, with appropriate emotions and reactions. The agent you're speaking with is practicing their real estate skills, so be realistic but also provide opportunities for them to demonstrate their expertise.
+
+Start the conversation by greeting the agent and briefly mentioning your situation.`;
+
+                            connect(apiKey, {
+                                model: 'models/gemini-2.5-flash-native-audio-preview-09-2025',
+                                systemInstruction,
+                                responseModalities: [Modality.AUDIO],
+                                voiceName: getVoiceForGender(scenario.persona.gender),
+                            });
+                        }
+                    }}
+                />
+            )}
         </div>
     );
 }

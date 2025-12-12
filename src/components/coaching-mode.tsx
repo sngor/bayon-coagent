@@ -205,7 +205,7 @@ Begin the conversation by introducing yourself and presenting your first concern
 
             try {
                 await connect(apiKey, {
-                    model: 'gemini-2.0-flash-exp',
+                    model: 'models/gemini-2.5-flash-native-audio-preview-09-2025',
                     systemInstruction,
                     responseModalities: [Modality.AUDIO],
                     voiceName: getVoiceForGender(scenario.persona.gender),

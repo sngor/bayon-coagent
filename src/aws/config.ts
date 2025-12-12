@@ -133,7 +133,7 @@ function getEnvironment(): Environment {
 export function getAWSConfig(): AWSConfig {
   const environment = getEnvironment();
   const isLocal = environment === 'local';
-  const region = process.env.NEXT_PUBLIC_AWS_REGION || process.env.AWS_REGION || 'us-east-1';
+  const region = process.env.NEXT_PUBLIC_AWS_REGION || process.env.AWS_REGION || 'us-west-2';
 
   return {
     region,
@@ -141,8 +141,8 @@ export function getAWSConfig(): AWSConfig {
     appUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
 
     cognito: {
-      userPoolId: process.env.NEXT_PUBLIC_USER_POOL_ID || process.env.COGNITO_USER_POOL_ID || 'us-west-2_ALOcJxQDd',
-      clientId: process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || process.env.COGNITO_CLIENT_ID || '1vnmp9v58opg04o480fokp0sct',
+      userPoolId: 'us-west-2_ALOcJxQDd',
+      clientId: '1vnmp9v58opg04o480fokp0sct',
       endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
 
