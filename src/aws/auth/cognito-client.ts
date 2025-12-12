@@ -584,25 +584,9 @@ let cognitoClient: CognitoAuthClient | null = null;
  */
 export function getCognitoClient(): CognitoAuthClient {
   if (!cognitoClient) {
-    console.log('Creating new CognitoAuthClient instance...');
-
-    // Force refresh the config to ensure we have the latest environment variables
-    const { resetConfig } = require('@/aws/config');
-    resetConfig();
-
+    console.error('Creating new CognitoAuthClient instance...');
     cognitoClient = new CognitoAuthClient();
-    console.log('CognitoAuthClient created with clientId:', cognitoClient.clientId || 'EMPTY');
-
-    // If still empty, there's a configuration issue
-    if (!cognitoClient.clientId) {
-      console.error('CRITICAL: CognitoClient created with empty clientId!');
-      console.error('Environment variables at creation time:', {
-        'NEXT_PUBLIC_USER_POOL_CLIENT_ID': process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID,
-        'COGNITO_CLIENT_ID': process.env.COGNITO_CLIENT_ID,
-        'NODE_ENV': process.env.NODE_ENV,
-        'typeof window': typeof window
-      });
-    }
+    console.error('CognitoAuthClient created with clientId:', cognitoClient.clientId || 'EMPTY');
   }
   return cognitoClient;
 }
@@ -619,10 +603,6 @@ export function resetCognitoClient(): void {
  * Useful when environment variables are loaded after initial config
  */
 export function refreshCognitoClient(): void {
-  // Reset the cached config first
-  const { resetConfig } = require('@/aws/config');
-  resetConfig();
-
   // Reset the client instance
   cognitoClient = null;
 
