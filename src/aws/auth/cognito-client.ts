@@ -57,11 +57,9 @@ export class CognitoAuthClient {
     const config = getConfig();
     const credentials = getAWSCredentials();
 
-
-
     this.client = new CognitoIdentityProviderClient({
       region: String(config.region), // Ensure region is a string
-      endpoint: config.cognito.endpoint,
+      endpoint: config.clientCognito.endpoint,
       credentials: credentials.accessKeyId && credentials.secretAccessKey
         ? {
           accessKeyId: credentials.accessKeyId,
@@ -70,8 +68,8 @@ export class CognitoAuthClient {
         : undefined,
     });
 
-    this.clientId = config.cognito.clientId;
-    this.userPoolId = config.cognito.userPoolId;
+    this.clientId = config.clientCognito.clientId;
+    this.userPoolId = config.clientCognito.userPoolId;
   }
 
   /**

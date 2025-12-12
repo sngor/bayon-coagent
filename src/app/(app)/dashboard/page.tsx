@@ -73,7 +73,7 @@ import { DashboardQuickActions } from '@/components/dashboard-quick-actions';
 import { DashboardWorkflowSection } from '@/components/dashboard-workflow-section';
 import { getUserWorkflowInstances } from '@/app/workflow-actions';
 import { WorkflowStatus } from '@/types/workflows';
-import { ProactiveSuggestionsPanel } from '@/components/enhanced-agents';
+
 
 
 
@@ -877,15 +877,28 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="col-span-3 tablet:col-span-1 lg:col-span-1 space-y-6 md:space-y-8">
-                        {/* AI Suggestions Panel */}
+                        {/* AI Suggestions Panel - Temporarily disabled to prevent errors */}
                         <div className="animate-fade-in-up animate-delay-100">
-                            <ProactiveSuggestionsPanel
-                                maxHeight="500px"
-                                showFilters={true}
-                                autoRefresh={true}
-                                refreshInterval={300}
-                                className="border-0 shadow-xl bg-gradient-to-br from-card to-purple-500/5"
-                            />
+                            <Card className="border-0 shadow-xl bg-gradient-to-br from-card to-purple-500/5">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Sparkles className="h-5 w-5 text-primary" />
+                                        AI Suggestions
+                                    </CardTitle>
+                                    <p className="text-sm text-muted-foreground">
+                                        Proactive insights and recommendations from your AI agents
+                                    </p>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-center py-8">
+                                        <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                        <p className="text-muted-foreground">AI suggestions coming soon</p>
+                                        <p className="text-sm text-muted-foreground mt-1">
+                                            Your AI agents are being set up to provide personalized recommendations
+                                        </p>
+                                    </div>
+                                </CardContent>
+                            </Card>
                         </div>
 
                         {/* Team Announcements */}

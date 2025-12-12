@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { StandardPageLayout } from '@/components/standard';
 import {
     Accordion,
@@ -13,7 +13,7 @@ import { AnimatedTabs as Tabs, AnimatedTabsContent as TabsContent, AnimatedTabsL
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, TrendingUp, Handshake, Award, BookOpen, Clock, Target, Star, Trophy, Zap, Play, ChevronRight, Sparkles } from 'lucide-react';
+import { CheckCircle, TrendingUp, Handshake, Award, BookOpen, Clock, Target, Star, Trophy, Zap, Play, Sparkles } from 'lucide-react';
 import { useUser } from '@/aws/auth';
 import { useQuery } from '@/aws/dynamodb/hooks';
 import type { TrainingProgress } from '@/lib/types/common';
@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils/common';
 export default function TrainingLessonsPage() {
     const { user } = useUser();
     const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined);
+    const [activeTab, setActiveTab] = useState<string>('marketing');
     // Use the allModules from training-data instead of combining manually
 
     // Memoize DynamoDB keys
@@ -60,24 +61,82 @@ export default function TrainingLessonsPage() {
         return (completed / professionalExcellenceModules.length) * 100;
     }, [completedModules]);
 
+    // Auto-open first incomplete module when data loads
+    const firstIncompleteModule = useMemo(() => {
+        return allModules.find(module => !completedModules.has(module.id));
+    }, [allModules, completedModules]);
+
+    // Auto-open first incomplete module on load
+    useEffect(() => {
+        if (firstIncompleteModule && !openAccordion) {
+            setOpenAccordion(firstIncompleteModule.id);
+
+            // Switch to the correct tab based on module type
+            if (marketingModules.some(m => m.id === firstIncompleteModule.id)) {
+                setActiveTab('marketing');
+            } else if (closingModules.some(m => m.id === firstIncompleteModule.id)) {
+                setActiveTab('closing');
+            } else if (professionalExcellenceModules.some(m => m.id === firstIncompleteModule.id)) {
+                setActiveTab('professional');
+            }
+        }
+    }, [firstIncompleteModule, openAccordion, marketingModules, closingModules, professionalExcellenceModules]);
+
+    // Keyboard navigation
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.ctrlKey || e.metaCmd) {
+                switch (e.key) {
+                    case '1':
+                        e.preventDefault();
+                        setActiveTab('marketing');
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        setActiveTab('closing');
+                        break;
+                    case '3':
+                        e.preventDefault();
+                        setActiveTab('professional');
+                        break;
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     const handleQuizComplete = async (moduleId: string) => {
         if (!user) return;
         try {
             await saveTrainingProgressAction(moduleId, true);
         } catch (error) {
             console.error('Failed to save training progress:', error);
+            // Could add toast notification here for better UX
+            return;
         }
 
         // Open the next available module
         const currentIndex = allModules.findIndex(m => m.id === moduleId);
         if (currentIndex < allModules.length - 1) {
-            setOpenAccordion(allModules[currentIndex + 1].id);
+            const nextModule = allModules[currentIndex + 1];
+            setOpenAccordion(nextModule.id);
+
+            // Switch to correct tab for next module
+            if (marketingModules.some(m => m.id === nextModule.id)) {
+                setActiveTab('marketing');
+            } else if (closingModules.some(m => m.id === nextModule.id)) {
+                setActiveTab('closing');
+            } else if (professionalExcellenceModules.some(m => m.id === nextModule.id)) {
+                setActiveTab('professional');
+            }
         } else {
             setOpenAccordion(undefined);
         }
     };
 
-    const renderModuleAccordion = (modules: typeof marketingModules, colorTheme: 'blue' | 'green' = 'blue') => {
+    const renderModuleAccordion = (modules: typeof marketingModules, colorTheme: 'blue' | 'green' | 'purple' = 'blue') => {
         const themeColors = {
             blue: {
                 bg: 'bg-blue-50/50 dark:bg-blue-950/20',
@@ -96,6 +155,15 @@ export default function TrainingLessonsPage() {
                 hover: 'hover:border-green-300/50 dark:hover:border-green-700/50',
                 active: 'border-green-400/50 dark:border-green-600/50 shadow-green-200/20 dark:shadow-green-800/20',
                 completed: 'bg-green-100/50 dark:bg-green-900/30 border-green-300/50 dark:border-green-700/50'
+            },
+            purple: {
+                bg: 'bg-purple-50/50 dark:bg-purple-950/20',
+                border: 'border-purple-200/50 dark:border-purple-800/30',
+                text: 'text-purple-900 dark:text-purple-100',
+                accent: 'text-purple-600 dark:text-purple-400',
+                hover: 'hover:border-purple-300/50 dark:hover:border-purple-700/50',
+                active: 'border-purple-400/50 dark:border-purple-600/50 shadow-purple-200/20 dark:shadow-purple-800/20',
+                completed: 'bg-purple-100/50 dark:bg-purple-900/30 border-purple-300/50 dark:border-purple-700/50'
             }
         };
 
@@ -187,11 +255,6 @@ export default function TrainingLessonsPage() {
                                                 )}
                                             </div>
                                         </div>
-                                        <ChevronRight className={cn(
-                                            'h-5 w-5 transition-transform duration-200',
-                                            isActive ? 'rotate-90' : '',
-                                            theme.accent
-                                        )} />
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="px-6 pb-6">
@@ -247,13 +310,31 @@ export default function TrainingLessonsPage() {
                                     </div>
                                 </div>
                             </div>
-                            {completedModules.size === allModules.length && (
+                            {completedModules.size === allModules.length ? (
                                 <div className="animate-in zoom-in spin-in-180 duration-500">
                                     <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 px-4 py-2 text-sm">
                                         <Trophy className="h-4 w-4 mr-2" />
                                         Expert Level
                                     </Badge>
                                 </div>
+                            ) : firstIncompleteModule && (
+                                <Button
+                                    onClick={() => {
+                                        setOpenAccordion(firstIncompleteModule.id);
+                                        // Switch to correct tab
+                                        if (marketingModules.some(m => m.id === firstIncompleteModule.id)) {
+                                            setActiveTab('marketing');
+                                        } else if (closingModules.some(m => m.id === firstIncompleteModule.id)) {
+                                            setActiveTab('closing');
+                                        } else if (professionalExcellenceModules.some(m => m.id === firstIncompleteModule.id)) {
+                                            setActiveTab('professional');
+                                        }
+                                    }}
+                                    className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white border-0 px-6 py-2 text-sm font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                                >
+                                    <Play className="h-4 w-4 mr-2" />
+                                    Continue Learning
+                                </Button>
                             )}
                         </div>
                     </CardHeader>
@@ -280,7 +361,7 @@ export default function TrainingLessonsPage() {
                         </div>
 
                         {/* Enhanced Stats Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
                             <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10 border border-blue-200/50 dark:border-blue-800/30 hover:scale-[1.02] transition-transform duration-200">
                                 <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
                                     <TrendingUp className="h-5 w-5 text-white" />
@@ -323,7 +404,7 @@ export default function TrainingLessonsPage() {
 
             {/* Enhanced Learning Modules */}
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '200ms' }}>
-                <Tabs defaultValue="marketing" className="w-full">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList>
                         <TabsTrigger value="marketing">
                             <span className="whitespace-nowrap">Marketing</span>
@@ -489,7 +570,7 @@ export default function TrainingLessonsPage() {
                                     </div>
                                 </CardHeader>
                                 <CardContent className="p-6">
-                                    {renderModuleAccordion(professionalExcellenceModules, 'green')}
+                                    {renderModuleAccordion(professionalExcellenceModules, 'purple')}
                                 </CardContent>
                             </Card>
                         </div>

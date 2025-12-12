@@ -15,6 +15,8 @@ export interface GeminiLiveHookReturn {
     isRecording: boolean;
     isSpeaking: boolean;
     error: string | null;
+    audioLevel: number;
+    outputAudioLevel: number;
     connect: (apiKey: string, config?: GeminiLiveConfig) => Promise<void>;
     disconnect: () => void;
     startRecording: () => Promise<void>;
@@ -27,6 +29,8 @@ export function useGeminiLive(): GeminiLiveHookReturn {
     const [isRecording, setIsRecording] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [audioLevel, setAudioLevel] = useState(0);
+    const [outputAudioLevel, setOutputAudioLevel] = useState(0);
 
     const wsRef = useRef<WebSocket | null>(null);
     const mediaStreamRef = useRef<MediaStream | null>(null);
@@ -34,11 +38,18 @@ export function useGeminiLive(): GeminiLiveHookReturn {
     const processorRef = useRef<any>(null);
     const audioQueueRef = useRef<Int16Array[]>([]);
     const isPlayingRef = useRef(false);
+    const audioBufferRef = useRef<Int16Array[]>([]);
+    const playbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastChunkTimeRef = useRef<number>(0);
+    const audioSourceRef = useRef<AudioBufferSourceNode | null>(null);
+    const continuousAudioRef = useRef<Int16Array>(new Int16Array(0));
+    const playbackPositionRef = useRef<number>(0);
+    const streamingIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const isRecordingRef = useRef(false);
     const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const reconnectAttemptsRef = useRef(0);
-    const maxReconnectAttempts = 3; // Reduced for faster feedback
-    const reconnectDelay = 2000; // Reduced delay
+    const maxReconnectAttempts = 5; // Increased attempts
+    const reconnectDelay = 5000; // Longer delay to avoid overwhelming the server
     const configRef = useRef<GeminiLiveConfig | null>(null);
     const apiKeyRef = useRef<string | null>(null);
 
@@ -52,38 +63,160 @@ export function useGeminiLive(): GeminiLiveHookReturn {
         return int16Array;
     }, []);
 
-    // Play audio response
-    const playAudioChunk = useCallback(async (audioData: Int16Array) => {
-        if (!audioContextRef.current) {
-            audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+    // Smart buffering - collect chunks and play them as larger segments
+    const bufferAudioChunk = useCallback((audioData: Int16Array) => {
+        // Add chunk to buffer queue
+        audioBufferRef.current.push(audioData);
+        lastChunkTimeRef.current = Date.now();
+
+        console.log('🎵 Added audio chunk:', audioData.length, 'samples. Queue length:', audioBufferRef.current.length);
+
+        // Clear existing timeout
+        if (playbackTimeoutRef.current) {
+            clearTimeout(playbackTimeoutRef.current);
         }
 
-        const audioContext = audioContextRef.current;
-        const audioBuffer = audioContext.createBuffer(1, audioData.length, 24000);
-        const channelData = audioBuffer.getChannelData(0);
+        // Real-time streaming strategy:
+        // - Start playing quickly with small buffers
+        // - Continue playing in smaller chunks for smoother audio
+        const bufferLength = audioBufferRef.current.length;
+        let waitTime = 80; // Faster default
 
-        // Convert Int16 to Float32 for Web Audio API
-        for (let i = 0; i < audioData.length; i++) {
-            channelData[i] = audioData[i] / (audioData[i] < 0 ? 0x8000 : 0x7fff);
+        if (isPlayingRef.current) {
+            // Already playing - let it continue, but check if we should play next batch soon
+            if (bufferLength >= 15) {
+                // Queue is getting large - prepare next batch
+                console.log('🎵 Large queue building, will play next batch soon. Queued:', bufferLength);
+                setTimeout(() => {
+                    if (audioBufferRef.current.length >= 10 && !isPlayingRef.current) {
+                        playBufferedAudio();
+                    }
+                }, 100);
+            }
+            return;
+        } else if (bufferLength >= 3) {
+            // Small buffer - play immediately for low latency
+            waitTime = 0;
+        } else if (bufferLength >= 2) {
+            // Minimal buffer - very short wait
+            waitTime = 20;
+        } else if (bufferLength >= 1) {
+            // Single chunk - short wait to see if more arrive
+            waitTime = 40;
         }
 
-        const source = audioContext.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioContext.destination);
+        // Set timeout to play buffered audio (only if not already playing)
+        playbackTimeoutRef.current = setTimeout(() => {
+            if (audioBufferRef.current.length > 0 && !isPlayingRef.current) {
+                playBufferedAudio();
+            }
+        }, waitTime);
+    }, []);
 
-        source.onended = () => {
+    // Play buffered audio chunks as one smooth segment
+    const playBufferedAudio = useCallback(async () => {
+        if (audioBufferRef.current.length === 0) return;
+
+        // If already playing, don't start another playback - let the onended callback handle it
+        if (isPlayingRef.current && audioSourceRef.current) {
+            console.log('⏳ Audio already playing, letting onended callback handle queue');
+            return;
+        }
+
+        try {
+            if (!audioContextRef.current) {
+                audioContextRef.current = new AudioContext();
+                console.log('🔊 Audio playback context created with sample rate:', audioContextRef.current.sampleRate);
+            }
+
+            const audioContext = audioContextRef.current;
+
+            // Resume audio context if suspended
+            if (audioContext.state === 'suspended') {
+                console.log('🔊 Resuming suspended audio context...');
+                await audioContext.resume();
+                console.log('🔊 Audio context resumed, new state:', audioContext.state);
+            }
+
+            // Combine all buffered chunks into one continuous audio stream
+            const totalSamples = audioBufferRef.current.reduce((sum, chunk) => sum + chunk.length, 0);
+            const combinedAudio = new Int16Array(totalSamples);
+            let offset = 0;
+
+            for (const chunk of audioBufferRef.current) {
+                combinedAudio.set(chunk, offset);
+                offset += chunk.length;
+            }
+
+            // Clear the buffer and track what we're playing
+            const chunksPlayed = audioBufferRef.current.length;
+            audioBufferRef.current = [];
+
+            // Skip very small audio chunks that might cause pops
+            if (combinedAudio.length < 240) { // Less than 10ms at 24kHz
+                console.log('🔇 Skipping very small audio chunk:', combinedAudio.length, 'samples');
+                return;
+            }
+
+            // Create audio buffer with proper sample rate (Gemini sends 24kHz)
+            const sampleRate = 24000;
+            const audioBuffer = audioContext.createBuffer(1, combinedAudio.length, sampleRate);
+            const channelData = audioBuffer.getChannelData(0);
+
+            // Convert Int16 to Float32 for Web Audio API
+            for (let i = 0; i < combinedAudio.length; i++) {
+                channelData[i] = combinedAudio[i] / (combinedAudio[i] < 0 ? 32768 : 32767);
+            }
+
+            // Calculate output audio level for waveform visualization
+            let outputSum = 0;
+            for (let i = 0; i < channelData.length; i++) {
+                outputSum += Math.abs(channelData[i]);
+            }
+            const outputLevel = Math.min(1, (outputSum / channelData.length) * 5); // Amplify for better visualization
+            setOutputAudioLevel(outputLevel);
+
+            // No fade effects - keep audio pure to avoid artifacts
+
+            const source = audioContext.createBufferSource();
+            source.buffer = audioBuffer;
+
+            // Direct connection for cleanest audio
+            source.connect(audioContext.destination);
+
+            source.onended = () => {
+                audioSourceRef.current = null;
+
+                // Always reset playing state first
+                isPlayingRef.current = false;
+
+                // Check if there are more chunks to play with minimal delay
+                if (audioBufferRef.current.length > 0) {
+                    console.log('🔄 Continuing audio playback - more chunks available:', audioBufferRef.current.length);
+                    // Play next segment with minimal delay for seamless audio
+                    setTimeout(() => playBufferedAudio(), 1);
+                } else {
+                    // No more audio - stop speaking
+                    console.log('🛑 Audio playback complete - no more chunks');
+                    setIsSpeaking(false);
+                    setOutputAudioLevel(0);
+                }
+            };
+
+            setIsSpeaking(true);
+            isPlayingRef.current = true;
+            audioSourceRef.current = source;
+            source.start();
+
+            console.log('🎵 Playing combined audio:', combinedAudio.length, 'samples from', chunksPlayed, 'chunks. Queue remaining:', audioBufferRef.current.length);
+            console.log('🔊 Audio context state:', audioContext.state, 'Sample rate:', audioContext.sampleRate);
+
+        } catch (error) {
+            console.error('❌ Error playing buffered audio:', error);
             setIsSpeaking(false);
             isPlayingRef.current = false;
-            // Play next chunk if available
-            const nextChunk = audioQueueRef.current.shift();
-            if (nextChunk) {
-                playAudioChunk(nextChunk);
-            }
-        };
-
-        setIsSpeaking(true);
-        isPlayingRef.current = true;
-        source.start();
+            audioBufferRef.current = []; // Clear buffer on error
+        }
     }, []);
 
     // Clear reconnection timeout
@@ -237,13 +370,18 @@ export function useGeminiLive(): GeminiLiveHookReturn {
             wsRef.current = null;
         }
 
+        // Use v1alpha endpoint for better stability
         const host = 'generativelanguage.googleapis.com';
         const path = '/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent';
         const url = `wss://${host}${path}?key=${apiKey}`;
 
-        console.log('🚀 Connecting to Gemini Live WebSocket...');
-        console.log('📊 API Key length:', apiKey.length);
+        console.log('� Connectineg to Gemini Live WebSocket...');
+        console.log('� APII Key length:', apiKey.length);
         console.log('🔑 API Key starts with:', apiKey.substring(0, 10) + '...');
+        console.log('🌐 Full WebSocket URL (masked):', url.replace(apiKey, 'API_KEY_MASKED'));
+
+        // Test if the URL is reachable first
+        console.log('🧪 Testing WebSocket endpoint reachability...');
 
         const ws = new WebSocket(url);
         wsRef.current = ws;
@@ -287,7 +425,12 @@ export function useGeminiLive(): GeminiLiveHookReturn {
                     data = JSON.parse(event.data);
                 }
 
-                console.log('📥 Received message from Gemini Live:', data.serverContent ? 'Audio response' : 'Setup response');
+                const audioPartsCount = data.serverContent?.modelTurn?.parts?.filter((p: any) =>
+                    p.inlineData && p.inlineData.mimeType.startsWith('audio/')
+                ).length || 0;
+
+                console.log('📥 Received message from Gemini Live:',
+                    data.serverContent ? `Audio response ${audioPartsCount}` : 'Setup response');
 
                 // Call the onMessage callback if provided
                 if (config?.onMessage) {
@@ -308,11 +451,8 @@ export function useGeminiLive(): GeminiLiveHookReturn {
                                 }
                                 const int16Array = new Int16Array(bytes.buffer);
 
-                                if (isPlayingRef.current) {
-                                    audioQueueRef.current.push(int16Array);
-                                } else {
-                                    playAudioChunk(int16Array);
-                                }
+                                // Always buffer audio chunks for smooth playback
+                                bufferAudioChunk(int16Array);
                             } catch (e) {
                                 console.error('❌ Error processing audio data:', e);
                             }
@@ -332,13 +472,12 @@ export function useGeminiLive(): GeminiLiveHookReturn {
             console.error('  - WebSocket readyState:', ws.readyState);
             console.error('  - Navigator online:', navigator.onLine);
 
-            let errorMessage = 'Connection failed. ';
+            // Simple error handling - let reconnection logic handle retries
+            let errorMessage = 'Connection error occurred. ';
             if (!navigator.onLine) {
                 errorMessage += 'No internet connection.';
-            } else if (apiKey.length < 30) {
-                errorMessage += 'API key may be invalid.';
             } else {
-                errorMessage += 'Please check your API key and try again.';
+                errorMessage += 'Will attempt to reconnect...';
             }
 
             setError(errorMessage);
@@ -386,7 +525,7 @@ export function useGeminiLive(): GeminiLiveHookReturn {
                 }
             }
         };
-    }, [playAudioChunk, attemptReconnect, testApiKey]);
+    }, [bufferAudioChunk, attemptReconnect, testApiKey]);
 
     // Connect to Gemini Live API
     const connect = useCallback(async (apiKey: string, config?: GeminiLiveConfig) => {
@@ -440,7 +579,35 @@ export function useGeminiLive(): GeminiLiveHookReturn {
         }
 
         audioQueueRef.current = [];
+        audioBufferRef.current = [];
         isPlayingRef.current = false;
+
+        // Stop any currently playing audio
+        if (audioSourceRef.current) {
+            try {
+                audioSourceRef.current.stop();
+            } catch (e) {
+                // Audio source might already be stopped
+            }
+            audioSourceRef.current = null;
+        }
+
+        // Clear playback timeout
+        if (playbackTimeoutRef.current) {
+            clearTimeout(playbackTimeoutRef.current);
+            playbackTimeoutRef.current = null;
+        }
+
+        // Clear streaming interval if it exists
+        if (streamingIntervalRef.current) {
+            clearInterval(streamingIntervalRef.current);
+            streamingIntervalRef.current = null;
+        }
+
+        // Reset continuous audio buffer
+        continuousAudioRef.current = new Int16Array(0);
+        playbackPositionRef.current = 0;
+
         isRecordingRef.current = false;
         setIsConnected(false);
         setIsRecording(false);
@@ -461,7 +628,6 @@ export function useGeminiLive(): GeminiLiveHookReturn {
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                     channelCount: 1,
-                    sampleRate: 16000,
                     echoCancellation: true,
                     noiseSuppression: true,
                 }
@@ -469,37 +635,120 @@ export function useGeminiLive(): GeminiLiveHookReturn {
 
             mediaStreamRef.current = stream;
 
-            // Create audio context for processing
-            const audioContext = new AudioContext({ sampleRate: 16000 });
+            // Create audio context with default sample rate (usually 44.1kHz or 48kHz)
+            const audioContext = new AudioContext();
             const source = audioContext.createMediaStreamSource(stream);
 
-            // Use ScriptProcessorNode (deprecated but widely supported)
-            const processor = audioContext.createScriptProcessor(4096, 1, 1);
+            console.log('🎤 Audio context sample rate:', audioContext.sampleRate);
 
-            processor.onaudioprocess = (e: any) => {
+            // Use larger buffer size for more stable processing
+            // Note: createScriptProcessor is deprecated but still widely supported
+            // TODO: Migrate to AudioWorklet for better performance in the future
+            const processor = audioContext.createScriptProcessor(8192, 1, 1);
+
+            let audioBuffer: Float32Array[] = [];
+            let bufferCount = 0;
+            const BUFFER_SIZE = 3; // Reduced buffer size for lower latency while maintaining stability
+
+            const processAudioData = (inputData: Float32Array) => {
                 if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || !isRecordingRef.current) return;
 
-                const inputData = e.inputBuffer.getChannelData(0);
-                const int16Data = float32ToInt16(inputData);
+                // Calculate audio level for waveform visualization
+                let sum = 0;
+                for (let i = 0; i < inputData.length; i++) {
+                    sum += Math.abs(inputData[i]);
+                }
+                const level = Math.min(1, (sum / inputData.length) * 10); // Amplify for better visualization
+                setAudioLevel(level);
 
-                // Convert to base64
-                const blob = new Blob([int16Data.buffer as ArrayBuffer], { type: 'application/octet-stream' });
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const base64String = (reader.result as string).split(',')[1];
-                    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                        const message = {
-                            realtimeInput: {
-                                mediaChunks: [{
-                                    mimeType: 'audio/pcm;rate=16000',
-                                    data: base64String
-                                }]
-                            }
-                        };
-                        wsRef.current.send(JSON.stringify(message));
+                audioBuffer.push(new Float32Array(inputData));
+                bufferCount++;
+
+                // Only send audio every few buffers to reduce WebSocket load
+                if (bufferCount < BUFFER_SIZE) return;
+
+                // Combine buffered audio
+                const totalLength = audioBuffer.reduce((sum, buf) => sum + buf.length, 0);
+                const combinedData = new Float32Array(totalLength);
+                let offset = 0;
+
+                for (const buf of audioBuffer) {
+                    combinedData.set(buf, offset);
+                    offset += buf.length;
+                }
+
+                // Reset buffer
+                audioBuffer = [];
+                bufferCount = 0;
+
+                // Apply noise gate to reduce background noise
+                const noiseGateThreshold = 0.01;
+                for (let i = 0; i < combinedData.length; i++) {
+                    if (Math.abs(combinedData[i]) < noiseGateThreshold) {
+                        combinedData[i] = 0;
                     }
-                };
-                reader.readAsDataURL(blob);
+                }
+
+                // Resample from browser's sample rate to 16kHz for Gemini
+                const targetSampleRate = 16000;
+                const sourceSampleRate = audioContext.sampleRate;
+                const resampleRatio = targetSampleRate / sourceSampleRate;
+                const targetLength = Math.floor(combinedData.length * resampleRatio);
+                const resampledData = new Float32Array(targetLength);
+
+                // Improved resampling with anti-aliasing
+                for (let i = 0; i < targetLength; i++) {
+                    const sourceIndex = i / resampleRatio;
+                    const index = Math.floor(sourceIndex);
+                    const fraction = sourceIndex - index;
+
+                    if (index + 1 < combinedData.length) {
+                        // Linear interpolation with bounds checking
+                        resampledData[i] = combinedData[index] * (1 - fraction) + combinedData[index + 1] * fraction;
+                    } else if (index < combinedData.length) {
+                        resampledData[i] = combinedData[index];
+                    } else {
+                        resampledData[i] = 0;
+                    }
+                }
+
+                const int16Data = float32ToInt16(resampledData);
+
+                // Convert to base64 with error handling
+                try {
+                    const blob = new Blob([int16Data.buffer as ArrayBuffer], { type: 'application/octet-stream' });
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const base64String = (reader.result as string).split(',')[1];
+                        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                            const message = {
+                                realtimeInput: {
+                                    mediaChunks: [{
+                                        mimeType: 'audio/pcm;rate=16000',
+                                        data: base64String
+                                    }]
+                                }
+                            };
+
+                            try {
+                                wsRef.current.send(JSON.stringify(message));
+                            } catch (sendError) {
+                                console.warn('⚠️ Failed to send audio data:', sendError);
+                            }
+                        }
+                    };
+                    reader.onerror = () => {
+                        console.warn('⚠️ Failed to convert audio to base64');
+                    };
+                    reader.readAsDataURL(blob);
+                } catch (error) {
+                    console.warn('⚠️ Error processing audio buffer:', error);
+                }
+            };
+
+            processor.onaudioprocess = (e: any) => {
+                const inputData = e.inputBuffer.getChannelData(0);
+                processAudioData(inputData);
             };
 
             source.connect(processor);
@@ -523,6 +772,7 @@ export function useGeminiLive(): GeminiLiveHookReturn {
 
         isRecordingRef.current = false;
         setIsRecording(false);
+        setAudioLevel(0);
 
         if (mediaStreamRef.current) {
             mediaStreamRef.current.getTracks().forEach(track => track.stop());
@@ -558,27 +808,20 @@ export function useGeminiLive(): GeminiLiveHookReturn {
         wsRef.current.send(JSON.stringify(message));
     }, []);
 
-    // Connection health check
+    // Connection health check - disabled to reduce WebSocket load
     useEffect(() => {
         if (!isConnected || !wsRef.current) return;
 
+        // Reduced frequency health check to avoid overloading the connection
         const healthCheckInterval = setInterval(() => {
-            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                // Send a ping to keep connection alive
-                try {
-                    wsRef.current.send(JSON.stringify({ ping: Date.now() }));
-                } catch (error) {
-                    console.warn('⚠️ Failed to send ping:', error);
-                }
-            } else if (wsRef.current && wsRef.current.readyState === WebSocket.CLOSED) {
-                // Connection is closed, attempt reconnect
+            if (wsRef.current && wsRef.current.readyState === WebSocket.CLOSED) {
                 console.log('💔 Health check detected closed connection');
                 setIsConnected(false);
                 if (apiKeyRef.current && configRef.current) {
                     attemptReconnect();
                 }
             }
-        }, 30000); // Check every 30 seconds
+        }, 60000); // Check every 60 seconds instead of 30
 
         return () => clearInterval(healthCheckInterval);
     }, [isConnected, attemptReconnect]);
@@ -595,6 +838,8 @@ export function useGeminiLive(): GeminiLiveHookReturn {
         isRecording,
         isSpeaking,
         error,
+        audioLevel,
+        outputAudioLevel,
         connect,
         disconnect,
         startRecording,

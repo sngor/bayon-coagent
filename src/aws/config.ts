@@ -288,9 +288,8 @@ let cachedConfig: AWSConfig | null = null;
  * This ensures configuration is only computed once per application lifecycle
  */
 export function getConfig(): AWSConfig {
-  if (!cachedConfig) {
-    cachedConfig = getAWSConfig();
-  }
+  // Temporarily disable caching to ensure fresh config
+  cachedConfig = getAWSConfig();
   return cachedConfig;
 }
 

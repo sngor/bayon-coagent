@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation';
 import { StandardCard } from '@/components/standard/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useGeminiLive } from '@/hooks/use-gemini-live';
+import { useGeminiLive } from '../hooks/use-gemini-live';
 import { getGeminiApiKeyAction } from '@/app/actions';
-import { Mic, MicOff, Volume2, VolumeX, Loader2, Sparkles, User, Pause, Play, Lightbulb } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Loader2, Sparkles, User, Lightbulb } from 'lucide-react';
 import type { RolePlayScenario } from '@/lib/constants/training-data';
-import { Modality } from '@google/genai';
+// Note: Using string literal instead of Modality enum for compatibility
+// import { Modality } from '@google/genai';
 import { VoiceDiagnostics } from '@/components/voice-diagnostics';
 
 export interface VoiceRolePlayProps {
@@ -27,7 +28,8 @@ function getVoiceForGender(gender: 'male' | 'female'): string {
 export function VoiceRolePlay({ scenario, onEnd }: VoiceRolePlayProps) {
     const [apiKey, setApiKey] = useState<string | null>(null);
     const [isInitializing, setIsInitializing] = useState(true);
-    const [isPaused, setIsPaused] = useState(false);
+
+
     const { toast } = useToast();
 
     const {
@@ -35,6 +37,8 @@ export function VoiceRolePlay({ scenario, onEnd }: VoiceRolePlayProps) {
         isRecording,
         isSpeaking,
         error,
+        audioLevel,
+        outputAudioLevel,
         connect,
         disconnect,
         startRecording,
@@ -106,7 +110,7 @@ Start the conversation by greeting the agent and briefly mentioning your situati
                 await connect(apiKey, {
                     model: 'models/gemini-2.5-flash-native-audio-preview-09-2025',
                     systemInstruction,
-                    responseModalities: [Modality.AUDIO],
+                    responseModalities: ['AUDIO'],
                     voiceName: getVoiceForGender(scenario.persona.gender),
                 });
 
@@ -137,6 +141,8 @@ Start the conversation by greeting the agent and briefly mentioning your situati
             });
         }
     }, [error, toast]);
+
+
 
     // Cleanup on unmount
     useEffect(() => {
@@ -209,7 +215,7 @@ Start the conversation by greeting the agent and briefly mentioning your situati
                                         connect(apiKey, {
                                             model: 'models/gemini-2.5-flash-native-audio-preview-09-2025',
                                             systemInstruction,
-                                            responseModalities: [Modality.AUDIO],
+                                            responseModalities: ['AUDIO'],
                                             voiceName: getVoiceForGender(scenario.persona.gender),
                                         });
                                     }}
@@ -297,7 +303,7 @@ Start the conversation by greeting the agent and briefly mentioning your situati
                 {/* Main Interaction Area */}
                 <div className="relative min-h-[400px] flex flex-col items-center justify-center rounded-2xl bg-gradient-to-b from-secondary/20 to-secondary/5 border border-secondary/20 p-8">
                     {/* Microphone Button Area */}
-                    <div className="flex flex-col items-center gap-8 z-10">
+                    <div className="flex flex-col items-center gap-6 z-10">
                         <div className="relative group">
                             {/* Glow Effect */}
                             {isRecording && (
@@ -308,7 +314,7 @@ Start the conversation by greeting the agent and briefly mentioning your situati
                             <Button
                                 onClick={handleToggleRecording}
                                 disabled={!isConnected || isSpeaking}
-                                className={`h-48 w-48 rounded-full shadow-xl transition-all duration-300 flex flex-col gap-2 ${isRecording
+                                className={`h-48 w-48 rounded-full shadow-xl transition-all duration-300 flex flex-col gap-2 relative z-10 ${isRecording
                                     ? 'bg-red-500 hover:bg-red-600 scale-105'
                                     : 'bg-white dark:bg-gray-900 text-primary border-4 border-primary/10 hover:border-primary/30 hover:scale-105'
                                     } disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed`}
@@ -326,6 +332,42 @@ Start the conversation by greeting the agent and briefly mentioning your situati
                                 )}
                             </Button>
                         </div>
+
+                        {/* Audio-Responsive Waveform Below Mic Button */}
+                        {(isRecording || isSpeaking) && (
+                            <div className="flex items-end gap-2 h-16 justify-center">
+                                {Array.from({ length: 12 }).map((_, i) => {
+                                    // Create different frequency responses for each bar
+                                    const baseHeight = 8;
+                                    const maxHeight = 50;
+
+                                    // Use audio level for recording, outputAudioLevel for AI speaking
+                                    const currentLevel = isRecording
+                                        ? audioLevel || 0
+                                        : isSpeaking
+                                            ? outputAudioLevel || 0
+                                            : 0;
+
+                                    // Each bar responds differently to create realistic waveform
+                                    const barMultiplier = 0.5 + Math.sin(i * 0.8) * 0.5; // Different frequency response per bar
+                                    const height = baseHeight + (currentLevel * barMultiplier * maxHeight);
+
+                                    return (
+                                        <div
+                                            key={i}
+                                            className={`w-2 rounded-full transition-all duration-75 ${isRecording
+                                                ? 'bg-red-400/70'
+                                                : 'bg-blue-400/70'
+                                                } ${currentLevel > 0.1 ? 'scale-y-110' : 'scale-y-100'}`}
+                                            style={{
+                                                height: `${Math.max(baseHeight, height)}px`,
+                                                minHeight: '8px'
+                                            }}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
 
                     {/* Status Text */}
@@ -442,7 +484,7 @@ Start the conversation by greeting the agent and briefly mentioning your situati
                             connect(apiKey, {
                                 model: 'models/gemini-2.5-flash-native-audio-preview-09-2025',
                                 systemInstruction,
-                                responseModalities: [Modality.AUDIO],
+                                responseModalities: ['AUDIO'],
                                 voiceName: getVoiceForGender(scenario.persona.gender),
                             });
                         }

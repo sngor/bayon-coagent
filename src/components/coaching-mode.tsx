@@ -5,11 +5,10 @@ import { useRouter } from 'next/navigation';
 import { StandardCard } from '@/components/standard/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useGeminiLive } from '@/hooks/use-gemini-live';
+import { useGeminiLive } from '../hooks/use-gemini-live';
 import { getGeminiApiKeyAction } from '@/app/actions';
-import { Mic, MicOff, Volume2, VolumeX, Loader2, Lightbulb, Target, TrendingUp, Pause, Play, Sparkles } from 'lucide-react';
+import { Mic, MicOff, Volume2, Loader2, Lightbulb, Target, TrendingUp, Sparkles } from 'lucide-react';
 import type { RolePlayScenario } from '@/lib/constants/training-data';
-import { Modality } from '@google/genai';
 
 export interface CoachingModeProps {
     scenario: RolePlayScenario;
@@ -32,13 +31,13 @@ function getVoiceForGender(gender: 'male' | 'female'): string {
 export function CoachingMode({ scenario, onEnd }: CoachingModeProps) {
     const [apiKey, setApiKey] = useState<string | null>(null);
     const [isInitializing, setIsInitializing] = useState(true);
-    const [isPaused, setIsPaused] = useState(false);
     const [coachingTips, setCoachingTips] = useState<CoachingTip[]>([]);
     const [sessionMetrics, setSessionMetrics] = useState({
         objections: 0,
         techniques: 0,
         duration: 0,
     });
+
     const { toast } = useToast();
 
     const router = useRouter();
@@ -48,6 +47,8 @@ export function CoachingMode({ scenario, onEnd }: CoachingModeProps) {
         isRecording,
         isSpeaking,
         error,
+        audioLevel,
+        outputAudioLevel,
         connect,
         disconnect,
         startRecording,
@@ -110,43 +111,99 @@ export function CoachingMode({ scenario, onEnd }: CoachingModeProps) {
         }
     }, []);
 
-    // Parse AI messages for technique markers
+    // Enhanced AI message parsing for technique detection
     const parseAIMessage = useCallback((message: any) => {
-        // Check if message contains text (serverContent or text field)
-        const textContent = message.serverContent?.modelTurn?.parts?.[0]?.text ||
-            message.text ||
-            '';
+        console.log('🎯 Coaching Mode - Received message:', message);
 
-        if (!textContent) return;
+        // Check multiple possible message formats
+        let textContent = '';
 
-        console.log('Parsing message for techniques:', textContent);
-
-        // Look for technique markers
-        const techniqueMatch = textContent.match(/\[TECHNIQUE:\s*([^\]]+)\]/i);
-        if (techniqueMatch) {
-            const techniqueName = techniqueMatch[1].trim();
-            addCoachingTip('technique', `Great! You used: ${techniqueName}`);
-            console.log('Technique detected:', techniqueName);
+        // Try different message structures
+        if (message.serverContent?.modelTurn?.parts?.[0]?.text) {
+            textContent = message.serverContent.modelTurn.parts[0].text;
+        } else if (message.text) {
+            textContent = message.text;
+        } else if (message.content) {
+            textContent = message.content;
+        } else if (typeof message === 'string') {
+            textContent = message;
         }
 
-        // Look for success markers
-        const successMatch = textContent.match(/\[SUCCESS:\s*([^\]]+)\]/i);
-        if (successMatch) {
-            const successMessage = successMatch[1].trim();
-            addCoachingTip('success', `✓ ${successMessage}`);
-            console.log('Success detected:', successMessage);
+        if (!textContent) {
+            console.log('⚠️ No text content found in message');
+            return;
         }
 
-        // Look for tip markers
-        const tipMatch = textContent.match(/\[TIP:\s*([^\]]+)\]/i);
-        if (tipMatch) {
-            const tipMessage = tipMatch[1].trim();
-            addCoachingTip('warning', `💡 ${tipMessage}`);
-            console.log('Tip detected:', tipMessage);
-        }
+        console.log('📝 Parsing text content:', textContent);
+
+        // Look for technique markers with improved regex patterns
+        const techniquePatterns = [
+            /\[TECHNIQUE:\s*([^\]]+)\]/gi,
+            /\[SKILL:\s*([^\]]+)\]/gi,
+            /\[METHOD:\s*([^\]]+)\]/gi,
+        ];
+
+        const successPatterns = [
+            /\[SUCCESS:\s*([^\]]+)\]/gi,
+            /\[GOOD:\s*([^\]]+)\]/gi,
+            /\[WELL DONE:\s*([^\]]+)\]/gi,
+        ];
+
+        const tipPatterns = [
+            /\[TIP:\s*([^\]]+)\]/gi,
+            /\[HINT:\s*([^\]]+)\]/gi,
+            /\[SUGGESTION:\s*([^\]]+)\]/gi,
+        ];
+
+        // Check for techniques
+        techniquePatterns.forEach(pattern => {
+            let match;
+            while ((match = pattern.exec(textContent)) !== null) {
+                const techniqueName = match[1].trim();
+                addCoachingTip('technique', `Great! You used: ${techniqueName}`);
+                console.log('✅ Technique detected:', techniqueName);
+            }
+        });
+
+        // Check for success markers
+        successPatterns.forEach(pattern => {
+            let match;
+            while ((match = pattern.exec(textContent)) !== null) {
+                const successMessage = match[1].trim();
+                addCoachingTip('success', `✓ ${successMessage}`);
+                console.log('🎉 Success detected:', successMessage);
+            }
+        });
+
+        // Check for tips
+        tipPatterns.forEach(pattern => {
+            let match;
+            while ((match = pattern.exec(textContent)) !== null) {
+                const tipMessage = match[1].trim();
+                addCoachingTip('warning', `💡 ${tipMessage}`);
+                console.log('💡 Tip detected:', tipMessage);
+            }
+        });
+
+        // Also look for common objection handling patterns in natural language
+        const naturalPatterns = [
+            { pattern: /feel.*felt.*found/i, technique: 'Feel, Felt, Found' },
+            { pattern: /understand.*concern/i, technique: 'Acknowledge & Reframe' },
+            { pattern: /what.*specifically.*concerns/i, technique: 'Clarifying Questions' },
+            { pattern: /if.*could.*address.*would.*ready/i, technique: 'Trial Close' },
+            { pattern: /data.*shows.*statistics/i, technique: 'Evidence-Based Response' },
+        ];
+
+        naturalPatterns.forEach(({ pattern, technique }) => {
+            if (pattern.test(textContent)) {
+                addCoachingTip('technique', `Detected: ${technique}`);
+                console.log('🔍 Natural pattern detected:', technique);
+            }
+        });
+
     }, [addCoachingTip]);
 
-    // Connect to Gemini Live with coaching instructions
+    // Connect to Gemini Live with enhanced coaching instructions
     useEffect(() => {
         if (!apiKey || isConnected) return;
 
@@ -163,31 +220,24 @@ Communication Style: ${scenario.persona.communicationStyle}
 **SECONDARY ROLE - Real-Time Coach:**
 While staying in character as ${scenario.persona.name}, you will also provide REAL-TIME COACHING FEEDBACK. This is COACHING MODE.
 
-**COACHING GUIDELINES:**
-1. **Stay in Character**: Respond as ${scenario.persona.name} would naturally respond
-2. **Present Objections**: Bring up concerns from the persona's list naturally in conversation
-3. **Escalate Appropriately**: If the agent handles an objection well, move to the next concern. If they struggle, give them a chance to recover
-4. **Provide Subtle Hints**: If the agent is struggling, give small verbal cues like "I'm not sure I understand..." or "Can you explain that differently?"
-5. **Acknowledge Good Techniques**: When the agent uses effective techniques, respond positively as the client would
-6. **Give Explicit Feedback**: After responding in character, briefly note when techniques are used
+**CRITICAL: ALWAYS INCLUDE FEEDBACK MARKERS**
+After every response, you MUST include coaching feedback using these exact formats:
 
-**TECHNIQUE DETECTION - Identify these objection handling techniques:**
-1. **Feel, Felt, Found**: "I understand how you feel... others have felt... what they found..."
-2. **Acknowledge + Reframe**: Validating concern then showing different perspective
-3. **Clarifying Questions**: "What specifically concerns you about...?" or "Can you help me understand..."
-4. **Trial Close**: "If we could address that, would you be ready to move forward?"
-5. **Evidence-Based Response**: Using data, statistics, or examples to support points
-6. **Active Listening**: Paraphrasing or summarizing what the client said
-7. **Empathy Statements**: Showing understanding of emotions and concerns
+**TECHNIQUE DETECTION - When the agent uses these techniques, mark them:**
+1. **Feel, Felt, Found**: "I understand how you feel... others have felt... what they found..." → [TECHNIQUE: Feel, Felt, Found]
+2. **Acknowledge + Reframe**: Validating concern then showing different perspective → [TECHNIQUE: Acknowledge & Reframe]
+3. **Clarifying Questions**: "What specifically concerns you about...?" → [TECHNIQUE: Clarifying Questions]
+4. **Trial Close**: "If we could address that, would you be ready to move forward?" → [TECHNIQUE: Trial Close]
+5. **Evidence-Based Response**: Using data, statistics, or examples → [TECHNIQUE: Evidence-Based Response]
+6. **Active Listening**: Paraphrasing or summarizing → [TECHNIQUE: Active Listening]
+7. **Empathy Statements**: Showing understanding of emotions → [TECHNIQUE: Empathy Statements]
 
-**FEEDBACK FORMAT:**
-When the agent uses a technique effectively, include a brief note in your response:
-- Start your in-character response normally
-- If a technique was used well, add at the end: "[TECHNIQUE: technique_name]"
-- If they handled an objection well: "[SUCCESS: brief_praise]"
-- If they need improvement: "[TIP: brief_suggestion]"
+**FEEDBACK MARKERS - Use these EXACT formats:**
+- When technique used well: [TECHNIQUE: technique_name]
+- When they handle objection well: [SUCCESS: brief_praise]
+- When they need improvement: [TIP: brief_suggestion]
 
-Examples:
+**EXAMPLES:**
 - "That makes sense. I appreciate you taking the time to explain that. [TECHNIQUE: Active Listening]"
 - "Okay, I can see how that data supports your recommendation. [TECHNIQUE: Evidence-Based Response]"
 - "I like how you acknowledged my concern. Let me think about that. [SUCCESS: Great use of empathy]"
@@ -196,18 +246,18 @@ Examples:
 **CONVERSATION FLOW:**
 1. Start with your main concern from the persona
 2. Present 2-3 objections throughout the conversation
-3. Gradually warm up if agent handles objections well
-4. Become more resistant if agent is pushy or dismissive
-5. Provide natural opportunities for the agent to demonstrate skills
-6. Give feedback markers when techniques are used
+3. ALWAYS include feedback markers in your responses
+4. Gradually warm up if agent handles objections well
+5. Become more resistant if agent is pushy or dismissive
+6. Give clear technique recognition when skills are demonstrated
 
-Begin the conversation by introducing yourself and presenting your first concern or objection.`;
+Begin the conversation by introducing yourself and presenting your first concern or objection. Remember to include feedback markers in EVERY response.`;
 
             try {
                 await connect(apiKey, {
                     model: 'models/gemini-2.5-flash-native-audio-preview-09-2025',
                     systemInstruction,
-                    responseModalities: [Modality.AUDIO],
+                    responseModalities: ['AUDIO'],
                     voiceName: getVoiceForGender(scenario.persona.gender),
                     onMessage: parseAIMessage,
                 });
@@ -240,7 +290,6 @@ Begin the conversation by introducing yourself and presenting your first concern
         initializeConnection();
     }, [apiKey, isConnected, connect, scenario, toast, parseAIMessage]);
 
-
     useEffect(() => {
         if (error) {
             toast({
@@ -250,6 +299,8 @@ Begin the conversation by introducing yourself and presenting your first concern
             });
         }
     }, [error, toast]);
+
+
 
     // Cleanup on unmount
     useEffect(() => {
@@ -355,7 +406,7 @@ Begin the conversation by introducing yourself and presenting your first concern
                 {/* Main Interaction Area */}
                 <div className="relative min-h-[400px] flex flex-col items-center justify-center rounded-2xl bg-gradient-to-b from-secondary/20 to-secondary/5 border border-secondary/20 p-8">
                     {/* Microphone Button Area */}
-                    <div className="flex flex-col items-center gap-8 z-10">
+                    <div className="flex flex-col items-center gap-6 z-10">
                         <div className="relative group">
                             {/* Glow Effect */}
                             {isRecording && (
@@ -384,6 +435,42 @@ Begin the conversation by introducing yourself and presenting your first concern
                                 )}
                             </Button>
                         </div>
+
+                        {/* Audio-Responsive Waveform Below Mic Button */}
+                        {(isRecording || isSpeaking) && (
+                            <div className="flex items-end gap-2 h-16 justify-center">
+                                {Array.from({ length: 12 }).map((_, i) => {
+                                    // Create different frequency responses for each bar
+                                    const baseHeight = 8;
+                                    const maxHeight = 50;
+
+                                    // Use audio level for recording, outputAudioLevel for AI speaking
+                                    const currentLevel = isRecording
+                                        ? audioLevel || 0
+                                        : isSpeaking
+                                            ? outputAudioLevel || 0
+                                            : 0;
+
+                                    // Each bar responds differently to create realistic waveform
+                                    const barMultiplier = 0.5 + Math.sin(i * 0.8) * 0.5;
+                                    const height = baseHeight + (currentLevel * barMultiplier * maxHeight);
+
+                                    return (
+                                        <div
+                                            key={i}
+                                            className={`w-2 rounded-full transition-all duration-75 ${isRecording
+                                                ? 'bg-red-400/70'
+                                                : 'bg-blue-400/70'
+                                                } ${currentLevel > 0.1 ? 'scale-y-110' : 'scale-y-100'}`}
+                                            style={{
+                                                height: `${Math.max(baseHeight, height)}px`,
+                                                minHeight: '8px'
+                                            }}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
 
                     <div className="mt-12 text-center space-y-2 z-10">
@@ -416,6 +503,9 @@ Begin the conversation by introducing yourself and presenting your first concern
                         <div className="flex items-center gap-2">
                             <Sparkles className="h-5 w-5 text-purple-500" />
                             <span className="font-headline">Real-time Feedback</span>
+                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                                {coachingTips.length} tips
+                            </span>
                         </div>
                     }
                     className="h-full"
@@ -425,6 +515,7 @@ Begin the conversation by introducing yourself and presenting your first concern
                             <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground p-4 border-2 border-dashed rounded-xl">
                                 <Lightbulb className="h-8 w-8 mb-2 opacity-20" />
                                 <p className="text-sm">Start speaking to receive real-time coaching tips and feedback</p>
+                                <p className="text-xs mt-2 opacity-60">The AI will analyze your objection handling techniques</p>
                             </div>
                         ) : (
                             coachingTips.map((tip, idx) => (
@@ -437,7 +528,12 @@ Begin the conversation by introducing yourself and presenting your first concern
                                             : 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200'
                                         }`}
                                 >
-                                    {tip.message}
+                                    <div className="flex items-start gap-2">
+                                        <span className="text-xs opacity-60">
+                                            {new Date(tip.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                        <span className="flex-1">{tip.message}</span>
+                                    </div>
                                 </div>
                             ))
                         )}
@@ -467,12 +563,14 @@ Begin the conversation by introducing yourself and presenting your first concern
                     </StandardCard>
 
                     <div className="p-4 rounded-xl bg-secondary/30 border border-secondary">
-                        <h4 className="font-semibold text-sm mb-3">Quick Reference</h4>
-                        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                        <h4 className="font-semibold text-sm mb-3">Technique Reference</h4>
+                        <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground">
                             <div className="p-2 rounded bg-background/50">Feel, Felt, Found</div>
                             <div className="p-2 rounded bg-background/50">Clarifying Questions</div>
                             <div className="p-2 rounded bg-background/50">Active Listening</div>
                             <div className="p-2 rounded bg-background/50">Trial Close</div>
+                            <div className="p-2 rounded bg-background/50">Evidence-Based Response</div>
+                            <div className="p-2 rounded bg-background/50">Acknowledge & Reframe</div>
                         </div>
                     </div>
                 </div>

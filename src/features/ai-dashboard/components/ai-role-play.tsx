@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { StandardCard } from '@/components/standard/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,6 +41,7 @@ export function AIRolePlay({ moduleId, className }: AIRolePlayProps = {}) {
     const [isVoiceMode, setIsVoiceMode] = useState(false);
     const [isCoachingMode, setIsCoachingMode] = useState(false);
     const { toast } = useToast();
+    const router = useRouter();
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -422,6 +424,8 @@ export function AIRolePlay({ moduleId, className }: AIRolePlayProps = {}) {
                             setMessages([]);
                             setFeedback(null);
                             setSessionStartTime(null);
+                            // Navigate back to the main practice page
+                            router.push('/learning/practice');
                         }}
                     />
                 ) : (
@@ -432,6 +436,8 @@ export function AIRolePlay({ moduleId, className }: AIRolePlayProps = {}) {
                             setMessages([]);
                             setFeedback(null);
                             setSessionStartTime(null);
+                            // Navigate back to the main practice page
+                            router.push('/learning/practice');
                         }}
                     />
                 )
@@ -469,15 +475,12 @@ export function AIRolePlay({ moduleId, className }: AIRolePlayProps = {}) {
                             </Button>
                             <Button
                                 onClick={() => {
-                                    setSessionId(null);
-                                    setMessages([]);
-                                    setFeedback(null);
-                                    setSessionStartTime(null);
-                                    setSelectedScenarioId('');
+                                    // Navigate back to the main practice page
+                                    router.push('/learning/practice');
                                 }}
                                 className="flex-1"
                             >
-                                Back to Scenarios
+                                Back to Practice
                             </Button>
                         </div>
                     </div>

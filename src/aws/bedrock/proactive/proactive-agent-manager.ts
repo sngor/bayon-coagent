@@ -533,44 +533,50 @@ Provide suggestions in this format:
             includeDismissed?: boolean;
         }
     ): Promise<ProactiveSuggestion[]> {
-        const items = await this.repository.queryItems({
-            PK: `USER#${userId}`,
-            SK: { beginsWith: 'SUGGESTION#' }
-        });
+        try {
+            const items = await this.repository.queryItems({
+                PK: `USER#${userId}`,
+                SK: { beginsWith: 'SUGGESTION#' }
+            });
 
-        let suggestions = items as ProactiveSuggestion[];
+            let suggestions = items as ProactiveSuggestion[];
 
-        // Apply filters
-        if (options?.type) {
-            suggestions = suggestions.filter(s => s.type === options.type);
-        }
-
-        if (options?.priority) {
-            suggestions = suggestions.filter(s => s.priority === options.priority);
-        }
-
-        if (!options?.includeDismissed) {
-            suggestions = suggestions.filter(s => !s.dismissed);
-        }
-
-        // Remove expired suggestions
-        const now = new Date().toISOString();
-        suggestions = suggestions.filter(s => !s.expiresAt || s.expiresAt > now);
-
-        // Sort by priority and creation date
-        suggestions.sort((a, b) => {
-            const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
-            const aPriority = priorityOrder[a.priority];
-            const bPriority = priorityOrder[b.priority];
-
-            if (aPriority !== bPriority) {
-                return bPriority - aPriority;
+            // Apply filters
+            if (options?.type) {
+                suggestions = suggestions.filter(s => s.type === options.type);
             }
 
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        });
+            if (options?.priority) {
+                suggestions = suggestions.filter(s => s.priority === options.priority);
+            }
 
-        return suggestions.slice(0, options?.limit || 50);
+            if (!options?.includeDismissed) {
+                suggestions = suggestions.filter(s => !s.dismissed);
+            }
+
+            // Remove expired suggestions
+            const now = new Date().toISOString();
+            suggestions = suggestions.filter(s => !s.expiresAt || s.expiresAt > now);
+
+            // Sort by priority and creation date
+            suggestions.sort((a, b) => {
+                const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
+                const aPriority = priorityOrder[a.priority];
+                const bPriority = priorityOrder[b.priority];
+
+                if (aPriority !== bPriority) {
+                    return bPriority - aPriority;
+                }
+
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            });
+
+            return suggestions.slice(0, options?.limit || 50);
+        } catch (error) {
+            // Log the error and return empty array instead of throwing
+            console.warn('Failed to query user suggestions from DynamoDB:', error);
+            return [];
+        }
     }
 
     /**

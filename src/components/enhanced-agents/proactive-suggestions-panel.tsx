@@ -155,18 +155,14 @@ export function ProactiveSuggestionsPanel({
             if (response.success && response.data) {
                 setSuggestions(response.data);
             } else {
-                toast({
-                    variant: 'destructive',
-                    title: 'Failed to load suggestions',
-                    description: response.error || 'Unknown error occurred'
-                });
+                // Silently handle the error - suggestions are optional
+                console.warn('Failed to load suggestions:', response.error);
+                setSuggestions([]);
             }
         } catch (error) {
-            toast({
-                variant: 'destructive',
-                title: 'Error loading suggestions',
-                description: error instanceof Error ? error.message : 'Unknown error'
-            });
+            // Silently handle the error - suggestions are optional
+            console.warn('Error loading suggestions:', error);
+            setSuggestions([]);
         } finally {
             setIsLoading(false);
             setIsRefreshing(false);

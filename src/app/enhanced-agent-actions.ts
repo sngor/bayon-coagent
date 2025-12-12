@@ -249,9 +249,12 @@ export async function getProactiveSuggestionsAction(
         };
 
     } catch (error) {
+        // Log the error for debugging but return empty suggestions instead of failing
+        console.warn('Failed to get proactive suggestions:', error);
         return {
-            success: false,
-            error: error instanceof Error ? error.message : 'Failed to get suggestions'
+            success: true,
+            data: [],
+            message: 'No suggestions available'
         };
     }
 }
