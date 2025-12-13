@@ -57,9 +57,21 @@ export class CognitoAuthClient {
     const config = getConfig();
     const credentials = getAWSCredentials();
 
+    // Temporarily hardcode values to bypass config issues
+    const hardcodedRegion = 'us-west-2';
+    const hardcodedClientId = '1vnmp9v58opg04o480fokp0sct';
+    const hardcodedUserPoolId = 'us-west-2_ALOcJxQDd';
+
+    console.log('Cognito Config:', {
+      region: hardcodedRegion,
+      endpoint: undefined,
+      clientId: hardcodedClientId,
+      userPoolId: hardcodedUserPoolId
+    });
+
     this.client = new CognitoIdentityProviderClient({
-      region: String(config.region), // Ensure region is a string
-      endpoint: config.clientCognito.endpoint,
+      region: hardcodedRegion,
+      endpoint: undefined,
       credentials: credentials.accessKeyId && credentials.secretAccessKey
         ? {
           accessKeyId: credentials.accessKeyId,
@@ -68,8 +80,8 @@ export class CognitoAuthClient {
         : undefined,
     });
 
-    this.clientId = config.clientCognito.clientId;
-    this.userPoolId = config.clientCognito.userPoolId;
+    this.clientId = hardcodedClientId;
+    this.userPoolId = hardcodedUserPoolId;
   }
 
   /**

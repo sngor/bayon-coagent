@@ -5705,7 +5705,55 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IntegrationServiceApi}/*
 
+  # ==========================================
+  # API Gateway + Lambda Migration - Phase 1
+  # ==========================================
 
+  # AI Content Generation Lambda
+  AiContentGenerationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-ai-content-generation-${Environment}
+      CodeUri: infrastructure/lambda-functions/ai-content-generation/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Timeout: 300
+      MemorySize: 2048
+      Role: !GetAtt ApplicationRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+          S3_BUCKET_NAME: !Ref StorageBucket
+          BEDROCK_MODEL_ID: anthropic.claude-3-5-sonnet-20241022-v2:0
+          BEDROCK_REGION: !Ref AWS::Region
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: AIService
+        Function: ContentGeneration
+
+  # AI Research Lambda
+  AiResearchFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-ai-research-${Environment}
+      CodeUri: infrastructure/lambda-functions/ai-research/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Timeout: 300
+      MemorySize: 2048
+      Role: !GetAtt ApplicationRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+          S3_BUCKET_NAME: !Ref StorageBucket
+          BEDROCK_MODEL_ID: anthropic.claude-3-5-sonnet-20241022-v2:0
+          BEDROCK_REGION: !Ref AWS::Region
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: AIService
+        Function: Research
 
 Outputs:
   UserPoolId:
@@ -6042,3 +6090,16 @@ Outputs:
     Value: !Ref StripeSecret
     Export:
       Name: !Sub ${AWS::StackName}-StripeSecretArn
+
+  # API Gateway + Lambda Migration Outputs
+  AiContentGenerationFunctionArn:
+    Description: AI Content Generation Lambda Function ARN
+    Value: !GetAtt AiContentGenerationFunction.Arn
+    Export:
+      Name: !Sub ${Environment}-AiContentGenerationFunctionArn
+
+  AiResearchFunctionArn:
+    Description: AI Research Lambda Function ARN
+    Value: !GetAtt AiResearchFunction.Arn
+    Export:
+      Name: !Sub ${Environment}-AiResearchFunctionArn

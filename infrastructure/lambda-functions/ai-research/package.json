@@ -1,0 +1,11 @@
+{
+    "name": "ai-research",
+    "version": "1.0.0",
+    "description": "AI Research Lambda Function",
+    "main": "index.js",
+    "dependencies": {
+        "@aws-sdk/client-dynamodb": "^3.948.0",
+        "@aws-sdk/lib-dynamodb": "^3.948.0",
+        "@aws-sdk/client-bedrock-runtime": "^3.948.0"
+    }
+}
