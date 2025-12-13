@@ -147,8 +147,8 @@ export function getAWSConfig(): AWSConfig {
     },
 
     clientCognito: {
-      userPoolId: process.env.CLIENT_COGNITO_USER_POOL_ID || process.env.NEXT_PUBLIC_USER_POOL_ID || process.env.COGNITO_USER_POOL_ID || '',
-      clientId: process.env.CLIENT_COGNITO_CLIENT_ID || process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || process.env.COGNITO_CLIENT_ID || '',
+      userPoolId: 'us-west-2_ALOcJxQDd',
+      clientId: '1vnmp9v58opg04o480fokp0sct',
       endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
 

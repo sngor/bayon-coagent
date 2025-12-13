@@ -95,6 +95,13 @@ body {
     --spacing-2xl: 3rem;
     --spacing-3xl: 4rem;
 
+    /* Enhanced visual hierarchy */
+    --header-height: 5rem;
+    --sidebar-width-expanded: 16rem;
+    --sidebar-width-collapsed: 4rem;
+    --content-max-width: 1400px;
+    --hub-header-height: 8rem;
+
     /* Enhanced shadow tokens */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
@@ -2756,7 +2763,7 @@ body {
   }
 }
 
-/* Tablet-specific optimizations */
+/* Mobile and Tablet-specific optimizations */
 @layer utilities {
   /* Border utilities - black border when no shadow */
   .border-when-no-shadow {
@@ -2773,9 +2780,45 @@ body {
     @apply border border-black dark:border-white;
   }
 
-  /* High contrast borders accessibility preference - WORKING VERSION */
+  /* Enhanced mobile touch targets */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
 
-  /* When high contrast is enabled, override border colors for ALL elements */
+  .touch-target-lg {
+    @apply min-h-[48px] min-w-[48px];
+  }
+
+  /* Mobile-optimized spacing */
+  .mobile-padding {
+    @apply px-4 py-3;
+  }
+
+  .mobile-margin {
+    @apply mx-4 my-3;
+  }
+
+  /* Mobile-friendly card spacing */
+  .mobile-card-spacing {
+    @apply p-4 gap-4;
+  }
+
+  /* Improved mobile typography */
+  .mobile-heading {
+    @apply text-xl font-bold leading-tight;
+  }
+
+  .mobile-body {
+    @apply text-base leading-relaxed;
+  }
+
+  .mobile-caption {
+    @apply text-sm text-muted-foreground;
+  }
+
+  /* Enhanced accessibility features */
+
+  /* High contrast borders accessibility preference - WORKING VERSION */
   .high-contrast-borders .border {
     border-color: var(--accessibility-border-override) !important;
   }
@@ -2788,6 +2831,58 @@ body {
 
   .high-contrast-borders [class*="border"] {
     border-color: var(--accessibility-border-override) !important;
+  }
+
+  /* Enhanced focus indicators */
+  .enhanced-focus *:focus-visible {
+    outline: 3px solid hsl(var(--primary)) !important;
+    outline-offset: 2px !important;
+    border-radius: 4px;
+  }
+
+  /* Screen reader optimizations */
+  .screen-reader-optimized .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .screen-reader-optimized .sr-only:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0.5rem;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+    background: hsl(var(--background));
+    border: 2px solid hsl(var(--primary));
+    border-radius: 4px;
+  }
+
+  /* Skip to content link */
+  .skip-to-content {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    padding: 8px;
+    text-decoration: none;
+    border-radius: 4px;
+    z-index: 1000;
+    transition: top 0.3s;
+  }
+
+  .skip-to-content:focus {
+    top: 6px;
   }
 
   /* Target all container variants */
@@ -3090,4 +3185,21 @@ body {
   content: " *";
   color: hsl(var(--destructive));
   font-weight: 600;
+}
+/* Enhanced backdrop blur utilities */
+@layer utilities {
+  .backdrop-blur-2xl {
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+  }
+
+  .glass-effect {
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  .glass-effect-strong {
+    backdrop-filter: blur(40px) saturate(200%) brightness(110%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(110%);
+  }
 }

@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useRef, useMemo, useCallback, useState, useEffect } from 'react';
 import { ICON_SIZES } from '@/lib/constants/icon-sizes';
 
-export function HubTabs({ tabs, activeTab, onChange, variant = 'default', isSticky = false }: HubTabsProps) {
+export function HubTabs({ tabs, activeTab, onChange, isSticky = false }: HubTabsProps) {
     const pathname = usePathname();
     const router = useRouter();
     const tabsRef = useRef<HTMLDivElement>(null);
@@ -75,28 +75,12 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default', isStic
 
     // Memoize styles to prevent recalculation
     const styles = useMemo(() => {
-        const baseStyles = 'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
-
-        const variantStyles = {
-            default: {
-                tab: 'border-b-2 border-transparent hover:border-muted-foreground/50 data-[active=true]:border-[#535353] data-[active=true]:text-[#535353] dark:data-[active=true]:border-white dark:data-[active=true]:text-white',
-                container: ''
-            },
-            pills: {
-                tab: 'rounded-full hover:bg-accent hover:text-accent-foreground data-[active=true]:bg-[#535353] data-[active=true]:text-white dark:data-[active=true]:bg-white dark:data-[active=true]:text-[#535353]',
-                container: ''
-            },
-            underline: {
-                tab: 'border-b-2 border-transparent hover:text-foreground data-[active=true]:border-[#535353] data-[active=true]:text-foreground dark:data-[active=true]:border-white',
-                container: ''
-            }
-        };
+        const baseStyles = 'inline-flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all duration-200 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
 
         return {
-            base: baseStyles,
-            variant: variantStyles[variant]
+            base: baseStyles
         };
-    }, [variant]);
+    }, []);
 
     return (
         <div className="relative">
@@ -109,12 +93,13 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default', isStic
             <div
                 ref={scrollContainerRef}
                 className={cn(
-                    'inline-flex items-center gap-2 overflow-x-auto scrollbar-hide rounded-full p-2 transition-all duration-300 ease-in-out',
-                    isSticky ? 'bg-background/30 backdrop-blur-xl border border-border/50 shadow-sm shadow-primary/10 ring-1 ring-white/10' : 'bg-transparent',
-                    styles.variant.container
+                    'inline-flex items-center gap-1 overflow-x-auto scrollbar-hide rounded-full p-1.5 transition-all duration-200',
+                    isSticky
+                        ? 'bg-background/95 backdrop-blur-xl border border-border/20 shadow-sm'
+                        : 'bg-transparent'
                 )}
             >
-                <div ref={tabsRef} className="flex items-center gap-2" role="tablist">
+                <div ref={tabsRef} className="flex items-center gap-1" role="tablist">
                     {tabs.map((tab, index) => {
                         const isActive = tab.id === currentTab;
                         const Icon = tab.icon;
@@ -132,10 +117,10 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default', isStic
                                 onKeyDown={(e) => handleKeyDown(e, index)}
                                 className={cn(
                                     styles.base,
-                                    styles.variant.tab,
-                                    !isActive && 'text-muted-foreground',
-                                    isSticky && 'backdrop-blur-sm bg-background/20',
-                                    isSticky && isActive && 'border border-border/30'
+                                    // Custom styling: transparent for inactive, black for active
+                                    'border-none bg-transparent',
+                                    !isActive && 'text-muted-foreground hover:text-foreground',
+                                    isActive && 'bg-black text-white dark:bg-white dark:text-black shadow-sm'
                                 )}
                             >
                                 {Icon && <Icon className={ICON_SIZES.sm} aria-hidden="true" />}
