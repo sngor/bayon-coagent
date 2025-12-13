@@ -249,3 +249,10 @@ export function AICard({
         </EnhancedCard>
     );
 }
+
+// Export individual card components for backward compatibility
+export const EnhancedCardHeader = CardHeader;
+export const EnhancedCardTitle = CardTitle;
+export const EnhancedCardDescription = CardDescription;
+export const EnhancedCardContent = CardContent;
+export const EnhancedCardFooter = CardFooter;

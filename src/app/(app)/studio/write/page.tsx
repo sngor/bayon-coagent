@@ -15,7 +15,7 @@ import { Sparkles, TrendingUp, FileText, Video, MapPin, MessageSquare } from 'lu
 import { ErrorBoundary, AIErrorBoundary } from '@/components/error-boundary';
 import { AILoadingState, useAIOperation } from '@/components/ai-loading-state';
 import { performanceMonitor, withPerformanceTracking } from '@/lib/performance';
-import { cache, cacheKeys, withCache } from '@/lib/cache';
+// import { cache, cacheKeys, withCache } from '@/lib/cache';
 import { analytics, trackAIGeneration, useAnalytics } from '@/lib/analytics';
 
 // Import existing actions
@@ -24,11 +24,7 @@ import { generateBlogPostAction, generateMarketUpdateAction } from '@/app/action
 // Enhanced blog post action with all improvements
 const enhancedGenerateBlogPost = withPerformanceTracking(
     'blog-post-generation',
-    withCache(
-        (topic: string, audience: string, keywords: string) =>
-            cacheKeys.blogPost(topic + audience + keywords, 'blog'),
-        { ttl: 1000 * 60 * 30 } // 30 minutes cache
-    )(async (formData: FormData) => {
+    async (formData: FormData) => {
         const topic = formData.get('topic') as string;
         const audience = formData.get('audience') as string;
         const keywords = formData.get('keywords') as string;
@@ -50,7 +46,7 @@ const enhancedGenerateBlogPost = withPerformanceTracking(
             trackAIGeneration.failed('blog-post', error instanceof Error ? error.message : 'Unknown error', duration);
             throw error;
         }
-    })
+    }
 );
 
 export default function EnhancedStudioWritePage() {
@@ -207,7 +203,7 @@ export default function EnhancedStudioWritePage() {
                         <div className="grid grid-cols-3 gap-4 text-center">
                             <div>
                                 <div className="text-2xl font-bold text-blue-600">
-                                    {cache.getStats().size}
+                                    {/* {cache.getStats().size} */}0
                                 </div>
                                 <div className="text-sm text-muted-foreground">Cached Items</div>
                             </div>

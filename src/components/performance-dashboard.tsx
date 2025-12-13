@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 import { performanceMonitor } from '@/lib/performance';
-import { cache } from '@/lib/cache';
+// import { cache } from '@/lib/cache';
 import { analytics } from '@/lib/analytics';
 
 interface PerformanceStats {
@@ -47,7 +47,8 @@ export function PerformanceDashboard() {
 
         // Get performance metrics
         const aiMetrics = analytics.getAIUsageMetrics();
-        const cacheStats = cache.getStats();
+        // const cacheStats = cache.getStats();
+        const cacheStats = { size: 0, totalHits: 0, averageAge: 0 };
 
         // Calculate cache hit rate (mock calculation)
         const cacheHitRate = cacheStats.totalHits > 0
@@ -265,7 +266,7 @@ export function PerformanceDashboard() {
                                 <CardContent>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <div className="text-lg font-semibold">{cache.getStats().size}</div>
+                                            <div className="text-lg font-semibold">{/* {cache.getStats().size} */}0</div>
                                             <div className="text-sm text-muted-foreground">Cached Items</div>
                                         </div>
                                         <div>

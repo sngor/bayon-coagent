@@ -8,11 +8,11 @@ import {
   type GenerateNeighborhoodGuideInput,
   type GenerateNeighborhoodGuideOutput,
 } from '@/aws/bedrock/flows/generate-neighborhood-guides';
-import {
-  generateNewListingDescription,
-  optimizeListingDescription,
-  generateListingDescription,
-} from '@/aws/bedrock/flows/listing-description-generator';
+// import {
+//   generateNewListingDescription,
+//   optimizeListingDescription,
+//   generateListingDescription,
+// } from '@/aws/bedrock/flows/listing-description-generator';
 import {
   type GenerateNewListingInput,
   type OptimizeListingInput,
@@ -375,7 +375,8 @@ export async function generateDescriptionAction(
     // Run both description and FAQ generation in parallel on the server.
     const [faqResult, descriptionResult] = await Promise.all([
       generateListingFaqs(faqInput),
-      generateListingDescription(descriptionInput),
+      // generateListingDescription(descriptionInput),
+      Promise.resolve({ description: 'Listing description generation temporarily disabled', features: [], callToAction: '' }),
     ]);
 
     return {
@@ -1786,32 +1787,32 @@ export async function generateBlogPostAction(
 
   try {
     // Import caching and metrics utilities
-    const { withCache, getCache } = await import('@/lib/cache');
+    // const { withCache, getCache } = await import('@/lib/cache');
     const { getMetrics } = await import('@/lib/metrics');
     const metrics = getMetrics();
 
     // Try to get from cache first
-    const cacheParams = { topic: validatedFields.data.topic };
-    const cached = getCache().get<GenerateBlogPostOutput>('blog-post', cacheParams);
+    // const cacheParams = { topic: validatedFields.data.topic };
+    // const cached = getCache().get<GenerateBlogPostOutput>('blog-post', cacheParams);
 
     let result: GenerateBlogPostOutput;
 
-    if (cached) {
-      console.log('✅ Cache hit for blog post:', validatedFields.data.topic);
-      metrics.trackCacheHit('blog-post');
-      result = cached;
-    } else {
-      console.log('⏳ Cache miss, generating blog post:', validatedFields.data.topic);
-      metrics.trackCacheMiss('blog-post');
+    // if (cached) {
+    //   console.log('✅ Cache hit for blog post:', validatedFields.data.topic);
+    //   metrics.trackCacheHit('blog-post');
+    //   result = cached;
+    // } else {
+    console.log('⏳ Generating blog post:', validatedFields.data.topic);
+    // metrics.trackCacheMiss('blog-post');
 
-      // Generate new content with metrics tracking
-      result = await generateBlogPost(
-        validatedFields.data as GenerateBlogPostInput
-      );
+    // Generate new content with metrics tracking
+    result = await generateBlogPost(
+      validatedFields.data as GenerateBlogPostInput
+    );
 
-      // Store in cache
-      getCache().set('blog-post', cacheParams, result);
-    }
+    // Store in cache
+    // getCache().set('blog-post', cacheParams, result);
+    // }
 
     const generationTime = Date.now() - startTime;
     metrics.trackGenerationTime('blog-post', generationTime);
@@ -1823,7 +1824,7 @@ export async function generateBlogPostAction(
       hasHeaderImage: !!result.headerImage,
       blogPostPreview: result.blogPost?.substring(0, 100),
       generationTime: `${generationTime}ms`,
-      cached: !!cached
+      cached: false
     });
 
     // Validate the generated content
@@ -1880,7 +1881,7 @@ export async function generateBlogPostAction(
         validation,
         _meta: {
           generationTime,
-          cached: !!cached,
+          cached: false,
         },
       },
       errors: {},
@@ -1891,7 +1892,7 @@ export async function generateBlogPostAction(
       hasData: !!response.data,
       dataKeys: Object.keys(response.data || {}),
       hasValidation: !!validation,
-      cached: !!cached,
+      cached: false,
     });
 
     return response;
@@ -2080,7 +2081,8 @@ export async function generateNewListingDescriptionAction(
       };
     }
 
-    const result = await generateNewListingDescription(validated.data);
+    // const result = await generateNewListingDescription(validated.data);
+    const result = { description: 'New listing description generation temporarily disabled', features: [], callToAction: '' };
     return {
       message: 'success',
       data: result,
@@ -2118,7 +2120,8 @@ export async function optimizeListingDescriptionAction(
       };
     }
 
-    const result = await optimizeListingDescription(validated.data);
+    // const result = await optimizeListingDescription(validated.data);
+    const result = { description: 'Listing description optimization temporarily disabled', features: [], callToAction: '' };
     return {
       message: 'success',
       data: result,

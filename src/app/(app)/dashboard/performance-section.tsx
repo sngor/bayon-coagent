@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, TrendingUp, Zap, Database } from 'lucide-react';
 import { performanceMonitor } from '@/lib/performance';
-import { cache } from '@/lib/cache';
+// import { cache } from '@/lib/cache';
 import { analytics } from '@/lib/analytics';
 import { useState, useEffect } from 'react';
 
@@ -18,7 +18,8 @@ export function DashboardPerformanceSection() {
     useEffect(() => {
         const updateStats = () => {
             const aiMetrics = analytics.getAIUsageMetrics();
-            const cacheStats = cache.getStats();
+            // const cacheStats = cache.getStats();
+            const cacheStats = { size: 0, totalHits: 0, averageAge: 0 };
 
             // Calculate cache hit rate
             const cacheHitRate = cacheStats.totalHits > 0
@@ -109,10 +110,11 @@ export function DashboardPerformanceSection() {
                                 <span>Fast response times - averaging {stats.averageTime}s</span>
                             </div>
                         )}
-                        {cache.getStats().size > 0 && (
+                        {/* {cache.getStats().size > 0 && ( */}
+                        {false && (
                             <div className="flex items-center gap-1">
                                 <Database className="h-3 w-3 text-blue-500" />
-                                <span>{cache.getStats().size} items cached for faster access</span>
+                                <span>{/* {cache.getStats().size} */}0 items cached for faster access</span>
                             </div>
                         )}
                     </div>

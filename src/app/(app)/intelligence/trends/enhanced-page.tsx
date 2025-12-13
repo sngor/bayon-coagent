@@ -13,17 +13,13 @@ import { toast } from '@/hooks/use-toast';
 import { ErrorBoundary, AIErrorBoundary } from '@/components/error-boundary';
 import { AILoadingState, useAIOperation } from '@/components/ai-loading-state';
 import { performanceMonitor, withPerformanceTracking } from '@/lib/performance';
-import { cache, cacheKeys, withCache } from '@/lib/cache';
+// import { cache, cacheKeys, withCache } from '@/lib/cache';
 import { analytics, trackAIGeneration, useAnalytics } from '@/lib/analytics';
 
 // Mock life event prediction function (replace with actual implementation)
 const enhancedLifeEventPrediction = withPerformanceTracking(
     'life-event-prediction',
-    withCache(
-        (location: string, demographics: string, timeframe: string) =>
-            cacheKeys.marketAnalysis(location + demographics + timeframe, 'life-events'),
-        { ttl: 1000 * 60 * 60 * 2 } // 2 hours cache
-    )(async (formData: { location: string; demographics: string; timeframe: string; eventType: string }) => {
+    async (formData: { location: string; demographics: string; timeframe: string; eventType: string }) => {
         const { location, demographics, timeframe, eventType } = formData;
 
         // Track prediction start
@@ -76,7 +72,7 @@ const enhancedLifeEventPrediction = withPerformanceTracking(
             trackAIGeneration.failed('life-event-prediction', error instanceof Error ? error.message : 'Unknown error', duration);
             throw error;
         }
-    })
+    }
 );
 
 export default function EnhancedMarketTrendsPage() {
@@ -171,7 +167,7 @@ export default function EnhancedMarketTrendsPage() {
                         <div className="grid grid-cols-3 gap-4 text-center">
                             <div>
                                 <div className="text-2xl font-bold text-green-600">
-                                    {cache.getStats().size}
+                                    {/* {cache.getStats().size} */}0
                                 </div>
                                 <div className="text-sm text-muted-foreground">Cached Analyses</div>
                             </div>

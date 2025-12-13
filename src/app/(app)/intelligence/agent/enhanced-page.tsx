@@ -16,7 +16,7 @@ import { marked } from 'marked';
 import { ErrorBoundary, AIErrorBoundary } from '@/components/error-boundary';
 import { AILoadingState, useAIOperation } from '@/components/ai-loading-state';
 import { performanceMonitor, withPerformanceTracking } from '@/lib/performance';
-import { cache, cacheKeys, withCache } from '@/lib/cache';
+// import { cache, cacheKeys, withCache } from '@/lib/cache';
 import { analytics, trackAIGeneration, useAnalytics } from '@/lib/analytics';
 
 // Import existing actions
@@ -25,10 +25,7 @@ import { runResearchAgentAction, saveResearchReportAction } from '@/app/actions'
 // Enhanced research action with all improvements
 const enhancedRunResearch = withPerformanceTracking(
     'research-generation',
-    withCache(
-        (topic: string) => cacheKeys.research(topic),
-        { ttl: 1000 * 60 * 60 } // 1 hour cache for research
-    )(async (formData: FormData) => {
+    async (formData: FormData) => {
         const topic = formData.get('topic') as string;
 
         // Track research start
@@ -48,7 +45,7 @@ const enhancedRunResearch = withPerformanceTracking(
             trackAIGeneration.failed('research', error instanceof Error ? error.message : 'Unknown error', duration);
             throw error;
         }
-    })
+    }
 );
 
 function SubmitButton({ disabled }: { disabled?: boolean }) {
@@ -195,7 +192,7 @@ export default function EnhancedResearchAgentPage() {
                         <div className="grid grid-cols-3 gap-4 text-center">
                             <div>
                                 <div className="text-2xl font-bold text-green-600">
-                                    {cache.getStats().size}
+                                    {/* {cache.getStats().size} */}0
                                 </div>
                                 <div className="text-sm text-muted-foreground">Cached Reports</div>
                             </div>

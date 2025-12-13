@@ -18,6 +18,9 @@ import {
     EnhancedCardDescription,
     EnhancedCardContent,
     EnhancedCardFooter,
+    MetricCard,
+    FeatureCard,
+    AICard,
 } from '@/components/ui/enhanced-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

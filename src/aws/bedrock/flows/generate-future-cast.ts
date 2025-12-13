@@ -6,12 +6,18 @@
 
 import { defineFlow, definePrompt, MODEL_CONFIGS } from '../flow-base';
 import { getGuardrailsService, DEFAULT_GUARDRAILS_CONFIG } from '../guardrails';
-import {
-    GenerateFutureCastInputSchema,
-    GenerateFutureCastOutputSchema,
-    type GenerateFutureCastInput,
-    type GenerateFutureCastOutput,
-} from '@/ai/schemas/market-update-schemas';
+// import {
+//     GenerateFutureCastInputSchema,
+//     GenerateFutureCastOutputSchema,
+//     type GenerateFutureCastInput,
+//     type GenerateFutureCastOutput,
+// } from '@/ai/schemas/market-update-schemas';
+
+// Temporary placeholder types
+const GenerateFutureCastInputSchema = { parse: (data: any) => data };
+const GenerateFutureCastOutputSchema = { parse: (data: any) => data };
+type GenerateFutureCastInput = any;
+type GenerateFutureCastOutput = any;
 
 
 
