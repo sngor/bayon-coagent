@@ -375,8 +375,9 @@ export async function generateEnhancedMarketUpdateAction(
         const { generateMarketUpdate: originalGenerateMarketUpdate } = await import('@/aws/bedrock/flows/generate-market-update');
 
         const bedrockResult = await originalGenerateMarketUpdate({
-            topic: validatedFields.data.topic,
             location: validatedFields.data.location,
+            timePeriod: 'current',
+            audience: validatedFields.data.topic,
         });
 
         // Transform to match ContentStudioOutput format
@@ -384,8 +385,8 @@ export async function generateEnhancedMarketUpdateAction(
             success: true,
             content: [{
                 type: 'market-update',
-                title: `${validatedFields.data.location} Market Update: ${validatedFields.data.topic}`,
-                body: bedrockResult.marketUpdate,
+                title: bedrockResult.title,
+                body: bedrockResult.content,
             }],
             timestamp: new Date().toISOString(),
             userId: user.id,

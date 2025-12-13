@@ -207,14 +207,6 @@ export default function AssistantPage() {
 
     return (
         <div className="space-y-6">
-            <Card>
-                <CardHeader>
-                    <div>
-                        <CardTitle className="font-headline text-2xl">AI Assistant</CardTitle>
-                        <CardDescription>Chat with your AI assistant</CardDescription>
-                    </div>
-                </CardHeader>
-            </Card>
             {/* Chat Controls */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'chat' | 'history')}>

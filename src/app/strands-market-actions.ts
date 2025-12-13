@@ -153,7 +153,7 @@ export async function generateEnhancedMarketUpdateAction(
         // Transform to match MarketIntelligenceOutput format
         const transformedResult: MarketIntelligenceOutput = {
             success: true,
-            analysis: bedrockResult.marketUpdate,
+            analysis: bedrockResult.content,
             timestamp: new Date().toISOString(),
             userId: user.id,
             source: 'bedrock-fallback',

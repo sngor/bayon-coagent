@@ -601,21 +601,21 @@ body {
       135deg,
       hsl(var(--ai-blue-deep)),
       hsl(var(--ai-blue)),
-      hsl(var(--ai-blue-light)),
+      hsl(220 80% 55%),
       hsl(var(--ai-blue))
     );
     background-size: 300% 300%;
     background-position: 0% 50%;
-    color: hsl(var(--primary-foreground));
-    transition: background-position 0.8s ease;
+    color: white;
+    transition: background-position 0.4s ease, box-shadow 0.2s ease;
     box-shadow: 0 4px 20px hsl(var(--ai-blue) / 0.4),
       0 0 40px hsl(var(--ai-blue) / 0.2);
   }
 
   .ai-gradient:hover {
     background-position: 100% 50%;
-    box-shadow: 0 6px 30px hsl(var(--ai-blue) / 0.5),
-      0 0 60px hsl(var(--ai-blue) / 0.3);
+    box-shadow: 0 4px 24px hsl(var(--ai-blue) / 0.4),
+      0 0 40px hsl(var(--ai-blue) / 0.25);
   }
 
   .shimmer-gradient {

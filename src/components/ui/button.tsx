@@ -34,7 +34,7 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline min-h-[44px] shadow-none hover:shadow-none active:scale-100",
-        ai: "ai-gradient shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300",
+        ai: "ai-gradient text-white shadow-lg hover:shadow-lg hover:scale-[1.02] transition-all duration-200",
         shimmer: "shimmer-gradient shadow-lg hover:scale-105",
         success: "bg-success text-success-foreground hover:bg-success-hover shadow-sm hover:shadow-md",
         premium: "bg-gradient-to-r from-[hsl(var(--gradient-start))] to-[hsl(var(--gradient-end))] text-primary-foreground shadow-lg hover:shadow-2xl hover:scale-[1.02] button-glow",

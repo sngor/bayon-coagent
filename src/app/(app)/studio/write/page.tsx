@@ -1570,7 +1570,7 @@ export default function ContentEnginePage() {
                     />
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
                     <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 animate-pulse-gentle">
                       <TrendingUp className="w-8 h-8 text-primary" />
                     </div>

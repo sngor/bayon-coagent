@@ -186,6 +186,13 @@ export async function uploadFile(
         return `https://${config.s3.bucketName}.s3.${detectedRegion}.amazonaws.com/${key}`;
       }
     }
+
+    // Provide more helpful error message
+    const errorMessage = error.message || 'Unknown S3 error';
+    if (errorMessage.includes('addressed using the specified endpoint')) {
+      throw new Error(`Storage Error: The bucket you are attempting to access must be addressed using the specified endpoint. Please send all future requests to this endpoint.`);
+    }
+
     throw error;
   }
 

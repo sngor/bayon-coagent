@@ -166,6 +166,52 @@ export default {
 					'100%': {
 						backgroundPosition: '-200% 0'
 					}
+				},
+				'loading-dots': {
+					'0%, 80%, 100%': {
+						transform: 'scale(0)',
+						opacity: '0.5'
+					},
+					'40%': {
+						transform: 'scale(1)',
+						opacity: '1'
+					}
+				},
+				'pulse-glow': {
+					'0%, 100%': {
+						opacity: '0.4',
+						transform: 'scale(1)'
+					},
+					'50%': {
+						opacity: '0.8',
+						transform: 'scale(1.05)'
+					}
+				},
+				'gradient-shift': {
+					'0%, 100%': {
+						backgroundPosition: '0% 50%'
+					},
+					'50%': {
+						backgroundPosition: '100% 50%'
+					}
+				},
+				'float': {
+					'0%, 100%': {
+						transform: 'translateY(0px)'
+					},
+					'50%': {
+						transform: 'translateY(-10px)'
+					}
+				},
+				'bounce-subtle': {
+					'0%, 100%': {
+						transform: 'translateY(0)',
+						animationTimingFunction: 'cubic-bezier(0.8, 0, 1, 1)'
+					},
+					'50%': {
+						transform: 'translateY(-5px)',
+						animationTimingFunction: 'cubic-bezier(0, 0, 0.2, 1)'
+					}
 				}
 			},
 			animation: {
@@ -174,7 +220,12 @@ export default {
 				'fade-in': 'fade-in 0.5s ease-in-out',
 				'fade-in-up': 'fade-in-up 0.5s ease-in-out',
 				shake: 'shake 0.5s ease-in-out',
-				shimmer: 'shimmer 2s linear infinite'
+				shimmer: 'shimmer 2s linear infinite',
+				'loading-dots': 'loading-dots 1.4s ease-in-out infinite',
+				'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
+				'gradient-shift': 'gradient-shift 3s ease-in-out infinite',
+				'float': 'float 3s ease-in-out infinite',
+				'bounce-subtle': 'bounce-subtle 2s infinite'
 			},
 			backgroundImage: {
 				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))'

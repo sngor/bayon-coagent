@@ -159,7 +159,7 @@ export function getAWSConfig(): AWSConfig {
 
     s3: {
       bucketName: process.env.S3_BUCKET_NAME || 'bayon-coagent-storage',
-      region: process.env.S3_REGION || region,
+      region: process.env.S3_REGION || region, // Use same region as main AWS region
       endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
 
