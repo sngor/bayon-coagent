@@ -43,24 +43,23 @@ frontend:
       commands:
         - echo "Node.js version:"
         - node --version
-        - echo "NPM version:"
-        - npm --version
+        - echo "Installing pnpm..."
+        - npm install -g pnpm
+        - echo "pnpm version:"
+        - pnpm --version
         - echo "Available memory:"
         - free -h || echo "Memory info not available"
         - echo "Setting Node.js options for memory..."
-        - export NODE_OPTIONS="--max-old-space-size=8192
-          --max-semi-space-size=512"
-        - echo "Optimizing npm configuration..."
-        - npm config set fund false
-        - npm config set audit false
-        - npm config set progress false
-        - npm config set loglevel error
+        - export NODE_OPTIONS="--max-old-space-size=8192 --max-semi-space-size=512"
+        - echo "Optimizing pnpm configuration..."
+        - pnpm config set fund false
+        - pnpm config set audit false
+        - pnpm config set progress false
+        - pnpm config set loglevel error
         - echo "Checking for cached dependencies..."
-        - if [ -d "node_modules" ]; then echo "Using cached node_modules"; else
-          echo "No cache found, will install fresh"; fi
+        - if [ -d "node_modules" ]; then echo "Using cached node_modules"; else echo "No cache found, will install fresh"; fi
         - echo "Installing dependencies with optimizations..."
-        - npm ci --prefer-offline --no-audit --no-fund --progress=false
-          --loglevel=error --maxsockets=1 --ignore-scripts
+        - pnpm install --frozen-lockfile --prefer-offline --ignore-scripts
         - echo "Dependencies installed successfully"
 
     build:
@@ -84,7 +83,7 @@ frontend:
         - 'echo "NEXT_PUBLIC_USER_POOL_ID is set: $([ -n
           "$NEXT_PUBLIC_USER_POOL_ID" ] && echo "YES" || echo "NO")"'
         - echo "Starting optimized build process..."
-        - time npm run build
+        - time pnpm run build
         - echo "Build completed successfully"
         - echo "Build artifacts size:"
         - du -sh .next || echo "Could not measure build size"
@@ -92,27 +91,27 @@ frontend:
   artifacts:
     baseDirectory: .next
     files:
-      - '**/*'
+      - "**/*"
     secondaryArtifacts:
       - baseDirectory: public
         files:
-          - '**/*'
+          - "**/*"
       - baseDirectory: .
         files:
           - package.json
-          - package-lock.json
+          - pnpm-lock.yaml
           - next.config.ts
 
   cache:
     paths:
       - node_modules/**/*
       - .next/cache/**/*
-      - ~/.npm/**/*
-      - .npm/**/*
+      - ~/.pnpm-store/**/*
+      - .pnpm/**/*
 
 # Custom headers for security and performance
 customHeaders:
-  - pattern: '**/*'
+  - pattern: "**/*"
     headers:
       - key: Strict-Transport-Security
         value: max-age=31536000; includeSubDomains
@@ -125,27 +124,27 @@ customHeaders:
       - key: Referrer-Policy
         value: strict-origin-when-cross-origin
 
-  - pattern: '*.js'
+  - pattern: "*.js"
     headers:
       - key: Cache-Control
         value: public, max-age=31536000, immutable
 
-  - pattern: '*.css'
+  - pattern: "*.css"
     headers:
       - key: Cache-Control
         value: public, max-age=31536000, immutable
 
-  - pattern: '*.jpg'
+  - pattern: "*.jpg"
     headers:
       - key: Cache-Control
         value: public, max-age=31536000, immutable
 
-  - pattern: '*.png'
+  - pattern: "*.png"
     headers:
       - key: Cache-Control
         value: public, max-age=31536000, immutable
 
-  - pattern: '*.svg'
+  - pattern: "*.svg"
     headers:
       - key: Cache-Control
         value: public, max-age=31536000, immutable
