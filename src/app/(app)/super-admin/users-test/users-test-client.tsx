@@ -11,10 +11,19 @@ export default function UsersTestClient() {
     }, []);
 
     return (
-        <div className="p-8">
-            <h1 className="text-2xl font-bold">Users Test Page</h1>
-            <p>Count: {count}</p>
-            <p>If you see this without errors, the layout is fine.</p>
+        <div className="space-y-8">
+            {/* Page Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="font-headline text-3xl font-bold">Users Test</h1>
+                    <p className="text-muted-foreground">Test page for user management functionality</p>
+                </div>
+            </div>
+
+            <div className="space-y-4">
+                <p>Count: {count}</p>
+                <p>If you see this without errors, the layout is fine.</p>
+            </div>
         </div>
     );
 }

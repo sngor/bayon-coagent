@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAdminStickyHeader } from '@/hooks/use-admin-sticky-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +39,10 @@ import { RoleBadge } from '@/components/admin/role-badge';
 import { BulkOperationsPanel } from '@/components/admin/bulk-operations-panel';
 
 export default function AdminUsersPage() {
+    const headerRef = useAdminStickyHeader({
+        title: 'Team Management',
+        icon: Users
+    });
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -210,6 +215,14 @@ export default function AdminUsersPage() {
 
     return (
         <div className="space-y-8">
+            {/* Page Header */}
+            <div ref={headerRef} className="flex items-center justify-between">
+                <div>
+                    <h1 className="font-headline text-3xl font-bold">Team Management</h1>
+                    <p className="text-muted-foreground">Manage team members, roles, and permissions</p>
+                </div>
+            </div>
+
             <Card>
                 <CardHeader>
                     <div className="flex items-center justify-between">

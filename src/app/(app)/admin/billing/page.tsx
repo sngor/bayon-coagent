@@ -367,7 +367,7 @@ export default function BillingDashboardPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold">Billing Management</h1>
+                <h1 className="font-headline text-3xl font-bold">Billing Management</h1>
                 <p className="text-muted-foreground">
                     Manage subscriptions, payments, and billing data
                 </p>

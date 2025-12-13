@@ -159,7 +159,7 @@ export default function AdminDashboardPage() {
                             <Shield className="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+                            <h1 className="font-headline text-3xl font-bold tracking-tight">Admin Dashboard</h1>
                             <div className="flex items-center gap-2 mt-1">
                                 <RoleBadge role={role} size="sm" />
                                 {lastUpdated && (
@@ -402,57 +402,52 @@ export default function AdminDashboardPage() {
                     {/* Team Analytics */}
                     <Card className="overflow-hidden bg-background/50 border-primary/20 hover:shadow-lg transition-all duration-200 hover:scale-[1.02] group">
                         <CardGradientMesh>
-                            <CardHeader className="relative z-10">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-3 bg-blue-100 dark:bg-blue-900/50 rounded-xl group-hover:scale-110 transition-transform">
-                                        <BarChart3 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                            <CardHeader className="relative z-10 pb-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg group-hover:scale-110 transition-transform">
+                                        <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                                     </div>
                                     <div className="flex-1">
-                                        <CardTitle className="text-lg">Team Analytics</CardTitle>
-                                        <CardDescription>Performance insights & reports</CardDescription>
+                                        <CardTitle className="text-base">Team Analytics</CardTitle>
+                                        <CardDescription className="text-xs">Performance insights & reports</CardDescription>
                                     </div>
                                     <div className="inline-flex items-center px-2 py-1 rounded-md bg-muted text-xs font-medium">
                                         3 Tools
                                     </div>
                                 </div>
                             </CardHeader>
-                            <CardContent className="space-y-2 relative z-10">
-                                <Button variant="ghost" asChild className="w-full justify-between h-auto p-3 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                            <CardContent className="space-y-1 relative z-10 pt-0">
+                                <Button variant="ghost" asChild className="w-full justify-between h-auto p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                                     <Link href="/admin/analytics" className="flex items-center">
-                                        <div className="flex items-center gap-3">
-                                            <BarChart3 className="h-4 w-4" />
+                                        <div className="flex items-center gap-2">
+                                            <BarChart3 className="h-3 w-3" />
                                             <div className="text-left">
-                                                <div className="font-medium">Team Performance</div>
-                                                <div className="text-xs text-muted-foreground">View metrics & KPIs</div>
+                                                <div className="font-medium text-sm">Team Performance</div>
                                             </div>
                                         </div>
-                                        <ChevronRight className="h-4 w-4" />
+                                        <ChevronRight className="h-3 w-3" />
                                     </Link>
                                 </Button>
-                                <div className="border-t border-border/50" />
-                                <Button variant="ghost" asChild className="w-full justify-between h-auto p-3 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                                <Button variant="ghost" asChild className="w-full justify-between h-auto p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                                     <Link href="/admin/users/activity" className="flex items-center">
-                                        <div className="flex items-center gap-3">
-                                            <Activity className="h-4 w-4" />
+                                        <div className="flex items-center gap-2">
+                                            <Activity className="h-3 w-3" />
                                             <div className="text-left">
-                                                <div className="font-medium">Team Activity</div>
-                                                <div className="text-xs text-muted-foreground">Recent actions & logs</div>
+                                                <div className="font-medium text-sm">Team Activity</div>
                                             </div>
                                         </div>
-                                        <ChevronRight className="h-4 w-4" />
+                                        <ChevronRight className="h-3 w-3" />
                                     </Link>
                                 </Button>
-                                <div className="border-t border-border/50" />
-                                <Button variant="ghost" asChild className="w-full justify-between h-auto p-3 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                                <Button variant="ghost" asChild className="w-full justify-between h-auto p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                                     <Link href="/admin/reports/team" className="flex items-center">
-                                        <div className="flex items-center gap-3">
-                                            <FileText className="h-4 w-4" />
+                                        <div className="flex items-center gap-2">
+                                            <FileText className="h-3 w-3" />
                                             <div className="text-left">
-                                                <div className="font-medium">Team Reports</div>
-                                                <div className="text-xs text-muted-foreground">Generate & export</div>
+                                                <div className="font-medium text-sm">Team Reports</div>
                                             </div>
                                         </div>
-                                        <ChevronRight className="h-4 w-4" />
+                                        <ChevronRight className="h-3 w-3" />
                                     </Link>
                                 </Button>
                             </CardContent>
@@ -461,57 +456,52 @@ export default function AdminDashboardPage() {
                     {/* Team Management */}
                     <Card className="overflow-hidden bg-background/50 border-primary/20 hover:shadow-lg transition-all duration-200 hover:scale-[1.02] group">
                         <CardGradientMesh>
-                            <CardHeader className="relative z-10">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-3 bg-purple-100 dark:bg-purple-900/50 rounded-xl group-hover:scale-110 transition-transform">
-                                        <Users className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                            <CardHeader className="relative z-10 pb-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-lg group-hover:scale-110 transition-transform">
+                                        <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                                     </div>
                                     <div className="flex-1">
-                                        <CardTitle className="text-lg">Team Management</CardTitle>
-                                        <CardDescription>Manage members & content</CardDescription>
+                                        <CardTitle className="text-base">Team Management</CardTitle>
+                                        <CardDescription className="text-xs">Manage members & content</CardDescription>
                                     </div>
                                     <div className="inline-flex items-center px-2 py-1 rounded-md bg-muted text-xs font-medium">
                                         3 Tools
                                     </div>
                                 </div>
                             </CardHeader>
-                            <CardContent className="space-y-2 relative z-10">
-                                <Button variant="ghost" asChild className="w-full justify-between h-auto p-3 hover:bg-purple-50 dark:hover:bg-purple-900/20">
+                            <CardContent className="space-y-1 relative z-10 pt-0">
+                                <Button variant="ghost" asChild className="w-full justify-between h-auto p-2 hover:bg-purple-50 dark:hover:bg-purple-900/20">
                                     <Link href="/admin/users" className="flex items-center">
-                                        <div className="flex items-center gap-3">
-                                            <Users className="h-4 w-4" />
+                                        <div className="flex items-center gap-2">
+                                            <Users className="h-3 w-3" />
                                             <div className="text-left">
-                                                <div className="font-medium">Team Members</div>
-                                                <div className="text-xs text-muted-foreground">Manage user accounts</div>
+                                                <div className="font-medium text-sm">Team Members</div>
                                             </div>
                                         </div>
-                                        <ChevronRight className="h-4 w-4" />
+                                        <ChevronRight className="h-3 w-3" />
                                     </Link>
                                 </Button>
-                                <div className="border-t border-border/50" />
-                                <Button variant="ghost" asChild className="w-full justify-between h-auto p-3 hover:bg-purple-50 dark:hover:bg-purple-900/20">
+                                <Button variant="ghost" asChild className="w-full justify-between h-auto p-2 hover:bg-purple-50 dark:hover:bg-purple-900/20">
                                     <Link href="/admin/content/moderation" className="flex items-center">
-                                        <div className="flex items-center gap-3">
-                                            <Flag className="h-4 w-4" />
+                                        <div className="flex items-center gap-2">
+                                            <Flag className="h-3 w-3" />
                                             <div className="text-left">
-                                                <div className="font-medium">Content Review</div>
-                                                <div className="text-xs text-muted-foreground">Moderate & approve</div>
+                                                <div className="font-medium text-sm">Content Review</div>
                                             </div>
                                         </div>
-                                        <ChevronRight className="h-4 w-4" />
+                                        <ChevronRight className="h-3 w-3" />
                                     </Link>
                                 </Button>
-                                <div className="border-t border-border/50" />
-                                <Button variant="ghost" asChild className="w-full justify-between h-auto p-3 hover:bg-purple-50 dark:hover:bg-purple-900/20">
+                                <Button variant="ghost" asChild className="w-full justify-between h-auto p-2 hover:bg-purple-50 dark:hover:bg-purple-900/20">
                                     <Link href="/admin/users/invitations" className="flex items-center">
-                                        <div className="flex items-center gap-3">
-                                            <UserPlus className="h-4 w-4" />
+                                        <div className="flex items-center gap-2">
+                                            <UserPlus className="h-3 w-3" />
                                             <div className="text-left">
-                                                <div className="font-medium">Invite Members</div>
-                                                <div className="text-xs text-muted-foreground">Send invitations</div>
+                                                <div className="font-medium text-sm">Invite Members</div>
                                             </div>
                                         </div>
-                                        <ChevronRight className="h-4 w-4" />
+                                        <ChevronRight className="h-3 w-3" />
                                     </Link>
                                 </Button>
                             </CardContent>
@@ -522,57 +512,52 @@ export default function AdminDashboardPage() {
                         {/* Support & Communication */}
                         <Card className="overflow-hidden bg-background/50 border-primary/20 hover:shadow-lg transition-all duration-200 hover:scale-[1.02] group">
                             <CardGradientMesh>
-                                <CardHeader className="relative z-10">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-3 bg-orange-100 dark:bg-orange-900/50 rounded-xl group-hover:scale-110 transition-transform">
-                                            <MessageSquare className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                                <CardHeader className="relative z-10 pb-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-orange-100 dark:bg-orange-900/50 rounded-lg group-hover:scale-110 transition-transform">
+                                            <MessageSquare className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                                         </div>
                                         <div className="flex-1">
-                                            <CardTitle className="text-lg">Support Hub</CardTitle>
-                                            <CardDescription>Platform-wide support</CardDescription>
+                                            <CardTitle className="text-base">Support Hub</CardTitle>
+                                            <CardDescription className="text-xs">Platform-wide support</CardDescription>
                                         </div>
                                         <div className="inline-flex items-center px-2 py-1 rounded-md bg-orange-100 dark:bg-orange-900/20 text-xs font-medium text-orange-700 dark:text-orange-300">
                                             Super Admin
                                         </div>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="space-y-2 relative z-10">
-                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-3 hover:bg-orange-50 dark:hover:bg-orange-900/20">
+                                <CardContent className="space-y-1 relative z-10 pt-0">
+                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-2 hover:bg-orange-50 dark:hover:bg-orange-900/20">
                                         <Link href="/admin/support" className="flex items-center">
-                                            <div className="flex items-center gap-3">
-                                                <MessageSquare className="h-4 w-4" />
+                                            <div className="flex items-center gap-2">
+                                                <MessageSquare className="h-3 w-3" />
                                                 <div className="text-left">
-                                                    <div className="font-medium">Support Tickets</div>
-                                                    <div className="text-xs text-muted-foreground">Manage user issues</div>
+                                                    <div className="font-medium text-sm">Support Tickets</div>
                                                 </div>
                                             </div>
-                                            <ChevronRight className="h-4 w-4" />
+                                            <ChevronRight className="h-3 w-3" />
                                         </Link>
                                     </Button>
-                                    <div className="border-t border-border/50" />
-                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-3 hover:bg-orange-50 dark:hover:bg-orange-900/20">
+                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-2 hover:bg-orange-50 dark:hover:bg-orange-900/20">
                                         <Link href="/admin/feedback" className="flex items-center">
-                                            <div className="flex items-center gap-3">
-                                                <Bell className="h-4 w-4" />
+                                            <div className="flex items-center gap-2">
+                                                <Bell className="h-3 w-3" />
                                                 <div className="text-left">
-                                                    <div className="font-medium">User Feedback</div>
-                                                    <div className="text-xs text-muted-foreground">Review suggestions</div>
+                                                    <div className="font-medium text-sm">User Feedback</div>
                                                 </div>
                                             </div>
-                                            <ChevronRight className="h-4 w-4" />
+                                            <ChevronRight className="h-3 w-3" />
                                         </Link>
                                     </Button>
-                                    <div className="border-t border-border/50" />
-                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-3 hover:bg-orange-50 dark:hover:bg-orange-900/20">
+                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-2 hover:bg-orange-50 dark:hover:bg-orange-900/20">
                                         <Link href="/admin/announcements" className="flex items-center">
-                                            <div className="flex items-center gap-3">
-                                                <Megaphone className="h-4 w-4" />
+                                            <div className="flex items-center gap-2">
+                                                <Megaphone className="h-3 w-3" />
                                                 <div className="text-left">
-                                                    <div className="font-medium">Announcements</div>
-                                                    <div className="text-xs text-muted-foreground">Platform updates</div>
+                                                    <div className="font-medium text-sm">Announcements</div>
                                                 </div>
                                             </div>
-                                            <ChevronRight className="h-4 w-4" />
+                                            <ChevronRight className="h-3 w-3" />
                                         </Link>
                                     </Button>
                                 </CardContent>
@@ -581,57 +566,52 @@ export default function AdminDashboardPage() {
                         {/* Platform Analytics */}
                         <Card className="overflow-hidden bg-background/50 border-primary/20 hover:shadow-lg transition-all duration-200 hover:scale-[1.02] group">
                             <CardGradientMesh>
-                                <CardHeader className="relative z-10">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-3 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl group-hover:scale-110 transition-transform">
-                                            <Target className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                                <CardHeader className="relative z-10 pb-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg group-hover:scale-110 transition-transform">
+                                            <Target className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                                         </div>
                                         <div className="flex-1">
-                                            <CardTitle className="text-lg">Platform Analytics</CardTitle>
-                                            <CardDescription>Platform-wide insights</CardDescription>
+                                            <CardTitle className="text-base">Platform Analytics</CardTitle>
+                                            <CardDescription className="text-xs">Platform-wide insights</CardDescription>
                                         </div>
                                         <div className="inline-flex items-center px-2 py-1 rounded-md bg-indigo-100 dark:bg-indigo-900/20 text-xs font-medium text-indigo-700 dark:text-indigo-300">
                                             Super Admin
                                         </div>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="space-y-2 relative z-10">
-                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                                <CardContent className="space-y-1 relative z-10 pt-0">
+                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
                                         <Link href="/admin/analytics/platform" className="flex items-center">
-                                            <div className="flex items-center gap-3">
-                                                <BarChart3 className="h-4 w-4" />
+                                            <div className="flex items-center gap-2">
+                                                <BarChart3 className="h-3 w-3" />
                                                 <div className="text-left">
-                                                    <div className="font-medium">Platform Metrics</div>
-                                                    <div className="text-xs text-muted-foreground">Global performance</div>
+                                                    <div className="font-medium text-sm">Platform Metrics</div>
                                                 </div>
                                             </div>
-                                            <ChevronRight className="h-4 w-4" />
+                                            <ChevronRight className="h-3 w-3" />
                                         </Link>
                                     </Button>
-                                    <div className="border-t border-border/50" />
-                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
                                         <Link href="/admin/analytics/engagement" className="flex items-center">
-                                            <div className="flex items-center gap-3">
-                                                <Activity className="h-4 w-4" />
+                                            <div className="flex items-center gap-2">
+                                                <Activity className="h-3 w-3" />
                                                 <div className="text-left">
-                                                    <div className="font-medium">User Engagement</div>
-                                                    <div className="text-xs text-muted-foreground">Usage patterns</div>
+                                                    <div className="font-medium text-sm">User Engagement</div>
                                                 </div>
                                             </div>
-                                            <ChevronRight className="h-4 w-4" />
+                                            <ChevronRight className="h-3 w-3" />
                                         </Link>
                                     </Button>
-                                    <div className="border-t border-border/50" />
-                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
+                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
                                         <Link href="/admin/reports/platform" className="flex items-center">
-                                            <div className="flex items-center gap-3">
-                                                <FileText className="h-4 w-4" />
+                                            <div className="flex items-center gap-2">
+                                                <FileText className="h-3 w-3" />
                                                 <div className="text-left">
-                                                    <div className="font-medium">Platform Reports</div>
-                                                    <div className="text-xs text-muted-foreground">Comprehensive data</div>
+                                                    <div className="font-medium text-sm">Platform Reports</div>
                                                 </div>
                                             </div>
-                                            <ChevronRight className="h-4 w-4" />
+                                            <ChevronRight className="h-3 w-3" />
                                         </Link>
                                     </Button>
                                 </CardContent>
@@ -640,57 +620,52 @@ export default function AdminDashboardPage() {
                         {/* System Configuration */}
                         <Card className="overflow-hidden bg-background/50 border-primary/20 hover:shadow-lg transition-all duration-200 hover:scale-[1.02] group">
                             <CardGradientMesh>
-                                <CardHeader className="relative z-10">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-3 bg-green-100 dark:bg-green-900/50 rounded-xl group-hover:scale-110 transition-transform">
-                                            <Settings className="h-6 w-6 text-green-600 dark:text-green-400" />
+                                <CardHeader className="relative z-10 pb-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-lg group-hover:scale-110 transition-transform">
+                                            <Settings className="h-5 w-5 text-green-600 dark:text-green-400" />
                                         </div>
                                         <div className="flex-1">
-                                            <CardTitle className="text-lg">System Config</CardTitle>
-                                            <CardDescription>Platform settings & features</CardDescription>
+                                            <CardTitle className="text-base">System Config</CardTitle>
+                                            <CardDescription className="text-xs">Platform settings & features</CardDescription>
                                         </div>
                                         <div className="inline-flex items-center px-2 py-1 rounded-md bg-green-100 dark:bg-green-900/20 text-xs font-medium text-green-700 dark:text-green-300">
                                             Super Admin
                                         </div>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="space-y-2 relative z-10">
-                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-3 hover:bg-green-50 dark:hover:bg-green-900/20">
+                                <CardContent className="space-y-1 relative z-10 pt-0">
+                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-2 hover:bg-green-50 dark:hover:bg-green-900/20">
                                         <Link href="/admin/config/features" className="flex items-center">
-                                            <div className="flex items-center gap-3">
-                                                <Zap className="h-4 w-4" />
+                                            <div className="flex items-center gap-2">
+                                                <Zap className="h-3 w-3" />
                                                 <div className="text-left">
-                                                    <div className="font-medium">Feature Flags</div>
-                                                    <div className="text-xs text-muted-foreground">Control rollouts</div>
+                                                    <div className="font-medium text-sm">Feature Flags</div>
                                                 </div>
                                             </div>
-                                            <ChevronRight className="h-4 w-4" />
+                                            <ChevronRight className="h-3 w-3" />
                                         </Link>
                                     </Button>
-                                    <div className="border-t border-border/50" />
-                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-3 hover:bg-green-50 dark:hover:bg-green-900/20">
+                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-2 hover:bg-green-50 dark:hover:bg-green-900/20">
                                         <Link href="/admin/config/settings" className="flex items-center">
-                                            <div className="flex items-center gap-3">
-                                                <Settings className="h-4 w-4" />
+                                            <div className="flex items-center gap-2">
+                                                <Settings className="h-3 w-3" />
                                                 <div className="text-left">
-                                                    <div className="font-medium">Platform Settings</div>
-                                                    <div className="text-xs text-muted-foreground">Global configuration</div>
+                                                    <div className="font-medium text-sm">Platform Settings</div>
                                                 </div>
                                             </div>
-                                            <ChevronRight className="h-4 w-4" />
+                                            <ChevronRight className="h-3 w-3" />
                                         </Link>
                                     </Button>
-                                    <div className="border-t border-border/50" />
-                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-3 hover:bg-green-50 dark:hover:bg-green-900/20">
+                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-2 hover:bg-green-50 dark:hover:bg-green-900/20">
                                         <Link href="/admin/system/maintenance" className="flex items-center">
-                                            <div className="flex items-center gap-3">
-                                                <Wrench className="h-4 w-4" />
+                                            <div className="flex items-center gap-2">
+                                                <Wrench className="h-3 w-3" />
                                                 <div className="text-left">
-                                                    <div className="font-medium">Maintenance Mode</div>
-                                                    <div className="text-xs text-muted-foreground">System maintenance</div>
+                                                    <div className="font-medium text-sm">Maintenance Mode</div>
                                                 </div>
                                             </div>
-                                            <ChevronRight className="h-4 w-4" />
+                                            <ChevronRight className="h-3 w-3" />
                                         </Link>
                                     </Button>
                                 </CardContent>
@@ -699,57 +674,52 @@ export default function AdminDashboardPage() {
                         {/* Advanced Management */}
                         <Card className="overflow-hidden bg-background/50 border-primary/20 hover:shadow-lg transition-all duration-200 hover:scale-[1.02] group">
                             <CardGradientMesh>
-                                <CardHeader className="relative z-10">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-3 bg-yellow-100 dark:bg-yellow-900/50 rounded-xl group-hover:scale-110 transition-transform">
-                                            <Shield className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+                                <CardHeader className="relative z-10 pb-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg group-hover:scale-110 transition-transform">
+                                            <Shield className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
                                         </div>
                                         <div className="flex-1">
-                                            <CardTitle className="text-lg">Advanced Management</CardTitle>
-                                            <CardDescription>Platform-wide management tools</CardDescription>
+                                            <CardTitle className="text-base">Advanced Management</CardTitle>
+                                            <CardDescription className="text-xs">Platform-wide management tools</CardDescription>
                                         </div>
                                         <div className="inline-flex items-center px-2 py-1 rounded-md bg-yellow-100 dark:bg-yellow-900/20 text-xs font-medium text-yellow-700 dark:text-yellow-300">
                                             Super Admin
                                         </div>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="space-y-2 relative z-10">
-                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-3 hover:bg-yellow-50 dark:hover:bg-yellow-900/20">
+                                <CardContent className="space-y-1 relative z-10 pt-0">
+                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-2 hover:bg-yellow-50 dark:hover:bg-yellow-900/20">
                                         <Link href="/admin/billing" className="flex items-center">
-                                            <div className="flex items-center gap-3">
-                                                <DollarSign className="h-4 w-4" />
+                                            <div className="flex items-center gap-2">
+                                                <DollarSign className="h-3 w-3" />
                                                 <div className="text-left">
-                                                    <div className="font-medium">Billing Management</div>
-                                                    <div className="text-xs text-muted-foreground">Revenue & subscriptions</div>
+                                                    <div className="font-medium text-sm">Billing Management</div>
                                                 </div>
                                             </div>
-                                            <ChevronRight className="h-4 w-4" />
+                                            <ChevronRight className="h-3 w-3" />
                                         </Link>
                                     </Button>
-                                    <div className="border-t border-border/50" />
-                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-3 hover:bg-yellow-50 dark:hover:bg-yellow-900/20">
+                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-2 hover:bg-yellow-50 dark:hover:bg-yellow-900/20">
                                         <Link href="/admin/integrations" className="flex items-center">
-                                            <div className="flex items-center gap-3">
-                                                <Key className="h-4 w-4" />
+                                            <div className="flex items-center gap-2">
+                                                <Key className="h-3 w-3" />
                                                 <div className="text-left">
-                                                    <div className="font-medium">API & Integrations</div>
-                                                    <div className="text-xs text-muted-foreground">External services</div>
+                                                    <div className="font-medium text-sm">API & Integrations</div>
                                                 </div>
                                             </div>
-                                            <ChevronRight className="h-4 w-4" />
+                                            <ChevronRight className="h-3 w-3" />
                                         </Link>
                                     </Button>
-                                    <div className="border-t border-border/50" />
-                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-3 hover:bg-yellow-50 dark:hover:bg-yellow-900/20">
+                                    <Button variant="ghost" asChild className="w-full justify-between h-auto p-2 hover:bg-yellow-50 dark:hover:bg-yellow-900/20">
                                         <Link href="/admin/audit" className="flex items-center">
-                                            <div className="flex items-center gap-3">
-                                                <FileText className="h-4 w-4" />
+                                            <div className="flex items-center gap-2">
+                                                <FileText className="h-3 w-3" />
                                                 <div className="text-left">
-                                                    <div className="font-medium">Audit Logs</div>
-                                                    <div className="text-xs text-muted-foreground">Security & compliance</div>
+                                                    <div className="font-medium text-sm">Audit Logs</div>
                                                 </div>
                                             </div>
-                                            <ChevronRight className="h-4 w-4" />
+                                            <ChevronRight className="h-3 w-3" />
                                         </Link>
                                     </Button>
                                 </CardContent>

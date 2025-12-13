@@ -43,7 +43,7 @@ export function AnalyticsClient() {
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+                    <h1 className="font-headline text-3xl font-bold">Analytics Dashboard</h1>
                     <p className="text-muted-foreground">Monitor platform performance and user engagement</p>
                 </div>
                 <Button>

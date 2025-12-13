@@ -37,7 +37,7 @@ export function SessionForm({ open, onOpenChange }: SessionFormProps) {
     const [error, setError] = useState<string | null>(null);
     const [errors, setErrors] = useState<Record<string, string[]>>({});
     const [templates, setTemplates] = useState<SessionTemplate[]>([]);
-    const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+    const [selectedTemplateId, setSelectedTemplateId] = useState<string>('none');
 
     const [formData, setFormData] = useState({
         propertyAddress: '',
@@ -74,7 +74,7 @@ export function SessionForm({ open, onOpenChange }: SessionFormProps) {
     const handleTemplateSelect = (templateId: string) => {
         setSelectedTemplateId(templateId);
 
-        if (!templateId) {
+        if (!templateId || templateId === 'none') {
             // Clear template-related fields
             setFormData((prev) => ({
                 ...prev,
@@ -113,7 +113,7 @@ export function SessionForm({ open, onOpenChange }: SessionFormProps) {
             const updates: any = { ...prev, scheduledStartTime: startTime };
 
             // Auto-calculate end time if template is selected
-            if (selectedTemplateId && startTime) {
+            if (selectedTemplateId && selectedTemplateId !== 'none' && startTime) {
                 const template = templates.find((t) => t.templateId === selectedTemplateId);
                 if (template?.typicalDuration) {
                     const start = new Date(startTime);
@@ -148,7 +148,7 @@ export function SessionForm({ open, onOpenChange }: SessionFormProps) {
                     notes: '',
                     templateId: '',
                 });
-                setSelectedTemplateId('');
+                setSelectedTemplateId('none');
             } else {
                 setError(result.error || 'An error occurred');
                 if (result.errors) {
@@ -192,7 +192,7 @@ export function SessionForm({ open, onOpenChange }: SessionFormProps) {
                                     <SelectValue placeholder="Select a template..." />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">No template</SelectItem>
+                                    <SelectItem value="none">No template</SelectItem>
                                     {templates.map((template) => (
                                         <SelectItem key={template.templateId} value={template.templateId}>
                                             <div className="flex items-center gap-2">
@@ -291,7 +291,7 @@ export function SessionForm({ open, onOpenChange }: SessionFormProps) {
                                     setFormData({ ...formData, scheduledEndTime: e.target.value })
                                 }
                             />
-                            {selectedTemplateId && (
+                            {selectedTemplateId && selectedTemplateId !== 'none' && (
                                 <p className="text-xs text-muted-foreground">
                                     Auto-calculated from template duration
                                 </p>

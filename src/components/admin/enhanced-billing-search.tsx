@@ -39,7 +39,7 @@ export function EnhancedBillingSearch() {
         email: '',
         domain: '',
         name: '',
-        status: '',
+        status: 'all',
         customerId: '',
         amountGreaterThan: '',
         amountLessThan: '',
@@ -59,10 +59,10 @@ export function EnhancedBillingSearch() {
                 if (searchCriteria.domain) criteria.domain = searchCriteria.domain;
                 if (searchCriteria.name) criteria.name = searchCriteria.name;
             } else if (searchType === 'subscriptions') {
-                if (searchCriteria.status) criteria.status = searchCriteria.status;
+                if (searchCriteria.status && searchCriteria.status !== 'all') criteria.status = searchCriteria.status;
                 if (searchCriteria.customerId) criteria.customerId = searchCriteria.customerId;
             } else if (searchType === 'payments') {
-                if (searchCriteria.status) criteria.status = searchCriteria.status;
+                if (searchCriteria.status && searchCriteria.status !== 'all') criteria.status = searchCriteria.status;
                 if (searchCriteria.customerId) criteria.customerId = searchCriteria.customerId;
                 if (searchCriteria.amountGreaterThan) criteria.amountGreaterThan = parseFloat(searchCriteria.amountGreaterThan);
                 if (searchCriteria.amountLessThan) criteria.amountLessThan = parseFloat(searchCriteria.amountLessThan);
@@ -217,7 +217,7 @@ export function EnhancedBillingSearch() {
                                         <SelectValue placeholder="Select status" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="">All Statuses</SelectItem>
+                                        <SelectItem value="all">All Statuses</SelectItem>
                                         <SelectItem value="active">Active</SelectItem>
                                         <SelectItem value="canceled">Canceled</SelectItem>
                                         <SelectItem value="past_due">Past Due</SelectItem>
@@ -245,7 +245,7 @@ export function EnhancedBillingSearch() {
                                         <SelectValue placeholder="Select status" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="">All Statuses</SelectItem>
+                                        <SelectItem value="all">All Statuses</SelectItem>
                                         <SelectItem value="succeeded">Succeeded</SelectItem>
                                         <SelectItem value="requires_payment_method">Failed</SelectItem>
                                         <SelectItem value="requires_action">Requires Action</SelectItem>

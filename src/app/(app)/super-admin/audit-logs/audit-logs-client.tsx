@@ -22,8 +22,8 @@ export default function AuditLogsClient() {
 
     // Filters
     const [adminUserId, setAdminUserId] = useState('');
-    const [action, setAction] = useState('');
-    const [resourceType, setResourceType] = useState('');
+    const [action, setAction] = useState('all');
+    const [resourceType, setResourceType] = useState('all');
     const [resourceId, setResourceId] = useState('');
     const [timeRange, setTimeRange] = useState('24h');
 
@@ -53,8 +53,8 @@ export default function AuditLogsClient() {
 
             const result = await getAuditLogsAction({
                 adminUserId: debouncedAdminUserId || undefined,
-                action: action || undefined,
-                resourceType: resourceType || undefined,
+                action: action === 'all' ? undefined : action || undefined,
+                resourceType: resourceType === 'all' ? undefined : resourceType || undefined,
                 resourceId: debouncedResourceId || undefined,
                 startTime,
                 nextToken: token,
@@ -110,7 +110,7 @@ export default function AuditLogsClient() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold">Audit Logs</h1>
+                    <h1 className="font-headline text-3xl font-bold">Audit Logs</h1>
                     <p className="text-muted-foreground">
                         Track all administrative actions and system changes
                     </p>
@@ -156,7 +156,7 @@ export default function AuditLogsClient() {
                                         <SelectValue placeholder="All actions" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="">All Actions</SelectItem>
+                                        <SelectItem value="all">All Actions</SelectItem>
                                         <SelectItem value="CREATE">Create</SelectItem>
                                         <SelectItem value="UPDATE">Update</SelectItem>
                                         <SelectItem value="DELETE">Delete</SelectItem>
@@ -175,7 +175,7 @@ export default function AuditLogsClient() {
                                         <SelectValue placeholder="All types" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="">All Types</SelectItem>
+                                        <SelectItem value="all">All Types</SelectItem>
                                         <SelectItem value="USER">User</SelectItem>
                                         <SelectItem value="ROLE">Role</SelectItem>
                                         <SelectItem value="PERMISSION">Permission</SelectItem>

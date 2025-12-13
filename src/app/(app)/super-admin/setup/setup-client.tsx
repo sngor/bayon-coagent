@@ -61,6 +61,14 @@ export function SetupClient() {
 
     return (
         <div className="space-y-8">
+            {/* Page Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="font-headline text-3xl font-bold">System Setup</h1>
+                    <p className="text-muted-foreground">Configure system settings and manage administrators</p>
+                </div>
+            </div>
+
             {/* Admin Overview */}
             <div className="grid gap-6 md:grid-cols-3">
                 <Card className="relative overflow-hidden">

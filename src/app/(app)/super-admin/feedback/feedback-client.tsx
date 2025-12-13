@@ -73,7 +73,7 @@ export function FeedbackClient() {
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold">User Feedback</h1>
+                    <h1 className="font-headline text-3xl font-bold">User Feedback</h1>
                     <p className="text-muted-foreground">Review and manage user feedback and feature requests</p>
                 </div>
                 <Button>

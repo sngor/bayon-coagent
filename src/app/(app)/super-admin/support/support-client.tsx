@@ -110,7 +110,7 @@ export default function SuperAdminSupportClient() {
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Support Management</h2>
+                    <h1 className="font-headline text-3xl font-bold">Support Management</h1>
                     <p className="text-muted-foreground">Manage and respond to user support tickets</p>
                 </div>
                 <Button variant="outline" onClick={loadTickets}>

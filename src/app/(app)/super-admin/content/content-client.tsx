@@ -64,7 +64,7 @@ export function ContentClient() {
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold">Content Moderation</h1>
+                    <h1 className="font-headline text-3xl font-bold">Content Moderation</h1>
                     <p className="text-muted-foreground">Review and moderate user-generated content</p>
                 </div>
             </div>

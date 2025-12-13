@@ -543,6 +543,13 @@ export async function findCompetitorsAction(
   prevState: any,
   formData: FormData
 ) {
+  console.log('🚀 findCompetitorsAction called');
+  console.log('📝 Form data:', {
+    name: formData.get('name'),
+    agencyName: formData.get('agencyName'),
+    address: formData.get('address'),
+  });
+
   const validatedFields = findCompetitorsSchema.safeParse({
     name: formData.get('name'),
     agencyName: formData.get('agencyName'),
@@ -550,6 +557,7 @@ export async function findCompetitorsAction(
   });
 
   if (!validatedFields.success) {
+    console.error('❌ Validation failed:', validatedFields.error);
     const errorMessage =
       validatedFields.error.errors[0]?.message ||
       'Required profile information is missing.';
@@ -560,10 +568,14 @@ export async function findCompetitorsAction(
     };
   }
 
+  console.log('✅ Validation passed, calling findCompetitors...');
   try {
     const result = await findCompetitors(
       validatedFields.data as FindCompetitorsInput
     );
+
+    console.log('🎯 findCompetitors result:', result);
+    console.log('📊 Competitors found:', result.competitors?.length || 0);
 
     return {
       message: 'success',
@@ -571,6 +583,7 @@ export async function findCompetitorsAction(
       errors: {},
     };
   } catch (error) {
+    console.error('❌ findCompetitors error:', error);
     const errorMessage = handleAWSError(error, 'An unexpected error occurred while finding competitors.');
     return {
       message: `Failed to find competitors: ${errorMessage}`,

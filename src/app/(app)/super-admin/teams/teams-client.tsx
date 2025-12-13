@@ -126,6 +126,14 @@ export function TeamsClient() {
     return (
         <AdminErrorBoundary>
             <div className="space-y-8">
+                {/* Page Header */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="font-headline text-3xl font-bold">Team Management</h1>
+                        <p className="text-muted-foreground">Create and manage teams with assigned administrators</p>
+                    </div>
+                </div>
+
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">

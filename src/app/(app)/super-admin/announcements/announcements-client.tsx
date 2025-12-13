@@ -60,6 +60,14 @@ export function AnnouncementsClient() {
 
     return (
         <div className="space-y-8">
+            {/* Page Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="font-headline text-3xl font-bold">Announcements</h1>
+                    <p className="text-muted-foreground">Create and manage platform-wide announcements</p>
+                </div>
+            </div>
+
             <Card>
                 <CardHeader>
                     <div className="flex items-center justify-between">

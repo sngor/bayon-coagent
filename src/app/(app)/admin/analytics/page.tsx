@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useAdminStickyHeader } from '@/hooks/use-admin-sticky-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CardGradientMesh } from '@/components/ui/gradient-mesh';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,10 @@ const DATE_RANGES = {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
 export default function AnalyticsDashboardPage() {
+    const headerRef = useAdminStickyHeader({
+        title: 'Team Analytics',
+        icon: BarChart3
+    });
     const [metrics, setMetrics] = useState<PlatformMetrics | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [dateRange, setDateRange] = useState('30d');
@@ -139,11 +144,11 @@ export default function AnalyticsDashboardPage() {
     return (
         <div className="space-y-8">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div ref={headerRef} className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Platform Analytics</h2>
+                    <h1 className="font-headline text-3xl font-bold tracking-tight">Team Analytics</h1>
                     <p className="text-muted-foreground">
-                        Monitor platform usage, engagement, and performance metrics
+                        Monitor team usage, engagement, and performance metrics
                     </p>
                 </div>
                 <div className="flex items-center gap-3">

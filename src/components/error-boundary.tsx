@@ -1,24 +1,22 @@
 'use client';
 
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface ErrorBoundaryState {
     hasError: boolean;
     error?: Error;
+    errorInfo?: React.ErrorInfo;
 }
 
 interface ErrorBoundaryProps {
     children: React.ReactNode;
-    fallback?: React.ComponentType<{ error?: Error; resetError: () => void }>;
+    fallback?: React.ComponentType<{ error: Error; retry: () => void }>;
+    onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
 }
 
-/**
- * Error Boundary component for catching and handling React component errors
- * Provides a fallback UI when components crash
- */
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
     constructor(props: ErrorBoundaryProps) {
         super(props);
@@ -30,54 +28,107 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     }
 
     componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-        console.error('Error Boundary caught an error:', error, errorInfo);
+        this.setState({ errorInfo });
+
+        // Log error to monitoring service
+        console.error('ErrorBoundary caught an error:', error, errorInfo);
+
+        // Call custom error handler
+        this.props.onError?.(error, errorInfo);
     }
 
-    resetError = () => {
-        this.setState({ hasError: false, error: undefined });
+    retry = () => {
+        this.setState({ hasError: false, error: undefined, errorInfo: undefined });
     };
 
     render() {
         if (this.state.hasError) {
-            const FallbackComponent = this.props.fallback || DefaultErrorFallback;
-            return <FallbackComponent error={this.state.error} resetError={this.resetError} />;
+            const { fallback: Fallback } = this.props;
+
+            if (Fallback && this.state.error) {
+                return <Fallback error={this.state.error} retry={this.retry} />;
+            }
+
+            return <DefaultErrorFallback error={this.state.error} retry={this.retry} />;
         }
 
         return this.props.children;
     }
 }
 
-interface ErrorFallbackProps {
-    error?: Error;
-    resetError: () => void;
-}
-
-function DefaultErrorFallback({ error, resetError }: ErrorFallbackProps) {
+function DefaultErrorFallback({ error, retry }: { error?: Error; retry: () => void }) {
     return (
-        <Card className="max-w-md mx-auto mt-8">
-            <CardHeader>
-                <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-red-500" />
-                    <CardTitle className="text-lg">Something went wrong</CardTitle>
+        <div className="flex items-center justify-center min-h-[400px] p-6">
+            <div className="max-w-md w-full">
+                <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Something went wrong</AlertTitle>
+                    <AlertDescription className="mt-2">
+                        {error?.message || 'An unexpected error occurred. Please try again.'}
+                    </AlertDescription>
+                </Alert>
+
+                <div className="mt-4 flex gap-2">
+                    <Button onClick={retry} variant="outline" size="sm">
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Try Again
+                    </Button>
+                    <Button
+                        onClick={() => window.location.reload()}
+                        variant="ghost"
+                        size="sm"
+                    >
+                        Refresh Page
+                    </Button>
                 </div>
-                <CardDescription>
-                    An unexpected error occurred. Please try refreshing the page.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                {error && (
-                    <details className="text-sm text-muted-foreground">
-                        <summary className="cursor-pointer">Error details</summary>
-                        <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto">
-                            {error.message}
+
+                {process.env.NODE_ENV === 'development' && error && (
+                    <details className="mt-4 text-sm text-muted-foreground">
+                        <summary className="cursor-pointer">Error Details</summary>
+                        <pre className="mt-2 whitespace-pre-wrap break-words">
+                            {error.stack}
                         </pre>
                     </details>
                 )}
-                <Button onClick={resetError} className="w-full">
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Try Again
-                </Button>
-            </CardContent>
-        </Card>
+            </div>
+        </div>
+    );
+}
+
+// Specific error boundary for AI operations
+export function AIErrorBoundary({ children }: { children: React.ReactNode }) {
+    return (
+        <ErrorBoundary
+            fallback={({ error, retry }) => (
+                <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>AI Generation Failed</AlertTitle>
+                    <AlertDescription className="mt-2">
+                        {error.message.includes('timeout')
+                            ? 'The AI request timed out. Please try again with a shorter prompt.'
+                            : error.message.includes('rate limit')
+                                ? 'Too many requests. Please wait a moment and try again.'
+                                : 'Failed to generate content. Please check your input and try again.'
+                        }
+                    </AlertDescription>
+                    <div className="mt-3">
+                        <Button onClick={retry} size="sm" variant="outline">
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Try Again
+                        </Button>
+                    </div>
+                </Alert>
+            )}
+            onError={(error) => {
+                // Track AI errors specifically
+                console.error('AI Operation Error:', {
+                    message: error.message,
+                    stack: error.stack,
+                    timestamp: new Date().toISOString()
+                });
+            }}
+        >
+            {children}
+        </ErrorBoundary>
     );
 }

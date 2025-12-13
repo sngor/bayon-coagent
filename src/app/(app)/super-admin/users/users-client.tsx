@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useAdminStickyHeader } from '@/hooks/use-admin-sticky-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,6 +63,10 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 
 export default function UsersClient() {
+    const headerRef = useAdminStickyHeader({
+        title: 'User Management',
+        icon: Users
+    });
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState<any[]>([]);
     const [teams, setTeams] = useState<any[]>([]);
@@ -416,6 +421,14 @@ export default function UsersClient() {
 
     return (
         <div className="space-y-8">
+            {/* Page Header */}
+            <div ref={headerRef} className="flex items-center justify-between">
+                <div>
+                    <h1 className="font-headline text-3xl font-bold">User Management</h1>
+                    <p className="text-muted-foreground">Manage user accounts, roles, and permissions</p>
+                </div>
+            </div>
+
             {/* User Overview Stats */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <Card className="relative overflow-hidden">

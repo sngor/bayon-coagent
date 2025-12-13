@@ -52,7 +52,7 @@ export default function IntegrationsClient() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">API & Integrations</h2>
+                    <h1 className="font-headline text-3xl font-bold">API & Integrations</h1>
                     <p className="text-muted-foreground">Manage external services and API connections</p>
                 </div>
                 <Button variant="outline" onClick={loadIntegrations}>

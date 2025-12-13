@@ -64,9 +64,9 @@ export function PropertySearch({ token, primaryColor, onContactAgent }: Property
         location: '',
         minPrice: '',
         maxPrice: '',
-        bedrooms: '',
-        bathrooms: '',
-        propertyType: '',
+        bedrooms: 'any',
+        bathrooms: 'any',
+        propertyType: 'any',
         minSquareFeet: '',
         maxSquareFeet: '',
     });
@@ -94,9 +94,9 @@ export function PropertySearch({ token, primaryColor, onContactAgent }: Property
                 location: criteria.location || undefined,
                 minPrice: criteria.minPrice ? parseInt(criteria.minPrice) : undefined,
                 maxPrice: criteria.maxPrice ? parseInt(criteria.maxPrice) : undefined,
-                bedrooms: criteria.bedrooms ? parseInt(criteria.bedrooms) : undefined,
-                bathrooms: criteria.bathrooms ? parseInt(criteria.bathrooms) : undefined,
-                propertyType: criteria.propertyType ? [criteria.propertyType] : undefined,
+                bedrooms: criteria.bedrooms && criteria.bedrooms !== 'any' ? parseInt(criteria.bedrooms) : undefined,
+                bathrooms: criteria.bathrooms && criteria.bathrooms !== 'any' ? parseInt(criteria.bathrooms) : undefined,
+                propertyType: criteria.propertyType && criteria.propertyType !== 'any' ? [criteria.propertyType] : undefined,
                 minSquareFeet: criteria.minSquareFeet ? parseInt(criteria.minSquareFeet) : undefined,
                 maxSquareFeet: criteria.maxSquareFeet ? parseInt(criteria.maxSquareFeet) : undefined,
                 page,
@@ -248,7 +248,7 @@ export function PropertySearch({ token, primaryColor, onContactAgent }: Property
                                 <SelectValue placeholder="Any" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">Any</SelectItem>
+                                <SelectItem value="any">Any</SelectItem>
                                 <SelectItem value="1">1+</SelectItem>
                                 <SelectItem value="2">2+</SelectItem>
                                 <SelectItem value="3">3+</SelectItem>
@@ -271,7 +271,7 @@ export function PropertySearch({ token, primaryColor, onContactAgent }: Property
                                 <SelectValue placeholder="Any" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">Any</SelectItem>
+                                <SelectItem value="any">Any</SelectItem>
                                 <SelectItem value="1">1+</SelectItem>
                                 <SelectItem value="2">2+</SelectItem>
                                 <SelectItem value="3">3+</SelectItem>
@@ -293,7 +293,7 @@ export function PropertySearch({ token, primaryColor, onContactAgent }: Property
                                 <SelectValue placeholder="Any" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">Any</SelectItem>
+                                <SelectItem value="any">Any</SelectItem>
                                 <SelectItem value="single-family">Single Family</SelectItem>
                                 <SelectItem value="condo">Condo</SelectItem>
                                 <SelectItem value="townhouse">Townhouse</SelectItem>

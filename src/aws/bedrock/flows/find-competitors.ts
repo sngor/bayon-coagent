@@ -110,15 +110,27 @@ Based ONLY on the search results above, identify 3-5 prominent competitor agents
 
 For each competitor you find in the search results, provide:
 - name: The competitor's full name
-- agency: The competitor's agency name
+- agency: The competitor's agency name  
 - reviewCount: Total online reviews found (or 0 if not found)
 - avgRating: Average rating out of 5 (or 0 if not found)
 - socialFollowers: Total social media followers (or 0 if not found)
 - domainAuthority: Domain authority score 0-100 (or 0 if not found)
 
-Return a JSON response with a "competitors" array containing 3-5 competitor objects with all the above fields.
+You must return a valid JSON object in exactly this format:
+{
+  "competitors": [
+    {
+      "name": "Agent Full Name",
+      "agency": "Agency Name",
+      "reviewCount": 0,
+      "avgRating": 0,
+      "socialFollowers": 0,
+      "domainAuthority": 0
+    }
+  ]
+}
 
-If you cannot find enough competitors in the search results, return fewer competitors rather than inventing information.`,
+If you cannot find enough competitors in the search results, return fewer competitors rather than inventing information. Always return at least an empty competitors array.`,
 });
 
 const findCompetitorsFlow = defineFlow(
@@ -129,38 +141,77 @@ const findCompetitorsFlow = defineFlow(
   },
   async (input) => {
     // Search for competitors in the market
+    console.log('🔍 Starting competitor discovery for:', input);
     const searchClient = getSearchClient();
     const searchQuery = `top real estate agents ${input.address} ${input.agencyName}`;
+    console.log('🔎 Search query:', searchQuery);
 
     try {
+      console.log('📡 Performing web search...');
       const searchResults = await searchClient.search(searchQuery, {
         maxResults: 10,
         searchDepth: 'advanced',
       });
+      console.log('📊 Search results count:', searchResults.results.length);
 
       const searchContext = searchClient.formatResultsForAI(searchResults.results, true);
+      console.log('📝 Search context length:', searchContext.length);
 
-      const output = await findCompetitorsPrompt({
-        ...input,
+      console.log('🤖 Calling AI prompt...');
+      const promptInput = {
+        name: input.name,
+        agencyName: input.agencyName,
+        address: input.address,
         searchContext,
-      } as any);
+      };
+      console.log('📝 Prompt input:', promptInput);
 
-      if (!output?.competitors) {
+      const output = await findCompetitorsPrompt(promptInput);
+
+      console.log('✅ AI response received:', JSON.stringify(output, null, 2));
+      if (!output) {
+        console.error('❌ AI returned null/undefined response');
+        throw new Error("The AI returned no response. Please try again.");
+      }
+      if (!output.competitors) {
+        console.error('❌ No competitors field in AI response');
         throw new Error("The AI returned an unexpected response format. Please try again.");
       }
+      if (!Array.isArray(output.competitors)) {
+        console.error('❌ Competitors field is not an array:', typeof output.competitors);
+        throw new Error("The AI returned competitors in an unexpected format. Please try again.");
+      }
+      console.log('🎯 Found competitors:', output.competitors.length);
       return output;
     } catch (error) {
       // If search fails, fall back to AI knowledge
-      console.warn('Web search failed for finding competitors:', error);
+      console.warn('⚠️ Web search failed for finding competitors:', error);
 
-      const output = await findCompetitorsPrompt({
-        ...input,
+      console.log('🔄 Falling back to AI knowledge...');
+      const fallbackInput = {
+        name: input.name,
+        agencyName: input.agencyName,
+        address: input.address,
         searchContext: 'Web search unavailable. Please provide estimates based on typical market patterns.',
-      } as any);
+      };
+      console.log('📝 Fallback input:', fallbackInput);
 
-      if (!output?.competitors) {
+      const output = await findCompetitorsPrompt(fallbackInput);
+
+      console.log('🤖 Fallback AI response:', JSON.stringify(output, null, 2));
+      if (!output) {
+        console.error('❌ Fallback AI returned null/undefined response');
+        throw new Error("The AI returned no response. Please try again.");
+      }
+      if (!output.competitors) {
+        console.error('❌ No competitors field in fallback AI response');
         throw new Error("The AI returned an unexpected response format. Please try again.");
       }
+      if (!Array.isArray(output.competitors)) {
+        console.error('❌ Fallback competitors field is not an array:', typeof output.competitors);
+        throw new Error("The AI returned competitors in an unexpected format. Please try again.");
+      }
+      console.log('🎯 Fallback found competitors:', output.competitors.length);
       return output;
     }
   }

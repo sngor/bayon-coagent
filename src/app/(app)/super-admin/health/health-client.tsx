@@ -71,6 +71,18 @@ export default function HealthClient() {
 
     return (
         <div className="space-y-8">
+            {/* Page Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="font-headline text-3xl font-bold">System Health</h1>
+                    <p className="text-muted-foreground">Monitor system performance and service status</p>
+                </div>
+                <Button onClick={refreshHealthData} disabled={false}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh
+                </Button>
+            </div>
+
             {/* Overall System Status */}
             <div className="flex items-center justify-between p-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50 rounded-xl border border-green-200 dark:border-green-800">
                 <div className="flex items-center gap-4">

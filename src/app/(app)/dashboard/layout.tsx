@@ -1,7 +1,7 @@
 'use client';
 
 import { HubLayout } from '@/components/hub/hub-layout';
-import { LayoutDashboard } from 'lucide-react';
+
 import { useUser } from '@/aws/auth';
 import { useMemo, useEffect, useState } from 'react';
 import { getDashboardData } from './actions';
@@ -54,7 +54,6 @@ export default function DashboardLayout({
         <HubLayout
             title={title}
             description="Your real estate success at a glance"
-            icon={LayoutDashboard}
             tabs={[]}
         >
             {children}

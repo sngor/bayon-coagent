@@ -62,7 +62,7 @@ export function SystemClient() {
         <div className="space-y-8">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold">System Management</h1>
+                    <h1 className="font-headline text-3xl font-bold">System Management</h1>
                     <p className="text-muted-foreground">Monitor system health and manage platform settings</p>
                 </div>
                 <div className="flex items-center gap-2">

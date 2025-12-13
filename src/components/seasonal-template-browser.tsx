@@ -81,7 +81,7 @@ export function SeasonalTemplateBrowser({
         actionUrl?: string;
         expiresAt: Date;
     }>>([]);
-    const [selectedSeason, setSelectedSeason] = useState<string>('');
+    const [selectedSeason, setSelectedSeason] = useState<string>('all');
     const [selectedMonth, setSelectedMonth] = useState<number | undefined>();
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('current');
@@ -120,7 +120,7 @@ export function SeasonalTemplateBrowser({
             try {
                 // Load seasonal templates
                 const templatesResult = await getSeasonalTemplatesAction(
-                    selectedSeason || undefined,
+                    selectedSeason === 'all' ? undefined : selectedSeason,
                     selectedMonth,
                     contentType,
                     true
@@ -262,8 +262,8 @@ export function SeasonalTemplateBrowser({
                 </h3>
                 {notifications.slice(0, 3).map((notification, index) => (
                     <Alert key={index} className={`${notification.priority === 'high' ? 'border-orange-200 bg-orange-50' :
-                            notification.priority === 'medium' ? 'border-blue-200 bg-blue-50' :
-                                'border-gray-200 bg-gray-50'
+                        notification.priority === 'medium' ? 'border-blue-200 bg-blue-50' :
+                            'border-gray-200 bg-gray-50'
                         }`}>
                         <AlertCircle className="h-4 w-4" />
                         <AlertTitle className="text-sm">{notification.title}</AlertTitle>
@@ -318,7 +318,7 @@ export function SeasonalTemplateBrowser({
                             <SelectValue placeholder="Season" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">All Seasons</SelectItem>
+                            <SelectItem value="all">All Seasons</SelectItem>
                             <SelectItem value="spring">Spring</SelectItem>
                             <SelectItem value="summer">Summer</SelectItem>
                             <SelectItem value="fall">Fall</SelectItem>
@@ -326,14 +326,14 @@ export function SeasonalTemplateBrowser({
                         </SelectContent>
                     </Select>
                     <Select
-                        value={selectedMonth?.toString() || ''}
-                        onValueChange={(value) => setSelectedMonth(value ? parseInt(value) : undefined)}
+                        value={selectedMonth?.toString() || 'all'}
+                        onValueChange={(value) => setSelectedMonth(value === 'all' ? undefined : parseInt(value))}
                     >
                         <SelectTrigger className="w-32">
                             <SelectValue placeholder="Month" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="">All Months</SelectItem>
+                            <SelectItem value="all">All Months</SelectItem>
                             {monthNames.map((month, index) => (
                                 <SelectItem key={month} value={(index + 1).toString()}>
                                     {month}
@@ -427,7 +427,7 @@ export function SeasonalTemplateBrowser({
                                 className="mt-2"
                                 onClick={() => {
                                     setSearchQuery('');
-                                    setSelectedSeason('');
+                                    setSelectedSeason('all');
                                     setSelectedMonth(undefined);
                                 }}
                             >

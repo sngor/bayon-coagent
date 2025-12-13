@@ -248,12 +248,22 @@ export default function CompetitiveAnalysisPage() {
   }
 
   useEffect(() => {
+    console.log('🔄 findState changed:', findState);
     if (findState.message && findState.message !== 'success') {
+      console.error('❌ Find state error:', findState.message);
       toast({
         variant: 'destructive',
         title: 'Search Failed',
         description: findState.message,
       });
+    } else if (findState.message === 'success') {
+      console.log('✅ Find state success, data:', findState.data);
+      if (findState.data && findState.data.length > 0) {
+        toast({
+          title: 'Competitors Found',
+          description: `Found ${findState.data.length} competitor${findState.data.length > 1 ? 's' : ''} in your market.`,
+        });
+      }
     }
   }, [findState]);
 

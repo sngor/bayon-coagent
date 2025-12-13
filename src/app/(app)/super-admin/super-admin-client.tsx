@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ManagementAreaCard } from '@/components/admin/management-area-card';
 import { useAdminDashboard } from '@/hooks/use-admin-dashboard';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAdminStickyHeader } from '@/hooks/use-admin-sticky-header';
 import {
     Users,
     MessageSquare,
@@ -36,8 +37,21 @@ export default function SuperAdminClient() {
         refreshAll
     } = useAdminDashboard();
 
+    const headerRef = useAdminStickyHeader({
+        title: 'Super Admin Dashboard',
+        icon: Shield
+    });
+
     return (
         <div className="space-y-8">
+            {/* Page Header */}
+            <div ref={headerRef} className="flex items-center justify-between">
+                <div>
+                    <h1 className="font-headline text-3xl font-bold">Super Admin Dashboard</h1>
+                    <p className="text-muted-foreground">System administration and management overview</p>
+                </div>
+            </div>
+
             {/* Error State */}
             {error && (
                 <Alert variant="destructive">
@@ -81,7 +95,7 @@ export default function SuperAdminClient() {
 
             {/* Key Metrics Grid */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="overflow-hidden bg-background/50 border-primary/20">
+                <Card className="overflow-hidden bg-white dark:bg-gray-900 border-primary/20">
                     <CardGradientMesh>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
                             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -99,7 +113,7 @@ export default function SuperAdminClient() {
                     </CardGradientMesh>
                 </Card>
 
-                <Card className="overflow-hidden bg-background/50 border-primary/20">
+                <Card className="overflow-hidden bg-white dark:bg-gray-900 border-primary/20">
                     <CardGradientMesh>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
                             <CardTitle className="text-sm font-medium">AI Requests Today</CardTitle>
@@ -119,7 +133,7 @@ export default function SuperAdminClient() {
                     </CardGradientMesh>
                 </Card>
 
-                <Card className="overflow-hidden bg-background/50 border-primary/20">
+                <Card className="overflow-hidden bg-white dark:bg-gray-900 border-primary/20">
                     <CardGradientMesh>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
                             <CardTitle className="text-sm font-medium">Pending Feedback</CardTitle>
@@ -139,7 +153,7 @@ export default function SuperAdminClient() {
                     </CardGradientMesh>
                 </Card>
 
-                <Card className="overflow-hidden bg-background/50 border-primary/20">
+                <Card className="overflow-hidden bg-white dark:bg-gray-900 border-primary/20">
                     <CardGradientMesh>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
                             <CardTitle className="text-sm font-medium">System Health</CardTitle>
@@ -164,7 +178,7 @@ export default function SuperAdminClient() {
 
             {/* Quick Actions */}
             <div className="grid gap-6 md:grid-cols-2">
-                <Card className="overflow-hidden bg-background/50 border-primary/20">
+                <Card className="overflow-hidden bg-white dark:bg-gray-900 border-primary/20">
                     <CardGradientMesh>
                         <CardHeader className="relative z-10">
                             <div className="flex items-center gap-3">
@@ -195,7 +209,7 @@ export default function SuperAdminClient() {
                     </CardGradientMesh>
                 </Card>
 
-                <Card className="overflow-hidden bg-background/50 border-primary/20">
+                <Card className="overflow-hidden bg-white dark:bg-gray-900 border-primary/20">
                     <CardGradientMesh>
                         <CardHeader className="relative z-10">
                             <div className="flex items-center gap-3">
@@ -241,7 +255,7 @@ export default function SuperAdminClient() {
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {/* User Management */}
-                    <Card className="group hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer overflow-hidden bg-background/50 border-primary/20">
+                    <Card className="group hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer overflow-hidden bg-white dark:bg-gray-900 border-primary/20">
                         <CardGradientMesh>
                             <CardHeader className="relative z-10">
                                 <div className="flex items-center gap-4">
@@ -276,7 +290,7 @@ export default function SuperAdminClient() {
                     </Card>
 
                     {/* Team Management */}
-                    <Card className="group hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer overflow-hidden bg-background/50 border-primary/20">
+                    <Card className="group hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer overflow-hidden bg-white dark:bg-gray-900 border-primary/20">
                         <CardGradientMesh>
                             <CardHeader className="relative z-10">
                                 <div className="flex items-center gap-4">
@@ -311,7 +325,7 @@ export default function SuperAdminClient() {
                     </Card>
 
                     {/* Analytics */}
-                    <Card className="group hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer overflow-hidden bg-background/50 border-primary/20">
+                    <Card className="group hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer overflow-hidden bg-white dark:bg-gray-900 border-primary/20">
                         <CardGradientMesh>
                             <CardHeader className="relative z-10">
                                 <div className="flex items-center gap-4">
@@ -348,7 +362,7 @@ export default function SuperAdminClient() {
                     </Card>
 
                     {/* Feature Management */}
-                    <Card className="group hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer overflow-hidden bg-background/50 border-primary/20">
+                    <Card className="group hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer overflow-hidden bg-white dark:bg-gray-900 border-primary/20">
                         <CardGradientMesh>
                             <CardHeader className="relative z-10">
                                 <div className="flex items-center gap-4">
@@ -383,7 +397,7 @@ export default function SuperAdminClient() {
                     </Card>
 
                     {/* Support & Communication */}
-                    <Card className="group hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer overflow-hidden bg-background/50 border-primary/20">
+                    <Card className="group hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer overflow-hidden bg-white dark:bg-gray-900 border-primary/20">
                         <CardGradientMesh>
                             <CardHeader className="relative z-10">
                                 <div className="flex items-center gap-4">
@@ -426,7 +440,7 @@ export default function SuperAdminClient() {
                     </Card>
 
                     {/* System & Integrations */}
-                    <Card className="group hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer overflow-hidden bg-background/50 border-primary/20">
+                    <Card className="group hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer overflow-hidden bg-white dark:bg-gray-900 border-primary/20">
                         <CardGradientMesh>
                             <CardHeader className="relative z-10">
                                 <div className="flex items-center gap-4">
@@ -472,7 +486,7 @@ export default function SuperAdminClient() {
 
             {/* Secondary Actions */}
             <div className="grid gap-6 md:grid-cols-2">
-                <Card className="hover:shadow-md transition-shadow overflow-hidden bg-background/50 border-primary/20">
+                <Card className="hover:shadow-md transition-shadow overflow-hidden bg-white dark:bg-gray-900 border-primary/20">
                     <CardGradientMesh>
                         <CardHeader className="relative z-10">
                             <div className="flex items-center gap-4">
@@ -496,7 +510,7 @@ export default function SuperAdminClient() {
                     </CardGradientMesh>
                 </Card>
 
-                <Card className="hover:shadow-md transition-shadow overflow-hidden bg-background/50 border-primary/20">
+                <Card className="hover:shadow-md transition-shadow overflow-hidden bg-white dark:bg-gray-900 border-primary/20">
                     <CardGradientMesh>
                         <CardHeader className="relative z-10">
                             <div className="flex items-center gap-4">
@@ -522,7 +536,7 @@ export default function SuperAdminClient() {
             </div>
 
             {/* Recent Activity */}
-            <Card className="overflow-hidden bg-background/50 border-primary/20">
+            <Card className="overflow-hidden bg-white dark:bg-gray-900 border-primary/20">
                 <CardGradientMesh>
                     <CardHeader className="relative z-10">
                         <div className="flex items-center justify-between">
