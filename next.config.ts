@@ -11,6 +11,9 @@ const nextConfig: NextConfig = {
   // Optimize for AWS Lambda/Container deployment
   output: 'standalone',
 
+  // Set the output file tracing root to silence workspace warning
+  outputFileTracingRoot: __dirname,
+
   // Only ignore build errors in development
   typescript: {
     ignoreBuildErrors: true, // Temporarily ignore TypeScript errors for deployment
@@ -63,25 +66,19 @@ const nextConfig: NextConfig = {
     },
     // Build optimizations
     webpackBuildWorker: false, // Disable webpack build worker to reduce memory usage
-    turbo: {
-      // Enable Turbopack optimizations
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
   },
 
   // Turbopack configuration (moved from experimental.turbo)
   turbopack: {
-    // Set the correct root directory to silence the warning
-    root: __dirname,
     rules: {
       // Handle PWA-related files
       '*.worker.js': {
         loaders: ['file-loader'],
+      },
+      // Handle SVG files
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
       },
     },
   },

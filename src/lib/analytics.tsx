@@ -1,6 +1,7 @@
 /**
  * Analytics and user behavior tracking for AI features
  */
+import React from 'react';
 
 interface AnalyticsEvent {
     event: string;
@@ -199,6 +200,6 @@ export function withAnalytics<P extends object>(
             analytics.track('component_mounted', { componentName });
         }, []);
 
-        return <Component { ...props } />;
+        return <Component {...props} />;
     };
 }
