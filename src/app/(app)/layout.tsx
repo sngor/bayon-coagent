@@ -59,7 +59,7 @@ function ContentWrapper({ children }: { children: React.ReactNode }) {
   const { preferences } = useAccessibility();
 
   return (
-    <div className={preferences.fullWidth ? '' : 'max-w-7xl mx-auto'}>
+    <div className={preferences.fullWidth ? '' : 'max-w-6xl mx-auto'}>
       {children}
     </div>
   );

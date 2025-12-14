@@ -5294,8 +5294,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub bayon-coagent-ai-content-generation-${Environment}
-      CodeUri: infrastructure/lambda-functions/ai-service/content-generation/
-      Handler: handler.handler
+      CodeUri: infrastructure/lambda-functions/ai-content-generation/
+      Handler: index.handler
       Runtime: nodejs22.x
       Timeout: 300  # 5 minutes for AI processing
       MemorySize: 2048  # Higher memory for AI workloads
@@ -5318,8 +5318,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub bayon-coagent-ai-research-${Environment}
-      CodeUri: infrastructure/lambda-functions/ai-service/research/
-      Handler: handler.handler
+      CodeUri: infrastructure/lambda-functions/ai-research/
+      Handler: index.handler
       Runtime: nodejs22.x
       Timeout: 300
       MemorySize: 2048
@@ -5705,55 +5705,7 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IntegrationServiceApi}/*
 
-  # ==========================================
-  # API Gateway + Lambda Migration - Phase 1
-  # ==========================================
 
-  # AI Content Generation Lambda
-  AiContentGenerationFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub bayon-coagent-ai-content-generation-${Environment}
-      CodeUri: infrastructure/lambda-functions/ai-content-generation/
-      Handler: index.handler
-      Runtime: nodejs22.x
-      Timeout: 300
-      MemorySize: 2048
-      Role: !GetAtt ApplicationRole.Arn
-      Environment:
-        Variables:
-          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
-          S3_BUCKET_NAME: !Ref StorageBucket
-          BEDROCK_MODEL_ID: anthropic.claude-3-5-sonnet-20241022-v2:0
-          BEDROCK_REGION: !Ref AWS::Region
-      Tags:
-        Environment: !Ref Environment
-        Application: BayonCoAgent
-        Service: AIService
-        Function: ContentGeneration
-
-  # AI Research Lambda
-  AiResearchFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub bayon-coagent-ai-research-${Environment}
-      CodeUri: infrastructure/lambda-functions/ai-research/
-      Handler: index.handler
-      Runtime: nodejs22.x
-      Timeout: 300
-      MemorySize: 2048
-      Role: !GetAtt ApplicationRole.Arn
-      Environment:
-        Variables:
-          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
-          S3_BUCKET_NAME: !Ref StorageBucket
-          BEDROCK_MODEL_ID: anthropic.claude-3-5-sonnet-20241022-v2:0
-          BEDROCK_REGION: !Ref AWS::Region
-      Tags:
-        Environment: !Ref Environment
-        Application: BayonCoAgent
-        Service: AIService
-        Function: Research
 
 Outputs:
   UserPoolId:

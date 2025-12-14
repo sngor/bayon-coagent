@@ -20,7 +20,8 @@ import {
 } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { runResearchAgentAction } from '@/app/actions';
+// Import production API client (replaces server action)
+import { runResearchAgent } from '@/lib/api-client';
 import { Loader2, BrainCircuit, Library, Calendar, Search } from 'lucide-react';
 import { type RunResearchAgentOutput } from '@/aws/bedrock/flows';
 import { toast } from '@/hooks/use-toast';
@@ -28,7 +29,8 @@ import { useUser } from '@/aws/auth';
 import { saveResearchReportAction } from '@/app/actions';
 import type { ResearchReport } from '@/lib/types/common/common';
 import Link from 'next/link';
-import { Skeleton } from '@/components/ui/skeleton';
+import { CardListSkeleton, FormSkeleton } from '@/components/ui/skeletons';
+import { Loading } from '@/components/ui/loading';
 
 
 type ResearchInitialState = {
@@ -46,7 +48,7 @@ const researchInitialState: ResearchInitialState = {
 function SubmitButton({ disabled }: { disabled?: boolean }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" variant={pending ? 'shimmer' : 'ai'} disabled={pending || disabled} className="w-full md:w-auto">
+    <Button type="submit" disabled={pending || disabled} className="w-full md:w-auto">
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -62,30 +64,11 @@ function SubmitButton({ disabled }: { disabled?: boolean }) {
   );
 }
 
-function ReportListSkeleton() {
-  return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {[...Array(3)].map((_, i) => (
-        <Card key={i}>
-          <CardHeader>
-            <Skeleton className="h-6 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-          </CardHeader>
-          <CardFooter>
-            <Skeleton className="h-4 w-1/4" />
-          </CardFooter>
-        </Card>
-      ))}
-    </div>
-  )
-}
-
 
 export default function ResearchAgentPage() {
-  const [state, formAction, isPending] = useActionState(
-    runResearchAgentAction,
-    researchInitialState
-  );
+  // Migrated from server action to API client
+  const [state, setState] = useState(researchInitialState);
+  const [isPending, setIsPending] = useState(false);
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -133,6 +116,49 @@ export default function ResearchAgentPage() {
   // Store the topic from the form
   const [lastTopic, setLastTopic] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Form submission handler (replacing server action)
+  const handleResearchSubmit = async (formData: FormData) => {
+    const topic = formData.get('topic') as string;
+    setLastTopic(topic);
+    setIsPending(true);
+    setState({ message: '', data: null, errors: {} });
+
+    try {
+      const result = await runResearchAgent({
+        query: topic,
+        location: '', // Could be extracted from user profile or form
+        sources: 'Market data, industry reports, local statistics'
+      });
+
+      if (result.success) {
+        setState({
+          message: 'success',
+          data: {
+            report: result.data.summary + '\n\n## Key Findings\n' +
+              result.data.keyFindings.map((finding: string) => `- ${finding}`).join('\n') +
+              '\n\n## Market Data\n' + JSON.stringify(result.data.marketData, null, 2) +
+              '\n\n## Trends\n' + result.data.trends.map((trend: string) => `- ${trend}`).join('\n') +
+              '\n\n## Implications\n' + result.data.implications +
+              '\n\n## Recommendations\n' + result.data.recommendations.map((rec: string) => `- ${rec}`).join('\n') +
+              '\n\n## Sources\n' + result.data.sources.map((source: string) => `- ${source}`).join('\n'),
+            reportId: result.reportId
+          },
+          errors: {}
+        });
+      } else {
+        throw new Error(result.error?.message || 'Research failed');
+      }
+    } catch (error) {
+      setState({
+        message: error instanceof Error ? error.message : 'Research failed',
+        data: null,
+        errors: { general: error instanceof Error ? error.message : 'Unknown error' }
+      });
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   useEffect(() => {
     if (state.message === 'success' && state.data && user?.id && !isSaving) {
@@ -225,7 +251,7 @@ export default function ResearchAgentPage() {
   };
 
   return (
-    <div className="animate-fade-in-up space-y-8">
+    <div className="space-y-8">
       <Card>
         <CardHeader>
           <div className="mb-6">
@@ -239,11 +265,7 @@ export default function ResearchAgentPage() {
         </CardHeader>
         <CardContent>
           <form
-            action={(formData) => {
-              const topic = formData.get('topic') as string;
-              setLastTopic(topic);
-              formAction(formData);
-            }}
+            action={handleResearchSubmit}
             className="space-y-4"
           >
             <div className="space-y-2">
@@ -287,7 +309,7 @@ export default function ResearchAgentPage() {
           </div>
         )}
 
-        {isLoadingReports && <ReportListSkeleton />}
+        {isLoadingReports && <CardListSkeleton count={3} />}
 
         {/* No search results */}
         {!isLoadingReports && savedReports && savedReports.length > 0 && searchQuery && filteredReports.length === 0 && (

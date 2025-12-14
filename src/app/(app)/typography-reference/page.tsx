@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default function TypographyReferencePage() {
     return (
-        <div className="container mx-auto py-8 space-y-12 max-w-6xl">
+        <div className="space-y-12">
             {/* Page Header */}
             <div className="space-y-4">
                 <h1 className="font-headline text-display-large text-gradient">

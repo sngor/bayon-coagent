@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 export default function NotificationSettingsPage() {
     return (
-        <div className="container mx-auto py-8 px-4 max-w-4xl">
+        <div className="space-y-6">
             <div className="space-y-6">
                 <div>
                     <h1 className="font-headline text-3xl font-bold tracking-tight">Notification Settings</h1>

@@ -27,13 +27,12 @@ import {
     Zap,
 } from 'lucide-react';
 import {
-    analyzeAEOAction,
-    optimizeForAEOAction,
-    quickAEOCheckAction,
-    generateAEOFAQAction,
-} from '@/app/aeo-actions';
+    analyzeContentAEO,
+    optimizeContentAEO,
+} from '@/lib/api-client';
 import { toast } from '@/hooks/use-toast';
 import type { AEOAnalysis, AEOOptimizationResult } from '@/aws/bedrock/aeo-optimizer';
+import { optimizeForAEOAction } from '@/app/aeo-actions';
 
 interface AEOOptimizationPanelProps {
     content: string;
@@ -56,9 +55,12 @@ export function AEOOptimizationPanel({
     const handleAnalyze = () => {
         startTransition(async () => {
             try {
-                const result = await analyzeAEOAction(content, contentType);
+                const result = await analyzeContentAEO({
+                    content,
+                    contentType
+                });
 
-                if (result.message === 'success' && result.data) {
+                if (result.success && result.data) {
                     setAnalysis(result.data);
                     toast({
                         title: 'AEO Analysis Complete',
@@ -68,7 +70,7 @@ export function AEOOptimizationPanel({
                     toast({
                         variant: 'destructive',
                         title: 'Analysis Failed',
-                        description: result.message,
+                        description: result.error?.message || 'Analysis failed',
                     });
                 }
             } catch (error) {

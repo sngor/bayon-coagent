@@ -150,7 +150,7 @@ export default function AdminDashboardPage() {
     );
 
     return (
-        <div className="space-y-8 p-6 max-w-7xl mx-auto" role="main" aria-label="Admin Dashboard">
+        <div className="space-y-8" role="main" aria-label="Admin Dashboard">
             {/* Enhanced Header */}
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div className="space-y-2">

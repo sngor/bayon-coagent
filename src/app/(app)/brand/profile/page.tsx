@@ -1,8 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useActionState, useTransition } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useState, useEffect, useTransition } from 'react';
 import { Typewriter, LoadingDots, SuccessAnimation, StaggeredText, GradientText } from '@/components/ui/text-animations';
 import '@/styles/text-animations.css';
 import {
@@ -28,7 +27,8 @@ import type { Profile } from '@/lib/types/common';
 import { JsonLdDisplay } from '@/components/json-ld-display';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
-import { generateBioAction, saveContentAction } from '@/app/actions';
+import { generateAgentBio } from '@/lib/api-client';
+import { saveContentAction } from '@/app/actions';
 import { Save, User, Building2, Award, Phone, Share2, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
@@ -40,7 +40,9 @@ import { STICKY_POSITIONS } from '@/lib/utils/common';
 import { FeaturedTestimonialSelector } from '@/components/featured-testimonial-selector';
 import type { Testimonial } from '@/lib/types/common/common';
 import { CardGradientMesh } from '@/components/ui/gradient-mesh';
-import { ProfileSkeleton, TestimonialSkeleton } from '@/components/ui/skeleton-loader';
+import { BrandProfileLoading } from '@/components/ui/page-loading';
+import { ProfileSkeleton } from '@/components/ui/skeletons';
+import { TestimonialSkeleton } from '@/components/ui/skeleton-loader';
 import { ErrorState, LoadingTimeout } from '@/components/ui/error-state';
 import { useProfileData } from '@/hooks/use-profile-data';
 
@@ -94,21 +96,7 @@ function SaveButton({ content, type }: { content: string, type: string }) {
     )
 }
 
-function GenerateBioButton({ disabled }: { disabled?: boolean }) {
-    const { pending } = useFormStatus();
-    return (
-        <StandardFormActions
-            primaryAction={{
-                label: 'Auto-Generate',
-                type: 'submit',
-                variant: 'ai',
-                loading: pending,
-                disabled: disabled,
-            }}
-            alignment="right"
-        />
-    )
-}
+
 
 // Section Components for better organization
 function BasicInfoSection({ profile, onInputChange }: { profile: Partial<Profile>, onInputChange: any }) {
@@ -154,7 +142,7 @@ function ProfessionalDetailsSection({ profile, onInputChange }: { profile: Parti
     );
 }
 
-function BioSection({ profile, onInputChange, bioFormAction }: { profile: Partial<Profile>, onInputChange: any, bioFormAction: any }) {
+function BioSection({ profile, onInputChange, onGenerateBio, isGeneratingBio }: { profile: Partial<Profile>, onInputChange: any, onGenerateBio: any, isGeneratingBio: boolean }) {
     const isGenerateDisabled = !profile.name || !profile.agencyName || !profile.yearsOfExperience;
 
     return (
@@ -165,13 +153,16 @@ function BioSection({ profile, onInputChange, bioFormAction }: { profile: Partia
             actions={
                 <ActionBar spacing="compact">
                     <SaveButton content={profile.bio || ''} type="Bio" />
-                    <form action={bioFormAction}>
-                        <input type="hidden" name="name" value={profile.name || ''} />
-                        <input type="hidden" name="experience" value={profile.yearsOfExperience?.toString() || ''} />
-                        <input type="hidden" name="certifications" value={Array.isArray(profile.certifications) ? profile.certifications.join(', ') : profile.certifications || ''} />
-                        <input type="hidden" name="agencyName" value={profile.agencyName || ''} />
-                        <GenerateBioButton disabled={isGenerateDisabled} />
-                    </form>
+                    <StandardFormActions
+                        primaryAction={{
+                            label: 'Auto-Generate',
+                            onClick: onGenerateBio,
+                            variant: 'ai',
+                            loading: isGeneratingBio,
+                            disabled: isGenerateDisabled,
+                        }}
+                        alignment="right"
+                    />
                 </ActionBar>
             }
         >
@@ -261,7 +252,7 @@ function SocialLinksSection({ profile, onInputChange }: { profile: Partial<Profi
     );
 }
 
-function ProfileForm({ profile, onInputChange, onSave, isSaving, isLoading, bioFormAction }: { profile: Partial<Profile>, onInputChange: any, onSave: any, isSaving: boolean, isLoading: boolean, bioFormAction: any }) {
+function ProfileForm({ profile, onInputChange, onSave, isSaving, isLoading, onGenerateBio, isGeneratingBio }: { profile: Partial<Profile>, onInputChange: any, onSave: any, isSaving: boolean, isLoading: boolean, onGenerateBio: any, isGeneratingBio: boolean }) {
     return (
         <div className="space-y-8">
             {/* Main Profile Information Card */}
@@ -289,7 +280,7 @@ function ProfileForm({ profile, onInputChange, onSave, isSaving, isLoading, bioF
                         <div className="py-2">
                             <Separator />
                         </div>
-                        <BioSection profile={profile} onInputChange={onInputChange} bioFormAction={bioFormAction} />
+                        <BioSection profile={profile} onInputChange={onInputChange} onGenerateBio={onGenerateBio} isGeneratingBio={isGeneratingBio} />
                         <div className="py-2">
                             <Separator />
                         </div>
@@ -332,7 +323,8 @@ export default function ProfilePage() {
     const [isLoadingTestimonials, setIsLoadingTestimonials] = useState(false);
     const [showTimeout, setShowTimeout] = useState(false);
 
-    const [bioState, bioFormAction] = useActionState(generateBioAction, initialBioState);
+    const [bioState, setBioState] = useState(initialBioState);
+    const [isGeneratingBio, setIsGeneratingBio] = useState(false);
 
     // Detect when checklist becomes sticky
     useEffect(() => {
@@ -360,22 +352,60 @@ export default function ProfilePage() {
         }
     }, [isLoading]);
 
-    // Effect for server-side generation results
-    useEffect(() => {
-        if (bioState.message === 'success' && bioState.data) {
-            updateProfile({ bio: bioState.data as string });
+    // Bio generation handler
+    const handleGenerateBio = async () => {
+        if (!profile.name || !profile.agencyName || !profile.yearsOfExperience) {
             toast({
-                title: 'Bio Generated!',
-                description: 'Your new professional bio was generated by our cloud AI.',
+                variant: 'destructive',
+                title: 'Missing Information',
+                description: 'Please fill in your name, agency, and years of experience first.',
             });
-        } else if (bioState.message && bioState.message !== 'success' && bioState.message !== '') {
+            return;
+        }
+
+        setIsGeneratingBio(true);
+        setBioState(initialBioState);
+
+        try {
+            const result = await generateAgentBio({
+                name: profile.name,
+                experience: profile.yearsOfExperience?.toString() || '',
+                certifications: Array.isArray(profile.certifications)
+                    ? profile.certifications.join(', ')
+                    : profile.certifications || '',
+                agencyName: profile.agencyName,
+            });
+
+            if (result.success && result.data) {
+                updateProfile({ bio: result.data as string });
+                setBioState({
+                    message: 'success',
+                    data: result.data,
+                    errors: {},
+                });
+                toast({
+                    title: 'Bio Generated!',
+                    description: 'Your new professional bio was generated by our AI.',
+                });
+            } else {
+                throw new Error(result.error?.message || 'Failed to generate bio');
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to generate bio';
+            setBioState({
+                message: errorMessage,
+                data: '',
+                errors: {},
+            });
             toast({
                 variant: 'destructive',
                 title: 'Generation Failed',
-                description: bioState.message || 'Could not generate bio. Please try again.',
-            })
+                description: errorMessage,
+            });
+        } finally {
+            setIsGeneratingBio(false);
         }
-    }, [bioState]);
+    };
 
     // Load testimonials
     useEffect(() => {
@@ -607,7 +637,8 @@ export default function ProfilePage() {
                                     onSave={handleSave}
                                     isSaving={isSaving}
                                     isLoading={isLoading}
-                                    bioFormAction={bioFormAction}
+                                    onGenerateBio={handleGenerateBio}
+                                    isGeneratingBio={isGeneratingBio}
                                 />
                             </div>
                             <div className="lg:col-span-1">

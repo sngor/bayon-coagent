@@ -1,8 +1,7 @@
 
 'use client';
 
-import { useMemo, useState, useActionState, useEffect } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useMemo, useState, useEffect, useActionState } from 'react';
 import {
   Bar,
   BarChart,
@@ -46,7 +45,8 @@ import type { KeywordRanking, Profile, Competitor } from '@/lib/types/common';
 import { useUser } from '@/aws/auth';
 import { useItem, useQuery } from '@/aws/dynamodb/hooks';
 import { CompetitorForm } from '@/components/competitor-form';
-import { findCompetitorsAction, getKeywordRankingsAction, saveCompetitorAction } from '@/app/actions';
+import { findCompetitors } from '@/lib/api-client';
+import { getKeywordRankingsAction, saveCompetitorAction } from '@/app/actions';
 import { toast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
@@ -62,6 +62,7 @@ import { AIMentionsList } from '@/components/ai-mentions-list';
 import { AIVisibilityTrends } from '@/components/ai-visibility-trends';
 import { CompetitorAIComparison } from '@/components/competitor-ai-comparison';
 import { AIContextAnalysis } from '@/components/ai-context-analysis';
+import { useFormStatus } from 'react-dom';
 
 // Chart configuration for review volume visualization
 const chartConfig = {
@@ -113,21 +114,7 @@ const initialKeywordRankingsState: KeywordRankingsState = {
 }
 
 
-function FindButton({ disabled, children }: React.ComponentProps<typeof Button> & { disabled?: boolean }) {
-  const { pending } = useFormStatus();
-  return (
-    <StandardFormActions
-      primaryAction={{
-        label: children as string || 'Auto-Find Competitors',
-        type: 'submit',
-        variant: 'ai',
-        loading: pending,
-        disabled: disabled,
-      }}
-      alignment="left"
-    />
-  )
-}
+
 
 function TrackRankingsButton({ disabled }: { disabled?: boolean }) {
   const { pending } = useFormStatus();
@@ -151,7 +138,8 @@ export default function CompetitiveAnalysisPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedCompetitor, setSelectedCompetitor] = useState<Competitor | null>(null);
 
-  const [findState, findFormAction] = useActionState(findCompetitorsAction, initialFindCompetitorsState);
+  const [findState, setFindState] = useState(initialFindCompetitorsState);
+  const [isLoadingCompetitors, setIsLoadingCompetitors] = useState(false);
   const [rankingState, rankingFormAction] = useActionState(getKeywordRankingsAction, initialKeywordRankingsState);
 
   // Memoize DynamoDB keys
@@ -247,25 +235,7 @@ export default function CompetitiveAnalysisPage() {
     }
   }
 
-  useEffect(() => {
-    console.log('🔄 findState changed:', findState);
-    if (findState.message && findState.message !== 'success') {
-      console.error('❌ Find state error:', findState.message);
-      toast({
-        variant: 'destructive',
-        title: 'Search Failed',
-        description: findState.message,
-      });
-    } else if (findState.message === 'success') {
-      console.log('✅ Find state success, data:', findState.data);
-      if (findState.data && findState.data.length > 0) {
-        toast({
-          title: 'Competitors Found',
-          description: `Found ${findState.data.length} competitor${findState.data.length > 1 ? 's' : ''} in your market.`,
-        });
-      }
-    }
-  }, [findState]);
+
 
   useEffect(() => {
     if (rankingState.message && rankingState.message !== 'success') {
@@ -349,7 +319,48 @@ export default function CompetitiveAnalysisPage() {
               title="AI Competitor Discovery"
               description="Use AI to automatically discover top competitors in your market based on your profile."
             >
-              <form action={findFormAction} className="space-y-4">
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setIsLoadingCompetitors(true);
+                setFindState(initialFindCompetitorsState);
+
+                try {
+                  const formData = new FormData(e.currentTarget);
+                  const result = await findCompetitors({
+                    name: formData.get('name') as string,
+                    agencyName: formData.get('agencyName') as string,
+                    address: formData.get('address') as string,
+                  });
+
+                  if (result.success && result.data) {
+                    setFindState({
+                      message: 'success',
+                      data: result.data,
+                      errors: {},
+                    });
+                    toast({
+                      title: 'Competitors Found',
+                      description: `Found ${result.data.length} competitor${result.data.length > 1 ? 's' : ''} in your market.`,
+                    });
+                  } else {
+                    throw new Error(result.error?.message || 'Failed to find competitors');
+                  }
+                } catch (error) {
+                  const errorMessage = error instanceof Error ? error.message : 'Failed to find competitors';
+                  setFindState({
+                    message: errorMessage,
+                    data: [],
+                    errors: {},
+                  });
+                  toast({
+                    variant: 'destructive',
+                    title: 'Search Failed',
+                    description: errorMessage,
+                  });
+                } finally {
+                  setIsLoadingCompetitors(false);
+                }
+              }} className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <StandardFormField
                     label="Your Agent Name"
@@ -395,7 +406,16 @@ export default function CompetitiveAnalysisPage() {
                     required
                   />
                 </StandardFormField>
-                <FindButton disabled={isUserLoading}>Auto-Find Competitors</FindButton>
+                <StandardFormActions
+                  primaryAction={{
+                    label: 'Auto-Find Competitors',
+                    type: 'submit',
+                    variant: 'ai',
+                    loading: isLoadingCompetitors,
+                    disabled: isUserLoading,
+                  }}
+                  alignment="left"
+                />
               </form>
               {findState.data && findState.data.length > 0 && (
                 <div className="mt-6">

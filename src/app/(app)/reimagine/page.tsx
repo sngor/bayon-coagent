@@ -289,7 +289,7 @@ export default function ReimagineToolkitPage() {
 
 
     return (
-        <div className="container mx-auto py-8 px-4 max-w-7xl">
+        <div className="space-y-8">
             {/* Main Content Area */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column: Main Workflow */}

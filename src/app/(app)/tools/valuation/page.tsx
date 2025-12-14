@@ -20,7 +20,8 @@ import {
 } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import { runPropertyValuationAction } from '@/app/actions';
+// Import production API client (replaces server action)
+import { runPropertyValuation } from '@/lib/api-client';
 import { Home, DollarSign, TrendingUp, AlertTriangle, CheckCircle, Copy, Download } from 'lucide-react';
 import { type PropertyValuationOutput } from '@/aws/bedrock/flows';
 import { toast } from '@/hooks/use-toast';
@@ -59,14 +60,70 @@ function SubmitButton({ disabled }: { disabled?: boolean }) {
 }
 
 export default function PropertyValuationPage() {
-    const [state, formAction, isPending] = useActionState(
-        runPropertyValuationAction,
-        valuationInitialState
-    );
+    // Migrated from server action to API client
+    const [state, setState] = useState(valuationInitialState);
+    const [isPending, setIsPending] = useState(false);
     const { user, isUserLoading } = useUser();
 
     // AI Operation Progress tracking
     const valuationOperation = useAIOperation('run-property-valuation');
+
+    // Form submission handler (replacing server action)
+    const handleValuationSubmit = async (formData: FormData) => {
+        setIsPending(true);
+        setState({ message: '', data: null, errors: {} });
+
+        try {
+            const result = await runPropertyValuation({
+                address: formData.get('address') as string,
+                propertyType: formData.get('propertyType') as string,
+                bedrooms: parseInt(formData.get('bedrooms') as string) || 0,
+                bathrooms: parseInt(formData.get('bathrooms') as string) || 0,
+                sqft: parseInt(formData.get('sqft') as string) || 0,
+                yearBuilt: parseInt(formData.get('yearBuilt') as string) || 0,
+                condition: formData.get('condition') as string,
+                comparables: [] // Could be enhanced to include comparable data
+            });
+
+            if (result.success) {
+                setState({
+                    message: 'success',
+                    data: {
+                        marketValuation: {
+                            estimatedValue: result.data.estimatedValue.best,
+                            valueRange: {
+                                low: result.data.estimatedValue.low,
+                                high: result.data.estimatedValue.high
+                            },
+                            confidenceLevel: result.data.confidenceLevel
+                        },
+                        keyFactors: result.data.valueDrivers.positive.concat(
+                            result.data.valueDrivers.negative.map((neg: string) => `Concern: ${neg}`)
+                        ),
+                        marketAnalysis: {
+                            marketCondition: 'Analyzed',
+                            medianPrice: result.data.estimatedValue.best,
+                            averageDaysOnMarket: null,
+                            marketTrends: result.data.marketFactors
+                        },
+                        recommendations: ['Based on current market analysis'],
+                        disclaimer: 'This is an AI-generated estimate for informational purposes only.'
+                    },
+                    errors: {}
+                });
+            } else {
+                throw new Error(result.error?.message || 'Valuation failed');
+            }
+        } catch (error) {
+            setState({
+                message: error instanceof Error ? error.message : 'Valuation failed',
+                data: null,
+                errors: { general: error instanceof Error ? error.message : 'Unknown error' }
+            });
+        } finally {
+            setIsPending(false);
+        }
+    };
 
     // Track operation progress
     useEffect(() => {
@@ -207,7 +264,7 @@ ${state.data.disclaimer}
                 title="Property Valuation"
                 description="Get an instant, AI-powered market valuation based on a property description or address."
             >
-                <form action={formAction} className="space-y-4">
+                <form action={handleValuationSubmit} className="space-y-4">
                     <StandardFormField
                         label="Property Description or Address"
                         id="propertyDescription"

@@ -30,6 +30,11 @@ import { TemplateSaveModal } from '@/components/template-save-modal';
 import { ContentCategory, TemplateConfiguration } from '@/lib/content-workflow-types';
 import { ProjectSelector } from '@/components/project-selector';
 import { saveContentAction } from '@/app/actions';
+import {
+  generateNewListingDescription,
+  optimizeListingDescription,
+  generateFromImages
+} from '@/lib/api-client';
 import { useUser } from '@/aws/auth';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AEOOptimizationPanel } from '@/components/aeo-optimization-panel';
@@ -148,10 +153,8 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
           throw new Error('Please select an emotional appeal style.');
         }
 
-        // Import the action dynamically
-        const { optimizeListingDescriptionAction } = await import('@/app/actions');
-
-        result = await optimizeListingDescriptionAction({
+        // Use serverless API
+        result = await optimizeListingDescription({
           originalDescription: propertyDetails.trim(),
           buyerPersona,
           sellingPoints: sellingPoints.trim() || '',
@@ -160,9 +163,7 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
       } else {
         // Check if using images or manual input
         if (uploadedImages.length > 0) {
-          // Generate from images
-          const { generateFromImagesAction } = await import('@/app/actions');
-
+          // Generate from images using serverless API
           // Convert images to base64
           const imagePromises = uploadedImages.map(async (img) => {
             return new Promise<{ data: string; format: string; order: number }>((resolve, reject) => {
@@ -179,7 +180,7 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
 
           const imageData = await Promise.all(imagePromises);
 
-          result = await generateFromImagesAction({
+          result = await generateFromImages({
             images: imageData,
             propertyType,
             location: location.trim(),
@@ -190,7 +191,7 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
             squareFeet: squareFeet.trim() || undefined,
           });
         } else {
-          // Generate from manual input
+          // Generate from manual input using serverless API
           if (!location || location.trim().length < 3) {
             throw new Error('Please enter a location (at least 3 characters).');
           }
@@ -198,29 +199,29 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
             throw new Error('Please enter key features (at least 10 characters).');
           }
 
-          const { generateNewListingDescriptionAction } = await import('@/app/actions');
-
-          result = await generateNewListingDescriptionAction({
+          result = await generateNewListingDescription({
             propertyType,
             bedrooms,
             bathrooms,
-            squareFeet: squareFeet.trim(),
+            squareFootage: squareFeet.trim(),
             location: location.trim(),
-            keyFeatures: keyFeatures.trim(),
+            features: keyFeatures.trim(),
             buyerPersona,
             writingStyle,
           });
         }
       }
 
-      if (result.message === 'success' && result.data) {
-        setGeneration(result.data.description);
+      if (result.success && result.data) {
+        // Handle different response formats from serverless API
+        const description = result.data.description || result.data.optimizedDescription || result.data;
+        setGeneration(typeof description === 'string' ? description : JSON.stringify(description));
         toast({
           title: '✨ Description Generated!',
           description: 'Your listing description is ready.',
         });
       } else {
-        throw new Error(result.message);
+        throw new Error(result.error?.message || 'Generation failed');
       }
     } catch (err) {
       console.error('Failed to generate listing description:', err);

@@ -57,7 +57,7 @@ export default function LocationServicesPage() {
     const userId = 'demo-user'; // In production, get from auth context
 
     return (
-        <div className="container max-w-4xl py-8 space-y-6">
+        <div className="space-y-6">
             {/* Header */}
             <div className="space-y-2">
                 <h1 className="text-3xl font-bold flex items-center gap-2">

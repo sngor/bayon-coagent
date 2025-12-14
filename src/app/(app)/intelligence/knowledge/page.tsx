@@ -155,7 +155,7 @@ export default function KnowledgeBasePage() {
     // Empty state
     if (!isLoading && documents.length === 0) {
         return (
-            <div className="container max-w-4xl py-8 space-y-8">
+            <div className="space-y-8">
                 {/* Header */}
                 <div className="space-y-2">
                     <h1 className="text-3xl font-headline font-bold">Knowledge Base</h1>
@@ -275,7 +275,7 @@ export default function KnowledgeBasePage() {
 
     // Documents view
     return (
-        <div className="container max-w-6xl py-8 space-y-6">
+        <div className="space-y-6">
             {/* Header */}
             <div className="flex items-start justify-between gap-4">
                 <div className="space-y-1">

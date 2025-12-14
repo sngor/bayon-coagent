@@ -1,8 +1,7 @@
 
 'use client';
 
-import { useMemo, useEffect, useState, useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useMemo, useEffect, useState } from 'react';
 import { StandardPageLayout, StandardErrorDisplay } from '@/components/standard';
 import { StandardFormActions } from '@/components/standard/form-actions';
 import {
@@ -52,7 +51,8 @@ import { AIOperationProgress, useAIOperation } from '@/components/ui/ai-operatio
 import { useUser } from '@/aws/auth';
 import { useItem, useQuery } from '@/aws/dynamodb/hooks';
 import type { BrandAudit, Competitor, MarketingPlan as MarketingPlanType } from '@/lib/types/common/common';
-import { generateMarketingPlanAction, saveMarketingPlanAction } from '@/app/actions';
+import { generateMarketingPlan } from '@/lib/api-client';
+import { saveMarketingPlanAction } from '@/app/actions';
 import { showSuccessToast, showErrorToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { cn } from '@/lib/utils/common';
@@ -72,22 +72,7 @@ const initialPlanState: GeneratePlanState = {
   errors: {},
 };
 
-function GeneratePlanButton({ disabled }: { disabled?: boolean }) {
-  const { pending } = useFormStatus();
-  return (
-    <StandardFormActions
-      primaryAction={{
-        label: 'Create My Strategy',
-        type: 'submit',
-        variant: 'ai',
-        loading: pending,
-        disabled: disabled,
-      }}
-      alignment="left"
-      className="min-w-[280px]"
-    />
-  );
-}
+
 
 const toolIcons: { [key: string]: React.ReactNode } = {
   'Content Engine': <BookText className="mr-2 h-4 w-4" />,
@@ -103,10 +88,7 @@ export default function MarketingPlanPage() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
 
-  const [state, formAction] = useActionState<GeneratePlanState, FormData>(
-    (state, payload) => generateMarketingPlanAction(state, payload),
-    initialPlanState
-  );
+  const [state, setState] = useState<GeneratePlanState>(initialPlanState);
 
   // AI Operation Progress tracking
   // AI Operation Progress tracking
@@ -223,7 +205,36 @@ export default function MarketingPlanPage() {
     setShowPlan(false);
     setGenerationError(null);
     setGenerationStep(0);
-    formAction(formData);
+    setState(initialPlanState);
+
+    try {
+      const result = await generateMarketingPlan({
+        userId: formData.get('userId') as string,
+        brandAudit: JSON.parse(formData.get('brandAudit') as string || '{}'),
+        competitors: JSON.parse(formData.get('competitors') as string || '[]'),
+      });
+
+      if (result.success && result.data) {
+        setState({
+          message: 'success',
+          data: {
+            id: `plan-${Date.now()}`,
+            plan: result.data.plan || [],
+            createdAt: new Date().toISOString(),
+          },
+          errors: {},
+        });
+      } else {
+        throw new Error(result.error?.message || 'Failed to generate marketing plan');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate marketing plan';
+      setState({
+        message: errorMessage,
+        data: null,
+        errors: {},
+      });
+    }
   };
 
   const handleRetry = () => {
@@ -254,11 +265,25 @@ export default function MarketingPlanPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <form action={handleFormSubmit}>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              handleFormSubmit(formData);
+            }}>
               <input type="hidden" name="userId" value={user?.id || ''} />
               <input type="hidden" name="brandAudit" value={JSON.stringify(brandAuditData || { results: [] })} />
               <input type="hidden" name="competitors" value={JSON.stringify(competitorsData || [])} />
-              <GeneratePlanButton disabled={!isDataReady} />
+              <StandardFormActions
+                primaryAction={{
+                  label: 'Create My Strategy',
+                  type: 'submit',
+                  variant: 'ai',
+                  loading: isGenerating,
+                  disabled: !isDataReady,
+                }}
+                alignment="left"
+                className="min-w-[280px]"
+              />
               {!isDataReady && (
                 <p className="text-sm text-muted-foreground mt-2">
                   Waiting for Brand Audit and Competitor data to load...

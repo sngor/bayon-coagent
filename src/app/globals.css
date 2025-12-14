@@ -3203,3 +3203,18 @@ body {
     -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(110%);
   }
 }
+
+/* Loading Animation Delays */
+@layer utilities {
+  .delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .delay-500 {
+    animation-delay: 500ms;
+  }
+
+  .delay-1000 {
+    animation-delay: 1000ms;
+  }
+}
