@@ -32,6 +32,10 @@ function verifyOAuthScopes(): void {
         instagram: ['instagram_manage_insights', 'read_insights', 'business_management'],
         linkedin: ['r_analytics', 'r_organization_followers_statistics'],
         twitter: ['tweet.moderate.write', 'follows.read'],
+        followupboss: ['contacts.read', 'analytics.read'],
+        facebook_lead_ads: ['leads_retrieval', 'read_insights'],
+        calendly: ['analytics.read', 'events.read'],
+        hubspot: ['analytics.read', 'contacts.read'],
     };
 
     for (const platform of platforms) {
@@ -69,6 +73,10 @@ function verifyAnalyticsEndpoints(): void {
         instagram: 'https://graph.facebook.com/v18.0',
         linkedin: 'https://api.linkedin.com/v2',
         twitter: 'https://api.twitter.com/2',
+        followupboss: 'https://api.followupboss.com/v1',
+        facebook_lead_ads: 'https://graph.facebook.com/v18.0',
+        calendly: 'https://api.calendly.com',
+        hubspot: 'https://api.hubapi.com',
     };
 
     for (const platform of platforms) {
@@ -105,6 +113,10 @@ function verifyAnalyticsMetrics(): void {
         instagram: 8,
         linkedin: 8,
         twitter: 8,
+        followupboss: 5,
+        facebook_lead_ads: 6,
+        calendly: 4,
+        hubspot: 7,
     };
 
     for (const platform of platforms) {
@@ -184,7 +196,7 @@ async function verifyContentWorkflowActions(): Promise<void> {
     console.log('\n🔍 Verifying Content Workflow OAuth Actions...\n');
 
     try {
-        const actions = await import('../src/app/content-workflow-oauth-actions');
+        const actions = await import('../src/features/content-engine/actions/content-workflow-oauth-actions');
 
         const requiredActions = [
             'initiateContentWorkflowConnection',

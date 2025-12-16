@@ -1,194 +1,223 @@
 # Documentation Index
 
-Welcome to the Bayon CoAgent documentation!
+Complete documentation for the Bayon CoAgent platform.
 
-## 🎯 Quick Start
+## 🏁 Getting Started
 
-**New to the codebase?** Start here:
+**New to the project?** Start here:
 
-1. Read [`CODEBASE_ORGANIZATION.md`](./CODEBASE_ORGANIZATION.md) - Complete guide to the codebase structure
-2. Check the project [`README.md`](../README.md) - Project overview and setup
-3. Review [`.agent/workflows/`](../.agent/workflows/) - Common procedures and workflows
+- [Getting Started Guide](./guides/getting-started.md) - Complete setup and first steps
+- [Architecture Overview](./guides/architecture.md) - System design and structure
+- [Development Workflow](./guides/development.md) - Day-to-day development process
 
-## 📚 Main Documentation
+## 📚 Core Documentation
 
-### Structure & Organization
+### Setup & Configuration
 
-- **[CODEBASE_ORGANIZATION.md](./CODEBASE_ORGANIZATION.md)** - ⭐ **START HERE**
-  - Complete guide to the feature-based architecture
-  - Directory structure and organization
-  - Import patterns and migration guide
-  - Feature and service reference
-  - Troubleshooting and best practices
+- [Getting Started](./guides/getting-started.md) - Complete setup guide
+- [Environment Variables](./guides/environment-variables.md) - Configuration reference
+- [AWS Local Development](./aws-local-development.md) - LocalStack setup
+- [Authentication Setup](./guides/auth-setup.md) - Cognito configuration
 
-### AI & Models
+### Architecture & Design
 
-- **[AI_MODEL_README.md](./AI_MODEL_README.md)** - AI model overview
-- **[AI_MODEL_MIGRATION_GUIDE.md](./AI_MODEL_MIGRATION_GUIDE.md)** - Genkit to Bedrock migration
-- **[AI_MODEL_DECISION_TREE.md](./AI_MODEL_DECISION_TREE.md)** - Model selection guide
-- **[AI_MODEL_EVALUATION_SUMMARY.md](./AI_MODEL_EVALUATION_SUMMARY.md)** - Model comparisons
-- **[AI_MODEL_OPTIMIZATION_RECOMMENDATIONS.md](./AI_MODEL_OPTIMIZATION_RECOMMENDATIONS.md)** - Optimization tips
+- [Architecture Overview](./guides/architecture.md) - System architecture
+- [Project Structure](./guides/project-structure.md) - File organization
+- [Hub Architecture](./guides/hub-integration.md) - Hub-based navigation
+- [Database Design](./guides/database-design.md) - DynamoDB schema
 
-### Features
+### Development
 
-- **[CLIENT_GIFTING_SYSTEM.md](./CLIENT_GIFTING_SYSTEM.md)** - Client gifting feature
-- **[COACHING_MODE.md](./COACHING_MODE.md)** - AI coaching mode
-- **[VOICE_ROLEPLAY_FEATURE.md](./VOICE_ROLEPLAY_FEATURE.md)** - Voice roleplay
-- **[features/](./features/)** - Individual feature docs
+- [Development Guide](./guides/development.md) - Development workflow
+- [Component Library](./component-library.md) - UI components
+- [Best Practices](./best-practices.md) - Development guidelines
+- [Performance Guide](./guides/performance.md) - Optimization techniques
 
-### Infrastructure & Deployment
+### Deployment
 
-- **[deployment/](./deployment/)** - Deployment guides
-- **[api-gateway-microservices.md](./api-gateway-microservices.md)** - API Gateway setup
-- **[api-versioning-strategy.md](./api-versioning-strategy.md)** - API versioning
-- **[aws-local-development.md](./aws-local-development.md)** - Local AWS setup
-- **[secrets-management.md](./secrets-management.md)** - Secrets management
-- **[sqs-queue-implementation.md](./sqs-queue-implementation.md)** - SQS queues
+- [Deployment Guide](./deployment/deployment.md) - Production deployment
+- [SAM Deployment](./deployment/sam-deployment.md) - AWS SAM guide
+- [Amplify Deployment](./guides/amplify-deployment.md) - AWS Amplify guide
+- [Deployment Checklist](./deployment/checklist.md) - Pre-deployment checks
 
-### UI & Components
+## 🔧 Quick References
 
-- **[design-system/](./design-system/)** - Design system documentation
-- **[component-library.md](./component-library.md)** - Component reference
-- **[animation-implementation-guide.md](./animation-implementation-guide.md)** - Animations
-- **[micro-animations.md](./micro-animations.md)** - Micro-interactions
-- **[container-styling-guide.md](./container-styling-guide.md)** - Container patterns
+### Commands & Scripts
 
-### Best Practices
+- [NPM Scripts Reference](./quick-reference/commands.md) - All available commands
+- [LocalStack Commands](./quick-reference/localstack.md) - Local AWS development
+- [Deployment Commands](./quick-reference/deployment.md) - Production deployment
 
-- **[best-practices.md](./best-practices.md)** - General best practices
-- **[standardization-guide.md](./standardization-guide.md)** - Code standards
-- **[refactoring-checklist.md](./refactoring-checklist.md)** - Refactoring guide
-- **[feature-toggles.md](./feature-toggles.md)** - Feature flags
+### Development
+
+- [Component Reference](./quick-reference/components.md) - UI component library
+- [Configuration Reference](./quick-reference/configuration.md) - Environment setup
+- [API Reference](./quick-reference/api.md) - Server actions and endpoints
+- [Image Analysis API](./api/image-analysis-service.md) - Virtual staging and image processing
+- [Database Reference](./quick-reference/database.md) - DynamoDB operations
+
+### Troubleshooting
+
+- [Common Issues](./troubleshooting/common-issues.md) - Frequent problems and solutions
+- [LocalStack Issues](./troubleshooting/localstack.md) - Local development problems
+- [Deployment Issues](./troubleshooting/deployment.md) - Production deployment problems
+- [Performance Issues](./troubleshooting/performance.md) - Performance debugging
+
+## 🎯 Feature Documentation
+
+### Core Features
+
+- [Studio Hub](./features/studio.md) - Content creation features
+- [Brand Hub](./features/brand.md) - Brand identity and strategy
+- [Research Hub](./features/research.md) - AI-powered research
+- [Market Hub](./features/market.md) - Market intelligence
+- [Tools Hub](./features/tools.md) - Deal analysis tools
+- [Library Hub](./features/library.md) - Content management
+
+### AI & Integrations
+
+- [AI Content Generation](./features/ai-content.md) - Bedrock integration
+- [Assistant Integration](./guides/assistant-integration.md) - AI chat assistant
+- [Google Integration](./guides/GOOGLE_INTEGRATION_GUIDE.md) - Business Profile sync
+- [Stripe Integration](./features/STRIPE_INTEGRATION.md) - Payment processing
+
+### Advanced Features
+
+- [Image Processing](./reimagine/README.md) - AI image editing
+- [Real-time Features](./features/realtime.md) - WebSocket communication
+- [Mobile Optimization](./guides/mobile-optimization.md) - Mobile-first design
+- [Performance Monitoring](./design-system/PERFORMANCE_MONITORING.md) - Analytics
+
+## 🎨 Design System
+
+### UI Components
+
+- [Design System](./design-system/design-system.md) - Complete design system
+- [Component Catalog](./design-system/COMPONENT_CATALOG.md) - All components
+- [Animation System](./design-system/animation-system.md) - Motion design
+- [Typography](./design-system/typography.md) - Text styles
+
+### Styling
+
+- [Color Palette](./design-system/color-palette.md) - Color system
+- [Design Tokens](./design-system/design-tokens.md) - Design variables
+- [Gradients](./design-system/gradients.md) - Gradient system
+- [Icons](./design-system/icons.md) - Icon library
+
+## 🚀 CI/CD & DevOps
+
+### Pipeline
+
+- [CI/CD Overview](./cicd/README.md) - Complete pipeline documentation
+- [Pipeline Architecture](./cicd/pipeline-architecture.md) - Workflow design
+- [Deployment Runbook](./cicd/deployment-runbook.md) - Step-by-step procedures
+- [Rollback Runbook](./cicd/rollback-runbook.md) - Emergency procedures
+
+### Setup & Configuration
+
+- [GitHub Setup](./cicd/github-setup-guide.md) - Repository configuration
+- [Branch Protection](./cicd/branch-protection-guide.md) - Git workflow
+- [Security Workflows](./cicd/security-workflow-guide.md) - Security scanning
+- [Performance Testing](./cicd/performance-testing-guide.md) - Lighthouse integration
+
+## 🔐 Security & Compliance
 
 ### Security
 
-- **[SECURITY.md](./SECURITY.md)** - Security overview
-- **[client-portal-security.md](./client-portal-security.md)** - Client portal security
-- **[client-portal-authentication.md](./client-portal-authentication.md)** - Authentication
+- [Security Guide](./SECURITY.md) - Security best practices
+- [Secrets Management](./secrets-management.md) - AWS Secrets Manager
+- [Authentication](./guides/auth-setup.md) - Cognito setup
+- [Client Portal Security](./client-portal-security.md) - Client access
+
+### Monitoring
+
+- [Monitoring Guide](./deployment/MONITORING_GUIDE.md) - CloudWatch setup
+- [Error Handling](./enterprise-error-handling.md) - Error management
+- [Performance Monitoring](./design-system/PERFORMANCE_MONITORING.md) - Performance tracking
+
+## 📱 Mobile & Responsive
+
+### Mobile Development
+
+- [Mobile Optimization](./guides/mobile-optimization.md) - Mobile-first approach
+- [Tablet Optimization](./guides/tablet-optimization.md) - Tablet-specific features
+- [Responsive Tables](./guides/responsive-tables.md) - Data display patterns
+- [Mobile Testing](./mobile-testing-checklist.md) - Testing procedures
+
+## 🧪 Testing & Quality
 
 ### Testing
 
-- **[mobile-testing-checklist.md](./mobile-testing-checklist.md)** - Mobile testing
-- **[mobile-test-report.md](./mobile-test-report.md)** - Test results
-- **[xray-service-map-testing.md](./xray-service-map-testing.md)** - X-Ray tracing
+- [Testing Guide](./validation/testing.md) - Testing strategy
+- [Performance Testing](./cicd/performance-testing-guide.md) - Lighthouse testing
+- [Mobile Testing](./mobile-testing-checklist.md) - Device testing
+- [Integration Testing](./guides/validation-integration.md) - End-to-end testing
 
-### Admin Platform
+## 📊 Analytics & Optimization
 
-- **[admin/](./admin/)** - Admin platform documentation
-  - [Admin README](./admin/README.md) - Entry point for admin docs
-  - [User Guide](./admin/USER_GUIDE.md) - For platform admins
-  - [API Reference](./admin/API_REFERENCE.md) - For API integration
-  - [Developer Guide](./admin/DEVELOPER_GUIDE.md) - For feature development
-  - [Testing Guide](./admin/TESTING_GUIDE.md) - For QA and testing
-  - [Migration Guide](./admin/MIGRATION_GUIDE.md) - Documentation reorganization guide
+### Performance
 
-### Other
+- [Performance Guide](./guides/performance.md) - Optimization techniques
+- [Bundle Analysis](./design-system/bundle-analysis.md) - Bundle optimization
+- [Animation Performance](./guides/animation-performance.md) - Motion optimization
+- [Virtual Scrolling](./guides/virtual-scrolling.md) - Large list handling
 
-- **[guides/](./guides/)** - How-to guides
-- **[quick-reference/](./quick-reference/)** - Quick reference sheets
-- **[archive/](./archive/)** - Archived docs
+## 🔄 Migration & Maintenance
 
-## 🔧 Workflows
+### Migration
 
-Common procedures and workflows are in [`.agent/workflows/`](../.agent/workflows/):
+- [Migration Guide](./guides/migration.md) - Firebase to AWS migration
+- [Database Migration](./app/ACTIONS_DYNAMODB_MIGRATION.md) - DynamoDB migration
+- [Component Migration](./design-system/COMPONENT_MIGRATION_SUMMARY.md) - UI updates
 
-- **`split-actions.md`** - Plan for splitting the monolithic actions.ts
-- **`reorganize-codebase.md`** - Codebase reorganization plan
-- And more...
+### Maintenance
 
-## 🗺️ Navigation Tips
+- [Refactoring Checklist](./refactoring-checklist.md) - Code maintenance
+- [Standardization Guide](./standardization-guide.md) - Code standards
+- [Cost Tracking](./cost-tracking.md) - AWS cost management
 
-### By Role
+## 📋 Checklists & References
 
-**Developer (New to Codebase):**
+### Quick Start Checklists
 
-1. CODEBASE_ORGANIZATION.md
-2. best-practices.md
-3. quick-reference.md
+- [Setup Checklist](./cicd/setup-checklist.md) - Initial setup
+- [Deployment Checklist](./deployment/checklist.md) - Pre-deployment
+- [Testing Checklist](./mobile-testing-checklist.md) - Quality assurance
 
-**Designer:**
+### Reference Materials
 
-1. design-system/
-2. component-library.md
-3. animation-implementation-guide.md
+- [API Versioning](./api-versioning-strategy.md) - API design
+- [Feature Toggles](./feature-toggles.md) - Feature management
+- [Secrets Reference](./quick-reference/secrets-manager.md) - AWS Secrets Manager
 
-**DevOps:**
+## 🗂 Archive
 
-1. deployment/
-2. aws-local-development.md
-3. secrets-management.md
+Historical documentation and completed implementations:
 
-**QA/Tester:**
-
-1. mobile-testing-checklist.md
-2. device-testing.md
-
-**Admin/Platform Manager:**
-
-1. admin/README.md
-2. admin/USER_GUIDE.md
-
-### By Task
-
-**Want to understand the codebase structure?**
-→ CODEBASE_ORGANIZATION.md
-
-**Need to add a new feature?**
-→ CODEBASE_ORGANIZATION.md (Features section)
-→ best-practices.md
-
-**Working with AI models?**
-→ AI_MODEL_README.md
-→ AI_MODEL_DECISION_TREE.md
-
-**Deploying to AWS?**
-→ deployment/
-→ aws-local-development.md
-
-**Building UI components?**
-→ component-library.md
-→ design-system/
-
-**Need to test?**
-→ mobile-testing-checklist.md
-
-**Managing the admin platform?**
-→ admin/README.md
-→ admin/USER_GUIDE.md
-
-**Integrating with admin APIs?**
-→ admin/API_REFERENCE.md
-
-**Developing admin features?**
-→ admin/DEVELOPER_GUIDE.md
-
-## 📝 Contributing to Docs
-
-When adding documentation:
-
-1. Use clear, descriptive filenames
-2. Add an entry to this README
-3. Include a table of contents for long docs
-4. Use markdown formatting consistently
-5. Add code examples where helpful
-
-## 🔍 Finding Information
-
-**Can't find what you need?**
-
-1. Check this README's table of contents
-2. Search the docs folder: `grep -r "your topic" docs/`
-3. Check `.agent/workflows/` for procedures
-4. Review the main project README
-
-## 📊 Documentation Statistics
-
-- **Total docs:** 50+files
-- **Guides:** 20+ guides
-- **Features:** 25+ feature docs
-- **Main reference:** CODEBASE_ORGANIZATION.md
+- [Archive](./archive/) - Completed features and legacy docs
+- [Admin Documentation](./admin/) - Admin system documentation
+- [Implementation Logs](./archive/logs/) - Development history
 
 ---
 
-**Last updated:** November 28, 2025  
-**Most important doc:** [`CODEBASE_ORGANIZATION.md`](./CODEBASE_ORGANIZATION.md)
+## 📞 Getting Help
+
+### Documentation Issues
+
+- Missing documentation? Create an issue or PR
+- Outdated information? Please update and submit a PR
+- Questions? Check [Common Issues](./troubleshooting/common-issues.md) first
+
+### Development Support
+
+1. Check [Troubleshooting](./troubleshooting/common-issues.md)
+2. Review [Best Practices](./best-practices.md)
+3. Consult [Architecture Guide](./guides/architecture.md)
+4. Create an issue with detailed information
+
+### Quick Links
+
+- [Getting Started](./guides/getting-started.md) - Start here
+- [Commands Reference](./quick-reference/commands.md) - All npm scripts
+- [Troubleshooting](./troubleshooting/common-issues.md) - Common problems
+- [Component Library](./component-library.md) - UI components

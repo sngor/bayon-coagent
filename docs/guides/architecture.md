@@ -1,250 +1,604 @@
-# Co-agent Marketer Architecture
+# Architecture Overview
 
-This document provides a high-level overview of the Co-agent Marketer project architecture, covering the directory structure, core concepts, data flow, and AWS integration.
+Comprehensive guide to the Bayon CoAgent platform architecture.
 
-## System Architecture
+## 🏗️ System Architecture
+
+Bayon CoAgent is built as a modern, scalable web application using AWS services and Next.js.
 
 ### High-Level Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Next.js Application                      │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │              React Components (UI Layer)                │ │
-│  └────────────────────────────────────────────────────────┘ │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │         Server Actions / API Routes (BFF Layer)        │ │
-│  └────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    AWS Service Layer                         │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │   Cognito    │  │   DynamoDB   │  │      S3      │      │
-│  │ (Auth)       │  │  (Database)  │  │  (Storage)   │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │   Bedrock    │  │  CloudWatch  │  │    Tavily    │      │
-│  │    (AI)      │  │  (Logging)   │  │   (Search)   │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Backend        │    │   AWS Services  │
+│   (Next.js)     │◄──►│   (API Routes)   │◄──►│   (Serverless)  │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+│                      │                      │
+├─ React 19           ├─ Server Actions      ├─ Cognito (Auth)
+├─ TypeScript         ├─ API Routes         ├─ DynamoDB (Data)
+├─ Tailwind CSS       ├─ Middleware         ├─ S3 (Storage)
+├─ shadcn/ui          └─ Edge Functions     ├─ Bedrock (AI)
+├─ Framer Motion                           ├─ CloudWatch (Logs)
+└─ Zod Validation                          └─ Amplify (Hosting)
 ```
 
-### Local Development Architecture
+## 🎯 Hub-Based Architecture
+
+The application is organized around feature hubs for intuitive navigation and development.
+
+### Hub Structure
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│              Developer Machine (localhost)                   │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │         Next.js Dev Server (Port 3000)                   │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                            │                                 │
-│                            ▼                                 │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │              LocalStack (Port 4566)                     │ │
-│  │  • DynamoDB Local                                       │ │
-│  │  • S3 Local                                             │ │
-│  │  • Cognito Local                                        │ │
-│  └────────────────────────────────────────────────────────┘ │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │         AWS Bedrock (via real AWS credentials)          │ │
-│  └────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
+Application Root
+├── Dashboard (Overview)
+├── Assistant (AI Chat)
+├── Studio (Content Creation)
+│   ├── Write (Blog posts, social media)
+│   ├── Describe (Listing descriptions)
+│   └── Reimagine (Image editing)
+├── Brand (Identity & Strategy)
+│   ├── Profile (Professional info)
+│   ├── Audit (NAP consistency)
+│   ├── Competitors (Market analysis)
+│   └── Strategy (Marketing plans)
+├── Research (AI Research)
+│   ├── Research Agent (Q&A)
+│   ├── Reports (Saved research)
+│   └── Knowledge Base (Repository)
+├── Market (Intelligence)
+│   ├── Insights (Trends analysis)
+│   ├── Opportunities (Investment)
+│   └── Analytics (Performance)
+├── Tools (Deal Analysis)
+│   ├── Calculator (Mortgage)
+│   ├── ROI (Renovation)
+│   └── Valuation (Property)
+├── Library (Content Management)
+│   ├── Content (Created content)
+│   ├── Reports (Research reports)
+│   ├── Media (Files)
+│   └── Templates (Reusable)
+├── Learning (Skill Development)
+│   ├── Lessons (Interactive)
+│   ├── Role-Play (AI scenarios)
+│   └── AI Plans (Personalized)
+└── Settings (Configuration)
 ```
 
-### Production Architecture
+### Navigation Hierarchy
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      AWS Cloud                               │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  CloudFront CDN → S3 Static Assets                      │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                            │                                 │
-│                            ▼                                 │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  Next.js on AWS Amplify Hosting                        │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                            │                                 │
-│                            ▼                                 │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │   Cognito    │  │   DynamoDB   │  │      S3      │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-│  ┌──────────────┐  ┌──────────────┐                        │
-│  │   Bedrock    │  │  CloudWatch  │                        │
-│  └──────────────┘  └──────────────┘                        │
-└─────────────────────────────────────────────────────────────┘
+Level 1: Main Navigation (Sidebar)
+├─ Level 2: Hub Tabs (Horizontal)
+│  └─ Level 3: Section Content (Page)
+│     └─ Level 4: Feature Details (Modal/Drawer)
 ```
 
-## Project Structure
+## 🛠️ Technology Stack
 
-The project is organized into several key directories:
+### Frontend Framework
 
-- **/src/app/**: The heart of the Next.js application, using the App Router.
+**Next.js 15 with App Router**
 
-  - **/src/app/(app)/**: Contains all the main authenticated routes and pages of the application (e.g., Dashboard, Profile, Content Engine).
-  - **/src/app/api/**: Handles API routes, such as the OAuth callback for Google Business Profile.
-  - **/src/app/globals.css**: The global stylesheet, including Tailwind CSS directives and theme variables.
-  - **/src/app/layout.tsx**: The root layout for the entire application.
+- Server-side rendering (SSR)
+- Static site generation (SSG)
+- API routes for backend functionality
+- Edge runtime for performance
+- Automatic code splitting
 
-- **/src/aws/**: AWS service integrations and utilities.
+**React 19**
 
-  - **/src/aws/auth/**: AWS Cognito authentication client and hooks (e.g., `cognito-client.ts`, `use-user.tsx`).
-  - **/src/aws/dynamodb/**: DynamoDB client, repository pattern, and React hooks (e.g., `use-query.tsx`, `use-item.tsx`).
-  - **/src/aws/s3/**: S3 client for file storage operations.
-  - **/src/aws/bedrock/**: AWS Bedrock AI client and flow implementations.
-  - **/src/aws/logging/**: CloudWatch logging utilities.
-  - **/src/aws/search/**: Tavily search API integration.
-  - **/src/aws/config.ts**: Central configuration module with environment detection.
+- Server Components by default
+- Client Components for interactivity
+- Concurrent features
+- Suspense boundaries
+- Error boundaries
 
-- **/src/ai/**: Legacy AI functionality (being phased out in favor of `/src/aws/bedrock/`).
+### UI & Styling
 
-  - **/src/ai/schemas/**: Zod schemas for AI input/output validation (still used with Bedrock).
+**Tailwind CSS**
 
-- **/src/components/**: Contains all reusable React components.
+- Utility-first CSS framework
+- Custom design tokens
+- Responsive design system
+- Dark mode support
+- JIT compilation
 
-  - **/src/components/ui/**: Holds the `shadcn/ui` components, which are the building blocks of the user interface.
-  - **/src/components/**: Contains custom, application-specific components (e.g., `PageHeader`, `Logo`, `CompetitorForm`).
+**shadcn/ui Components**
 
-- **/src/firebase/**: Legacy Firebase integration (maintained for backward compatibility during transition).
+- Radix UI primitives
+- Accessible components
+- Customizable design system
+- TypeScript support
+- Copy-paste components
 
-- **/infrastructure/**: AWS CDK infrastructure as code.
+**Framer Motion**
 
-  - **/infrastructure/lib/**: CDK stack definitions for Cognito, DynamoDB, S3, IAM, and monitoring.
-  - **/infrastructure/scripts/**: Deployment and verification scripts.
+- Declarative animations
+- Layout animations
+- Gesture handling
+- Page transitions
+- Performance optimized
 
-- **/scripts/migration/**: Data migration scripts from Firebase to AWS.
+### Type Safety & Validation
 
-- **/docs/**: Contains project documentation and backend configuration.
-  - **/docs/backend.json**: A crucial blueprint that defines the data entities and database structure for the entire application.
+**TypeScript**
 
-## Core Concepts
+- Strict mode enabled
+- Type-safe API calls
+- Component prop validation
+- IDE integration
+- Build-time error checking
 
-### UI: Next.js, shadcn/ui, and Tailwind CSS
+**Zod**
 
-The user interface is built with **Next.js** using the modern App Router. We use **Server Components** by default to improve performance. The visual styling is handled by **Tailwind CSS**, and the component library is **shadcn/ui**, which provides beautifully designed and accessible UI primitives that are highly customizable.
+- Runtime type validation
+- Schema-first approach
+- Form validation
+- API input/output validation
+- Type inference
 
-### Authentication: AWS Cognito
+## ☁️ AWS Infrastructure
 
-User authentication is handled by **AWS Cognito**, providing secure user management with JWT tokens.
+### Authentication & Authorization
 
-- **Cognito Client**: The `src/aws/auth/cognito-client.ts` module provides methods for sign-up, sign-in, sign-out, and session management.
-- **useUser Hook**: The `useUser` hook from `src/aws/auth/use-user.tsx` provides easy access to the current user's state throughout the app.
-- **Token Management**: JWT tokens are automatically refreshed and validated for protected routes.
-- **Local Development**: Uses LocalStack for local Cognito emulation.
+**AWS Cognito**
 
-### Database: Amazon DynamoDB
+- User pools for authentication
+- JWT token management
+- Multi-factor authentication
+- Social login integration
+- Session management
 
-**DynamoDB** is our NoSQL database, using a single-table design pattern for optimal performance.
+### Database
 
-- **Single-Table Design**: All entities are stored in one table with composite keys (PK/SK) for efficient queries.
-- **Repository Pattern**: The `src/aws/dynamodb/repository.ts` provides a clean abstraction for CRUD operations.
-- **React Hooks**: Custom hooks `useQuery` and `useItem` (replacing `useCollection` and `useDoc`) provide reactive data access.
-- **Real-time Updates**: Polling mechanism simulates real-time updates (can be upgraded to DynamoDB Streams).
-- **Data Structure**: The structure is defined in `docs/backend.json` and mapped to DynamoDB key patterns.
+**Amazon DynamoDB**
 
-**Key Patterns:**
+- Single-table design pattern
+- Partition key: `USER#<userId>`
+- Sort key patterns for different entities
+- Global secondary indexes
+- Point-in-time recovery
+
+#### Data Model
 
 ```
-User Profile:     PK: USER#<userId>,  SK: PROFILE
-Agent Profile:    PK: USER#<userId>,  SK: AGENT#<id>
-Saved Content:    PK: USER#<userId>,  SK: CONTENT#<id>
-Research Reports: PK: USER#<userId>,  SK: REPORT#<id>
+PK: USER#<userId>          SK: PROFILE
+PK: USER#<userId>          SK: CONTENT#<id>
+PK: USER#<userId>          SK: REPORT#<id>
+PK: USER#<userId>          SK: AGENT#<id>
+PK: USER#<userId>          SK: OAUTH#<provider>
+PK: USER#<userId>          SK: PLAN#<id>
 ```
 
-### Storage: Amazon S3
+### Storage
 
-**S3** handles all file storage needs.
+**Amazon S3**
 
-- **S3 Client**: The `src/aws/s3/client.ts` module provides upload, download, and presigned URL generation.
-- **Presigned URLs**: Secure, temporary URLs for direct browser uploads and downloads.
-- **CORS Configuration**: Configured for browser-based uploads.
-- **Local Development**: Uses LocalStack S3 emulation.
+- User-generated content
+- Image processing pipeline
+- Static asset hosting
+- Lifecycle policies
+- Presigned URLs for uploads
 
-### AI: AWS Bedrock
+### AI Services
 
-All AI features are implemented using **AWS Bedrock** with Claude 3.5 Sonnet.
+**AWS Bedrock**
 
-- **Bedrock Client**: The `src/aws/bedrock/client.ts` module handles AI model invocations.
-- **AI Flows**: Individual flows in `/src/aws/bedrock/flows/` orchestrate AI calls (e.g., `generate-agent-bio.ts`, `run-nap-audit.ts`).
-- **Structured I/O**: We use **Zod** schemas (from `/src/ai/schemas/`) to define strict input and output schemas. This ensures reliable, structured JSON responses from the AI models.
-- **Streaming Support**: Supports streaming responses for better user experience.
-- **Calling Flows**: From the Next.js frontend, we call these flows via **Server Actions** defined in `src/app/actions.ts`.
+- Claude 3.5 Sonnet model
+- Streaming responses
+- Content generation
+- Image analysis
+- Safety guardrails
 
-### Web Search: Tavily API
+**Agent Orchestration System**
 
-**Tavily** provides web search capabilities for AI flows that need current information.
+- Multi-agent workflow execution
+- Dependency-based step coordination
+- Intelligent retry mechanisms
+- Workflow persistence and tracking
+- Error categorization and handling
 
-- **Search Client**: The `src/aws/search/client.ts` module integrates with Tavily API.
-- **Used By**: Research agent, market updates, and other flows requiring web data.
+### Monitoring & Logging
 
-### Configuration: Environment Detection
+**AWS CloudWatch**
 
-The `src/aws/config.ts` module automatically detects the environment and configures service endpoints:
+- Application logs
+- Performance metrics
+- Error tracking
+- Custom dashboards
+- Alerting
 
-- **Local Development**: When `USE_LOCAL_AWS=true`, connects to LocalStack at `http://localhost:4566`.
-- **Production**: Connects to real AWS services in the configured region.
-- **Centralized**: All AWS service configurations are managed in one place.
+### Hosting & Deployment
 
-### Key Features Data Flow
+**AWS Amplify**
 
-- **AI Marketing Plan**: The `MarketingPlanPage` component allows a user to generate a plan. It calls the `generateMarketingPlanAction` server action, which invokes the Bedrock AI flow. This flow analyzes the user's latest `BrandAudit` and `Competitor` data from DynamoDB and sends it to Claude 3.5 Sonnet to create a 3-step plan. The resulting plan is saved back to DynamoDB with key pattern `PK: USER#<userId>, SK: PLAN#<planId>`.
-- **Brand Audit & Zillow Integration**: In the `BrandAuditPage`, the "Run Audit" button triggers the `runNapAuditAction`, which calls the Bedrock flow to check NAP consistency across the web using Tavily search. The "Fetch Reviews" button calls the `getZillowReviewsAction`, which uses the agent's Zillow email to fetch reviews via the Bridge API. Fetched reviews are saved to DynamoDB.
-- **Saved Content & Knowledge Base**: Throughout the app (e.g., in the Co-Marketing Studio), "Save" buttons allow users to store generated content. This content is saved to DynamoDB with appropriate key patterns (`CONTENT#<id>` or `REPORT#<id>`). The `SavedContentPage` and `KnowledgeBasePage` then query this data using the DynamoDB hooks, acting as personal libraries for the user.
+- Continuous deployment
+- Branch-based environments
+- Custom domains
+- SSL certificates
+- Global CDN
 
-## AWS Services Integration
+## 📁 Project Structure
 
-### Local Development with LocalStack
+### Source Code Organization
 
-LocalStack provides local emulation of AWS services for development:
-
-- **DynamoDB Local**: Full DynamoDB API compatibility
-- **S3 Local**: S3-compatible object storage
-- **Cognito Local**: Basic Cognito user pool functionality
-- **Endpoint**: All services accessible at `http://localhost:4566`
-
-See [AWS Local Development Guide](./docs/aws-local-development.md) for setup instructions.
-
-### Production AWS Services
-
-In production, the application connects to real AWS services:
-
-- **AWS Cognito**: User Pool for authentication
-- **Amazon DynamoDB**: Single table with GSI for alternate access patterns
-- **Amazon S3**: Bucket with CORS and lifecycle policies
-- **AWS Bedrock**: Claude 3.5 Sonnet model access
-- **AWS CloudWatch**: Centralized logging and monitoring
-
-See [AWS Setup Guide](./AWS_SETUP.md) for production setup instructions.
-
-## Infrastructure as Code
-
-The infrastructure is defined using AWS CDK (TypeScript) in the `/infrastructure` directory:
-
-- **Cognito Stack**: User pool and client configuration
-- **DynamoDB Stack**: Table with GSI definitions
-- **S3 Stack**: Bucket with policies and CORS
-- **IAM Stack**: Roles and policies for service access
-- **Monitoring Stack**: CloudWatch dashboards and alarms
-
-Deploy infrastructure:
-
-```bash
-cd infrastructure
-npm run deploy:prod
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── (app)/             # Authenticated routes
+│   │   ├── dashboard/     # Dashboard hub
+│   │   ├── studio/        # Content creation hub
+│   │   ├── brand/         # Brand identity hub
+│   │   ├── research/      # Research hub
+│   │   ├── market/        # Market intelligence hub
+│   │   ├── tools/         # Deal analysis hub
+│   │   ├── library/       # Content management hub
+│   │   ├── learning/      # Skill development hub
+│   │   └── settings/      # Configuration hub
+│   ├── (auth)/            # Authentication pages
+│   ├── (legal)/           # Legal pages
+│   ├── api/               # API routes
+│   ├── actions.ts         # Server actions
+│   ├── layout.tsx         # Root layout
+│   └── globals.css        # Global styles
+├── aws/                   # AWS service integrations
+│   ├── auth/              # Cognito authentication
+│   ├── dynamodb/          # Database operations
+│   ├── s3/                # File storage
+│   ├── bedrock/           # AI services
+│   └── config.ts          # AWS configuration
+├── components/            # React components
+│   ├── ui/                # shadcn/ui components
+│   ├── hub/               # Hub-specific components
+│   └── [feature]/         # Feature components
+├── hooks/                 # Custom React hooks
+├── lib/                   # Utilities and helpers
+├── services/              # Business logic and orchestration
+│   └── strands/           # AI agent services and orchestration
+└── types/                 # TypeScript definitions
 ```
 
-See [Infrastructure Guide](./infrastructure/DEPLOYMENT_GUIDE.md) for details.
+### Infrastructure Code
 
-## Data Migration
+```
+infrastructure/
+├── lib/                   # CDK stack definitions
+├── scripts/               # Deployment scripts
+└── cdk.json              # CDK configuration
+```
 
-For migrating existing data from Firebase to AWS:
+## 🤖 Agent Orchestration System
 
-1. **Export from Firestore**: Extract all collections and documents
-2. **Transform Data**: Convert to DynamoDB single-table format
-3. **Import to DynamoDB**: Batch write items with proper keys
-4. **Migrate Storage**: Copy files from Firebase Storage to S3
-5. **Validate**: Verify data integrity and completeness
+### Multi-Agent Workflow Architecture
 
-See [Migration Guide](./MIGRATION_GUIDE.md) for step-by-step instructions.
+The Agent Orchestration System coordinates multiple AI agents to execute complex, multi-step workflows automatically.
+
+#### Workflow Types
+
+**Content Campaign Workflow**
+
+```
+Research Agent → Content Studio → Market Intelligence
+     ↓              ↓                    ↓
+Market Research → Blog Content →    Market Update
+                → Social Media
+```
+
+**Listing Optimization Workflow**
+
+```
+Market Intelligence → Competitive Analysis → Listing Description
+        ↓                      ↓                    ↓
+Market Analysis →    Competitive Research →   Optimized Description
+```
+
+**Brand Building Workflow**
+
+```
+Research Agent → Market Intelligence → Content Studio
+      ↓               ↓                    ↓
+Competitive → Market Positioning → Content Strategy
+Research
+```
+
+**Investment Analysis Workflow**
+
+```
+Research Agent → Market Intelligence → Opportunity Analysis
+      ↓               ↓                       ↓
+Market Research → Trend Analysis →    Investment Report
+```
+
+#### Orchestration Features
+
+**Dependency Management**
+
+- Steps execute based on dependency completion
+- Parallel execution for independent steps
+- Intelligent waiting for prerequisite results
+
+**Error Handling & Retry Logic**
+
+- Agent-specific retry configurations
+- Exponential backoff with jitter
+- Error categorization (timeout, network, validation, agent failure)
+- Graceful degradation for non-critical failures
+
+**Progress Tracking**
+
+- Real-time workflow status updates
+- Step-by-step completion monitoring
+- Duration tracking and performance metrics
+- Workflow persistence in DynamoDB
+
+**Result Synthesis**
+
+- Combines outputs from multiple agents
+- Structured result formatting
+- Summary generation with key insights
+- Workflow completion notifications
+
+#### Implementation Pattern
+
+```typescript
+// Define workflow input
+const workflowInput: WorkflowOrchestrationInput = {
+  workflowType: "content-campaign",
+  userId: "user123",
+  name: "Seattle Market Campaign",
+  parameters: {
+    topic: "Seattle Real Estate Trends",
+    targetAudience: "buyers",
+    platforms: ["linkedin", "facebook"],
+  },
+};
+
+// Execute workflow
+const result = await executeAgentWorkflow(workflowInput);
+
+// Result includes:
+// - success: boolean
+// - workflowId: string
+// - steps: WorkflowStep[]
+// - results: combined agent outputs
+// - summary: workflow completion summary
+```
+
+## 🔄 Data Flow
+
+### Authentication Flow
+
+```
+1. User visits protected route
+2. Middleware checks for valid JWT token
+3. If no token, redirect to sign-in
+4. Cognito handles authentication
+5. JWT token stored in httpOnly cookie
+6. Subsequent requests include token
+7. Server actions validate token
+```
+
+### Content Generation Flow
+
+```
+1. User submits content request (form)
+2. Server action validates input (Zod)
+3. Server action calls Bedrock API
+4. Bedrock streams response
+5. Response saved to DynamoDB
+6. Client receives streamed content
+7. UI updates optimistically
+```
+
+### Data Persistence Flow
+
+```
+1. User action triggers server action
+2. Server action validates input
+3. DynamoDB operation executed
+4. Response returned to client
+5. Client updates UI state
+6. Cache invalidated if needed
+```
+
+## 🔧 Development Patterns
+
+### Server Components vs Client Components
+
+**Server Components (Default)**
+
+- Data fetching
+- Static content
+- SEO-friendly
+- No JavaScript bundle
+- Direct database access
+
+**Client Components (`'use client'`)**
+
+- Interactive features
+- Event handlers
+- Browser APIs
+- State management
+- Real-time updates
+
+### Server Actions Pattern
+
+```typescript
+// Server Action
+export async function createContent(formData: FormData) {
+  // 1. Validate input with Zod
+  const input = contentSchema.parse({
+    title: formData.get("title"),
+    content: formData.get("content"),
+  });
+
+  // 2. Get user from session
+  const user = await getCurrentUser();
+
+  // 3. Call AWS service
+  const result = await generateContent(input);
+
+  // 4. Save to database
+  await saveContent(user.id, result);
+
+  // 5. Return structured response
+  return { success: true, data: result };
+}
+```
+
+### Component Composition
+
+```typescript
+// Hub Layout Pattern
+export function HubLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="hub-container">
+      <HubHeader />
+      <HubTabs />
+      <main className="hub-content">{children}</main>
+    </div>
+  );
+}
+```
+
+## 🚀 Performance Architecture
+
+### Optimization Strategies
+
+**Code Splitting**
+
+- Automatic route-based splitting
+- Dynamic imports for heavy components
+- Lazy loading for non-critical features
+
+**Caching**
+
+- Next.js automatic caching
+- DynamoDB query caching
+- S3 CloudFront distribution
+- Browser caching headers
+
+**Image Optimization**
+
+- Next.js Image component
+- Automatic format conversion (WebP/AVIF)
+- Responsive image sizing
+- Lazy loading
+
+**Bundle Optimization**
+
+- Tree shaking
+- Package optimization
+- Dynamic imports
+- Bundle analysis
+
+### Monitoring & Analytics
+
+**Performance Metrics**
+
+- Core Web Vitals
+- Lighthouse scores
+- Real User Monitoring (RUM)
+- Custom performance markers
+
+**Error Tracking**
+
+- CloudWatch error logs
+- Client-side error boundaries
+- Unhandled promise rejections
+- Network error monitoring
+
+## 🔐 Security Architecture
+
+### Authentication Security
+
+- JWT tokens with short expiration
+- Refresh token rotation
+- httpOnly cookies
+- CSRF protection
+- Rate limiting
+
+### Data Security
+
+- Encryption at rest (DynamoDB, S3)
+- Encryption in transit (HTTPS/TLS)
+- IAM least privilege access
+- VPC security groups
+- AWS WAF protection
+
+### Input Validation
+
+- Zod schema validation
+- SQL injection prevention
+- XSS protection
+- File upload validation
+- Rate limiting
+
+## 🌐 Scalability Architecture
+
+### Horizontal Scaling
+
+- Serverless functions (auto-scaling)
+- DynamoDB on-demand scaling
+- S3 unlimited storage
+- CloudFront global distribution
+- Amplify auto-scaling
+
+### Performance Scaling
+
+- Edge computing with CloudFront
+- Regional data replication
+- Lazy loading strategies
+- Progressive enhancement
+- Optimistic UI updates
+
+## 🔄 Development Workflow
+
+### Local Development
+
+```
+1. LocalStack for AWS services
+2. Docker containers for isolation
+3. Hot reload for fast iteration
+4. TypeScript for type safety
+5. ESLint for code quality
+```
+
+### CI/CD Pipeline
+
+```
+1. GitHub Actions for automation
+2. Automated testing
+3. Security scanning
+4. Performance testing
+5. Multi-environment deployment
+```
+
+### Deployment Strategy
+
+```
+Development → Staging → Production
+     ↓           ↓          ↓
+  LocalStack   AWS Dev   AWS Prod
+```
+
+## 📊 Monitoring Architecture
+
+### Application Monitoring
+
+- CloudWatch application logs
+- Custom metrics and dashboards
+- Error rate monitoring
+- Performance tracking
+- User behavior analytics
+
+### Infrastructure Monitoring
+
+- AWS service health
+- Resource utilization
+- Cost monitoring
+- Security events
+- Compliance tracking
+
+This architecture provides a scalable, maintainable, and performant foundation for the Bayon CoAgent platform while ensuring security and reliability.

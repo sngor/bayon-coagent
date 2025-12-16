@@ -54,7 +54,12 @@ export const handler = wrapLambdaHandler(async (
         switch (request.type) {
             case 'neighborhood-guide':
                 const guideInput = GenerateNeighborhoodGuideInputSchema.parse(request.input);
-                result = await generateNeighborhoodGuide(guideInput);
+                // Map new schema format to old function format
+                const mappedGuideInput = {
+                    targetMarket: `${guideInput.neighborhood}, ${guideInput.city}, ${guideInput.state}`,
+                    pillarTopic: `Complete Guide to ${guideInput.neighborhood} - ${guideInput.targetAudience} Edition`
+                };
+                result = await generateNeighborhoodGuide(mappedGuideInput);
                 break;
 
             case 'blog-post':

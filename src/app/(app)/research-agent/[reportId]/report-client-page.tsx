@@ -67,7 +67,7 @@ export default function ReportClientPage({ reportId }: { reportId: string }) {
                             <CardFooter className="flex-col items-start gap-4 border-t pt-6">
                                 <h3 className="font-headline text-lg font-semibold">Citations</h3>
                                 <ul className="list-disc list-inside space-y-2">
-                                    {report.citations.map((citation, index) => (
+                                    {report.citations.map((citation: string, index: number) => (
                                         <li key={index} className="text-sm">
                                             <a href={citation} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-all">
                                                 {citation} <ExternalLink className="inline-block ml-1 h-3 w-3" />

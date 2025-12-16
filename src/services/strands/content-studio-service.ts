@@ -1,3 +1,6 @@
+import { createLogger } from '@/aws/logging/logger';
+const logger = createLogger({ service: 'content-studio' });
+
 /**
  * Enhanced Content Studio Service - Strands-Inspired Implementation
  * 
@@ -6,7 +9,7 @@
  */
 
 import { z } from 'zod';
-import { getCurrentUserServer } from '@/aws/auth/server-auth';
+
 import { getSearchClient } from '@/aws/search';
 import { getRepository } from '@/aws/dynamodb/repository';
 
@@ -139,7 +142,7 @@ class ContentTools {
 
             return formattedResults;
         } catch (error) {
-            console.warn('Content research failed:', error);
+            logger.warn('Content research failed:', { error: error instanceof Error ? error.message : String(error) });
             return "Research temporarily unavailable. Using general knowledge.";
         }
     }
@@ -249,7 +252,7 @@ Market Outlook:
         try {
             const repository = getRepository();
             const timestamp = new Date().toISOString();
-            const contentId = `content_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const contentId = `content_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
             const pk = `USER#${userId}`;
             const sk = `CONTENT#${contentId}`;
@@ -273,7 +276,7 @@ Market Outlook:
 
             return `✅ Content saved to library! Content ID: ${contentId}`;
         } catch (error) {
-            console.error('Failed to save content:', error);
+            logger.error('Failed to save content:', error instanceof Error ? error : new Error(String(error)));
             return `⚠️ Content generated but not saved: ${error instanceof Error ? error.message : 'Unknown error'}`;
         }
     }
@@ -453,17 +456,17 @@ ${this.generateVideoMainPoints(data.topic, data.research)}
         return `Understanding ${topic} is essential for ${audience} in today's dynamic real estate market. This comprehensive guide breaks down the key factors you need to know.`;
     }
 
-    private static generateKeyPoints(topic: string, audience: string): string {
+    private static generateKeyPoints(_topic: string, audience: string): string {
         return `• Market conditions are creating new opportunities for strategic ${audience}
 • Understanding timing and positioning is more important than ever
 • Local market dynamics vary significantly by area and property type`;
     }
 
-    private static generateRecommendations(topic: string, audience: string): string {
+    private static generateRecommendations(_topic: string, audience: string): string {
         return `Based on current market analysis, ${audience} should focus on data-driven decision making and working with experienced professionals who understand local market nuances.`;
     }
 
-    private static generateConclusion(topic: string, audience: string): string {
+    private static generateConclusion(topic: string, _audience: string): string {
         return `${topic} presents both opportunities and challenges in the current market. Success comes from staying informed, acting strategically, and working with the right team.`;
     }
 
@@ -473,7 +476,7 @@ ${this.generateVideoMainPoints(data.topic, data.research)}
         return sentences[0] ? sentences[0].trim() + '.' : 'Market conditions continue to evolve with new opportunities emerging.';
     }
 
-    private static generateBulletPoint(topic: string, index: number): string {
+    private static generateBulletPoint(_topic: string, index: number): string {
         const points = [
             `Current market conditions favor strategic decision-making`,
             `Timing and positioning are critical success factors`,
@@ -497,15 +500,15 @@ ${this.generateVideoMainPoints(data.topic, data.research)}
         return `The ${location} real estate market shows balanced conditions with ${topic} presenting strategic opportunities for informed participants.`;
     }
 
-    private static generateBuyerInsight(topic: string): string {
+    private static generateBuyerInsight(_topic: string): string {
         return `Market conditions create opportunities for well-prepared buyers`;
     }
 
-    private static generateSellerInsight(topic: string): string {
+    private static generateSellerInsight(_topic: string): string {
         return `Strategic pricing and presentation remain key to successful sales`;
     }
 
-    private static generateInvestorInsight(topic: string): string {
+    private static generateInvestorInsight(_topic: string): string {
         return `Cash flow and appreciation potential align in select market segments`;
     }
 
@@ -545,7 +548,7 @@ class ContentStudioAgent {
      */
     async generateContent(input: ContentStudioInput): Promise<ContentStudioOutput> {
         try {
-            console.log(`🎨 Starting content generation: ${input.contentType} - ${input.topic}`);
+            logger.info(`🎨 Starting content generation: ${input.contentType} - ${input.topic}`);
 
             // Step 1: Research if requested
             let research = "";
@@ -670,7 +673,7 @@ class ContentStudioAgent {
                 contentId = idMatch ? idMatch[1] : undefined;
             }
 
-            console.log(`✅ Content generation completed: ${contentVariations.length} variations`);
+            logger.info(`✅ Content generation completed: ${contentVariations.length} variations`);
 
             return {
                 success: true,
@@ -685,7 +688,7 @@ class ContentStudioAgent {
             };
 
         } catch (error) {
-            console.error('❌ Content generation failed:', error);
+            logger.error('❌ Content generation failed:', error instanceof Error ? error : new Error(String(error)));
 
             return {
                 success: false,
@@ -719,6 +722,16 @@ export async function generateBlogPost(
         contentType: 'blog-post',
         topic,
         userId,
+        targetAudience: options?.targetAudience || 'general',
+        tone: options?.tone || 'professional',
+        length: options?.length || 'medium',
+        includeHashtags: options?.includeHashtags ?? true,
+        includeSEO: options?.includeSEO ?? true,
+        includeWebSearch: options?.includeWebSearch ?? true,
+        searchDepth: options?.searchDepth || 'basic',
+        includeData: options?.includeData ?? true,
+        saveToLibrary: options?.saveToLibrary ?? true,
+        generateVariations: options?.generateVariations ?? 1,
         ...options,
     });
 }
@@ -733,7 +746,17 @@ export async function generateSocialMediaPosts(
         contentType: 'social-media',
         topic,
         userId,
+        targetAudience: options?.targetAudience || 'general',
+        tone: options?.tone || 'professional',
+        length: options?.length || 'medium',
         platforms: platforms as any,
+        includeHashtags: options?.includeHashtags ?? true,
+        includeSEO: options?.includeSEO ?? true,
+        includeWebSearch: options?.includeWebSearch ?? true,
+        searchDepth: options?.searchDepth || 'basic',
+        includeData: options?.includeData ?? true,
+        saveToLibrary: options?.saveToLibrary ?? true,
+        generateVariations: options?.generateVariations ?? 1,
         ...options,
     });
 }
@@ -749,6 +772,16 @@ export async function generateMarketUpdate(
         topic,
         userId,
         location,
+        targetAudience: options?.targetAudience || 'general',
+        tone: options?.tone || 'professional',
+        length: options?.length || 'medium',
+        includeHashtags: options?.includeHashtags ?? true,
+        includeSEO: options?.includeSEO ?? true,
+        includeWebSearch: options?.includeWebSearch ?? true,
+        searchDepth: options?.searchDepth || 'basic',
+        includeData: options?.includeData ?? true,
+        saveToLibrary: options?.saveToLibrary ?? true,
+        generateVariations: options?.generateVariations ?? 1,
         ...options,
     });
 }

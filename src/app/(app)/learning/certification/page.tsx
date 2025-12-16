@@ -533,7 +533,7 @@ export default function LearningCertificationPage() {
                                             <Award className="h-12 w-12 text-white" />
                                         </div>
                                         <h3 className="text-2xl font-bold text-white mb-2">{selectedCertificate.title}</h3>
-                                        <p className="text-white/80 mb-4">Awarded to {user?.name || 'Professional'}</p>
+                                        <p className="text-white/80 mb-4">Awarded to {user?.attributes?.name || user?.email || 'Professional'}</p>
                                         <Badge className="bg-white/20 text-white">
                                             {selectedCertificate.verificationCode}
                                         </Badge>

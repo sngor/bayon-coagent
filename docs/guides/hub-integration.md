@@ -102,6 +102,7 @@ const stagingResult = await enhancedReimagineAction({
   analysisType: "virtual-staging",
   roomType: "living-room",
   stagingStyle: "modern-contemporary",
+  targetAudience: "buyers", // New: Personalizes staging recommendations
 });
 ```
 

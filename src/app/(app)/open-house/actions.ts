@@ -3788,7 +3788,7 @@ export async function deleteSessionPhoto(
         }
 
         // Find the photo
-        const photo = session.photos.find((p) => p.photoId === photoId);
+        const photo = session.photos.find((p: any) => p.photoId === photoId);
         if (!photo) {
             return { success: false, error: 'Photo not found' };
         }
@@ -3798,7 +3798,7 @@ export async function deleteSessionPhoto(
         await deleteFile(photo.s3Key);
 
         // Remove from session
-        const updatedPhotos = session.photos.filter((p) => p.photoId !== photoId);
+        const updatedPhotos = session.photos.filter((p: any) => p.photoId !== photoId);
         await repository.updateOpenHouseSession(user.id, sessionId, {
             photos: updatedPhotos,
             updatedAt: new Date().toISOString(),

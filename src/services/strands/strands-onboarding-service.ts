@@ -207,6 +207,8 @@ class StrandsOnboardingService {
                 startedAt: timestamp,
                 lastAccessedAt: timestamp,
                 featuresUsed: {
+                    brandStrategy: false,
+                    imageAnalysis: false,
                     enhancedResearch: false,
                     contentStudio: false,
                     listingOptimization: false,

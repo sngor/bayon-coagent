@@ -6,11 +6,11 @@ This guide explains how to set up and manage OAuth credentials and API keys usin
 
 The Bayon Coagent platform uses AWS Secrets Manager to securely store and manage sensitive credentials:
 
-- **Google OAuth** - For Google Business Profile integration
-- **Facebook OAuth** - For Facebook social media integration
-- **Instagram OAuth** - For Instagram social media integration
-- **LinkedIn OAuth** - For LinkedIn social media integration
-- **Twitter OAuth** - For Twitter social media integration
+- **Google OAuth** - For Google Business Profile integration (profile management only)
+- **Facebook OAuth** - For Facebook social media integration and analytics
+- **Instagram OAuth** - For Instagram social media integration and analytics
+- **LinkedIn OAuth** - For LinkedIn social media integration and analytics
+- **Twitter OAuth** - For Twitter social media integration and analytics
 - **MLS API** - For MLS listing data integration (MLSGrid and Bridge Interactive)
 
 ## Architecture

@@ -350,8 +350,7 @@ export class VoiceService {
         } catch (error: any) {
             const voiceError = createVoiceError(
                 this.getRecordingErrorMessage(error),
-                undefined,
-                'microphone'
+                undefined
             );
             this.updateState({ error: voiceError });
         }
@@ -388,7 +387,7 @@ export class VoiceService {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
         try {
-            const blob = new Blob([audioData.buffer], { type: 'application/octet-stream' });
+            const blob = new Blob([audioData.buffer as ArrayBuffer], { type: 'application/octet-stream' });
             const reader = new FileReader();
 
             reader.onload = () => {

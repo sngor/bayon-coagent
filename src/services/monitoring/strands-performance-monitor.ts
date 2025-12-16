@@ -63,7 +63,7 @@ class PerformanceMonitoringTools {
         try {
             const repository = getRepository();
             const timestamp = new Date().toISOString();
-            const metricId = `metric_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const metricId = `metric_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
             const metricItem = {
                 PK: `METRICS#${metric.serviceType}`,

@@ -682,10 +682,10 @@ export default function AILessonPlanPage() {
                                                 <div className="flex-1">
                                                     <p className="text-sm">{objective.description}</p>
                                                     <div className="flex gap-2 mt-1">
-                                                        <Badge className={getCategoryColor(objective.category)} size="sm">
+                                                        <Badge className={getCategoryColor(objective.category)}>
                                                             {objective.category}
                                                         </Badge>
-                                                        <Badge variant="outline" size="sm">
+                                                        <Badge variant="outline">
                                                             {objective.priority} priority
                                                         </Badge>
                                                     </div>

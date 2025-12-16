@@ -417,18 +417,65 @@ const { visibleItems, containerRef, scrollerRef } = useVirtualScroll({
 });
 ```
 
+## Logging
+
+### Standardized Logging
+
+Use consistent logging patterns across the codebase:
+
+```tsx
+import { createLogger } from "@/aws/logging/logger";
+const logger = createLogger({ service: "your-service-name" });
+
+// ✅ Use explicit log levels
+logger.info("Operation started", { userId, operation: "data-processing" });
+logger.warn("Rate limit approaching", { current: 95, limit: 100 });
+logger.error("Operation failed", error, { context: "additional-info" });
+logger.debug("Detailed debugging info", { details: debugData });
+
+// ❌ Don't use logger.log() - deprecated for consistency
+// logger.log('Some message'); // Use logger.info() instead
+```
+
+**Key Principles**:
+
+- Always use explicit log levels (`info`, `warn`, `error`, `debug`)
+- Include relevant context objects for better debugging
+- Use service-specific loggers for better organization
+- Follow structured logging format for CloudWatch integration
+
+**Service-Specific Loggers**:
+
+```tsx
+// Create service-specific loggers
+const authLogger = createLogger({ service: "auth" });
+const dbLogger = createLogger({ service: "database" });
+const aiLogger = createLogger({ service: "bedrock" });
+
+// Use in operations
+authLogger.info("User login attempt", { email: user.email });
+dbLogger.warn("Query taking longer than expected", {
+  query: "getUserProfile",
+  duration: 1500,
+});
+aiLogger.error("AI generation failed", error, { modelId: "claude-3-5-sonnet" });
+```
+
 ## Error Handling
 
 ### Try-Catch
 
-Always handle errors:
+Always handle errors with proper logging:
 
 ```tsx
 try {
   const result = await riskyOperation();
+  logger.info("Operation completed successfully", {
+    operation: "riskyOperation",
+  });
   return { data: result };
 } catch (error) {
-  console.error("Operation failed:", error);
+  logger.error("Operation failed", error, { operation: "riskyOperation" });
   return { error: "Operation failed" };
 }
 ```

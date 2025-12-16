@@ -26,6 +26,7 @@ import {
 } from '@/types/onboarding';
 import { DynamoDBError } from '@/aws/dynamodb/errors';
 import { logError, recoverFromStateError } from './onboarding-error-handler';
+import { logger } from '@/aws';
 
 /**
  * Custom error for onboarding operations
@@ -92,13 +93,10 @@ export class OnboardingService {
             return state;
         } catch (error) {
             // Enhanced error logging for debugging
-            console.error('[ONBOARDING_SERVICE] getOnboardingState error details:', {
-                error,
-                errorMessage: error?.message,
-                errorStack: error?.stack,
-                errorName: error?.name,
+            logger.error('getOnboardingState error details:', error instanceof Error ? error : new Error(String(error)), {
                 userId,
-                keys: getOnboardingStateKeys(userId)
+                keys: getOnboardingStateKeys(userId),
+                operation: 'getOnboardingState'
             });
 
             logError(error, { userId, operation: 'getOnboardingState' });
@@ -124,7 +122,7 @@ export class OnboardingService {
             // Check if onboarding already exists
             const existingState = await this.getOnboardingState(userId);
             if (existingState) {
-                console.warn('[ONBOARDING_SERVICE] Onboarding already exists for user:', userId);
+                logger.warn('Onboarding already exists for user', { userId, operation: 'initializeOnboarding' });
                 return existingState;
             }
 
@@ -154,10 +152,14 @@ export class OnboardingService {
             };
 
             await this.repository.put(item);
-            console.log('[ONBOARDING_SERVICE] Initialized onboarding for user:', userId, 'flowType:', flowType);
+            logger.info('Initialized onboarding for user', { userId, flowType, operation: 'initializeOnboarding' });
             return state;
         } catch (error) {
-            console.error('[ONBOARDING_SERVICE] Error initializing onboarding:', error);
+            logger.error('Error initializing onboarding:', error instanceof Error ? error : new Error(String(error)), {
+                userId,
+                flowType,
+                operation: 'initializeOnboarding'
+            });
             throw this.handleError(error, 'Failed to initialize onboarding');
         }
     }
@@ -245,7 +247,7 @@ export class OnboardingService {
             console.log('[ONBOARDING_SERVICE] Completed step:', stepId, 'for user:', userId);
             return state;
         } catch (error) {
-            console.error('[ONBOARDING_SERVICE] Error completing step:', error);
+            logger.error('Error completing step:', error instanceof Error ? error : new Error(String(error)), { userId, stepId, operation: 'completeStep' });
             throw this.handleError(error, `Failed to complete step '${stepId}'`);
         }
     }

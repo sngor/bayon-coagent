@@ -85,7 +85,7 @@ interface Testimonial {
   id: string; // UUID
   userId: string; // Agent's user ID
   clientName: string; // Client's full name
-  testimonialText: string; // The testimonial content
+  content: string; // The testimonial content
   dateReceived: string; // ISO 8601 timestamp
   clientPhotoUrl?: string; // S3 URL for client photo
   isFeatured: boolean; // Display on profile page
@@ -191,7 +191,7 @@ async function createTestimonialAction(
 const result = await createTestimonialAction({
   userId: "user-123",
   clientName: "John Doe",
-  testimonialText: "Great service!",
+  content: "Great service!",
   dateReceived: new Date().toISOString(),
   isFeatured: false,
   tags: ["buyer"],
@@ -324,14 +324,14 @@ Handles client testimonial submission (public endpoint).
 ```typescript
 async function submitTestimonialAction(
   requestId: string,
-  testimonialText: string
+  content: string
 ): Promise<ActionResult<Testimonial>>;
 ```
 
 **Parameters**:
 
 - `requestId`: ID from submission link
-- `testimonialText`: Client's testimonial
+- `content`: Client's testimonial
 
 **Returns**: Same as createTestimonialAction
 
@@ -521,10 +521,7 @@ class TestimonialRequestService {
   ): Promise<TestimonialRequest>;
 
   // Process client submission
-  async submitTestimonial(
-    token: string,
-    testimonialText: string
-  ): Promise<Testimonial>;
+  async submitTestimonial(token: string, content: string): Promise<Testimonial>;
 
   // Send reminder for pending requests
   async sendReminder(requestId: string): Promise<void>;
@@ -532,6 +529,64 @@ class TestimonialRequestService {
   // Mark expired requests
   async expireOldRequests(): Promise<number>;
 }
+```
+
+### TestimonialReminderService
+
+Located in `src/services/notifications/testimonial-reminder-service.ts`.
+
+Handles automated reminder emails for pending testimonial requests and expiration of old requests.
+
+```typescript
+interface TestimonialReminderResult {
+  success: boolean;
+  remindersSent: number;
+  errors: string[];
+}
+
+interface TestimonialExpirationResult {
+  success: boolean;
+  requestsExpired: number;
+  errors: string[];
+}
+
+interface AllUserRemindersResult {
+  success: boolean;
+  usersProcessed: number;
+  totalRemindersSent: number;
+  totalRequestsExpired: number;
+  errors: string[];
+}
+```
+
+**Key Functions**:
+
+```typescript
+// Send reminders for a specific user
+async function sendTestimonialReminders(
+  userId: string
+): Promise<TestimonialReminderResult>;
+
+// Expire old requests for a specific user
+async function expireOldTestimonialRequests(
+  userId: string
+): Promise<TestimonialExpirationResult>;
+
+// Process all users (for scheduled jobs)
+async function processAllUserReminders(): Promise<AllUserRemindersResult>;
+```
+
+**Configuration**:
+
+```typescript
+export const TESTIMONIAL_REMINDER_CONFIG = {
+  REMINDER_DELAY_DAYS: 7, // Days before first reminder
+  EXPIRATION_DAYS: 30, // Days before request expires
+  MAX_REMINDERS: 2, // Maximum reminders per request
+  REMINDER_INTERVAL_DAYS: 7, // Days between reminders
+  BATCH_SIZE: 10, // Batch processing size
+  BATCH_DELAY_MS: 1000, // Delay between batches
+} as const;
 ```
 
 ---
@@ -556,7 +611,7 @@ interface TestimonialListProps {
 **Features**:
 
 - Filter by date range, featured status, has photo, tags
-- Search by client name or testimonial text
+- Search by client name or testimonial content
 - Pagination
 - Sort by date received or created date
 - Click to view details
@@ -580,7 +635,7 @@ interface TestimonialFormProps {
 **Features**:
 
 - Client name input
-- Testimonial text textarea
+- Testimonial content textarea
 - Date picker for dateReceived
 - Photo upload with preview
 - Tags input (comma-separated)
@@ -651,7 +706,7 @@ interface ProfileTestimonialsDisplayProps {
 
 - Grid layout (2 columns on desktop, 1 on mobile)
 - Client photo display
-- Testimonial text with read more
+- Testimonial content with read more
 - Date display
 - Schema markup included
 
@@ -809,7 +864,7 @@ describe("TestimonialRepository", () => {
     const testimonial = await repo.createTestimonial({
       userId: "user-123",
       clientName: "John Doe",
-      testimonialText: "Great service!",
+      content: "Great service!",
       dateReceived: new Date().toISOString(),
       isFeatured: false,
       tags: ["buyer"],
@@ -831,7 +886,7 @@ describe("createTestimonialAction", () => {
     const result = await createTestimonialAction({
       userId: "user-123",
       clientName: "John Doe",
-      testimonialText: "Great service!",
+      content: "Great service!",
       dateReceived: new Date().toISOString(),
       isFeatured: false,
       tags: [],
@@ -1011,7 +1066,7 @@ All inputs are validated using Zod schemas:
 ```typescript
 const CreateTestimonialSchema = z.object({
   clientName: z.string().min(1).max(100),
-  testimonialText: z.string().min(10).max(2000),
+  content: z.string().min(10).max(2000),
   dateReceived: z.string().datetime(),
   tags: z.array(z.string()).max(10),
 });
@@ -1039,7 +1094,7 @@ If migrating from an existing testimonial system:
 const transformed = legacyTestimonials.map((old) => ({
   userId: old.agentId,
   clientName: old.client,
-  testimonialText: old.text,
+  content: old.text,
   dateReceived: old.date,
   isFeatured: old.featured || false,
   tags: old.categories || [],

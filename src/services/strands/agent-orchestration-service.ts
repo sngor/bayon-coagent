@@ -1,3 +1,6 @@
+import { createLogger } from '@/aws/logging/logger';
+const logger = createLogger({ service: 'agent-orchestration' });
+
 /**
  * Enhanced Agent Orchestration Service - Strands-Inspired Implementation
  * 
@@ -7,6 +10,37 @@
 
 import { z } from 'zod';
 import { getRepository } from '@/aws/dynamodb/repository';
+
+// Constants for workflow execution
+const WORKFLOW_CONSTANTS = {
+    DEFAULT_ESTIMATED_DURATION: 300, // seconds
+    MAX_BACKOFF_DELAY: 30000, // 30 seconds
+    BACKOFF_BASE: 2,
+    BACKOFF_INITIAL: 1000, // 1 second
+} as const;
+
+// Error types for better categorization
+export enum WorkflowErrorType {
+    TIMEOUT = 'TIMEOUT',
+    AGENT_FAILURE = 'AGENT_FAILURE',
+    DEPENDENCY_FAILURE = 'DEPENDENCY_FAILURE',
+    VALIDATION_ERROR = 'VALIDATION_ERROR',
+    NETWORK_ERROR = 'NETWORK_ERROR',
+    UNKNOWN_ERROR = 'UNKNOWN_ERROR'
+}
+
+export class WorkflowError extends Error {
+    constructor(
+        message: string,
+        public type: WorkflowErrorType,
+        public stepId?: string,
+        public retryable: boolean = true,
+        public originalError?: Error
+    ) {
+        super(message);
+        this.name = 'WorkflowError';
+    }
+}
 
 // Workflow types
 export const WorkflowTypeSchema = z.enum([
@@ -107,6 +141,89 @@ export type WorkflowOrchestrationInput = z.infer<typeof WorkflowOrchestrationInp
 export type WorkflowOrchestrationOutput = z.infer<typeof WorkflowOrchestrationOutputSchema>;
 export type WorkflowStep = z.infer<typeof WorkflowStepSchema>;
 
+// Workflow parameter interfaces for type safety
+export interface ContentCampaignParameters {
+    topic: string;
+    targetAudience?: string;
+    platforms?: string[];
+    location?: string;
+}
+
+export interface ListingOptimizationParameters {
+    propertyType: string;
+    location: string;
+    keyFeatures: string;
+    buyerPersona: string;
+    price?: string;
+}
+
+export interface BrandBuildingParameters {
+    agentName: string;
+    location: string;
+    specialization: string;
+    targetMarket?: string;
+}
+
+export interface InvestmentAnalysisParameters {
+    location: string;
+    propertyType: string;
+    investmentGoals: string;
+    budget?: string;
+}
+
+/**
+ * Retry configuration for different agent types
+ */
+const AGENT_RETRY_CONFIG = {
+    'research-agent': { maxRetries: 3, timeoutMultiplier: 2.5 }, // Research can be flaky
+    'content-studio': { maxRetries: 2, timeoutMultiplier: 2.0 }, // Content generation is usually stable
+    'listing-description': { maxRetries: 2, timeoutMultiplier: 1.5 }, // Fast and reliable
+    'market-intelligence': { maxRetries: 3, timeoutMultiplier: 2.0 }, // External data dependencies
+    'competitive-analysis': { maxRetries: 2, timeoutMultiplier: 2.0 },
+    'seo-optimization': { maxRetries: 1, timeoutMultiplier: 1.5 },
+    'social-media': { maxRetries: 2, timeoutMultiplier: 1.5 }
+} as const;
+
+/**
+ * Step Factory - Creates workflow steps with consistent defaults
+ */
+class WorkflowStepFactory {
+    /**
+     * Create a workflow step with intelligent retry configuration based on agent type
+     */
+    static createStep(config: {
+        id: string;
+        name: string;
+        agentType: z.infer<typeof AgentTypeSchema>;
+        inputs: Record<string, any>;
+        dependencies?: string[];
+        estimatedDuration?: number;
+        maxRetries?: number;
+    }): WorkflowStep {
+        const agentConfig = AGENT_RETRY_CONFIG[config.agentType] || { maxRetries: 2, timeoutMultiplier: 2.0 };
+
+        return {
+            id: config.id,
+            name: config.name,
+            agentType: config.agentType,
+            inputs: config.inputs,
+            dependencies: config.dependencies || [],
+            estimatedDuration: config.estimatedDuration,
+            maxRetries: config.maxRetries || agentConfig.maxRetries,
+            status: 'pending' as const,
+            retryCount: 0
+        };
+    }
+
+    /**
+     * Get timeout for agent type
+     */
+    static getTimeoutForAgent(agentType: string, estimatedDuration: number = WORKFLOW_CONSTANTS.DEFAULT_ESTIMATED_DURATION): number {
+        const config = AGENT_RETRY_CONFIG[agentType as keyof typeof AGENT_RETRY_CONFIG] || { timeoutMultiplier: 2.0 };
+        return estimatedDuration * 1000 * config.timeoutMultiplier;
+    }
+}
+
 /**
  * Workflow Templates - Predefined multi-agent workflows
  */
@@ -120,7 +237,7 @@ class WorkflowTemplates {
         const { topic, targetAudience, platforms, location } = parameters;
 
         return [
-            {
+            WorkflowStepFactory.createStep({
                 id: 'research',
                 name: 'Market Research',
                 agentType: 'research-agent',
@@ -130,10 +247,9 @@ class WorkflowTemplates {
                     includeMarketAnalysis: true,
                     targetAudience: targetAudience || 'agents'
                 },
-                dependencies: [],
                 estimatedDuration: 120
-            },
-            {
+            }),
+            WorkflowStepFactory.createStep({
                 id: 'blog-content',
                 name: 'Blog Post Creation',
                 agentType: 'content-studio',
@@ -146,8 +262,8 @@ class WorkflowTemplates {
                 },
                 dependencies: ['research'],
                 estimatedDuration: 90
-            },
-            {
+            }),
+            WorkflowStepFactory.createStep({
                 id: 'social-content',
                 name: 'Social Media Content',
                 agentType: 'content-studio',
@@ -160,8 +276,8 @@ class WorkflowTemplates {
                 },
                 dependencies: ['research'],
                 estimatedDuration: 60
-            },
-            {
+            }),
+            WorkflowStepFactory.createStep({
                 id: 'market-update',
                 name: 'Market Update',
                 agentType: 'market-intelligence',
@@ -170,9 +286,8 @@ class WorkflowTemplates {
                     location: location || 'Local Market',
                     targetAudience: targetAudience || 'agents'
                 },
-                dependencies: [],
                 estimatedDuration: 75
-            }
+            })
         ];
     }
 
@@ -184,7 +299,7 @@ class WorkflowTemplates {
         const { propertyType, location, keyFeatures, buyerPersona, price } = parameters;
 
         return [
-            {
+            WorkflowStepFactory.createStep({
                 id: 'market-analysis',
                 name: 'Market Analysis',
                 agentType: 'market-intelligence',
@@ -193,10 +308,9 @@ class WorkflowTemplates {
                     location,
                     marketSegment: propertyType || 'residential'
                 },
-                dependencies: [],
                 estimatedDuration: 90
-            },
-            {
+            }),
+            WorkflowStepFactory.createStep({
                 id: 'competitive-analysis',
                 name: 'Competitive Analysis',
                 agentType: 'market-intelligence',
@@ -205,10 +319,9 @@ class WorkflowTemplates {
                     location,
                     priceRange: price
                 },
-                dependencies: [],
                 estimatedDuration: 75
-            },
-            {
+            }),
+            WorkflowStepFactory.createStep({
                 id: 'listing-description',
                 name: 'Listing Description Generation',
                 agentType: 'listing-description',
@@ -223,7 +336,7 @@ class WorkflowTemplates {
                 },
                 dependencies: ['market-analysis', 'competitive-analysis'],
                 estimatedDuration: 60
-            }
+            })
         ];
     }
 
@@ -235,7 +348,7 @@ class WorkflowTemplates {
         const { agentName, location, specialization, targetMarket } = parameters;
 
         return [
-            {
+            WorkflowStepFactory.createStep({
                 id: 'competitive-research',
                 name: 'Competitive Landscape Analysis',
                 agentType: 'research-agent',
@@ -245,10 +358,9 @@ class WorkflowTemplates {
                     includeMarketAnalysis: true,
                     targetAudience: 'agents'
                 },
-                dependencies: [],
                 estimatedDuration: 150
-            },
-            {
+            }),
+            WorkflowStepFactory.createStep({
                 id: 'market-positioning',
                 name: 'Market Positioning Analysis',
                 agentType: 'market-intelligence',
@@ -259,8 +371,8 @@ class WorkflowTemplates {
                 },
                 dependencies: ['competitive-research'],
                 estimatedDuration: 120
-            },
-            {
+            }),
+            WorkflowStepFactory.createStep({
                 id: 'content-strategy',
                 name: 'Content Strategy Development',
                 agentType: 'content-studio',
@@ -272,7 +384,7 @@ class WorkflowTemplates {
                 },
                 dependencies: ['market-positioning'],
                 estimatedDuration: 90
-            }
+            })
         ];
     }
 
@@ -284,7 +396,7 @@ class WorkflowTemplates {
         const { location, propertyType, investmentGoals, budget } = parameters;
 
         return [
-            {
+            WorkflowStepFactory.createStep({
                 id: 'market-research',
                 name: 'Investment Market Research',
                 agentType: 'research-agent',
@@ -294,10 +406,9 @@ class WorkflowTemplates {
                     includeMarketAnalysis: true,
                     targetAudience: 'investors'
                 },
-                dependencies: [],
                 estimatedDuration: 180
-            },
-            {
+            }),
+            WorkflowStepFactory.createStep({
                 id: 'market-trends',
                 name: 'Market Trend Analysis',
                 agentType: 'market-intelligence',
@@ -307,10 +418,9 @@ class WorkflowTemplates {
                     marketSegment: 'investment',
                     timePeriod: '3-year'
                 },
-                dependencies: [],
                 estimatedDuration: 120
-            },
-            {
+            }),
+            WorkflowStepFactory.createStep({
                 id: 'opportunity-analysis',
                 name: 'Investment Opportunity Analysis',
                 agentType: 'market-intelligence',
@@ -323,7 +433,7 @@ class WorkflowTemplates {
                 },
                 dependencies: ['market-research', 'market-trends'],
                 estimatedDuration: 90
-            }
+            })
         ];
     }
 }
@@ -342,30 +452,9 @@ class AgentExecutionEngine {
         updatedStep.status = 'running';
 
         try {
-            console.log(`🤖 Executing step: ${step.name} (${step.agentType})`);
+            logger.info(`🤖 Executing step: ${step.name} (${step.agentType})`);
 
-            let result: any;
-
-            switch (step.agentType) {
-                case 'research-agent':
-                    result = await this.executeResearchAgent(step.inputs, workflowContext);
-                    break;
-
-                case 'content-studio':
-                    result = await this.executeContentStudio(step.inputs, workflowContext);
-                    break;
-
-                case 'listing-description':
-                    result = await this.executeListingDescription(step.inputs, workflowContext);
-                    break;
-
-                case 'market-intelligence':
-                    result = await this.executeMarketIntelligence(step.inputs, workflowContext);
-                    break;
-
-                default:
-                    throw new Error(`Unknown agent type: ${step.agentType}`);
-            }
+            const result = await this.executeAgentWithTimeout(step, workflowContext);
 
             updatedStep.outputs = result;
             updatedStep.status = 'completed';
@@ -377,18 +466,122 @@ class AgentExecutionEngine {
                 );
             }
 
-            console.log(`✅ Step completed: ${step.name} (${updatedStep.actualDuration}s)`);
+            logger.info(`✅ Step completed: ${step.name} (${updatedStep.actualDuration}s)`);
 
         } catch (error) {
-            console.error(`❌ Step failed: ${step.name}`, error);
+            logger.error(`❌ Step failed: ${step.name}`, error instanceof Error ? error : new Error(String(error)));
+
+            const workflowError = this.categorizeError(error, step.id);
 
             updatedStep.status = 'failed';
-            updatedStep.error = error instanceof Error ? error.message : 'Unknown error';
+            updatedStep.error = workflowError.message;
             updatedStep.endTime = new Date().toISOString();
             updatedStep.retryCount = (updatedStep.retryCount || 0) + 1;
+
+            // Only retry if error is retryable and we haven't exceeded max retries
+            if (workflowError.retryable && updatedStep.retryCount < updatedStep.maxRetries) {
+                const backoffDelay = Math.min(
+                    WORKFLOW_CONSTANTS.BACKOFF_INITIAL * Math.pow(WORKFLOW_CONSTANTS.BACKOFF_BASE, updatedStep.retryCount),
+                    WORKFLOW_CONSTANTS.MAX_BACKOFF_DELAY
+                );
+                logger.info(`⏳ Waiting ${backoffDelay}ms before retry (${workflowError.type})...`);
+                await new Promise(resolve => setTimeout(resolve, backoffDelay));
+            } else if (!workflowError.retryable) {
+                logger.info(`🚫 Error not retryable: ${workflowError.type}`);
+            }
         }
 
         return updatedStep;
+    }
+
+    /**
+     * Execute agent with timeout protection
+     */
+    private static async executeAgentWithTimeout(step: WorkflowStep, workflowContext: any): Promise<any> {
+        const timeoutMs = WorkflowStepFactory.getTimeoutForAgent(step.agentType, step.estimatedDuration || WORKFLOW_CONSTANTS.DEFAULT_ESTIMATED_DURATION);
+
+        const executePromise = this.executeAgentByType(step.agentType, step.inputs, workflowContext);
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error(`Step timeout after ${timeoutMs}ms`)), timeoutMs);
+        });
+
+        return Promise.race([executePromise, timeoutPromise]);
+    }
+
+    /**
+     * Execute agent by type with centralized routing
+     */
+    private static async executeAgentByType(agentType: string, inputs: any, workflowContext: any): Promise<any> {
+        switch (agentType) {
+            case 'research-agent':
+                return this.executeResearchAgent(inputs, workflowContext);
+            case 'content-studio':
+                return this.executeContentStudio(inputs, workflowContext);
+            case 'listing-description':
+                return this.executeListingDescription(inputs, workflowContext);
+            case 'market-intelligence':
+                return this.executeMarketIntelligence(inputs, workflowContext);
+            default:
+                throw new WorkflowError(
+                    `Unknown agent type: ${agentType}`,
+                    WorkflowErrorType.VALIDATION_ERROR,
+                    undefined,
+                    false // Not retryable
+                );
+        }
+    }
+
+    /**
+     * Categorize errors for better handling and monitoring
+     */
+    private static categorizeError(error: unknown, stepId: string): WorkflowError {
+        if (error instanceof WorkflowError) {
+            return error;
+        }
+
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+        // Timeout errors
+        if (errorMessage.includes('timeout')) {
+            return new WorkflowError(
+                errorMessage,
+                WorkflowErrorType.TIMEOUT,
+                stepId,
+                true,
+                error instanceof Error ? error : undefined
+            );
+        }
+
+        // Network errors
+        if (errorMessage.includes('network') || errorMessage.includes('connection') || errorMessage.includes('ECONNREFUSED')) {
+            return new WorkflowError(
+                errorMessage,
+                WorkflowErrorType.NETWORK_ERROR,
+                stepId,
+                true,
+                error instanceof Error ? error : undefined
+            );
+        }
+
+        // Validation errors (usually not retryable)
+        if (errorMessage.includes('validation') || errorMessage.includes('invalid') || errorMessage.includes('required')) {
+            return new WorkflowError(
+                errorMessage,
+                WorkflowErrorType.VALIDATION_ERROR,
+                stepId,
+                false,
+                error instanceof Error ? error : undefined
+            );
+        }
+
+        // Default to agent failure (retryable)
+        return new WorkflowError(
+            errorMessage,
+            WorkflowErrorType.AGENT_FAILURE,
+            stepId,
+            true,
+            error instanceof Error ? error : undefined
+        );
     }
 
     /**
@@ -421,6 +614,10 @@ class AgentExecutionEngine {
             userId: context.userId,
             tone: inputs.tone || 'professional',
             targetAudience: inputs.targetAudience || 'general',
+            length: inputs.length || 'medium',
+            searchDepth: inputs.searchDepth || 'basic',
+            includeData: inputs.includeData ?? true,
+            generateVariations: inputs.generateVariations || 1,
             platforms: inputs.platforms,
             includeWebSearch: inputs.includeWebSearch ?? true,
             includeSEO: inputs.includeSEO ?? true,
@@ -508,12 +705,12 @@ class WorkflowExecutionManager {
                 // Check for failed dependencies
                 const failedSteps = executedSteps.filter(step => step.status === 'failed');
                 if (failedSteps.length > 0) {
-                    console.warn('⚠️ Workflow has failed steps, skipping dependent steps');
+                    logger.warn('⚠️ Workflow has failed steps, skipping dependent steps');
                     break;
                 }
 
                 // No ready steps and no failures - possible circular dependency
-                console.error('❌ No ready steps found - possible circular dependency');
+                logger.error('❌ No ready steps found - possible circular dependency');
                 break;
             }
 
@@ -530,10 +727,10 @@ class WorkflowExecutionManager {
                 } else if (updatedStep.status === 'failed') {
                     // Check if we should retry
                     if (updatedStep.retryCount < updatedStep.maxRetries) {
-                        console.log(`🔄 Retrying step: ${updatedStep.name} (attempt ${updatedStep.retryCount + 1})`);
+                        logger.info(`🔄 Retrying step: ${updatedStep.name} (attempt ${updatedStep.retryCount + 1})`);
                         updatedStep.status = 'pending';
                     } else {
-                        console.error(`💥 Step failed permanently: ${updatedStep.name}`);
+                        logger.error(`💥 Step failed permanently: ${updatedStep.name}`);
                         completedCount++; // Count as completed to avoid infinite loop
                     }
                 }
@@ -572,7 +769,7 @@ class AgentOrchestrationService {
      */
     async executeWorkflow(input: WorkflowOrchestrationInput): Promise<WorkflowOrchestrationOutput> {
         try {
-            console.log(`🚀 Starting workflow orchestration: ${input.workflowType}`);
+            logger.info(`🚀 Starting workflow orchestration: ${input.workflowType}`);
 
             const workflowId = `workflow_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             const startTime = new Date().toISOString();
@@ -611,7 +808,7 @@ class AgentOrchestrationService {
                 await this.saveWorkflowCompletion(workflowId, execution, totalDuration);
             }
 
-            console.log(`✅ Workflow orchestration completed: ${workflowId}`);
+            logger.info(`✅ Workflow orchestration completed: ${workflowId}`);
 
             return {
                 success: true,
@@ -629,7 +826,7 @@ class AgentOrchestrationService {
             };
 
         } catch (error) {
-            console.error('❌ Workflow orchestration failed:', error);
+            logger.error('❌ Workflow orchestration failed:', error instanceof Error ? error : new Error(String(error)));
 
             return {
                 success: false,
@@ -690,9 +887,18 @@ class AgentOrchestrationService {
                 source: 'agent-orchestration-service'
             };
 
-            await repository.create(workflowItem);
+            await repository.create(
+                workflowItem.PK,
+                workflowItem.SK,
+                'Workflow',
+                workflowItem,
+                {
+                    GSI1PK: workflowItem.GSI1PK,
+                    GSI1SK: workflowItem.GSI1SK
+                }
+            );
         } catch (error) {
-            console.error('Failed to save workflow start:', error);
+            logger.error('Failed to save workflow start:', error instanceof Error ? error : new Error(String(error)));
             // Don't fail the workflow if saving fails
         }
     }
@@ -725,11 +931,11 @@ class AgentOrchestrationService {
             const items = await repository.query(`USER#${execution.steps[0]?.userId || 'unknown'}`, `WORKFLOW#${workflowId}`);
 
             if (items.items.length > 0) {
-                const item = items.items[0];
+                const item = items.items[0] as any;
                 await repository.update(item.PK, item.SK, updates);
             }
         } catch (error) {
-            console.error('Failed to save workflow completion:', error);
+            logger.error('Failed to save workflow completion:', error instanceof Error ? error : new Error(String(error)));
             // Don't fail the workflow if saving fails
         }
     }
@@ -762,6 +968,10 @@ export async function executeContentCampaign(
         userId,
         name: `Content Campaign: ${topic}`,
         description: `Multi-channel content campaign for ${topic}`,
+        priority: 'normal',
+        saveResults: true,
+        executeAsync: true,
+        notifyOnCompletion: false,
         parameters: {
             topic,
             targetAudience: options?.targetAudience || 'agents',
@@ -786,6 +996,10 @@ export async function executeListingOptimization(
         userId,
         name: `Listing Optimization: ${propertyDetails.location}`,
         description: `Complete listing optimization for ${propertyDetails.propertyType} in ${propertyDetails.location}`,
+        priority: 'normal' as const,
+        saveResults: true,
+        executeAsync: true,
+        notifyOnCompletion: false,
         parameters: propertyDetails
     });
 }
@@ -804,6 +1018,10 @@ export async function executeBrandBuilding(
         userId,
         name: `Brand Building: ${agentDetails.agentName}`,
         description: `Comprehensive brand building strategy for ${agentDetails.agentName}`,
+        priority: 'normal' as const,
+        saveResults: true,
+        executeAsync: true,
+        notifyOnCompletion: false,
         parameters: agentDetails
     });
 }
@@ -822,6 +1040,10 @@ export async function executeInvestmentAnalysis(
         userId,
         name: `Investment Analysis: ${investmentDetails.location}`,
         description: `Comprehensive investment analysis for ${investmentDetails.propertyType} in ${investmentDetails.location}`,
+        priority: 'normal' as const,
+        saveResults: true,
+        executeAsync: true,
+        notifyOnCompletion: false,
         parameters: investmentDetails
     });
 }

@@ -1,3 +1,6 @@
+import { createLogger } from '@/aws/logging/logger';
+const logger = createLogger({ service: 'integration-testing' });
+
 /**
  * Enhanced Integration & Testing Service - Strands-Inspired Implementation
  * 
@@ -740,7 +743,7 @@ class PerformanceMonitor {
                 success: true
             };
 
-            console.log(`📊 Performance: ${operationName} completed in ${metrics.responseTime}ms`);
+            logger.info(`📊 Performance: ${operationName} completed in ${metrics.responseTime}ms`);
 
             return { result, metrics };
         } catch (error) {
@@ -752,7 +755,7 @@ class PerformanceMonitor {
                 error: error instanceof Error ? error.message : 'Unknown error'
             };
 
-            console.error(`📊 Performance: ${operationName} failed after ${metrics.responseTime}ms`);
+            logger.error(`📊 Performance: ${operationName} failed after ${metrics.responseTime}ms`);
 
             throw error;
         }
@@ -788,7 +791,7 @@ class IntegrationTestingService {
      */
     async executeTest(config: TestConfiguration): Promise<TestResult> {
         try {
-            console.log(`🧪 Starting test: ${config.testName} (${config.testType})`);
+            logger.info(`🧪 Starting test: ${config.testName} (${config.testType})`);
 
             const testId = `test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             const startTime = new Date().toISOString();
@@ -828,7 +831,7 @@ class IntegrationTestingService {
                 });
             }
 
-            console.log(`✅ Test completed: ${config.testName} - Status: ${status}`);
+            logger.info(`✅ Test completed: ${config.testName} - Status: ${status}`);
 
             return {
                 success: true,
@@ -851,7 +854,7 @@ class IntegrationTestingService {
             };
 
         } catch (error) {
-            console.error('❌ Test execution failed:', error);
+            logger.error('❌ Test execution failed:', error instanceof Error ? error : new Error(String(error)));
 
             return {
                 success: false,
@@ -929,6 +932,10 @@ class IntegrationTestingService {
             userId: inputs.userId,
             tone: inputs.tone || 'professional',
             targetAudience: inputs.targetAudience || 'general',
+            length: 'medium' as const,
+            searchDepth: 'basic' as const,
+            includeData: true,
+            generateVariations: 1,
             platforms: inputs.platforms,
             includeWebSearch: inputs.includeWebSearch ?? true,
             includeSEO: inputs.includeSEO ?? true,
@@ -990,6 +997,9 @@ class IntegrationTestingService {
             name: inputs.name,
             description: inputs.description,
             parameters: inputs.parameters,
+            priority: 'normal',
+            executeAsync: false,
+            notifyOnCompletion: false,
             saveResults: false // Don't save during testing
         });
     }
@@ -1175,7 +1185,7 @@ class IntegrationTestingService {
                 GSI1SK: `TEST#${timestamp}`
             });
         } catch (error) {
-            console.error('Failed to save test results:', error);
+            logger.error('Failed to save test results:', error instanceof Error ? error : new Error(String(error)));
             // Don't fail the test if saving fails
         }
     }
@@ -1204,7 +1214,9 @@ export async function testAllServices(userId: string): Promise<TestResult> {
         testInputs: { userId },
         validateOutput: true,
         measurePerformance: true,
-        saveResults: true
+        saveResults: true,
+        minQualityScore: 80,
+        maxExecutionTime: 300
     });
 }
 
@@ -1245,7 +1257,8 @@ export async function validateServiceOutput(
         validateOutput: true,
         measurePerformance: false,
         saveResults: true,
-        minQualityScore: 90
+        minQualityScore: 90,
+        maxExecutionTime: 300
     });
 }
 

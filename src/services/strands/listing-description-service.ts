@@ -1,3 +1,6 @@
+import { createLogger } from '@/aws/logging/logger';
+const logger = createLogger({ service: 'listing-description' });
+
 /**
  * Enhanced Listing Description Service - Strands-Inspired Implementation
  * 
@@ -133,7 +136,7 @@ class ListingTools {
 
             return analysis;
         } catch (error) {
-            console.warn('Comparable analysis failed:', error);
+            logger.warn('Comparable analysis failed:', { error: error instanceof Error ? error.message : String(error) });
             return this.getMockComparableData(location, propertyType);
         }
     }
@@ -170,7 +173,7 @@ class ListingTools {
 
             return insights;
         } catch (error) {
-            console.warn('Neighborhood analysis failed:', error);
+            logger.warn('Neighborhood analysis failed:', { error: error instanceof Error ? error.message : String(error) });
             return this.getMockNeighborhoodData(location);
         }
     }
@@ -607,7 +610,7 @@ class ListingDescriptionAgent {
      */
     async generateListingDescription(input: ListingDescriptionInput): Promise<ListingDescriptionOutput> {
         try {
-            console.log(`🏠 Starting intelligent listing generation: ${input.propertyType} in ${input.location}`);
+            logger.info(`🏠 Starting intelligent listing generation: ${input.propertyType} in ${input.location}`);
 
             // Step 1: Analyze comparable listings if requested
             let comparableData = "";
@@ -674,7 +677,7 @@ class ListingDescriptionAgent {
                 pricingStrategy = `Based on comparable properties, consider competitive pricing with emphasis on unique features and move-in ready condition. Market conditions support strategic positioning for ${input.buyerPersona.replace('-', ' ')} segment.`;
             }
 
-            console.log('✅ Intelligent listing description generated successfully');
+            logger.info('✅ Intelligent listing description generated successfully');
 
             return {
                 success: true,
@@ -695,7 +698,7 @@ class ListingDescriptionAgent {
             };
 
         } catch (error) {
-            console.error('❌ Listing description generation failed:', error);
+            logger.error('❌ Listing description generation failed:', error instanceof Error ? error : new Error(String(error)));
 
             return {
                 success: false,
@@ -736,6 +739,10 @@ export async function generateSimpleListingDescription(
         buyerPersona: buyerPersona as any,
         writingStyle: 'professional',
         userId,
+        includeMarketAnalysis: options?.includeMarketAnalysis ?? true,
+        includeNeighborhoodInsights: options?.includeNeighborhoodInsights ?? true,
+        includeSEOOptimization: options?.includeSEOOptimization ?? true,
+        includeCompetitiveAnalysis: options?.includeCompetitiveAnalysis ?? false,
         ...options,
     });
 }

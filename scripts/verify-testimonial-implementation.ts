@@ -58,12 +58,15 @@ const mockTestimonial: Testimonial = {
     id: 'test-123',
     userId: 'user-456',
     clientName: 'John Doe',
+    content: 'Great service!',
     testimonialText: 'Great service!',
-    dateReceived: '2024-01-15T10:00:00Z',
+    rating: 5,
+    isPublic: false,
     isFeatured: false,
-    tags: ['buyer'],
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
+    dateReceived: new Date().toISOString(),
+    tags: ['excellent', 'professional'],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
 };
 
 console.log('  ✓ Testimonial type is properly defined');

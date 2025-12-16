@@ -66,7 +66,7 @@ export const handler = wrapLambdaHandler(async (
                         {
                             reportId,
                             userId: user.userId,
-                            query: researchInput.query,
+                            query: researchInput.topic,
                             result,
                             source: 'research-agent',
                             createdAt: new Date().toISOString(),

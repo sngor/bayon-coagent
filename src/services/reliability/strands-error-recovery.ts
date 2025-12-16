@@ -571,8 +571,8 @@ class ErrorRecoveryManager {
         }
 
         // Check circuit breaker states
-        Object.entries(stats.circuitBreakerStatus).forEach(([service, status]) => {
-            if (status.state === 'open') {
+        Object.entries(stats.circuitBreakerStatus).forEach(([service, breakerStatus]) => {
+            if (breakerStatus && typeof breakerStatus === 'object' && 'state' in breakerStatus && breakerStatus.state === 'open') {
                 issues.push(`Circuit breaker OPEN for ${service}`);
                 recommendations.push(`Investigate and fix issues with ${service}`);
                 if (status !== 'critical') status = 'degraded';
@@ -644,7 +644,7 @@ export function withErrorRecovery(serviceType: string, fallbackFn?: Function) {
     ) {
         const method = descriptor.value!;
 
-        descriptor.value = async function (...args: any[]) {
+        descriptor.value = async function (this: any, ...args: any[]) {
             const [inputs, userId] = args;
 
             return errorRecoveryManager.executeWithRecovery(

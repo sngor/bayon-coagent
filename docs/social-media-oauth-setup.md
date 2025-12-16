@@ -1,6 +1,17 @@
 # Social Media OAuth Setup Guide
 
-This guide walks you through setting up OAuth credentials for Facebook, Instagram, and LinkedIn integrations.
+This guide walks you through setting up OAuth credentials for Facebook, Instagram, LinkedIn, and Twitter integrations.
+
+## Supported Platforms
+
+The Bayon CoAgent platform supports OAuth integration with the following social media platforms:
+
+- **Facebook**: Business pages, insights, and content publishing
+- **Instagram**: Business account content publishing and analytics
+- **LinkedIn**: Professional content sharing and analytics
+- **Twitter**: Tweet publishing and engagement tracking
+
+**Note**: Google Analytics and YouTube integrations have been removed to focus on core real estate social media workflows.
 
 ## LinkedIn OAuth Setup
 
@@ -169,6 +180,53 @@ The requested permissions aren't available:
 4. **Limit permissions**: Only request the OAuth scopes you actually need
 5. **Monitor usage**: Check your app dashboards for unusual activity
 
+## Twitter OAuth Setup
+
+### 1. Create a Twitter App
+
+1. Go to [Twitter Developer Portal](https://developer.twitter.com/en/portal/dashboard)
+2. Click "Create Project" or "Create App"
+3. Fill in the required information:
+   - **App name**: Bayon Coagent (or your app name)
+   - **App description**: Real estate content management platform
+   - **Website URL**: Your domain or `http://localhost:3000` for development
+4. Complete the app creation process
+
+### 2. Configure OAuth Settings
+
+1. In your app dashboard, go to "Settings" → "Authentication settings"
+2. Enable "OAuth 2.0"
+3. Add callback URLs:
+   - Development: `http://localhost:3000/api/oauth/twitter/callback`
+   - Production: `https://yourdomain.com/api/oauth/twitter/callback`
+4. Save settings
+
+### 3. Get Your Credentials
+
+1. Go to "Keys and tokens" tab
+2. Copy your credentials:
+   - **API Key**: This is your `TWITTER_CLIENT_ID`
+   - **API Secret**: This is your `TWITTER_CLIENT_SECRET`
+   - **Bearer Token**: For API access
+
+### 4. Update Environment Variables
+
+Add to your `.env.local` file:
+
+```bash
+TWITTER_CLIENT_ID=your-actual-api-key
+TWITTER_CLIENT_SECRET=your-actual-api-secret
+TWITTER_BEARER_TOKEN=your-bearer-token
+```
+
+### 5. Test the Connection
+
+1. Restart your development server: `npm run dev`
+2. Go to Settings → Social Media Connections
+3. Click "Connect" for Twitter
+4. You should be redirected to Twitter for authorization
+5. After authorizing, you'll be redirected back with a success message
+
 ## Required OAuth Scopes
 
 ### LinkedIn
@@ -189,6 +247,14 @@ The requested permissions aren't available:
 - `instagram_basic` - Basic Instagram access
 - `instagram_content_publish` - Publish content
 - `pages_show_list` - Required for Instagram Business Account
+
+### Twitter
+
+- `tweet.read` - Read tweets
+- `tweet.write` - Post tweets
+- `tweet.moderate.write` - Moderate tweets
+- `follows.read` - Read follower information
+- `users.read` - Read user information
 
 ## Next Steps
 

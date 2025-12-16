@@ -44,7 +44,7 @@ import {
     Settings,
     Loader2,
     Plus,
-    Sync
+    RefreshCw as Sync
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth/use-user';
@@ -224,19 +224,19 @@ export default function BrandIntegrationsPage() {
                 <div className="space-y-6">
                     {/* Google Business Profile Integration */}
                     <Card className={`border-2 ${connectionStatus.status === 'connected' ? 'border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-900/10' :
-                            connectionStatus.status === 'stale' ? 'border-yellow-200 bg-yellow-50/50 dark:border-yellow-800 dark:bg-yellow-900/10' :
-                                'border-gray-200 dark:border-gray-800'
+                        connectionStatus.status === 'stale' ? 'border-yellow-200 bg-yellow-50/50 dark:border-yellow-800 dark:bg-yellow-900/10' :
+                            'border-gray-200 dark:border-gray-800'
                         }`}>
                         <CardHeader>
                             <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-4">
                                     <div className={`p-3 rounded-lg ${connectionStatus.status === 'connected' ? 'bg-green-100 dark:bg-green-900/30' :
-                                            connectionStatus.status === 'stale' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
-                                                'bg-gray-100 dark:bg-gray-900/30'
+                                        connectionStatus.status === 'stale' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
+                                            'bg-gray-100 dark:bg-gray-900/30'
                                         }`}>
                                         <Globe className={`h-8 w-8 ${connectionStatus.status === 'connected' ? 'text-green-600 dark:text-green-400' :
-                                                connectionStatus.status === 'stale' ? 'text-yellow-600 dark:text-yellow-400' :
-                                                    'text-gray-600 dark:text-gray-400'
+                                            connectionStatus.status === 'stale' ? 'text-yellow-600 dark:text-yellow-400' :
+                                                'text-gray-600 dark:text-gray-400'
                                             }`} />
                                     </div>
                                     <div>
@@ -249,8 +249,8 @@ export default function BrandIntegrationsPage() {
                                 <Badge
                                     variant={connectionStatus.status === 'connected' ? 'default' : 'secondary'}
                                     className={`${connectionStatus.status === 'connected' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                            connectionStatus.status === 'stale' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                                                'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+                                        connectionStatus.status === 'stale' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                                            'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
                                         }`}
                                 >
                                     {connectionStatus.status === 'connected' && <CheckCircle2 className="h-3 w-3 mr-1" />}
@@ -458,8 +458,8 @@ export default function BrandIntegrationsPage() {
                                                                             <Star
                                                                                 key={i}
                                                                                 className={`h-4 w-4 ${i < review.rating
-                                                                                        ? 'text-yellow-400 fill-yellow-400'
-                                                                                        : 'text-gray-300'
+                                                                                    ? 'text-yellow-400 fill-yellow-400'
+                                                                                    : 'text-gray-300'
                                                                                     }`}
                                                                             />
                                                                         ))}

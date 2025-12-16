@@ -176,7 +176,7 @@ class MockWebhookHandlerService {
 
     private validateWebhook(event: WebhookEvent): boolean {
         // Mock signature validation
-        return event.signature && event.signature.length > 10;
+        return !!(event.signature && event.signature.length > 10);
     }
 
     async routeWebhook(event: WebhookEvent): Promise<string> {

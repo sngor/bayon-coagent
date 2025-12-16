@@ -1,3 +1,6 @@
+import { createLogger } from '@/aws/logging/logger';
+const logger = createLogger({ service: 'image-analysis' });
+
 /**
  * Enhanced Image Analysis Service - Strands-Inspired Implementation
  * 
@@ -279,7 +282,7 @@ class ImageAnalysisTools {
         }
 
         // Object removal
-        if (propertyInsights.improvements.some(imp => imp.includes('clutter') || imp.includes('remove'))) {
+        if (propertyInsights.improvements.some((imp: string) => imp.includes('clutter') || imp.includes('remove'))) {
             suggestions.push({
                 type: 'Object Removal',
                 description: 'Remove distracting elements to create cleaner, more appealing composition',
@@ -452,7 +455,7 @@ class ImageAnalysisTools {
         try {
             const repository = getRepository();
             const timestamp = new Date().toISOString();
-            const analysisId = `image_analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const analysisId = `image_analysis_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
             const pk = `USER#${userId}`;
             const sk = `IMAGE_ANALYSIS#${analysisId}`;
@@ -476,7 +479,7 @@ class ImageAnalysisTools {
 
             return `✅ Analysis saved to library! Analysis ID: ${analysisId}`;
         } catch (error) {
-            console.error('Failed to save analysis:', error);
+            logger.error('Failed to save analysis:', error instanceof Error ? error : new Error(String(error)));
             return `⚠️ Analysis generated but not saved: ${error instanceof Error ? error.message : 'Unknown error'}`;
         }
     }
@@ -616,7 +619,7 @@ class ImageAnalysisTemplates {
 
 ## Identified Features
 
-${data.propertyInsights.features.map(feature => `• ${feature}`).join('\n')}
+${data.propertyInsights.features.map((feature: string) => `• ${feature}`).join('\n')}
 
 ## Marketing Recommendations
 
@@ -639,7 +642,7 @@ ${sug.description}
 
 ## Improvement Opportunities
 
-${data.propertyInsights.improvements.map(imp => `• ${imp}`).join('\n')}
+${data.propertyInsights.improvements.map((imp: string) => `• ${imp}`).join('\n')}
 
 ## Professional Recommendations
 
@@ -770,7 +773,7 @@ class ImageAnalysisAgent {
      */
     async analyzeImage(input: ImageAnalysisInput): Promise<ImageAnalysisOutput> {
         try {
-            console.log(`🖼️ Starting image analysis: ${input.analysisType}`);
+            logger.info(`🖼️ Starting image analysis: ${input.analysisType}`);
 
             // Step 1: Analyze property features from image
             let propertyInsights = undefined;
@@ -875,7 +878,7 @@ class ImageAnalysisAgent {
                 analysisId = idMatch ? idMatch[1] : undefined;
             }
 
-            console.log('✅ Image analysis completed successfully');
+            logger.info('✅ Image analysis completed successfully');
 
             return {
                 success: true,
@@ -894,7 +897,7 @@ class ImageAnalysisAgent {
             };
 
         } catch (error) {
-            console.error('❌ Image analysis failed:', error);
+            logger.error('❌ Image analysis failed:', error instanceof Error ? error : new Error(String(error)));
 
             return {
                 success: false,
@@ -929,9 +932,13 @@ export async function analyzePropertyImage(
         analysisType: 'property-analysis',
         imageUrl,
         userId,
-        includePropertyAnalysis: true,
-        includeMarketingRecommendations: true,
-        includeEnhancementSuggestions: true,
+        targetAudience: options?.targetAudience || 'buyers',
+        generateVariations: options?.generateVariations || 1,
+        includePropertyAnalysis: options?.includePropertyAnalysis ?? true,
+        includeMarketingRecommendations: options?.includeMarketingRecommendations ?? true,
+        includeEnhancementSuggestions: options?.includeEnhancementSuggestions ?? true,
+        includeStagingRecommendations: options?.includeStagingRecommendations ?? false,
+        saveResults: options?.saveResults ?? true,
         ...options,
     });
 }
@@ -946,8 +953,13 @@ export async function generateVirtualStaging(
         analysisType: 'virtual-staging',
         imageUrl,
         userId,
+        targetAudience: options?.targetAudience || 'buyers',
         stagingStyle: stagingStyle as any,
         includeStagingRecommendations: true,
+        includePropertyAnalysis: options?.includePropertyAnalysis ?? true,
+        includeMarketingRecommendations: options?.includeMarketingRecommendations ?? true,
+        includeEnhancementSuggestions: options?.includeEnhancementSuggestions ?? false,
+        saveResults: options?.saveResults ?? true,
         generateVariations: 2,
         ...options,
     });
@@ -963,8 +975,13 @@ export async function enhancePropertyImage(
         analysisType: 'image-enhancement',
         imageUrl,
         userId,
+        targetAudience: options?.targetAudience || 'buyers',
         enhancementType: enhancementType as any,
         includeEnhancementSuggestions: true,
+        includePropertyAnalysis: options?.includePropertyAnalysis ?? true,
+        includeMarketingRecommendations: options?.includeMarketingRecommendations ?? true,
+        includeStagingRecommendations: options?.includeStagingRecommendations ?? false,
+        saveResults: options?.saveResults ?? true,
         generateVariations: 1,
         ...options,
     });
@@ -979,6 +996,12 @@ export async function convertDayToDusk(
         analysisType: 'day-to-dusk',
         imageUrl,
         userId,
+        targetAudience: options?.targetAudience || 'buyers',
+        includePropertyAnalysis: options?.includePropertyAnalysis ?? true,
+        includeMarketingRecommendations: options?.includeMarketingRecommendations ?? true,
+        includeEnhancementSuggestions: options?.includeEnhancementSuggestions ?? false,
+        includeStagingRecommendations: options?.includeStagingRecommendations ?? false,
+        saveResults: options?.saveResults ?? true,
         generateVariations: 1,
         ...options,
     });

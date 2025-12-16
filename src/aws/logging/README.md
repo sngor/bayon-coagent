@@ -24,6 +24,12 @@ logger.debug("Debugging information", { detail: "value" });
 logger.info("User logged in", { userId: "123" });
 logger.warn("Rate limit approaching", { current: 95, limit: 100 });
 logger.error("Database connection failed", error, { operation: "query" });
+
+// ❌ Don't use logger.log() - use explicit levels instead
+// logger.log("Some message"); // Deprecated
+
+// ✅ Use explicit log levels for consistency
+logger.info("Operation completed successfully");
 ```
 
 ### Service-Specific Logger
@@ -239,6 +245,8 @@ const template = generateAllAlarmsTemplate(
 - **INFO**: General informational messages (user actions, system events)
 - **WARN**: Warning messages (approaching limits, deprecated features)
 - **ERROR**: Error messages (failures, exceptions)
+
+**Important**: Always use `logger.info()` for informational messages, not `logger.log()`. The codebase has been standardized to use the explicit log level methods for consistency and better CloudWatch integration.
 
 ### 2. Include Context
 

@@ -506,7 +506,7 @@ export function withOptimization(serviceType: string) {
     ) {
         const method = descriptor.value!;
 
-        descriptor.value = async function (...args: any[]) {
+        descriptor.value = async function (this: any, ...args: any[]) {
             const [inputs, userId] = args;
 
             return performanceOptimizer.optimizeExecution(

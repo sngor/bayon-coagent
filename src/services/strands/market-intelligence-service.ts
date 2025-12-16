@@ -1,3 +1,6 @@
+import { createLogger } from '@/aws/logging/logger';
+const logger = createLogger({ service: 'market-intelligence' });
+
 /**
  * Enhanced Market Intelligence Service - Strands-Inspired Implementation
  * 
@@ -154,7 +157,7 @@ class MarketIntelligenceTools {
 
             return formattedResults;
         } catch (error) {
-            console.warn('Market research failed:', error);
+            logger.warn('Market research failed:', { error: error instanceof Error ? error.message : String(error) });
             return this.getMockMarketData(location, analysisType);
         }
     }
@@ -402,7 +405,7 @@ class MarketIntelligenceTools {
         try {
             const repository = getRepository();
             const timestamp = new Date().toISOString();
-            const reportId = `market_analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const reportId = `market_analysis_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
             const pk = `USER#${userId}`;
             const sk = `REPORT#${reportId}`;
@@ -426,7 +429,7 @@ class MarketIntelligenceTools {
 
             return `✅ Analysis saved to library! Report ID: ${reportId}`;
         } catch (error) {
-            console.error('Failed to save analysis:', error);
+            logger.error('Failed to save analysis:', error instanceof Error ? error : new Error(String(error)));
             return `⚠️ Analysis generated but not saved: ${error instanceof Error ? error.message : 'Unknown error'}`;
         }
     }
@@ -692,7 +695,7 @@ class MarketIntelligenceAgent {
      */
     async executeMarketAnalysis(input: MarketIntelligenceInput): Promise<MarketIntelligenceOutput> {
         try {
-            console.log(`📊 Starting market intelligence analysis: ${input.analysisType} for ${input.location}`);
+            logger.info(`📊 Starting market intelligence analysis: ${input.analysisType} for ${input.location}`);
 
             // Step 1: Research current market conditions
             let marketData = "";
@@ -808,7 +811,7 @@ class MarketIntelligenceAgent {
             const idMatch = saveResult.match(/Report ID: ([^\s]+)/);
             reportId = idMatch ? idMatch[1] : undefined;
 
-            console.log('✅ Market intelligence analysis completed successfully');
+            logger.info('✅ Market intelligence analysis completed successfully');
 
             return {
                 success: true,
@@ -826,7 +829,7 @@ class MarketIntelligenceAgent {
             };
 
         } catch (error) {
-            console.error('❌ Market intelligence analysis failed:', error);
+            logger.error('❌ Market intelligence analysis failed:', error instanceof Error ? error : new Error(String(error)));
 
             return {
                 success: false,
@@ -871,6 +874,14 @@ export async function generateMarketUpdate(
         analysisType: 'market-update',
         location,
         userId,
+        targetAudience: options?.targetAudience || 'buyers',
+        includeCompetitiveAnalysis: options?.includeCompetitiveAnalysis ?? false,
+        timePeriod: options?.timePeriod || 'current',
+        marketSegment: options?.marketSegment || 'residential',
+        includeWebResearch: options?.includeWebResearch ?? true,
+        includeHistoricalData: options?.includeHistoricalData ?? true,
+        includePredictiveModeling: options?.includePredictiveModeling ?? true,
+        includeInvestmentMetrics: options?.includeInvestmentMetrics ?? false,
         ...options,
     });
 }
@@ -878,14 +889,21 @@ export async function generateMarketUpdate(
 export async function analyzeTrends(
     location: string,
     userId: string,
-    timePeriod: string = 'current',
+    timePeriod: 'current' | 'quarterly' | 'yearly' | '3-year' | '5-year' = 'current',
     options?: Partial<MarketIntelligenceInput>
 ): Promise<MarketIntelligenceOutput> {
     return executeMarketIntelligence({
         analysisType: 'trend-analysis',
         location,
         userId,
-        timePeriod: timePeriod as any,
+        targetAudience: options?.targetAudience || 'buyers',
+        includeCompetitiveAnalysis: options?.includeCompetitiveAnalysis ?? false,
+        timePeriod,
+        marketSegment: options?.marketSegment || 'residential',
+        includeWebResearch: options?.includeWebResearch ?? true,
+        includeHistoricalData: options?.includeHistoricalData ?? true,
+        includePredictiveModeling: options?.includePredictiveModeling ?? true,
+        includeInvestmentMetrics: options?.includeInvestmentMetrics ?? false,
         ...options,
     });
 }
@@ -893,14 +911,21 @@ export async function analyzeTrends(
 export async function identifyOpportunities(
     location: string,
     userId: string,
-    targetAudience: string = 'agents',
+    targetAudience: 'agents' | 'buyers' | 'sellers' | 'investors' = 'agents',
     options?: Partial<MarketIntelligenceInput>
 ): Promise<MarketIntelligenceOutput> {
     return executeMarketIntelligence({
         analysisType: 'opportunity-identification',
         location,
         userId,
-        targetAudience: targetAudience as any,
+        targetAudience,
+        includeCompetitiveAnalysis: options?.includeCompetitiveAnalysis ?? false,
+        timePeriod: options?.timePeriod || 'current',
+        marketSegment: options?.marketSegment || 'residential',
+        includeWebResearch: options?.includeWebResearch ?? true,
+        includeHistoricalData: options?.includeHistoricalData ?? true,
+        includePredictiveModeling: options?.includePredictiveModeling ?? true,
+        includeInvestmentMetrics: options?.includeInvestmentMetrics ?? false,
         ...options,
     });
 }

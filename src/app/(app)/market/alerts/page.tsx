@@ -224,12 +224,14 @@ export default function MarketAlertsPage() {
         ));
 
         const alert = alerts.find(a => a.id === alertId);
-        toast({
-            title: alert?.isActive ? 'Alert Disabled' : 'Alert Enabled',
-            description: alert?.isActive
-                ? `"${alert.name}" will no longer send notifications.`
-                : `"${alert.name}" is now active and monitoring.`,
-        });
+        if (alert) {
+            toast({
+                title: alert.isActive ? 'Alert Disabled' : 'Alert Enabled',
+                description: alert.isActive
+                    ? `"${alert.name}" will no longer send notifications.`
+                    : `"${alert.name}" is now active and monitoring.`,
+            });
+        }
     };
 
     const deleteAlert = (alertId: string) => {
@@ -569,8 +571,8 @@ export default function MarketAlertsPage() {
                                     <div
                                         key={notification.id}
                                         className={`p-3 rounded-lg border cursor-pointer transition-colors ${notification.isRead
-                                                ? 'bg-gray-50 border-gray-200'
-                                                : 'bg-blue-50 border-blue-200'
+                                            ? 'bg-gray-50 border-gray-200'
+                                            : 'bg-blue-50 border-blue-200'
                                             }`}
                                         onClick={() => markNotificationRead(notification.id)}
                                     >

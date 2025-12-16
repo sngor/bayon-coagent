@@ -38,7 +38,7 @@ const profile = {
 const testimonials = [
   {
     clientName: "Jane Doe",
-    testimonialText: "Excellent service!",
+    content: "Excellent service!",
     dateReceived: "2024-01-15",
     // ... other fields
   },

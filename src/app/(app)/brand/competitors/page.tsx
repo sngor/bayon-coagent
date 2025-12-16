@@ -335,12 +335,12 @@ export default function CompetitiveAnalysisPage() {
                   if (result.success && result.data) {
                     setFindState({
                       message: 'success',
-                      data: result.data,
+                      data: Array.isArray(result.data) ? result.data : [],
                       errors: {},
                     });
                     toast({
                       title: 'Competitors Found',
-                      description: `Found ${result.data.length} competitor${result.data.length > 1 ? 's' : ''} in your market.`,
+                      description: `Found ${Array.isArray(result.data) ? result.data.length : 0} competitor${Array.isArray(result.data) && result.data.length > 1 ? 's' : ''} in your market.`,
                     });
                   } else {
                     throw new Error(result.error?.message || 'Failed to find competitors');

@@ -1,3 +1,6 @@
+import { createLogger } from '@/aws/logging/logger';
+const logger = createLogger({ service: 'base-executor' });
+
 /**
  * Base executor for Strands agents
  * Implements common patterns used across the AWS service layer
@@ -50,24 +53,24 @@ export abstract class BaseStrandsExecutor<TInput, TOutput> {
         return new Promise((resolve) => {
             const pythonProcess = spawn('python3', [scriptPath], {
                 stdio: ['pipe', 'pipe', 'pipe'],
-                env: this.environment,
-            });
+                env: { ...process.env, ...this.environment },
+            }) as any;
 
             let stdout = '';
             let stderr = '';
             let isResolved = false;
 
             // Collect output
-            pythonProcess.stdout.on('data', (data) => {
+            pythonProcess.stdout.on('data', (data: Buffer) => {
                 stdout += data.toString();
             });
 
-            pythonProcess.stderr.on('data', (data) => {
+            pythonProcess.stderr.on('data', (data: Buffer) => {
                 stderr += data.toString();
             });
 
             // Handle process completion
-            pythonProcess.on('close', (code) => {
+            pythonProcess.on('close', (code: number | null) => {
                 if (isResolved) return;
                 isResolved = true;
 
@@ -80,24 +83,24 @@ export abstract class BaseStrandsExecutor<TInput, TOutput> {
                             timestamp: new Date().toISOString(),
                         });
                     } catch (parseError) {
-                        console.error(`Failed to parse ${this.config.type} agent output:`, parseError);
+                        logger.error(`Failed to parse ${this.config.type} agent output:`, parseError instanceof Error ? parseError : new Error(String(parseError)));
                         resolve(this.createFallbackResult(
                             `Failed to parse results: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`
                         ));
                     }
                 } else {
-                    console.error(`${this.config.type} agent process failed:`, stderr);
+                    logger.error(`${this.config.type} agent process failed:`, new Error(stderr));
                     resolve(this.createFallbackResult(
                         `Agent failed with code ${code}: ${stderr}`
                     ));
                 }
             });
 
-            pythonProcess.on('error', (error) => {
+            pythonProcess.on('error', (error: Error) => {
                 if (isResolved) return;
                 isResolved = true;
 
-                console.error(`Failed to start ${this.config.type} agent:`, error);
+                logger.error(`Failed to start ${this.config.type} agent:`, error);
                 resolve(this.createFallbackResult(
                     `Failed to start agent: ${error.message}`
                 ));
@@ -143,7 +146,7 @@ export abstract class BaseStrandsExecutor<TInput, TOutput> {
                 lastError = result.error || 'Unknown error';
 
                 if (attempt < this.config.maxRetries) {
-                    console.warn(`${this.config.type} agent attempt ${attempt + 1} failed, retrying...`);
+                    logger.warn(`${this.config.type} agent attempt ${attempt + 1} failed, retrying...`);
                     // Exponential backoff
                     await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
                 }

@@ -138,8 +138,8 @@ class XRayVerifier {
                     status: 'pass',
                     message: 'Basic tracing functionality works',
                     details: {
-                        traceId: context.traceId,
-                        correlationId: context.correlationId,
+                        traceId: (context as any)?.traceId,
+                        correlationId: (context as any)?.correlationId,
                         contextRetrieved: !!currentContext,
                     }
                 });

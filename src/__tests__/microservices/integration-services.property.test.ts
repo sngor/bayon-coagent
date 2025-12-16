@@ -565,7 +565,7 @@ class MockMLSIntegrationService {
             errors.push({
                 recordId: `record_${i}`,
                 error: 'Data validation failed',
-                severity: Math.random() > 0.5 ? 'warning' : 'error' as const,
+                severity: (Math.random() > 0.5 ? 'warning' : 'error') as 'warning' | 'error',
             });
         }
 

@@ -316,7 +316,7 @@ Common issues and solutions:
 
 - Add client name
 - Include date received
-- Ensure testimonial text is present
+- Ensure testimonial content is present
 
 ### Testing Your Schema
 

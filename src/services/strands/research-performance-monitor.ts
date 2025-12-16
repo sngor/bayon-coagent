@@ -44,7 +44,9 @@ class ResearchPerformanceMonitor {
         // Clean up old metrics if we exceed the limit
         if (this.metrics.size > this.maxMetrics) {
             const oldestKey = this.metrics.keys().next().value;
-            this.metrics.delete(oldestKey);
+            if (oldestKey) {
+                this.metrics.delete(oldestKey);
+            }
         }
 
         console.log(`🔍 Started research tracking: ${requestId}`);

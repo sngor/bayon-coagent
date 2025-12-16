@@ -22,7 +22,7 @@ The Testimonials feature helps you collect, organize, and showcase client feedba
 2. Click the **"New Testimonial"** button
 3. Fill in the testimonial details:
    - **Client Name**: Full name of the client
-   - **Testimonial Text**: The client's feedback
+   - **Content**: The client's feedback
    - **Date Received**: When you received the testimonial
    - **Client Photo** (optional): Upload a photo of your client
    - **Tags** (optional): Add categories like "buyer", "seller", "luxury"
@@ -123,7 +123,7 @@ Use filters to find specific testimonials:
 Use the search bar to find testimonials by:
 
 - Client name
-- Testimonial text content
+- Testimonial content
 
 ### Tagging Testimonials
 
@@ -167,7 +167,7 @@ Featured testimonials appear on your public agent profile:
 When someone views your agent profile, they'll see:
 
 - Client name
-- Testimonial text
+- Testimonial content
 - Date received
 - Client photo (if available)
 - Proper schema markup for search engines

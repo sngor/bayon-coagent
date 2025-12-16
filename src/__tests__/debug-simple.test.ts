@@ -33,12 +33,13 @@ describe('Debug Circuit Breaker', () => {
                 console.log('Success:', result);
                 successfulOperations++;
             } catch (error) {
-                console.log('Error caught:', error.name, error.message);
+                const err = error as Error;
+                console.log('Error caught:', err.name, err.message);
 
-                if (error.name === 'CircuitBreakerError') {
+                if (err.name === 'CircuitBreakerError') {
                     cascadingFailuresPrevented++;
                     console.log('Circuit breaker prevented execution');
-                } else if (error.message === 'Simulated service failure') {
+                } else if (err.message === 'Simulated service failure') {
                     actualServiceFailures++;
                     console.log('Actual service failure');
                 }

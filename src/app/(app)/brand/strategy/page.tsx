@@ -219,7 +219,7 @@ export default function MarketingPlanPage() {
           message: 'success',
           data: {
             id: `plan-${Date.now()}`,
-            plan: result.data.plan || [],
+            plan: (result.data as any)?.plan || [],
             createdAt: new Date().toISOString(),
           },
           errors: {},

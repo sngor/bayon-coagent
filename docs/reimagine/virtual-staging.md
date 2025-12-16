@@ -54,9 +54,41 @@ Choose the room type that matches your photo:
 
 💡 **Tip**: Selecting the correct room type ensures appropriate furniture placement.
 
-### Step 2: Choose Furniture Style
+### Step 2: Select Target Audience
 
-Select a style that matches the property's aesthetic:
+Choose who you're staging for to get personalized recommendations:
+
+#### Buyers
+
+- Move-in ready appeal and lifestyle visualization
+- Comfortable, inviting furniture arrangements
+- Warm color palettes that feel like home
+- **Best for**: Most residential listings
+
+#### Sellers
+
+- Maximize perceived value and space utilization
+- Broad market appeal with neutral choices
+- Highlight property's best architectural features
+- **Best for**: Preparing properties for market
+
+#### Investors
+
+- Demonstrate rental potential and ROI factors
+- Durable, low-maintenance furniture choices
+- Practical layouts emphasizing functionality
+- **Best for**: Investment properties, rental units
+
+#### Renters
+
+- Aspirational lifestyle appeal
+- Flexible living arrangements
+- Comfort and convenience features
+- **Best for**: Rental marketing materials
+
+### Step 3: Choose Furniture Style
+
+Select a style that matches the property's aesthetic and target audience:
 
 #### Modern
 
@@ -100,7 +132,7 @@ Select a style that matches the property's aesthetic:
 - Versatile design
 - **Best for**: Most residential properties
 
-### Step 3: Review and Adjust
+### Step 4: Review and Adjust
 
 After AI generates the staging:
 
@@ -111,8 +143,9 @@ After AI generates the staging:
 If results aren't perfect:
 
 - Click **Regenerate** to try again
-- Try a different style
+- Try a different target audience or style
 - Ensure room type is correct
+- Consider if the audience matches your marketing goals
 
 ## Before/After Examples
 
@@ -166,10 +199,11 @@ If results aren't perfect:
 ### Do's ✅
 
 - **Match the property's price point** - Luxury staging for luxury homes
+- **Select the right target audience** - Buyers vs. investors need different approaches
 - **Consider the target buyer** - Family furniture for family homes
 - **Keep it realistic** - Don't over-furnish small spaces
-- **Maintain consistency** - Use similar styles across all rooms
-- **Show functionality** - Help buyers understand room purpose
+- **Maintain consistency** - Use similar styles and audience focus across all rooms
+- **Show functionality** - Help your target audience understand room purpose
 
 ### Don'ts ❌
 

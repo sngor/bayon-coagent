@@ -367,15 +367,14 @@ export default function ProfilePage() {
 
         try {
             // Create FormData for the server action
-            const formData = new FormData();
-            formData.append('name', profile.name);
-            formData.append('experience', profile.yearsOfExperience?.toString() || '');
-            formData.append('certifications', Array.isArray(profile.certifications)
-                ? profile.certifications.join(', ')
-                : profile.certifications || '');
-            formData.append('agencyName', profile.agencyName);
-
-            const result = await generateBioAction(null, formData);
+            const result = await generateBioAction({
+                name: profile.name,
+                experience: profile.yearsOfExperience?.toString() || '',
+                certifications: Array.isArray(profile.certifications)
+                    ? profile.certifications.join(', ')
+                    : profile.certifications || '',
+                agencyName: profile.agencyName,
+            });
 
             if (result.message === 'success' && result.data) {
                 updateProfile({ bio: result.data as string });
