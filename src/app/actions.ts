@@ -494,13 +494,13 @@ const bioSchema = z.object({
     .min(1, 'Your agency name must be set in your profile.'),
 });
 
-export async function generateBioAction(prevState: any, formData: FormData) {
-  const validatedFields = bioSchema.safeParse({
-    name: formData.get('name'),
-    experience: formData.get('experience'),
-    certifications: formData.get('certifications'),
-    agencyName: formData.get('agencyName'),
-  });
+export async function generateBioAction(input: {
+  name: string;
+  experience?: string;
+  certifications?: string;
+  agencyName: string;
+}) {
+  const validatedFields = bioSchema.safeParse(input);
 
   if (!validatedFields.success) {
     const errorMessage =

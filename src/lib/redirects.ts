@@ -47,6 +47,9 @@ export const REDIRECT_MAP: Record<string, string> = {
 
   // Training (removed from main nav)
   '/training-hub': '/training',
+
+  // Learning Hub consolidation
+  '/learning/practice': '/learning/role-play',
 };
 
 /**

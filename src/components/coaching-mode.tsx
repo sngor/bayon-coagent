@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useGeminiLive } from '../hooks/use-gemini-live';
 import { getGeminiApiKeyAction } from '@/app/actions';
 import { Mic, MicOff, Volume2, Loader2, Lightbulb, Target, TrendingUp, Sparkles } from 'lucide-react';
-import type { RolePlayScenario } from '@/lib/constants/training-data';
+import type { RolePlayScenario } from '@/lib/constants/learning-data';
 
 export interface CoachingModeProps {
     scenario: RolePlayScenario;
@@ -208,7 +208,7 @@ export function CoachingMode({ scenario, onEnd }: CoachingModeProps) {
         if (!apiKey || isConnected) return;
 
         const initializeConnection = async () => {
-            const systemInstruction = `You are a dual-role AI coach for real estate training:
+            const systemInstruction = `You are a dual-role AI coach for real estate learning:
 
 **PRIMARY ROLE - Client Persona (${scenario.persona.name}):**
 ${scenario.persona.background}
@@ -255,7 +255,7 @@ Begin the conversation by introducing yourself and presenting your first concern
 
             try {
                 await connect(apiKey, {
-                    model: 'models/gemini-2.5-flash-native-audio-preview-09-2025',
+                    model: 'models/gemini-2.5-flash-native-audio-preview-12-2025',
                     systemInstruction,
                     responseModalities: ['AUDIO'],
                     voiceName: getVoiceForGender(scenario.persona.gender),

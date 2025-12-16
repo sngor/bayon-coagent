@@ -1,0 +1,580 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Bayon CoAgent - Real-Time Communication & Collaboration Services
+
+Parameters:
+  Environment:
+    Type: String
+    Default: development
+    AllowedValues:
+      - development
+      - production
+    Description: Environment name
+
+  DynamoDBTableName:
+    Type: String
+    Description: Main DynamoDB table name
+    Default: !Sub BayonCoAgent-${Environment}
+
+Conditions:
+  IsProduction: !Equals
+    - !Ref Environment
+    - production
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 1024
+    Runtime: nodejs22.x
+    Tracing: Active
+    Environment:
+      Variables:
+        NODE_ENV: !Ref Environment
+        DYNAMODB_TABLE: !Ref DynamoDBTableName
+        WEBSOCKET_API_ENDPOINT: !Sub wss://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+        XRAY_TRACING_ENABLED: 'true'
+
+Resources:
+  # ==========================================
+  # WebSocket API Gateway
+  # ==========================================
+  WebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub bayon-coagent-websocket-${Environment}
+      Description: !Sub Bayon CoAgent WebSocket API for real-time communication (${Environment})
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: $request.body.action
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: RealtimeComm
+
+  # WebSocket Routes
+  ConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $connect
+      AuthorizationType: NONE
+      Target: !Sub integrations/${ConnectIntegration}
+
+  DisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $disconnect
+      AuthorizationType: NONE
+      Target: !Sub integrations/${DisconnectIntegration}
+
+  DefaultRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $default
+      AuthorizationType: NONE
+      Target: !Sub integrations/${DefaultIntegration}
+
+  # Message Routes
+  SendMessageRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: sendMessage
+      AuthorizationType: NONE
+      Target: !Sub integrations/${SendMessageIntegration}
+
+  JoinRoomRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: joinRoom
+      AuthorizationType: NONE
+      Target: !Sub integrations/${JoinRoomIntegration}
+
+  LeaveRoomRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: leaveRoom
+      AuthorizationType: NONE
+      Target: !Sub integrations/${LeaveRoomIntegration}
+
+  UpdateStatusRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: updateStatus
+      AuthorizationType: NONE
+      Target: !Sub integrations/${UpdateStatusIntegration}
+
+  # WebSocket Integrations
+  ConnectIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketConnectFunction.Arn}/invocations
+
+  DisconnectIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketDisconnectFunction.Arn}/invocations
+
+  DefaultIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketDefaultFunction.Arn}/invocations
+
+  SendMessageIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ChatMessageFunction.Arn}/invocations
+
+  JoinRoomIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RoomManagementFunction.Arn}/invocations
+
+  LeaveRoomIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RoomManagementFunction.Arn}/invocations
+
+  UpdateStatusIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LiveUpdatesFunction.Arn}/invocations
+
+  # WebSocket Deployment
+  WebSocketDeployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    DependsOn:
+      - ConnectRoute
+      - DisconnectRoute
+      - DefaultRoute
+      - SendMessageRoute
+      - JoinRoomRoute
+      - LeaveRoomRoute
+      - UpdateStatusRoute
+    Properties:
+      ApiId: !Ref WebSocketApi
+      Description: !Sub WebSocket deployment for ${Environment}
+
+  WebSocketStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref WebSocketApi
+      DeploymentId: !Ref WebSocketDeployment
+      StageName: !Ref Environment
+      Description: !Sub WebSocket stage for ${Environment}
+      DefaultRouteSettings:
+        ThrottlingRateLimit: !If
+          - IsProduction
+          - 1000
+          - 100
+        ThrottlingBurstLimit: !If
+          - IsProduction
+          - 2000
+          - 200
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+
+  # ==========================================
+  # Lambda Functions
+  # ==========================================
+
+  # WebSocket Connection Management
+  WebSocketConnectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-websocket-connect-${Environment}
+      CodeUri: src/lambda/realtime/
+      Handler: websocket-connect.handler
+      Role: !GetAtt RealtimeServiceRole.Arn
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: RealtimeComm
+        Function: WebSocketConnect
+
+  WebSocketDisconnectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-websocket-disconnect-${Environment}
+      CodeUri: src/lambda/realtime/
+      Handler: websocket-disconnect.handler
+      Role: !GetAtt RealtimeServiceRole.Arn
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: RealtimeComm
+        Function: WebSocketDisconnect
+
+  WebSocketDefaultFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-websocket-default-${Environment}
+      CodeUri: src/lambda/realtime/
+      Handler: websocket-default.handler
+      Role: !GetAtt RealtimeServiceRole.Arn
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: RealtimeComm
+        Function: WebSocketDefault
+
+  # Chat/Messaging Service
+  ChatMessageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-chat-message-${Environment}
+      CodeUri: src/lambda/realtime/
+      Handler: chat-message.handler
+      Role: !GetAtt RealtimeServiceRole.Arn
+      Environment:
+        Variables:
+          CHAT_HISTORY_TTL: !If
+            - IsProduction
+            - '2592000'
+            - '604800'
+            # 30 days prod, 7 days dev
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: RealtimeComm
+        Function: ChatMessage
+
+  # Room Management Service
+  RoomManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-room-management-${Environment}
+      CodeUri: src/lambda/realtime/
+      Handler: room-management.handler
+      Role: !GetAtt RealtimeServiceRole.Arn
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: RealtimeComm
+        Function: RoomManagement
+
+  # Live Updates Service
+  LiveUpdatesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-live-updates-${Environment}
+      CodeUri: src/lambda/realtime/
+      Handler: live-updates.handler
+      Role: !GetAtt RealtimeServiceRole.Arn
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: RealtimeComm
+        Function: LiveUpdates
+
+  # Notification Broadcasting Service
+  NotificationBroadcastFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-notification-broadcast-${Environment}
+      CodeUri: src/lambda/realtime/
+      Handler: notification-broadcast.handler
+      Role: !GetAtt RealtimeServiceRole.Arn
+      Events:
+        DynamoDBStream:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt RealtimeConnectionsTable.StreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 10
+            MaximumBatchingWindowInSeconds: 5
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: RealtimeComm
+        Function: NotificationBroadcast
+
+  # ==========================================
+  # DynamoDB Tables for Real-time Services
+  # ==========================================
+
+  # WebSocket Connections Table
+  RealtimeConnectionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub BayonCoAgent-RealtimeConnections-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      TimeToLiveSpecification:
+        AttributeName: TTL
+        Enabled: true
+      AttributeDefinitions:
+        - AttributeName: connectionId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: roomId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: connectionId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: UserIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: RoomIndex
+          KeySchema:
+            - AttributeName: roomId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Service
+          Value: RealtimeComm
+
+  # Chat Messages Table
+  ChatMessagesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub BayonCoAgent-ChatMessages-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: TTL
+        Enabled: true
+      AttributeDefinitions:
+        - AttributeName: roomId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: 'N'
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: roomId
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: UserIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+            - AttributeName: timestamp
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Service
+          Value: RealtimeComm
+
+  # Live Status Updates Table
+  LiveStatusTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub BayonCoAgent-LiveStatus-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: TTL
+        Enabled: true
+      AttributeDefinitions:
+        - AttributeName: resourceId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: resourceId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: UserIndex
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Service
+          Value: RealtimeComm
+
+  # ==========================================
+  # IAM Roles and Permissions
+  # ==========================================
+
+  RealtimeServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub bayon-coagent-realtime-service-${Environment}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:BatchGetItem
+                  - dynamodb:BatchWriteItem
+                Resource:
+                  - !GetAtt RealtimeConnectionsTable.Arn
+                  - !Sub ${RealtimeConnectionsTable.Arn}/index/*
+                  - !GetAtt ChatMessagesTable.Arn
+                  - !Sub ${ChatMessagesTable.Arn}/index/*
+                  - !GetAtt LiveStatusTable.Arn
+                  - !Sub ${LiveStatusTable.Arn}/index/*
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBTableName}
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBTableName}/index/*
+        - PolicyName: WebSocketApiAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - execute-api:ManageConnections
+                Resource: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*
+        - PolicyName: DynamoDBStreamAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:DescribeStream
+                  - dynamodb:GetRecords
+                  - dynamodb:GetShardIterator
+                  - dynamodb:ListStreams
+                Resource: !GetAtt RealtimeConnectionsTable.StreamArn
+
+  # Lambda Permissions for WebSocket API Gateway
+  WebSocketConnectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref WebSocketConnectFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*
+
+  WebSocketDisconnectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref WebSocketDisconnectFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*
+
+  WebSocketDefaultPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref WebSocketDefaultFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*
+
+  ChatMessagePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ChatMessageFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*
+
+  RoomManagementPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref RoomManagementFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*
+
+  LiveUpdatesPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LiveUpdatesFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*
+
+  # ==========================================
+  # CloudWatch Log Groups
+  # ==========================================
+
+  WebSocketLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/apigateway/bayon-coagent-websocket-${Environment}
+      RetentionInDays: !If
+        - IsProduction
+        - 30
+        - 7
+
+Outputs:
+  WebSocketApiId:
+    Description: WebSocket API Gateway ID
+    Value: !Ref WebSocketApi
+    Export:
+      Name: !Sub ${AWS::StackName}-WebSocketApiId
+
+  WebSocketApiEndpoint:
+    Description: WebSocket API Gateway endpoint
+    Value: !Sub wss://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+    Export:
+      Name: !Sub ${AWS::StackName}-WebSocketApiEndpoint
+
+  RealtimeConnectionsTableName:
+    Description: Real-time connections table name
+    Value: !Ref RealtimeConnectionsTable
+    Export:
+      Name: !Sub ${AWS::StackName}-RealtimeConnectionsTable
+
+  ChatMessagesTableName:
+    Description: Chat messages table name
+    Value: !Ref ChatMessagesTable
+    Export:
+      Name: !Sub ${AWS::StackName}-ChatMessagesTable
+
+  LiveStatusTableName:
+    Description: Live status table name
+    Value: !Ref LiveStatusTable
+    Export:
+      Name: !Sub ${AWS::StackName}-LiveStatusTable

@@ -128,7 +128,7 @@ export default function SupportPage() {
             {/* Quick Help Cards */}
             <div className="grid md:grid-cols-4 gap-4">
                 <Card className="hover:shadow-lg transition-all hover:border-primary/50 cursor-pointer group">
-                    <Link href="/training-hub">
+                    <Link href="/learning">
                         <CardHeader className="pb-3">
                             <div className="flex items-center justify-between">
                                 <Book className="h-8 w-8 text-primary" />
@@ -141,7 +141,7 @@ export default function SupportPage() {
                 </Card>
 
                 <Card className="hover:shadow-lg transition-all hover:border-primary/50 cursor-pointer group">
-                    <Link href="/training-hub">
+                    <Link href="/learning">
                         <CardHeader className="pb-3">
                             <div className="flex items-center justify-between">
                                 <Video className="h-8 w-8 text-primary" />
@@ -660,10 +660,10 @@ export default function SupportPage() {
                                 Email Support
                             </Button>
                         </a>
-                        <Link href="/training-hub">
+                        <Link href="/learning">
                             <Button size="lg" variant="outline" className="w-full sm:w-auto">
                                 <Book className="h-5 w-5 mr-2" />
-                                View Training Hub
+                                View Learning Hub
                             </Button>
                         </Link>
                     </div>
@@ -690,8 +690,8 @@ export default function SupportPage() {
                             <span className="group-hover:text-primary transition-colors">Terms of Service</span>
                             <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                         </Link>
-                        <Link href="/training-hub" className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors group">
-                            <span className="group-hover:text-primary transition-colors">Training Hub</span>
+                        <Link href="/learning" className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors group">
+                            <span className="group-hover:text-primary transition-colors">Learning Hub</span>
                             <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                         </Link>
                         <Link href="/settings" className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors group">

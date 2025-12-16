@@ -156,7 +156,7 @@ export default function TermsOfServicePage() {
                                             "Generate content for your business",
                                             "Conduct research and analysis",
                                             "Manage your professional brand",
-                                            "Access training and resources"
+                                            "Access learning and resources"
                                         ].map((item, i) => (
                                             <li key={i} className="flex items-start gap-2">
                                                 <span className="text-green-600 dark:text-green-400">✓</span>

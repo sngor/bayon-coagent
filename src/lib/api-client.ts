@@ -23,19 +23,61 @@ interface ApiResponse<T = any> {
     correlationId?: string;
 }
 
+// Service configuration type for better type safety
+interface ServiceConfig {
+    baseUrl: string;
+    timeout?: number;
+    retries?: number;
+}
+
+// Centralized service endpoints
+const SERVICE_ENDPOINTS = {
+    ai: {
+        content: '',
+        research: '/research',
+        brand: '', // Fixed: was '/brand', should be '' to match other services
+    },
+    studio: {
+        base: '',
+    },
+    integration: {
+        oauth: '/oauth',
+        files: '/files',
+    },
+} as const;
+
 class ApiClient {
-    private baseUrls: Record<string, string>;
+    private services: Record<string, ServiceConfig>;
 
     constructor() {
-        // Use proxy for development to avoid CORS issues
         const isDevelopment = process.env.NODE_ENV === 'development';
 
-        this.baseUrls = {
-            ai: isDevelopment ? '/api/proxy/ai' : (process.env.NEXT_PUBLIC_AI_SERVICE_API_URL || ''),
-            studio: isDevelopment ? '/api/proxy/ai/studio' : (process.env.NEXT_PUBLIC_AI_SERVICE_API_URL || ''),
-            integration: process.env.NEXT_PUBLIC_INTEGRATION_SERVICE_API_URL || '',
-            background: process.env.NEXT_PUBLIC_BACKGROUND_SERVICE_API_URL || '',
-            admin: process.env.NEXT_PUBLIC_ADMIN_SERVICE_API_URL || '',
+        this.services = {
+            ai: {
+                baseUrl: isDevelopment ? '/api/proxy/ai' : (process.env.NEXT_PUBLIC_AI_SERVICE_API_URL || ''),
+                timeout: 30000,
+                retries: 2,
+            },
+            studio: {
+                baseUrl: isDevelopment ? '/api/proxy/ai/studio' : (process.env.NEXT_PUBLIC_AI_SERVICE_API_URL || ''),
+                timeout: 45000, // Longer timeout for content generation
+                retries: 1,
+            },
+            integration: {
+                baseUrl: process.env.NEXT_PUBLIC_INTEGRATION_SERVICE_API_URL || '',
+                timeout: 15000,
+                retries: 3,
+            },
+            background: {
+                baseUrl: process.env.NEXT_PUBLIC_BACKGROUND_SERVICE_API_URL || '',
+                timeout: 60000, // Longer for background tasks
+                retries: 1,
+            },
+            admin: {
+                baseUrl: process.env.NEXT_PUBLIC_ADMIN_SERVICE_API_URL || '',
+                timeout: 20000,
+                retries: 2,
+            },
         };
     }
 
@@ -59,57 +101,70 @@ class ApiClient {
     }
 
     private async makeRequest<T>(
-        service: keyof typeof this.baseUrls,
+        service: keyof typeof this.services,
         endpoint: string,
         options: RequestInit = {}
     ): Promise<ApiResponse<T>> {
-        const baseUrl = this.baseUrls[service];
-        if (!baseUrl) {
+        const serviceConfig = this.services[service];
+        if (!serviceConfig?.baseUrl) {
             throw new Error(`API URL not configured for service: ${service}`);
         }
 
-        const url = `${baseUrl}${endpoint}`;
-        console.log(`Making API request to: ${url}`);
-
+        const url = `${serviceConfig.baseUrl}${endpoint}`;
         const headers = await this.getAuthHeaders();
 
-        try {
-            const response = await fetch(url, {
-                ...options,
-                headers: {
-                    ...headers,
-                    ...options.headers,
-                },
-            });
+        // Implement retry logic with exponential backoff
+        let lastError: Error;
+        const maxRetries = serviceConfig.retries || 1;
 
-            console.log(`Response status: ${response.status}`);
-            console.log(`Response headers:`, Object.fromEntries(response.headers.entries()));
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), serviceConfig.timeout || 30000);
 
-            // Check if response is JSON
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                const text = await response.text();
-                console.error('Non-JSON response received:', text);
-                throw new Error(`Expected JSON response but got ${contentType}. Response: ${text.substring(0, 200)}...`);
+                const response = await fetch(url, {
+                    ...options,
+                    headers: {
+                        ...headers,
+                        ...options.headers,
+                    },
+                    signal: controller.signal,
+                });
+
+                clearTimeout(timeoutId);
+
+                // Validate response content type
+                const contentType = response.headers.get('content-type');
+                if (!contentType?.includes('application/json')) {
+                    const text = await response.text();
+                    throw new Error(`Expected JSON response but got ${contentType}. Response: ${text.substring(0, 200)}...`);
+                }
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                return data;
+            } catch (error: any) {
+                lastError = error;
+
+                // Don't retry on client errors (4xx) or abort errors
+                if (error.name === 'AbortError' || (error.message.includes('HTTP 4'))) {
+                    break;
+                }
+
+                // Exponential backoff for retries
+                if (attempt < maxRetries) {
+                    const delay = Math.min(1000 * Math.pow(2, attempt), 5000);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
             }
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                console.error('API error response:', data);
-                throw new Error(data.error?.message || `HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            return data;
-        } catch (error: any) {
-            console.error(`API request failed: ${url}`, error);
-            console.error('Error details:', {
-                message: error.message,
-                name: error.name,
-                stack: error.stack
-            });
-            throw error;
         }
+
+        console.error(`API request failed after ${maxRetries + 1} attempts: ${url}`, lastError);
+        throw lastError;
     }
 
     // ==========================================
@@ -131,7 +186,7 @@ class ApiClient {
     }
 
     async analyzeBrand(type: string, input: any) {
-        return this.makeRequest('ai', '/brand', {
+        return this.makeRequest('ai', '', {
             method: 'POST',
             body: JSON.stringify({ type, input }),
         });

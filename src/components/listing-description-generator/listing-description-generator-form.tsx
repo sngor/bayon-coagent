@@ -30,6 +30,7 @@ import { TemplateSaveModal } from '@/components/template-save-modal';
 import { ContentCategory, TemplateConfiguration } from '@/lib/content-workflow-types';
 import { ProjectSelector } from '@/components/project-selector';
 import { saveContentAction } from '@/app/actions';
+import { SaveToLibraryDialog } from '@/components/studio/save-to-library-dialog';
 import {
   generateNewListingDescription,
   optimizeListingDescription,
@@ -64,9 +65,6 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showTemplateSaveModal, setShowTemplateSaveModal] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveProjectId, setSaveProjectId] = useState<string | null>(null);
-  const [saveName, setSaveName] = useState('');
   const [templateConfiguration, setTemplateConfiguration] = useState<TemplateConfiguration>({
     promptParameters: {},
     contentStructure: { sections: [], format: 'listing' },
@@ -258,49 +256,6 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
       return;
     }
     setShowSaveDialog(true);
-  };
-
-  const handleSaveConfirm = async () => {
-    if (!user || !generation) {
-      toast({
-        variant: 'destructive',
-        title: 'Could not save',
-        description: 'Content or user is missing.',
-      });
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const result = await saveContentAction(
-        user.id,
-        generation,
-        'Listing Description',
-        saveName || 'Listing Description',
-        saveProjectId
-      );
-
-      if (result.message === 'Content saved successfully') {
-        toast({
-          title: '✨ Content Saved!',
-          description: 'Your listing description has been saved to your Library.',
-        });
-        setShowSaveDialog(false);
-        setSaveName('');
-        setSaveProjectId(null);
-      } else {
-        throw new Error(result.errors?.[0] || 'Save failed');
-      }
-    } catch (error) {
-      console.error('Failed to save content:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Save Failed',
-        description: 'Could not save content.',
-      });
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   const handleSaveAsTemplate = () => {
@@ -778,50 +733,19 @@ export function ListingDescriptionGeneratorForm({ isOptimizeMode = false }: List
         previewContent={generation}
       />
 
-      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Save Listing Description</DialogTitle>
-            <DialogDescription>
-              Name your listing description and assign it to a project.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <StandardFormField label="Content Name (Optional)" id="saveName">
-              <Input
-                id="saveName"
-                value={saveName}
-                onChange={(e) => setSaveName(e.target.value)}
-                placeholder="e.g., Downtown Condo Listing"
-              />
-            </StandardFormField>
-            <ProjectSelector
-              value={saveProjectId}
-              onChange={setSaveProjectId}
-              label="Project"
-              placeholder="Select a project (optional)"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowSaveDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveConfirm} disabled={isSaving}>
-              {isSaving ? (
-                <>
-                  <span className="mr-2 h-4 w-4 animate-spin">⏳</span>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SaveToLibraryDialog
+        isOpen={showSaveDialog}
+        onOpenChange={setShowSaveDialog}
+        content={generation}
+        contentType="listing-description"
+        suggestedName={`${propertyType} Listing - ${location || 'Property'}`}
+        onSaved={(savedItem) => {
+          toast({
+            title: 'Content Saved!',
+            description: `"${savedItem.name}" has been added to your library.`,
+          });
+        }}
+      />
     </>
   );
 }

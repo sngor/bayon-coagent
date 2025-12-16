@@ -1,143 +1,187 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { StandardCard } from '@/components/standard/card';
-import { Badge } from '@/components/ui/badge';
-import { Wifi, WifiOff, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
+import { DiagnosticItem } from '@/components/ui/diagnostic-item';
+import { ErrorAlert } from '@/components/ui/error-alert';
+import { type DiagnosticStatus } from '@/components/ui/status-indicators';
+import { VoiceErrorBoundary } from '@/components/voice-error-boundary';
+import {
+    AlertTriangle,
+    Wifi,
+    Key,
+    Settings,
+    ExternalLink,
+    RefreshCw,
+    Mic,
+    type LucideIcon
+} from 'lucide-react';
+
+type ErrorType = 'microphone' | 'api-key' | 'network' | 'quota' | 'unknown' | null;
+
+interface DiagnosticItemData {
+    id: string;
+    label: string;
+    status: DiagnosticStatus;
+    message: string;
+    icon: LucideIcon;
+}
 
 interface VoiceDiagnosticsProps {
     isConnected: boolean;
     error: string | null;
     onRunDiagnostics: () => void;
+    className?: string;
+    showDevNote?: boolean;
 }
 
-export function VoiceDiagnostics({ isConnected, error, onRunDiagnostics }: VoiceDiagnosticsProps) {
-    const [networkStatus, setNetworkStatus] = useState<'online' | 'offline'>('online');
-    const [webSocketSupport, setWebSocketSupport] = useState<boolean>(true);
-    const [mediaDevicesSupport, setMediaDevicesSupport] = useState<boolean>(true);
+import { getErrorType, ERROR_SOLUTIONS } from '@/lib/voice-errors';
 
-    useEffect(() => {
-        // Check network status
-        const updateNetworkStatus = () => {
-            setNetworkStatus(navigator.onLine ? 'online' : 'offline');
+export function VoiceDiagnostics({
+    isConnected,
+    error,
+    onRunDiagnostics,
+    className,
+    showDevNote = true
+}: VoiceDiagnosticsProps) {
+    const errorType = useMemo(() => getErrorType(error) as ErrorType, [error]);
+
+    const requestMicrophonePermission = useCallback(async () => {
+        try {
+            await navigator.mediaDevices.getUserMedia({ audio: true });
+            // If successful, retry the connection
+            onRunDiagnostics();
+        } catch (err) {
+            console.error('Failed to get microphone permission:', err);
+        }
+    }, [onRunDiagnostics]);
+
+    const diagnosticItems = useMemo((): DiagnosticItemData[] => {
+        const isOnline = navigator.onLine;
+
+        // Helper function to determine status
+        const getStatus = (condition: boolean, errorCondition?: boolean): DiagnosticStatus => {
+            if (errorCondition) return 'error';
+            if (condition) return 'success';
+            return 'warning';
         };
 
-        window.addEventListener('online', updateNetworkStatus);
-        window.addEventListener('offline', updateNetworkStatus);
-        updateNetworkStatus();
+        return [
+            {
+                id: 'connection',
+                label: 'Internet Connection',
+                status: getStatus(isOnline, !isOnline),
+                message: isOnline ? 'Connected' : 'No internet connection',
+                icon: Wifi,
+            },
+            {
+                id: 'microphone',
+                label: 'Microphone Access',
+                status: getStatus(errorType !== 'microphone', errorType === 'microphone'),
+                message: errorType === 'microphone'
+                    ? 'Microphone access denied'
+                    : 'Microphone permission required',
+                icon: Mic,
+            },
+            {
+                id: 'api-key',
+                label: 'Gemini API Key',
+                status: getStatus(isConnected, errorType === 'api-key'),
+                message: errorType === 'api-key'
+                    ? 'Invalid or missing API key'
+                    : isConnected
+                        ? 'API key valid'
+                        : 'API key not verified',
+                icon: Key,
+            },
+            {
+                id: 'service',
+                label: 'Gemini Live Service',
+                status: getStatus(isConnected, !!error && !isConnected),
+                message: isConnected
+                    ? 'Connected and ready'
+                    : error
+                        ? 'Service unavailable'
+                        : 'Not connected',
+                icon: Settings,
+            },
+        ];
+    }, [isConnected, error, errorType]);
 
-        // Check WebSocket support
-        setWebSocketSupport(typeof WebSocket !== 'undefined');
 
-        // Check MediaDevices support
-        setMediaDevicesSupport(
-            typeof navigator !== 'undefined' &&
-            'mediaDevices' in navigator &&
-            'getUserMedia' in navigator.mediaDevices
-        );
-
-        return () => {
-            window.removeEventListener('online', updateNetworkStatus);
-            window.removeEventListener('offline', updateNetworkStatus);
-        };
-    }, []);
-
-    const diagnosticItems = [
-        {
-            label: 'Network Connection',
-            status: networkStatus === 'online' ? 'good' : 'error',
-            message: networkStatus === 'online' ? 'Connected' : 'No internet connection',
-            icon: networkStatus === 'online' ? CheckCircle : WifiOff,
-        },
-        {
-            label: 'WebSocket Support',
-            status: webSocketSupport ? 'good' : 'error',
-            message: webSocketSupport ? 'Supported' : 'Not supported in this browser',
-            icon: webSocketSupport ? CheckCircle : AlertCircle,
-        },
-        {
-            label: 'Microphone Access',
-            status: mediaDevicesSupport ? 'good' : 'error',
-            message: mediaDevicesSupport ? 'Available' : 'Not available',
-            icon: mediaDevicesSupport ? CheckCircle : AlertCircle,
-        },
-        {
-            label: 'Voice Service',
-            status: isConnected ? 'good' : error ? 'error' : 'warning',
-            message: isConnected ? 'Connected' : error ? 'Connection failed' : 'Disconnected',
-            icon: isConnected ? CheckCircle : error ? AlertCircle : WifiOff,
-        },
-    ];
 
     return (
-        <StandardCard
-            title={
-                <div className="flex items-center gap-2">
-                    <Wifi className="h-5 w-5 text-primary" />
-                    <span className="font-headline">Connection Diagnostics</span>
-                </div>
-            }
-        >
-            <div className="space-y-4">
-                <div className="grid grid-cols-1 gap-3">
-                    {diagnosticItems.map((item, index) => {
-                        const IconComponent = item.icon;
-                        return (
-                            <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-                                <div className="flex items-center gap-3">
-                                    <IconComponent
-                                        className={`h-4 w-4 ${item.status === 'good'
-                                                ? 'text-emerald-500'
-                                                : item.status === 'error'
-                                                    ? 'text-red-500'
-                                                    : 'text-yellow-500'
-                                            }`}
-                                    />
-                                    <div>
-                                        <p className="text-sm font-medium">{item.label}</p>
-                                        <p className="text-xs text-muted-foreground">{item.message}</p>
-                                    </div>
-                                </div>
-                                <Badge
-                                    variant={
-                                        item.status === 'good'
-                                            ? 'default'
-                                            : item.status === 'error'
-                                                ? 'destructive'
-                                                : 'secondary'
-                                    }
-                                    className="text-xs"
-                                >
-                                    {item.status === 'good' ? 'OK' : item.status === 'error' ? 'Error' : 'Warning'}
-                                </Badge>
-                            </div>
-                        );
-                    })}
-                </div>
+        <VoiceErrorBoundary>
+            <Card
+                className={`border-orange-200 dark:border-orange-800 ${className || ''}`}
+                role="region"
+                aria-label="Voice connection diagnostics"
+            >
+                <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-orange-600" aria-hidden="true" />
+                        Voice Connection Diagnostics
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    {/* Current Error */}
+                    {error && <ErrorAlert message={error} />}
 
-                {error && (
-                    <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
-                        <div className="flex items-start gap-2">
-                            <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
-                            <div>
-                                <p className="text-sm font-medium text-red-900 dark:text-red-100">Connection Error</p>
-                                <p className="text-xs text-red-700 dark:text-red-300 mt-1">{error}</p>
+                    {/* Diagnostic Items */}
+                    <div className="space-y-3">
+                        {diagnosticItems.map((item) => (
+                            <DiagnosticItem key={item.id} {...item} />
+                        ))}
+                    </div>
+
+                    {/* Solutions */}
+                    {errorType && (
+                        <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                            <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">Recommended Solutions</h4>
+                            <div className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
+                                {ERROR_SOLUTIONS[errorType].map((solution, index) => (
+                                    <p key={index}>• {solution}</p>
+                                ))}
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                <Button
-                    onClick={onRunDiagnostics}
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Run Diagnostics
-                </Button>
-            </div>
-        </StandardCard>
+                    {/* Actions */}
+                    <div className="flex flex-col gap-3">
+                        <div className="flex gap-3">
+                            {errorType === 'microphone' && (
+                                <Button onClick={requestMicrophonePermission} variant="default" className="flex-1">
+                                    <Mic className="h-4 w-4 mr-2" />
+                                    Allow Microphone
+                                </Button>
+                            )}
+                            <Button onClick={onRunDiagnostics} variant="outline" className="flex-1">
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                                Retry Connection
+                            </Button>
+                        </div>
+                        <Button
+                            variant="outline"
+                            onClick={() => window.open('https://aistudio.google.com/app/apikey', '_blank')}
+                            className="w-full"
+                        >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Get API Key
+                        </Button>
+                    </div>
+
+                    {/* Development Note */}
+                    {showDevNote && (
+                        <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800">
+                            <p className="text-xs text-muted-foreground">
+                                <strong>Note:</strong> Voice features require a valid Gemini API key with access to Gemini Live.
+                                This is expected during development if no API key is configured.
+                            </p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </VoiceErrorBoundary>
     );
 }

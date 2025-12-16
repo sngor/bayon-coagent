@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useGeminiLive } from '../hooks/use-gemini-live';
 import { getGeminiApiKeyAction } from '@/app/actions';
 import { Mic, MicOff, Volume2, VolumeX, Loader2, Sparkles, User, Lightbulb } from 'lucide-react';
-import type { RolePlayScenario } from '@/lib/constants/training-data';
+import type { RolePlayScenario } from '@/lib/constants/learning-data';
 // Note: Using string literal instead of Modality enum for compatibility
 // import { Modality } from '@google/genai';
 import { VoiceDiagnostics } from '@/components/voice-diagnostics';
@@ -108,7 +108,7 @@ Start the conversation by greeting the agent and briefly mentioning your situati
 
             try {
                 await connect(apiKey, {
-                    model: 'models/gemini-2.5-flash-native-audio-preview-09-2025',
+                    model: 'models/gemini-2.5-flash-native-audio-preview-12-2025',
                     systemInstruction,
                     responseModalities: ['AUDIO'],
                     voiceName: getVoiceForGender(scenario.persona.gender),
@@ -213,7 +213,7 @@ Stay in character throughout the conversation. Respond naturally as this persona
 Start the conversation by greeting the agent and briefly mentioning your situation.`;
 
                                         connect(apiKey, {
-                                            model: 'models/gemini-2.5-flash-native-audio-preview-09-2025',
+                                            model: 'models/gemini-2.5-flash-native-audio-preview-12-2025',
                                             systemInstruction,
                                             responseModalities: ['AUDIO'],
                                             voiceName: getVoiceForGender(scenario.persona.gender),
@@ -482,7 +482,7 @@ Stay in character throughout the conversation. Respond naturally as this persona
 Start the conversation by greeting the agent and briefly mentioning your situation.`;
 
                             connect(apiKey, {
-                                model: 'models/gemini-2.5-flash-native-audio-preview-09-2025',
+                                model: 'models/gemini-2.5-flash-native-audio-preview-12-2025',
                                 systemInstruction,
                                 responseModalities: ['AUDIO'],
                                 voiceName: getVoiceForGender(scenario.persona.gender),

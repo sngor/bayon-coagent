@@ -50,6 +50,10 @@ export enum EventSource {
     AI = 'bayon.coagent.ai',
     INTEGRATION = 'bayon.coagent.integration',
     NOTIFICATION = 'bayon.coagent.notification',
+    ALERT = 'bayon.coagent.alert',
+    AUDIT = 'bayon.coagent.audit',
+    CONFIGURATION = 'bayon.coagent.configuration',
+    HEALTH = 'bayon.coagent.health',
 }
 
 /**

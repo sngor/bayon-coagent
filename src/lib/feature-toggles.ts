@@ -73,7 +73,7 @@ export const DEFAULT_FEATURES: FeatureToggle[] = [
         category: 'hub'
     },
     {
-        id: 'training',
+        id: 'learning',
         name: 'Learning Hub',
         description: 'Learning and skill development - Lessons, AI Plan, Practice',
         icon: 'GraduationCap',

@@ -68,12 +68,21 @@ export const NAVIGATION_CONFIG: NavigationConfig = {
 
         // Research & Intelligence (Supporting content creation)
         {
-            href: '/intelligence',
+            href: '/research',
             icon: AISparkleIcon,
             filledIcon: AISparkleIcon,
             label: 'Research',
             customIcon: true,
             featureId: 'research'
+        },
+
+        // Market Intelligence (Market trends and opportunities)
+        {
+            href: '/market',
+            icon: BarChart3,
+            filledIcon: BarChart3,
+            label: 'Market',
+            featureId: 'market'
         },
 
         // Deal Analysis Tools
@@ -118,7 +127,7 @@ export const NAVIGATION_CONFIG: NavigationConfig = {
             icon: GraduationCap,
             filledIcon: GraduationCap,
             label: 'Learning',
-            featureId: 'training'
+            featureId: 'learning'
         },
     ],
     admin: [

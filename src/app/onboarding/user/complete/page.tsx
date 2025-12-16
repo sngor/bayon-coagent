@@ -119,15 +119,15 @@ export default function CompletePage() {
                 <div className="bg-muted/50 p-6 rounded-lg">
                     <h4 className="font-semibold mb-2">Need Help Getting Started?</h4>
                     <p className="text-sm text-muted-foreground mb-4">
-                        Visit our Training section for guides and tutorials, or use the Assistant for instant help.
+                        Visit our Learning section for guides and tutorials, or use the Assistant for instant help.
                     </p>
                     <div className="flex gap-2 justify-center">
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => router.push('/training')}
+                            onClick={() => router.push('/learning')}
                         >
-                            View Training
+                            View Learning
                         </Button>
                         <Button
                             variant="outline"

@@ -1,4 +1,0 @@
-{
-    "httpMethod": "POST",
-    "body": "{\"type\":\"generate-listing-description\",\"input\":{\"propertyType\":\"Single-Family Home\",\"location\":\"Seattle\",\"features\":\"Updated kitchen, hardwood floors\"}}"
-}

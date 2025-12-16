@@ -17,14 +17,14 @@ import { CheckCircle, TrendingUp, Handshake, Award, BookOpen, Clock, Target, Sta
 import { useUser } from '@/aws/auth';
 import { useQuery } from '@/aws/dynamodb/hooks';
 import type { TrainingProgress } from '@/lib/types/common';
-import { saveTrainingProgressAction } from '@/app/actions';
-import { marketingModules, closingModules, professionalExcellenceModules, allModules } from '@/lib/constants/training-data';
+import { saveLearningProgressAction } from '@/app/learning-actions';
+import { marketingModules, closingModules, professionalExcellenceModules, allModules } from '@/lib/constants/learning-data';
 import { Quiz } from '@/components/quiz';
 // Removed framer-motion to improve performance
 import { cn } from '@/lib/utils/common';
 
 
-export default function TrainingLessonsPage() {
+export default function LearningLessonsPage() {
     const { user } = useUser();
     const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined);
     const [activeTab, setActiveTab] = useState<string>('marketing');
@@ -41,25 +41,30 @@ export default function TrainingLessonsPage() {
         return new Set(progressData.filter(p => p.completed).map(p => p.id));
     }, [progressData]);
 
-    const completionPercentage = useMemo(() => {
-        if (completedModules.size === 0) return 0;
-        return (completedModules.size / allModules.length) * 100;
-    }, [completedModules, allModules.length]);
+    // Memoize progress calculations with proper dependencies
+    const progressStats = useMemo(() => {
+        const marketingCompleted = marketingModules.filter(m => completedModules.has(m.id)).length;
+        const closingCompleted = closingModules.filter(m => completedModules.has(m.id)).length;
+        const professionalCompleted = professionalExcellenceModules.filter(m => completedModules.has(m.id)).length;
 
-    const marketingCompletionPercentage = useMemo(() => {
-        const completed = marketingModules.filter(m => completedModules.has(m.id)).length;
-        return (completed / marketingModules.length) * 100;
-    }, [completedModules]);
+        const totalCompleted = completedModules.size;
+        const totalModules = allModules.length;
 
-    const closingCompletionPercentage = useMemo(() => {
-        const completed = closingModules.filter(m => completedModules.has(m.id)).length;
-        return (completed / closingModules.length) * 100;
-    }, [completedModules]);
+        return {
+            overall: totalModules > 0 ? (totalCompleted / totalModules) * 100 : 0,
+            marketing: marketingModules.length > 0 ? (marketingCompleted / marketingModules.length) * 100 : 0,
+            closing: closingModules.length > 0 ? (closingCompleted / closingModules.length) * 100 : 0,
+            professional: professionalExcellenceModules.length > 0 ? (professionalCompleted / professionalExcellenceModules.length) * 100 : 0,
+            marketingCompleted,
+            closingCompleted,
+            professionalCompleted,
+        };
+    }, [completedModules, marketingModules.length, closingModules.length, professionalExcellenceModules.length, allModules.length]);
 
-    const professionalCompletionPercentage = useMemo(() => {
-        const completed = professionalExcellenceModules.filter(m => completedModules.has(m.id)).length;
-        return (completed / professionalExcellenceModules.length) * 100;
-    }, [completedModules]);
+    // Extract individual percentages for cleaner code
+    const marketingCompletionPercentage = progressStats.marketing;
+    const closingCompletionPercentage = progressStats.closing;
+    const professionalCompletionPercentage = progressStats.professional;
 
     // Auto-open first incomplete module when data loads
     const firstIncompleteModule = useMemo(() => {
@@ -85,7 +90,7 @@ export default function TrainingLessonsPage() {
     // Keyboard navigation
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.ctrlKey || e.metaCmd) {
+            if (e.ctrlKey || e.metaKey) {
                 switch (e.key) {
                     case '1':
                         e.preventDefault();
@@ -110,9 +115,9 @@ export default function TrainingLessonsPage() {
     const handleQuizComplete = async (moduleId: string) => {
         if (!user) return;
         try {
-            await saveTrainingProgressAction(moduleId, true);
+            await saveLearningProgressAction(moduleId, true);
         } catch (error) {
-            console.error('Failed to save training progress:', error);
+            console.error('Failed to save learning progress:', error);
             // Could add toast notification here for better UX
             return;
         }
@@ -305,7 +310,7 @@ export default function TrainingLessonsPage() {
                                         <CardDescription className="text-base">
                                             {completedModules.size === allModules.length
                                                 ? "🎉 Congratulations! You've mastered all modules!"
-                                                : `${allModules.length - completedModules.size} modules remaining to complete your training`}
+                                                : `${allModules.length - completedModules.size} modules remaining to complete your learning journey`}
                                         </CardDescription>
                                     </div>
                                 </div>
@@ -347,15 +352,15 @@ export default function TrainingLessonsPage() {
                                     Overall Progress
                                 </span>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-2xl font-bold text-primary">{Math.round(completionPercentage)}%</span>
+                                    <span className="text-2xl font-bold text-primary">{Math.round(progressStats.overall)}%</span>
                                     <span className="text-sm text-muted-foreground">complete</span>
                                 </div>
                             </div>
                             <div className="relative">
-                                <Progress value={completionPercentage} className="h-4 bg-secondary/50" />
+                                <Progress value={progressStats.overall} className="h-4 bg-secondary/50" />
                                 <div
                                     className="absolute inset-0 h-4 rounded-full bg-gradient-to-r from-primary/20 to-transparent transition-all duration-1000 ease-out"
-                                    style={{ width: `${completionPercentage}%` }}
+                                    style={{ width: `${progressStats.overall}%` }}
                                 />
                             </div>
                         </div>

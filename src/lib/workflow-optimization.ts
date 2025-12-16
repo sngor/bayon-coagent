@@ -341,7 +341,7 @@ export function detectIfStuck(
       type: 'tutorial',
       action: {
         label: 'View Tutorial',
-        href: `/training-hub?topic=${currentFeature}`,
+        href: `/learning?topic=${currentFeature}`,
       },
     });
 
@@ -417,8 +417,8 @@ export function detectIfStuck(
       description: 'Browse all tutorials and guides',
       type: 'tutorial',
       action: {
-        label: 'Training Hub',
-        href: '/training-hub',
+        label: 'Learning Hub',
+        href: '/learning',
       },
     });
   }
@@ -495,7 +495,7 @@ export function getComplexTaskGuidance(taskId: string): ComplexTaskGuidance | nu
           ],
           completed: false,
           estimatedTime: '5 minutes',
-          helpLink: '/training-hub?topic=writing-bio',
+          helpLink: '/learning?topic=writing-bio',
         },
         {
           id: 'social-links',
@@ -538,7 +538,7 @@ export function getComplexTaskGuidance(taskId: string): ComplexTaskGuidance | nu
           ],
           completed: false,
           estimatedTime: '3 minutes',
-          helpLink: '/training-hub?topic=brand-audit',
+          helpLink: '/learning?topic=brand-audit',
         },
         {
           id: 'analyze-competitors',
@@ -572,7 +572,7 @@ export function getComplexTaskGuidance(taskId: string): ComplexTaskGuidance | nu
           ],
           completed: false,
           estimatedTime: '2 minutes',
-          helpLink: '/training-hub?topic=marketing-plan',
+          helpLink: '/learning?topic=marketing-plan',
         },
       ],
     },
@@ -751,7 +751,7 @@ function getEfficiencySuggestions(currentFeature: string): WorkflowOptimization[
         impact: 'medium',
         action: {
           label: 'Learn How',
-          href: '/training-hub?topic=batch-content',
+          href: '/learning?topic=batch-content',
         },
       },
       {

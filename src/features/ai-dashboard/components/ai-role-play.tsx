@@ -20,7 +20,7 @@ import {
     sendRolePlayMessageAction,
     endRolePlayAction,
 } from '@/app/actions';
-import { rolePlayScenarios, type RolePlayScenario } from '@/lib/constants/training-data';
+import { rolePlayScenarios, type RolePlayScenario } from '@/lib/constants/learning-data';
 import type { RolePlayMessage } from '@/aws/bedrock/flows/role-play-flow';
 import { VoiceRolePlay } from '@/components/voice-role-play';
 import { CoachingMode } from '@/components/coaching-mode';
@@ -424,8 +424,8 @@ export function AIRolePlay({ moduleId, className }: AIRolePlayProps = {}) {
                             setMessages([]);
                             setFeedback(null);
                             setSessionStartTime(null);
-                            // Navigate back to the main practice page
-                            router.push('/learning/practice');
+                            // Navigate back to the main role-play page
+                            router.push('/learning/role-play');
                         }}
                     />
                 ) : (
@@ -436,8 +436,8 @@ export function AIRolePlay({ moduleId, className }: AIRolePlayProps = {}) {
                             setMessages([]);
                             setFeedback(null);
                             setSessionStartTime(null);
-                            // Navigate back to the main practice page
-                            router.push('/learning/practice');
+                            // Navigate back to the main role-play page
+                            router.push('/learning/role-play');
                         }}
                     />
                 )
@@ -475,12 +475,12 @@ export function AIRolePlay({ moduleId, className }: AIRolePlayProps = {}) {
                             </Button>
                             <Button
                                 onClick={() => {
-                                    // Navigate back to the main practice page
-                                    router.push('/learning/practice');
+                                    // Navigate back to the main role-play page
+                                    router.push('/learning/role-play');
                                 }}
                                 className="flex-1"
                             >
-                                Back to Practice
+                                Back to Role-Play
                             </Button>
                         </div>
                     </div>

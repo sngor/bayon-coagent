@@ -12,30 +12,34 @@
 
 // Re-export all shared component prop types
 export type { PageTransitionProps } from './page-transition';
-export type { 
-    ProfileCompletionBannerProps, 
+export type {
+    ProfileCompletionBannerProps,
     ProfileCompletionChecklistProps,
-    ProfileField 
+    ProfileField
 } from './profile-completion-banner';
-export type { 
-    SuggestedNextStepsProps, 
-    NextStep 
+export type {
+    SuggestedNextStepsProps,
+    NextStep
 } from './suggested-next-steps';
 export type { FrequentFeaturesProps } from './frequent-features';
-export type { 
-    ErrorBoundaryProps, 
+export type {
+    ErrorBoundaryProps,
     ErrorBoundaryState,
-    DefaultErrorFallbackProps 
+    DefaultErrorFallbackProps
 } from './error-boundary';
-export type { 
-    CompetitorFormProps, 
+export type {
+    CompetitorFormProps,
     CompetitorFormData,
-    EnrichState 
+    EnrichState
 } from './competitor-form';
-export type { AITrainingPlanProps } from './ai-training-plan';
-export type { 
-    QuizProps, 
-    QuizQuestion 
+export type { AILearningPlanProps } from './ai-learning-plan';
+export type {
+    ProgressHeroProps,
+    LearningErrorBoundaryProps
+} from './learning/types';
+export type {
+    QuizProps,
+    QuizQuestion
 } from './quiz';
 export type { S3FileUploadProps } from './s3-file-upload';
 export type { ProfileImageUploadProps } from './profile-image-upload';

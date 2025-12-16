@@ -31,6 +31,8 @@ import {
 
 
 import { AEOOptimizationPanel } from '@/components/aeo-optimization-panel';
+import { SaveToLibraryDialog } from '@/components/studio/save-to-library-dialog';
+import { RecentContentSidebar } from '@/components/studio/recent-content-sidebar';
 
 // Helper function to clean and format content
 function cleanAndFormatContent(content: string): string {
@@ -142,6 +144,7 @@ export default function StudioWritePage() {
     const [generatedContent, setGeneratedContent] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loadingStep, setLoadingStep] = useState(0);
+    const [showSaveDialog, setShowSaveDialog] = useState(false);
 
     const handleSubmit = async (formData: FormData, contentType: string) => {
         setIsLoading(true);
@@ -460,7 +463,7 @@ export default function StudioWritePage() {
             </Card>
 
             {/* Content Generation Forms */}
-            <div className="grid gap-6 lg:grid-cols-3">
+            <div className="grid gap-6 lg:grid-cols-4">
                 <Card className="lg:col-span-1">
                     <CardHeader>
                         <CardTitle>
@@ -1313,16 +1316,15 @@ export default function StudioWritePage() {
                                 />
 
                                 <div className="flex gap-2">
-                                    <Button onClick={() => navigator.clipboard.writeText(generatedContent)}>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => navigator.clipboard.writeText(generatedContent)}
+                                    >
                                         Copy Content
                                     </Button>
                                     <Button
-                                        onClick={() => {
-                                            toast({
-                                                title: 'Content Saved!',
-                                                description: 'Added to your library.'
-                                            });
-                                        }}
+                                        onClick={() => setShowSaveDialog(true)}
+                                        className="bg-green-600 hover:bg-green-700 text-white"
                                     >
                                         Save to Library
                                     </Button>
@@ -1340,7 +1342,26 @@ export default function StudioWritePage() {
                         )}
                     </CardContent>
                 </Card>
+
+                {/* Recent Content Sidebar */}
+                <div className="lg:col-span-1">
+                    <RecentContentSidebar />
+                </div>
             </div>
+
+            {/* Save to Library Dialog */}
+            <SaveToLibraryDialog
+                isOpen={showSaveDialog}
+                onOpenChange={setShowSaveDialog}
+                content={generatedContent}
+                contentType={activeTab as any}
+                onSaved={(savedItem) => {
+                    toast({
+                        title: 'Content Saved!',
+                        description: `"${savedItem.name}" has been added to your library.`,
+                    });
+                }}
+            />
         </div>
     );
 }

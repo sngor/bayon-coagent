@@ -1,7 +1,7 @@
 'use client';
 
-import { AITrainingPlan } from '@/features/ai-dashboard/components/ai-training-plan';
+import { AILearningPlan } from '@/features/ai-dashboard/components/ai-learning-plan';
 
-export default function AITrainingPlanPage() {
-    return <AITrainingPlan />;
+export default function AILearningPlanPage() {
+    return <AILearningPlan />;
 }

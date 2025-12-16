@@ -1,0 +1,573 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Bayon CoAgent - Microservices Infrastructure Foundation
+
+Parameters:
+  Environment:
+    Type: String
+    Default: development
+    AllowedValues:
+      - development
+      - production
+    Description: Environment name
+
+  AlarmEmail:
+    Type: String
+    Default: ""
+    Description: Email address for CloudWatch alarms (optional)
+
+Conditions:
+  IsProduction: !Equals [!Ref Environment, production]
+  HasAlarmEmail: !Not [!Equals [!Ref AlarmEmail, ""]]
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 1024
+    Runtime: nodejs22.x
+    Tracing: Active
+    Environment:
+      Variables:
+        NODE_ENV: !Ref Environment
+        DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+        EVENT_BUS_NAME: !Ref MicroservicesEventBus
+        XRAY_TRACING_ENABLED: "true"
+        XRAY_SERVICE_NAME: !Sub bayon-coagent-microservices-${Environment}
+
+Resources:
+  # ==========================================
+  # Custom EventBridge Event Bus
+  # ==========================================
+  MicroservicesEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Sub bayon-coagent-events-${Environment}
+      Description: !Sub Custom event bus for Bayon CoAgent microservices (${Environment})
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Component
+          Value: EventBridge
+
+  # Event Archive for Replay Capability
+  EventArchive:
+    Type: AWS::Events::Archive
+    Properties:
+      ArchiveName: !Sub bayon-coagent-event-archive-${Environment}
+      SourceArn: !GetAtt MicroservicesEventBus.Arn
+      Description: !Sub Event archive for replay capability (${Environment})
+      RetentionDays: !If [IsProduction, 90, 30]
+      EventPattern:
+        source:
+          - prefix: "bayon.coagent"
+
+  # Dead Letter Queue for Failed Events
+  EventBridgeDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub bayon-coagent-eventbridge-dlq-${Environment}
+      MessageRetentionPeriod: 1209600 # 14 days
+      VisibilityTimeoutSeconds: 300 # 5 minutes
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Component
+          Value: EventBridge-DLQ
+
+  # ==========================================
+  # Service Discovery Lambda Function
+  # ==========================================
+  ServiceDiscoveryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-service-discovery-${Environment}
+      CodeUri: ../src/lambda/microservices/
+      Handler: service-discovery-handler.handler
+      Description: Service discovery and registry for microservices
+      Environment:
+        Variables:
+          SERVICE_NAME: service-discovery
+          SERVICE_VERSION: "1.0.0"
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoDBTable
+        - CloudWatchPutMetricPolicy: {}
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/bayon-coagent-service-discovery-${Environment}:*
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ServiceDiscoveryApi
+            Path: /{proxy+}
+            Method: ANY
+
+  # Service Discovery API Gateway
+  ServiceDiscoveryApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub bayon-coagent-service-discovery-${Environment}
+      StageName: v1
+      Description: !Sub Service Discovery API (${Environment})
+      TracingEnabled: true
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+          DataTraceEnabled: !If [IsProduction, false, true]
+          MetricsEnabled: true
+          ThrottlingRateLimit: 100
+          ThrottlingBurstLimit: 200
+      Auth:
+        DefaultAuthorizer: AWS_IAM
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+
+  # ==========================================
+  # API Gateway for Microservices Routing
+  # ==========================================
+  MicroservicesApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub bayon-coagent-microservices-${Environment}
+      StageName: v1
+      Description: !Sub Main API Gateway for microservices routing (${Environment})
+      TracingEnabled: true
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+          DataTraceEnabled: !If [IsProduction, false, true]
+          MetricsEnabled: true
+          ThrottlingRateLimit: !If [IsProduction, 1000, 100]
+          ThrottlingBurstLimit: !If [IsProduction, 2000, 200]
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt UserPool.Arn
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: !If
+          - IsProduction
+          - "'https://bayoncoagent.app'"
+          - "'http://localhost:3000'"
+
+  # API Gateway Router Lambda Function
+  ApiGatewayRouterFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-api-router-${Environment}
+      CodeUri: ../src/lambda/microservices/
+      Handler: api-gateway-router-handler.handler
+      Description: Routes API Gateway requests to appropriate microservices
+      Environment:
+        Variables:
+          SERVICE_NAME: api-gateway-router
+          SERVICE_VERSION: "1.0.0"
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref DynamoDBTable
+        - CloudWatchPutMetricPolicy: {}
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - lambda:InvokeFunction
+              Resource: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:bayon-coagent-*-${Environment}
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MicroservicesApiGateway
+            Path: /{proxy+}
+            Method: ANY
+
+  # ==========================================
+  # Health Check Service
+  # ==========================================
+  HealthCheckFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-health-check-${Environment}
+      CodeUri: ../src/lambda/microservices/
+      Handler: health-check-handler.handler
+      Description: Health check service for microservices monitoring
+      Environment:
+        Variables:
+          SERVICE_NAME: health-check-service
+          SERVICE_VERSION: "1.0.0"
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref DynamoDBTable
+        - CloudWatchPutMetricPolicy: {}
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - lambda:InvokeFunction
+              Resource: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:bayon-coagent-*-${Environment}
+      Events:
+        ScheduledHealthCheck:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+            Description: Run health checks every 5 minutes
+            Enabled: true
+
+  # ==========================================
+  # Circuit Breaker Service
+  # ==========================================
+  CircuitBreakerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-circuit-breaker-${Environment}
+      CodeUri: ../src/lambda/microservices/
+      Handler: circuit-breaker-handler.handler
+      Description: Circuit breaker service for fault tolerance
+      Environment:
+        Variables:
+          SERVICE_NAME: circuit-breaker-service
+          SERVICE_VERSION: "1.0.0"
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoDBTable
+        - CloudWatchPutMetricPolicy: {}
+
+  # ==========================================
+  # Monitoring and Metrics Collection
+  # ==========================================
+  MetricsCollectorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-metrics-collector-${Environment}
+      CodeUri: ../src/lambda/microservices/
+      Handler: metrics-collector-handler.handler
+      Description: Collects and aggregates metrics from microservices
+      Environment:
+        Variables:
+          SERVICE_NAME: metrics-collector
+          SERVICE_VERSION: "1.0.0"
+      Policies:
+        - CloudWatchPutMetricPolicy: {}
+        - DynamoDBReadPolicy:
+            TableName: !Ref DynamoDBTable
+      Events:
+        ScheduledMetricsCollection:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 minute)
+            Description: Collect metrics every minute
+            Enabled: true
+
+  # ==========================================
+  # EventBridge Rules for Service Communication
+  # ==========================================
+
+  # Service Health Events Rule
+  ServiceHealthRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-service-health-${Environment}
+      Description: Route service health events to monitoring
+      EventBusName: !Ref MicroservicesEventBus
+      EventPattern:
+        source:
+          - "bayon.coagent.health"
+        detail-type:
+          - "Service Health Check"
+          - "Service Status Changed"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt HealthCheckFunction.Arn
+          Id: HealthCheckTarget
+          RetryPolicy:
+            MaximumRetryAttempts: 2
+            MaximumEventAge: 900
+          DeadLetterConfig:
+            Arn: !GetAtt EventBridgeDLQ.Arn
+
+  # Service Discovery Events Rule
+  ServiceDiscoveryRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-service-discovery-${Environment}
+      Description: Route service registration events
+      EventBusName: !Ref MicroservicesEventBus
+      EventPattern:
+        source:
+          - "bayon.coagent.service"
+        detail-type:
+          - "Service Registered"
+          - "Service Unregistered"
+          - "Service Heartbeat"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt ServiceDiscoveryFunction.Arn
+          Id: ServiceDiscoveryTarget
+          RetryPolicy:
+            MaximumRetryAttempts: 3
+            MaximumEventAge: 1800
+
+  # Metrics Collection Events Rule
+  MetricsCollectionRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-metrics-collection-${Environment}
+      Description: Route metrics events to collector
+      EventBusName: !Ref MicroservicesEventBus
+      EventPattern:
+        source:
+          - "bayon.coagent.metrics"
+        detail-type:
+          - "Service Metrics"
+          - "Performance Metrics"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt MetricsCollectorFunction.Arn
+          Id: MetricsCollectorTarget
+          RetryPolicy:
+            MaximumRetryAttempts: 2
+            MaximumEventAge: 3600
+
+  # ==========================================
+  # Lambda Permissions for EventBridge
+  # ==========================================
+  ServiceHealthRulePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref HealthCheckFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ServiceHealthRule.Arn
+
+  ServiceDiscoveryRulePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ServiceDiscoveryFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ServiceDiscoveryRule.Arn
+
+  MetricsCollectionRulePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref MetricsCollectorFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt MetricsCollectionRule.Arn
+
+  # ==========================================
+  # CloudWatch Dashboard
+  # ==========================================
+  MicroservicesDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub BayonCoAgent-Microservices-${Environment}
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 0,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "BayonCoAgent/Microservices", "RequestCount", "Service", "service-discovery" ],
+                  [ ".", "ErrorCount", ".", "." ],
+                  [ ".", "AverageResponseTime", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Service Discovery Metrics",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12,
+              "y": 0,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/Lambda", "Invocations", "FunctionName", "${ServiceDiscoveryFunction}" ],
+                  [ ".", "Errors", ".", "." ],
+                  [ ".", "Duration", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "Lambda Function Metrics",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 6,
+              "width": 24,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/Events", "InvocationsCount", "EventBusName", "${MicroservicesEventBus}" ],
+                  [ ".", "FailedInvocations", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "${AWS::Region}",
+                "title": "EventBridge Metrics",
+                "period": 300
+              }
+            }
+          ]
+        }
+
+  # ==========================================
+  # CloudWatch Alarms
+  # ==========================================
+  ServiceDiscoveryErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub bayon-coagent-service-discovery-errors-${Environment}
+      AlarmDescription: Service Discovery function error rate is high
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ServiceDiscoveryFunction
+      AlarmActions:
+        - !Ref AlertingTopic
+
+  EventBridgeFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub bayon-coagent-eventbridge-failures-${Environment}
+      AlarmDescription: EventBridge failed invocations are high
+      MetricName: FailedInvocations
+      Namespace: AWS/Events
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: EventBusName
+          Value: !Ref MicroservicesEventBus
+      AlarmActions:
+        - !Ref AlertingTopic
+
+  # SNS Topic for Alerts
+  AlertingTopic:
+    Type: AWS::SNS::Topic
+    Condition: HasAlarmEmail
+    Properties:
+      TopicName: !Sub bayon-coagent-microservices-alerts-${Environment}
+      DisplayName: Bayon CoAgent Microservices Alerts
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref AlarmEmail
+
+  # ==========================================
+  # IAM Roles and Policies
+  # ==========================================
+  MicroservicesExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub bayon-coagent-microservices-execution-${Environment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: MicroservicesAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource: !GetAtt DynamoDBTable.Arn
+              - Effect: Allow
+                Action:
+                  - events:PutEvents
+                Resource: !GetAtt MicroservicesEventBus.Arn
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:bayon-coagent-*-${Environment}
+              - Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricData
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/bayon-coagent-*-${Environment}:*
+
+Outputs:
+  MicroservicesEventBusName:
+    Description: Name of the custom EventBridge event bus
+    Value: !Ref MicroservicesEventBus
+    Export:
+      Name: !Sub ${AWS::StackName}-EventBusName
+
+  MicroservicesEventBusArn:
+    Description: ARN of the custom EventBridge event bus
+    Value: !GetAtt MicroservicesEventBus.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-EventBusArn
+
+  ServiceDiscoveryApiUrl:
+    Description: URL of the Service Discovery API
+    Value: !Sub https://${ServiceDiscoveryApi}.execute-api.${AWS::Region}.amazonaws.com/v1
+    Export:
+      Name: !Sub ${AWS::StackName}-ServiceDiscoveryApiUrl
+
+  MicroservicesApiUrl:
+    Description: URL of the main Microservices API Gateway
+    Value: !Sub https://${MicroservicesApiGateway}.execute-api.${AWS::Region}.amazonaws.com/v1
+    Export:
+      Name: !Sub ${AWS::StackName}-MicroservicesApiUrl
+
+  DashboardUrl:
+    Description: URL of the CloudWatch Dashboard
+    Value: !Sub https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=${MicroservicesDashboard}
+    Export:
+      Name: !Sub ${AWS::StackName}-DashboardUrl

@@ -867,7 +867,7 @@ export default function BrandAuditPage() {
                                                 : {
                                                     label: "Learn More About NAP",
                                                     onClick: () => {
-                                                        window.location.href = '/training';
+                                                        window.location.href = '/learning';
                                                     },
                                                 }
                                         }
@@ -1188,7 +1188,7 @@ export default function BrandAuditPage() {
                                                             <Button
                                                                 variant="outline"
                                                                 type="button"
-                                                                onClick={() => { window.location.href = '/training'; }}
+                                                                onClick={() => { window.location.href = '/learning'; }}
                                                             >
                                                                 Learn More About AEO
                                                             </Button>
@@ -1213,7 +1213,7 @@ export default function BrandAuditPage() {
                                                             <Button
                                                                 variant="outline"
                                                                 type="button"
-                                                                onClick={() => { window.location.href = '/training'; }}
+                                                                onClick={() => { window.location.href = '/learning'; }}
                                                             >
                                                                 Learn More About AEO
                                                             </Button>
@@ -1288,8 +1288,8 @@ export default function BrandAuditPage() {
                                                             <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
                                                             <span>
                                                                 Need help? Visit our{' '}
-                                                                <Link href="/training" className="underline font-semibold hover:text-blue-900 dark:hover:text-blue-100">
-                                                                    Training Hub
+                                                                <Link href="/learning" className="underline font-semibold hover:text-blue-900 dark:hover:text-blue-100">
+                                                                    Learning Hub
                                                                 </Link>
                                                                 {' '}for detailed guides
                                                             </span>

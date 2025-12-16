@@ -69,7 +69,7 @@ export type EntityType =
   | 'ResearchReport'
   | 'Project'
   | 'SavedContent'
-  | 'TrainingProgress'
+  | 'LearningProgress'
   | 'MarketingPlan'
   | 'ReviewAnalysis'
   | 'OAuthToken'
@@ -211,7 +211,12 @@ export type EntityType =
   | 'RetryRecord'
   | 'AlertPreferences'
   | 'BulkOperationResult'
-  | 'BulkOperationIndex';
+  | 'BulkOperationIndex'
+  | 'CourseProgress'
+  | 'TutorialProgress'
+  | 'BestPracticeBookmark'
+  | 'LearningCertificate'
+  | 'CommunityPost';
 
 /**
  * Base DynamoDB item structure

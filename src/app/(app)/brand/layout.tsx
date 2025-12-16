@@ -3,7 +3,7 @@
 import { HubLayoutWithFavorites } from '@/components/hub/hub-layout-with-favorites';
 import { FeatureGuard } from '@/components/feature-guard';
 import { EnhancedAgentIntegration } from '@/components/enhanced-agents';
-import { Target, User, Shield, Users, Zap, Calendar, MessageSquareQuote, Sparkles } from 'lucide-react';
+import { Target, User, Shield, Users, Zap, Calendar, MessageSquareQuote, Sparkles, Settings } from 'lucide-react';
 
 const brandTabs = [
     { id: 'profile', label: 'Profile', href: '/brand/profile', icon: User },
@@ -11,6 +11,7 @@ const brandTabs = [
     { id: 'ai-visibility', label: 'AI Visibility', href: '/brand/audit/ai-visibility', icon: Sparkles },
     { id: 'competitors', label: 'Competitors', href: '/brand/competitors', icon: Users },
     { id: 'strategy', label: 'Strategy', href: '/brand/strategy', icon: Zap },
+    { id: 'integrations', label: 'Integrations', href: '/brand/integrations', icon: Settings },
     { id: 'testimonials', label: 'Testimonials', href: '/brand/testimonials', icon: MessageSquareQuote },
     { id: 'calendar', label: 'Calendar', href: '/brand/calendar', icon: Calendar },
 ];
