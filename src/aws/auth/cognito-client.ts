@@ -23,13 +23,7 @@ import {
   AdminGetUserCommandOutput,
   AttributeType,
 } from '@aws-sdk/client-cognito-identity-provider';
-import { getConfig, getAWSCredentials } from '../config';
 import { UserRole } from '../dynamodb/admin-types';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
-import { config } from 'process';
 
 export interface CognitoUser {
   id: string;
@@ -64,10 +58,10 @@ export class CognitoAuthClient {
     
     const currentHostname = typeof window !== 'undefined' ? window.location.hostname : '';
     
-    // HARDCODED VALUES - NO CONFIGURATION DEPENDENCIES
+    // NEW COGNITO USER POOL - FRESH START
     const region = 'us-west-2';
-    const clientId = '1vnmp9v58opg04o480fokp0sct';
-    const userPoolId = 'us-west-2_ALOcJxQDd';
+    const clientId = '33grpfrfup7q9jkmumv77ffdce';
+    const userPoolId = 'us-west-2_wqsUAbADO';
     
     // ULTIMATE TEST - if you don't see this, the new code isn't loading
     console.log('🔥🔥🔥 ULTIMATE FIX v4.0 - NEW CODE LOADING 🔥🔥🔥');
@@ -91,13 +85,13 @@ export class CognitoAuthClient {
       COGNITO_CLIENT_ID: process.env.COGNITO_CLIENT_ID
     });
 
-    // Debug config values
-    console.log('Config Values:', {
-      configRegion: config.region,
-      configCognitoClientId: config.cognito.clientId,
-      configCognitoUserPoolId: config.cognito.userPoolId,
-      configClientCognitoClientId: config.clientCognito.clientId,
-      configClientCognitoUserPoolId: config.clientCognito.userPoolId
+    // Debug: Final hardcoded values being used
+    console.log('🔥 FINAL COGNITO CONFIG v5.0:', {
+      region,
+      clientId,
+      userPoolId,
+      buildVersion: 'v5.0-NEW-COGNITO',
+      timestamp: new Date().toISOString()
     });
 
     // OLD LOG REMOVED - this was showing us-east-1
