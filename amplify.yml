@@ -74,6 +74,11 @@ frontend:
         - export CI=true
         - export SKIP_ENV_VALIDATION=true
         - echo "Verifying critical environment variables..."
+        - echo "NODE_ENV=$NODE_ENV"
+        - echo "NEXT_PUBLIC_AWS_REGION=$NEXT_PUBLIC_AWS_REGION"
+        - echo "NEXT_PUBLIC_USER_POOL_ID=$NEXT_PUBLIC_USER_POOL_ID"
+        - echo "NEXT_PUBLIC_USER_POOL_CLIENT_ID=$NEXT_PUBLIC_USER_POOL_CLIENT_ID"
+        - echo "NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL"
         - 'echo "COGNITO_CLIENT_ID is set: $([ -n "$COGNITO_CLIENT_ID" ] && echo
           "YES" || echo "NO")"'
         - 'echo "COGNITO_USER_POOL_ID is set: $([ -n "$COGNITO_USER_POOL_ID" ]

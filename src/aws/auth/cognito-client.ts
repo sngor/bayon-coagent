@@ -57,20 +57,74 @@ export class CognitoAuthClient {
     const config = getConfig();
     const credentials = getAWSCredentials();
 
-    // Temporarily hardcode values to bypass config issues
-    const hardcodedRegion = 'us-west-2';
-    const hardcodedClientId = '1vnmp9v58opg04o480fokp0sct';
-    const hardcodedUserPoolId = 'us-west-2_ALOcJxQDd';
+    // Runtime environment detection for production
+    const currentHostname = typeof window !== 'undefined' ? window.location.hostname : '';
+    const isProduction = currentHostname === 'bayoncoagent.app' || 
+                        currentHostname.includes('amplifyapp.com') ||
+                        process.env.NODE_ENV === 'production';
+    
+    // Debug hostname detection
+    console.log('Hostname Detection:', {
+      currentHostname,
+      isProduction,
+      NODE_ENV: process.env.NODE_ENV
+    });
+    
+    // Force production values for bayoncoagent.app
+    let region, clientId, userPoolId;
+    
+    if (currentHostname === 'bayoncoagent.app' || currentHostname.includes('amplifyapp.com')) {
+      // Force production values
+      region = 'us-west-2';
+      clientId = '1vnmp9v58opg04o480fokp0sct';
+      userPoolId = 'us-west-2_ALOcJxQDd';
+      console.log('Using forced production values for', currentHostname);
+    } else {
+      // Use environment variables with fallbacks
+      region = process.env.NEXT_PUBLIC_AWS_REGION || config.region || 'us-west-2';
+      clientId = process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || config.cognito.clientId || '1vnmp9v58opg04o480fokp0sct';
+      userPoolId = process.env.NEXT_PUBLIC_USER_POOL_ID || config.cognito.userPoolId || 'us-west-2_ALOcJxQDd';
+    }
+
+    // Debug environment variables
+    console.log('Environment Variables Check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXT_PUBLIC_AWS_REGION: process.env.NEXT_PUBLIC_AWS_REGION,
+      NEXT_PUBLIC_USER_POOL_ID: process.env.NEXT_PUBLIC_USER_POOL_ID,
+      NEXT_PUBLIC_USER_POOL_CLIENT_ID: process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID,
+      AWS_REGION: process.env.AWS_REGION,
+      COGNITO_USER_POOL_ID: process.env.COGNITO_USER_POOL_ID,
+      COGNITO_CLIENT_ID: process.env.COGNITO_CLIENT_ID
+    });
+
+    // Debug config values
+    console.log('Config Values:', {
+      configRegion: config.region,
+      configCognitoClientId: config.cognito.clientId,
+      configCognitoUserPoolId: config.cognito.userPoolId,
+      configClientCognitoClientId: config.clientCognito.clientId,
+      configClientCognitoUserPoolId: config.clientCognito.userPoolId
+    });
 
     console.log('Cognito Config:', {
-      region: hardcodedRegion,
+      region: region,
       endpoint: undefined,
-      clientId: hardcodedClientId,
-      userPoolId: hardcodedUserPoolId
+      clientId: clientId,
+      userPoolId: userPoolId
+    });
+
+    // Ensure region is never undefined or empty
+    const finalRegion = region || 'us-west-2';
+    
+    console.log('Final Cognito Client Configuration:', {
+      region: finalRegion,
+      clientId: clientId,
+      userPoolId: userPoolId,
+      hasCredentials: !!(credentials.accessKeyId && credentials.secretAccessKey)
     });
 
     this.client = new CognitoIdentityProviderClient({
-      region: hardcodedRegion,
+      region: finalRegion,
       endpoint: undefined,
       credentials: credentials.accessKeyId && credentials.secretAccessKey
         ? {
@@ -80,8 +134,8 @@ export class CognitoAuthClient {
         : undefined,
     });
 
-    this.clientId = hardcodedClientId;
-    this.userPoolId = hardcodedUserPoolId;
+    this.clientId = clientId;
+    this.userPoolId = userPoolId;
   }
 
   /**
