@@ -97,12 +97,7 @@ export class CognitoAuthClient {
       configClientCognitoUserPoolId: config.clientCognito.userPoolId
     });
 
-    console.log('Cognito Config:', {
-      region: region,
-      endpoint: undefined,
-      clientId: clientId,
-      userPoolId: userPoolId
-    });
+    // OLD LOG REMOVED - this was showing us-east-1
 
     // Add global debug function for testing
     if (typeof window !== 'undefined') {
