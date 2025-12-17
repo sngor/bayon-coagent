@@ -70,20 +70,29 @@ export class CognitoAuthClient {
       NODE_ENV: process.env.NODE_ENV
     });
     
-    // Force production values for bayoncoagent.app
+    // AGGRESSIVE FIX: Always use production values for any production-like environment
     let region, clientId, userPoolId;
     
-    if (currentHostname === 'bayoncoagent.app' || currentHostname.includes('amplifyapp.com')) {
-      // Force production values
+    // Check multiple conditions for production environment
+    const isProductionDomain = currentHostname === 'bayoncoagent.app' || 
+                              currentHostname.includes('amplifyapp.com') ||
+                              currentHostname.includes('cloudfront.net');
+    
+    const isProductionEnv = process.env.NODE_ENV === 'production' ||
+                           typeof window !== 'undefined';
+    
+    if (isProductionDomain || isProductionEnv) {
+      // ALWAYS use production values - ignore environment variables for now
       region = 'us-west-2';
       clientId = '1vnmp9v58opg04o480fokp0sct';
       userPoolId = 'us-west-2_ALOcJxQDd';
-      console.log('Using forced production values for', currentHostname);
+      console.log('🔧 FORCED PRODUCTION VALUES v2.1 - hostname:', currentHostname, 'env:', process.env.NODE_ENV);
     } else {
-      // Use environment variables with fallbacks
-      region = process.env.NEXT_PUBLIC_AWS_REGION || config.region || 'us-west-2';
-      clientId = process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || config.cognito.clientId || '1vnmp9v58opg04o480fokp0sct';
-      userPoolId = process.env.NEXT_PUBLIC_USER_POOL_ID || config.cognito.userPoolId || 'us-west-2_ALOcJxQDd';
+      // Local development only
+      region = process.env.NEXT_PUBLIC_AWS_REGION || 'us-west-2';
+      clientId = process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || '1vnmp9v58opg04o480fokp0sct';
+      userPoolId = process.env.NEXT_PUBLIC_USER_POOL_ID || 'us-west-2_ALOcJxQDd';
+      console.log('🏠 LOCAL DEVELOPMENT VALUES');
     }
 
     // Debug environment variables
@@ -116,12 +125,23 @@ export class CognitoAuthClient {
     // Ensure region is never undefined or empty
     const finalRegion = region || 'us-west-2';
     
-    console.log('Final Cognito Client Configuration:', {
+    console.log('Final Cognito Client Configuration v2.1:', {
       region: finalRegion,
       clientId: clientId,
       userPoolId: userPoolId,
       hasCredentials: !!(credentials.accessKeyId && credentials.secretAccessKey)
     });
+
+    // Add global debug function for testing
+    if (typeof window !== 'undefined') {
+      (window as any).debugCognito = () => ({
+        region: finalRegion,
+        clientId: clientId,
+        userPoolId: userPoolId,
+        hostname: currentHostname,
+        timestamp: new Date().toISOString()
+      });
+    }
 
     this.client = new CognitoIdentityProviderClient({
       region: finalRegion,

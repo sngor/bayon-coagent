@@ -149,6 +149,9 @@ const nextConfig: NextConfig = {
   // Enable compression
   compress: true,
 
+  // Temporarily disable caching to ensure fresh builds
+  generateEtags: false,
+
   // Webpack optimizations for memory usage
   webpack: (config, { dev, isServer }) => {
     // Reduce memory usage during build
