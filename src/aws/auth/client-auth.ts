@@ -157,19 +157,20 @@ export class ClientAuthClient {
         const config = getConfig();
         const credentials = getAWSCredentials();
 
-        // Use separate client Cognito configuration
-        // Falls back to agent Cognito if client-specific config is not set
-        this.clientUserPoolId = config.clientCognito.userPoolId;
-        this.clientAppClientId = config.clientCognito.clientId;
-
-        // HARDCODE REGION FOR CLIENT AUTH TOO
+        // HARDCODE NEW COGNITO CREDENTIALS FOR CLIENT AUTH TOO
         const hardcodedRegion = 'us-west-2';
+        const hardcodedUserPoolId = 'us-west-2_wqsUAbADO';
+        const hardcodedClientId = '33grpfrfup7q9jkmumv77ffdce';
         
-        console.log('Client Cognito Config v3.0 HARDCODED:', {
+        this.clientUserPoolId = hardcodedUserPoolId;
+        this.clientAppClientId = hardcodedClientId;
+        
+        console.log('🔥 Client Cognito Config v4.0 - NEW CREDENTIALS:', {
             region: hardcodedRegion,
             endpoint: config.clientCognito.endpoint,
             userPoolId: this.clientUserPoolId,
             clientId: this.clientAppClientId,
+            buildVersion: 'v4.0-NEW-COGNITO'
         });
 
         this.client = new CognitoIdentityProviderClient({
