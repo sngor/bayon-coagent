@@ -162,15 +162,18 @@ export class ClientAuthClient {
         this.clientUserPoolId = config.clientCognito.userPoolId;
         this.clientAppClientId = config.clientCognito.clientId;
 
-        console.log('Client Cognito Config:', {
-            region: config.region,
+        // HARDCODE REGION FOR CLIENT AUTH TOO
+        const hardcodedRegion = 'us-west-2';
+        
+        console.log('Client Cognito Config v3.0 HARDCODED:', {
+            region: hardcodedRegion,
             endpoint: config.clientCognito.endpoint,
             userPoolId: this.clientUserPoolId,
             clientId: this.clientAppClientId,
         });
 
         this.client = new CognitoIdentityProviderClient({
-            region: config.region,
+            region: hardcodedRegion,
             endpoint: config.clientCognito.endpoint,
             credentials: credentials.accessKeyId && credentials.secretAccessKey
                 ? {

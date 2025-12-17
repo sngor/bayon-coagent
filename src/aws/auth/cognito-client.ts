@@ -25,6 +25,11 @@ import {
 } from '@aws-sdk/client-cognito-identity-provider';
 import { getConfig, getAWSCredentials } from '../config';
 import { UserRole } from '../dynamodb/admin-types';
+import { config } from 'process';
+import { config } from 'process';
+import { config } from 'process';
+import { config } from 'process';
+import { config } from 'process';
 
 export interface CognitoUser {
   id: string;
@@ -54,46 +59,23 @@ export class CognitoAuthClient {
   private userPoolId: string;
 
   constructor() {
-    const config = getConfig();
-    const credentials = getAWSCredentials();
-
-    // Runtime environment detection for production
+    // NUCLEAR OPTION: Hardcode everything for production
+    // This completely bypasses all configuration systems
+    
     const currentHostname = typeof window !== 'undefined' ? window.location.hostname : '';
-    const isProduction = currentHostname === 'bayoncoagent.app' || 
-                        currentHostname.includes('amplifyapp.com') ||
-                        process.env.NODE_ENV === 'production';
     
-    // Debug hostname detection
-    console.log('Hostname Detection:', {
-      currentHostname,
-      isProduction,
-      NODE_ENV: process.env.NODE_ENV
+    // HARDCODED VALUES - NO CONFIGURATION DEPENDENCIES
+    const region = 'us-west-2';
+    const clientId = '1vnmp9v58opg04o480fokp0sct';
+    const userPoolId = 'us-west-2_ALOcJxQDd';
+    
+    console.log('🚨 NUCLEAR OPTION v3.0 - HARDCODED VALUES:', {
+      hostname: currentHostname,
+      region,
+      clientId,
+      userPoolId,
+      timestamp: new Date().toISOString()
     });
-    
-    // AGGRESSIVE FIX: Always use production values for any production-like environment
-    let region, clientId, userPoolId;
-    
-    // Check multiple conditions for production environment
-    const isProductionDomain = currentHostname === 'bayoncoagent.app' || 
-                              currentHostname.includes('amplifyapp.com') ||
-                              currentHostname.includes('cloudfront.net');
-    
-    const isProductionEnv = process.env.NODE_ENV === 'production' ||
-                           typeof window !== 'undefined';
-    
-    if (isProductionDomain || isProductionEnv) {
-      // ALWAYS use production values - ignore environment variables for now
-      region = 'us-west-2';
-      clientId = '1vnmp9v58opg04o480fokp0sct';
-      userPoolId = 'us-west-2_ALOcJxQDd';
-      console.log('🔧 FORCED PRODUCTION VALUES v2.1 - hostname:', currentHostname, 'env:', process.env.NODE_ENV);
-    } else {
-      // Local development only
-      region = process.env.NEXT_PUBLIC_AWS_REGION || 'us-west-2';
-      clientId = process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || '1vnmp9v58opg04o480fokp0sct';
-      userPoolId = process.env.NEXT_PUBLIC_USER_POOL_ID || 'us-west-2_ALOcJxQDd';
-      console.log('🏠 LOCAL DEVELOPMENT VALUES');
-    }
 
     // Debug environment variables
     console.log('Environment Variables Check:', {
@@ -122,36 +104,21 @@ export class CognitoAuthClient {
       userPoolId: userPoolId
     });
 
-    // Ensure region is never undefined or empty
-    const finalRegion = region || 'us-west-2';
-    
-    console.log('Final Cognito Client Configuration v2.1:', {
-      region: finalRegion,
-      clientId: clientId,
-      userPoolId: userPoolId,
-      hasCredentials: !!(credentials.accessKeyId && credentials.secretAccessKey)
-    });
-
     // Add global debug function for testing
     if (typeof window !== 'undefined') {
       (window as any).debugCognito = () => ({
-        region: finalRegion,
-        clientId: clientId,
-        userPoolId: userPoolId,
+        region,
+        clientId,
+        userPoolId,
         hostname: currentHostname,
         timestamp: new Date().toISOString()
       });
     }
 
     this.client = new CognitoIdentityProviderClient({
-      region: finalRegion,
+      region: region,
       endpoint: undefined,
-      credentials: credentials.accessKeyId && credentials.secretAccessKey
-        ? {
-          accessKeyId: credentials.accessKeyId,
-          secretAccessKey: credentials.secretAccessKey,
-        }
-        : undefined,
+      // No credentials for browser-based auth
     });
 
     this.clientId = clientId;
