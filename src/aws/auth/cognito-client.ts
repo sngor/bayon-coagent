@@ -69,12 +69,15 @@ export class CognitoAuthClient {
     const clientId = '1vnmp9v58opg04o480fokp0sct';
     const userPoolId = 'us-west-2_ALOcJxQDd';
     
-    console.log('🚨 NUCLEAR OPTION v3.0 - HARDCODED VALUES:', {
+    // ULTIMATE TEST - if you don't see this, the new code isn't loading
+    console.log('🔥🔥🔥 ULTIMATE FIX v4.0 - NEW CODE LOADING 🔥🔥🔥');
+    console.log('🚨 NUCLEAR OPTION v4.0 - HARDCODED VALUES:', {
       hostname: currentHostname,
       region,
       clientId,
       userPoolId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      buildTime: '2025-12-17-02:45:00'
     });
 
     // Debug environment variables
