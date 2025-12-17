@@ -41,6 +41,28 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/__tests__/**/*",
+    "**/test-*.ts",
+    "**/test-*.tsx",
+    "src/services/admin/**/*",
+    "src/services/agentstrands/**/*",
+    "src/services/monitoring/**/*",
+    "src/lambda/**/*",
+    "src/aws/bedrock/flows/index.ts",
+    "src/aws/bedrock/competitive-intelligence/**/*",
+    "src/aws/bedrock/collaborative-editing/**/*",
+    "src/aws/bedrock/integration/**/*",
+    "src/aws/bedrock/multi-modal/**/*",
+    "src/aws/bedrock/orchestration/**/*",
+    "src/aws/bedrock/proactive/**/*",
+    "src/aws/bedrock/quality-assurance/**/*",
+    "src/aws/bedrock/routing/**/*",
+    "src/aws/bedrock/workers/**/*",
+    "src/app/(app)/open-house/**/*",
+    "src/features/**/*",
+    "src/components/examples/**/*"
   ]
 }

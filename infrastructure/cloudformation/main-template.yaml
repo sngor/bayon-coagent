@@ -1,0 +1,185 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Bayon CoAgent - Main Infrastructure Template
+
+Parameters:
+  Environment:
+    Type: String
+    Default: development
+    AllowedValues:
+      - development
+      - production
+    Description: Environment name
+
+  AlarmEmail:
+    Type: String
+    Default: ""
+    Description: Email address for CloudWatch alarms (optional)
+
+  SESFromEmail:
+    Type: String
+    Default: "noreply@bayoncoagent.com"
+    Description: Email address for sending notifications via SES
+
+Conditions:
+  IsProduction: !Equals [!Ref Environment, production]
+  HasAlarmEmail: !Not [!Equals [!Ref AlarmEmail, ""]]
+
+Resources:
+  # ==========================================
+  # Core Infrastructure Stack
+  # ==========================================
+  CoreInfrastructureStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./core-infrastructure.yaml
+      Parameters:
+        Environment: !Ref Environment
+        AlarmEmail: !Ref AlarmEmail
+        SESFromEmail: !Ref SESFromEmail
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Component
+          Value: CoreInfrastructure
+
+  # ==========================================
+  # API Gateway Services Stack
+  # ==========================================
+  ApiGatewayServicesStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: CoreInfrastructureStack
+    Properties:
+      TemplateURL: ./api-gateway-services.yaml
+      Parameters:
+        Environment: !Ref Environment
+        UserPoolId: !GetAtt CoreInfrastructureStack.Outputs.UserPoolId
+        DynamoDBTableName: !GetAtt CoreInfrastructureStack.Outputs.DynamoDBTableName
+        StorageBucketName: !GetAtt CoreInfrastructureStack.Outputs.StorageBucketName
+        ApplicationRoleArn: !GetAtt CoreInfrastructureStack.Outputs.ApplicationRoleArn
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Component
+          Value: ApiGatewayServices
+
+  # ==========================================
+  # Lambda Functions Stack
+  # ==========================================
+  LambdaFunctionsStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - CoreInfrastructureStack
+      - ApiGatewayServicesStack
+    Properties:
+      TemplateURL: ./lambda-functions.yaml
+      Parameters:
+        Environment: !Ref Environment
+        DynamoDBTableName: !GetAtt CoreInfrastructureStack.Outputs.DynamoDBTableName
+        StorageBucketName: !GetAtt CoreInfrastructureStack.Outputs.StorageBucketName
+        ApplicationEventBusName: !GetAtt EventDrivenStack.Outputs.ApplicationEventBusName
+        AiJobRequestQueueUrl: !GetAtt EventDrivenStack.Outputs.AiJobRequestQueueUrl
+        AiJobResponseQueueUrl: !GetAtt EventDrivenStack.Outputs.AiJobResponseQueueUrl
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Component
+          Value: LambdaFunctions
+
+  # ==========================================
+  # Event-Driven Architecture Stack
+  # ==========================================
+  EventDrivenStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: CoreInfrastructureStack
+    Properties:
+      TemplateURL: ./event-driven-architecture.yaml
+      Parameters:
+        Environment: !Ref Environment
+        DynamoDBTableName: !GetAtt CoreInfrastructureStack.Outputs.DynamoDBTableName
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Component
+          Value: EventDrivenArchitecture
+
+  # ==========================================
+  # Monitoring and Alarms Stack
+  # ==========================================
+  MonitoringStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - CoreInfrastructureStack
+      - LambdaFunctionsStack
+    Properties:
+      TemplateURL: ./monitoring-alarms.yaml
+      Parameters:
+        Environment: !Ref Environment
+        AlarmEmail: !Ref AlarmEmail
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Component
+          Value: Monitoring
+
+Outputs:
+  # Core Infrastructure Outputs
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !GetAtt CoreInfrastructureStack.Outputs.UserPoolId
+    Export:
+      Name: !Sub ${Environment}-UserPoolId
+
+  UserPoolClientId:
+    Description: Cognito User Pool Client ID
+    Value: !GetAtt CoreInfrastructureStack.Outputs.UserPoolClientId
+    Export:
+      Name: !Sub ${Environment}-UserPoolClientId
+
+  DynamoDBTableName:
+    Description: DynamoDB Table Name
+    Value: !GetAtt CoreInfrastructureStack.Outputs.DynamoDBTableName
+    Export:
+      Name: !Sub ${Environment}-DynamoDBTableName
+
+  StorageBucketName:
+    Description: S3 Storage Bucket Name
+    Value: !GetAtt CoreInfrastructureStack.Outputs.StorageBucketName
+    Export:
+      Name: !Sub ${Environment}-StorageBucketName
+
+  # API Gateway Outputs
+  MainApiUrl:
+    Description: Main API Gateway URL
+    Value: !GetAtt ApiGatewayServicesStack.Outputs.MainApiUrl
+    Export:
+      Name: !Sub ${Environment}-MainApiUrl
+
+  AiServiceApiUrl:
+    Description: AI Service API URL
+    Value: !GetAtt ApiGatewayServicesStack.Outputs.AiServiceApiUrl
+    Export:
+      Name: !Sub ${Environment}-AiServiceApiUrl
+
+  IntegrationServiceApiUrl:
+    Description: Integration Service API URL
+    Value: !GetAtt ApiGatewayServicesStack.Outputs.IntegrationServiceApiUrl
+    Export:
+      Name: !Sub ${Environment}-IntegrationServiceApiUrl
+
+  # Event-Driven Architecture Outputs
+  ApplicationEventBusName:
+    Description: Application Event Bus Name
+    Value: !GetAtt EventDrivenStack.Outputs.ApplicationEventBusName
+    Export:
+      Name: !Sub ${Environment}-ApplicationEventBusName

@@ -1,0 +1,59 @@
+# Event-Driven Architecture for Bayon CoAgent
+
+# Key Events by Domain
+Events:
+  # Content Creation Events
+  content.blog.generated:
+    source: "bayon.coagent.studio"
+    detail-type: "Blog Post Generated"
+    consumers: [analytics-service, library-service]
+
+  content.social.published:
+    source: "bayon.coagent.studio"
+    detail-type: "Social Media Published"
+    consumers: [analytics-service, integration-service]
+
+  content.image.processed:
+    source: "bayon.coagent.studio"
+    detail-type: "Image Reimagined"
+    consumers: [library-service, usage-tracking]
+
+  # Brand Intelligence Events
+  brand.competitor.discovered:
+    source: "bayon.coagent.brand"
+    detail-type: "New Competitor Found"
+    consumers: [notification-service, analytics-service]
+
+  brand.ranking.changed:
+    source: "bayon.coagent.brand"
+    detail-type: "Keyword Ranking Updated"
+    consumers: [notification-service, reporting-service]
+
+  # Research Events
+  research.report.completed:
+    source: "bayon.coagent.research"
+    detail-type: "Research Report Generated"
+    consumers: [library-service, analytics-service]
+
+  # User Events
+  user.subscription.upgraded:
+    source: "bayon.coagent.user"
+    detail-type: "Subscription Tier Changed"
+    consumers: [usage-service, analytics-service, notification-service]
+
+# Event Processing Patterns
+Patterns:
+  # Async Processing for Heavy AI Tasks
+  - Event: content.generation.requested
+    Pattern: Queue → Lambda → EventBridge
+    Benefits: Decoupling, retry logic, progress tracking
+
+  # Real-time Notifications
+  - Event: brand.alert.triggered
+    Pattern: EventBridge → Lambda → WebSocket API
+    Benefits: Immediate user feedback
+
+  # Analytics Aggregation
+  - Event: user.action.*
+    Pattern: EventBridge → Kinesis → Lambda → DynamoDB
+    Benefits: Real-time analytics, cost-effective processing

@@ -18,6 +18,7 @@ import {
     aiResponseCache,
     backgroundJobQueue
 } from '../lib/fallback-mechanisms';
+import { getEventPublisher } from '@/aws/events/event-publisher';
 
 // Wrap AWS SDK clients with X-Ray
 const dynamoClient = AWSXRay.captureAWSv3Client(new DynamoDBClient({}));
@@ -131,12 +132,25 @@ async function sendJobResponse(jobId: string, userId: string, result: any, error
 async function processJob(record: SQSRecord): Promise<void> {
     const job: BlogPostJobInput = JSON.parse(record.body);
     const { jobId, userId, topic, tone, keywords, targetAudience, length } = job;
+    const eventPublisher = getEventPublisher();
 
     console.log(`Processing blog post job ${jobId} for user ${userId}`);
+    const startTime = Date.now();
 
     try {
         // Update status to processing
         await updateJobStatus(jobId, userId, 'processing');
+
+        // Publish job started event
+        await eventPublisher.publishJobProgress({
+            userId,
+            jobId,
+            jobType: 'blog-post-generation',
+            progress: 10,
+            status: 'processing',
+            message: 'Starting blog post generation...',
+            estimatedTimeRemaining: 30000 // 30 seconds
+        });
 
         // Generate blog post using Bedrock flow with retry logic and fallback
         const cacheKey = `${topic}_${tone}_${length}`;
@@ -173,13 +187,51 @@ async function processJob(record: SQSRecord): Promise<void> {
             console.log(`Used fallback for job ${jobId}: ${fallbackResult.metadata?.fallbackType}`);
         }
 
+        // Publish progress update
+        await eventPublisher.publishJobProgress({
+            userId,
+            jobId,
+            jobType: 'blog-post-generation',
+            progress: 90,
+            status: 'processing',
+            message: 'Finalizing blog post...',
+            estimatedTimeRemaining: 2000 // 2 seconds
+        });
+
         // Update status to completed with result
         await updateJobStatus(jobId, userId, 'completed', result);
 
         // Send response to queue
         await sendJobResponse(jobId, userId, result);
 
-        // Publish AI Job Completed event
+        // Publish content generated event
+        await eventPublisher.publishContentGenerated({
+            userId,
+            contentId: jobId,
+            contentType: 'blog-post',
+            title: result.title || topic,
+            content: result.content || result.blogPost,
+            metadata: {
+                generationTime: Date.now() - startTime,
+                tokensUsed: result.tokensUsed || 0,
+                model: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+                prompt: topic,
+                usedFallback
+            }
+        });
+
+        // Publish job completion
+        await eventPublisher.publishJobProgress({
+            userId,
+            jobId,
+            jobType: 'blog-post-generation',
+            progress: 100,
+            status: 'completed',
+            message: 'Blog post generated successfully!',
+            estimatedTimeRemaining: 0
+        });
+
+        // Publish AI Job Completed event (legacy)
         await publishAiJobCompletedEvent({
             jobId,
             userId,
@@ -231,7 +283,18 @@ async function processJob(record: SQSRecord): Promise<void> {
         // Send error response to queue
         await sendJobResponse(jobId, userId, undefined, JSON.stringify(errorResponse));
 
-        // Publish AI Job Failed event
+        // Publish job failure event
+        await eventPublisher.publishJobProgress({
+            userId,
+            jobId,
+            jobType: 'blog-post-generation',
+            progress: 0,
+            status: 'failed',
+            message: `Failed to generate blog post: ${errorMessage}`,
+            estimatedTimeRemaining: 0
+        });
+
+        // Publish AI Job Failed event (legacy)
         await publishAiJobCompletedEvent({
             jobId,
             userId,

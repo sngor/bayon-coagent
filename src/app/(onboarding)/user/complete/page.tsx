@@ -29,7 +29,7 @@ export default function UserCompletePage() {
     const [redirectCountdown, setRedirectCountdown] = useState(3);
 
     const userId = user?.id || '';
-    const userName = user?.firstName || user?.name?.split(' ')[0];
+    const userName = (user as any)?.firstName || (user as any)?.name?.split(' ')[0];
 
     useEffect(() => {
         const completeOnboarding = async () => {

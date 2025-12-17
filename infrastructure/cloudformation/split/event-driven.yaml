@@ -1,0 +1,557 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Bayon CoAgent - Event-Driven Architecture - EventBridge, SQS, Lambda
+
+Parameters:
+  Environment:
+    Type: String
+    Default: development
+    AllowedValues:
+      - development
+      - production
+    Description: Environment name
+
+  AlarmEmail:
+    Type: String
+    Default: ""
+    Description: Email address for CloudWatch alarms (optional)
+
+  SESFromEmail:
+    Type: String
+    Default: "noreply@bayoncoagent.com"
+    Description: Email address for sending notifications via SES
+
+Conditions:
+  IsProduction: !Equals [!Ref Environment, production]
+  HasAlarmEmail: !Not [!Equals [!Ref AlarmEmail, ""]]
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 1024
+    Runtime: nodejs22.x
+    Architectures: [arm64]
+    Tracing: Active
+    Environment:
+      Variables:
+        NODE_ENV: !Ref Environment
+        BEDROCK_MODEL_ID: anthropic.claude-3-5-sonnet-20241022-v2:0
+        BEDROCK_REGION: !Ref AWS::Region
+        XRAY_TRACING_ENABLED: "true"
+        XRAY_SERVICE_NAME: !Sub bayon-coagent-${Environment}
+
+Resources:
+# ==========================================
+  # Enhanced EventBridge for Event-Driven Architecture
+  # ==========================================
+
+  # Custom EventBridge Event Bus for Application Events
+  ApplicationEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Sub bayon-coagent-events-${Environment}
+      Description: !Sub Custom event bus for Bayon CoAgent microservices (${Environment})
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Component
+          Value: EventBridge
+
+  # Event Archive for Replay Capability
+  EventArchive:
+    Type: AWS::Events::Archive
+    Properties:
+      ArchiveName: !Sub bayon-coagent-event-archive-${Environment}
+      SourceArn: !GetAtt ApplicationEventBus.Arn
+      Description: !Sub Event archive for replay capability (${Environment})
+      RetentionDays: !If [IsProduction, 90, 30]
+      EventPattern:
+        source:
+          - prefix: "bayon.coagent"
+
+  # Dead Letter Queue for Failed Events
+  EventBridgeDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub bayon-coagent-eventbridge-dlq-${Environment}
+      MessageRetentionPeriod: 1209600 # 14 days
+      VisibilityTimeoutSeconds: 300 # 5 minutes
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: BayonCoAgent
+        - Key: Component
+          Value: EventBridge-DLQ
+
+  # ==========================================
+  # Event Processing Lambda Functions
+  # ==========================================
+
+  # Content Event Processor
+  ContentEventProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-content-event-processor-${Environment}
+      CodeUri: src/lambda/
+      Handler: event-processors/content-event-processor.handler
+      Runtime: nodejs22.x
+      Timeout: 60
+      MemorySize: 512
+      Role: !GetAtt EventProcessorRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+          EVENT_BUS_NAME: !Ref ApplicationEventBus
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: EventProcessing
+        Function: ContentEventProcessor
+
+  # Real-time Notification Processor
+  RealtimeNotificationProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-realtime-notification-processor-${Environment}
+      CodeUri: src/lambda/
+      Handler: event-processors/realtime-notification-processor.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 256
+      Role: !GetAtt EventProcessorRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+          WEBSOCKET_API_ENDPOINT: !Sub https://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: EventProcessing
+        Function: RealtimeNotificationProcessor
+
+  # WebSocket API for Real-time Communications
+  WebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub bayon-coagent-websocket-${Environment}
+      Description: !Sub WebSocket API for real-time notifications (${Environment})
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: $request.body.action
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Component: WebSocket
+
+  # WebSocket Connect Route
+  WebSocketConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $connect
+      Target: !Sub integrations/${WebSocketConnectIntegration}
+
+  WebSocketConnectIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketConnectionFunction.Arn}/invocations
+
+  # WebSocket Disconnect Route
+  WebSocketDisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $disconnect
+      Target: !Sub integrations/${WebSocketDisconnectIntegration}
+
+  WebSocketDisconnectIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketConnectionFunction.Arn}/invocations
+
+  # WebSocket Connection Handler
+  WebSocketConnectionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-websocket-connection-${Environment}
+      CodeUri: src/lambda/
+      Handler: event-processors/realtime-notification-processor.connectHandler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 256
+      Role: !GetAtt EventProcessorRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: WebSocket
+        Function: ConnectionHandler
+
+  # Brand Intelligence Event Processor
+  BrandIntelligenceProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-brand-intelligence-processor-${Environment}
+      CodeUri: src/lambda/
+      Handler: event-processors/brand-intelligence-processor.handler
+      Runtime: nodejs22.x
+      Timeout: 60
+      MemorySize: 512
+      Role: !GetAtt EventProcessorRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+          EVENT_BUS_NAME: !Ref ApplicationEventBus
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: EventProcessing
+        Function: BrandIntelligenceProcessor
+
+  # Research Event Processor
+  ResearchEventProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-research-event-processor-${Environment}
+      CodeUri: src/lambda/
+      Handler: event-processors/research-event-processor.handler
+      Runtime: nodejs22.x
+      Timeout: 60
+      MemorySize: 512
+      Role: !GetAtt EventProcessorRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+          EVENT_BUS_NAME: !Ref ApplicationEventBus
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: EventProcessing
+        Function: ResearchEventProcessor
+
+  # Market Intelligence Event Processor
+  MarketIntelligenceProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-market-intelligence-processor-${Environment}
+      CodeUri: src/lambda/
+      Handler: event-processors/market-intelligence-processor.handler
+      Runtime: nodejs22.x
+      Timeout: 60
+      MemorySize: 512
+      Role: !GetAtt EventProcessorRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+          EVENT_BUS_NAME: !Ref ApplicationEventBus
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: EventProcessing
+        Function: MarketIntelligenceProcessor
+
+  # User Event Processor
+  UserEventProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-user-event-processor-${Environment}
+      CodeUri: src/lambda/
+      Handler: event-processors/user-event-processor.handler
+      Runtime: nodejs22.x
+      Timeout: 60
+      MemorySize: 512
+      Role: !GetAtt EventProcessorRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+          EVENT_BUS_NAME: !Ref ApplicationEventBus
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: EventProcessing
+        Function: UserEventProcessor
+
+  # WebSocket Deployment
+  WebSocketDeployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    DependsOn:
+      - WebSocketConnectRoute
+      - WebSocketDisconnectRoute
+    Properties:
+      ApiId: !Ref WebSocketApi
+      Description: !Sub WebSocket deployment for ${Environment}
+
+  WebSocketStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref WebSocketApi
+      DeploymentId: !Ref WebSocketDeployment
+      StageName: !Ref Environment
+      Description: !Sub WebSocket stage for ${Environment}
+      DefaultRouteSettings:
+        ThrottlingRateLimit: !If [IsProduction, 1000, 100]
+        ThrottlingBurstLimit: !If [IsProduction, 2000, 200]
+
+  # Lambda Permissions for WebSocket
+  WebSocketConnectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref WebSocketConnectionFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*
+
+  # IAM Role for Event Processors
+  EventProcessorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: EventProcessorAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt DynamoDBTable.Arn
+                  - !Sub ${DynamoDBTable.Arn}/index/*
+              - Effect: Allow
+                Action:
+                  - events:PutEvents
+                Resource: !GetAtt ApplicationEventBus.Arn
+              - Effect: Allow
+                Action:
+                  - execute-api:ManageConnections
+                Resource: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource: !GetAtt EventBridgeDLQ.Arn
+
+  # ==========================================
+  # EventBridge Rules for Event Routing
+  # ==========================================
+
+  # Content Generation Events Rule
+  ContentGenerationEventsRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-content-generation-${Environment}
+      Description: Route content generation events to processor
+      EventBusName: !Ref ApplicationEventBus
+      EventPattern:
+        source:
+          - "bayon.coagent.studio"
+        detail-type:
+          - "Content Generated"
+          - "Content Published"
+          - "Content Updated"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt ContentEventProcessorFunction.Arn
+          Id: ContentEventProcessorTarget
+          RetryPolicy:
+            MaximumRetryAttempts: 3
+            MaximumEventAge: 1800
+          DeadLetterConfig:
+            Arn: !GetAtt EventBridgeDLQ.Arn
+
+  # Real-time Notification Events Rule
+  RealtimeNotificationEventsRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-realtime-notifications-${Environment}
+      Description: Route real-time notification events to WebSocket processor
+      EventBusName: !Ref ApplicationEventBus
+      EventPattern:
+        source:
+          - "bayon.coagent.content"
+          - "bayon.coagent.brand"
+          - "bayon.coagent.research"
+          - "bayon.coagent.market"
+        detail-type:
+          - "Real-time Notification"
+          - "Job Progress Update"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt RealtimeNotificationProcessorFunction.Arn
+          Id: RealtimeNotificationProcessorTarget
+          RetryPolicy:
+            MaximumRetryAttempts: 2
+            MaximumEventAge: 900
+          DeadLetterConfig:
+            Arn: !GetAtt EventBridgeDLQ.Arn
+
+  # Brand Intelligence Events Rule
+  BrandIntelligenceEventsRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-brand-intelligence-${Environment}
+      Description: Route brand intelligence events
+      EventBusName: !Ref ApplicationEventBus
+      EventPattern:
+        source:
+          - "bayon.coagent.brand"
+        detail-type:
+          - "Profile Updated"
+          - "Competitor Discovered"
+          - "Ranking Changed"
+          - "Audit Completed"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt BrandIntelligenceProcessorFunction.Arn
+          Id: BrandIntelligenceProcessorTarget
+          RetryPolicy:
+            MaximumRetryAttempts: 3
+            MaximumEventAge: 1800
+
+  # Research Events Rule
+  ResearchEventsRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-research-${Environment}
+      Description: Route research events
+      EventBusName: !Ref ApplicationEventBus
+      EventPattern:
+        source:
+          - "bayon.coagent.research"
+        detail-type:
+          - "Research Query Completed"
+          - "Report Generated"
+          - "Knowledge Updated"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt ResearchEventProcessorFunction.Arn
+          Id: ResearchEventProcessorTarget
+          RetryPolicy:
+            MaximumRetryAttempts: 3
+            MaximumEventAge: 1800
+
+  # Market Intelligence Events Rule
+  MarketIntelligenceEventsRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-market-intelligence-${Environment}
+      Description: Route market intelligence events
+      EventBusName: !Ref ApplicationEventBus
+      EventPattern:
+        source:
+          - "bayon.coagent.market"
+        detail-type:
+          - "Trend Detected"
+          - "Alert Triggered"
+          - "Opportunity Identified"
+          - "Price Change Detected"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt MarketIntelligenceProcessorFunction.Arn
+          Id: MarketIntelligenceProcessorTarget
+          RetryPolicy:
+            MaximumRetryAttempts: 3
+            MaximumEventAge: 1800
+
+  # User Events Rule
+  UserEventsRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-user-events-${Environment}
+      Description: Route user-related events
+      EventBusName: !Ref ApplicationEventBus
+      EventPattern:
+        source:
+          - "bayon.coagent.user"
+        detail-type:
+          - "User Registered"
+          - "Subscription Changed"
+          - "Usage Updated"
+          - "Profile Updated"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt UserEventProcessorFunction.Arn
+          Id: UserEventProcessorTarget
+          RetryPolicy:
+            MaximumRetryAttempts: 3
+            MaximumEventAge: 1800
+
+  # Lambda Permissions for EventBridge Rules
+  ContentEventProcessorPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ContentEventProcessorFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ContentGenerationEventsRule.Arn
+
+  RealtimeNotificationProcessorPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref RealtimeNotificationProcessorFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt RealtimeNotificationEventsRule.Arn
+
+  BrandIntelligenceProcessorPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref BrandIntelligenceProcessorFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt BrandIntelligenceEventsRule.Arn
+
+  ResearchEventProcessorPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ResearchEventProcessorFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ResearchEventsRule.Arn
+
+  MarketIntelligenceProcessorPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref MarketIntelligenceProcessorFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt MarketIntelligenceEventsRule.Arn
+
+  UserEventProcessorPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref UserEventProcessorFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt UserEventsRule.Arn
+
+  
+
+# Minimal outputs for this section
+Outputs:
+  StackName:
+    Description: Name of this CloudFormation stack
+    Value: !Ref AWS::StackName
+    Export:
+      Name: !Sub ${Environment}-event-driven-StackName

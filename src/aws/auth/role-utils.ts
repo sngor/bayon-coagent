@@ -1,63 +1,47 @@
 /**
- * Role utilities for user role management
+ * Role utilities for user authentication and authorization
  */
 
-export type UserRole = 'user' | 'admin' | 'superadmin';
+export type UserRole = 'user' | 'admin' | 'super_admin';
 
-export interface RolePermissions {
-    canRead: boolean;
-    canWrite: boolean;
-    canDelete: boolean;
-    canManageUsers: boolean;
-    canAccessAdmin: boolean;
+export function extractRoleFromToken(token: any): UserRole {
+    // Extract role from JWT token or user attributes
+    const role = token?.['custom:role'] || token?.role || 'user';
+    return role as UserRole;
 }
 
-const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
-    user: {
-        canRead: true,
-        canWrite: true,
-        canDelete: false,
-        canManageUsers: false,
-        canAccessAdmin: false,
-    },
-    admin: {
-        canRead: true,
-        canWrite: true,
-        canDelete: true,
-        canManageUsers: true,
-        canAccessAdmin: true,
-    },
-    superadmin: {
-        canRead: true,
-        canWrite: true,
-        canDelete: true,
-        canManageUsers: true,
-        canAccessAdmin: true,
-    },
-};
-
-export function getRolePermissions(role: UserRole): RolePermissions {
-    return ROLE_PERMISSIONS[role];
+export function hasAdminAccess(role: UserRole): boolean {
+    return role === 'admin' || role === 'super_admin';
 }
 
-export function hasPermission(role: UserRole, permission: keyof RolePermissions): boolean {
-    return ROLE_PERMISSIONS[role][permission];
+export function hasSuperAdminAccess(role: UserRole): boolean {
+    return role === 'super_admin';
 }
 
-export function isAdmin(role: UserRole): boolean {
-    return role === 'admin' || role === 'superadmin';
+export function canManageRoles(role: UserRole): boolean {
+    return role === 'super_admin';
 }
 
-export function isSuperAdmin(role: UserRole): boolean {
-    return role === 'superadmin';
+export function getRoleColor(role: UserRole): string {
+    switch (role) {
+        case 'super_admin':
+            return 'bg-red-100 text-red-800';
+        case 'admin':
+            return 'bg-blue-100 text-blue-800';
+        case 'user':
+        default:
+            return 'bg-gray-100 text-gray-800';
+    }
 }
 
-export async function getUserRole(userId: string): Promise<UserRole> {
-    // Mock implementation for testing
-    // In real implementation, this would query the user's role from the database
-    return 'user';
-}
-
-export function validateRole(role: string): role is UserRole {
-    return ['user', 'admin', 'superadmin'].includes(role);
+export function getRoleLabel(role: UserRole): string {
+    switch (role) {
+        case 'super_admin':
+            return 'Super Admin';
+        case 'admin':
+            return 'Admin';
+        case 'user':
+        default:
+            return 'User';
+    }
 }

@@ -1,3 +1,24 @@
 {
-    "typescript.autoClosingTags": false
+    "yaml.maxItemsComputed": 15000,
+    "yaml.format.enable": true,
+    "yaml.validate": true,
+    "yaml.hover": true,
+    "yaml.completion": true,
+    "files.associations": {
+        "*.yaml": "yaml",
+        "*.yml": "yaml",
+        "template*.yaml": "cloudformation",
+        "samconfig.toml": "toml"
+    },
+    "cloudformation.format.enable": true,
+    "editor.formatOnSave": false,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+    },
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "typescript.suggest.autoImports": true,
+    "emmet.includeLanguages": {
+        "typescript": "html",
+        "typescriptreact": "html"
+    }
 }

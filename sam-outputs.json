@@ -1,0 +1,12 @@
+[
+    {
+        "OutputKey": "FunctionArn",
+        "OutputValue": "arn:aws:lambda:us-west-2:409136660268:function:bayon-coagent-production-PerformanceTestFunction-SsHMPdDvq6XW",
+        "Description": "ARN of the performance test function"
+    },
+    {
+        "OutputKey": "Architecture",
+        "OutputValue": "arm64",
+        "Description": "Function architecture (should be arm64)"
+    }
+]

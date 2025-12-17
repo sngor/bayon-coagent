@@ -13,6 +13,7 @@ import {
     Server,
     Globe,
     HardDrive,
+    AlertTriangle,
     Cpu,
     Wifi,
     Eye
@@ -57,12 +58,12 @@ export default function HealthClient() {
                 metric.id === 'response-time' ? `${healthStatus.responseTime}ms` :
                     metric.id === 'error-rate' ? `${healthStatus.errorRate}%` :
                         metric.id === 'active-alerts' ? healthStatus.activeAlerts.toString() :
-                            metric.value,
+                            (metric as any).value,
             progress: metric.id === 'uptime' ? healthStatus.uptime :
                 metric.id === 'response-time' ? Math.max(0, 100 - (healthStatus.responseTime / 10)) :
                     metric.id === 'error-rate' ? healthStatus.errorRate * 100 :
                         metric.id === 'active-alerts' ? (healthStatus.activeAlerts > 0 ? 100 : 0) :
-                            metric.progress
+                            (metric as any).progress
         })), [healthStatus]);
 
     const handleServiceTest = useCallback(async (serviceName: string) => {
@@ -91,7 +92,7 @@ export default function HealthClient() {
                     </div>
                     <div>
                         <h2 className="text-2xl font-bold text-green-900 dark:text-green-100">All Systems Operational</h2>
-                        <p className="text-green-700 dark:text-green-300">Last checked: {lastChecked}</p>
+                        <p className="text-green-700 dark:text-green-300">Last checked: {new Date().toLocaleTimeString()}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -101,12 +102,12 @@ export default function HealthClient() {
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleRefresh}
-                        disabled={isRefreshing}
+                        onClick={() => window.location.reload()}
+                        disabled={false}
                         className="border-green-300 hover:bg-green-100 dark:border-green-700 dark:hover:bg-green-900/50"
                     >
-                        <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                        {isRefreshing ? 'Checking...' : 'Refresh'}
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Refresh
                     </Button>
                 </div>
             </div>

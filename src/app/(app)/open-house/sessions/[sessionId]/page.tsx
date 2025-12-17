@@ -45,10 +45,11 @@ export default async function SessionDetailPage({ params }: SessionDetailPagePro
         : { visitors: [] };
 
     // Get analytics for performance comparison (only for active sessions)
-    let performanceMetrics = [];
+    let performanceMetrics: any[] = [];
     if (session.status === 'active') {
-        const { analytics } = await getDashboardAnalytics({});
-        if (analytics) {
+        const result = await getDashboardAnalytics({});
+        if (result.data) {
+            const analytics = result.data;
             performanceMetrics = [
                 {
                     label: 'Visitors',

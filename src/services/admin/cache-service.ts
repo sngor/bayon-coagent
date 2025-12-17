@@ -68,8 +68,10 @@ export class CacheService {
         // Evict oldest entries if cache is full
         if (this.cache.size >= this.maxSize && !this.cache.has(key)) {
             const oldestKey = this.cache.keys().next().value;
-            this.cache.delete(oldestKey);
-            this.metrics.evictions++;
+            if (oldestKey) {
+                this.cache.delete(oldestKey);
+                this.metrics.evictions++;
+            }
         }
 
         const expiresAt = Date.now() + ttlSeconds * 1000;

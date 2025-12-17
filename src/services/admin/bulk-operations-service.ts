@@ -403,6 +403,7 @@ export class BulkOperationsService {
                 EntityType: 'BulkOperationIndex',
                 Data: result,
                 CreatedAt: result.startedAt,
+                UpdatedAt: Date.now(),
             });
         } catch (error) {
             console.error('Failed to store operation result:', error);
@@ -431,6 +432,7 @@ export class BulkOperationsService {
                 GSI1PK: 'AUDIT_LOGS',
                 GSI1SK: `${entry.timestamp}#${auditId}`,
                 CreatedAt: entry.timestamp,
+                UpdatedAt: Date.now(),
             });
         } catch (error) {
             console.error('Failed to create audit log:', error);

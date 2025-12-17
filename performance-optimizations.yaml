@@ -1,0 +1,82 @@
+# Performance Optimization Strategy
+
+# Lambda Function Optimization
+LambdaOptimizations:
+  # High-frequency functions (provisioned concurrency)
+  AuthenticationFunction:
+    Memory: 512MB
+    ProvisionedConcurrency: 5
+    Reason: "User login/session validation - frequent use"
+
+  ContentGenerationFunction:
+    Memory: 3008MB # Max for CPU-intensive AI tasks
+    ProvisionedConcurrency: 2
+    Reason: "AI content generation - CPU intensive"
+
+  # Medium-frequency functions (optimized memory)
+  ProfileManagementFunction:
+    Memory: 1024MB
+    ProvisionedConcurrency: 0
+    Reason: "Profile CRUD operations"
+
+  # Low-frequency functions (minimal resources)
+  AdminFunctions:
+    Memory: 256MB
+    ProvisionedConcurrency: 0
+    Reason: "Infrequent admin operations"
+
+# Caching Strategy
+CachingLayers:
+  # ElastiCache Redis for session data
+  UserSessions:
+    TTL: 15 minutes
+    Size: cache.t3.micro
+    UseCase: "JWT tokens, user preferences"
+
+  # DynamoDB DAX for hot data
+  UserProfiles:
+    TTL: 1 hour
+    UseCase: "Frequently accessed profile data"
+
+  # API Gateway caching for static responses
+  APIResponses:
+    TTL: 5 minutes
+    UseCase: "Market data, competitor info"
+
+# Database Optimization
+DynamoDBOptimizations:
+  # Hot partition prevention
+  PartitionStrategy:
+    - Use composite keys with random suffixes
+    - Distribute writes across partitions
+    - Monitor hot partition metrics
+
+  # GSI optimization
+  GlobalSecondaryIndexes:
+    UserContentIndex:
+      Purpose: "Query user's content by type and date"
+      PartitionKey: "UserId"
+      SortKey: "ContentType#CreatedAt"
+
+    ContentAnalyticsIndex:
+      Purpose: "Analytics aggregation by content type"
+      PartitionKey: "ContentType"
+      SortKey: "CreatedAt"
+
+# CDN and Edge Optimization
+CloudFrontOptimization:
+  # Static assets
+  StaticAssets:
+    CacheBehavior: "Cache everything for 1 year"
+    Compression: true
+
+  # API responses (GET only)
+  APICache:
+    CacheBehavior: "Cache for 5 minutes"
+    QueryStringCaching: true
+
+  # Lambda@Edge for auth
+  EdgeFunctions:
+    AuthCheck:
+      Purpose: "Validate JWT at edge"
+      Benefit: "Reduce latency for authenticated requests"

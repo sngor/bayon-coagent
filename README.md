@@ -48,13 +48,11 @@ See [docs/README.md](./docs/README.md) for complete documentation index.
 
 Bayon CoAgent is organized into intuitive hubs for streamlined workflows:
 
-### 🎨 Studio - Content Creation Hub
+### � Dashiboard - Overview Hub
+Central command center with key metrics, recent activity, and quick access to all features.
 
-Turn ideas into polished content in minutes:
-
-- **Write**: AI content generation for blog posts, social media, market updates
-- **Describe**: Persona-driven listing descriptions
-- **Reimagine**: AI-powered image editing (virtual staging, day-to-dusk, enhancement)
+### 🤖 Assistant - AI Chat Hub
+Conversational AI assistant for real estate questions, guidance, and support.
 
 ### 🎯 Brand - Identity & Strategy Hub
 
@@ -64,22 +62,33 @@ Own your market position and outshine the competition:
 - **Audit**: NAP consistency checks and review imports
 - **Competitors**: AI-powered competitor discovery and keyword ranking
 - **Strategy**: Personalized marketing plans based on market position
+- **Calendar**: Schedule and manage appointments
+- **Integrations**: Connect Google Business Profile and other services
+- **Testimonials**: Manage client testimonials and reviews
+
+### 🎨 Studio - Content Creation Hub
+
+Turn ideas into polished content in minutes:
+
+- **Write**: AI content generation for blog posts, social media, market updates
+- **Describe**: Persona-driven listing descriptions
+- **Reimagine**: AI-powered image editing (virtual staging, day-to-dusk, enhancement)
+- **Open House**: Create open house materials and flyers
+- **Post Cards**: Design marketing postcards
 
 ### 🔍 Research - AI-Powered Research Hub
 
-Get comprehensive research and insights:
-
-- **Research Agent**: Ask any market question, get research-backed answers
-- **Reports**: Access all saved research reports and analyses
-- **Knowledge Base**: Centralized repository for research materials
+Get comprehensive research and insights on any market topic with AI-powered research capabilities.
 
 ### 📊 Market - Market Intelligence Hub
 
 Track trends and opportunities:
 
 - **Insights**: Market trend analysis and life event predictions
-- **Opportunities**: Investment opportunity identification
+- **News**: Real estate news and market updates
 - **Analytics**: Market data analysis and performance tracking
+- **Opportunities**: Investment opportunity identification
+- **Alerts**: Market alerts and notifications
 
 ### 🧮 Tools - Deal Analysis Hub
 
@@ -88,6 +97,7 @@ Analyze deals and crunch numbers:
 - **Calculator**: Mortgage calculator with amortization schedules
 - **ROI**: Renovation ROI calculator for investment analysis
 - **Valuation**: AI-powered property valuation tool
+- **Document Scanner**: Scan and process real estate documents
 
 ### 📁 Library - Content Management Hub
 
@@ -97,6 +107,25 @@ Everything you've created, ready when you need it:
 - **Reports**: Saved research reports and market analyses
 - **Media**: Images, videos, documents
 - **Templates**: Saved templates and reusable content
+
+### 👥 Clients - Client Management Hub
+Manage client relationships, dashboards, and communications.
+
+### 🏠 Open House - Event Management Hub
+Plan, manage, and track open house events and activities.
+
+### 🎓 Learning - Skill Development Hub
+
+Master real estate skills with AI-powered training and practice:
+
+- **Lessons**: Interactive learning modules with progress tracking
+- **Tutorials**: Video-based learning content
+- **Role-Play**: AI-powered practice scenarios
+- **AI Lesson Plan**: Generate personalized learning plans
+- **Best Practices**: Curated industry best practices
+- **Certification**: Achievement tracking and certificates
+- **Community**: Learning community and discussions
+- **Courses**: Structured learning programs
 
 ## 🛠 Tech Stack
 
@@ -132,24 +161,45 @@ Everything you've created, ready when you need it:
 ├── src/                    # Application source code
 │   ├── app/               # Next.js App Router
 │   │   ├── (app)/         # Authenticated routes (hub structure)
-│   │   │   ├── dashboard/     # Overview hub
-│   │   │   ├── assistant/     # AI chat hub
-│   │   │   ├── studio/        # Content creation hub
-│   │   │   ├── brand/         # Brand identity hub
-│   │   │   ├── research/      # Research hub
-│   │   │   ├── market/        # Market intelligence hub
-│   │   │   ├── tools/         # Deal analysis hub
-│   │   │   ├── library/       # Content management hub
-│   │   │   └── settings/      # Account settings
+│   │   │   ├── dashboard/         # Overview hub
+│   │   │   ├── assistant/         # AI chat hub
+│   │   │   ├── brand/             # Brand identity hub
+│   │   │   ├── studio/            # Content creation hub
+│   │   │   ├── research/          # Research hub (unified)
+│   │   │   ├── research-agent/    # Legacy research agent
+│   │   │   ├── knowledge-base/    # Legacy knowledge base
+│   │   │   ├── market/            # Market intelligence hub
+│   │   │   ├── tools/             # Deal analysis hub
+│   │   │   ├── library/           # Content management hub
+│   │   │   ├── client-dashboards/ # Client management hub
+│   │   │   ├── open-house/        # Open house management
+│   │   │   ├── learning/          # Learning & development hub
+│   │   │   ├── admin/             # Admin panel
+│   │   │   ├── super-admin/       # Super admin panel
+│   │   │   ├── settings/          # Account settings
+│   │   │   ├── support/           # Support center
+│   │   │   ├── analytics/         # Analytics dashboard
+│   │   │   ├── onboarding/        # User onboarding
+│   │   │   ├── mobile/            # Mobile-specific routes
+│   │   │   ├── client-gifts/      # Client gifting system
+│   │   │   ├── content-engine/    # Legacy content engine
+│   │   │   ├── reimagine/         # Legacy reimagine (now in studio)
+│   │   │   └── unsubscribe/       # Email unsubscribe
 │   │   └── api/           # API routes
 │   ├── aws/               # AWS service integrations
 │   ├── components/        # React components
 │   ├── hooks/             # Custom React hooks
 │   ├── lib/               # Utilities and helpers
-│   └── types/             # TypeScript type definitions
+│   ├── ai/                # AI schemas and configurations
+│   └── contexts/          # React contexts
 ├── infrastructure/        # AWS CDK infrastructure as code
 ├── scripts/              # Build, deployment, and migration scripts
 ├── docs/                 # Project documentation
+├── tests/                # Test files
+├── monitoring/           # Monitoring configurations
+├── agents/               # AI agent configurations
+├── amplify/              # AWS Amplify configuration
+├── config/               # Configuration files
 └── public/               # Static assets
 ```
 
@@ -167,8 +217,10 @@ Everything you've created, ready when you need it:
 #### Development
 
 ```bash
-npm run dev                 # Start Next.js dev server (port 3000)
+npm run dev                 # Start Next.js dev server with Turbopack
 npm run build              # Build production bundle
+npm run build:fast         # Fast build (skip env validation)
+npm run build:analyze      # Build with bundle analysis
 npm run start              # Start production server
 npm run lint               # Run ESLint
 npm run typecheck          # Run TypeScript type checking
@@ -180,23 +232,80 @@ npm run typecheck          # Run TypeScript type checking
 npm run localstack:start   # Start LocalStack in Docker
 npm run localstack:stop    # Stop LocalStack
 npm run localstack:init    # Initialize AWS resources
+npm run localstack:logs    # View LocalStack logs
 npm run verify:setup       # Verify local setup
 ```
 
-#### Testing
+#### Testing & Quality
 
 ```bash
 npm test                   # Run Jest tests
 npm run test:watch         # Run tests in watch mode
 npm run test:coverage      # Generate coverage report
+npm run lighthouse         # Run Lighthouse performance tests
+npm run lighthouse:ci      # Run Lighthouse CI
+npm run bundle:check       # Check bundle size
+npm run bundle:track       # Track bundle size changes
 ```
 
-#### Deployment
+#### Infrastructure & Deployment
 
 ```bash
-npm run sam:deploy:dev     # Deploy dev (SAM - recommended)
-npm run sam:deploy:prod    # Deploy prod (SAM - recommended)
+# SAM Deployment (Recommended)
+npm run sam:validate       # Validate SAM templates
+npm run sam:deploy:dev     # Deploy dev environment
+npm run sam:deploy:prod    # Deploy prod environment
+npm run sam:destroy:dev    # Destroy dev environment
+npm run sam:destroy:prod   # Destroy prod environment
+npm run sam:outputs        # View stack outputs
+npm run sam:update-env     # Update env from SAM outputs
+
+# CDK Infrastructure
+npm run infra:validate     # Validate infrastructure templates
+npm run infra:deploy:dev   # Deploy dev infrastructure
+npm run infra:deploy:prod  # Deploy prod infrastructure
+
+# Amplify Deployment
 npm run deploy:amplify     # Deploy to AWS Amplify
+npm run deploy:test        # Test deployment
+```
+
+#### Migration & Setup
+
+```bash
+# Data Migration
+npm run migrate:export     # Export from Firestore
+npm run migrate:transform  # Transform data
+npm run migrate:import     # Import to DynamoDB
+npm run migrate:storage    # Migrate storage
+npm run migrate:validate   # Validate migration
+npm run migrate:rollback   # Rollback migration
+npm run migrate:all        # Run complete migration
+
+# Service Setup
+npm run admin:create       # Create super admin user
+npm run setup:secrets      # Setup AWS Secrets Manager
+npm run verify:secrets     # Verify secrets configuration
+npm run clear-auth         # Clear auth session
+```
+
+#### Verification & Monitoring
+
+```bash
+# Service Verification
+npm run verify:bedrock-models    # Verify Bedrock models
+npm run verify:reimagine         # Verify Reimagine setup
+npm run verify:xray             # Verify X-Ray tracing
+npm run verify:sqs              # Verify SQS queues
+npm run verify:eventbridge      # Verify EventBridge
+
+# Configuration
+npm run configure:reimagine-s3   # Configure S3 for Reimagine
+npm run setup:reimagine-monitoring  # Setup Reimagine monitoring
+npm run setup:onboarding-monitoring # Setup onboarding monitoring
+
+# Security
+npm run security:check      # Check for secrets in code
 ```
 
 ### Environment Configuration

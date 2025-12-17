@@ -284,11 +284,12 @@ export class EmailNotificationService {
 
         // Store in DynamoDB
         const keys = generateAdminKeys.emailNotification(notificationId);
-        await this.repository.create({
-            ...keys,
-            EntityType: 'EmailNotification',
-            Data: notification,
-        });
+        await this.repository.create(
+            keys.PK,
+            keys.SK,
+            'EmailNotification',
+            notification
+        );
 
         // Attempt to send immediately
         await this.processNotification(notificationId);

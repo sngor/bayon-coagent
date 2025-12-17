@@ -67,12 +67,17 @@ Complete documentation for the Bayon CoAgent platform.
 
 ### Core Features
 
-- [Studio Hub](./features/studio.md) - Content creation features
+- [Dashboard Hub](./features/dashboard.md) - Overview and metrics
+- [Assistant Hub](./features/assistant.md) - AI chat assistant
 - [Brand Hub](./features/brand.md) - Brand identity and strategy
+- [Studio Hub](./features/studio.md) - Content creation features
 - [Research Hub](./features/research.md) - AI-powered research
 - [Market Hub](./features/market.md) - Market intelligence
 - [Tools Hub](./features/tools.md) - Deal analysis tools
 - [Library Hub](./features/library.md) - Content management
+- [Clients Hub](./features/clients.md) - Client management
+- [Open House Hub](./features/open-house.md) - Event management
+- [Learning Hub](./features/learning.md) - Skill development
 
 ### AI & Integrations
 

@@ -33,7 +33,6 @@ import {
     AlertTriangle,
     Loader2,
     FileImage,
-    FilePdf,
     Scan,
     Copy,
     Share,
@@ -305,11 +304,11 @@ RECOMMENDATIONS:
         });
     };
 
-    const handleDownload = (document: ScannedDocument) => {
-        if (document.downloadUrl) {
+    const handleDownload = (doc: ScannedDocument) => {
+        if (doc.downloadUrl) {
             const link = document.createElement('a');
-            link.href = document.downloadUrl;
-            link.download = document.name;
+            link.href = doc.downloadUrl;
+            link.download = doc.name;
             link.click();
         }
     };

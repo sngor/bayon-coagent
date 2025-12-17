@@ -103,11 +103,26 @@ export async function generateSocialMediaPostWithScores(
     // 1. Generate the social media post
     const result = await generateSocialMediaPost({
         topic: input.topic,
-        platform: input.platform,
-        tone: input.tone,
+        platforms: [input.platform],
+        tone: input.tone || 'professional',
+        numberOfVariations: 1,
     });
 
-    // 2. Validate with social media focus
+    // 2. Extract the post content for the specific platform
+    const platformKey = input.platform === 'twitter' ? 'twitter' : input.platform;
+    const postContent = result.variations[0]?.[platformKey as keyof typeof result.variations[0]] || '';
+    
+    // 3. Extract hashtags from the post content (simple regex)
+    const hashtagMatches = postContent.match(/#\w+/g) || [];
+    const hashtags = hashtagMatches.map(tag => tag.substring(1)); // Remove # symbol
+    
+    // 4. Create the expected return structure
+    const contentResult = {
+        post: postContent,
+        hashtags: hashtags,
+    };
+
+    // 5. Validate with social media focus
     const validator = getValidationAgent();
 
     const validationConfig: ValidationConfig = {
@@ -131,9 +146,9 @@ export async function generateSocialMediaPostWithScores(
         strictMode: false,
     };
 
-    const validation = await validator.validate(result.post, validationConfig);
+    const validation = await validator.validate(postContent, validationConfig);
 
-    // 3. Log platform-specific scores
+    // 6. Log platform-specific scores
     if (validation.socialMediaScore) {
         console.log(`${input.platform} Post Scores:`, {
             overall: validation.score,
@@ -144,7 +159,7 @@ export async function generateSocialMediaPostWithScores(
     }
 
     return {
-        content: result,
+        content: contentResult,
         validation,
     };
 }

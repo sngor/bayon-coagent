@@ -65,11 +65,7 @@ class PerformanceMonitoringTools {
             const timestamp = new Date().toISOString();
             const metricId = `metric_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
-            const metricItem = {
-                PK: `METRICS#${metric.serviceType}`,
-                SK: `${timestamp}#${metricId}`,
-                GSI1PK: `USER#${metric.userId}`,
-                GSI1SK: `METRIC#${timestamp}`,
+            const metricData = {
                 id: metricId,
                 serviceType: metric.serviceType,
                 metricType: metric.metricType,
@@ -81,7 +77,16 @@ class PerformanceMonitoringTools {
                 createdAt: timestamp,
             };
 
-            await repository.create(metricItem);
+            await repository.create(
+                `METRICS#${metric.serviceType}`,
+                `${timestamp}#${metricId}`,
+                'PerformanceMetric',
+                metricData,
+                {
+                    GSI1PK: `USER#${metric.userId}`,
+                    GSI1SK: `METRIC#${timestamp}`,
+                }
+            );
         } catch (error) {
             console.error('Failed to track performance metric:', error);
             // Don't throw - monitoring shouldn't break the main flow

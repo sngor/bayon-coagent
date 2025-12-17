@@ -90,21 +90,21 @@ export default function PropertyValuationPage() {
                     message: 'success',
                     data: {
                         marketValuation: {
-                            estimatedValue: result.data.estimatedValue.best,
+                            estimatedValue: (result.data as any).estimatedValue.best,
                             valueRange: {
-                                low: result.data.estimatedValue.low,
-                                high: result.data.estimatedValue.high
+                                low: (result.data as any).estimatedValue.low,
+                                high: (result.data as any).estimatedValue.high
                             },
-                            confidenceLevel: result.data.confidenceLevel
+                            confidenceLevel: (result.data as any).confidenceLevel
                         },
-                        keyFactors: result.data.valueDrivers.positive.concat(
-                            result.data.valueDrivers.negative.map((neg: string) => `Concern: ${neg}`)
+                        keyFactors: (result.data as any).valueDrivers.positive.concat(
+                            (result.data as any).valueDrivers.negative.map((neg: string) => `Concern: ${neg}`)
                         ),
                         marketAnalysis: {
                             marketCondition: 'Analyzed',
-                            medianPrice: result.data.estimatedValue.best,
+                            medianPrice: (result.data as any).estimatedValue.best,
                             averageDaysOnMarket: null,
-                            marketTrends: result.data.marketFactors
+                            marketTrends: (result.data as any).marketFactors
                         },
                         recommendations: ['Based on current market analysis'],
                         disclaimer: 'This is an AI-generated estimate for informational purposes only.'
@@ -191,17 +191,17 @@ Value Range: ${formatCurrency(state.data.marketValuation.valueRange.low)} - ${fo
 Confidence Level: ${state.data.marketValuation.confidenceLevel.toUpperCase()}
 
 Key Factors:
-${state.data.keyFactors.map(factor => `• ${factor}`).join('\n')}
+${state.data.keyFactors.map((factor: string) => `• ${factor}`).join('\n')}
 
 Market Analysis:
 Market Condition: ${state.data.marketAnalysis.marketCondition}
 ${state.data.marketAnalysis.medianPrice ? `Median Price: ${formatCurrency(state.data.marketAnalysis.medianPrice)}` : ''}
 ${state.data.marketAnalysis.averageDaysOnMarket ? `Average Days on Market: ${state.data.marketAnalysis.averageDaysOnMarket}` : ''}
 Trends:
-${state.data.marketAnalysis.marketTrends.map(trend => `• ${trend}`).join('\n')}
+${state.data.marketAnalysis.marketTrends.map((trend: string) => `• ${trend}`).join('\n')}
 
 Recommendations:
-${state.data.recommendations.map(rec => `• ${rec}`).join('\n')}
+${state.data.recommendations.map((rec: string) => `• ${rec}`).join('\n')}
 
 ${state.data.disclaimer}
     `.trim();
@@ -223,10 +223,10 @@ ${state.data.disclaimer}
 **Confidence Level:** ${state.data.marketValuation.confidenceLevel.toUpperCase()}
 
 ## Key Factors
-${state.data.keyFactors.map(factor => `- ${factor}`).join('\n')}
+${state.data.keyFactors.map((factor: string) => `- ${factor}`).join('\n')}
 
 ## Comparable Properties
-${state.data.comparableProperties.map(comp =>
+${state.data.comparableProperties.map((comp: any) =>
             `- **${comp.address}** - ${formatCurrency(comp.price)}${comp.sqft ? ` (${comp.sqft} sqft)` : ''}${comp.beds && comp.baths ? ` - ${comp.beds}bd/${comp.baths}ba` : ''}${comp.saleDate ? ` - Sold: ${comp.saleDate}` : ''}`
         ).join('\n')}
 
@@ -236,10 +236,10 @@ ${state.data.marketAnalysis.medianPrice ? `**Median Price:** ${formatCurrency(st
 ${state.data.marketAnalysis.averageDaysOnMarket ? `**Average Days on Market:** ${state.data.marketAnalysis.averageDaysOnMarket}` : ''}
 
 **Market Trends:**
-${state.data.marketAnalysis.marketTrends.map(trend => `- ${trend}`).join('\n')}
+${state.data.marketAnalysis.marketTrends.map((trend: string) => `- ${trend}`).join('\n')}
 
 ## Recommendations
-${state.data.recommendations.map(rec => `- ${rec}`).join('\n')}
+${state.data.recommendations.map((rec: string) => `- ${rec}`).join('\n')}
 
 ---
 ${state.data.disclaimer}
@@ -269,7 +269,7 @@ ${state.data.disclaimer}
                         label="Property Description or Address"
                         id="propertyDescription"
                         error={state.errors?.propertyDescription?.[0]}
-                        hint="Provide a detailed property description or address. Include features like bedrooms, bathrooms, square footage, location, and condition for more accurate results."
+
                     >
                         <Textarea
                             id="propertyDescription"
@@ -355,7 +355,7 @@ ${state.data.disclaimer}
                             <div className="space-y-3">
                                 <h4 className="font-headline font-semibold">Key Valuation Factors</h4>
                                 <div className="grid gap-2">
-                                    {state.data.keyFactors.map((factor, index) => (
+                                    {state.data.keyFactors.map((factor: string, index: number) => (
                                         <div key={index} className="flex items-start gap-2">
                                             <TrendingUp className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                                             <span className="text-sm">{factor}</span>
@@ -377,7 +377,7 @@ ${state.data.disclaimer}
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    {state.data.comparableProperties.map((comp, index) => (
+                                    {state.data.comparableProperties.map((comp: any, index: number) => (
                                         <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                                             <div className="flex-1">
                                                 <div className="font-medium">{comp.address}</div>
@@ -431,7 +431,7 @@ ${state.data.disclaimer}
                                 <div className="space-y-2">
                                     <h5 className="text-sm font-medium">Market Trends</h5>
                                     <div className="space-y-2">
-                                        {state.data.marketAnalysis.marketTrends.map((trend, index) => (
+                                        {state.data.marketAnalysis.marketTrends.map((trend: string, index: number) => (
                                             <div key={index} className="flex items-start gap-2">
                                                 <TrendingUp className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                                                 <span className="text-sm">{trend}</span>
@@ -454,7 +454,7 @@ ${state.data.disclaimer}
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-3">
-                                    {state.data.recommendations.map((rec, index) => (
+                                    {state.data.recommendations.map((rec: string, index: number) => (
                                         <Alert key={index}>
                                             <CheckCircle className="h-4 w-4" />
                                             <AlertDescription>{rec}</AlertDescription>

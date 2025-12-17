@@ -5,7 +5,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useUser } from '@/aws/auth/use-user';
 import { useItem } from '@/aws/dynamodb/hooks/use-item';
-import type { ResearchReport } from '@/lib/types/common/common';
+import type { ResearchReport } from '@/lib/types/common';
 import { marked } from 'marked';
 import { ExternalLink, ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';

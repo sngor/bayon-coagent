@@ -71,12 +71,18 @@ fi
 
 # Deploy with SAM
 echo -e "${YELLOW}Deploying infrastructure...${NC}"
+
+# Use appropriate config environment
+CONFIG_ENV="default"
+if [ "$ENVIRONMENT" = "development" ]; then
+    CONFIG_ENV="development"
+fi
+
 sam deploy \
-    --config-env $ENVIRONMENT \
+    --config-env $CONFIG_ENV \
     --parameter-overrides $PARAMS \
     --profile $PROFILE \
     --region $REGION \
-    --resolve-s3 \
     --no-fail-on-empty-changeset
 
 echo ""

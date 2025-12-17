@@ -161,8 +161,14 @@ export default function ReimagineToolkitPage() {
 
     // Handle upload complete - now directly processes the edit
     const handleUploadComplete = useCallback(
-        async (imageId: string, suggestions: EditSuggestion[], editType: EditType, params: EditParams) => {
-            setCurrentImage({ imageId, suggestions });
+        async (imageId: string, suggestions?: EditSuggestion[], editType?: EditType, params?: EditParams) => {
+            setCurrentImage({ imageId, suggestions: suggestions || [] });
+
+            // If no editType provided, just set the image and stay in upload state
+            if (!editType || !params) {
+                setWorkflowState('upload');
+                return;
+            }
 
             try {
                 setWorkflowState('processing');

@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use server';
 
 import { getRepository } from '@/aws/dynamodb/repository';

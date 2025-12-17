@@ -1,0 +1,1534 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Bayon CoAgent - CloudWatch Monitoring and Alarms
+
+Parameters:
+  Environment:
+    Type: String
+    Default: development
+    AllowedValues:
+      - development
+      - production
+    Description: Environment name
+
+  AlarmEmail:
+    Type: String
+    Default: ""
+    Description: Email address for CloudWatch alarms (optional)
+
+  SESFromEmail:
+    Type: String
+    Default: "noreply@bayoncoagent.com"
+    Description: Email address for sending notifications via SES
+
+Conditions:
+  IsProduction: !Equals [!Ref Environment, production]
+  HasAlarmEmail: !Not [!Equals [!Ref AlarmEmail, ""]]
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 1024
+    Runtime: nodejs22.x
+    Architectures: [arm64]
+    Tracing: Active
+    Environment:
+      Variables:
+        NODE_ENV: !Ref Environment
+        BEDROCK_MODEL_ID: anthropic.claude-3-5-sonnet-20241022-v2:0
+        BEDROCK_REGION: !Ref AWS::Region
+        XRAY_TRACING_ENABLED: "true"
+        XRAY_SERVICE_NAME: !Sub bayon-coagent-${Environment}
+
+Resources:
+# ==========================================
+  # CloudWatch Monitoring
+  # ==========================================
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Condition: HasAlarmEmail
+    Properties:
+      TopicName: !Sub bayon-coagent-alarms-${Environment}
+      DisplayName: !Sub Bayon CoAgent Alarms (${Environment})
+      Subscription:
+        - Endpoint: !Ref AlarmEmail
+          Protocol: email
+        - Endpoint: !Ref AlarmEmail
+          Protocol: email
+
+  # ==========================================
+  # Deployment Alarms for Automatic Rollback
+  # ==========================================
+  LambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${Environment}-lambda-deployment-errors
+      AlarmDescription: Alert when Lambda function errors exceed threshold during deployment
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  LambdaThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${Environment}-lambda-deployment-throttles
+      AlarmDescription: Alert when Lambda function throttles exceed threshold during deployment
+      MetricName: Throttles
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 3
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  # ==========================================
+  # Traffic Hook Functions for Deployment Validation
+  # ==========================================
+  PreTrafficHookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-pre-traffic-hook-${Environment}
+      CodeUri: src/lambda/
+      Handler: deployment-hooks/pre-traffic.handler
+      Runtime: nodejs22.x
+      Timeout: 60
+      MemorySize: 256
+      Role: !GetAtt ApplicationRole.Arn
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Purpose: DeploymentValidation
+
+  PostTrafficHookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-post-traffic-hook-${Environment}
+      CodeUri: src/lambda/
+      Handler: deployment-hooks/post-traffic.handler
+      Runtime: nodejs22.x
+      Timeout: 60
+      MemorySize: 256
+      Role: !GetAtt ApplicationRole.Arn
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Purpose: DeploymentValidation
+
+  # ==========================================
+  # Service-Specific Alarms
+  # ==========================================
+  AuthFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-high-auth-failures
+      AlarmDescription: Alert when authentication failures exceed threshold
+      MetricName: SignInThrottles
+      Namespace: AWS/Cognito
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: UserPool
+          Value: !Ref UserPool
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  DynamoDBThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-dynamodb-throttling
+      AlarmDescription: Alert when DynamoDB requests are being throttled
+      MetricName: UserErrors
+      Namespace: AWS/DynamoDB
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: TableName
+          Value: !Ref DynamoDBTable
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  S3ErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-s3-errors
+      AlarmDescription: Alert when S3 5xx errors exceed threshold
+      MetricName: 5xxErrors
+      Namespace: AWS/S3
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: BucketName
+          Value: !Ref StorageBucket
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  # Lambda Function Alarms
+  LifeEventProcessorErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-life-event-processor-errors
+      AlarmDescription: Alert when life event processor has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref LifeEventProcessorFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  CompetitorMonitorErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-competitor-monitor-errors
+      AlarmDescription: Alert when competitor monitor has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref CompetitorMonitorProcessorFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  TrendDetectorErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-trend-detector-errors
+      AlarmDescription: Alert when trend detector has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref TrendDetectorProcessorFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  PriceReductionProcessorErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-price-reduction-processor-errors
+      AlarmDescription: Alert when price reduction processor has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref PriceReductionProcessorFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  NotificationProcessorErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-notification-processor-errors
+      AlarmDescription: Alert when notification processor has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref NotificationProcessorFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  NotificationDigestGeneratorErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-notification-digest-generator-errors
+      AlarmDescription: Alert when notification digest generator has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref NotificationDigestGeneratorFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  NotificationRetryProcessorErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-notification-retry-processor-errors
+      AlarmDescription: Alert when notification retry processor has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref NotificationRetryProcessorFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  NotificationCleanupMaintenanceErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-notification-cleanup-maintenance-errors
+      AlarmDescription: Alert when notification cleanup maintenance has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !GetAtt NotificationCleanupMaintenanceFunction.Arn
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  # Content Workflow Lambda Alarms
+  CalculateOptimalTimesErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-calculate-optimal-times-errors
+      AlarmDescription: Alert when calculate optimal times has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref CalculateOptimalTimesFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  PublishScheduledContentErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-publish-scheduled-content-errors
+      AlarmDescription: Alert when publish scheduled content has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref PublishScheduledContentFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  SyncSocialAnalyticsErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-sync-social-analytics-errors
+      AlarmDescription: Alert when sync social analytics has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SyncSocialAnalyticsFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  # Enhanced Performance Monitoring Alarms for Content Workflow Functions
+  PublishScheduledContentDurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-publish-scheduled-content-duration
+      AlarmDescription: Alert when publish scheduled content duration exceeds threshold
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 600000 # 10 minutes in milliseconds
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref PublishScheduledContentFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  PublishScheduledContentThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-publish-scheduled-content-throttles
+      AlarmDescription: Alert when publish scheduled content is being throttled
+      MetricName: Throttles
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref PublishScheduledContentFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  SyncSocialAnalyticsDurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-sync-social-analytics-duration
+      AlarmDescription: Alert when sync social analytics duration exceeds threshold
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 720000 # 12 minutes in milliseconds
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SyncSocialAnalyticsFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  SyncSocialAnalyticsThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-sync-social-analytics-throttles
+      AlarmDescription: Alert when sync social analytics is being throttled
+      MetricName: Throttles
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SyncSocialAnalyticsFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  # AI Monitoring Lambda Alarms
+  ScheduledAIMonitoringErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-scheduled-ai-monitoring-errors
+      AlarmDescription: Alert when scheduled AI monitoring has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ScheduledAIMonitoringFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  ScheduledAIMonitoringDurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-scheduled-ai-monitoring-duration
+      AlarmDescription: Alert when scheduled AI monitoring duration exceeds threshold
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 720000 # 12 minutes in milliseconds
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ScheduledAIMonitoringFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  ScheduledAIMonitoringThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-scheduled-ai-monitoring-throttles
+      AlarmDescription: Alert when scheduled AI monitoring is being throttled
+      MetricName: Throttles
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ScheduledAIMonitoringFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  CalculateOptimalTimesDurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-calculate-optimal-times-duration
+      AlarmDescription: Alert when calculate optimal times duration exceeds threshold
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 720000 # 12 minutes in milliseconds
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref CalculateOptimalTimesFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  CalculateOptimalTimesThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-calculate-optimal-times-throttles
+      AlarmDescription: Alert when calculate optimal times is being throttled
+      MetricName: Throttles
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref CalculateOptimalTimesFunction
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  # Dead Letter Queue Alarms
+  PublishScheduledContentDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-publish-scheduled-content-dlq-messages
+      AlarmDescription: Alert when messages appear in publish scheduled content DLQ
+      MetricName: ApproximateNumberOfVisibleMessages
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt PublishScheduledContentDLQ.QueueName
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  SyncSocialAnalyticsDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-sync-social-analytics-dlq-messages
+      AlarmDescription: Alert when messages appear in sync social analytics DLQ
+      MetricName: ApproximateNumberOfVisibleMessages
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt SyncSocialAnalyticsDLQ.QueueName
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  CalculateOptimalTimesDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-calculate-optimal-times-dlq-messages
+      AlarmDescription: Alert when messages appear in calculate optimal times DLQ
+      MetricName: ApproximateNumberOfVisibleMessages
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt CalculateOptimalTimesDLQ.QueueName
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  # Content Workflow Business Metrics Alarms
+  ContentWorkflowPublishingFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-content-workflow-publishing-failures
+      AlarmDescription: Alert when content publishing failure rate exceeds threshold
+      MetricName: PublishingFailure
+      Namespace: BayonCoAgent/ContentWorkflow
+      Statistic: Sum
+      Period: 900 # 15 minutes
+      EvaluationPeriods: 2
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  ContentWorkflowAnalyticsSyncFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-content-workflow-analytics-sync-failures
+      AlarmDescription: Alert when analytics sync failure rate exceeds threshold
+      MetricName: AnalyticsSyncFailure
+      Namespace: BayonCoAgent/ContentWorkflow
+      Statistic: Sum
+      Period: 3600 # 1 hour
+      EvaluationPeriods: 2
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  ContentWorkflowRateLimitAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasAlarmEmail
+    Properties:
+      AlarmName: !Sub ${Environment}-content-workflow-rate-limits
+      AlarmDescription: Alert when rate limiting occurs frequently
+      MetricName: RateLimitEncountered
+      Namespace: BayonCoAgent/ContentWorkflow
+      Statistic: Sum
+      Period: 3600 # 1 hour
+      EvaluationPeriods: 1
+      Threshold: 20
+      ComparisonOperator: GreaterThanThreshold
+      AlarmActions:
+        - !Ref AlarmTopic
+      TreatMissingData: notBreaching
+
+  # ==========================================
+  # CloudWatch Dashboard
+  # ==========================================
+  MonitoringDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub BayonCoAgent-${Environment}
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Cognito", "SignInSuccesses", {"stat": "Sum"}],
+                  [".", "SignInThrottles", {"stat": "Sum"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Authentication Activity",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/DynamoDB", "ConsumedReadCapacityUnits", {"stat": "Sum"}],
+                  [".", "ConsumedWriteCapacityUnits", {"stat": "Sum"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "DynamoDB Activity",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/S3", "AllRequests", {"stat": "Sum"}],
+                  [".", "4xxErrors", {"stat": "Sum"}],
+                  [".", "5xxErrors", {"stat": "Sum"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "S3 Activity",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Bedrock", "Invocations", {"stat": "Sum"}],
+                  [".", "ModelInvocationThrottles", {"stat": "Sum"}],
+                  [".", "InvocationLatency", {"stat": "Average"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Bedrock Activity",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${LifeEventProcessorFunction}", {"stat": "Sum"}],
+                  [".", "Errors", ".", ".", {"stat": "Sum"}],
+                  [".", "Duration", ".", ".", {"stat": "Average"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Life Event Processor",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${CompetitorMonitorProcessorFunction}", {"stat": "Sum"}],
+                  [".", "Errors", ".", ".", {"stat": "Sum"}],
+                  [".", "Duration", ".", ".", {"stat": "Average"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Competitor Monitor",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${TrendDetectorProcessorFunction}", {"stat": "Sum"}],
+                  [".", "Errors", ".", ".", {"stat": "Sum"}],
+                  [".", "Duration", ".", ".", {"stat": "Average"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Trend Detector",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${PriceReductionProcessorFunction}", {"stat": "Sum"}],
+                  [".", "Errors", ".", ".", {"stat": "Sum"}],
+                  [".", "Duration", ".", ".", {"stat": "Average"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Price Reduction Monitor",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${NotificationProcessorFunction}", {"stat": "Sum"}],
+                  [".", "Errors", ".", ".", {"stat": "Sum"}],
+                  [".", "Duration", ".", ".", {"stat": "Average"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Notification Processor",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${CalculateOptimalTimesFunction}", {"stat": "Sum"}],
+                  [".", "Errors", ".", ".", {"stat": "Sum"}],
+                  [".", "Duration", ".", ".", {"stat": "Average"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Calculate Optimal Times",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${PublishScheduledContentFunction}", {"stat": "Sum"}],
+                  [".", "Errors", ".", ".", {"stat": "Sum"}],
+                  [".", "Duration", ".", ".", {"stat": "Average"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Publish Scheduled Content",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${SyncSocialAnalyticsFunction}", {"stat": "Sum"}],
+                  [".", "Errors", ".", ".", {"stat": "Sum"}],
+                  [".", "Duration", ".", ".", {"stat": "Average"}],
+                  [".", "Throttles", ".", ".", {"stat": "Sum"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Sync Social Analytics",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "${ScheduledAIMonitoringFunction}", {"stat": "Sum"}],
+                  [".", "Errors", ".", ".", {"stat": "Sum"}],
+                  [".", "Duration", ".", ".", {"stat": "Average"}],
+                  [".", "Throttles", ".", ".", {"stat": "Sum"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Scheduled AI Monitoring",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["AWS/SQS", "ApproximateNumberOfVisibleMessages", "QueueName", "${PublishScheduledContentDLQ.QueueName}", {"stat": "Sum"}],
+                  [".", ".", ".", "${SyncSocialAnalyticsDLQ.QueueName}", {"stat": "Sum"}],
+                  [".", ".", ".", "${CalculateOptimalTimesDLQ.QueueName}", {"stat": "Sum"}],
+                  [".", ".", ".", "${ScheduledAIMonitoringDLQ.QueueName}", {"stat": "Sum"}]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Content Workflow Dead Letter Queues",
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "properties": {
+                "metrics": [
+                  ["BayonCoAgent/ContentWorkflow", "PublishingSuccess", {"stat": "Sum"}],
+                  [".", "PublishingFailure", {"stat": "Sum"}],
+                  [".", "AnalyticsSyncSuccess", {"stat": "Sum"}],
+                  [".", "AnalyticsSyncFailure", {"stat": "Sum"}],
+                  [".", "OptimalTimesCalculated", {"stat": "Sum"}]
+                ],
+                "period": 3600,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Content Workflow Business Metrics",
+                "yAxis": {"left": {"min": 0}}
+              }
+            }
+          ]
+        }
+
+  # ==========================================
+  # Admin Alert Processing
+  # ==========================================
+
+  # Admin Alert Processor Lambda Function
+  AdminAlertProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-admin-alert-processor-${Environment}
+      CodeUri: src/lambda/
+      Handler: admin-alert-processor.handler
+      Runtime: nodejs22.x
+      Timeout: 300
+      MemorySize: 512
+      Role: !GetAtt AdminServiceLambdaRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !Ref DynamoDBTable
+          SES_FROM_EMAIL: !Ref SESFromEmail
+          ENVIRONMENT: !Ref Environment
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: AdminAlertProcessor
+
+  # EventBridge Rule for Daily Digest
+  AdminDailyDigestRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-admin-daily-digest-${Environment}
+      Description: Triggers daily digest email for SuperAdmins
+      ScheduleExpression: cron(0 9 * * ? *) # 9 AM UTC daily
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt AdminAlertProcessorFunction.Arn
+          Id: AdminAlertProcessorTarget
+          Input: |
+            {
+              "detail-type": "Scheduled Event",
+              "detail": {
+                "type": "digest"
+              }
+            }
+
+  # Permission for EventBridge to invoke Lambda
+  AdminDailyDigestRulePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AdminAlertProcessorFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt AdminDailyDigestRule.Arn
+
+  # CloudWatch Alarm for High Error Rate
+  HighErrorRateAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub bayon-coagent-high-error-rate-${Environment}
+      AlarmDescription: Triggers when API error rate exceeds 5%
+      MetricName: 5XXError
+      Namespace: AWS/ApiGateway
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 10
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AdminAlertSNSTopic
+
+  # CloudWatch Alarm for High Latency
+  HighLatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub bayon-coagent-high-latency-${Environment}
+      AlarmDescription: Triggers when API latency exceeds 2 seconds
+      MetricName: Latency
+      Namespace: AWS/ApiGateway
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 2000
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AdminAlertSNSTopic
+
+  # CloudWatch Alarm for DynamoDB Throttling
+  DynamoDBThrottlingAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub bayon-coagent-dynamodb-throttling-${Environment}
+      AlarmDescription: Triggers when DynamoDB requests are throttled
+      MetricName: UserErrors
+      Namespace: AWS/DynamoDB
+      Dimensions:
+        - Name: TableName
+          Value: !Ref DynamoDBTable
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AdminAlertSNSTopic
+
+  # SNS Topic for Admin Alerts
+  AdminAlertSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub bayon-coagent-admin-alerts-${Environment}
+      DisplayName: Bayon Coagent Admin Alerts
+      Subscription:
+        - Endpoint: !GetAtt AdminAlertProcessorFunction.Arn
+          Protocol: lambda
+
+  # Permission for SNS to invoke Lambda
+  AdminAlertSNSPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AdminAlertProcessorFunction
+      Action: lambda:InvokeFunction
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref AdminAlertSNSTopic
+
+  # EventBridge Rule for Threshold Violations
+  ThresholdViolationRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub bayon-coagent-threshold-violation-${Environment}
+      Description: Triggers when system thresholds are violated
+      EventPattern:
+        source:
+          - bayon.coagent
+        detail-type:
+          - Threshold Violation
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt AdminAlertProcessorFunction.Arn
+          Id: AdminAlertProcessorTarget
+
+  # Permission for EventBridge Threshold Rule to invoke Lambda
+  ThresholdViolationRulePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AdminAlertProcessorFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt ThresholdViolationRule.Arn
+
+  # ==========================================
+  # API Gateway + Lambda Migration Functions
+  # ==========================================
+
+  # AI Service Lambda Functions
+  AiContentGenerationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-ai-content-generation-${Environment}
+      CodeUri: infrastructure/lambda-functions/ai-content-generation/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Timeout: 300  # 5 minutes for AI processing
+      MemorySize: 3008  # Max memory for AI workloads (better CPU performance)
+      Role: !GetAtt AiProcessingLambdaRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+          S3_BUCKET_NAME: !Ref StorageBucket
+          BEDROCK_MODEL_ID: anthropic.claude-3-5-sonnet-20241022-v2:0
+          BEDROCK_REGION: !Ref AWS::Region
+          COGNITO_USER_POOL_ID: !Ref UserPool
+          COGNITO_CLIENT_ID: !Ref UserPoolClient
+      AutoPublishAlias: live
+      ProvisionedConcurrencyConfig:
+        ProvisionedConcurrency: !If [IsProduction, 2, 0]  # Keep 2 warm for content generation
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: AIService
+        Function: ContentGeneration
+
+  AiResearchFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-ai-research-${Environment}
+      CodeUri: infrastructure/lambda-functions/ai-research/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      Timeout: 300
+      MemorySize: 2048
+      Role: !GetAtt AiProcessingLambdaRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+          S3_BUCKET_NAME: !Ref StorageBucket
+          BEDROCK_MODEL_ID: anthropic.claude-3-5-sonnet-20241022-v2:0
+          BEDROCK_REGION: !Ref AWS::Region
+          COGNITO_USER_POOL_ID: !Ref UserPool
+          COGNITO_CLIENT_ID: !Ref UserPoolClient
+          TAVILY_API_KEY: ""
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: AIService
+        Function: Research
+
+  AiBrandAnalysisFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-ai-brand-analysis-${Environment}
+      CodeUri: infrastructure/lambda-functions/ai-service/brand-analysis/
+      Handler: handler.handler
+      Runtime: nodejs22.x
+      Timeout: 300
+      MemorySize: 2048
+      Role: !GetAtt AiProcessingLambdaRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+          S3_BUCKET_NAME: !Ref StorageBucket
+          BEDROCK_MODEL_ID: anthropic.claude-3-5-sonnet-20241022-v2:0
+          BEDROCK_REGION: !Ref AWS::Region
+          COGNITO_USER_POOL_ID: !Ref UserPool
+          COGNITO_CLIENT_ID: !Ref UserPoolClient
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: AIService
+        Function: BrandAnalysis
+
+  # Integration Service Lambda Functions
+  IntegrationOAuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-integration-oauth-${Environment}
+      CodeUri: infrastructure/lambda-functions/integration-service/oauth/
+      Handler: handler.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 512
+      Role: !GetAtt IntegrationServiceLambdaRole.Arn
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+          COGNITO_USER_POOL_ID: !Ref UserPool
+          COGNITO_CLIENT_ID: !Ref UserPoolClient
+          GOOGLE_CLIENT_ID: !Ref GoogleOAuthSecret
+          GOOGLE_CLIENT_SECRET: !Ref GoogleOAuthSecret
+          GOOGLE_REDIRECT_URI: !If
+            - IsProduction
+            - https://bayoncoagent.app/oauth/callback
+            - http://localhost:3000/oauth/callback
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: IntegrationService
+        Function: OAuth
+
+  IntegrationFileStorageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-integration-file-storage-${Environment}
+      CodeUri: infrastructure/lambda-functions/integration-service/file-storage/
+      Handler: handler.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 512
+      Role: !GetAtt IntegrationServiceLambdaRole.Arn
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Ref StorageBucket
+          COGNITO_USER_POOL_ID: !Ref UserPool
+          COGNITO_CLIENT_ID: !Ref UserPoolClient
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: IntegrationService
+        Function: FileStorage
+
+  # Lambda Roles
+  AiProcessingLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub bayon-coagent-ai-processing-lambda-${Environment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:BatchGetItem
+                  - dynamodb:BatchWriteItem
+                Resource:
+                  - !GetAtt DynamoDBTable.Arn
+                  - !Sub ${DynamoDBTable.Arn}/index/*
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub ${StorageBucket.Arn}/*
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: !GetAtt StorageBucket.Arn
+        - PolicyName: BedrockAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:InvokeModelWithResponseStream
+                Resource:
+                  - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0
+                  - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/anthropic.claude-*
+                  - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/amazon.titan-*
+        - PolicyName: SecretsManagerAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - "*"
+
+  IntegrationServiceLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub bayon-coagent-integration-service-lambda-${Environment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt DynamoDBTable.Arn
+                  - !Sub ${DynamoDBTable.Arn}/index/*
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt StorageBucket.Arn
+                  - !Sub ${StorageBucket.Arn}/*
+        - PolicyName: SecretsManagerAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Ref GoogleOAuthSecret
+                  - !Ref FacebookOAuthSecret
+                  - !Ref InstagramOAuthSecret
+                  - !Ref LinkedInOAuthSecret
+                  - !Ref TwitterOAuthSecret
+
+  # API Gateway Resources and Methods
+  AiContentResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      ParentId: !GetAtt AiServiceApi.RootResourceId
+      PathPart: content
+
+  AiContentGenerationMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      ResourceId: !Ref AiContentResource
+      HttpMethod: POST
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref AiServiceCognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AiContentGenerationFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+        - StatusCode: 400
+        - StatusCode: 401
+        - StatusCode: 500
+
+  AiResearchResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      ParentId: !GetAtt AiServiceApi.RootResourceId
+      PathPart: research
+
+  AiResearchMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      ResourceId: !Ref AiResearchResource
+      HttpMethod: POST
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref AiServiceCognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AiResearchFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+        - StatusCode: 400
+        - StatusCode: 401
+        - StatusCode: 500
+
+  AiBrandResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      ParentId: !GetAtt AiServiceApi.RootResourceId
+      PathPart: brand
+
+  AiBrandAnalysisMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      ResourceId: !Ref AiBrandResource
+      HttpMethod: POST
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref AiServiceCognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AiBrandAnalysisFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+        - StatusCode: 400
+        - StatusCode: 401
+        - StatusCode: 500
+
+  # Integration Service API Resources
+  IntegrationOAuthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !GetAtt IntegrationServiceApi.RootResourceId
+      PathPart: oauth
+
+  IntegrationOAuthMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ResourceId: !Ref IntegrationOAuthResource
+      HttpMethod: ANY
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref IntegrationServiceCognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IntegrationOAuthFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+        - StatusCode: 400
+        - StatusCode: 401
+        - StatusCode: 500
+
+  IntegrationFilesResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !GetAtt IntegrationServiceApi.RootResourceId
+      PathPart: files
+
+  IntegrationFilesMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ResourceId: !Ref IntegrationFilesResource
+      HttpMethod: ANY
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref IntegrationServiceCognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IntegrationFileStorageFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+        - StatusCode: 400
+        - StatusCode: 401
+        - StatusCode: 500
+
+  # Lambda Permissions
+  AiContentGenerationLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AiContentGenerationFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AiServiceApi}/*
+
+  AiResearchLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AiResearchFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AiServiceApi}/*
+
+  AiBrandAnalysisLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AiBrandAnalysisFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AiServiceApi}/*
+
+  IntegrationOAuthLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IntegrationOAuthFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IntegrationServiceApi}/*
+
+  IntegrationFileStorageLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IntegrationFileStorageFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IntegrationServiceApi}/*
+
+
+
+
+
+# Minimal outputs for this section
+Outputs:
+  StackName:
+    Description: Name of this CloudFormation stack
+    Value: !Ref AWS::StackName
+    Export:
+      Name: !Sub ${Environment}-monitoring-StackName

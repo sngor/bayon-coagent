@@ -61,7 +61,7 @@ export default function AuditLogsClient() {
                 limit: 50
             });
 
-            if (result.success && result.data) {
+            if (result.data) {
                 setLogs(result.data.logs || []);
                 setNextToken(result.data.nextToken);
             } else {

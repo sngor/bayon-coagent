@@ -1,0 +1,291 @@
+{
+    "widgets": [
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 6,
+            "properties": {
+                "metrics": [
+                    [
+                        "AWS/Lambda",
+                        "Duration",
+                        "FunctionName",
+                        "bayon-coagent-ai-content-generation-production"
+                    ],
+                    [
+                        ".",
+                        ".",
+                        ".",
+                        "bayon-coagent-cognito-authorizer-production"
+                    ],
+                    [
+                        ".",
+                        ".",
+                        ".",
+                        "bayon-coagent-ai-research-production"
+                    ],
+                    [
+                        ".",
+                        ".",
+                        ".",
+                        "bayon-coagent-ai-brand-analysis-production"
+                    ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-east-1",
+                "title": "Lambda Function Duration (ARM64 Optimized)",
+                "period": 300,
+                "stat": "Average",
+                "yAxis": {
+                    "left": {
+                        "min": 0
+                    }
+                }
+            }
+        },
+        {
+            "type": "metric",
+            "x": 12,
+            "y": 0,
+            "width": 12,
+            "height": 6,
+            "properties": {
+                "metrics": [
+                    [
+                        "BayonCoAgent/Performance",
+                        "CacheHitRate",
+                        "CacheType",
+                        "blogPost"
+                    ],
+                    [
+                        ".",
+                        ".",
+                        ".",
+                        "socialMedia"
+                    ],
+                    [
+                        ".",
+                        ".",
+                        ".",
+                        "listingDescription"
+                    ],
+                    [
+                        ".",
+                        ".",
+                        ".",
+                        "research"
+                    ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-east-1",
+                "title": "AI Cache Hit Rates",
+                "period": 300,
+                "stat": "Average",
+                "yAxis": {
+                    "left": {
+                        "min": 0,
+                        "max": 100
+                    }
+                }
+            }
+        },
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 6,
+            "width": 8,
+            "height": 6,
+            "properties": {
+                "metrics": [
+                    [
+                        "AWS/Lambda",
+                        "ConcurrentExecutions",
+                        "FunctionName",
+                        "bayon-coagent-ai-content-generation-production"
+                    ],
+                    [
+                        ".",
+                        ".",
+                        ".",
+                        "bayon-coagent-cognito-authorizer-production"
+                    ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-east-1",
+                "title": "Concurrent Executions (Provisioned Concurrency)",
+                "period": 300,
+                "stat": "Maximum"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 8,
+            "y": 6,
+            "width": 8,
+            "height": 6,
+            "properties": {
+                "metrics": [
+                    [
+                        "BayonCoAgent/Performance",
+                        "CircuitBreakerState",
+                        "Service",
+                        "bedrock"
+                    ],
+                    [
+                        ".",
+                        "CircuitBreakerFailures",
+                        ".",
+                        "."
+                    ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-east-1",
+                "title": "Circuit Breaker Status",
+                "period": 300,
+                "stat": "Maximum"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 16,
+            "y": 6,
+            "width": 8,
+            "height": 6,
+            "properties": {
+                "metrics": [
+                    [
+                        "AWS/Lambda",
+                        "Errors",
+                        "FunctionName",
+                        "bayon-coagent-ai-content-generation-production"
+                    ],
+                    [
+                        ".",
+                        ".",
+                        ".",
+                        "bayon-coagent-cognito-authorizer-production"
+                    ],
+                    [
+                        ".",
+                        "Throttles",
+                        ".",
+                        "bayon-coagent-ai-content-generation-production"
+                    ],
+                    [
+                        ".",
+                        ".",
+                        ".",
+                        "bayon-coagent-cognito-authorizer-production"
+                    ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-east-1",
+                "title": "Lambda Errors & Throttles",
+                "period": 300,
+                "stat": "Sum"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 0,
+            "y": 12,
+            "width": 12,
+            "height": 6,
+            "properties": {
+                "metrics": [
+                    [
+                        "BayonCoAgent/Performance",
+                        "TokensUsed",
+                        "ContentType",
+                        "blogPost"
+                    ],
+                    [
+                        ".",
+                        ".",
+                        ".",
+                        "socialMedia"
+                    ],
+                    [
+                        ".",
+                        ".",
+                        ".",
+                        "listingDescription"
+                    ],
+                    [
+                        ".",
+                        ".",
+                        ".",
+                        "research"
+                    ]
+                ],
+                "view": "timeSeries",
+                "stacked": true,
+                "region": "us-east-1",
+                "title": "AI Token Usage by Content Type",
+                "period": 300,
+                "stat": "Sum"
+            }
+        },
+        {
+            "type": "metric",
+            "x": 12,
+            "y": 12,
+            "width": 12,
+            "height": 6,
+            "properties": {
+                "metrics": [
+                    [
+                        "BayonCoAgent/Performance",
+                        "AIGenerationCost",
+                        "ContentType",
+                        "blogPost"
+                    ],
+                    [
+                        ".",
+                        ".",
+                        ".",
+                        "socialMedia"
+                    ],
+                    [
+                        ".",
+                        ".",
+                        ".",
+                        "listingDescription"
+                    ],
+                    [
+                        ".",
+                        ".",
+                        ".",
+                        "research"
+                    ]
+                ],
+                "view": "timeSeries",
+                "stacked": true,
+                "region": "us-east-1",
+                "title": "AI Generation Costs by Content Type",
+                "period": 300,
+                "stat": "Sum"
+            }
+        },
+        {
+            "type": "log",
+            "x": 0,
+            "y": 18,
+            "width": 24,
+            "height": 6,
+            "properties": {
+                "query": "SOURCE '/aws/lambda/bayon-coagent-ai-content-generation-production'\n| fields @timestamp, @message\n| filter @message like /ERROR/\n| sort @timestamp desc\n| limit 20",
+                "region": "us-east-1",
+                "title": "Recent Errors in AI Content Generation",
+                "view": "table"
+            }
+        }
+    ]
+}

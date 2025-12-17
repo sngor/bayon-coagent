@@ -1,0 +1,1163 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Bayon CoAgent - API Gateway Services and Resources
+
+Parameters:
+  Environment:
+    Type: String
+    Default: development
+    AllowedValues:
+      - development
+      - production
+    Description: Environment name
+
+  AlarmEmail:
+    Type: String
+    Default: ""
+    Description: Email address for CloudWatch alarms (optional)
+
+  SESFromEmail:
+    Type: String
+    Default: "noreply@bayoncoagent.com"
+    Description: Email address for sending notifications via SES
+
+Conditions:
+  IsProduction: !Equals [!Ref Environment, production]
+  HasAlarmEmail: !Not [!Equals [!Ref AlarmEmail, ""]]
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 1024
+    Runtime: nodejs22.x
+    Architectures: [arm64]
+    Tracing: Active
+    Environment:
+      Variables:
+        NODE_ENV: !Ref Environment
+        BEDROCK_MODEL_ID: anthropic.claude-3-5-sonnet-20241022-v2:0
+        BEDROCK_REGION: !Ref AWS::Region
+        XRAY_TRACING_ENABLED: "true"
+        XRAY_SERVICE_NAME: !Sub bayon-coagent-${Environment}
+
+Resources:
+# ==========================================
+  # API Gateway for Service Boundaries
+  # ==========================================
+
+  # CloudWatch Log Group for API Gateway
+  ApiGatewayLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/apigateway/bayon-coagent-${Environment}
+      RetentionInDays: !If [IsProduction, 30, 7]
+
+  # Main API Gateway for Core Platform Service
+  MainRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub bayon-coagent-main-${Environment}
+      Description: !Sub Bayon CoAgent Main API Gateway (${Environment})
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Policy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: execute-api:Invoke
+            Resource: "*"
+
+  MainHealthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref MainRestApi
+      ParentId: !GetAtt MainRestApi.RootResourceId
+      PathPart: health
+
+  MainHealthMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref MainRestApi
+      ResourceId: !Ref MainHealthResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates:
+              application/json: '{"status": "healthy"}'
+      MethodResponses:
+        - StatusCode: 200
+
+  # AI Processing Service API Gateway
+  AiServiceApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub bayon-coagent-ai-${Environment}
+      Description: !Sub Bayon CoAgent AI Processing Service API (${Environment})
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # External Integration Service API Gateway
+  IntegrationServiceApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub bayon-coagent-integration-${Environment}
+      Description: !Sub Bayon CoAgent Integration Service API (${Environment})
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # Background Processing Service API Gateway
+  BackgroundServiceApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub bayon-coagent-background-${Environment}
+      Description: !Sub Bayon CoAgent Background Processing Service API (${Environment})
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # Admin Service API Gateway
+  AdminServiceApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub bayon-coagent-admin-${Environment}
+      Description: !Sub Bayon CoAgent Admin Service API (${Environment})
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # API Gateway Deployments and Stages
+  MainApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - MainHealthMethod
+    Properties:
+      RestApiId: !Ref MainRestApi
+      Description: !Sub Main API deployment for ${Environment}
+
+  MainApiStage:
+    Type: AWS::ApiGateway::Stage
+    DependsOn:
+      - ApiGatewayAccount
+    Properties:
+      RestApiId: !Ref MainRestApi
+      DeploymentId: !Ref MainApiDeployment
+      StageName: v1
+      Description: !Sub Main API v1 stage for ${Environment}
+      TracingEnabled: true
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+          DataTraceEnabled: !If [IsProduction, false, true]
+          MetricsEnabled: true
+          ThrottlingRateLimit: !If [IsProduction, 1000, 100]
+          ThrottlingBurstLimit: !If [IsProduction, 2000, 200]
+      AccessLogSetting:
+        DestinationArn: !GetAtt ApiGatewayLogGroup.Arn
+        Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol","responseLength":"$context.responseLength","error.message":"$context.error.message","error.messageString":"$context.error.messageString","traceId":"$context.xrayTraceId","apiVersion":"$context.stage"}'
+
+  # AI Service API Gateway Resources and Methods
+
+  AiServiceSuccessResponseModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      ContentType: application/json
+      Name: SuccessResponse
+      Schema:
+        $schema: http://json-schema.org/draft-04/schema#
+        title: Success Response
+        type: object
+        properties:
+          jobId:
+            type: string
+          status:
+            type: string
+          message:
+            type: string
+        required:
+          - jobId
+          - status
+
+  # /jobs resource
+  AiServiceJobsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      ParentId: !GetAtt AiServiceApi.RootResourceId
+      PathPart: jobs
+
+  # POST /jobs - Submit AI job
+  AiServiceSubmitJobMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      ResourceId: !Ref AiServiceJobsResource
+      HttpMethod: POST
+      AuthorizationType: AWS_IAM
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:sqs:path/${AWS::AccountId}/${AiJobRequestQueue.QueueName}
+        Credentials: !GetAtt AiServiceApiGatewayRole.Arn
+        RequestParameters:
+          integration.request.header.Content-Type: "'application/x-www-form-urlencoded'"
+        RequestTemplates:
+          application/json: |
+            Action=SendMessage&MessageBody=$util.urlEncode($input.body)
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates:
+              application/json: |
+                {
+                  "jobId": "$context.requestId",
+                  "status": "submitted",
+                  "message": "Job submitted successfully"
+                }
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: !Ref AiServiceSuccessResponseModel
+
+  # /jobs/{jobId} resource
+  AiServiceJobIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      ParentId: !Ref AiServiceJobsResource
+      PathPart: "{jobId}"
+
+  # GET /jobs/{jobId} - Get job status
+  AiServiceGetJobMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      ResourceId: !Ref AiServiceJobIdResource
+      HttpMethod: GET
+      AuthorizationType: AWS_IAM
+      RequestParameters:
+        method.request.path.jobId: true
+      Integration:
+        Type: AWS
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:dynamodb:action/GetItem
+        Credentials: !GetAtt AiServiceApiGatewayRole.Arn
+        RequestTemplates:
+          application/json: !Sub |
+            {
+              "TableName": "${DynamoDBTable}",
+              "Key": {
+                "PK": {"S": "USER#$context.authorizer.principalId"},
+                "SK": {"S": "AIJOB#$input.params('jobId')"}
+              }
+            }
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates:
+              application/json: |
+                #set($item = $input.path('$.Item'))
+                {
+                  "jobId": "$item.SK.S",
+                  "status": "$item.Status.S",
+                  "jobType": "$item.JobType.S",
+                  "createdAt": "$item.CreatedAt.S",
+                  "updatedAt": "$item.UpdatedAt.S"
+                  #if($item.Result)
+                  ,"result": $item.Result.S
+                  #end
+                  #if($item.Error)
+                  ,"error": "$item.Error.S"
+                  #end
+                  #if($item.CompletedAt)
+                  ,"completedAt": "$item.CompletedAt.S"
+                  #end
+                }
+          - StatusCode: 404
+            SelectionPattern: '.*"Item":null.*'
+            ResponseTemplates:
+              application/json: |
+                {
+                  "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Job not found"
+                  }
+                }
+      MethodResponses:
+        - StatusCode: 200
+        - StatusCode: 404
+
+  # IAM Role for AI Service API Gateway
+  AiServiceApiGatewayRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub bayon-coagent-ai-service-api-gateway-${Environment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SQSAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource: !GetAtt AiJobRequestQueue.Arn
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                Resource: !GetAtt DynamoDBTable.Arn
+
+  AiServiceApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - AiServiceSubmitJobMethod
+      - AiServiceGetJobMethod
+      - AiServiceHealthMethod
+      - AiContentGenerationMethod
+      - AiResearchMethod
+      - AiBrandAnalysisMethod
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      Description: !Sub AI Service API deployment for ${Environment}
+
+  AiServiceApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      DeploymentId: !Ref AiServiceApiDeployment
+      StageName: v1
+      Description: !Sub AI Service API stage for ${Environment}
+      TracingEnabled: true
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+          DataTraceEnabled: !If [IsProduction, false, true]
+          MetricsEnabled: true
+          ThrottlingRateLimit: !If [IsProduction, 1000, 100]
+          ThrottlingBurstLimit: !If [IsProduction, 2000, 200]
+
+  # Integration Service API Gateway Resources and Methods
+
+  # /oauth resource
+  IntegrationServiceOAuthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !GetAtt IntegrationServiceApi.RootResourceId
+      PathPart: oauth
+
+  # /oauth/google resource
+  IntegrationServiceGoogleResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !Ref IntegrationServiceOAuthResource
+      PathPart: google
+
+  # /oauth/google/authorize resource
+  IntegrationServiceGoogleAuthorizeResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !Ref IntegrationServiceGoogleResource
+      PathPart: authorize
+
+  # GET /oauth/google/authorize
+  IntegrationServiceGoogleAuthorizeMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ResourceId: !Ref IntegrationServiceGoogleAuthorizeResource
+      HttpMethod: GET
+      AuthorizationType: AWS_IAM
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IntegrationGoogleOAuthFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /oauth/google/callback resource
+  IntegrationServiceGoogleCallbackResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !Ref IntegrationServiceGoogleResource
+      PathPart: callback
+
+  # GET /oauth/google/callback
+  # Note: OAuth callbacks must remain NONE as they are called by external OAuth providers
+  IntegrationServiceGoogleCallbackMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ResourceId: !Ref IntegrationServiceGoogleCallbackResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IntegrationGoogleOAuthFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /oauth/{platform} resource for social media
+  IntegrationServiceSocialPlatformResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !Ref IntegrationServiceOAuthResource
+      PathPart: "{platform}"
+
+  # /oauth/{platform}/authorize resource
+  IntegrationServiceSocialAuthorizeResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !Ref IntegrationServiceSocialPlatformResource
+      PathPart: authorize
+
+  # GET /oauth/{platform}/authorize
+  IntegrationServiceSocialAuthorizeMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ResourceId: !Ref IntegrationServiceSocialAuthorizeResource
+      HttpMethod: GET
+      AuthorizationType: AWS_IAM
+      RequestParameters:
+        method.request.path.platform: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IntegrationSocialOAuthFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /oauth/{platform}/callback resource
+  IntegrationServiceSocialCallbackResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !Ref IntegrationServiceSocialPlatformResource
+      PathPart: callback
+
+  # GET /oauth/{platform}/callback
+  # Note: OAuth callbacks must remain NONE as they are called by external OAuth providers
+  IntegrationServiceSocialCallbackMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ResourceId: !Ref IntegrationServiceSocialCallbackResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      RequestParameters:
+        method.request.path.platform: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IntegrationSocialOAuthFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /mls resource
+  IntegrationServiceMLSResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !GetAtt IntegrationServiceApi.RootResourceId
+      PathPart: mls
+
+  # /mls/sync resource
+  IntegrationServiceMLSSyncResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !Ref IntegrationServiceMLSResource
+      PathPart: sync
+
+  # POST /mls/sync
+  IntegrationServiceMLSSyncMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ResourceId: !Ref IntegrationServiceMLSSyncResource
+      HttpMethod: POST
+      AuthorizationType: AWS_IAM
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IntegrationMLSSyncFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # /mls/status resource
+  IntegrationServiceMLSStatusResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !Ref IntegrationServiceMLSResource
+      PathPart: status
+
+  # /mls/status/{syncId} resource
+  IntegrationServiceMLSStatusIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !Ref IntegrationServiceMLSStatusResource
+      PathPart: "{syncId}"
+
+  # GET /mls/status/{syncId}
+  IntegrationServiceMLSStatusMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ResourceId: !Ref IntegrationServiceMLSStatusIdResource
+      HttpMethod: GET
+      AuthorizationType: AWS_IAM
+      RequestParameters:
+        method.request.path.syncId: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IntegrationMLSSyncFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+
+  # Lambda Permissions for API Gateway to invoke Integration Service functions
+  IntegrationGoogleOAuthLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IntegrationGoogleOAuthFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IntegrationServiceApi}/*
+
+  IntegrationSocialOAuthLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IntegrationSocialOAuthFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IntegrationServiceApi}/*
+
+  IntegrationMLSSyncLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IntegrationMLSSyncFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IntegrationServiceApi}/*
+
+  IntegrationServiceApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - IntegrationServiceGoogleAuthorizeMethod
+      - IntegrationServiceGoogleCallbackMethod
+      - IntegrationServiceSocialAuthorizeMethod
+      - IntegrationServiceSocialCallbackMethod
+      - IntegrationServiceMLSSyncMethod
+      - IntegrationServiceMLSStatusMethod
+      - IntegrationServiceHealthMethod
+      - IntegrationOAuthMethod
+      - IntegrationFilesMethod
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      Description: !Sub Integration Service API deployment for ${Environment}
+
+  IntegrationServiceApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      DeploymentId: !Ref IntegrationServiceApiDeployment
+      StageName: v1
+      Description: !Sub Integration Service API stage for ${Environment}
+      TracingEnabled: true
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+          DataTraceEnabled: !If [IsProduction, false, true]
+          MetricsEnabled: true
+          ThrottlingRateLimit: !If [IsProduction, 500, 50]
+          ThrottlingBurstLimit: !If [IsProduction, 1000, 100]
+
+  BackgroundServiceApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - BackgroundServiceHealthMethod
+    Properties:
+      RestApiId: !Ref BackgroundServiceApi
+      Description: !Sub Background Service API deployment for ${Environment}
+
+  BackgroundServiceApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref BackgroundServiceApi
+      DeploymentId: !Ref BackgroundServiceApiDeployment
+      StageName: v1
+      Description: !Sub Background Service API stage for ${Environment}
+      TracingEnabled: true
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: INFO
+          DataTraceEnabled: !If [IsProduction, false, true]
+          MetricsEnabled: true
+          ThrottlingRateLimit: !If [IsProduction, 200, 20]
+          ThrottlingBurstLimit: !If [IsProduction, 400, 40]
+
+  # Admin Service API Deployment and Stage are defined later after all resources are created
+
+  # ==========================================
+  # Health Check Endpoints for All Services
+  # ==========================================
+
+  # AI Service Health Check
+  AiServiceHealthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      ParentId: !GetAtt AiServiceApi.RootResourceId
+      PathPart: health
+
+  AiServiceHealthMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AiServiceApi
+      ResourceId: !Ref AiServiceHealthResource
+      HttpMethod: GET
+      AuthorizationType: AWS_IAM
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AiServiceHealthCheckFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+        - StatusCode: 503
+
+  AiServiceHealthCheckFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-health-check-ai-service-${Environment}
+      CodeUri: src/lambda/
+      Handler: health-check-ai-service.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 256
+      Role: !GetAtt AiProcessingLambdaRole.Arn
+      Environment:
+        Variables:
+          AI_JOB_REQUEST_QUEUE_URL: !Ref AiJobRequestQueue
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: AIProcessing
+        Function: HealthCheck
+
+  AiServiceHealthCheckPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AiServiceHealthCheckFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AiServiceApi}/*
+
+  # Integration Service Health Check
+  IntegrationServiceHealthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ParentId: !GetAtt IntegrationServiceApi.RootResourceId
+      PathPart: health
+
+  IntegrationServiceHealthMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref IntegrationServiceApi
+      ResourceId: !Ref IntegrationServiceHealthResource
+      HttpMethod: GET
+      AuthorizationType: AWS_IAM
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${IntegrationServiceHealthCheckFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+        - StatusCode: 503
+
+  IntegrationServiceHealthCheckFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-health-check-integration-service-${Environment}
+      CodeUri: src/lambda/
+      Handler: health-check-integration-service.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 256
+      Role: !GetAtt IntegrationServiceLambdaRole.Arn
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: IntegrationService
+        Function: HealthCheck
+
+  IntegrationServiceHealthCheckPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IntegrationServiceHealthCheckFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IntegrationServiceApi}/*
+
+  # Background Service Health Check
+  BackgroundServiceHealthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref BackgroundServiceApi
+      ParentId: !GetAtt BackgroundServiceApi.RootResourceId
+      PathPart: health
+
+  BackgroundServiceHealthMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref BackgroundServiceApi
+      ResourceId: !Ref BackgroundServiceHealthResource
+      HttpMethod: GET
+      AuthorizationType: AWS_IAM
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${BackgroundServiceHealthCheckFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+        - StatusCode: 503
+
+  BackgroundServiceHealthCheckFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-health-check-background-service-${Environment}
+      CodeUri: src/lambda/
+      Handler: health-check-background-service.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 256
+      Role: !GetAtt ContentWorkflowLambdaRole.Arn
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: BackgroundService
+        Function: HealthCheck
+
+  BackgroundServiceHealthCheckPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref BackgroundServiceHealthCheckFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${BackgroundServiceApi}/*
+
+  # Admin Service Health Check
+  AdminServiceHealthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ParentId: !GetAtt AdminServiceApi.RootResourceId
+      PathPart: health
+
+  AdminServiceHealthMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref AdminServiceApi
+      ResourceId: !Ref AdminServiceHealthResource
+      HttpMethod: GET
+      AuthorizationType: AWS_IAM
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminServiceHealthCheckFunction.Arn}/invocations
+      MethodResponses:
+        - StatusCode: 200
+        - StatusCode: 503
+
+  AdminServiceHealthCheckFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-health-check-admin-service-${Environment}
+      CodeUri: src/lambda/
+      Handler: health-check-admin-service.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 256
+      Role: !GetAtt ApplicationRole.Arn
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Service: AdminService
+        Function: HealthCheck
+
+  AdminServiceHealthCheckPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AdminServiceHealthCheckFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AdminServiceApi}/*
+
+  # ==========================================
+  # Cognito JWT Token Authorizer
+  # ==========================================
+
+  # Cognito Authorizer Lambda Function
+  CognitoAuthorizerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-cognito-authorizer-${Environment}
+      CodeUri: src/lambda/
+      Handler: cognito-authorizer.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 512  # Optimized for auth operations
+      Role: !GetAtt CognitoAuthorizerRole.Arn
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      AutoPublishAlias: live
+      ProvisionedConcurrencyConfig:
+        ProvisionedConcurrency: !If [IsProduction, 5, 0]  # Keep 5 warm instances in prod
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: CognitoAuthorizer
+
+  # IAM Role for Cognito Authorizer
+  CognitoAuthorizerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub bayon-coagent-cognito-authorizer-${Environment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CognitoAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:GetUser
+                  - cognito-idp:DescribeUserPool
+                Resource: !GetAtt UserPool.Arn
+        - PolicyName: CloudWatchLogs
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/bayon-coagent-cognito-authorizer-${Environment}*
+
+  # Lambda Permissions for API Gateways to invoke authorizer
+  CognitoAuthorizerMainApiPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CognitoAuthorizerFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MainRestApi}/authorizers/*
+
+  CognitoAuthorizerAiServicePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CognitoAuthorizerFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AiServiceApi}/authorizers/*
+
+  CognitoAuthorizerIntegrationServicePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CognitoAuthorizerFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${IntegrationServiceApi}/authorizers/*
+
+  CognitoAuthorizerBackgroundServicePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CognitoAuthorizerFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${BackgroundServiceApi}/authorizers/*
+
+  CognitoAuthorizerAdminServicePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CognitoAuthorizerFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AdminServiceApi}/authorizers/*
+
+  # API Gateway Authorizers for each service
+  MainApiCognitoAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      Name: !Sub bayon-coagent-main-cognito-authorizer-${Environment}
+      Type: TOKEN
+      AuthorizerUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CognitoAuthorizerFunction.Arn}/invocations
+      AuthorizerCredentials: !GetAtt ApiGatewayAuthorizerRole.Arn
+      AuthorizerResultTtlInSeconds: 300
+      IdentitySource: method.request.header.Authorization
+      RestApiId: !Ref MainRestApi
+
+  AiServiceCognitoAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      Name: !Sub bayon-coagent-ai-cognito-authorizer-${Environment}
+      Type: TOKEN
+      AuthorizerUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CognitoAuthorizerFunction.Arn}/invocations
+      AuthorizerCredentials: !GetAtt ApiGatewayAuthorizerRole.Arn
+      AuthorizerResultTtlInSeconds: 300
+      IdentitySource: method.request.header.Authorization
+      RestApiId: !Ref AiServiceApi
+
+  IntegrationServiceCognitoAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      Name: !Sub bayon-coagent-integration-cognito-authorizer-${Environment}
+      Type: TOKEN
+      AuthorizerUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CognitoAuthorizerFunction.Arn}/invocations
+      AuthorizerCredentials: !GetAtt ApiGatewayAuthorizerRole.Arn
+      AuthorizerResultTtlInSeconds: 300
+      IdentitySource: method.request.header.Authorization
+      RestApiId: !Ref IntegrationServiceApi
+
+  BackgroundServiceCognitoAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      Name: !Sub bayon-coagent-background-cognito-authorizer-${Environment}
+      Type: TOKEN
+      AuthorizerUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CognitoAuthorizerFunction.Arn}/invocations
+      AuthorizerCredentials: !GetAtt ApiGatewayAuthorizerRole.Arn
+      AuthorizerResultTtlInSeconds: 300
+      IdentitySource: method.request.header.Authorization
+      RestApiId: !Ref BackgroundServiceApi
+
+  # Admin Authorizer Lambda Function
+  AdminAuthorizerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-admin-authorizer-${Environment}
+      CodeUri: src/lambda/
+      Handler: admin-authorizer.handler
+      Runtime: nodejs22.x
+      Timeout: 30
+      MemorySize: 256
+      Role: !GetAtt CognitoAuthorizerRole.Arn
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: AdminAuthorizer
+
+  # Lambda Permission for Admin Service API Gateway to invoke admin authorizer
+  AdminAuthorizerAdminServicePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AdminAuthorizerFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${AdminServiceApi}/authorizers/*
+
+  AdminServiceCognitoAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      Name: !Sub bayon-coagent-admin-authorizer-${Environment}
+      Type: TOKEN
+      AuthorizerUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminAuthorizerFunction.Arn}/invocations
+      AuthorizerCredentials: !GetAtt ApiGatewayAuthorizerRole.Arn
+      AuthorizerResultTtlInSeconds: 300
+      IdentitySource: method.request.header.Authorization
+      RestApiId: !Ref AdminServiceApi
+
+  # IAM Role for API Gateway to invoke authorizer
+  ApiGatewayAuthorizerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub bayon-coagent-api-gateway-authorizer-${Environment}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeLambdaAuthorizer
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: !GetAtt CognitoAuthorizerFunction.Arn
+
+  # Usage Plans for different service tiers
+  BasicUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      UsagePlanName: !Sub bayon-coagent-basic-${Environment}
+      Description: Basic usage plan for standard users
+      ApiStages:
+        - ApiId: !Ref MainRestApi
+          Stage: !Ref MainApiStage
+      Throttle:
+        RateLimit: !If [IsProduction, 100, 10]
+        BurstLimit: !If [IsProduction, 200, 20]
+      Quota:
+        Limit: !If [IsProduction, 10000, 1000]
+        Period: DAY
+
+  PremiumUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      UsagePlanName: !Sub bayon-coagent-premium-${Environment}
+      Description: Premium usage plan for power users
+      ApiStages:
+        - ApiId: !Ref MainRestApi
+          Stage: !Ref MainApiStage
+      Throttle:
+        RateLimit: !If [IsProduction, 500, 50]
+        BurstLimit: !If [IsProduction, 1000, 100]
+      Quota:
+        Limit: !If [IsProduction, 50000, 5000]
+        Period: DAY
+
+  EnterpriseUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      UsagePlanName: !Sub bayon-coagent-enterprise-${Environment}
+      Description: Enterprise usage plan for high-volume users
+      ApiStages:
+        - ApiId: !Ref MainRestApi
+          Stage: !Ref MainApiStage
+      Throttle:
+        RateLimit: !If [IsProduction, 2000, 200]
+        BurstLimit: !If [IsProduction, 4000, 400]
+      Quota:
+        Limit: !If [IsProduction, 200000, 20000]
+        Period: DAY
+
+  AiServiceUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      UsagePlanName: !Sub bayon-coagent-ai-service-${Environment}
+      Description: Usage plan for AI processing service
+      ApiStages:
+        - ApiId: !Ref AiServiceApi
+          Stage: !Ref AiServiceApiStage
+      Throttle:
+        RateLimit: !If [IsProduction, 1000, 100]
+        BurstLimit: !If [IsProduction, 2000, 200]
+      Quota:
+        Limit: !If [IsProduction, 100000, 10000]
+        Period: DAY
+
+  # Request/Response Models for API validation
+  ErrorResponseModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      RestApiId: !Ref MainRestApi
+      ContentType: application/json
+      Name: ErrorResponse
+      Schema:
+        $schema: http://json-schema.org/draft-04/schema#
+        title: Error Response
+        type: object
+        properties:
+          error:
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              details:
+                type: object
+              traceId:
+                type: string
+            required:
+              - code
+              - message
+        required:
+          - error
+
+  SuccessResponseModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      RestApiId: !Ref MainRestApi
+      ContentType: application/json
+      Name: SuccessResponse
+      Schema:
+        $schema: http://json-schema.org/draft-04/schema#
+        title: Success Response
+        type: object
+        properties:
+          success:
+            type: boolean
+          data:
+            type: object
+          message:
+            type: string
+          traceId:
+            type: string
+        required:
+          - success
+
+  # Request Validator
+  RequestValidator:
+    Type: AWS::ApiGateway::RequestValidator
+    Properties:
+      RestApiId: !Ref MainRestApi
+      Name: Validate body and parameters
+      ValidateRequestBody: true
+      ValidateRequestParameters: true
+
+  
+
+# Minimal outputs for this section
+Outputs:
+  StackName:
+    Description: Name of this CloudFormation stack
+    Value: !Ref AWS::StackName
+    Export:
+      Name: !Sub ${Environment}-api-gateway-StackName

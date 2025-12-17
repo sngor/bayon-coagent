@@ -11,7 +11,7 @@ import { STRIPE_CONFIG } from '@/lib/constants/stripe-config';
 
 // Initialize Stripe client
 const stripe = new Stripe(STRIPE_CONFIG.secretKey, {
-    apiVersion: '2024-11-20.acacia',
+    apiVersion: '2025-11-17.clover',
 });
 
 export interface PromotionCampaign {
@@ -150,26 +150,26 @@ export class PromotionService {
 
             // Save to DynamoDB
             const repository = getRepository();
-            await repository.create({
-                PK: 'PROMOTION#CAMPAIGN',
-                SK: promotionCampaign.id,
-                EntityType: 'PromotionCampaign',
-                Data: promotionCampaign,
-            });
+            await repository.create(
+                'PROMOTION#CAMPAIGN',
+                promotionCampaign.id,
+                'PromotionCampaign',
+                promotionCampaign
+            );
 
             // Create audit log
-            await repository.create({
-                PK: 'AUDIT#PROMOTION',
-                SK: `${Date.now()}#${promotionCampaign.id}`,
-                EntityType: 'AuditLog',
-                Data: {
+            await repository.create(
+                'AUDIT#PROMOTION',
+                `${Date.now()}#${promotionCampaign.id}`,
+                'AuditLog',
+                {
                     action: 'campaign_created',
                     adminId,
                     campaignId: promotionCampaign.id,
                     couponId: stripeCoupon.id,
                     timestamp: Date.now(),
-                },
-            });
+                }
+            );
 
             return promotionCampaign;
         } catch (error) {
@@ -183,8 +183,8 @@ export class PromotionService {
      */
     async createSeasonalPromotion(
         seasonType: string,
-        customDiscount?: number,
-        adminId: string
+        adminId: string,
+        customDiscount?: number
     ): Promise<PromotionCampaign> {
         const seasonal = this.seasonalPromotions.find(p => p.season === seasonType);
         if (!seasonal) {
@@ -207,6 +207,7 @@ export class PromotionService {
             discountValue: discount,
             maxRedemptions: 500, // Limit to prevent abuse
             isActive: true,
+            createdBy: adminId,
         }, adminId);
     }
 
@@ -302,18 +303,18 @@ export class PromotionService {
             });
 
             // Create audit log
-            await repository.create({
-                PK: 'AUDIT#PROMOTION',
-                SK: `${Date.now()}#${campaignId}`,
-                EntityType: 'AuditLog',
-                Data: {
+            await repository.create(
+                'AUDIT#PROMOTION',
+                `${Date.now()}#${campaignId}`,
+                'AuditLog',
+                {
                     action: 'campaign_deactivated',
                     adminId,
                     campaignId,
                     couponId: promotionData.couponId,
                     timestamp: Date.now(),
-                },
-            });
+                }
+            );
         } catch (error) {
             console.error('Error deactivating promotion:', error);
             throw new Error('Failed to deactivate promotion');

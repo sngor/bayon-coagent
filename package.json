@@ -48,6 +48,8 @@
     "verify:reimagine": "tsx scripts/verify-reimagine-setup.ts",
     "setup:reimagine-monitoring": "tsx scripts/setup-reimagine-monitoring.ts",
     "setup:onboarding-monitoring": "tsx scripts/setup-onboarding-monitoring.ts",
+    "test:event-driven": "tsx scripts/test-event-driven-architecture.ts",
+    "deploy:event-driven": "./scripts/deploy-event-driven-enhancements.sh",
     "lighthouse": "node scripts/lighthouse-test.js",
     "lighthouse:prod": "node scripts/lighthouse-test.js https://your-production-url.com",
     "lighthouse:ci": "lhci autorun",
@@ -60,7 +62,10 @@
     "setup:secrets": "tsx scripts/setup-secrets.ts",
     "verify:secrets": "tsx scripts/verify-secrets.ts",
     "verify:eventbridge": "tsx scripts/verify-eventbridge-setup.ts",
-    "verify:eventbridge:prod": "tsx scripts/verify-eventbridge-setup.ts production"
+    "verify:eventbridge:prod": "tsx scripts/verify-eventbridge-setup.ts production",
+    "infra:validate": "./scripts/validate-split-templates.sh",
+    "infra:deploy:dev": "./scripts/deploy-split-infrastructure.sh development",
+    "infra:deploy:prod": "./scripts/deploy-split-infrastructure.sh production"
   },
   "dependencies": {
     "@aws-sdk/client-api-gateway": "^3.952.0",

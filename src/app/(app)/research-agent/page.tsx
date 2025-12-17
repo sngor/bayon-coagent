@@ -27,7 +27,7 @@ import { type RunResearchAgentOutput } from '@/aws/bedrock/flows';
 import { toast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
 import { saveResearchReportAction } from '@/app/actions';
-import type { ResearchReport } from '@/lib/types/common/common';
+import type { ResearchReport } from '@/lib/types/common';
 import Link from 'next/link';
 import { CardListSkeleton, FormSkeleton } from '@/components/ui/skeletons';
 import { Loading } from '@/components/ui/loading';
@@ -132,17 +132,18 @@ export default function ResearchAgentPage() {
       });
 
       if (result.success) {
+        const data = result.data as any;
         setState({
           message: 'success',
           data: {
-            report: result.data.summary + '\n\n## Key Findings\n' +
-              result.data.keyFindings.map((finding: string) => `- ${finding}`).join('\n') +
-              '\n\n## Market Data\n' + JSON.stringify(result.data.marketData, null, 2) +
-              '\n\n## Trends\n' + result.data.trends.map((trend: string) => `- ${trend}`).join('\n') +
-              '\n\n## Implications\n' + result.data.implications +
-              '\n\n## Recommendations\n' + result.data.recommendations.map((rec: string) => `- ${rec}`).join('\n') +
-              '\n\n## Sources\n' + result.data.sources.map((source: string) => `- ${source}`).join('\n'),
-            reportId: result.reportId
+            report: data.summary + '\n\n## Key Findings\n' +
+              data.keyFindings.map((finding: string) => `- ${finding}`).join('\n') +
+              '\n\n## Market Data\n' + JSON.stringify(data.marketData, null, 2) +
+              '\n\n## Trends\n' + data.trends.map((trend: string) => `- ${trend}`).join('\n') +
+              '\n\n## Implications\n' + data.implications +
+              '\n\n## Recommendations\n' + data.recommendations.map((rec: string) => `- ${rec}`).join('\n') +
+              '\n\n## Sources\n' + data.sources.map((source: string) => `- ${source}`).join('\n'),
+            reportId: (result as any).reportId
           },
           errors: {}
         });
@@ -350,7 +351,7 @@ export default function ResearchAgentPage() {
 
         {!isLoadingReports && (!savedReports || savedReports.length === 0) && (
           <StandardEmptyState
-            icon={<Library className="h-16 w-16 text-muted-foreground" />}
+            icon={Library}
             title="Your Knowledge Base is Empty"
             description="You haven't saved any research reports yet. Use the form above to create your first one."
           />

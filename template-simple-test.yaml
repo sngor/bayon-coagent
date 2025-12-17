@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Bayon CoAgent - Performance Test (Simple)
+
+Parameters:
+  Environment:
+    Type: String
+    Default: development
+
+Conditions:
+  IsProduction: !Equals [!Ref Environment, production]
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: nodejs22.x
+    Architectures: [arm64] # 20% cost savings
+    Tracing: Active
+
+Resources:
+  # Simple test function with ARM64 and provisioned concurrency
+  PerformanceTestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/lambda/
+      Handler: test-functions.handler
+
+      Environment:
+        Variables:
+          TEST_MODE: "performance"
+      Tags:
+        Environment: !Ref Environment
+        Purpose: PerformanceTest
+
+Outputs:
+  FunctionArn:
+    Description: ARN of the performance test function
+    Value: !GetAtt PerformanceTestFunction.Arn
+
+  Architecture:
+    Description: Function architecture (should be arm64)
+    Value: arm64
