@@ -288,11 +288,12 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                             description: "Now choose your plan to continue.",
                         });
                     } else {
-                        // User needs email verification, proceed to plan selection
-                        setSignupStep('plan');
+                        // User needs email verification, show verification step
+                        setSignupStep('verify');
+                        setNeedsVerification(true);
                         toast({
                             title: "Account created",
-                            description: "Now choose your plan to continue.",
+                            description: "Please check your email for a verification code.",
                         });
                     }
                 })
