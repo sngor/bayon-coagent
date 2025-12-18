@@ -200,6 +200,27 @@ function UserDropdownContent({ profile, user, userName, getInitials, handleSignO
         </Link>
       </DropdownMenuItem>
 
+      {/* Admin Dashboard Links */}
+      {(isAdmin || isSuperAdmin) && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link href="/admin" className="cursor-pointer">
+              <Shield className="mr-2 h-4 w-4 text-blue-600" />
+              <span>Admin Panel</span>
+            </Link>
+          </DropdownMenuItem>
+          {isSuperAdmin && (
+            <DropdownMenuItem asChild>
+              <Link href="/super-admin" className="cursor-pointer">
+                <Shield className="mr-2 h-4 w-4 text-orange-600" />
+                <span>Super Admin Panel</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
+        </>
+      )}
+
       {/* Admin Mode Toggles */}
       <AdminModeControls
         isAdmin={isAdmin}
