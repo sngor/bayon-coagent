@@ -31,6 +31,8 @@ import type { ResearchReport } from '@/lib/types/common';
 import Link from 'next/link';
 import { CardListSkeleton, FormSkeleton } from '@/components/ui/skeletons';
 import { Loading } from '@/components/ui/loading';
+import { FeatureGate, UsageBadge } from '@/components/feature-gate';
+import { useFeatureGates } from '@/hooks/use-feature-gates';
 
 
 type ResearchInitialState = {
@@ -73,6 +75,7 @@ export default function ResearchAgentPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const { user, isUserLoading } = useUser();
+  const { canUseFeature, incrementUsage, getUpgradeMessage } = useFeatureGates();
   const [savedReports, setSavedReports] = useState<ResearchReport[]>([]);
   const [isLoadingReports, setIsLoadingReports] = useState(true);
 
@@ -119,6 +122,16 @@ export default function ResearchAgentPage() {
 
   // Form submission handler (replacing server action)
   const handleResearchSubmit = async (formData: FormData) => {
+    // Check if user can use research reports
+    if (!canUseFeature('researchReports')) {
+      toast({
+        variant: 'destructive',
+        title: 'Limit Reached',
+        description: getUpgradeMessage('researchReports'),
+      });
+      return;
+    }
+
     const topic = formData.get('topic') as string;
     setLastTopic(topic);
     setIsPending(true);
@@ -147,6 +160,9 @@ export default function ResearchAgentPage() {
           },
           errors: {}
         });
+
+        // Increment usage counter
+        await incrementUsage('researchReports');
       } else {
         throw new Error(result.error?.message || 'Research failed');
       }
@@ -256,7 +272,10 @@ export default function ResearchAgentPage() {
       <Card>
         <CardHeader>
           <div className="mb-6">
-            <h1 className="text-2xl font-bold font-headline">AI Research Agent</h1>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-2xl font-bold font-headline">AI Research Agent</h1>
+              <UsageBadge feature="researchReports" />
+            </div>
             <p className="text-muted-foreground">Delegate deep-dive research. Your AI agent will compile a comprehensive report that you can save to your knowledge base.</p>
           </div>
           <CardTitle className="font-headline">New Research Task</CardTitle>
@@ -265,27 +284,29 @@ export default function ResearchAgentPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form
-            action={handleResearchSubmit}
-            className="space-y-4"
-          >
-            <div className="space-y-2">
-              <Label htmlFor="topic">Research Topic</Label>
-              <Textarea
-                id="topic"
-                name="topic"
-                placeholder="e.g., 'The impact of rising interest rates on the commercial real estate market in Seattle'"
-                rows={3}
-              />
-              {state.errors?.topic && (
-                <p className="text-sm text-destructive">{state.errors.topic[0]}</p>
+          <FeatureGate feature="researchReports">
+            <form
+              action={handleResearchSubmit}
+              className="space-y-4"
+            >
+              <div className="space-y-2">
+                <Label htmlFor="topic">Research Topic</Label>
+                <Textarea
+                  id="topic"
+                  name="topic"
+                  placeholder="e.g., 'The impact of rising interest rates on the commercial real estate market in Seattle'"
+                  rows={3}
+                />
+                {state.errors?.topic && (
+                  <p className="text-sm text-destructive">{state.errors.topic[0]}</p>
+                )}
+              </div>
+              <SubmitButton disabled={isUserLoading} />
+              {state.message && state.message !== 'success' && (
+                <p className="text-destructive mt-4">{state.message}</p>
               )}
-            </div>
-            <SubmitButton disabled={isUserLoading} />
-            {state.message && state.message !== 'success' && (
-              <p className="text-destructive mt-4">{state.message}</p>
-            )}
-          </form>
+            </form>
+          </FeatureGate>
         </CardContent>
       </Card>
 

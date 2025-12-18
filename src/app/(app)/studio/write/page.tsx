@@ -33,6 +33,8 @@ import {
 import { AEOOptimizationPanel } from '@/components/aeo-optimization-panel';
 import { SaveToLibraryDialog } from '@/components/studio/save-to-library-dialog';
 import { RecentContentSidebar } from '@/components/studio/recent-content-sidebar';
+import { FeatureGate, UsageBadge } from '@/components/feature-gate';
+import { useFeatureGates } from '@/hooks/use-feature-gates';
 
 // Helper function to clean and format content
 function cleanAndFormatContent(content: string): string {
@@ -139,6 +141,7 @@ function extractKeywordsFromContent(content: string): string[] {
 
 export default function StudioWritePage() {
     const searchParams = useSearchParams();
+    const { canUseFeature, incrementUsage, getUpgradeMessage } = useFeatureGates();
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'blog-post');
     const [isLoading, setIsLoading] = useState(false);
     const [generatedContent, setGeneratedContent] = useState('');
@@ -147,6 +150,16 @@ export default function StudioWritePage() {
     const [showSaveDialog, setShowSaveDialog] = useState(false);
 
     const handleSubmit = async (formData: FormData, contentType: string) => {
+        // Check if user can use AI content generation
+        if (!canUseFeature('aiContentGeneration')) {
+            toast({
+                variant: 'destructive',
+                title: 'Limit Reached',
+                description: getUpgradeMessage('aiContentGeneration'),
+            });
+            return;
+        }
+
         setIsLoading(true);
         setError(null);
         setGeneratedContent('');
@@ -362,6 +375,10 @@ export default function StudioWritePage() {
                 // Clean and format the final content
                 const cleanedContent = cleanAndFormatContent(content);
                 setGeneratedContent(cleanedContent);
+                
+                // Increment usage counter
+                await incrementUsage('aiContentGeneration');
+                
                 toast({
                     title: '✨ Content Generated!',
                     description: 'Your content is ready.',
@@ -429,7 +446,10 @@ export default function StudioWritePage() {
             <Card>
                 <CardHeader>
                     <div className="mb-6">
-                        <h1 className="text-2xl font-bold">Studio Write</h1>
+                        <div className="flex items-center gap-3 mb-2">
+                            <h1 className="text-2xl font-bold">Studio Write</h1>
+                            <UsageBadge feature="aiContentGeneration" />
+                        </div>
                         <p className="text-muted-foreground">
                             Create high-quality content with AI assistance
                         </p>
@@ -463,7 +483,8 @@ export default function StudioWritePage() {
             </Card>
 
             {/* Content Generation Forms */}
-            <div className="grid gap-6 lg:grid-cols-4">
+            <FeatureGate feature="aiContentGeneration">
+                <div className="grid gap-6 lg:grid-cols-4">
                 <Card className="lg:col-span-1">
                     <CardHeader>
                         <CardTitle>
@@ -1362,6 +1383,7 @@ export default function StudioWritePage() {
                     });
                 }}
             />
+            </FeatureGate>
         </div>
     );
 }

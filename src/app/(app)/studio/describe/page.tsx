@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Home, Sparkles } from 'lucide-react';
+import { FeatureGate, UsageBadge } from '@/components/feature-gate';
 
 
 export default function ListingDescriptionGeneratorPage() {
@@ -40,7 +41,10 @@ export default function ListingDescriptionGeneratorPage() {
       <Card>
         <CardHeader className="pb-0">
           <div className="mb-6">
-            <h1 className="text-2xl font-bold font-headline">Listing Descriptions</h1>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-2xl font-bold font-headline">Listing Descriptions</h1>
+              <UsageBadge feature="aiContentGeneration" />
+            </div>
             <p className="text-muted-foreground">Generate and optimize listing descriptions</p>
           </div>
         </CardHeader>
@@ -72,22 +76,24 @@ export default function ListingDescriptionGeneratorPage() {
       </Card>
 
       {/* Content Forms */}
-      <Tabs value={activeMode} onValueChange={setActiveMode} className="w-full">
-        <div className="hidden">
-          <TabsList>
-            <TabsTrigger value="generate">Generate New</TabsTrigger>
-            <TabsTrigger value="optimize">Optimize Existing</TabsTrigger>
-          </TabsList>
-        </div>
+      <FeatureGate feature="aiContentGeneration">
+        <Tabs value={activeMode} onValueChange={setActiveMode} className="w-full">
+          <div className="hidden">
+            <TabsList>
+              <TabsTrigger value="generate">Generate New</TabsTrigger>
+              <TabsTrigger value="optimize">Optimize Existing</TabsTrigger>
+            </TabsList>
+          </div>
 
-        <TabsContent value="generate">
-          <ListingDescriptionGeneratorForm />
-        </TabsContent>
+          <TabsContent value="generate">
+            <ListingDescriptionGeneratorForm />
+          </TabsContent>
 
-        <TabsContent value="optimize">
-          <ListingDescriptionGeneratorForm isOptimizeMode={true} />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="optimize">
+            <ListingDescriptionGeneratorForm isOptimizeMode={true} />
+          </TabsContent>
+        </Tabs>
+      </FeatureGate>
     </div>
   );
 }

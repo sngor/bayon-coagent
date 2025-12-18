@@ -25,6 +25,7 @@ import { NotificationSettings } from '@/lib/notifications/components';
 import { ProfileImageUpload } from '@/components/profile-image-upload';
 import { updateProfilePhotoUrlAction } from '@/app/actions';
 import { onboardingService } from '@/services/onboarding';
+import { SubscriptionManagement } from '@/components/subscription-management';
 
 
 function formatTimestamp(timestamp: number): string {
@@ -160,7 +161,7 @@ export default function SettingsPage() {
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         const tabParam = urlParams.get('tab');
-        if (tabParam && ['account', 'preferences', 'integrations', 'security', 'usage', 'features'].includes(tabParam)) {
+        if (tabParam && ['account', 'preferences', 'integrations', 'security', 'usage', 'subscription', 'features'].includes(tabParam)) {
             setActiveTab(tabParam);
         }
     }, []);
@@ -456,6 +457,10 @@ export default function SettingsPage() {
                         <TabsTrigger value="usage">
                             <BarChart3 className="h-4 w-4" />
                             <span className="hidden sm:inline whitespace-nowrap">Usage</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="subscription">
+                            <BarChart3 className="h-4 w-4" />
+                            <span className="hidden sm:inline whitespace-nowrap">Subscription</span>
                         </TabsTrigger>
                         <TabsTrigger value="features">
                             <Wand2 className="h-4 w-4" />
@@ -1006,6 +1011,10 @@ export default function SettingsPage() {
                                 </div>
                             </DataGrid>
                         </ContentSection>
+                    </TabsContent>
+
+                    <TabsContent value="subscription" className="space-y-6">
+                        <SubscriptionManagement />
                     </TabsContent>
 
                     <TabsContent value="features" className="space-y-6">

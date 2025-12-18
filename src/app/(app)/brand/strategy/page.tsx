@@ -48,6 +48,8 @@ import {
 import { AILoader, StepLoader } from '@/components/ui/loading-states';
 import { StandardLoadingSpinner, StandardEmptyState } from '@/components/standard';
 import { AIOperationProgress, useAIOperation } from '@/components/ui/ai-operation-progress';
+import { FeatureGate, UsageBadge } from '@/components/feature-gate';
+import { useFeatureGates } from '@/hooks/use-feature-gates';
 import { useUser } from '@/aws/auth';
 import { useItem, useQuery } from '@/aws/dynamodb/hooks';
 import type { BrandAudit, Competitor, MarketingPlan as MarketingPlanType } from '@/lib/types/common/common';
@@ -82,6 +84,7 @@ const toolIcons: { [key: string]: React.ReactNode } = {
 
 export default function MarketingPlanPage() {
   const { user, isUserLoading } = useUser();
+  const { canUseFeature, incrementUsage, getUpgradeMessage } = useFeatureGates();
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPlan, setShowPlan] = useState(false);
   const [generationStep, setGenerationStep] = useState(0);
@@ -201,6 +204,12 @@ export default function MarketingPlanPage() {
   }, [displayPlan, isGenerating]);
 
   const handleFormSubmit = async (formData: FormData) => {
+    // Check if user can use marketing plans
+    if (!canUseFeature('marketingPlans')) {
+      setGenerationError(getUpgradeMessage('marketingPlans'));
+      return;
+    }
+
     setIsGenerating(true);
     setShowPlan(false);
     setGenerationError(null);
@@ -224,6 +233,9 @@ export default function MarketingPlanPage() {
           },
           errors: {},
         });
+
+        // Increment usage counter
+        await incrementUsage('marketingPlans');
       } else {
         throw new Error(result.error?.message || 'Failed to generate marketing plan');
       }
@@ -254,7 +266,10 @@ export default function MarketingPlanPage() {
         <Card className="text-center">
           <CardHeader>
             <div className="mb-6 text-left">
-              <CardTitle className="font-headline text-2xl">Marketing Strategy</CardTitle>
+              <div className="flex items-center gap-3 mb-2">
+                <CardTitle className="font-headline text-2xl">Marketing Strategy</CardTitle>
+                <UsageBadge feature="marketingPlans" />
+              </div>
               <CardDescription>AI-generated marketing plans</CardDescription>
             </div>
             <div className="text-center">

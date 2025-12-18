@@ -16,9 +16,7 @@ import { useFormStatus } from 'react-dom';
 import { HeroGradientMesh, SubtleGradientMesh, GradientMesh } from '@/components/ui/gradient-mesh';
 import { useToast } from '@/hooks/use-toast';
 import { useSearchParams } from 'next/navigation';
-import { StripePricing } from '@/components/stripe-pricing';
-import { StripePaymentForm } from '@/components/stripe-payment-form';
-import { SUBSCRIPTION_PLANS, SubscriptionPlan } from '@/lib/constants/stripe-config';
+
 
 
 function AuthButton({ children }: { children: React.ReactNode }) {
@@ -240,7 +238,7 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     const [isVerifying, setIsVerifying] = useState(false);
     const [isResending, setIsResending] = useState(false);
     const [invitationData, setInvitationData] = useState<{ organizationName: string; organizationId: string } | null>(null);
-    const [signupStep, setSignupStep] = useState<'account' | 'plan' | 'payment' | 'verify'>(() => {
+    const [signupStep, setSignupStep] = useState<'account' | 'verify'>(() => {
         // Check if there's a pending verification on component mount
         if (typeof window !== 'undefined') {
             const pending = localStorage.getItem('pendingVerification');
@@ -260,8 +258,6 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
         }
         return 'account';
     });
-    const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | undefined>();
-    const [clientSecret, setClientSecret] = useState<string | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
     const signupProcessedRef = useRef(false);
 
@@ -318,12 +314,16 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                     setUserId(result.userSub);
 
                     if (result.userConfirmed) {
-                        // User is auto-confirmed (Cognito setting), proceed to plan selection
-                        setSignupStep('plan');
+                        // User is auto-confirmed, redirect to dashboard (free tier)
                         toast({
-                            title: "Account created",
-                            description: "Now choose your plan to continue.",
+                            title: "Account created successfully!",
+                            description: "Welcome to Bayon CoAgent! Redirecting to your dashboard...",
                         });
+                        
+                        // Auto sign in and redirect to dashboard
+                        setTimeout(() => {
+                            window.location.href = '/dashboard';
+                        }, 2000);
                     } else {
                         // User needs email verification, show verification step
                         // Store verification state in localStorage to persist across component resets
@@ -405,94 +405,7 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
         }
     };
 
-    const handlePlanSelection = async (plan: SubscriptionPlan) => {
-        setSelectedPlan(plan);
-        setError(null);
 
-        // Skip payment in development mode
-        if (process.env.NODE_ENV === 'development') {
-            toast({
-                title: "Plan selected",
-                description: `${SUBSCRIPTION_PLANS[plan].name} plan selected. Payment skipped in development.`,
-            });
-
-            // Bootstrap user with appropriate role before sign in
-            if (userId) {
-                try {
-                    const { bootstrapFirstUserAction } = await import('@/app/actions');
-                    const bootstrapResult = await bootstrapFirstUserAction(
-                        userId,
-                        userEmail,
-                        signUpState.data?.givenName,
-                        signUpState.data?.familyName
-                    );
-
-                    if (bootstrapResult.message === 'success' && bootstrapResult.data?.isFirstUser) {
-                        toast({
-                            variant: "success",
-                            title: "Welcome, SuperAdmin!",
-                            description: "You're the first user and have been granted SuperAdmin privileges.",
-                        });
-                    }
-                } catch (bootstrapError) {
-                    console.error('Failed to bootstrap user:', bootstrapError);
-                    // Don't block the signup flow if bootstrap fails
-                }
-            }
-
-            // In development, skip to verification or auto-sign in
-            if (userEmail && userPassword) {
-                try {
-                    await signIn(userEmail, userPassword);
-                    toast({
-                        variant: "success",
-                        title: "Welcome!",
-                        description: "Your account is ready.",
-                    });
-                    window.location.href = '/dashboard';
-                } catch (err) {
-                    // If auto-sign in fails, show verification step
-                    setSignupStep('verify');
-                }
-            } else {
-                setSignupStep('verify');
-            }
-            return;
-        }
-
-        // Production: proceed with payment
-        try {
-            const response = await fetch('/api/stripe/create-subscription', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: userEmail,
-                    priceId: SUBSCRIPTION_PLANS[plan].priceId,
-                    userId: userId,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (data.clientSecret) {
-                setClientSecret(data.clientSecret);
-                setSignupStep('payment');
-            } else {
-                throw new Error('Failed to create subscription');
-            }
-        } catch (err) {
-            handleAuthError(err as Error);
-        }
-    };
-
-    const handlePaymentSuccess = () => {
-        setSignupStep('verify');
-        setSuccess('Payment successful! Please verify your email to complete signup.');
-        toast({
-            title: "Payment successful",
-            description: "Check your email for a verification code.",
-        });
-    };
 
     const handleResendCode = async () => {
         setIsResending(true);
@@ -515,51 +428,7 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     const hasEmailError = emailTouched && signUpState.errors && 'email' in signUpState.errors && signUpState.errors.email;
     const hasPasswordError = passwordTouched && signUpState.errors && 'password' in signUpState.errors && signUpState.errors.password;
 
-    // Show plan selection
-    if (signupStep === 'plan') {
-        return (
-            <div className="grid gap-8 animate-fade-in p-8 rounded-2xl glass-effect-sm border-border/50 shadow-xl bg-card/40 backdrop-blur-xl">
-                <div className="grid gap-3 text-center">
-                    <h1 className="font-display text-4xl font-bold text-gradient-primary tracking-tight">Choose Your Plan</h1>
-                    <p className="text-lg text-muted-foreground font-light">
-                        Select the plan that fits your needs
-                    </p>
-                    {process.env.NODE_ENV === 'development' && (
-                        <p className="text-sm text-amber-600 dark:text-amber-400">
-                            Development Mode: Payment will be skipped
-                        </p>
-                    )}
-                </div>
-                <StripePricing onSelectPlan={handlePlanSelection} selectedPlan={selectedPlan} />
-                {error && (
-                    <Alert variant="destructive" className="animate-slide-down border-destructive/50 bg-destructive/10">
-                        <Terminal className="h-4 w-4" />
-                        <AlertTitle className="font-semibold">Error</AlertTitle>
-                        <AlertDescription className="text-sm">{error}</AlertDescription>
-                    </Alert>
-                )}
-            </div>
-        );
-    }
 
-    // Show payment form
-    if (signupStep === 'payment' && clientSecret) {
-        return (
-            <div className="grid gap-8 animate-fade-in p-8 rounded-2xl glass-effect-sm border-border/50 shadow-xl bg-card/40 backdrop-blur-xl">
-                <div className="grid gap-3 text-center">
-                    <h1 className="font-display text-4xl font-bold text-gradient-primary tracking-tight">Complete Payment</h1>
-                    <p className="text-lg text-muted-foreground font-light">
-                        Enter your payment details to activate your subscription
-                    </p>
-                </div>
-                <StripePaymentForm
-                    clientSecret={clientSecret}
-                    onSuccess={handlePaymentSuccess}
-                    onBack={() => setSignupStep('plan')}
-                />
-            </div>
-        );
-    }
 
     // Show verification form if needed
     if (signupStep === 'verify') {

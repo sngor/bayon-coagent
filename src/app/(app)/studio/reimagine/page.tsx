@@ -35,6 +35,8 @@ import { EditHistoryList } from '@/components/reimagine/edit-history-list';
 import { ProcessingProgress, type ProcessingStatus } from '@/components/reimagine/processing-progress';
 import { RateLimitStatus } from '@/components/reimagine/rate-limit-status';
 import { MultiAngleStagingInterface } from '@/components/reimagine/multi-angle-staging-interface';
+import { FeatureGate, UsageBadge } from '@/components/feature-gate';
+import { useFeatureGates } from '@/hooks/use-feature-gates';
 import {
     VirtualStagingForm,
     DayToDuskForm,
@@ -94,6 +96,7 @@ interface ChainEditData {
 export default function ReimagineToolkitPage() {
     const router = useRouter();
     const { user, isUserLoading } = useUser();
+    const { canUseFeature, incrementUsage, getUpgradeMessage } = useFeatureGates();
 
     // Workflow state
     const [workflowState, setWorkflowState] = useState<WorkflowState>('upload');
@@ -184,6 +187,13 @@ export default function ReimagineToolkitPage() {
     // Handle upload complete - now directly processes the edit
     const handleUploadComplete = useCallback(
         async (imageId: string, suggestions?: EditSuggestion[], editType?: EditType, params?: EditParams) => {
+            // Check if user can use image enhancements
+            if (!canUseFeature('imageEnhancements')) {
+                setProcessingError(getUpgradeMessage('imageEnhancements'));
+                setProcessingStatus('error');
+                return;
+            }
+
             setCurrentImage({ imageId, suggestions: suggestions || [] });
 
             let result;
@@ -241,6 +251,9 @@ export default function ReimagineToolkitPage() {
                         editParams: params, // Store parameters for regeneration
                         sourceImageId: imageId, // Store source image ID for regeneration
                     });
+
+                    // Increment usage counter
+                    await incrementUsage('imageEnhancements');
 
                     setProcessingStatus('completed');
                     setWorkflowState('preview');
@@ -446,7 +459,10 @@ export default function ReimagineToolkitPage() {
                 <Card className="mb-6">
                     <CardHeader className="pb-0">
                         <div className="mb-6">
-                            <h1 className="text-2xl font-bold font-headline">Reimagine Image Toolkit</h1>
+                            <div className="flex items-center gap-3 mb-2">
+                                <h1 className="text-2xl font-bold font-headline">Reimagine Image Toolkit</h1>
+                                <UsageBadge feature="imageEnhancements" />
+                            </div>
                             <p className="text-muted-foreground">Transform property photos with AI</p>
                         </div>
                     </CardHeader>
