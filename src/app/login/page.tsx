@@ -220,13 +220,47 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     const [emailTouched, setEmailTouched] = useState(false);
     const [passwordTouched, setPasswordTouched] = useState(false);
     const [needsVerification, setNeedsVerification] = useState(false);
-    const [userEmail, setUserEmail] = useState('');
+    const [userEmail, setUserEmail] = useState(() => {
+        // Restore email from pending verification if available
+        if (typeof window !== 'undefined') {
+            const pending = localStorage.getItem('pendingVerification');
+            if (pending) {
+                try {
+                    const data = JSON.parse(pending);
+                    return data.email || '';
+                } catch (e) {
+                    return '';
+                }
+            }
+        }
+        return '';
+    });
     const [userPassword, setUserPassword] = useState('');
     const [verificationCode, setVerificationCode] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
     const [isResending, setIsResending] = useState(false);
     const [invitationData, setInvitationData] = useState<{ organizationName: string; organizationId: string } | null>(null);
-    const [signupStep, setSignupStep] = useState<'account' | 'plan' | 'payment' | 'verify'>('account');
+    const [signupStep, setSignupStep] = useState<'account' | 'plan' | 'payment' | 'verify'>(() => {
+        // Check if there's a pending verification on component mount
+        if (typeof window !== 'undefined') {
+            const pending = localStorage.getItem('pendingVerification');
+            if (pending) {
+                try {
+                    const data = JSON.parse(pending);
+                    // Check if it's not too old (5 minutes)
+                    if (Date.now() - data.timestamp < 5 * 60 * 1000) {
+                        console.log('🔍 DEBUG: Found pending verification, starting in verify step');
+                        return 'verify';
+                    } else {
+                        localStorage.removeItem('pendingVerification');
+                    }
+                } catch (e) {
+                    localStorage.removeItem('pendingVerification');
+                }
+            }
+        }
+        return 'account';
+    });
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | undefined>();
     const [clientSecret, setClientSecret] = useState<string | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
@@ -309,14 +343,17 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                     } else {
                         // User needs email verification, show verification step
                         console.log('🔍 DEBUG: Setting signupStep to verify, userConfirmed:', result.userConfirmed);
+                        
+                        // Store verification state in localStorage to persist across component resets
+                        localStorage.setItem('pendingVerification', JSON.stringify({
+                            email: signUpState.data.email,
+                            userSub: result.userSub,
+                            timestamp: Date.now()
+                        }));
+                        
                         setSignupStep('verify');
                         setNeedsVerification(true);
-                        console.log('🔍 DEBUG: signupStep should now be verify');
-                        
-                        // Add a timeout to check if state persists
-                        setTimeout(() => {
-                            console.log('🔍 DEBUG: Checking signupStep after timeout - should still be verify');
-                        }, 100);
+                        console.log('🔍 DEBUG: signupStep should now be verify, also stored in localStorage');
                         toast({
                             title: "Account created",
                             description: "Please check your email for a verification code.",
@@ -369,6 +406,9 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                 }
             }
 
+            // Clear pending verification from localStorage
+            localStorage.removeItem('pendingVerification');
+            
             setSuccess('Account verified successfully! Redirecting to dashboard...');
             toast({
                 variant: "success",
