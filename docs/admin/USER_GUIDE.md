@@ -1476,6 +1476,39 @@ This section describes common day-to-day workflows for admins and super-admins.
 3. Clear browser cache and cookies
 4. Check audit logs for role changes
 5. Contact SuperAdmin to verify role
+6. Use the Super Admin Test Page (see [Testing Admin Access](#testing-admin-access))
+
+### Testing Admin Access
+
+**Path**: `/super-admin/test-page`  
+**Access**: All users (displays different content based on role)
+
+The Super Admin Test Page is a diagnostic tool that helps troubleshoot authentication and authorization issues. It displays:
+
+**User Information**:
+- User ID and email
+- Authentication loading state
+
+**Admin Information**:
+- Admin role status (Admin/SuperAdmin)
+- Authorization loading state
+- Current role assignment
+
+**Access Status**:
+- **Access Granted**: Green card shown for users with SuperAdmin access
+- **Access Denied**: Red card shown for users without SuperAdmin access, with link to grant access page
+
+**When to Use**:
+- Troubleshooting role assignment issues
+- Verifying authentication state
+- Debugging authorization problems
+- Testing after role changes
+
+**Common Scenarios**:
+- User reports they can't access admin features → Direct them to test page to verify role
+- After granting admin access → Use test page to confirm changes took effect
+- Authentication issues → Check if user data is loading properly
+- Role synchronization problems → Compare displayed role with expected role
 
 ### Getting Help
 

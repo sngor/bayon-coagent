@@ -51,6 +51,21 @@ The application is organized into hubs. When adding new features:
 3. **Use hub components** for layout and navigation
 4. **Update hub navigation** if adding new sections
 
+### Background Processing Architecture
+
+The platform uses AWS Lambda functions for background processing instead of HTTP cron endpoints:
+
+- **Trial Notifications**: `bayon-coagent-trial-notifications-production`
+  - Triggered daily at 12 PM UTC via EventBridge
+  - Sends trial expiry notifications (3-day and 1-day warnings)
+  - More reliable and secure than HTTP endpoints
+
+- **Benefits of Lambda Architecture**:
+  - No exposed HTTP endpoints for security
+  - Native AWS integration with CloudWatch logging
+  - Automatic scaling and error handling
+  - Cost-effective for scheduled tasks
+
 ### File Organization
 
 ```
@@ -507,10 +522,28 @@ Recommended extensions for development:
 ```json
 // .vscode/settings.json
 {
-  "typescript.preferences.importModuleSpecifier": "relative",
-  "editor.formatOnSave": true,
+  "yaml.maxItemsComputed": 15000,
+  "yaml.format.enable": true,
+  "yaml.validate": true,
+  "yaml.hover": true,
+  "yaml.completion": true,
+  "files.associations": {
+    "*.yaml": "yaml",
+    "*.yml": "yaml",
+    "template*.yaml": "cloudformation",
+    "samconfig.toml": "toml"
+  },
+  "cloudformation.format.enable": true,
+  "editor.formatOnSave": false,
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true
+    "source.fixAll.eslint": "explicit"
+  },
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "typescript.suggest.autoImports": true,
+  "typescript.autoClosingTags": false,
+  "emmet.includeLanguages": {
+    "typescript": "html",
+    "typescriptreact": "html"
   },
   "tailwindCSS.experimental.classRegex": [
     ["cn\\(([^)]*)\\)", "'([^']*)'"],
@@ -518,6 +551,16 @@ Recommended extensions for development:
   ]
 }
 ```
+
+**Key Settings Explained**:
+
+- **YAML Configuration**: Enhanced support for large CloudFormation templates with increased item limits and proper file associations
+- **TypeScript**: Relative imports preferred, auto-imports enabled, auto-closing tags disabled for precise JSX control
+- **ESLint**: Explicit auto-fixing on save for consistent code quality
+- **Emmet**: HTML expansion support in TypeScript/React files
+- **Tailwind**: Enhanced IntelliSense for `cn()` utility and `cva()` class variance patterns
+
+**TypeScript Auto-Closing Tags**: Disabled (`"typescript.autoClosingTags": false`) to give developers full control over JSX tag completion, preventing unwanted auto-completions in React components and ensuring cleaner code editing experience. This is particularly important when working with complex component hierarchies and conditional rendering.
 
 ### Logging Standards
 
@@ -693,6 +736,9 @@ npm run bundle:check
 
 # 5. Run security checks
 npm run security:check
+
+# 6. Test API endpoints after deployment
+./scripts/test-api-endpoints.sh
 ```
 
 ### Environment Configuration

@@ -26,7 +26,7 @@ This script automatically tests:
 1. **Subscription Status API** (`/api/subscription/status`)
 2. **Environment Debug API** (`/api/debug/env`)
 3. **Admin Analytics API** (`/api/admin/subscription-analytics`)
-4. **Trial Notifications API** (`/api/cron/trial-notifications`)
+4. **Lambda Function Status** (AWS Lambda + EventBridge)
 
 ### Expected Results
 
@@ -35,7 +35,7 @@ The script provides clear feedback for each endpoint:
 - ✅ **Subscription API working!** - Core functionality is ready
 - ✅ **Debug API working!** - Environment variables are set correctly
 - ❌ **Admin API failed (may need authentication)** - Expected for unauthenticated requests
-- ❌ **Cron API failed (may need proper token)** - Expected without valid authentication
+- ✅ **Lambda function deployed** - Trial notifications handled by AWS Lambda
 
 ### Script Output Example
 
@@ -55,9 +55,9 @@ Response: {"success":true,"environment":"production","region":"us-east-1"}
 Response: {"success":false,"error":"Unauthorized"}
 ❌ Admin API failed (may need authentication)
 
-4. Testing Trial Notifications API...
-Response: {"success":false,"error":"Invalid token"}
-❌ Cron API failed (may need proper token)
+4. Testing Lambda Function Status...
+ℹ️  Trial notifications handled by AWS Lambda + EventBridge
+✅ Lambda function deployed (no HTTP endpoint to test)
 
 🎯 Summary:
 - If Subscription API works, core functionality is ready
@@ -158,37 +158,30 @@ curl "https://bayoncoagent.app/api/admin/subscription-analytics"
 - Analytics data aggregation
 - Database queries
 
-### 4. Trial Notifications API
+### 4. Lambda Function Status
 
-Test scheduled job functionality:
+Trial notifications are now handled by AWS Lambda + EventBridge (no HTTP endpoint):
 
 ```bash
-curl -X POST "https://bayoncoagent.app/api/cron/trial-notifications" \
-  -H "Authorization: Bearer test-token" \
-  -H "Content-Type: application/json"
+# Check Lambda function deployment
+aws lambda get-function \
+  --function-name bayon-coagent-trial-notifications-production
 
-# Expected response (invalid token):
-{
-  "success": false,
-  "error": "Invalid token"
-}
+# View recent Lambda logs
+aws logs tail /aws/lambda/bayon-coagent-trial-notifications-production --follow
 
-# Expected response (valid token):
-{
-  "success": true,
-  "data": {
-    "processed": 5,
-    "notifications": 3,
-    "errors": 0
-  }
-}
+# Manually invoke Lambda for testing
+aws lambda invoke \
+  --function-name bayon-coagent-trial-notifications-production \
+  --payload '{"source":"manual-test"}' \
+  response.json
 ```
 
-**What this tests:**
-- Cron job authentication
-- Email notification system
-- Trial user processing
-- Background job functionality
+**What this provides:**
+- Automated trial notifications via EventBridge schedule (daily at 12 PM UTC)
+- More reliable than HTTP cron endpoints
+- Better security (no exposed HTTP endpoint)
+- Native AWS integration with CloudWatch logging
 
 ## API Endpoints Reference
 
@@ -219,13 +212,13 @@ curl -X POST "https://bayoncoagent.app/api/cron/trial-notifications" \
 | `/api/admin/content` | GET | Content moderation | Admin |
 | `/api/admin/system` | GET | System status | Super Admin |
 
-### Cron Job APIs
+### Lambda Functions (Background Processing)
 
-| Endpoint | Method | Purpose | Authentication |
-|----------|--------|---------|----------------|
-| `/api/cron/trial-notifications` | POST | Send trial reminders | Cron Token |
-| `/api/cron/cleanup` | POST | Clean up expired data | Cron Token |
-| `/api/cron/analytics` | POST | Generate analytics | Cron Token |
+| Function | Trigger | Purpose | Monitoring |
+|----------|---------|---------|------------|
+| `bayon-coagent-trial-notifications-production` | EventBridge (Daily 12 PM UTC) | Send trial reminders | CloudWatch Logs |
+| `bayon-coagent-cleanup-production` | EventBridge (Weekly) | Clean up expired data | CloudWatch Logs |
+| `bayon-coagent-analytics-production` | EventBridge (Daily) | Generate analytics | CloudWatch Logs |
 
 ## Authentication Testing
 
@@ -257,17 +250,22 @@ curl "https://bayoncoagent.app/api/admin/users" \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
-### Cron Authentication
+### Lambda Function Testing
 
-Test cron job endpoints:
+Test Lambda functions directly:
 
 ```bash
-# Cron token (from environment variables)
-CRON_TOKEN="your-secure-cron-token"
+# Test trial notifications Lambda
+aws lambda invoke \
+  --function-name bayon-coagent-trial-notifications-production \
+  --payload '{"source":"manual-test"}' \
+  response.json
 
-# Test cron endpoint
-curl -X POST "https://bayoncoagent.app/api/cron/trial-notifications" \
-  -H "Authorization: Bearer $CRON_TOKEN"
+# Check response
+cat response.json
+
+# View function logs
+aws logs tail /aws/lambda/bayon-coagent-trial-notifications-production --follow
 ```
 
 ## Error Handling Testing

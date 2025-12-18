@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useRef, useMemo, useCallback, useState, useEffect } from 'react';
 import { ICON_SIZES } from '@/lib/constants/icon-sizes';
 
-export function HubTabs({ tabs, activeTab, onChange, isSticky = false }: HubTabsProps) {
+export function HubTabs({ tabs, activeTab, onChange, variant = 'default', isSticky = false }: HubTabsProps) {
     const pathname = usePathname();
     const router = useRouter();
     const tabsRef = useRef<HTMLDivElement>(null);
@@ -75,12 +75,29 @@ export function HubTabs({ tabs, activeTab, onChange, isSticky = false }: HubTabs
 
     // Memoize styles to prevent recalculation
     const styles = useMemo(() => {
-        const baseStyles = 'inline-flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all duration-200 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
+        const baseStyles = 'inline-flex items-center gap-2 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
+
+        const variantStyles = {
+            default: {
+                tab: 'px-4 py-2 rounded-full border-none bg-transparent',
+                container: 'inline-flex items-center gap-1 overflow-x-auto scrollbar-hide rounded-full p-1.5 transition-all duration-200'
+            },
+            pills: {
+                tab: 'px-4 py-2 rounded-full border-none bg-transparent',
+                container: 'inline-flex items-center gap-1 overflow-x-auto scrollbar-hide rounded-full p-1.5 transition-all duration-200'
+            },
+            underline: {
+                tab: 'px-4 py-2 rounded-none border-b-2 border-transparent bg-transparent',
+                container: 'inline-flex items-center gap-1 overflow-x-auto scrollbar-hide border-b border-border'
+            }
+        };
 
         return {
-            base: baseStyles
+            base: baseStyles,
+            tab: variantStyles[variant].tab,
+            container: variantStyles[variant].container
         };
-    }, []);
+    }, [variant]);
 
     return (
         <div className="relative">
@@ -93,7 +110,7 @@ export function HubTabs({ tabs, activeTab, onChange, isSticky = false }: HubTabs
             <div
                 ref={scrollContainerRef}
                 className={cn(
-                    'inline-flex items-center gap-1 overflow-x-auto scrollbar-hide rounded-full p-1.5 transition-all duration-200',
+                    styles.container,
                     isSticky
                         ? 'bg-background/95 backdrop-blur-xl border border-border/20 shadow-sm'
                         : 'bg-transparent'
@@ -117,10 +134,14 @@ export function HubTabs({ tabs, activeTab, onChange, isSticky = false }: HubTabs
                                 onKeyDown={(e) => handleKeyDown(e, index)}
                                 className={cn(
                                     styles.base,
-                                    // Custom styling: transparent for inactive, black for active
-                                    'border-none bg-transparent',
-                                    !isActive && 'text-muted-foreground hover:text-foreground',
-                                    isActive && 'bg-black text-white dark:bg-white dark:text-black shadow-sm'
+                                    styles.tab,
+                                    // Variant-specific active/inactive styling
+                                    variant === 'underline' && isActive && 'border-blue-600 dark:border-blue-400',
+                                    variant === 'underline' && !isActive && 'border-transparent hover:border-muted-foreground/50',
+                                    variant !== 'underline' && !isActive && 'text-muted-foreground hover:text-foreground',
+                                    variant !== 'underline' && isActive && 'bg-blue-50 text-blue-900 dark:bg-blue-950/50 dark:text-blue-100 shadow-sm font-extrabold',
+                                    variant === 'underline' && isActive && 'text-blue-600 dark:text-blue-400 font-extrabold',
+                                    variant === 'underline' && !isActive && 'text-muted-foreground hover:text-foreground'
                                 )}
                             >
                                 {Icon && <Icon className={ICON_SIZES.sm} aria-hidden="true" />}

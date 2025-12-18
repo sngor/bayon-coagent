@@ -84,12 +84,9 @@ export function ProfileStepExample() {
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             // Save profile data
-            console.log('Saving profile:', formData);
-
             // Navigate to next step
             router.push('/onboarding/tour');
         } catch (error) {
-            console.error('Failed to save profile:', error);
         } finally {
             setIsSubmitting(false);
         }

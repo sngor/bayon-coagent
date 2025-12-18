@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/aws/auth';
 import { useTheme } from 'next-themes';
 import { useAccessibility } from '@/contexts/accessibility-context';
-import { DebugAccessibility } from '@/components/debug-accessibility';
+
 import { LoginHistory } from '@/components/login-history';
 import { UsageTracking, UsageStats } from '@/components/ui/usage-tracking';
 import type { UsageLimit } from '@/components/ui/usage-tracking';
@@ -1022,7 +1022,6 @@ export default function SettingsPage() {
                     </TabsContent>
                 </Tabs >
             </div >
-            <DebugAccessibility />
         </>
     );
 }

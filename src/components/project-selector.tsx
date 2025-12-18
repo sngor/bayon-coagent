@@ -45,22 +45,17 @@ export function ProjectSelector({
 
     const loadProjects = async () => {
         if (!user?.id) {
-            console.warn('No user ID available for loading projects');
             setIsLoading(false);
             return;
         }
 
         setIsLoading(true);
         try {
-            console.log('Loading projects for user:', user.id);
             const result = await getProjectsAction(user.id);
-            console.log('Projects result:', result);
 
             if (result.data) {
                 setProjects(result.data);
-                console.log('Loaded projects:', result.data.length);
             } else {
-                console.warn('No projects data returned:', result);
                 setProjects([]);
             }
         } catch (error) {
@@ -99,7 +94,6 @@ export function ProjectSelector({
                 onChange(result.data.id);
             }
         } catch (error) {
-            console.error('Failed to create project:', error);
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to create project.' });
         }
     };

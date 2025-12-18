@@ -11,15 +11,32 @@
 
 import { useState, useCallback } from 'react';
 import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 import { OnboardingContainer } from '@/components/onboarding';
 import {
     LazySkipConfirmationDialog,
-    LazyProfileForm,
 } from '@/components/onboarding/lazy-components';
 import { useDebouncedCallback, useDebouncedValue } from '@/lib/performance/debounce';
 import { useOptimisticSteps } from '@/lib/performance/optimistic-updates';
 import { getOptimizedImageProps } from '@/lib/performance/image-optimization';
 import { onboardingAnalytics } from '@/services/onboarding/onboarding-analytics';
+
+// Types
+interface ProfileData {
+    name?: string;
+    email?: string;
+    bio?: string;
+    brokerage?: string;
+    [key: string]: unknown;
+}
+
+interface ListItem {
+    id: string;
+    name: string;
+}
 
 /**
  * Example: Profile Setup Page with All Optimizations
@@ -38,8 +55,7 @@ export function ProfileSetupExample() {
 
     // 3. DEBOUNCING - Auto-save with 500ms delay
     const debouncedSave = useDebouncedCallback(
-        async (data: any) => {
-            console.log('Auto-saving profile:', data);
+        async (data: ProfileData) => {
             // Save to server
             await saveProfile(data);
         },
@@ -103,12 +119,11 @@ export function ProfileSetupExample() {
 
             {/* Search with Debouncing */}
             <div className="mb-4">
-                <input
+                <Input
                     type="text"
                     placeholder="Search brokerages..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-4 py-2 border rounded-lg"
                 />
                 <p className="text-sm text-muted-foreground mt-1">
                     Searching for: {debouncedSearch}
@@ -139,13 +154,16 @@ export function ProfileSetupExample() {
  * Example: List with Optimistic Updates
  */
 export function OptimisticListExample() {
-    const [items, setItems] = useState<Array<{ id: string; name: string }>>([]);
+    const [items, setItems] = useState<ListItem[]>([]);
+    const [loadingItems, setLoadingItems] = useState<Set<string>>(new Set());
+    const { toast } = useToast();
 
     const addItem = async (name: string) => {
         const newItem = { id: Date.now().toString(), name };
 
         // Optimistic update - add immediately
         setItems((prev) => [...prev, newItem]);
+        setLoadingItems((prev) => new Set(prev).add(newItem.id));
 
         try {
             // Actual API call
@@ -153,13 +171,26 @@ export function OptimisticListExample() {
         } catch (error) {
             // Rollback on error
             setItems((prev) => prev.filter((item) => item.id !== newItem.id));
-            console.error('Failed to add item:', error);
+            toast({
+                title: "Error",
+                description: "Failed to add item. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setLoadingItems((prev) => {
+                const newSet = new Set(prev);
+                newSet.delete(newItem.id);
+                return newSet;
+            });
         }
     };
 
     const removeItem = async (id: string) => {
         // Store for rollback
         const itemToRemove = items.find((item) => item.id === id);
+
+        // Show loading state
+        setLoadingItems((prev) => new Set(prev).add(id));
 
         // Optimistic update - remove immediately
         setItems((prev) => prev.filter((item) => item.id !== id));
@@ -172,24 +203,43 @@ export function OptimisticListExample() {
             if (itemToRemove) {
                 setItems((prev) => [...prev, itemToRemove]);
             }
-            console.error('Failed to remove item:', error);
+            toast({
+                title: "Error",
+                description: "Failed to remove item. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setLoadingItems((prev) => {
+                const newSet = new Set(prev);
+                newSet.delete(id);
+                return newSet;
+            });
         }
     };
 
     return (
-        <div>
-            <button onClick={() => addItem('New Item')}>
+        <div className="space-y-4">
+            <Button type="button" onClick={() => addItem('New Item')}>
                 Add Item
-            </button>
-            <ul>
-                {items.map((item) => (
-                    <li key={item.id}>
-                        {item.name}
-                        <button onClick={() => removeItem(item.id)}>
-                            Remove
-                        </button>
-                    </li>
-                ))}
+            </Button>
+            <ul className="space-y-2">
+                {items.map((item) => {
+                    const isLoading = loadingItems.has(item.id);
+                    return (
+                        <li key={item.id} className="flex items-center justify-between p-2 border rounded">
+                            <span className={isLoading ? "opacity-50" : ""}>{item.name}</span>
+                            <Button 
+                                type="button" 
+                                variant="destructive" 
+                                size="sm"
+                                disabled={isLoading}
+                                onClick={() => removeItem(item.id)}
+                            >
+                                {isLoading ? "Removing..." : "Remove"}
+                            </Button>
+                        </li>
+                    );
+                })}
             </ul>
         </div>
     );
@@ -204,12 +254,43 @@ export function DebouncedFormExample() {
         email: '',
         bio: '',
     });
+    const [errors, setErrors] = useState<Partial<typeof formData>>({});
+    const { toast } = useToast();
+
+    // Validation function
+    const validateField = (field: keyof typeof formData, value: string): string | undefined => {
+        switch (field) {
+            case 'name':
+                return value.trim().length < 2 ? 'Name must be at least 2 characters' : undefined;
+            case 'email':
+                return !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? 'Invalid email format' : undefined;
+            case 'bio':
+                return value.length > 500 ? 'Bio must be less than 500 characters' : undefined;
+            default:
+                return undefined;
+        }
+    };
 
     // Debounced auto-save
     const debouncedSave = useDebouncedCallback(
         async (data: typeof formData) => {
-            console.log('Auto-saving form:', data);
-            await saveFormToServer(data);
+            // Only save if no validation errors
+            const hasErrors = Object.values(errors).some(error => error);
+            if (!hasErrors) {
+                try {
+                    await saveFormToServer(data);
+                    toast({
+                        title: "Saved",
+                        description: "Your changes have been saved automatically.",
+                    });
+                } catch (error) {
+                    toast({
+                        title: "Error",
+                        description: "Failed to save changes. Please try again.",
+                        variant: "destructive",
+                    });
+                }
+            }
         },
         1000 // 1 second delay
     );
@@ -217,35 +298,68 @@ export function DebouncedFormExample() {
     const handleChange = (field: keyof typeof formData, value: string) => {
         const newData = { ...formData, [field]: value };
         setFormData(newData);
-        debouncedSave(newData);
+        
+        // Validate field
+        const error = validateField(field, value);
+        setErrors(prev => ({ ...prev, [field]: error }));
+        
+        // Only auto-save if no error
+        if (!error) {
+            debouncedSave(newData);
+        }
     };
 
     return (
-        <form>
-            <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => handleChange('name', e.target.value)}
-                placeholder="Name"
-            />
-            <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleChange('email', e.target.value)}
-                placeholder="Email"
-            />
-            <textarea
-                value={formData.bio}
-                onChange={(e) => handleChange('bio', e.target.value)}
-                placeholder="Bio"
-            />
+        <form className="space-y-4">
+            <div>
+                <Input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => handleChange('name', e.target.value)}
+                    placeholder="Name"
+                    className={errors.name ? "border-destructive" : ""}
+                />
+                {errors.name && (
+                    <p className="text-sm text-destructive mt-1">{errors.name}</p>
+                )}
+            </div>
+            <div>
+                <Input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleChange('email', e.target.value)}
+                    placeholder="Email"
+                    className={errors.email ? "border-destructive" : ""}
+                />
+                {errors.email && (
+                    <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                )}
+            </div>
+            <div>
+                <Textarea
+                    value={formData.bio}
+                    onChange={(e) => handleChange('bio', e.target.value)}
+                    placeholder="Bio"
+                    className={errors.bio ? "border-destructive" : ""}
+                />
+                {errors.bio && (
+                    <p className="text-sm text-destructive mt-1">{errors.bio}</p>
+                )}
+                <p className="text-sm text-muted-foreground mt-1">
+                    {formData.bio.length}/500 characters
+                </p>
+            </div>
         </form>
     );
 }
 
 // Mock functions for examples
-async function saveProfile(data: any): Promise<void> {
+async function saveProfile(data: ProfileData): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Simulate occasional failures for testing
+    if (Math.random() < 0.1) {
+        throw new Error('Network error');
+    }
 }
 
 async function navigateToNextStep(): Promise<number> {
@@ -258,14 +372,26 @@ async function navigateToPreviousStep(): Promise<number> {
     return 0;
 }
 
-async function saveItemToServer(item: any): Promise<void> {
+async function saveItemToServer(item: ListItem): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 500));
+    // Simulate occasional failures for testing
+    if (Math.random() < 0.1) {
+        throw new Error('Server error');
+    }
 }
 
 async function deleteItemFromServer(id: string): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 500));
+    // Simulate occasional failures for testing
+    if (Math.random() < 0.1) {
+        throw new Error('Delete failed');
+    }
 }
 
-async function saveFormToServer(data: any): Promise<void> {
+async function saveFormToServer(data: ProfileData): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 500));
+    // Simulate occasional failures for testing
+    if (Math.random() < 0.1) {
+        throw new Error('Save failed');
+    }
 }

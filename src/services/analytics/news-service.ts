@@ -28,23 +28,18 @@ class NewsService {
         // Check if we have a pending request for the same location
         const pendingRequest = this.pendingRequests.get(cacheKey);
         if (pendingRequest) {
-            console.log('Returning pending request for:', cacheKey);
             return pendingRequest;
         }
 
         // Check cache first
         const cached = this.cache.get(cacheKey);
         if (cached && this.isCacheValid(cached)) {
-            if (NEWS_CONFIG.LOG_CACHE_HITS) {
-                console.log('Returning cached news for:', cacheKey);
-            }
             return cached.data;
         }
 
         // Check rate limits
         if (!this.canMakeRequest()) {
             if (cached) {
-                console.log('Rate limit reached, returning expired cache for:', cacheKey);
                 return cached.data;
             }
             throw new Error('Rate limit exceeded and no cached data available');
@@ -161,7 +156,6 @@ class NewsService {
             const cacheKey = this.getCacheKey(input.location);
             const cached = this.cache.get(cacheKey);
             if (cached && NEWS_CONFIG.ENABLE_FALLBACK_NEWS) {
-                console.log('Returning expired cache as fallback');
                 return cached.data;
             }
 

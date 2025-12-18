@@ -84,6 +84,18 @@ export function SubscriptionManagement() {
                     used: Math.floor(Math.random() * 3) + 1, // 1-3 used
                     limit: 10,
                     unlimited: false
+                },
+                {
+                    feature: 'AI Role-Play Sessions',
+                    used: Math.floor(Math.random() * 8) + 2, // 2-9 used
+                    limit: 25,
+                    unlimited: false
+                },
+                {
+                    feature: 'AI Learning Plans',
+                    used: Math.floor(Math.random() * 2) + 1, // 1-2 used
+                    limit: 5,
+                    unlimited: false
                 }
             ];
         } else {
@@ -110,6 +122,18 @@ export function SubscriptionManagement() {
                 {
                     feature: 'Marketing Plans',
                     used: 0,
+                    limit: 1,
+                    unlimited: false
+                },
+                {
+                    feature: 'AI Role-Play Sessions',
+                    used: 2,
+                    limit: 3,
+                    unlimited: false
+                },
+                {
+                    feature: 'AI Learning Plans',
+                    used: 1,
                     limit: 1,
                     unlimited: false
                 }
@@ -489,8 +513,8 @@ export function SubscriptionManagement() {
                                         : 'text-amber-700 dark:text-amber-300'
                                 }`}>
                                     {subscriptionStatus.isInTrial 
-                                        ? 'Continue with a paid plan to keep these professional features after your trial ends.'
-                                        : 'Premium plans include unlimited AI content generation, image enhancements, and research reports.'
+                                        ? 'Continue with a paid plan to keep these professional features and Learning hub access after your trial ends.'
+                                        : 'Premium plans include unlimited AI content generation, image enhancements, research reports, and full Learning hub access with AI role-play sessions.'
                                     }
                                 </p>
                             </div>
@@ -513,6 +537,10 @@ export function SubscriptionManagement() {
                             </tr>
                         </thead>
                         <tbody className="divide-y">
+                            {/* Content & Studio Features */}
+                            <tr className="bg-muted/30">
+                                <td className="py-2 px-4 font-medium text-muted-foreground" colSpan={5}>Content & Studio</td>
+                            </tr>
                             <tr>
                                 <td className="py-3 px-4">AI Content Generation</td>
                                 <td className="text-center py-3 px-4">10/month</td>
@@ -541,6 +569,58 @@ export function SubscriptionManagement() {
                                 <td className="text-center py-3 px-4">Unlimited</td>
                                 <td className="text-center py-3 px-4">Unlimited</td>
                             </tr>
+                            
+                            {/* Learning Hub Features */}
+                            <tr className="bg-muted/30">
+                                <td className="py-2 px-4 font-medium text-muted-foreground" colSpan={5}>Learning Hub</td>
+                            </tr>
+                            <tr>
+                                <td className="py-3 px-4">Interactive Lessons</td>
+                                <td className="text-center py-3 px-4">Basic (5)</td>
+                                <td className="text-center py-3 px-4">Standard (25)</td>
+                                <td className="text-center py-3 px-4">All Lessons</td>
+                                <td className="text-center py-3 px-4">All Lessons</td>
+                            </tr>
+                            <tr>
+                                <td className="py-3 px-4">AI Role-Play Sessions</td>
+                                <td className="text-center py-3 px-4">3/month</td>
+                                <td className="text-center py-3 px-4">10/month</td>
+                                <td className="text-center py-3 px-4">Unlimited</td>
+                                <td className="text-center py-3 px-4">Unlimited</td>
+                            </tr>
+                            <tr>
+                                <td className="py-3 px-4">AI Learning Plans</td>
+                                <td className="text-center py-3 px-4">1/month</td>
+                                <td className="text-center py-3 px-4">3/month</td>
+                                <td className="text-center py-3 px-4">Unlimited</td>
+                                <td className="text-center py-3 px-4">Unlimited</td>
+                            </tr>
+                            <tr>
+                                <td className="py-3 px-4">Live Chat Support</td>
+                                <td className="text-center py-3 px-4">-</td>
+                                <td className="text-center py-3 px-4">Role-Play Only</td>
+                                <td className="text-center py-3 px-4">Learning Plans + Role-Play</td>
+                                <td className="text-center py-3 px-4">Full Access</td>
+                            </tr>
+                            <tr>
+                                <td className="py-3 px-4">Certification Tracking</td>
+                                <td className="text-center py-3 px-4">Basic</td>
+                                <td className="text-center py-3 px-4">Standard</td>
+                                <td className="text-center py-3 px-4">Advanced</td>
+                                <td className="text-center py-3 px-4">Premium</td>
+                            </tr>
+                            <tr>
+                                <td className="py-3 px-4">Community Access</td>
+                                <td className="text-center py-3 px-4">Read Only</td>
+                                <td className="text-center py-3 px-4">Post & Comment</td>
+                                <td className="text-center py-3 px-4">Full Access</td>
+                                <td className="text-center py-3 px-4">Full Access + Moderation</td>
+                            </tr>
+                            
+                            {/* Brand & Market Features */}
+                            <tr className="bg-muted/30">
+                                <td className="py-2 px-4 font-medium text-muted-foreground" colSpan={5}>Brand & Market</td>
+                            </tr>
                             <tr>
                                 <td className="py-3 px-4">Brand Monitoring</td>
                                 <td className="text-center py-3 px-4">Basic</td>
@@ -554,6 +634,11 @@ export function SubscriptionManagement() {
                                 <td className="text-center py-3 px-4">-</td>
                                 <td className="text-center py-3 px-4">✓</td>
                                 <td className="text-center py-3 px-4">✓</td>
+                            </tr>
+                            
+                            {/* Support & Advanced Features */}
+                            <tr className="bg-muted/30">
+                                <td className="py-2 px-4 font-medium text-muted-foreground" colSpan={5}>Support & Advanced</td>
                             </tr>
                             <tr>
                                 <td className="py-3 px-4">Priority Support</td>
@@ -571,6 +656,23 @@ export function SubscriptionManagement() {
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                
+                {/* Live Chat Limitations Notice */}
+                <div className="mt-6 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-start gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                                Live Chat Access Levels
+                            </p>
+                            <ul className="text-xs mt-2 space-y-1 text-blue-700 dark:text-blue-300">
+                                <li><strong>Starter:</strong> Live chat available only during AI role-play sessions for practice scenarios</li>
+                                <li><strong>Professional:</strong> Live chat for AI learning plans and role-play sessions</li>
+                                <li><strong>Omnia:</strong> Full live chat access across all features and general support</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </ContentSection>
         </div>

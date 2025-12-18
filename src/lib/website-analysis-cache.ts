@@ -67,7 +67,6 @@ class WebsiteAnalysisCache {
             return null;
         }
 
-        console.log(`[Cache] HIT for ${url} (age: ${Math.round((Date.now() - entry.timestamp) / 1000 / 60)}m)`);
         return entry.data;
     }
 
@@ -88,7 +87,6 @@ class WebsiteAnalysisCache {
         };
 
         this.cache.set(key, entry);
-        console.log(`[Cache] SET for ${url} (TTL: ${ttl / 1000 / 60}m, size: ${this.cache.size})`);
     }
 
     /**
@@ -124,7 +122,6 @@ class WebsiteAnalysisCache {
      */
     clear(): void {
         this.cache.clear();
-        console.log('[Cache] Cleared all entries');
     }
 
     /**
@@ -166,9 +163,7 @@ class WebsiteAnalysisCache {
             }
         });
 
-        if (removedCount > 0) {
-            console.log(`[Cache] Cleanup removed ${removedCount} expired entries (remaining: ${this.cache.size})`);
-        }
+        // Cleanup completed silently
     }
 
     /**
@@ -239,7 +234,6 @@ export async function deduplicateRequest(
     // Check if request is already pending
     const pending = pendingRequests.get(normalizedUrl);
     if (pending) {
-        console.log(`[Dedup] Request already pending for ${url}, waiting...`);
         return pending;
     }
 

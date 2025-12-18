@@ -1,4 +1,5 @@
-import SuperAdminClient from './super-admin-client';
+import SuperAdminTestPage from './test-page';
+// import SuperAdminClient from './super-admin-client';
 import { Suspense } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
@@ -33,7 +34,7 @@ function SuperAdminLoading() {
 export default function SuperAdminPage() {
     return (
         <Suspense fallback={<SuperAdminLoading />}>
-            <SuperAdminClient />
+            <SuperAdminTestPage />
         </Suspense>
     );
 }

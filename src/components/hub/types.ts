@@ -26,7 +26,7 @@ export interface HubLayoutProps {
 
 export interface HubTabsProps {
   tabs: HubTab[];
-  activeTab: string;
+  activeTab?: string;
   onChange?: (tabId: string) => void;
   variant?: 'default' | 'pills' | 'underline';
   isSticky?: boolean;

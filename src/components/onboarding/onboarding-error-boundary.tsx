@@ -46,8 +46,6 @@ export class OnboardingErrorBoundary extends Component<ErrorBoundaryProps, Error
     }
 
     componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-        console.error('[ONBOARDING_ERROR_BOUNDARY] Caught error:', error, errorInfo);
-
         // Call optional error callback
         if (this.props.onError) {
             this.props.onError(error, errorInfo);

@@ -188,7 +188,7 @@ Hub components provide consistent navigation and layout across all feature hubs 
 
 ### HubLayout
 
-Main layout wrapper for all hub pages with header, tabs, and content area.
+Main layout wrapper for all hub pages with header, tabs, and content area. Provides consistent structure across all feature hubs with sticky header behavior and tab navigation.
 
 ```tsx
 import { HubLayout } from "@/components/hub";
@@ -202,7 +202,7 @@ import { Palette } from "lucide-react";
     { id: "profile", label: "Profile", href: "/brand/profile" },
     { id: "audit", label: "Audit", href: "/brand/audit" },
   ]}
-  tabsVariant="default"
+  tabsVariant="pills"
   actions={<Button>Action</Button>}
 >
   {children}
@@ -211,16 +211,49 @@ import { Palette } from "lucide-react";
 
 **Props:**
 
-- `title` (string): Hub title
-- `description` (string, optional): Hub description
-- `icon` (LucideIcon): Hub icon
-- `tabs` (HubTab[]): Tab configuration
-- `tabsVariant` ('default' | 'pills' | 'underline'): Tab style
-- `actions` (ReactNode, optional): Action buttons in header
+- `title` (string): Hub title displayed in header
+- `description` (string, optional): Hub description text
+- `icon` (LucideIcon): Hub icon for header and sticky navigation
+- `tabs` (HubTab[], optional): Tab configuration for hub navigation
+- `tabsVariant` ('default' | 'pills' | 'underline', optional): Tab visual style (default: 'default')
+- `actions` (ReactNode, optional): Action buttons displayed in header
+- `children` (ReactNode): Hub content
+
+**Features:**
+
+- **Sticky Header Integration**: Automatically updates sticky header when scrolling
+- **Responsive Design**: Adapts to mobile and tablet layouts
+- **Tab Navigation**: Integrated HubTabs with variant support
+- **Intersection Observer**: Detects when header is covered for sticky behavior
+- **Performance Optimized**: Memoized components and minimal re-renders
+
+**Common Usage Patterns:**
+
+```tsx
+// Most hubs use pills variant
+<HubLayout
+  title="Studio"
+  description="Turn ideas into polished content"
+  icon={Wand2}
+  tabs={studioTabs}
+  tabsVariant="pills"
+>
+  {children}
+</HubLayout>
+
+// Simple hub without tabs
+<HubLayout
+  title="Dashboard"
+  description="Your command center"
+  icon={Home}
+>
+  {children}
+</HubLayout>
+```
 
 ### HubTabs
 
-Horizontal tab navigation with keyboard support and active state management.
+Horizontal tab navigation with keyboard support, active state management, multiple visual variants, and scroll indicators for mobile.
 
 ```tsx
 import { HubTabs } from "@/components/hub";
@@ -230,15 +263,58 @@ import { HubTabs } from "@/components/hub";
   activeTab="profile"
   onChange={(tabId) => console.log(tabId)}
   variant="pills"
+  isSticky={true}
 />;
 ```
 
 **Props:**
 
-- `tabs` (HubTab[]): Array of tab objects
-- `activeTab` (string): Currently active tab ID
-- `onChange` (function, optional): Tab change handler
-- `variant` ('default' | 'pills' | 'underline'): Visual style
+- `tabs` (HubTab[]): Array of tab objects with id, label, href, optional icon and badge
+- `activeTab` (string, optional): Currently active tab ID (auto-detected from pathname if not provided)
+- `onChange` (function, optional): Tab change handler (uses router navigation if not provided)
+- `variant` ('default' | 'pills' | 'underline', optional): Visual style variant (default: 'default')
+- `isSticky` (boolean, optional): Whether to apply sticky styling with backdrop blur and border
+
+**Variants:**
+
+- **default**: Rounded pill-style tabs with background colors
+- **pills**: Same as default (alias for consistency)
+- **underline**: Minimal tabs with bottom border indicators
+
+**Features:**
+
+- **Keyboard Navigation**: Arrow keys to navigate between tabs
+- **Auto-detection**: Automatically determines active tab from current pathname
+- **Scroll Indicators**: Shows gradient indicators when tabs overflow horizontally
+- **Accessibility**: Full ARIA support with proper roles and labels
+- **Performance**: Memoized calculations and event handlers to prevent unnecessary re-renders
+- **Mobile Optimized**: Horizontal scrolling with touch support and visual indicators
+- **Multiple Variants**: Support for different visual styles to match design needs
+
+**Tab Object Structure:**
+
+```tsx
+interface HubTab {
+  id: string;
+  label: string;
+  href: string;
+  icon?: LucideIcon;
+  badge?: number | string;
+}
+```
+
+**Usage Examples:**
+
+```tsx
+// Pills variant (most common in hubs)
+<HubTabs tabs={brandTabs} variant="pills" />
+
+// Underline variant (minimal style)
+<HubTabs tabs={settingsTabs} variant="underline" />
+
+// With sticky behavior
+<HubTabs tabs={tabs} variant="pills" isSticky={true} />
+```
 
 ### HubHeader
 

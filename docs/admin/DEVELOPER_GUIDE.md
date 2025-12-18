@@ -925,6 +925,106 @@ export async function requireSuperAdmin() {
 }
 ```
 
+### Test Page Implementation
+
+The Super Admin Test Page (`/super-admin/test-page`) is a diagnostic tool for debugging authentication and authorization issues:
+
+```typescript
+// src/app/(app)/super-admin/test-page.tsx
+'use client';
+
+import { useUser } from '@/aws/auth/use-user';
+import { useAdmin } from '@/contexts/admin-context';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+export default function SuperAdminTestPage() {
+    try {
+        const { user, isUserLoading } = useUser();
+        const { isSuperAdmin, isAdmin, role, isLoading: adminLoading } = useAdmin();
+
+        // Loading state handling
+        if (isUserLoading || adminLoading) {
+            return <div className="p-8">Loading...</div>;
+        }
+
+        return (
+            <div className="p-8 space-y-6">
+                {/* User Information Display */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>User Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        <div>User ID: {user?.id || 'Not loaded'}</div>
+                        <div>Email: {user?.email || 'Not loaded'}</div>
+                        <div>User Loading: {isUserLoading ? 'Yes' : 'No'}</div>
+                    </CardContent>
+                </Card>
+
+                {/* Admin Role Information */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Admin Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        <div>Admin Loading: {adminLoading ? 'Yes' : 'No'}</div>
+                        <div>Is Admin: {isAdmin ? 'Yes' : 'No'}</div>
+                        <div>Is Super Admin: {isSuperAdmin ? 'Yes' : 'No'}</div>
+                        <div>Role: {role || 'Not loaded'}</div>
+                    </CardContent>
+                </Card>
+
+                {/* Access Status Display */}
+                {!isSuperAdmin && (
+                    <Card className="border-red-200 bg-red-50">
+                        <CardHeader>
+                            <CardTitle className="text-red-800">Access Denied</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-red-600">You don't have super admin access.</p>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {isSuperAdmin && (
+                    <Card className="border-green-200 bg-green-50">
+                        <CardHeader>
+                            <CardTitle className="text-green-800">Access Granted</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-green-600">You have super admin access!</p>
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
+        );
+    } catch (error) {
+        // Error state handling
+        return (
+            <div className="p-8">
+                <h1 className="text-2xl font-bold mb-4 text-red-600">Error</h1>
+                <p className="text-red-600">
+                    {error instanceof Error ? error.message : 'Unknown error'}
+                </p>
+            </div>
+        );
+    }
+}
+```
+
+**Key Features**:
+- **Dual Hook Integration**: Uses both `useUser()` and `useAdmin()` hooks to compare authentication states
+- **Loading State Management**: Handles loading states from both authentication sources
+- **Visual Status Indicators**: Color-coded cards show access status clearly
+- **Error Boundary**: Catches and displays authentication errors gracefully
+- **Debugging Information**: Shows all relevant auth/role data for troubleshooting
+
+**Use Cases**:
+- Debugging role assignment issues
+- Verifying authentication flow
+- Testing authorization changes
+- Troubleshooting access problems
+
 ---
 
 ## Error Handling

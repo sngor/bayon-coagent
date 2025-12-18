@@ -97,7 +97,6 @@ export default function SelectionPage() {
             // Default to completion page if no hub selected
             router.push('/onboarding/user/complete');
         } catch (error) {
-            console.error('[SELECTION_PAGE] Error completing step:', error);
             toast({
                 title: 'Error',
                 description: 'Failed to complete selection. Please try again.',
@@ -129,7 +128,6 @@ export default function SelectionPage() {
             // Navigate to completion
             router.push('/onboarding/user/complete');
         } catch (error) {
-            console.error('[SELECTION_PAGE] Error skipping step:', error);
             toast({
                 title: 'Error',
                 description: 'Failed to skip selection. Please try again.',

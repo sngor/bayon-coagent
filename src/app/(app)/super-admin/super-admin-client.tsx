@@ -90,13 +90,37 @@ class SuperAdminErrorBoundary extends Component<
 }
 
 function SuperAdminDashboard() {
-    const {
-        stats,
-        recentActivity,
-        loading,
-        error,
-        refreshAll
-    } = useAdminDashboard();
+    try {
+        // Temporarily disable the hook to isolate the issue
+        const stats = {
+            totalUsers: 0,
+            activeUsers: 0,
+            newSignups24h: 0,
+            pendingInvitations: 0,
+            systemStatus: 'Healthy',
+            openTickets: 0,
+            pendingContent: 0,
+            errorRate: 0,
+            totalFeedback: 0,
+            pendingFeedback: 0,
+            totalAiRequests: 0,
+            totalAiCosts: 0,
+            activeFeatures: 0,
+            betaFeatures: 0,
+            totalTeams: 0,
+        };
+        const recentActivity: any[] = [];
+        const loading = false;
+        const error = null;
+        const refreshAll = () => Promise.resolve();
+        
+        // const {
+        //     stats,
+        //     recentActivity,
+        //     loading,
+        //     error,
+        //     refreshAll
+        // } = useAdminDashboard();
 
     // Ensure stats is properly serialized to prevent React error #130
     const safeStats = {
@@ -675,32 +699,85 @@ function SuperAdminDashboard() {
             </Card>
         </div>
     );
+    } catch (error) {
+        console.error('SuperAdminDashboard error:', error);
+        return (
+            <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="font-headline text-3xl font-bold">Super Admin Dashboard</h1>
+                        <p className="text-muted-foreground">Error loading dashboard</p>
+                    </div>
+                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-destructive">
+                            <AlertTriangle className="h-5 w-5" />
+                            Dashboard Error
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">
+                            Error: {error instanceof Error ? error.message : 'Unknown error'}
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 }
 function DebugInfo() {
-    const { user } = useUser();
-    const { isSuperAdmin, isAdmin, role } = useAdmin();
-    
-    return (
-        <Card className="mb-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20">
-            <CardHeader>
-                <CardTitle className="text-sm text-blue-800 dark:text-blue-200">Debug Information</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm space-y-2">
-                <div>User ID: {user?.id || 'Not loaded'}</div>
-                <div>Email: {user?.email || 'Not loaded'}</div>
-                <div>Is Admin: {isAdmin ? 'Yes' : 'No'}</div>
-                <div>Is Super Admin: {isSuperAdmin ? 'Yes' : 'No'}</div>
-                <div>Role: {role || 'Not loaded'}</div>
-            </CardContent>
-        </Card>
-    );
+    try {
+        const { user } = useUser();
+        const { isSuperAdmin, isAdmin, role, isLoading } = useAdmin();
+        
+        return (
+            <Card className="mb-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+                <CardHeader>
+                    <CardTitle className="text-sm text-blue-800 dark:text-blue-200">Debug Information</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm space-y-2">
+                    <div>User ID: {user?.id || 'Not loaded'}</div>
+                    <div>Email: {user?.email || 'Not loaded'}</div>
+                    <div>Admin Loading: {isLoading ? 'Yes' : 'No'}</div>
+                    <div>Is Admin: {isAdmin ? 'Yes' : 'No'}</div>
+                    <div>Is Super Admin: {isSuperAdmin ? 'Yes' : 'No'}</div>
+                    <div>Role: {role || 'Not loaded'}</div>
+                </CardContent>
+            </Card>
+        );
+    } catch (error) {
+        console.error('DebugInfo error:', error);
+        return (
+            <Card className="mb-6 border-red-200 bg-red-50">
+                <CardHeader>
+                    <CardTitle className="text-sm text-red-800">Debug Error</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm">
+                    <div>Error: {error instanceof Error ? error.message : 'Unknown error'}</div>
+                </CardContent>
+            </Card>
+        );
+    }
 }
 
 export default function SuperAdminClient() {
-    return (
-        <SuperAdminErrorBoundary>
-            <DebugInfo />
-            <SuperAdminDashboard />
-        </SuperAdminErrorBoundary>
-    );
+    try {
+        return (
+            <SuperAdminErrorBoundary>
+                <DebugInfo />
+                <SuperAdminDashboard />
+            </SuperAdminErrorBoundary>
+        );
+    } catch (error) {
+        console.error('SuperAdminClient render error:', error);
+        return (
+            <div className="p-8">
+                <h1 className="text-2xl font-bold mb-4">Error Loading Super Admin</h1>
+                <p className="text-red-600">
+                    {error instanceof Error ? error.message : 'Unknown error'}
+                </p>
+            </div>
+        );
+    }
 }

@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@aws-crypto/sha256-js':
+        specifier: ^5.2.0
+        version: 5.2.0
       '@aws-sdk/client-api-gateway':
         specifier: ^3.952.0
         version: 3.952.0
@@ -72,6 +75,9 @@ importers:
         specifier: ^3.936.0
         version: 3.948.0
       '@aws-sdk/client-sts':
+        specifier: ^3.952.0
+        version: 3.952.0
+      '@aws-sdk/credential-provider-node':
         specifier: ^3.952.0
         version: 3.952.0
       '@aws-sdk/lib-dynamodb':

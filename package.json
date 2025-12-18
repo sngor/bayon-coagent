@@ -69,6 +69,7 @@
     "infra:deploy:prod": "./scripts/deploy-split-infrastructure.sh production"
   },
   "dependencies": {
+    "@aws-crypto/sha256-js": "^5.2.0",
     "@aws-sdk/client-api-gateway": "^3.952.0",
     "@aws-sdk/client-bedrock": "^3.940.0",
     "@aws-sdk/client-bedrock-agent-runtime": "^3.943.0",
@@ -91,6 +92,7 @@
     "@aws-sdk/client-sns": "^3.936.0",
     "@aws-sdk/client-sqs": "^3.936.0",
     "@aws-sdk/client-sts": "^3.952.0",
+    "@aws-sdk/credential-provider-node": "^3.952.0",
     "@aws-sdk/lib-dynamodb": "^3.933.0",
     "@aws-sdk/s3-request-presigner": "^3.933.0",
     "@aws-sdk/util-dynamodb": "^3.933.0",

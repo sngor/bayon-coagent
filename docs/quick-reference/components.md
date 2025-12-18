@@ -405,10 +405,11 @@ import { HubTabs } from "@/components/hub/hub-tabs";
 
 <HubTabs
   tabs={[
-    { id: "tab1", label: "Tab 1", href: "/hub/tab1" },
-    { id: "tab2", label: "Tab 2", href: "/hub/tab2" },
+    { id: "tab1", label: "Tab 1", href: "/hub/tab1", icon: User },
+    { id: "tab2", label: "Tab 2", href: "/hub/tab2", badge: 5 },
   ]}
-  activeTab="tab1"
+  variant="pills"
+  isSticky={true}
 />;
 ```
 

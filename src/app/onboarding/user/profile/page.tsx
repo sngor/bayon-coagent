@@ -36,7 +36,6 @@ export default function ProfilePage() {
         setIsLoading(true);
         try {
             // TODO: Save profile data to DynamoDB here
-            console.log('[PROFILE_PAGE] Profile data:', data);
 
             // Complete the profile step
             const result = await completeOnboardingStepAction(userId, 'profile');
@@ -52,7 +51,6 @@ export default function ProfilePage() {
             // Navigate to next step (tour)
             router.push('/onboarding/user/tour');
         } catch (error) {
-            console.error('[PROFILE_PAGE] Error completing step:', error);
             toast({
                 title: 'Error',
                 description: 'Failed to save profile. Please try again.',
@@ -98,7 +96,6 @@ export default function ProfilePage() {
             // Navigate to next step (tour)
             router.push('/onboarding/user/tour');
         } catch (error) {
-            console.error('[PROFILE_PAGE] Error skipping step:', error);
             toast({
                 title: 'Error',
                 description: 'Failed to skip profile setup. Please try again.',

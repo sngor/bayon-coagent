@@ -504,6 +504,46 @@ Run tests with debug output:
 DEBUG=* npm test -- src/services/admin/__tests__
 ```
 
+### Manual Testing Tools
+
+#### Super Admin Test Page
+
+**Path**: `/super-admin/test-page`  
+**Purpose**: Diagnostic tool for authentication and authorization testing
+
+**What it Tests**:
+- User authentication state
+- Admin role assignment (Admin/SuperAdmin)
+- Authorization loading states
+- Role-based access control
+
+**Test Scenarios**:
+
+1. **Unauthenticated User**:
+   - Should show "Not loaded" for user information
+   - Should show access denied
+
+2. **Regular User**:
+   - Should show user ID and email
+   - Should show "No" for admin roles
+   - Should display access denied with grant access link
+
+3. **Admin User**:
+   - Should show user information
+   - Should show "Yes" for Admin, "No" for SuperAdmin
+   - Should display access denied
+
+4. **SuperAdmin User**:
+   - Should show user information
+   - Should show "Yes" for both Admin and SuperAdmin
+   - Should display access granted
+
+**Usage in Testing**:
+- Verify role assignments after user creation
+- Test authentication flow
+- Debug authorization issues
+- Validate role-based UI changes
+
 ### Reporting Issues
 
 When tests fail:

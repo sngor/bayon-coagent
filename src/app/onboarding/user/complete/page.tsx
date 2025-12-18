@@ -36,7 +36,6 @@ export default function CompletePage() {
                 }
                 setIsCompleted(true);
             } catch (error) {
-                console.error('[COMPLETE_PAGE] Error completing onboarding:', error);
                 toast({
                     title: 'Error',
                     description: 'Failed to complete onboarding. Please try again.',

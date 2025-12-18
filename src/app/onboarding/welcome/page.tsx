@@ -131,7 +131,6 @@ export default function WelcomePage() {
                 const result = await getOnboardingStateAction(userId);
 
                 if (result.errors) {
-                    console.error('[WELCOME_PAGE] Error loading onboarding state:', result.errors);
                     return;
                 }
 
@@ -142,16 +141,12 @@ export default function WelcomePage() {
                 if (!state) {
                     // For now, we'll skip the role detection and default to user flow
                     // This can be enhanced later when role detection is needed
-                    console.log('[WELCOME_PAGE] No onboarding state found, will initialize on next step');
                 }
 
                 // Track analytics if this is the first time viewing welcome
                 // Note: Analytics tracking is temporarily simplified
-                if (!state || !state?.completedSteps?.includes('welcome')) {
-                    console.log('[WELCOME_PAGE] First time viewing welcome page');
-                }
             } catch (error) {
-                console.error('[WELCOME_PAGE] Error loading onboarding state:', error);
+                // Error loading onboarding state
             }
         };
 

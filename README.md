@@ -432,6 +432,26 @@ curl http://localhost:4566/_localstack/health
 echo $USE_LOCAL_AWS  # Should be "true"
 ```
 
+### Admin Access Issues
+
+If you're having trouble with admin or super admin access:
+
+```bash
+# Create super admin user
+npm run admin:create
+
+# Test admin access using the diagnostic page
+# Visit: http://localhost:3000/super-admin/test-page
+```
+
+The **Super Admin Test Page** (`/super-admin/test-page`) is a diagnostic tool that shows:
+- User authentication status
+- Admin role assignments
+- Authorization loading states
+- Access granted/denied status
+
+Use this page to troubleshoot role assignment and authentication issues.
+
 ### AWS Credentials Error
 
 If you see `"Cannot read properties of undefined (reading 'accessKeyId')"`:

@@ -530,7 +530,6 @@ export function OptimizedAnalyticsDashboard({
                 }
 
                 const loadTime = performance.now() - startTime;
-                console.log(`Analytics data loaded in ${loadTime.toFixed(2)}ms`);
 
                 // Update performance stats
                 if (enablePerformanceOptimizations) {

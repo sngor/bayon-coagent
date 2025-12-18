@@ -234,7 +234,6 @@ export function ProfileFormExample() {
             const validatedData = result.data;
 
             // Save to backend (would use a server action here)
-            console.log('Validated data:', validatedData);
 
             toast({
                 title: 'Success',

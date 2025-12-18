@@ -41,7 +41,6 @@ export default function TourPage() {
             // Navigate to next step (selection)
             router.push('/onboarding/user/selection');
         } catch (error) {
-            console.error('[TOUR_PAGE] Error completing step:', error);
             toast({
                 title: 'Error',
                 description: 'Failed to complete tour. Please try again.',
@@ -73,7 +72,6 @@ export default function TourPage() {
             // Navigate to next step (selection)
             router.push('/onboarding/user/selection');
         } catch (error) {
-            console.error('[TOUR_PAGE] Error skipping step:', error);
             toast({
                 title: 'Error',
                 description: 'Failed to skip tour. Please try again.',
