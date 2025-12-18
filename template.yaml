@@ -2798,6 +2798,67 @@ Resources:
       DeadLetterQueue:
         Type: SQS
         TargetArn: !GetAtt NotificationProcessorDLQ.Arn
+
+  TrialNotificationsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bayon-coagent-trial-notifications-${Environment}
+      CodeUri: src/lambda/
+      Handler: trial-notifications.handler
+      Timeout: 300
+      MemorySize: 512
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref DynamoDBTable
+          SES_REGION: !Ref AWS::Region
+          FROM_EMAIL: !Ref SESFromEmail
+          NEXT_PUBLIC_APP_URL: !Sub 
+            - https://${Domain}
+            - Domain: !If 
+              - IsProduction
+              - bayoncoagent.app
+              - !Sub ${Environment}.bayoncoagent.app
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref DynamoDBTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamoDBTable
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendRawEmail
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - dynamodb:Scan
+                - dynamodb:Query
+                - dynamodb:UpdateItem
+              Resource:
+                - !GetAtt DynamoDBTable.Arn
+      Events:
+        DailyTrialCheck:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 12 * * ? *)
+            Description: "Daily trial expiry notifications at 12 PM UTC"
+            Input: !Sub |
+              {
+                "source": "aws.events",
+                "detail-type": "Scheduled Event",
+                "detail": {
+                  "action": "check-trial-expiry",
+                  "environment": "${Environment}"
+                }
+              }
+      DeadLetterQueue:
+        Type: SQS
+        TargetArn: !GetAtt NotificationProcessorDLQ.Arn
+      Tags:
+        Environment: !Ref Environment
+        Application: BayonCoAgent
+        Function: TrialNotifications
       Tags:
         Environment: !Ref Environment
         Application: BayonCoAgent

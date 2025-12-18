@@ -901,6 +901,9 @@ For this project, SAM is the better choice because:
 | DynamoDB Table           | ✅  | ✅  |
 | DynamoDB GSIs (3)        | ✅  | ✅  |
 | S3 Bucket                | ✅  | ✅  |
+| Lambda Functions (6+)    | ✅  | ✅  |
+| EventBridge Rules        | ✅  | ✅  |
+| SQS Queues & DLQs        | ✅  | ✅  |
 | IAM Roles                | ✅  | ✅  |
 | CloudWatch Dashboard     | ✅  | ✅  |
 | CloudWatch Alarms        | ✅  | ✅  |
@@ -945,6 +948,25 @@ The infrastructure integrates seamlessly with existing application code:
 - `src/aws/s3/client.ts`
 - `src/hooks/use-s3-upload.ts`
 - `src/components/s3-file-upload.tsx`
+
+### Lambda Functions
+
+The deployment includes several Lambda functions for background processing:
+
+- **Trial Notifications**: `bayon-coagent-trial-notifications-{env}`
+  - Daily automated trial expiry notifications (12 PM UTC)
+  - Handles 3-day and 1-day trial warnings
+  - Manages expired trial processing
+- **Market Intelligence**: Background market analysis and alerts
+- **Notification Processing**: Email and communication handling
+- **Content Processing**: AI-powered content generation jobs
+
+**Monitoring**: All functions include CloudWatch alarms and dead letter queues for reliability.
+
+**Logs**: View function logs with:
+```bash
+aws logs tail /aws/lambda/bayon-coagent-trial-notifications-production --follow
+```
 
 ### AI
 

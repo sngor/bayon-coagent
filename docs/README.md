@@ -55,6 +55,7 @@ Complete documentation for the Bayon CoAgent platform.
 - [API Reference](./quick-reference/api.md) - Server actions and endpoints
 - [Image Analysis API](./api/image-analysis-service.md) - Virtual staging and image processing
 - [Database Reference](./quick-reference/database.md) - DynamoDB operations
+- [Trial Notifications](./quick-reference/trial-notifications.md) - Trial notification system
 
 ### Troubleshooting
 
@@ -85,6 +86,12 @@ Complete documentation for the Bayon CoAgent platform.
 - [Assistant Integration](./guides/assistant-integration.md) - AI chat assistant
 - [Google Integration](./guides/GOOGLE_INTEGRATION_GUIDE.md) - Business Profile sync
 - [Stripe Integration](./features/STRIPE_INTEGRATION.md) - Payment processing
+
+### Subscription & Business
+
+- [Subscription System](./features/subscription-system.md) - Freemium model and trial management
+- [Trial Notifications](./quick-reference/trial-notifications.md) - Automated trial notifications
+- [Lambda Functions](../src/lambda/README.md) - Background processing functions
 
 ### Advanced Features
 

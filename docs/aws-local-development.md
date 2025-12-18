@@ -119,6 +119,32 @@ When `USE_LOCAL_AWS=false` or in production:
 - Production credentials are used
 - Data is stored in AWS cloud
 
+## Background Services
+
+### Lambda Functions
+
+The application includes several Lambda functions for background processing:
+
+- **Trial Notifications**: Daily automated trial expiry notifications
+- **Market Intelligence**: Scheduled market analysis and alerts
+- **Content Processing**: Background AI content generation
+- **Subscription Management**: Stripe event processing
+
+**Local Development**: Lambda functions run in AWS (not LocalStack) even during local development, as they require:
+- AWS Bedrock for AI processing
+- AWS SES for email delivery
+- Complex scheduling via EventBridge
+
+**Testing**: Use the test scripts to verify Lambda function behavior:
+
+```bash
+# Test trial notifications
+npm run test:trial-notifications
+
+# Test market intelligence alerts
+npm run test:market-alerts
+```
+
 ## Troubleshooting
 
 ### LocalStack won't start
@@ -132,6 +158,31 @@ When `USE_LOCAL_AWS=false` or in production:
 1. Verify LocalStack is running: `docker ps | grep localstack`
 2. Check the health endpoint: `curl http://localhost:4566/_localstack/health`
 3. Ensure `USE_LOCAL_AWS=true` in `.env.local`
+
+### "Cannot read properties of undefined (reading 'accessKeyId')" Error
+
+This error occurs when AWS service clients try to access credentials that are `undefined`. This is expected behavior in production environments where AWS SDK should use the default credential chain (IAM roles, CLI credentials, etc.).
+
+**Root Cause**: The `getAWSCredentials()` function returns `undefined` when:
+- Not in local environment (`USE_LOCAL_AWS !== 'true'`)
+- No explicit AWS credentials are set in environment variables
+- AWS SDK should use default credential chain
+
+**Solution**: Always check if credentials exist before accessing properties:
+
+```typescript
+// ❌ Wrong - causes error when credentials is undefined
+if (credentials.accessKeyId && credentials.secretAccessKey) {
+    clientConfig.credentials = credentials;
+}
+
+// ✅ Correct - safe null checking
+if (credentials && credentials.accessKeyId && credentials.secretAccessKey) {
+    clientConfig.credentials = credentials;
+}
+```
+
+**Fixed Files**: This pattern has been corrected in all AWS service clients throughout the codebase. See `CREDENTIALS_ERROR_FIX.md` for complete details.
 
 ### Resources not found
 

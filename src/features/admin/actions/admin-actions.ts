@@ -146,7 +146,7 @@ export async function getUsersListAction(
 
         // Build client config
         const clientConfig: any = { region: config.region };
-        if (credentials.accessKeyId && credentials.secretAccessKey) {
+        if (credentials && credentials.accessKeyId && credentials.secretAccessKey) {
             clientConfig.credentials = credentials;
         }
 
@@ -574,7 +574,7 @@ export async function disableUserAction(
         const credentials = getAWSCredentials();
 
         const clientConfig: any = { region: config.region };
-        if (credentials.accessKeyId && credentials.secretAccessKey) {
+        if (credentials && credentials.accessKeyId && credentials.secretAccessKey) {
             clientConfig.credentials = credentials;
         }
 
@@ -692,7 +692,7 @@ export async function updateUserRoleAction(
             const credentials = getAWSCredentials();
 
             const clientConfig: any = { region: config.region };
-            if (credentials.accessKeyId && credentials.secretAccessKey) {
+            if (credentials && credentials.accessKeyId && credentials.secretAccessKey) {
                 clientConfig.credentials = credentials;
             }
 
@@ -1227,7 +1227,7 @@ export async function createUserAction(
         const credentials = getAWSCredentials();
 
         const clientConfig: any = { region: config.region };
-        if (credentials.accessKeyId && credentials.secretAccessKey) {
+        if (credentials && credentials.accessKeyId && credentials.secretAccessKey) {
             clientConfig.credentials = credentials;
         }
 
@@ -1886,7 +1886,7 @@ export async function getAuditLogsAction(
         const credentials = getAWSCredentials();
 
         const clientConfig: any = { region: config.region };
-        if (credentials.accessKeyId && credentials.secretAccessKey) {
+        if (credentials && credentials.accessKeyId && credentials.secretAccessKey) {
             clientConfig.credentials = credentials;
         }
 

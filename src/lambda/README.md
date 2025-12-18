@@ -1,10 +1,31 @@
-# Market Intelligence Alerts - Lambda Functions
+# Lambda Functions
 
-This directory contains the Lambda functions that implement the automated alert processing scheduler for the Market Intelligence Alerts feature.
+This directory contains the Lambda functions that implement automated background processing for various features including market intelligence alerts, trial notifications, and subscription management.
 
 ## Functions
 
-### 1. Life Event Processor (`life-event-processor.ts`)
+### 1. Trial Notifications (`trial-notifications.ts`)
+
+- **Schedule**: Daily at 12:00 PM UTC
+- **Purpose**: Sends automated trial expiry notifications and handles expired trials
+- **Timeout**: 5 minutes
+- **Memory**: 512 MB
+
+**Process Flow**:
+
+1. Scans DynamoDB for users with active trials
+2. Identifies trials expiring in 3 days or 1 day
+3. Sends HTML email notifications via AWS SES
+4. Handles expired trials by updating subscription status
+5. Returns processing summary with notification counts
+
+**Email Templates**:
+- 3-day warning with upgrade call-to-action
+- 1-day final warning with urgency messaging
+- Professional HTML design with responsive layout
+- Includes upgrade URL and support contact information
+
+### 2. Life Event Processor (`life-event-processor.ts`)
 
 - **Schedule**: Daily at 6:00 AM UTC
 - **Purpose**: Analyzes public records data to identify life events and generate high-intent lead alerts
@@ -68,6 +89,7 @@ This directory contains the Lambda functions that implement the automated alert 
 
 The functions are scheduled using AWS EventBridge (CloudWatch Events) with cron expressions:
 
+- **Trial Notifications**: `cron(0 12 * * ? *)` - Daily at 12 PM UTC
 - **Life Event Processor**: `cron(0 6 * * ? *)` - Daily at 6 AM UTC
 - **Competitor Monitor**: `cron(0 */4 * * ? *)` - Every 4 hours
 - **Trend Detector**: `cron(0 7 * * ? *)` - Daily at 7 AM UTC
@@ -122,6 +144,11 @@ Each Lambda function has access to:
 - `BEDROCK_MODEL_ID`: Bedrock model ID
 - `BEDROCK_REGION`: Bedrock region
 - `LOG_LEVEL`: Logging level (INFO)
+
+**Trial Notifications Function Additional Variables**:
+- `SES_REGION`: AWS SES region for email sending
+- `FROM_EMAIL`: Email address for sending notifications
+- `NEXT_PUBLIC_APP_URL`: Application URL for upgrade links
 
 ## Error Handling
 

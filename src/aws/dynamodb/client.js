@@ -19,7 +19,7 @@ function createDynamoDBClient() {
     const clientConfig = {
         region: config.region,
     };
-    if (credentials.accessKeyId && credentials.secretAccessKey) {
+    if (credentials && credentials.accessKeyId && credentials.secretAccessKey) {
         clientConfig.credentials = credentials;
     }
     if (config.dynamodb.endpoint) {

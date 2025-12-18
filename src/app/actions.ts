@@ -2385,55 +2385,68 @@ export async function checkAdminStatusAction(userId: string): Promise<{
       return { isAdmin: false, error: 'User ID required' };
     }
 
-    // TEMPORARY OVERRIDE: Grant admin access to specific user IDs
-    // This ensures admin access even if the database role isn't set yet
-    const adminUserIds = [
-      '28619310-e041-70fe-03bd-897627fb5a4d', // Original admin
-      'f8b1b3a0-9081-7018-175c-37b5df71148f'  // Current user
-    ];
+    // Use Cognito Groups for role-based access control
+    const { getCognitoGroupsClient } = await import('@/aws/auth/cognito-groups');
+    const cognitoClient = getCognitoGroupsClient();
 
-    if (adminUserIds.includes(userId)) {
+    try {
+      // Get user groups from Cognito
+      const groups = await cognitoClient.getUserGroups(userId);
+      const isAdmin = groups.includes('admin') || groups.includes('superadmin');
+      const isSuperAdmin = groups.includes('superadmin');
+
+      let role = 'user';
+      if (isSuperAdmin) {
+        role = 'super_admin';
+      } else if (isAdmin) {
+        role = 'admin';
+      }
+
+      // Get profile data from DynamoDB for additional info
+      const repository = getRepository();
+      const profileKeys = getProfileKeys(userId);
+      let profileData = null;
+      
+      try {
+        const result = await repository.get(profileKeys.PK, profileKeys.SK);
+        profileData = result;
+      } catch (dbError) {
+        console.warn('Could not fetch profile data from DynamoDB:', dbError);
+        // Continue without profile data - Cognito groups are the source of truth
+      }
 
       return {
-        isAdmin: true,
-        role: 'super_admin',
+        isAdmin,
+        role,
         profileData: {
           id: userId,
-          role: 'super_admin',
-          email: userId === '28619310-e041-70fe-03bd-897627fb5a4d' ? 'ngorlong@gmail.com' : 'admin@example.com',
-          adminSince: new Date().toISOString(),
-          override: true,
+          role,
+          groups,
+          cognitoGroupsAuth: true,
+          ...profileData,
         },
       };
+    } catch (cognitoError) {
+      console.error('Error checking Cognito groups:', cognitoError);
+      
+      // Fallback: Check DynamoDB for backward compatibility
+      console.log('Falling back to DynamoDB role check...');
+      
+      const repository = getRepository();
+      const profileKeys = getProfileKeys(userId);
+      const result = await repository.get(profileKeys.PK, profileKeys.SK);
+      const profileData = result;
+
+      const role = profileData?.role || 'user';
+      const isAdmin = role === 'admin' || role === 'super_admin';
+
+      return {
+        isAdmin,
+        role,
+        profileData,
+        error: 'Cognito groups unavailable, using DynamoDB fallback',
+      };
     }
-
-    const repository = getRepository();
-    const profileKeys = getProfileKeys(userId);
-    const result = await repository.get(profileKeys.PK, profileKeys.SK);
-    const profileData = result;
-
-    // Check for admin role OR specific email override
-    const email = profileData?.email;
-    const isSuperAdminEmail = email === 'ngorlong@gmail.com';
-
-    const role = profileData?.role || 'user';
-    const isAdmin = role === 'admin' || role === 'super_admin' || isSuperAdminEmail;
-
-
-
-    if (isSuperAdminEmail && role !== 'super_admin') {
-      // Auto-promote to super_admin if not already
-      // We don't await this to avoid slowing down the response
-      repository.update(profileKeys.PK, profileKeys.SK, {
-        role: 'super_admin'
-      }).catch(console.error);
-    }
-
-    return {
-      isAdmin,
-      role: isSuperAdminEmail ? 'super_admin' : role,
-      profileData,
-    };
   } catch (error: any) {
     console.error('Error checking admin status:', error);
     return {

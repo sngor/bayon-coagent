@@ -127,6 +127,17 @@ Master real estate skills with AI-powered training and practice:
 - **Community**: Learning community and discussions
 - **Courses**: Structured learning programs
 
+## 💳 Subscription System
+
+Bayon CoAgent operates on a freemium model with professional trials:
+
+- **Free Tier**: Limited AI generations and basic features
+- **7-Day Professional Trial**: Full access to all premium features
+- **Automated Notifications**: Email reminders at 3-day and 1-day marks
+- **Seamless Upgrades**: Stripe-powered subscription management
+- **Usage Tracking**: Monthly limits and feature gates
+- **Trial Management**: Automated expiry handling via Lambda functions
+
 ## 🛠 Tech Stack
 
 ### Framework & UI
@@ -144,6 +155,9 @@ Master real estate skills with AI-powered training and practice:
 - **Amazon DynamoDB**: NoSQL database with single-table design
 - **Amazon S3**: Object storage for user files and assets
 - **AWS Bedrock**: AI service using Claude 3.5 Sonnet
+- **AWS Lambda**: Serverless functions for background processing
+- **AWS SES**: Email service for notifications and communications
+- **AWS EventBridge**: Event-driven architecture and scheduling
 - **AWS CloudWatch**: Logging, monitoring, and alerting
 - **AWS Amplify**: Continuous deployment and hosting
 
@@ -400,6 +414,18 @@ curl http://localhost:4566/_localstack/health
 # Check environment variables
 echo $USE_LOCAL_AWS  # Should be "true"
 ```
+
+### AWS Credentials Error
+
+If you see `"Cannot read properties of undefined (reading 'accessKeyId')"`:
+
+This error occurs when AWS service clients try to access credentials that are `undefined`. This is expected behavior in production environments where AWS SDK should use the default credential chain.
+
+**Quick Fix**: This has been resolved in the latest version. If you encounter this error:
+
+1. Pull the latest code changes
+2. Restart your development server
+3. See `CREDENTIALS_ERROR_FIX.md` for technical details
 
 For more help, see [Troubleshooting Guide](./docs/troubleshooting/common-issues.md).
 

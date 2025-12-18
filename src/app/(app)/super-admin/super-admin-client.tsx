@@ -10,6 +10,8 @@ import { useAdminDashboard } from '@/hooks/use-admin-dashboard';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAdminStickyHeader } from '@/hooks/use-admin-sticky-header';
 import { Component, ReactNode } from 'react';
+import { useUser } from '@/aws/auth/use-user';
+import { useAdmin } from '@/contexts/admin-context';
 import {
     Users,
     MessageSquare,
@@ -96,6 +98,25 @@ function SuperAdminDashboard() {
         refreshAll
     } = useAdminDashboard();
 
+    // Ensure stats is properly serialized to prevent React error #130
+    const safeStats = {
+        totalUsers: Number(stats?.totalUsers) || 0,
+        activeUsers: Number(stats?.activeUsers) || 0,
+        newSignups24h: Number(stats?.newSignups24h) || 0,
+        pendingInvitations: Number(stats?.pendingInvitations) || 0,
+        systemStatus: String(stats?.systemStatus) || 'Checking...',
+        openTickets: Number(stats?.openTickets) || 0,
+        pendingContent: Number(stats?.pendingContent) || 0,
+        errorRate: Number(stats?.errorRate) || 0,
+        totalFeedback: Number(stats?.totalFeedback) || 0,
+        pendingFeedback: Number(stats?.pendingFeedback) || 0,
+        totalAiRequests: Number(stats?.totalAiRequests) || 0,
+        totalAiCosts: Number(stats?.totalAiCosts) || 0,
+        activeFeatures: Number(stats?.activeFeatures) || 0,
+        betaFeatures: Number(stats?.betaFeatures) || 0,
+        totalTeams: Number(stats?.totalTeams) || 0,
+    };
+
     const headerRef = useAdminStickyHeader({
         title: 'Super Admin Dashboard',
         icon: Shield
@@ -127,8 +148,8 @@ function SuperAdminDashboard() {
                     </div>
                     <div>
                         <h3 className="font-semibold text-green-900 dark:text-green-100">
-                            {stats.systemStatus === 'Checking...' ? 'Checking System Status...' :
-                                stats.systemStatus === 'Healthy' ? 'All Systems Operational' : stats.systemStatus}
+                            {safeStats.systemStatus === 'Checking...' ? 'Checking System Status...' :
+                                safeStats.systemStatus === 'Healthy' ? 'All Systems Operational' : safeStats.systemStatus}
                         </h3>
                         <p className="text-sm text-green-700 dark:text-green-300">Last checked: Just now</p>
                     </div>
@@ -163,7 +184,7 @@ function SuperAdminDashboard() {
                             </div>
                         </CardHeader>
                         <CardContent className="relative z-10">
-                            <div className="text-3xl font-bold">{stats.totalUsers}</div>
+                            <div className="text-3xl font-bold">{safeStats.totalUsers}</div>
                             <div className="flex items-center gap-2 mt-2">
                                 <TrendingUp className="h-4 w-4 text-green-600" />
                                 <span className="text-sm text-green-600 font-medium">Active users</span>
@@ -181,11 +202,11 @@ function SuperAdminDashboard() {
                             </div>
                         </CardHeader>
                         <CardContent className="relative z-10">
-                            <div className="text-3xl font-bold">{stats.totalAiRequests}</div>
+                            <div className="text-3xl font-bold">{safeStats.totalAiRequests}</div>
                             <div className="flex items-center gap-2 mt-2">
                                 <DollarSign className="h-4 w-4 text-purple-600" />
                                 <span className="text-sm text-purple-600 font-medium">
-                                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(stats.totalAiCosts || 0)} est. cost
+                                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(safeStats.totalAiCosts || 0)} est. cost
                                 </span>
                             </div>
                         </CardContent>
@@ -201,11 +222,11 @@ function SuperAdminDashboard() {
                             </div>
                         </CardHeader>
                         <CardContent className="relative z-10">
-                            <div className="text-3xl font-bold">{stats.pendingFeedback}</div>
+                            <div className="text-3xl font-bold">{safeStats.pendingFeedback}</div>
                             <div className="flex items-center gap-2 mt-2">
                                 <Clock className="h-4 w-4 text-orange-600" />
                                 <span className="text-sm text-orange-600 font-medium">
-                                    {stats.pendingFeedback > 0 ? 'Items pending review' : 'All caught up'}
+                                    {safeStats.pendingFeedback > 0 ? 'Items pending review' : 'All caught up'}
                                 </span>
                             </div>
                         </CardContent>
@@ -222,12 +243,12 @@ function SuperAdminDashboard() {
                         </CardHeader>
                         <CardContent className="relative z-10">
                             <div className="text-3xl font-bold text-green-600">
-                                {stats.systemStatus === 'Healthy' ? '100%' : stats.systemStatus === 'Checking...' ? '-' : 'Degraded'}
+                                {safeStats.systemStatus === 'Healthy' ? '100%' : safeStats.systemStatus === 'Checking...' ? '-' : 'Degraded'}
                             </div>
                             <div className="flex items-center gap-2 mt-2">
                                 <CheckCircle className="h-4 w-4 text-green-600" />
                                 <span className="text-sm text-green-600 font-medium">
-                                    {stats.systemStatus === 'Healthy' ? 'All services online' : stats.systemStatus}
+                                    {safeStats.systemStatus === 'Healthy' ? 'All services online' : safeStats.systemStatus}
                                 </span>
                             </div>
                         </CardContent>
@@ -256,7 +277,7 @@ function SuperAdminDashboard() {
                                     <MessageSquare className="h-5 w-5 text-orange-600" />
                                     <span className="font-medium">Review Feedback</span>
                                 </div>
-                                <Badge variant="secondary">{stats.pendingFeedback} pending</Badge>
+                                <Badge variant="secondary">{safeStats.pendingFeedback} pending</Badge>
                             </div>
                             <Button asChild className="w-full bg-orange-600 hover:bg-orange-700">
                                 <Link href="/super-admin/feedback">
@@ -330,11 +351,11 @@ function SuperAdminDashboard() {
                             <CardContent className="space-y-4 relative z-10">
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/50 rounded-lg">
-                                        <div className="font-bold text-lg">{stats.totalUsers}</div>
+                                        <div className="font-bold text-lg">{safeStats.totalUsers}</div>
                                         <div className="text-muted-foreground">Total</div>
                                     </div>
                                     <div className="text-center p-3 bg-green-50 dark:bg-green-950/50 rounded-lg">
-                                        <div className="font-bold text-lg">{stats.totalUsers}</div>
+                                        <div className="font-bold text-lg">{safeStats.totalUsers}</div>
                                         <div className="text-muted-foreground">Active</div>
                                     </div>
                                 </div>
@@ -365,11 +386,11 @@ function SuperAdminDashboard() {
                             <CardContent className="space-y-4 relative z-10">
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/50 rounded-lg">
-                                        <div className="font-bold text-lg">{(stats as any).totalTeams || 0}</div>
+                                        <div className="font-bold text-lg">{safeStats.totalTeams || 0}</div>
                                         <div className="text-muted-foreground">Total</div>
                                     </div>
                                     <div className="text-center p-3 bg-amber-50 dark:bg-amber-950/50 rounded-lg">
-                                        <div className="font-bold text-lg">{stats.totalUsers}</div>
+                                        <div className="font-bold text-lg">{safeStats.totalUsers}</div>
                                         <div className="text-muted-foreground">Members</div>
                                     </div>
                                 </div>
@@ -401,12 +422,12 @@ function SuperAdminDashboard() {
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div className="text-center p-3 bg-purple-50 dark:bg-purple-950/50 rounded-lg">
                                         <div className="font-bold text-lg">
-                                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(stats.totalAiCosts || 0)}
+                                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(safeStats.totalAiCosts || 0)}
                                         </div>
                                         <div className="text-muted-foreground">AI Costs</div>
                                     </div>
                                     <div className="text-center p-3 bg-indigo-50 dark:bg-indigo-950/50 rounded-lg">
-                                        <div className="font-bold text-lg">{stats.totalAiRequests}</div>
+                                        <div className="font-bold text-lg">{safeStats.totalAiRequests}</div>
                                         <div className="text-muted-foreground">Requests</div>
                                     </div>
                                 </div>
@@ -437,11 +458,11 @@ function SuperAdminDashboard() {
                             <CardContent className="space-y-4 relative z-10">
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div className="text-center p-3 bg-green-50 dark:bg-green-950/50 rounded-lg">
-                                        <div className="font-bold text-lg">{stats.activeFeatures}</div>
+                                        <div className="font-bold text-lg">{safeStats.activeFeatures}</div>
                                         <div className="text-muted-foreground">Active</div>
                                     </div>
                                     <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-950/50 rounded-lg">
-                                        <div className="font-bold text-lg">{stats.betaFeatures}</div>
+                                        <div className="font-bold text-lg">{safeStats.betaFeatures}</div>
                                         <div className="text-muted-foreground">Beta</div>
                                     </div>
                                 </div>
@@ -472,7 +493,7 @@ function SuperAdminDashboard() {
                             <CardContent className="space-y-4 relative z-10">
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                     <div className="text-center p-3 bg-red-50 dark:bg-red-950/50 rounded-lg">
-                                        <div className="font-bold text-lg">{stats.pendingFeedback}</div>
+                                        <div className="font-bold text-lg">{safeStats.pendingFeedback}</div>
                                         <div className="text-muted-foreground">Tickets</div>
                                     </div>
                                     <div className="text-center p-3 bg-pink-50 dark:bg-pink-950/50 rounded-lg">
@@ -655,9 +676,30 @@ function SuperAdminDashboard() {
         </div>
     );
 }
+function DebugInfo() {
+    const { user } = useUser();
+    const { isSuperAdmin, isAdmin, role } = useAdmin();
+    
+    return (
+        <Card className="mb-6 border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+            <CardHeader>
+                <CardTitle className="text-sm text-blue-800 dark:text-blue-200">Debug Information</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm space-y-2">
+                <div>User ID: {user?.id || 'Not loaded'}</div>
+                <div>Email: {user?.email || 'Not loaded'}</div>
+                <div>Is Admin: {isAdmin ? 'Yes' : 'No'}</div>
+                <div>Is Super Admin: {isSuperAdmin ? 'Yes' : 'No'}</div>
+                <div>Role: {role || 'Not loaded'}</div>
+            </CardContent>
+        </Card>
+    );
+}
+
 export default function SuperAdminClient() {
     return (
         <SuperAdminErrorBoundary>
+            <DebugInfo />
             <SuperAdminDashboard />
         </SuperAdminErrorBoundary>
     );

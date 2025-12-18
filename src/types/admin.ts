@@ -19,3 +19,41 @@ export interface AdminActionResult<T = any> {
     data?: T;
     errors?: string[];
 }
+
+// Dashboard Stats
+export interface AdminDashboardStats {
+    totalUsers: number;
+    activeUsers?: number;
+    newSignups24h?: number;
+    pendingInvitations?: number;
+    openTickets?: number;
+    pendingContent?: number;
+    errorRate?: number;
+    alerts?: AdminAlert[];
+    totalFeedback: number;
+    pendingFeedback: number;
+    totalAiRequests: number;
+    totalAiCosts: number;
+    activeFeatures: number;
+    betaFeatures: number;
+    systemStatus: 'Healthy' | 'Degraded' | 'Down' | 'Checking...';
+    totalTeams?: number;
+    activeSubscriptions?: number;
+    canceledSubscriptions?: number;
+    trialSubscriptions?: number;
+    totalRevenue?: number;
+    monthlyRecurringRevenue?: number;
+    paymentFailures?: number;
+    churnRate?: number;
+    averageRevenuePerUser?: number;
+    lifetimeValue?: number;
+}
+
+export interface AdminAlert {
+    message: string;
+    severity: 'info' | 'warning' | 'critical';
+    action?: {
+        label: string;
+        href: string;
+    };
+}

@@ -33,7 +33,7 @@ export function getSQSClient(): SQSClient {
         };
 
         // Only add credentials if they are defined
-        if (credentials.accessKeyId && credentials.secretAccessKey) {
+        if (credentials && credentials.accessKeyId && credentials.secretAccessKey) {
             clientConfig.credentials = credentials;
         }
 
