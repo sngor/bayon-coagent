@@ -699,6 +699,58 @@ aws cloudwatch put-metric-alarm \
 
 ---
 
+## API Testing
+
+### Automated API Testing Script
+
+Use the provided script to test all API endpoints after deployment:
+
+```bash
+# Test production deployment
+./scripts/test-api-endpoints.sh
+
+# The script tests:
+# 1. Subscription Status API (/api/subscription/status)
+# 2. Environment Debug API (/api/debug/env)
+# 3. Admin Analytics API (/api/admin/subscription-analytics)
+# 4. Trial Notifications API (/api/cron/trial-notifications)
+```
+
+**Script Features:**
+
+- Tests core API functionality
+- Validates environment variable configuration
+- Checks authentication endpoints
+- Provides clear pass/fail status
+- Includes next steps guidance
+
+**Expected Results:**
+
+- ✅ Subscription API: Should work if core functionality is ready
+- ✅ Debug API: Should work if environment variables are set correctly
+- ❌ Admin API: May need authentication (expected)
+- ❌ Cron API: May need proper authentication token (expected)
+
+### Manual API Testing
+
+Test individual endpoints:
+
+```bash
+# Test subscription status
+curl "https://bayoncoagent.app/api/subscription/status?userId=test"
+
+# Test environment debug (shows if env vars are configured)
+curl "https://bayoncoagent.app/api/debug/env"
+
+# Test admin analytics (requires authentication)
+curl "https://bayoncoagent.app/api/admin/subscription-analytics"
+
+# Test cron notifications (requires proper token)
+curl -X POST "https://bayoncoagent.app/api/cron/trial-notifications" \
+  -H "Authorization: Bearer test-token" \
+  -H "Content-Type: application/json"
+```
+
 ## Deployment Checklist
 
 Before deploying to production:
@@ -711,6 +763,7 @@ Before deploying to production:
 - [ ] CloudWatch alarms configured
 - [ ] Backup and disaster recovery plan in place
 - [ ] Monitoring dashboard created
+- [ ] **API endpoints tested with `./scripts/test-api-endpoints.sh`**
 - [ ] Load testing completed
 - [ ] Security review completed
 - [ ] Documentation updated
@@ -835,6 +888,9 @@ The script will:
 ```bash
 # Get your Amplify URL from console, then:
 npm run deploy:test https://main.d1234567890.amplifyapp.com
+
+# Test API endpoints specifically:
+./scripts/test-api-endpoints.sh
 ```
 
 ## Option 2: Vercel (Alternative)

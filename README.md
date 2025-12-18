@@ -282,6 +282,9 @@ npm run infra:deploy:prod  # Deploy prod infrastructure
 # Amplify Deployment
 npm run deploy:amplify     # Deploy to AWS Amplify
 npm run deploy:test        # Test deployment
+
+# API Testing
+./scripts/test-api-endpoints.sh  # Test all API endpoints
 ```
 
 #### Migration & Setup
@@ -380,6 +383,20 @@ GOOGLE_REDIRECT_URI=http://localhost:3000/api/oauth/google/callback
    ```
 
 For detailed deployment instructions, see [Deployment Guide](./docs/deployment/deployment.md).
+
+### Post-Deployment Testing
+
+After deployment, test your API endpoints:
+
+```bash
+# Test all API endpoints
+npm run test:api
+
+# Or run directly
+./scripts/test-api-endpoints.sh
+```
+
+See [API Testing Guide](./docs/deployment/api-testing.md) for comprehensive testing procedures.
 
 ## 🔍 Troubleshooting
 

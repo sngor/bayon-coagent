@@ -42,6 +42,7 @@
     "sam:update-env": "./scripts/update-env-from-sam.sh development",
     "deploy:amplify": "bash scripts/deploy-amplify.sh",
     "deploy:test": "bash scripts/test-deployment.sh",
+    "test:api": "bash scripts/test-api-endpoints.sh",
     "reimagine:configure-s3": "tsx scripts/configure-s3-lifecycle.ts",
     "verify:bedrock-models": "tsx scripts/verify-bedrock-models.ts",
     "configure:reimagine-s3": "tsx scripts/configure-reimagine-s3.ts",
