@@ -9,6 +9,7 @@ import { ManagementAreaCard } from '@/components/admin/management-area-card';
 import { useAdminDashboard } from '@/hooks/use-admin-dashboard';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAdminStickyHeader } from '@/hooks/use-admin-sticky-header';
+import { Component, ReactNode } from 'react';
 import {
     Users,
     MessageSquare,
@@ -28,7 +29,65 @@ import {
     AlertTriangle
 } from 'lucide-react';
 
-export default function SuperAdminClient() {
+interface ErrorBoundaryState {
+    hasError: boolean;
+    error?: Error;
+}
+
+class SuperAdminErrorBoundary extends Component<
+    { children: ReactNode },
+    ErrorBoundaryState
+> {
+    constructor(props: { children: ReactNode }) {
+        super(props);
+        this.state = { hasError: false };
+    }
+
+    static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error: Error, errorInfo: any) {
+        console.error('Super Admin Dashboard Error:', error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="space-y-8">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="font-headline text-3xl font-bold">Super Admin Dashboard</h1>
+                            <p className="text-muted-foreground">System administration and management overview</p>
+                        </div>
+                    </div>
+                    <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                            <div className="space-y-2">
+                                <p>Something went wrong loading the Super Admin dashboard.</p>
+                                <p className="text-sm text-muted-foreground">
+                                    Error: {this.state.error?.message || 'Unknown error'}
+                                </p>
+                                <Button 
+                                    onClick={() => this.setState({ hasError: false, error: undefined })} 
+                                    variant="outline" 
+                                    size="sm"
+                                >
+                                    Try Again
+                                </Button>
+                            </div>
+                        </AlertDescription>
+                    </Alert>
+                </div>
+            );
+        }
+
+        return this.props.children;
+    }
+}
+
+function SuperAdminDashboard() {
     const {
         stats,
         recentActivity,
@@ -594,5 +653,12 @@ export default function SuperAdminClient() {
                 </CardGradientMesh>
             </Card>
         </div>
+    );
+}
+export default function SuperAdminClient() {
+    return (
+        <SuperAdminErrorBoundary>
+            <SuperAdminDashboard />
+        </SuperAdminErrorBoundary>
     );
 }
