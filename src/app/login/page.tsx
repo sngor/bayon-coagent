@@ -289,8 +289,10 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                         });
                     } else {
                         // User needs email verification, show verification step
+                        console.log('🔍 DEBUG: Setting signupStep to verify, userConfirmed:', result.userConfirmed);
                         setSignupStep('verify');
                         setNeedsVerification(true);
+                        console.log('🔍 DEBUG: signupStep should now be verify');
                         toast({
                             title: "Account created",
                             description: "Please check your email for a verification code.",
@@ -515,7 +517,9 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     }
 
     // Show verification form if needed
+    console.log('🔍 DEBUG: Current signupStep:', signupStep, 'needsVerification:', needsVerification);
     if (signupStep === 'verify') {
+        console.log('🔍 DEBUG: Rendering verification form');
         return (
             <div className="grid gap-8 animate-fade-in p-8 rounded-2xl glass-effect-sm border-border/50 shadow-xl bg-card/40 backdrop-blur-xl">
                 <div className="grid gap-3 text-center">
