@@ -269,9 +269,13 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
         console.log('🔍 DEBUG: useEffect triggered with signUpState:', {
             message: signUpState.message,
             hasData: !!signUpState.data,
-            data: signUpState.data
+            data: signUpState.data,
+            currentSignupStep: signupStep
         });
-        if (signUpState.message === 'success' && signUpState.data) {
+        
+        // Only process if we're in the account step and have success data
+        // This prevents the useEffect from running when signUpState resets after we've moved to verify step
+        if (signUpState.message === 'success' && signUpState.data && signupStep === 'account') {
             console.log('🔍 DEBUG: signUpState success condition met, proceeding with signUp');
             setError(null);
 
@@ -324,7 +328,7 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                 description: signUpState.message,
             });
         }
-    }, [signUpState, signUp, toast]);
+    }, [signUpState, signUp, toast, signupStep]);
 
     const handleVerification = async (e: React.FormEvent) => {
         e.preventDefault();
