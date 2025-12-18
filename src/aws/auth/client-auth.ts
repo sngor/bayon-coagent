@@ -165,13 +165,7 @@ export class ClientAuthClient {
         this.clientUserPoolId = hardcodedUserPoolId;
         this.clientAppClientId = hardcodedClientId;
         
-        console.log('🔥 Client Cognito Config v4.0 - NEW CREDENTIALS:', {
-            region: hardcodedRegion,
-            endpoint: config.clientCognito.endpoint,
-            userPoolId: this.clientUserPoolId,
-            clientId: this.clientAppClientId,
-            buildVersion: 'v4.0-NEW-COGNITO'
-        });
+
 
         this.client = new CognitoIdentityProviderClient({
             region: hardcodedRegion,

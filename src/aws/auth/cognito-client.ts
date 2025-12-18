@@ -63,36 +63,7 @@ export class CognitoAuthClient {
     const clientId = '33grpfrfup7q9jkmumv77ffdce';
     const userPoolId = 'us-west-2_wqsUAbADO';
     
-    // ULTIMATE TEST - if you don't see this, the new code isn't loading
-    console.log('🔥🔥🔥 ULTIMATE FIX v4.0 - NEW CODE LOADING 🔥🔥🔥');
-    console.log('🚨 NUCLEAR OPTION v4.0 - HARDCODED VALUES:', {
-      hostname: currentHostname,
-      region,
-      clientId,
-      userPoolId,
-      timestamp: new Date().toISOString(),
-      buildTime: '2025-12-17-02:45:00'
-    });
 
-    // Debug environment variables
-    console.log('Environment Variables Check:', {
-      NODE_ENV: process.env.NODE_ENV,
-      NEXT_PUBLIC_AWS_REGION: process.env.NEXT_PUBLIC_AWS_REGION,
-      NEXT_PUBLIC_USER_POOL_ID: process.env.NEXT_PUBLIC_USER_POOL_ID,
-      NEXT_PUBLIC_USER_POOL_CLIENT_ID: process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID,
-      AWS_REGION: process.env.AWS_REGION,
-      COGNITO_USER_POOL_ID: process.env.COGNITO_USER_POOL_ID,
-      COGNITO_CLIENT_ID: process.env.COGNITO_CLIENT_ID
-    });
-
-    // Debug: Final hardcoded values being used
-    console.log('🔥 FINAL COGNITO CONFIG v5.0:', {
-      region,
-      clientId,
-      userPoolId,
-      buildVersion: 'v5.0-NEW-COGNITO',
-      timestamp: new Date().toISOString()
-    });
 
     // OLD LOG REMOVED - this was showing us-east-1
 

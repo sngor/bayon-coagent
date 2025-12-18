@@ -249,7 +249,6 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                     const data = JSON.parse(pending);
                     // Check if it's not too old (5 minutes)
                     if (Date.now() - data.timestamp < 5 * 60 * 1000) {
-                        console.log('🔍 DEBUG: Found pending verification, starting in verify step');
                         return 'verify';
                     } else {
                         localStorage.removeItem('pendingVerification');
@@ -301,28 +300,14 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     }
 
     useEffect(() => {
-        console.log('🔍 DEBUG: useEffect triggered with signUpState:', {
-            message: signUpState.message,
-            hasData: !!signUpState.data,
-            data: signUpState.data,
-            currentSignupStep: signupStep
-        });
-        
         // Only process if we're in the account step and have success data and haven't processed yet
         // This prevents the useEffect from running when signUpState resets after we've moved to verify step
         if (signUpState.message === 'success' && signUpState.data && signupStep === 'account' && !signupProcessedRef.current) {
-            console.log('🔍 DEBUG: signUpState success condition met, proceeding with signUp');
             signupProcessedRef.current = true; // Mark as processed
             setError(null);
 
             setUserEmail(signUpState.data.email);
             setUserPassword(signUpState.data.password);
-            console.log('🔍 DEBUG: About to call signUp with:', {
-                email: signUpState.data.email,
-                hasPassword: !!signUpState.data.password,
-                givenName: signUpState.data.givenName,
-                familyName: signUpState.data.familyName
-            });
             signUp(
                 signUpState.data.email,
                 signUpState.data.password,
@@ -330,7 +315,6 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                 signUpState.data.familyName
             )
                 .then((result) => {
-                    console.log('🔍 DEBUG: signUp promise resolved with result:', result);
                     setUserId(result.userSub);
 
                     if (result.userConfirmed) {
@@ -342,8 +326,6 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                         });
                     } else {
                         // User needs email verification, show verification step
-                        console.log('🔍 DEBUG: Setting signupStep to verify, userConfirmed:', result.userConfirmed);
-                        
                         // Store verification state in localStorage to persist across component resets
                         localStorage.setItem('pendingVerification', JSON.stringify({
                             email: signUpState.data.email,
@@ -353,17 +335,13 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                         
                         setSignupStep('verify');
                         setNeedsVerification(true);
-                        console.log('🔍 DEBUG: signupStep should now be verify, also stored in localStorage');
                         toast({
                             title: "Account created",
                             description: "Please check your email for a verification code.",
                         });
                     }
                 })
-                .catch((error) => {
-                    console.log('🔍 DEBUG: signUp promise rejected with error:', error);
-                    handleAuthError(error);
-                });
+                .catch(handleAuthError);
         } else if (signUpState.message && signUpState.message !== 'success') {
             setError(signUpState.message);
             toast({
@@ -584,9 +562,7 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     }
 
     // Show verification form if needed
-    console.log('🔍 DEBUG: Current signupStep:', signupStep, 'needsVerification:', needsVerification);
     if (signupStep === 'verify') {
-        console.log('🔍 DEBUG: Rendering verification form');
         return (
             <div className="grid gap-8 animate-fade-in p-8 rounded-2xl glass-effect-sm border-border/50 shadow-xl bg-card/40 backdrop-blur-xl">
                 <div className="grid gap-3 text-center">
