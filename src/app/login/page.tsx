@@ -266,11 +266,23 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     }
 
     useEffect(() => {
+        console.log('🔍 DEBUG: useEffect triggered with signUpState:', {
+            message: signUpState.message,
+            hasData: !!signUpState.data,
+            data: signUpState.data
+        });
         if (signUpState.message === 'success' && signUpState.data) {
+            console.log('🔍 DEBUG: signUpState success condition met, proceeding with signUp');
             setError(null);
 
             setUserEmail(signUpState.data.email);
             setUserPassword(signUpState.data.password);
+            console.log('🔍 DEBUG: About to call signUp with:', {
+                email: signUpState.data.email,
+                hasPassword: !!signUpState.data.password,
+                givenName: signUpState.data.givenName,
+                familyName: signUpState.data.familyName
+            });
             signUp(
                 signUpState.data.email,
                 signUpState.data.password,
@@ -278,6 +290,7 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                 signUpState.data.familyName
             )
                 .then((result) => {
+                    console.log('🔍 DEBUG: signUp promise resolved with result:', result);
                     setUserId(result.userSub);
 
                     if (result.userConfirmed) {
@@ -299,7 +312,10 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                         });
                     }
                 })
-                .catch(handleAuthError);
+                .catch((error) => {
+                    console.log('🔍 DEBUG: signUp promise rejected with error:', error);
+                    handleAuthError(error);
+                });
         } else if (signUpState.message && signUpState.message !== 'success') {
             setError(signUpState.message);
             toast({
