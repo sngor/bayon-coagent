@@ -48,11 +48,16 @@ export function getS3Client(): S3Client {
     const clientConfig: any = {
       region: config.s3.region,
       endpoint: config.s3.endpoint,
-      credentials: credentials.accessKeyId && credentials.secretAccessKey
-        ? { accessKeyId: credentials.accessKeyId, secretAccessKey: credentials.secretAccessKey }
-        : undefined,
       forcePathStyle: config.environment === 'local', // Required for LocalStack
     };
+
+    // Add credentials if available, otherwise let AWS SDK use default credential chain
+    if (credentials && credentials.accessKeyId && credentials.secretAccessKey) {
+      clientConfig.credentials = {
+        accessKeyId: credentials.accessKeyId,
+        secretAccessKey: credentials.secretAccessKey
+      };
+    }
 
     // Add optimized request handler with connection pooling
     // Only in Node.js environment (not in browser or edge runtime)
@@ -94,12 +99,19 @@ async function detectBucketRegion(bucketName: string): Promise<string | null> {
     const config = getConfig();
     const credentials = getAWSCredentials();
 
-    const globalClient = new S3Client({
+    const globalClientConfig: any = {
       region: 'us-east-1',
-      credentials: credentials.accessKeyId && credentials.secretAccessKey
-        ? { accessKeyId: credentials.accessKeyId, secretAccessKey: credentials.secretAccessKey }
-        : undefined
-    });
+    };
+
+    // Add credentials if available, otherwise let AWS SDK use default credential chain
+    if (credentials && credentials.accessKeyId && credentials.secretAccessKey) {
+      globalClientConfig.credentials = {
+        accessKeyId: credentials.accessKeyId,
+        secretAccessKey: credentials.secretAccessKey
+      };
+    }
+
+    const globalClient = new S3Client(globalClientConfig);
 
     const command = new GetBucketLocationCommand({ Bucket: bucketName });
     const response = await globalClient.send(command);

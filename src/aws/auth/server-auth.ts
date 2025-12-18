@@ -169,3 +169,40 @@ export async function getCurrentUserWithRoles() {
   const groupsClient = getCognitoGroupsClient();
   return await groupsClient.getUserWithGroups(userId);
 }
+
+/**
+ * Get current user for server-side use
+ * Returns user object with id and email
+ */
+export async function getCurrentUserServer(): Promise<{ id: string; email: string } | null> {
+  try {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('cognito_session');
+    
+    if (!sessionCookie) {
+      return null;
+    }
+
+    const session = JSON.parse(sessionCookie.value);
+    
+    if (!session.accessToken) {
+      return null;
+    }
+
+    // Get user from access token
+    const cognitoClient = getCognitoClient();
+    const user = await cognitoClient.getCurrentUser(session.accessToken);
+    
+    if (!user) {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      email: user.email
+    };
+  } catch (error) {
+    console.error('Failed to get current user:', error);
+    return null;
+  }
+}

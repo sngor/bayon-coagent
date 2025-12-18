@@ -203,3 +203,10 @@ export class BedrockClient {
 
 // Export singleton instance
 export const bedrockClient = new BedrockClient();
+
+/**
+ * Get the singleton Bedrock client instance
+ */
+export function getBedrockClient(): BedrockClient {
+  return bedrockClient;
+}

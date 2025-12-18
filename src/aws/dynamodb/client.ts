@@ -32,8 +32,8 @@ function createDynamoDBClient(): DynamoDBClient {
     region: config.region,
   };
 
-  // Add credentials if available
-  if (credentials.accessKeyId && credentials.secretAccessKey) {
+  // Add credentials if available, otherwise let AWS SDK use default credential chain
+  if (credentials && credentials.accessKeyId && credentials.secretAccessKey) {
     clientConfig.credentials = credentials;
   }
 

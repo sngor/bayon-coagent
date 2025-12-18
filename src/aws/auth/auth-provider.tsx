@@ -105,9 +105,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setIsLoading(true);
             setError(null);
 
-            // Temporary debug
-            alert(`About to sign in with clientId: ${cognitoClient.clientId || 'EMPTY'}`);
-
             const newSession = await cognitoClient.signIn(email, password);
             setSession(newSession);
 

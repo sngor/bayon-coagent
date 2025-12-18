@@ -225,11 +225,17 @@ export function getAWSCredentials() {
     };
   }
 
-  // In production, credentials should come from IAM roles or environment
-  return {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  };
+  // In production/development, only return credentials if explicitly set
+  // Otherwise, let AWS SDK use default credential chain (CLI, IAM roles, etc.)
+  if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+    return {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    };
+  }
+
+  // Return undefined to let AWS SDK use default credential chain
+  return undefined;
 }
 
 /**

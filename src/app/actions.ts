@@ -1,6 +1,42 @@
 'use server';
 
-import { setSessionCookie as setServerSessionCookie, clearSessionCookie, getCurrentUserServer } from '@/aws/auth/server-auth';
+import { getCurrentUserId } from '@/aws/auth/server-auth';
+import { cookies } from 'next/headers';
+
+/**
+ * Set session cookie for server-side authentication
+ */
+async function setServerSessionCookie(
+  accessToken: string,
+  idToken: string,
+  refreshToken: string,
+  expiresAt: number
+): Promise<void> {
+  const cookieStore = await cookies();
+  
+  const sessionData = {
+    accessToken,
+    idToken,
+    refreshToken,
+    expiresAt,
+  };
+
+  cookieStore.set('cognito_session', JSON.stringify(sessionData), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    path: '/',
+  });
+}
+
+/**
+ * Clear session cookie on logout
+ */
+async function clearSessionCookie(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.delete('cognito_session');
+}
 
 // AWS Bedrock flows (migrated from Genkit)
 import {
