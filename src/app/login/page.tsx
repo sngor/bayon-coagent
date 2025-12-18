@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { SessionLoading } from '@/components/session-loading';
-import { useEffect, useState, useActionState } from 'react';
+import { useEffect, useState, useActionState, useRef } from 'react';
 import { useUser, useAuthMethods } from '@/aws/auth/use-user';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal, Loader2, Eye, EyeOff, Sparkles, TrendingUp, Zap, Target, CheckCircle2, Mail, LayoutDashboard, Bot, BarChart3 } from 'lucide-react';
@@ -230,6 +230,7 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
     const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | undefined>();
     const [clientSecret, setClientSecret] = useState<string | null>(null);
     const [userId, setUserId] = useState<string | null>(null);
+    const signupProcessedRef = useRef(false);
 
     // Validate invitation token on mount
     useEffect(() => {
@@ -273,10 +274,11 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
             currentSignupStep: signupStep
         });
         
-        // Only process if we're in the account step and have success data
+        // Only process if we're in the account step and have success data and haven't processed yet
         // This prevents the useEffect from running when signUpState resets after we've moved to verify step
-        if (signUpState.message === 'success' && signUpState.data && signupStep === 'account') {
+        if (signUpState.message === 'success' && signUpState.data && signupStep === 'account' && !signupProcessedRef.current) {
             console.log('🔍 DEBUG: signUpState success condition met, proceeding with signUp');
+            signupProcessedRef.current = true; // Mark as processed
             setError(null);
 
             setUserEmail(signUpState.data.email);
@@ -310,6 +312,11 @@ function SignUpForm({ onSwitch }: { onSwitch: () => void }) {
                         setSignupStep('verify');
                         setNeedsVerification(true);
                         console.log('🔍 DEBUG: signupStep should now be verify');
+                        
+                        // Add a timeout to check if state persists
+                        setTimeout(() => {
+                            console.log('🔍 DEBUG: Checking signupStep after timeout - should still be verify');
+                        }, 100);
                         toast({
                             title: "Account created",
                             description: "Please check your email for a verification code.",
