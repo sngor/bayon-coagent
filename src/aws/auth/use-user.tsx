@@ -10,6 +10,8 @@
 
 import { useAuth } from './auth-provider';
 import { CognitoUser } from './cognito-client';
+import { UserRole, CognitoGroupsClient } from './cognito-groups';
+import { useMemo } from 'react';
 
 /**
  * Interface for the return value of the useUser hook.
@@ -19,21 +21,43 @@ export interface UserAuthState {
     user: CognitoUser | null;
     isUserLoading: boolean;
     userError: Error | null;
+    roles: UserRole[];
+    isAdmin: boolean;
+    isSuperAdmin: boolean;
 }
 
 /**
  * Hook for accessing the authenticated user's state.
  * This provides the User object, loading status, and any auth errors.
  * 
- * @returns {UserAuthState} Object with user, isUserLoading, userError.
+ * @returns {UserAuthState} Object with user, isUserLoading, userError, roles, isAdmin, isSuperAdmin.
  */
 export const useUser = (): UserAuthState => {
-    const { user, isLoading, error } = useAuth();
+    const { user, isLoading, error, session } = useAuth();
+
+    // Extract roles from JWT token (client-side)
+    const roles = useMemo(() => {
+        if (!session?.idToken) {
+            return ['user'] as UserRole[];
+        }
+        return CognitoGroupsClient.extractRolesFromToken(session.idToken);
+    }, [session?.idToken]);
+
+    const isAdmin = useMemo(() => {
+        return roles.includes('admin') || roles.includes('superadmin');
+    }, [roles]);
+
+    const isSuperAdmin = useMemo(() => {
+        return roles.includes('superadmin');
+    }, [roles]);
 
     return {
         user,
         isUserLoading: isLoading,
         userError: error,
+        roles,
+        isAdmin,
+        isSuperAdmin,
     };
 };
 

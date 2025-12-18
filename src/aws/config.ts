@@ -142,14 +142,14 @@ export function getAWSConfig(): AWSConfig {
     appUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
 
     cognito: {
-      userPoolId: 'us-west-2_wqsUAbADO',
-      clientId: '33grpfrfup7q9jkmumv77ffdce',
+      userPoolId: process.env.COGNITO_USER_POOL_ID || process.env.NEXT_PUBLIC_USER_POOL_ID || 'us-west-2_wqsUAbADO',
+      clientId: process.env.COGNITO_CLIENT_ID || process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || '33grpfrfup7q9jkmumv77ffdce',
       endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
 
     clientCognito: {
-      userPoolId: 'us-west-2_wqsUAbADO',
-      clientId: '33grpfrfup7q9jkmumv77ffdce',
+      userPoolId: process.env.COGNITO_USER_POOL_ID || process.env.NEXT_PUBLIC_USER_POOL_ID || 'us-west-2_wqsUAbADO',
+      clientId: process.env.COGNITO_CLIENT_ID || process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || '33grpfrfup7q9jkmumv77ffdce',
       endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
 
