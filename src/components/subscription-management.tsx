@@ -12,6 +12,15 @@ import { StripePaymentForm } from '@/components/stripe-payment-form';
 import { SUBSCRIPTION_PLANS, SubscriptionPlan } from '@/lib/constants/stripe-config';
 import { ContentSection, DataGrid } from '@/components/ui';
 
+// Type-safe helper functions
+const getPlanName = (plan: SubscriptionPlan | null): string => {
+    return plan && plan in SUBSCRIPTION_PLANS ? SUBSCRIPTION_PLANS[plan].name : 'Free Tier';
+};
+
+const getPlanPrice = (plan: SubscriptionPlan | null): string => {
+    return plan && plan in SUBSCRIPTION_PLANS ? `$${SUBSCRIPTION_PLANS[plan].price}/month` : 'Limited features with usage limits';
+};
+
 interface SubscriptionStatus {
     isActive: boolean;
     plan: SubscriptionPlan | null;
@@ -363,16 +372,14 @@ export function SubscriptionManagement() {
                             <div>
                                 <div className="flex items-center gap-3 mb-1">
                                     <h3 className="text-lg font-semibold">
-                                        {subscriptionStatus.plan ? SUBSCRIPTION_PLANS[subscriptionStatus.plan].name : 'Free Tier'}
+                                        {getPlanName(subscriptionStatus.plan)}
                                     </h3>
                                     {getStatusBadge(subscriptionStatus.status)}
                                 </div>
                                 <p className="text-sm text-muted-foreground">
                                     {subscriptionStatus.isInTrial
                                         ? `Free trial - ${subscriptionStatus.trialDaysRemaining} days remaining`
-                                        : subscriptionStatus.plan && subscriptionStatus.plan in SUBSCRIPTION_PLANS
-                                        ? `$${SUBSCRIPTION_PLANS[subscriptionStatus.plan as SubscriptionPlan].price}/month`
-                                        : 'Limited features with usage limits'
+                                        : getPlanPrice(subscriptionStatus.plan)
                                     }
                                 </p>
                             </div>

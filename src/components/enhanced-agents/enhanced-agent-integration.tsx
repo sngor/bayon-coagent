@@ -37,6 +37,7 @@ import {
     BellOff
 } from 'lucide-react';
 import { HubAgentChat } from './hub-agent-chat';
+import { AgentErrorBoundary } from './agent-error-boundary';
 import { useEnhancedAgents } from '@/hooks/use-enhanced-agents';
 import { getProactiveSuggestionsAction } from '@/app/enhanced-agent-actions';
 import { HubAgentRegistry } from '@/aws/bedrock/hub-agents/hub-agent-registry';
@@ -85,7 +86,7 @@ export function EnhancedAgentIntegration({
     const hubAgent = HubAgentRegistry.getAgentByHub(hubContext);
 
     /**
-     * Load suggestions for this hub
+     * Load suggestions for this hub with error resilience
      */
     const loadSuggestions = async () => {
         if (!isProactiveMonitoringEnabled) return;
@@ -124,6 +125,8 @@ export function EnhancedAgentIntegration({
             }
         } catch (error) {
             console.error('Failed to load suggestions:', error);
+            // Fail silently - suggestions are enhancement, not critical
+            setSuggestions([]);
         }
     };
 
@@ -176,156 +179,158 @@ export function EnhancedAgentIntegration({
     }
 
     return (
-        <div className={cn("fixed z-50 flex flex-col gap-2", positionClasses[position], className)}>
-            {/* Suggestions Popover */}
-            {showNotifications && (
-                <Popover open={showSuggestions} onOpenChange={setShowSuggestions}>
-                    <PopoverTrigger asChild>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className={cn(
-                                "h-10 px-3 bg-background/95 backdrop-blur-sm border shadow-lg hover:shadow-xl transition-all duration-300",
-                                hasNewSuggestions && "animate-pulse border-primary/50"
-                            )}
-                            onClick={() => {
-                                setShowSuggestions(!showSuggestions);
-                                setHasNewSuggestions(false);
-                            }}
+        <AgentErrorBoundary>
+            <div className={cn("fixed z-50 flex flex-col gap-2", positionClasses[position], className)}>
+                {/* Suggestions Popover */}
+                {showNotifications && (
+                    <Popover open={showSuggestions} onOpenChange={setShowSuggestions}>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className={cn(
+                                    "h-10 px-3 bg-background/95 backdrop-blur-sm border shadow-lg hover:shadow-xl transition-all duration-300",
+                                    hasNewSuggestions && "animate-pulse border-primary/50"
+                                )}
+                                onClick={() => {
+                                    setShowSuggestions(!showSuggestions);
+                                    setHasNewSuggestions(false);
+                                }}
+                            >
+                                <div className="flex items-center gap-2">
+                                    {hasNewSuggestions ? (
+                                        <Bell className="w-4 h-4 text-primary" />
+                                    ) : (
+                                        <Lightbulb className="w-4 h-4" />
+                                    )}
+                                    <span className="text-sm">
+                                        {suggestions.length > 0 ? `${suggestions.length} suggestions` : 'Suggestions'}
+                                    </span>
+                                    {hasNewSuggestions && (
+                                        <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                                    )}
+                                </div>
+                            </Button>
+                        </PopoverTrigger>
+
+                        <PopoverContent
+                            className="w-80 p-0"
+                            align="end"
+                            side={position.includes('top') ? 'bottom' : 'top'}
                         >
-                            <div className="flex items-center gap-2">
-                                {hasNewSuggestions ? (
-                                    <Bell className="w-4 h-4 text-primary" />
-                                ) : (
-                                    <Lightbulb className="w-4 h-4" />
-                                )}
-                                <span className="text-sm">
-                                    {suggestions.length > 0 ? `${suggestions.length} suggestions` : 'Suggestions'}
-                                </span>
-                                {hasNewSuggestions && (
-                                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                                )}
-                            </div>
-                        </Button>
-                    </PopoverTrigger>
-
-                    <PopoverContent
-                        className="w-80 p-0"
-                        align="end"
-                        side={position.includes('top') ? 'bottom' : 'top'}
-                    >
-                        <div className="p-4">
-                            <div className="flex items-center justify-between mb-3">
-                                <h4 className="font-semibold text-sm">AI Suggestions</h4>
-                                {!isProactiveMonitoringEnabled && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={handleEnableProactiveMonitoring}
-                                        className="text-xs h-6"
-                                    >
-                                        <Zap className="w-3 h-3 mr-1" />
-                                        Enable
-                                    </Button>
-                                )}
-                            </div>
-
-                            {!isProactiveMonitoringEnabled ? (
-                                <div className="text-center py-4">
-                                    <BellOff className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                                    <p className="text-sm text-muted-foreground mb-3">
-                                        Enable AI monitoring to get proactive suggestions
-                                    </p>
-                                    <Button size="sm" onClick={handleEnableProactiveMonitoring}>
-                                        <Zap className="w-4 h-4 mr-2" />
-                                        Enable AI Suggestions
-                                    </Button>
-                                </div>
-                            ) : suggestions.length === 0 ? (
-                                <div className="text-center py-4">
-                                    <Sparkles className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                                    <p className="text-sm text-muted-foreground">
-                                        No suggestions right now. Your AI agents are monitoring for opportunities.
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {suggestions.map((suggestion) => (
-                                        <div
-                                            key={suggestion.id}
-                                            className="group cursor-pointer rounded-lg border p-3 hover:bg-muted/50 transition-colors"
-                                            onClick={() => handleSuggestionClick(suggestion)}
+                            <div className="p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h4 className="font-semibold text-sm">AI Suggestions</h4>
+                                    {!isProactiveMonitoringEnabled && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleEnableProactiveMonitoring}
+                                            className="text-xs h-6"
                                         >
-                                            <div className="flex items-start justify-between gap-2 mb-2">
-                                                <h5 className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors">
-                                                    {suggestion.title}
-                                                </h5>
-                                                <Badge
-                                                    variant={suggestion.priority === 'high' ? 'default' : 'secondary'}
-                                                    className="text-xs shrink-0"
-                                                >
-                                                    {suggestion.priority}
-                                                </Badge>
-                                            </div>
-                                            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
-                                                {suggestion.description}
-                                            </p>
-                                            {suggestion.actions && suggestion.actions[0] && (
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-xs text-primary font-medium">
-                                                        {suggestion.actions[0].label}
-                                                    </span>
-                                                    <ChevronRight className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
+                                            <Zap className="w-3 h-3 mr-1" />
+                                            Enable
+                                        </Button>
+                                    )}
                                 </div>
-                            )}
-                        </div>
-                    </PopoverContent>
-                </Popover>
-            )}
 
-            {/* Agent Chat Sheet */}
-            <Sheet open={isAgentOpen} onOpenChange={setIsAgentOpen}>
-                <SheetTrigger asChild>
-                    <Button
-                        className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                                {!isProactiveMonitoringEnabled ? (
+                                    <div className="text-center py-4">
+                                        <BellOff className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                                        <p className="text-sm text-muted-foreground mb-3">
+                                            Enable AI monitoring to get proactive suggestions
+                                        </p>
+                                        <Button size="sm" onClick={handleEnableProactiveMonitoring}>
+                                            <Zap className="w-4 h-4 mr-2" />
+                                            Enable AI Suggestions
+                                        </Button>
+                                    </div>
+                                ) : suggestions.length === 0 ? (
+                                    <div className="text-center py-4">
+                                        <Sparkles className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                                        <p className="text-sm text-muted-foreground">
+                                            No suggestions right now. Your AI agents are monitoring for opportunities.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {suggestions.map((suggestion) => (
+                                            <div
+                                                key={suggestion.id}
+                                                className="group cursor-pointer rounded-lg border p-3 hover:bg-muted/50 transition-colors"
+                                                onClick={() => handleSuggestionClick(suggestion)}
+                                            >
+                                                <div className="flex items-start justify-between gap-2 mb-2">
+                                                    <h5 className="font-medium text-sm line-clamp-1 group-hover:text-primary transition-colors">
+                                                        {suggestion.title}
+                                                    </h5>
+                                                    <Badge
+                                                        variant={suggestion.priority === 'high' ? 'default' : 'secondary'}
+                                                        className="text-xs shrink-0"
+                                                    >
+                                                        {suggestion.priority}
+                                                    </Badge>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+                                                    {suggestion.description}
+                                                </p>
+                                                {suggestion.actions && suggestion.actions[0] && (
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-xs text-primary font-medium">
+                                                            {suggestion.actions[0].label}
+                                                        </span>
+                                                        <ChevronRight className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                )}
+
+                {/* Agent Chat Sheet */}
+                <Sheet open={isAgentOpen} onOpenChange={setIsAgentOpen}>
+                    <SheetTrigger asChild>
+                        <Button
+                            className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                        >
+                            <Bot className="w-6 h-6 text-white" />
+                        </Button>
+                    </SheetTrigger>
+
+                    <SheetContent
+                        side="right"
+                        className="w-[400px] sm:w-[500px] p-0"
                     >
-                        <Bot className="w-6 h-6 text-white" />
-                    </Button>
-                </SheetTrigger>
+                        <SheetHeader className="p-6 pb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/10 to-purple-600/10 flex items-center justify-center">
+                                    <Bot className="w-5 h-5 text-primary" />
+                                </div>
+                                <div>
+                                    <SheetTitle className="text-left">{hubAgent.name}</SheetTitle>
+                                    <SheetDescription className="text-left">
+                                        Your {hubContext} AI specialist
+                                    </SheetDescription>
+                                </div>
+                            </div>
+                        </SheetHeader>
 
-                <SheetContent
-                    side="right"
-                    className="w-[400px] sm:w-[500px] p-0"
-                >
-                    <SheetHeader className="p-6 pb-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/10 to-purple-600/10 flex items-center justify-center">
-                                <Bot className="w-5 h-5 text-primary" />
-                            </div>
-                            <div>
-                                <SheetTitle className="text-left">{hubAgent.name}</SheetTitle>
-                                <SheetDescription className="text-left">
-                                    Your {hubContext} AI specialist
-                                </SheetDescription>
-                            </div>
+                        <div className="px-6 pb-6">
+                            <HubAgentChat
+                                hubContext={hubContext}
+                                defaultExpanded={true}
+                                showAgentInfo={true}
+                                maxHeight="calc(100vh - 200px)"
+                                placeholder={`Ask ${hubAgent.name} anything about ${hubContext}...`}
+                            />
                         </div>
-                    </SheetHeader>
-
-                    <div className="px-6 pb-6">
-                        <HubAgentChat
-                            hubContext={hubContext}
-                            defaultExpanded={true}
-                            showAgentInfo={true}
-                            maxHeight="calc(100vh - 200px)"
-                            placeholder={`Ask ${hubAgent.name} anything about ${hubContext}...`}
-                        />
-                    </div>
-                </SheetContent>
-            </Sheet>
-        </div>
+                    </SheetContent>
+                </Sheet>
+            </div>
+        </AgentErrorBoundary>
     );
 }

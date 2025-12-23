@@ -3,8 +3,86 @@
 import { getCurrentUserId } from '@/aws/auth/server-auth';
 import { cookies } from 'next/headers';
 
+// Session cookie configuration constants
+const SESSION_COOKIE_CONFIG = {
+  MAX_COOKIE_SIZE: 3500, // Leave headroom under 4096 byte limit
+  CHUNK_SIZE: 3500,
+  MAX_CHUNKS_TO_CLEAR: 10,
+  COOKIE_OPTIONS: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax' as const,
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    path: '/',
+  },
+} as const;
+
+/**
+ * Session data interface
+ */
+interface SessionData {
+  accessToken: string;
+  idToken: string;
+  refreshToken: string;
+  expiresAt: number;
+}
+
+/**
+ * Split large string into chunks of specified size
+ */
+function chunkString(str: string, chunkSize: number): string[] {
+  const chunks: string[] = [];
+  for (let i = 0; i < str.length; i += chunkSize) {
+    chunks.push(str.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
+/**
+ * Clear all potential chunk cookies
+ */
+async function clearChunkCookies(cookieStore: Awaited<ReturnType<typeof cookies>>): Promise<void> {
+  cookieStore.delete('cognito_session_chunks');
+  for (let i = 0; i < SESSION_COOKIE_CONFIG.MAX_CHUNKS_TO_CLEAR; i++) {
+    cookieStore.delete(`cognito_session_${i}`);
+  }
+}
+
+/**
+ * Set chunked session cookies for large session data
+ */
+async function setChunkedSessionCookies(
+  cookieStore: Awaited<ReturnType<typeof cookies>>,
+  sessionString: string
+): Promise<void> {
+  const chunks = chunkString(sessionString, SESSION_COOKIE_CONFIG.CHUNK_SIZE);
+  
+  // Set chunk count cookie
+  cookieStore.set('cognito_session_chunks', chunks.length.toString(), SESSION_COOKIE_CONFIG.COOKIE_OPTIONS);
+  
+  // Set individual chunk cookies
+  chunks.forEach((chunk, index) => {
+    cookieStore.set(`cognito_session_${index}`, chunk, SESSION_COOKIE_CONFIG.COOKIE_OPTIONS);
+  });
+  
+  // Clear the main cookie if it exists
+  cookieStore.delete('cognito_session');
+}
+
+/**
+ * Set single session cookie for small session data
+ */
+async function setSingleSessionCookie(
+  cookieStore: Awaited<ReturnType<typeof cookies>>,
+  sessionString: string
+): Promise<void> {
+  cookieStore.set('cognito_session', sessionString, SESSION_COOKIE_CONFIG.COOKIE_OPTIONS);
+  await clearChunkCookies(cookieStore);
+}
+
 /**
  * Set session cookie for server-side authentication
+ * Automatically handles chunking for large session data to avoid 4096 byte cookie limit
  */
 async function setServerSessionCookie(
   accessToken: string,
@@ -14,20 +92,21 @@ async function setServerSessionCookie(
 ): Promise<void> {
   const cookieStore = await cookies();
   
-  const sessionData = {
+  const sessionData: SessionData = {
     accessToken,
     idToken,
     refreshToken,
     expiresAt,
   };
 
-  cookieStore.set('cognito_session', JSON.stringify(sessionData), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-    path: '/',
-  });
+  const sessionString = JSON.stringify(sessionData);
+  
+  // Use chunked cookies if session data exceeds size limit
+  if (sessionString.length > SESSION_COOKIE_CONFIG.MAX_COOKIE_SIZE) {
+    await setChunkedSessionCookies(cookieStore, sessionString);
+  } else {
+    await setSingleSessionCookie(cookieStore, sessionString);
+  }
 }
 
 /**
@@ -35,7 +114,58 @@ async function setServerSessionCookie(
  */
 async function clearSessionCookie(): Promise<void> {
   const cookieStore = await cookies();
+  
+  // Clear single cookie
   cookieStore.delete('cognito_session');
+  
+  // Clear chunked cookies
+  await clearChunkCookies(cookieStore);
+}
+
+/**
+ * Get session data from cookies (handles both single and chunked cookies)
+ */
+async function getServerSessionData(): Promise<SessionData | null> {
+  const cookieStore = await cookies();
+  
+  // Check if we have chunked cookies
+  const chunkCountCookie = cookieStore.get('cognito_session_chunks');
+  
+  if (chunkCountCookie) {
+    // Reconstruct from chunks
+    const chunkCount = parseInt(chunkCountCookie.value, 10);
+    if (isNaN(chunkCount) || chunkCount <= 0) {
+      return null;
+    }
+    
+    let sessionString = '';
+    for (let i = 0; i < chunkCount; i++) {
+      const chunkCookie = cookieStore.get(`cognito_session_${i}`);
+      if (!chunkCookie) {
+        // Missing chunk, session is invalid
+        return null;
+      }
+      sessionString += chunkCookie.value;
+    }
+    
+    try {
+      return JSON.parse(sessionString) as SessionData;
+    } catch {
+      return null;
+    }
+  } else {
+    // Check for single cookie
+    const sessionCookie = cookieStore.get('cognito_session');
+    if (!sessionCookie) {
+      return null;
+    }
+    
+    try {
+      return JSON.parse(sessionCookie.value) as SessionData;
+    } catch {
+      return null;
+    }
+  }
 }
 
 // AWS Bedrock flows (migrated from Genkit)

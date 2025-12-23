@@ -1,96 +1,57 @@
 /**
- * React hook for background sync functionality
+ * React Hook for Background Sync
+ * Provides a clean React interface for background sync operations
  */
 
 import { useEffect, useState, useCallback } from 'react';
-import { backgroundSyncManager, BackgroundSyncEvent } from '@/lib/background-sync-manager';
+import { backgroundSyncManager } from '@/lib/background-sync-manager';
+import type { BackgroundSyncEvent } from '@/lib/background-sync';
 
-export interface BackgroundSyncStatus {
-    isSupported: boolean;
-    isAvailable: boolean;
-    isRegistered: boolean;
-    lastSyncEvent?: BackgroundSyncEvent;
+interface UseBackgroundSyncReturn {
+  isSupported: boolean;
+  isAvailable: boolean;
+  isInitialized: boolean;
+  queueOperation: (operation: any, priority?: boolean) => Promise<boolean>;
+  triggerSync: () => Promise<boolean>;
+  events: BackgroundSyncEvent[];
 }
 
-export function useBackgroundSync() {
-    const [status, setStatus] = useState<BackgroundSyncStatus>({
-        isSupported: false,
-        isAvailable: false,
-        isRegistered: false
+export function useBackgroundSync(): UseBackgroundSyncReturn {
+  const [isSupported] = useState(() => backgroundSyncManager.isBackgroundSyncSupported());
+  const [isAvailable, setIsAvailable] = useState(() => backgroundSyncManager.isBackgroundSyncAvailable());
+  const [events, setEvents] = useState<BackgroundSyncEvent[]>([]);
+
+  const queueOperation = useCallback(async (operation: any, priority = false) => {
+    return backgroundSyncManager.queueOperationForBackgroundSync(operation, priority);
+  }, []);
+
+  const triggerSync = useCallback(async () => {
+    return backgroundSyncManager.triggerBackgroundSync();
+  }, []);
+
+  useEffect(() => {
+    // Subscribe to background sync events
+    const unsubscribe = backgroundSyncManager.onBackgroundSyncEvent((event) => {
+      setEvents(prev => [...prev.slice(-9), event]); // Keep last 10 events
     });
 
-    const [syncEvents, setSyncEvents] = useState<BackgroundSyncEvent[]>([]);
+    // Update availability status periodically
+    const interval = setInterval(() => {
+      setIsAvailable(backgroundSyncManager.isBackgroundSyncAvailable());
+    }, 5000);
 
-    // Handle background sync events
-    const handleBackgroundSyncEvent = useCallback((event: BackgroundSyncEvent) => {
-        setStatus(prev => ({
-            ...prev,
-            lastSyncEvent: event
-        }));
-
-        setSyncEvents(prev => [...prev.slice(-9), event]); // Keep last 10 events
-    }, []);
-
-    // Initialize background sync
-    useEffect(() => {
-        const updateStatus = async () => {
-            const registrationStatus = await backgroundSyncManager.getRegistrationStatus();
-
-            setStatus({
-                isSupported: backgroundSyncManager.isBackgroundSyncSupported(),
-                isAvailable: backgroundSyncManager.isBackgroundSyncAvailable(),
-                isRegistered: registrationStatus.registered
-            });
-        };
-
-        updateStatus();
-
-        // Subscribe to background sync events
-        const unsubscribe = backgroundSyncManager.onBackgroundSyncEvent(handleBackgroundSyncEvent);
-
-        return () => {
-            unsubscribe();
-        };
-    }, [handleBackgroundSyncEvent]);
-
-    // Register background sync
-    const registerBackgroundSync = useCallback(async (): Promise<boolean> => {
-        const success = await backgroundSyncManager.registerBackgroundSync();
-
-        if (success) {
-            setStatus(prev => ({
-                ...prev,
-                isRegistered: true
-            }));
-        }
-
-        return success;
-    }, []);
-
-    // Trigger background sync
-    const triggerBackgroundSync = useCallback(async (): Promise<boolean> => {
-        return await backgroundSyncManager.triggerBackgroundSync();
-    }, []);
-
-    // Queue operation for background sync
-    const queueOperation = useCallback(async (
-        operation: any,
-        priority: boolean = false
-    ): Promise<boolean> => {
-        return await backgroundSyncManager.queueOperationForBackgroundSync(operation, priority);
-    }, []);
-
-    // Update service worker
-    const updateServiceWorker = useCallback(async (): Promise<boolean> => {
-        return await backgroundSyncManager.updateServiceWorker();
-    }, []);
-
-    return {
-        status,
-        syncEvents,
-        registerBackgroundSync,
-        triggerBackgroundSync,
-        queueOperation,
-        updateServiceWorker
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
     };
+  }, []);
+
+  return {
+    isSupported,
+    isAvailable,
+    isInitialized: isAvailable, // For backward compatibility
+    queueOperation,
+    triggerSync,
+    events,
+  };
 }

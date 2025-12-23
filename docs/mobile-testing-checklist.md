@@ -7,10 +7,14 @@ This document provides a comprehensive checklist for testing mobile enhancements
 Before starting mobile testing, ensure:
 
 - [ ] Application is deployed and accessible via HTTPS
+- [ ] PWA features are enabled (`NEXT_PUBLIC_ENABLE_SERVICE_WORKER=true`)
+- [ ] Service worker file exists (`/sw.js` or `/sw-custom.js`)
 - [ ] Service worker is registered and active
 - [ ] Manifest.json is properly configured
-- [ ] Push notification keys are configured
+- [ ] Push notification keys are configured (if using push notifications)
 - [ ] Test devices have internet connectivity
+
+> **Note**: PWA features including service worker registration are disabled by default. Enable them before testing PWA functionality.
 
 ## Device Requirements
 

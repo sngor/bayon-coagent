@@ -194,7 +194,33 @@ a:not(.no-touch-feedback):active {
 - Ripple effect container class (`.touch-ripple`)
 - Fast transitions (0.1s) for immediate feedback
 
-### 5. Additional Optimizations
+### 5. Sidebar Mobile Optimization
+
+**Objective**: Improve mobile sidebar UX by preventing full-screen overlay.
+
+**Implementation**:
+
+The sidebar component has been optimized for mobile devices with improved width calculation:
+
+```typescript
+// Before: Full viewport width
+const SIDEBAR_WIDTH_MOBILE = "100vw"
+
+// After: Leaves margin for better UX
+const SIDEBAR_WIDTH_MOBILE = "calc(100vw - 3rem)"
+```
+
+**Benefits**:
+- Prevents full-screen overlay on mobile devices
+- Maintains visual context of the underlying page
+- Provides better user experience with 3rem (48px) margin
+- Allows users to see and tap outside the sidebar to close it
+- Follows mobile design best practices for overlay components
+
+**Usage**:
+The sidebar automatically applies the optimized width on mobile devices without requiring any changes to implementation code.
+
+### 6. Additional Optimizations
 
 #### Prevent Unwanted Touch Behaviors
 

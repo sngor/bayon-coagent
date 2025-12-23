@@ -484,7 +484,7 @@ export default function StudioWritePage() {
 
             {/* Content Generation Forms */}
             <FeatureGate feature="aiContentGeneration">
-                <div className="grid gap-6 lg:grid-cols-4">
+                <div className="grid gap-6 lg:grid-cols-3">
                 <Card className="lg:col-span-1">
                     <CardHeader>
                         <CardTitle>
@@ -1363,11 +1363,11 @@ export default function StudioWritePage() {
                         )}
                     </CardContent>
                 </Card>
+            </div>
 
-                {/* Recent Content Sidebar */}
-                <div className="lg:col-span-1">
-                    <RecentContentSidebar />
-                </div>
+            {/* Recent Content Section - Moved to bottom */}
+            <div className="mt-8">
+                <RecentContentSidebar />
             </div>
 
             {/* Save to Library Dialog */}

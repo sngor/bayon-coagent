@@ -542,6 +542,44 @@ import {
 
 ## 📊 Data Display Components
 
+### Market Insights Components
+
+#### Market Insights Filters
+
+```typescript
+import { MarketInsightsFilters } from "@/components/market-insights/market-insights-filters";
+
+<MarketInsightsFilters
+  filters={{ location: 'Seattle, WA', timeframe: '3months' }}
+  onFiltersChange={(filters) => setFilters(filters)}
+  onAnalyze={() => analyzeMarket()}
+/>
+```
+
+#### Market Trends Tab
+
+```typescript
+import { MarketTrendsTab } from "@/components/market-insights/market-trends-tab";
+
+<MarketTrendsTab trends={marketTrends} />
+```
+
+#### Life Events Tab
+
+```typescript
+import { LifeEventsTab } from "@/components/market-insights/life-events-tab";
+
+<LifeEventsTab lifeEvents={lifeEventPredictions} />
+```
+
+#### Market Stats Cards
+
+```typescript
+import { MarketStatsCards } from "@/components/market-insights/market-stats-cards";
+
+<MarketStatsCards />
+```
+
 ### Responsive Table
 
 ```typescript

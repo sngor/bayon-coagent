@@ -27,6 +27,10 @@ export class PWAManager {
     private serviceWorkerRegistration: ServiceWorkerRegistration | null = null;
 
     private constructor() {
+        // PWA manager initialization disabled to prevent service worker 404 errors
+        console.log('PWA manager initialization disabled');
+        return;
+        
         if (typeof window !== 'undefined') {
             this.initialize();
         }
@@ -61,9 +65,36 @@ export class PWAManager {
     }
 
     /**
+     * Check if service worker file exists
+     */
+    private async checkServiceWorkerExists(): Promise<boolean> {
+        try {
+            const response = await fetch('/sw.js', { method: 'HEAD' });
+            return response.ok;
+        } catch {
+            return false;
+        }
+    }
+
+    /**
      * Register service worker
      */
     private async registerServiceWorker(): Promise<void> {
+        // Check if service worker is enabled in configuration
+        const isServiceWorkerEnabled = process.env.NEXT_PUBLIC_ENABLE_SERVICE_WORKER === 'true';
+        
+        if (!isServiceWorkerEnabled) {
+            console.log('Service worker registration disabled via configuration');
+            return;
+        }
+
+        // Check if service worker file exists
+        const serviceWorkerExists = await this.checkServiceWorkerExists();
+        if (!serviceWorkerExists) {
+            console.warn('Service worker file not found at /sw.js, skipping registration');
+            return;
+        }
+        
         if ('serviceWorker' in navigator) {
             try {
                 const registration = await navigator.serviceWorker.register('/sw.js', {
@@ -93,6 +124,20 @@ export class PWAManager {
                 console.log('Service Worker registered successfully');
             } catch (error) {
                 console.error('Service Worker registration failed:', error);
+                
+                // Provide more specific error information
+                if (error instanceof Error) {
+                    if (error.message.includes('404')) {
+                        console.warn('Service worker file not found. Ensure /sw.js exists in public directory.');
+                    } else if (error.message.includes('SecurityError')) {
+                        console.warn('Service worker registration blocked by security policy. Check HTTPS requirements.');
+                    } else if (error.message.includes('NetworkError')) {
+                        console.warn('Network error during service worker registration. Check connectivity.');
+                    }
+                }
+                
+                // Don't throw - PWA features should degrade gracefully
+                this.serviceWorkerRegistration = null;
             }
         }
     }

@@ -67,7 +67,7 @@ Applied the same glassmorphism effects to mobile menu:
 
 ```tsx
 className =
-  "w-[--sidebar-width] bg-sidebar/95 backdrop-blur-xl p-0 text-sidebar-foreground [&>button]:hidden border-r border-white/10 dark:border-white/5";
+  "w-[--sidebar-width] bg-sidebar/95 backdrop-blur-xl p-0 text-sidebar-foreground border-r border-white/10 dark:border-white/5";
 ```
 
 **Features:**

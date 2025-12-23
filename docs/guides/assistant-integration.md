@@ -2,7 +2,70 @@
 
 ## Summary
 
-I've started integrating server-side chat history into the assistant page. Here's what's been done and what remains.
+Server-side chat history integration for the assistant page is complete with enhanced error handling and improved user experience. This guide covers the implementation details and recent improvements.
+
+## Recent Improvements ✅
+
+### Enhanced Error Handling (December 2024)
+
+The `useChatHistory` hook now includes improved error handling and user experience:
+
+1. **Better Authentication State Management**
+   - Properly clears sessions when user is not authenticated
+   - Avoids showing authentication errors to users
+   - Graceful handling of loading states
+
+2. **Improved Error Messages**
+   - Uses proper toast functions (`showErrorToast`, `showSuccessToast`)
+   - Filters out authentication errors from user-facing messages
+   - Better timeout handling with user-friendly messages
+
+3. **Loading State Optimization**
+   - Timeout protection (10 seconds) for slow network conditions
+   - Clear error messages for connection issues
+   - Optimistic updates for better perceived performance
+
+```typescript
+// Enhanced error handling example
+const loadSessions = useCallback(async () => {
+  if (!user) {
+    setSessions([]);
+    setIsLoading(false);
+    return;
+  }
+
+  try {
+    setIsLoading(true);
+    setError(null);
+
+    // Timeout protection
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Loading took too long...')), LOADING_TIMEOUT);
+    });
+
+    const result = await Promise.race([listChatSessions(), timeoutPromise]);
+
+    if (result.success) {
+      setSessions(result.data);
+      setError(null);
+    } else {
+      // Only show toast for actual errors, not authentication issues
+      if (result.error !== 'User not authenticated') {
+        showErrorToast('Failed to load chat history', result.error);
+      }
+    }
+  } catch (error) {
+    // Handle timeout and network errors gracefully
+    const errorMessage = error instanceof Error && error.message.includes('took too long')
+      ? 'Loading took too long. Please check your connection and try again.'
+      : 'Could not load chat sessions. Please try refreshing the page.';
+    
+    setError(errorMessage);
+  } finally {
+    setIsLoading(false);
+  }
+}, [user]);
+```
 
 ## Changes Made ✅
 
@@ -15,7 +78,7 @@ import {
   hasLocalChatHistory,
   getLocalChatHistoryCount,
 } from "@/lib/migrate-chat-history";
-import { toast } from "@/hooks/use-toast";
+import { showErrorToast, showSuccessToast } from "@/hooks/use-toast";
 import { Cloud, HardDrive } from "lucide-react";
 ```
 

@@ -486,6 +486,38 @@ export function getAWSConfig() {
 
 ## 📱 PWA Configuration
 
+> **Note**: PWA features are disabled by default. Service worker registration and background sync are disabled to prevent 404 errors when service worker files are not present.
+
+### Enabling PWA Features
+
+To enable PWA functionality:
+
+#### 1. Environment Variable
+
+```bash
+# .env.local (development) or .env.production (production)
+NEXT_PUBLIC_ENABLE_SERVICE_WORKER=true
+```
+
+#### 2. Service Worker File
+
+Create a service worker file in the `public` directory:
+
+```javascript
+// public/sw.js - Basic service worker
+self.addEventListener('install', (event) => {
+  console.log('Service worker installing...');
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  console.log('Service worker activating...');
+  event.waitUntil(clients.claim());
+});
+
+// Add caching, push notifications, background sync as needed
+```
+
 ### Manifest (public/manifest.json)
 
 ```json
@@ -499,18 +531,26 @@ export function getAWSConfig() {
   "theme_color": "#000000",
   "icons": [
     {
-      "src": "/icon-192x192.png",
+      "src": "/icon-192x192.svg",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/svg+xml"
     },
     {
-      "src": "/icon-512x512.png",
+      "src": "/icon-512x512.svg",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/svg+xml"
     }
   ]
 }
 ```
+
+### Current Status
+
+- **PWA Manager**: Disabled by default, requires service worker
+- **Background Sync**: Disabled by default, requires service worker
+- **Push Notifications**: Available when service worker is enabled
+- **Install Prompt**: Available when PWA criteria are met
+- **Offline Caching**: Requires custom service worker implementation
 
 ## 🔍 Monitoring Configuration
 

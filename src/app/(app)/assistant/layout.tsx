@@ -1,6 +1,7 @@
 'use client';
 
 import { HubLayout } from '@/components/hub/hub-layout';
+import { EnhancedAgentIntegration } from '@/components/enhanced-agents';
 import { Bot } from 'lucide-react';
 
 export default function AssistantLayout({
@@ -16,6 +17,11 @@ export default function AssistantLayout({
             tabs={[]}
         >
             {children}
+            <EnhancedAgentIntegration
+                hubContext="assistant"
+                position="bottom-right"
+                showNotifications={true}
+            />
         </HubLayout>
     );
 }

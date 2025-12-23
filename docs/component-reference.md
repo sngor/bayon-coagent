@@ -2,6 +2,85 @@
 
 Quick reference for all standard components with API documentation and usage examples.
 
+## Navigation
+
+### Sidebar
+
+Application sidebar with responsive mobile optimization and collapsible states.
+
+**Mobile Optimization:**
+- Width: `calc(100vw - 3rem)` on mobile (leaves 48px margin)
+- Prevents full-screen overlay for better UX
+- Maintains visual context of underlying page
+- Allows tap-outside-to-close functionality
+- All interactive elements (buttons, links) remain accessible
+
+**Desktop Features:**
+- Collapsible with icon-only mode
+- Keyboard shortcut support (Cmd/Ctrl + B)
+- Smooth transitions between expanded/collapsed states
+- Tooltip support for collapsed state
+- Responsive gap spacing (4 units default, 3 units on md+ screens)
+
+**Configuration:**
+```typescript
+const SIDEBAR_WIDTH = "14rem"           // Desktop width
+const SIDEBAR_WIDTH_MOBILE = "calc(100vw - 3rem)"  // Mobile width with margin
+const SIDEBAR_WIDTH_ICON = "3.5rem"    // Collapsed width
+const SIDEBAR_KEYBOARD_SHORTCUT = "b"   // Toggle shortcut key
+
+// Responsive spacing
+const MENU_BUTTON_GAP = "gap-4 md:gap-3"  // 4 units mobile, 3 units desktop
+```
+
+**Usage:**
+```tsx
+import { 
+  Sidebar, 
+  SidebarProvider, 
+  SidebarContent,
+  SidebarHeader,
+  SidebarFooter,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarTrigger,
+  useSidebar 
+} from "@/components/ui/sidebar";
+
+// Basic setup
+<SidebarProvider defaultOpen={true}>
+  <Sidebar>
+    <SidebarHeader>
+      <h2>Navigation</h2>
+    </SidebarHeader>
+    <SidebarContent>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton asChild>
+            <Link href="/dashboard">Dashboard</Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    </SidebarContent>
+    <SidebarFooter>
+      <SidebarTrigger />
+    </SidebarFooter>
+  </Sidebar>
+  <SidebarInset>
+    {/* Main content */}
+  </SidebarInset>
+</SidebarProvider>
+```
+
+**Props:**
+- `defaultOpen` (boolean) - Initial sidebar state
+- `open` (boolean) - Controlled open state
+- `onOpenChange` (function) - Open state change handler
+- `side` ("left" | "right") - Sidebar position
+- `variant` ("sidebar" | "floating" | "inset") - Visual variant
+- `collapsible` ("offcanvas" | "icon" | "none") - Collapse behavior
+
 ## Page Layout
 
 ### StandardPageLayout

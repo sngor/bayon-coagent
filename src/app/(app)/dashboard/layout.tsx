@@ -1,6 +1,7 @@
 'use client';
 
 import { HubLayout } from '@/components/hub/hub-layout';
+import { EnhancedAgentIntegration } from '@/components/enhanced-agents';
 import { BarChart3 } from 'lucide-react';
 
 import { useUser } from '@/aws/auth';
@@ -59,6 +60,11 @@ export default function DashboardLayout({
             tabs={[]}
         >
             {children}
+            <EnhancedAgentIntegration
+                hubContext="dashboard"
+                position="bottom-right"
+                showNotifications={true}
+            />
         </HubLayout>
     );
 }

@@ -9,21 +9,23 @@ export const REDIRECT_MAP: Record<string, string> = {
   '/listing-description-generator': '/studio/describe',
   '/reimagine': '/studio/reimagine',
 
-  // Research Hub
-  '/research-agent': '/intelligence/agent',
-  '/knowledge-base': '/intelligence/knowledge',
-  '/intelligence/research': '/intelligence/agent',
-
-  // Market Hub (formerly Intelligence)
-  '/intelligence': '/market',
+  // Research Hub (Combined with Market Intelligence)
+  '/research-agent': '/research/agent',
+  '/intelligence/agent': '/research/agent',
+  '/intelligence/knowledge': '/research/knowledge',
+  '/intelligence/research': '/research/agent',
+  '/intelligence': '/research',
   '/intelligence/competitors': '/brand/competitors',
-  '/intelligence/market-insights': '/market/trends',
+  '/intelligence/market-insights': '/research/insights',
+  '/market': '/research',
+  '/market/insights': '/research/insights',
+  '/market/news': '/research/news',
+  '/market/opportunities': '/research/opportunities',
+  '/market/analytics': '/research/analytics',
+  '/market/alerts': '/research/alerts',
   '/competitive-analysis': '/brand/competitors',
-  '/investment-opportunity-identification': '/market/opportunities',
-  '/life-event-predictor': '/market/trends',
-
-  // Market consolidation redirects (legacy insights paths)
-  '/market/insights': '/market/trends',
+  '/investment-opportunity-identification': '/research/opportunities',
+  '/life-event-predictor': '/research/insights',
 
   // Tools Hub (moved from Market)
   '/market/calculator': '/tools/calculator',
@@ -42,8 +44,6 @@ export const REDIRECT_MAP: Record<string, string> = {
 
   // Library redirects
   '/projects': '/library/content',
-
-
 
   // Training (removed from main nav)
   '/training-hub': '/training',

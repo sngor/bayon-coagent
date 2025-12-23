@@ -126,23 +126,56 @@ Current User Context:
 
 Respond as ${hubAgent.name} with your characteristic ${hubAgent.personality} personality.`;
 
-        // Generate response using Bedrock
+        // Generate response using Bedrock with enhanced retry logic
         const client = getBedrockClient(hubAgent.capabilities.preferredModel);
 
-        const response = await client.invokeWithPrompts(
-            systemPrompt,
-            validatedInput.message,
-            z.object({
-                response: z.string(),
-                keyPoints: z.array(z.string()).optional(),
-                suggestedActions: z.array(z.string()).optional()
-            }),
-            {
-                temperature: 0.7,
-                maxTokens: 2048,
-                flowName: `hub-agent-chat-${hubAgent.hub}`
+        let response;
+        let retryCount = 0;
+        const maxRetries = 2;
+        const baseDelay = 1000; // 1 second base delay
+
+        while (retryCount <= maxRetries) {
+            try {
+                response = await client.invokeWithPrompts(
+                    systemPrompt,
+                    validatedInput.message,
+                    z.object({
+                        response: z.string(),
+                        keyPoints: z.array(z.string()).optional(),
+                        suggestedActions: z.array(z.string()).optional()
+                    }),
+                    {
+                        temperature: 0.7,
+                        maxTokens: 2048,
+                        flowName: `hub-agent-chat-${hubAgent.hub}`
+                    }
+                );
+                break; // Success, exit retry loop
+            } catch (error) {
+                retryCount++;
+                
+                if (retryCount > maxRetries) {
+                    // If all retries failed, provide specific error message
+                    if (error instanceof Error) {
+                        const errorMessage = error.message.toLowerCase();
+                        if (errorMessage.includes('throttle') || errorMessage.includes('rate limit')) {
+                            throw new Error('AI service is busy. Please try again in a moment.');
+                        } else if (errorMessage.includes('timeout')) {
+                            throw new Error('Request timed out. Please try a shorter message.');
+                        } else if (errorMessage.includes('model')) {
+                            throw new Error('AI model temporarily unavailable. Please try again.');
+                        } else if (errorMessage.includes('authentication') || errorMessage.includes('credentials')) {
+                            throw new Error('Authentication error. Please refresh the page.');
+                        }
+                    }
+                    throw error; // Re-throw original error if no specific handling
+                }
+                
+                // Exponential backoff with jitter
+                const delay = baseDelay * Math.pow(2, retryCount) + Math.random() * 1000;
+                await new Promise(resolve => setTimeout(resolve, delay));
             }
-        );
+        }
 
         const conversationId = validatedInput.conversationId || `conv-${Date.now()}`;
 

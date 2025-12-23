@@ -6,10 +6,12 @@ This directory contains the mobile service layer infrastructure for the Bayon Co
 
 The mobile service layer enables real estate agents to use the platform effectively while on-the-go, with features like:
 
-- **PWA Support**: Install the app on mobile devices for native-like experience
+- **PWA Support**: Install the app on mobile devices for native-like experience (currently disabled by default)
 - **Offline Queue**: Continue working offline with automatic sync when connection returns
 - **Device APIs**: Access camera, microphone, and location services
 - **Push Notifications**: Receive real-time notifications for leads and updates
+
+> **Note**: PWA features including service worker registration and background sync are currently disabled by default to prevent 404 errors. See [Configuration](#configuration) section for enabling instructions.
 
 ## Services
 
@@ -45,16 +47,18 @@ const hasCamera = await deviceAPI.requestCameraPermission();
 
 Manages Progressive Web App functionality:
 
+> **Important**: PWA functionality is currently disabled by default. Service worker registration and background sync are disabled to prevent 404 errors when the service worker file is not present.
+
 ```typescript
 import { pwaManager } from "@/lib/mobile/pwa-manager";
 
-// Install prompt
+// Install prompt (requires PWA to be enabled)
 await pwaManager.showInstallPrompt();
 
 // Check install state
 const { canInstall, isInstalled } = pwaManager.getInstallState();
 
-// Push notifications
+// Push notifications (requires service worker)
 const subscription = await pwaManager.subscribeToPushNotifications(vapidKey);
 
 // Show notification
@@ -66,9 +70,9 @@ await pwaManager.showNotification("New Lead", {
 
 **Features:**
 
-- Install prompt handling
-- Service worker registration and updates
-- Push notification setup
+- Install prompt handling (disabled by default)
+- Service worker registration and updates (disabled by default)
+- Push notification setup (requires service worker)
 - App lifecycle events
 
 ### Offline Queue Service (`offline-queue.ts`)
@@ -237,7 +241,9 @@ import { OfflineIndicator } from "@/components/mobile/offline-indicator";
 
 ## Service Worker
 
-The custom service worker (`/public/sw-custom.js`) provides:
+> **Current Status**: Service worker functionality is disabled by default to prevent 404 errors.
+
+The custom service worker (`/public/sw-custom.js`) would provide:
 
 - **Intelligent Caching**: Different strategies for different resource types
 - **Offline Support**: Serves cached content when offline
@@ -246,10 +252,22 @@ The custom service worker (`/public/sw-custom.js`) provides:
 
 ### Cache Strategies
 
+When enabled, the service worker uses these strategies:
+
 - **API Routes**: Network first, fallback to cache
 - **Static Assets**: Cache first, fallback to network
 - **HTML Pages**: Network first, fallback to cache
 - **Images**: Stale while revalidate
+
+### Enabling Service Worker
+
+To enable service worker functionality:
+
+1. Set `NEXT_PUBLIC_ENABLE_SERVICE_WORKER=true` in your environment variables
+2. Ensure `/sw.js` or `/sw-custom.js` exists in the `public` directory
+3. Deploy over HTTPS (required for service workers in production)
+
+See [Configuration](#configuration) section for detailed setup instructions.
 
 ## PWA Manifest
 
@@ -260,6 +278,106 @@ The PWA manifest (`/public/manifest.json`) defines:
 - Display mode (standalone)
 - App shortcuts
 - Share target configuration
+
+## Configuration
+
+### Enabling PWA Features
+
+PWA features including service worker registration and background sync are disabled by default. To enable them:
+
+#### 1. Environment Configuration
+
+Add to your environment file (`.env.local` for development, `.env.production` for production):
+
+```bash
+NEXT_PUBLIC_ENABLE_SERVICE_WORKER=true
+```
+
+#### 2. Service Worker File
+
+Create a service worker file in your `public` directory:
+
+- `/public/sw.js` - Standard service worker
+- `/public/sw-custom.js` - Custom service worker with enhanced features
+
+Example basic service worker (`/public/sw.js`):
+
+```javascript
+// Basic service worker for PWA functionality
+self.addEventListener('install', (event) => {
+  console.log('Service worker installing...');
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  console.log('Service worker activating...');
+  event.waitUntil(clients.claim());
+});
+
+self.addEventListener('fetch', (event) => {
+  // Handle fetch events for caching
+});
+
+self.addEventListener('push', (event) => {
+  // Handle push notifications
+  const data = event.data ? event.data.json() : {};
+  
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Notification', {
+      body: data.body || 'You have a new notification',
+      icon: '/icon-192x192.svg',
+      badge: '/icon-192x192.svg',
+      data: data.data || {}
+    })
+  );
+});
+```
+
+#### 3. HTTPS Requirement
+
+Service workers require HTTPS in production environments. Development on `localhost` works without HTTPS.
+
+#### 4. PWA Manifest
+
+Ensure your PWA manifest is properly configured at `/public/manifest.json`:
+
+```json
+{
+  "name": "Bayon CoAgent",
+  "short_name": "CoAgent",
+  "description": "AI-powered success platform for real estate agents",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/icon-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}
+```
+
+### Troubleshooting
+
+**Service Worker Not Registering:**
+- Check that `NEXT_PUBLIC_ENABLE_SERVICE_WORKER=true` is set
+- Verify service worker file exists in `/public/` directory
+- Ensure you're using HTTPS in production
+- Check browser console for registration errors
+
+**PWA Install Prompt Not Showing:**
+- Verify service worker is registered successfully
+- Check PWA manifest is valid and accessible
+- Ensure site meets PWA installability criteria
+- Test in Chrome/Edge (best PWA support)
+
+**Background Sync Not Working:**
+- Confirm service worker is active
+- Check that background sync is supported in the browser
+- Verify network connectivity for sync operations
 
 ## Events
 

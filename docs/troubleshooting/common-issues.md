@@ -146,6 +146,39 @@ npm run clear-auth
 # LocalStack uses default settings (1 hour access token)
 ```
 
+### Large Token Cookie Issues
+
+**Problem**: Authentication fails with large JWT tokens or "Cookie too large" errors
+
+**Background**: The platform automatically handles large JWT tokens by splitting them into multiple cookies when they exceed 3.5KB to avoid browser cookie size limits (4096 bytes).
+
+**Solutions**:
+
+```bash
+# 1. Check if chunked cookies are being used
+# DevTools → Application → Cookies → localhost:3000
+# Look for: cognito_session_chunks, cognito_session_0, cognito_session_1, etc.
+
+# 2. Clear all authentication cookies
+npm run clear-auth
+
+# 3. If cookies seem corrupted, clear manually:
+# DevTools → Application → Cookies → Delete all cognito_session* cookies
+
+# 4. Check server logs for cookie reconstruction errors
+# Look for "Missing chunk" or "Failed to reconstruct session" messages
+
+# 5. Verify cookie chunking is working:
+# Large tokens should create multiple cognito_session_N cookies
+# Small tokens should use single cognito_session cookie
+```
+
+**How Cookie Chunking Works**:
+- **Single Cookie Mode**: Session data < 3.5KB stored in `cognito_session`
+- **Chunked Mode**: Session data ≥ 3.5KB split into `cognito_session_0`, `cognito_session_1`, etc.
+- **Chunk Count**: Stored in `cognito_session_chunks` cookie
+- **Automatic Cleanup**: Unused cookies are automatically cleared when switching modes
+
 ## 🏗️ Build Issues
 
 ### TypeScript Errors
@@ -545,6 +578,40 @@ DEBUG=localstack npm run localstack:start
 1. **Console**: Check for JavaScript errors
 2. **Network**: Monitor API requests and responses
 3. **Application**: Inspect localStorage, cookies, service workers
+
+### PWA and Service Worker Issues
+
+**Service Worker Registration Disabled by Default**:
+- Service worker registration and background sync are disabled by default to prevent 404 errors
+- PWA manager initialization is also disabled to avoid service worker dependencies
+- To enable: Set `NEXT_PUBLIC_ENABLE_SERVICE_WORKER=true` in your environment variables
+- Ensure `/sw.js` or `/sw-custom.js` file exists in the `public` directory
+- Service workers require HTTPS in production (localhost works for development)
+
+**PWA Install Prompt Not Showing**:
+- PWA features are disabled by default - enable service worker first
+- Verify service worker is enabled and registered successfully
+- Check PWA manifest configuration in `public/manifest.json`
+- Ensure site meets PWA installability criteria (HTTPS, manifest, service worker)
+- Test in Chrome or Edge browsers (best PWA support)
+
+**Background Sync Not Working**:
+- Background sync is disabled by default along with service worker registration
+- Enable service worker first, then background sync will be available
+- Verify the service worker file includes background sync event handlers
+- Check browser support for Background Sync API
+
+**Service Worker Update Issues**:
+- Only applies when service worker is enabled
+- Updates are checked hourly automatically when enabled
+- Clear browser cache if updates aren't applying
+- Check browser DevTools → Application → Service Workers for status
+
+**Push Notifications Not Working**:
+- Push notifications require an active service worker
+- Verify notification permissions are granted
+- Check VAPID keys are properly configured
+- Ensure service worker includes push event handlers
 4. **Performance**: Profile rendering and JavaScript execution
 5. **Memory**: Check for memory leaks
 

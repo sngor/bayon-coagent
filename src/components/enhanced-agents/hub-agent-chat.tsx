@@ -132,14 +132,31 @@ export function HubAgentChat({
         } catch (error) {
             console.error('Chat error:', error);
 
-            const errorMessage: ChatMessage = {
+            // Provide more specific error messages based on error type
+            let errorMessage = 'I apologize, but I encountered an error. Please try again.';
+            
+            if (error instanceof Error) {
+                if (error.message.includes('Authentication')) {
+                    errorMessage = 'Authentication error. Please refresh the page and try again.';
+                } else if (error.message.includes('Network') || error.message.includes('fetch')) {
+                    errorMessage = 'Network error. Please check your connection and try again.';
+                } else if (error.message.includes('Bedrock') || error.message.includes('model')) {
+                    errorMessage = 'AI service temporarily unavailable. Please try again in a moment.';
+                } else if (error.message.includes('rate limit') || error.message.includes('throttle')) {
+                    errorMessage = 'Too many requests. Please wait a moment before trying again.';
+                } else if (error.message.includes('timeout')) {
+                    errorMessage = 'Request timed out. Please try a shorter message or try again.';
+                }
+            }
+
+            const errorResponse: ChatMessage = {
                 id: `error-${Date.now()}`,
                 role: 'assistant',
-                content: 'I apologize, but I encountered an error. Please try again.',
+                content: errorMessage,
                 timestamp: new Date().toISOString()
             };
 
-            setMessages(prev => [...prev, errorMessage]);
+            setMessages(prev => [...prev, errorResponse]);
         } finally {
             setIsLoading(false);
         }

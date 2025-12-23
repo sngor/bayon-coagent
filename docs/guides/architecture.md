@@ -41,9 +41,13 @@ Application Root
 │   ├── Audit (NAP consistency)
 │   ├── Competitors (Market analysis)
 │   └── Strategy (Marketing plans)
-├── Research (AI Research)
+├── Research (AI Research) [Feature Gated + AI Agent]
 │   ├── Research Agent (Q&A)
-│   ├── Reports (Saved research)
+│   ├── Market Insights (Trends)
+│   ├── News (Real estate news)
+│   ├── Opportunities (Investment)
+│   ├── Analytics (Performance)
+│   ├── Alerts (Notifications)
 │   └── Knowledge Base (Repository)
 ├── Market (Intelligence)
 │   ├── Insights (Trends analysis)
@@ -268,6 +272,173 @@ infrastructure/
 └── cdk.json              # CDK configuration
 ```
 
+## 🤖 Enhanced Agent Integration System
+
+### Hub-Specific AI Assistance
+
+The Enhanced Agent Integration system provides contextual AI assistance within each hub through specialized agents.
+
+#### Agent Architecture
+
+**Hub Agent Registry**
+
+- Centralized registry of hub-specific AI agents
+- Each agent has specialized knowledge and personality
+- Configurable capabilities and task types
+- Performance scoring and reliability metrics
+
+**Agent Configurations**
+
+```typescript
+interface HubAgentConfig {
+  id: string;
+  name: string;
+  hub: string;
+  personality: string;
+  expertise: string[];
+  systemPrompt: string;
+  capabilities: AgentCapabilities;
+  proactiveFeatures: string[];
+}
+```
+
+#### Available Hub Agents
+
+**Research Hub - Dr. Sarah (Market Research Analyst)**
+
+- Specializes in market research, data analysis, and trend identification
+- Expertise: market-research, data-analysis, competitive-intelligence
+- Proactive features: market-trend-alerts, research-update-notifications
+
+**Studio Hub - Maya (Creative Content Specialist)**
+
+- Focuses on content creation, copywriting, and visual storytelling
+- Expertise: content-creation, copywriting, social-media, brand-storytelling
+- Proactive features: content-calendar-suggestions, trending-topic-alerts
+
+**Brand Hub - Alex (Brand & Marketing Strategist)**
+
+- Strategic brand building and competitive positioning
+- Expertise: brand-strategy, competitive-analysis, seo-optimization
+- Proactive features: competitor-monitoring, brand-mention-alerts
+
+**Market Hub - Marcus (Market Intelligence Specialist)**
+
+- Market trends, investment analysis, and opportunity identification
+- Expertise: market-trends, investment-analysis, opportunity-identification
+- Proactive features: opportunity-alerts, market-shift-notifications
+
+#### Integration Pattern
+
+```typescript
+// Hub Layout Integration
+export default function ResearchLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <FeatureGuard featureId="research">
+            <HubLayoutWithFavorites
+                title="Research Hub"
+                description="AI-powered research capabilities"
+                icon={Search}
+                tabs={researchTabs}
+            >
+                {children}
+                <EnhancedAgentIntegration
+                    hubContext="research"
+                    position="bottom-right"
+                    showNotifications={true}
+                />
+            </HubLayoutWithFavorites>
+        </FeatureGuard>
+    );
+}
+```
+
+#### Features
+
+**Contextual Chat Interface**
+
+- Hub-specific AI assistant with specialized knowledge
+- Collapsible chat interface with agent personality
+- Quick suggestion buttons for common tasks
+- Message history and conversation context
+
+**Proactive Monitoring**
+
+- Background monitoring for relevant opportunities
+- Automated notifications for important updates
+- Smart suggestions based on user activity
+- Performance insights and recommendations
+
+**Agent Capabilities**
+
+- Multi-step workflow execution
+- Cross-hub coordination and integration
+- Error handling with intelligent retry logic
+- Result synthesis and summary generation
+
+## 🔐 Feature Gate System
+
+### Subscription-Based Access Control
+
+The Feature Gate system controls access to premium features based on user subscription status.
+
+#### Implementation Pattern
+
+```typescript
+// Feature Gate Wrapper
+<FeatureGuard featureId="research">
+    <PremiumFeatureContent />
+</FeatureGuard>
+
+// Usage Tracking
+const { canUseFeature, incrementUsage } = useFeatureGates();
+
+if (!canUseFeature('aiContentGeneration')) {
+    // Show upgrade prompt
+    return <UpgradePrompt />;
+}
+```
+
+#### Feature Categories
+
+**Free Tier Features**
+
+- Basic content generation (limited)
+- Simple market insights
+- Basic profile management
+- Limited AI interactions
+
+**Professional Features**
+
+- Unlimited AI content generation
+- Advanced research capabilities
+- Enhanced agent integration
+- Priority support
+
+**Premium Hub Access**
+
+- Research Hub: Full access with AI agent assistance
+- Learning Hub: Complete curriculum and AI role-play
+- Advanced Analytics: Detailed performance tracking
+- White-label options: Custom branding
+
+#### Usage Limits
+
+```typescript
+export const SUBSCRIPTION_CONSTANTS = {
+    FREE_TIER_USAGE_LIMITS: {
+        AI_CONTENT_GENERATION: { used: 8, limit: 10 },
+        RESEARCH_REPORTS: { used: 1, limit: 3 },
+        AI_ROLE_PLAY_SESSIONS: { used: 2, limit: 3 },
+    },
+    TRIAL_USAGE_LIMITS: {
+        AI_CONTENT_GENERATION: { used: 12, limit: 100 },
+        RESEARCH_REPORTS: { used: 3, limit: 20 },
+        AI_ROLE_PLAY_SESSIONS: { used: 6, limit: 25 },
+    },
+};
+```
+
 ## 🤖 Agent Orchestration System
 
 ### Multi-Agent Workflow Architecture
@@ -374,10 +545,30 @@ const result = await executeAgentWorkflow(workflowInput);
 2. Middleware checks for valid JWT token
 3. If no token, redirect to sign-in
 4. Cognito handles authentication
-5. JWT token stored in httpOnly cookie
-6. Subsequent requests include token
-7. Server actions validate token
+5. JWT tokens stored in httpOnly cookies (with automatic chunking for large tokens)
+6. Subsequent requests include token(s)
+7. Server actions validate and reconstruct token data
 ```
+
+#### Session Cookie Management
+
+The authentication system implements intelligent cookie chunking to handle large JWT tokens:
+
+**Single Cookie Mode** (< 3.5KB):
+- Session data stored in single `cognito_session` cookie
+- Standard cookie handling for smaller tokens
+
+**Chunked Cookie Mode** (≥ 3.5KB):
+- Session data split into multiple cookies (`cognito_session_0`, `cognito_session_1`, etc.)
+- Chunk count stored in `cognito_session_chunks` cookie
+- Automatic reconstruction during session retrieval
+- Prevents 4096-byte browser cookie limit issues
+
+**Features**:
+- Automatic size detection and chunking
+- Graceful fallback between modes
+- Comprehensive cleanup of unused cookies
+- Error handling for missing chunks
 
 ### Content Generation Flow
 
@@ -515,9 +706,11 @@ export function HubLayout({ children }: { children: React.ReactNode }) {
 
 - JWT tokens with short expiration
 - Refresh token rotation
-- httpOnly cookies
+- httpOnly cookies with intelligent chunking for large tokens
+- Automatic cookie size management (prevents 4096-byte limit issues)
 - CSRF protection
 - Rate limiting
+- Secure cookie cleanup and reconstruction
 
 ### Data Security
 

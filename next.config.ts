@@ -268,8 +268,8 @@ const nextConfig: NextConfig = {
 };
 
 // Configure PWA with Service Worker for offline functionality
-// Temporarily disable PWA to reduce build memory usage
-const pwaConfig = false && process.env.NODE_ENV === 'production'
+// Temporarily disable PWA to fix precaching errors
+const pwaConfig = false // Disabled until precaching issues are resolved
   ? withPWA({
     dest: 'public',
     disable: false,

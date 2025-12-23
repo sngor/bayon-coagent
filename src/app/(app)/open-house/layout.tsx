@@ -2,6 +2,7 @@
 
 import { HubLayout } from '@/components/hub/hub-layout';
 import { FeatureGuard } from '@/components/feature-guard';
+import { EnhancedAgentIntegration } from '@/components/enhanced-agents';
 import { DoorOpen, Users, BarChart3, FileText, Repeat, Webhook } from 'lucide-react';
 
 const openHouseTabs = [
@@ -23,6 +24,11 @@ export default function OpenHouseLayout({ children }: { children: React.ReactNod
                 tabsVariant="pills"
             >
                 {children}
+                <EnhancedAgentIntegration
+                    hubContext="open-house"
+                    position="bottom-right"
+                    showNotifications={true}
+                />
             </HubLayout>
         </FeatureGuard>
     );

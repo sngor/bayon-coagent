@@ -157,6 +157,43 @@ const result = await enhancedCompetitorAnalysisAction(
 
 ## 🔍 Research Hub Integration
 
+### Hub Layout Structure
+
+**Location:** `/research`  
+**Layout Component:** `HubLayoutWithFavorites` (simplified clean layout)
+
+The Research hub has been streamlined to provide a clean, performant interface for comprehensive research and market intelligence features:
+
+- **Research Agent** (`/research/agent`): AI-powered research capabilities
+- **Market Insights** (`/research/insights`): Market trend analysis and life event predictions
+- **News** (`/research/news`): Real estate news aggregation and analysis
+- **Opportunities** (`/research/opportunities`): Investment opportunity identification
+- **Analytics** (`/research/analytics`): Market data analysis and performance tracking
+- **Alerts** (`/research/alerts`): Market alerts and notifications
+- **Knowledge Base** (`/research/knowledge`): Knowledge management and storage
+
+#### Layout Configuration:
+
+```typescript
+<HubLayoutWithFavorites
+  title="Research Hub"
+  description="Get comprehensive research and insights on any market topic with AI-powered research capabilities and market intelligence"
+  icon={Search}
+  tabs={[
+    { id: 'agent', label: 'Research Agent', href: '/research/agent', icon: Bot },
+    { id: 'insights', label: 'Market Insights', href: '/research/insights', icon: TrendingUp },
+    { id: 'news', label: 'News', href: '/research/news', icon: Newspaper },
+    { id: 'opportunities', label: 'Opportunities', href: '/research/opportunities', icon: Target },
+    { id: 'analytics', label: 'Analytics', href: '/research/analytics', icon: BarChart3 },
+    { id: 'alerts', label: 'Alerts', href: '/research/alerts', icon: Bell },
+    { id: 'knowledge', label: 'Knowledge Base', href: '/research/knowledge', icon: BookOpen },
+  ]}
+  tabsVariant="pills"
+>
+  {children}
+</HubLayoutWithFavorites>
+```
+
 ### Enhanced Research Agent Tab
 
 **Location:** `/research/agent`  
@@ -184,54 +221,44 @@ const result = await enhancedResearchAction(
 );
 ```
 
-## 📊 Market Hub Integration
+### Enhanced Market Intelligence Tabs
 
-### Enhanced Insights Tab
+**Locations:** `/research/insights`, `/research/news`, `/research/opportunities`, `/research/analytics`, `/research/alerts`
 
-**Location:** `/market/insights`  
-**Enhanced Actions:** `enhancedMarketInsightsAction()`
-
-#### New Capabilities:
+#### Market Insights (`/research/insights`)
 
 - **Advanced Market Analysis**: Comprehensive market intelligence with predictive modeling
 - **Trend Forecasting**: Market trend analysis with confidence scoring
-- **Opportunity Identification**: Investment and business opportunities with priority ranking
-- **Market Metrics**: Key performance indicators and market health assessments
-- **Predictive Analytics**: Future market condition forecasting
+- **Life Event Predictions**: Identify potential clients through life event analysis
+- **Market Health Assessments**: Key performance indicators and market condition analysis
 
-#### Implementation Example:
+#### News (`/research/news`)
 
-```typescript
-// Market update analysis
-const marketUpdate = await enhancedMarketInsightsAction(
-  "Austin, TX",
-  "market-update",
-  {
-    targetAudience: "agents",
-    marketSegment: "residential",
-  }
-);
+- **Real-time News Aggregation**: Latest real estate news with location filtering
+- **Trend Identification**: Industry trend analysis from news sources
+- **Market Impact Analysis**: How news affects local market conditions
 
-// Trend analysis
-const trendAnalysis = await enhancedMarketInsightsAction(
-  "Austin, TX",
-  "trend-analysis",
-  {
-    timePeriod: "3-year",
-    targetAudience: "investors",
-  }
-);
+#### Opportunities (`/research/opportunities`)
 
-// Opportunity identification
-const opportunities = await enhancedMarketInsightsAction(
-  "Austin, TX",
-  "opportunity-identification",
-  {
-    targetAudience: "investors",
-    marketSegment: "investment",
-  }
-);
-```
+- **Investment Analysis**: Comprehensive investment opportunity identification
+- **Market Gap Analysis**: Underserved market opportunities
+- **ROI Projections**: Investment return analysis and forecasting
+
+#### Analytics (`/research/analytics`)
+
+- **Performance Tracking**: Market performance metrics and benchmarking
+- **Comparative Analysis**: Market comparison tools and reporting
+- **Data Visualization**: Interactive charts and analytics dashboards
+
+#### Alerts (`/research/alerts`)
+
+- **Real-time Notifications**: Price changes, new listings, market conditions
+- **Custom Alert Configuration**: Personalized alert settings and triggers
+- **Multi-channel Delivery**: Email, SMS, and in-app notifications
+
+## 📊 Market Hub Integration
+
+**Note:** Market intelligence features have been consolidated into the Research Hub for a unified research and market analysis experience. The Market Hub may be repurposed for specialized market tools or deprecated in favor of the enhanced Research Hub.
 
 ## 🚀 Enhanced Workflow Integration
 

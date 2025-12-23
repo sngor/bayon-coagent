@@ -4,7 +4,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
-import { PanelLeft, PanelRight, ChevronsLeft, ChevronsRight } from "lucide-react"
+import { PanelLeft, PanelRight } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils/common"
@@ -23,7 +23,7 @@ import {
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "14rem"
-const SIDEBAR_WIDTH_MOBILE = "18rem"
+const SIDEBAR_WIDTH_MOBILE = "calc(100vw - 3rem)"
 const SIDEBAR_WIDTH_ICON = "3.5rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
@@ -42,8 +42,16 @@ const SidebarContext = React.createContext<SidebarContext | null>(null)
 
 function useSidebar() {
   const context = React.useContext(SidebarContext)
-  return context;
+  if (!context) {
+    throw new Error("useSidebar must be used within a SidebarProvider")
+  }
+  return context
 }
+
+const SIDEBAR_CSS_VARS = {
+  "--sidebar-width": SIDEBAR_WIDTH,
+  "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
+} as React.CSSProperties
 
 const SidebarProvider = React.forwardRef<
   HTMLDivElement,
@@ -133,13 +141,10 @@ const SidebarProvider = React.forwardRef<
       <SidebarContext.Provider value={contextValue}>
         <TooltipProvider delayDuration={0}>
           <div
-            style={
-              {
-                "--sidebar-width": SIDEBAR_WIDTH,
-                "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
-                ...style,
-              } as React.CSSProperties
-            }
+            style={{
+              ...SIDEBAR_CSS_VARS,
+              ...style,
+            }}
             className={cn(
               "group/sidebar-wrapper w-full",
               className
@@ -185,7 +190,7 @@ const Sidebar = React.forwardRef<
             <SheetContent
               data-sidebar="sidebar"
               data-mobile="true"
-              className="w-[calc(100vw-1.5rem)] max-w-[--sidebar-width] h-[calc(100vh-1.5rem)] bg-transparent p-0 text-sidebar-foreground [&>button]:hidden border-none inset-3"
+              className="w-[--sidebar-width] h-[calc(100vh-3rem)] bg-transparent p-0 text-sidebar-foreground border-none top-6 left-6 right-6 bottom-6"
               style={
                 {
                   "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -229,7 +234,7 @@ const Sidebar = React.forwardRef<
           <SheetContent
             data-sidebar="sidebar"
             data-mobile="true"
-            className="w-[calc(100vw-1.5rem)] max-w-[--sidebar-width] h-[calc(100vh-1.5rem)] bg-transparent p-0 text-sidebar-foreground [&>button]:hidden border-none inset-3"
+            className="w-[--sidebar-width] h-[calc(100vh-3rem)] bg-transparent p-0 text-sidebar-foreground border-none top-6 left-6 right-6 bottom-6"
             style={
               {
                 "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -410,7 +415,7 @@ const SidebarToggle = React.forwardRef<
   }
 >(({ className, asChild = false, tooltip, ...props }, ref) => {
   const Comp = asChild ? Slot : "button"
-  const { isMobile, state, side, toggleSidebar } = useSidebar()!;
+  const { isMobile, state, toggleSidebar } = useSidebar()!;
   const Icon = state === "collapsed" ? PanelLeft : PanelRight
 
   const button = (
@@ -554,8 +559,36 @@ const SidebarMenuItem = React.forwardRef<
 ))
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
-const sidebarMenuButtonVariants = cva(
-  "peer/menu-button relative flex w-full items-center overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-primary/15 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[state=collapsed]/sidebar-wrapper:justify-center group-data-[state=collapsed]/sidebar-wrapper:px-2 group-data-[state=expanded]/sidebar-wrapper:gap-3 [&>span:last-child]:group-data-[state=collapsed]/sidebar-wrapper:opacity-0 [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:group-data-[state=collapsed]/sidebar-wrapper:mx-auto data-[active=true]:bg-blue-50 data-[active=true]:text-blue-900 data-[active=true]:font-extrabold data-[active=true]:shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.05)] dark:data-[active=true]:bg-blue-950/50 dark:data-[active=true]:text-blue-100",
+const sidebarMenuButtonVariants = cva([
+  // Base styles
+  "peer/menu-button relative flex w-full items-center overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring",
+  
+  // Transitions and interactions
+  "transition-all duration-200 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2",
+  "active:bg-primary/15 active:scale-[0.98]",
+  
+  // Disabled states
+  "disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50",
+  
+  // Group interactions
+  "group-has-[[data-sidebar=menu-action]]/menu-item:pr-8",
+  "data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground",
+  
+  // Collapsed state
+  "group-data-[state=collapsed]/sidebar-wrapper:justify-center group-data-[state=collapsed]/sidebar-wrapper:px-2",
+  
+  // Expanded state spacing
+  "group-data-[state=expanded]/sidebar-wrapper:gap-3 md:group-data-[state=expanded]/sidebar-wrapper:gap-3 gap-4 md:gap-3",
+  
+  // Child element styles
+  "[&>span:last-child]:group-data-[state=collapsed]/sidebar-wrapper:opacity-0 [&>span:last-child]:truncate",
+  "[&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:group-data-[state=collapsed]/sidebar-wrapper:mx-auto",
+  
+  // Active state
+  "data-[active=true]:bg-blue-50 data-[active=true]:text-blue-900 data-[active=true]:font-extrabold",
+  "data-[active=true]:shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.05)]",
+  "dark:data-[active=true]:bg-blue-950/50 dark:data-[active=true]:text-blue-100",
+],
   {
     variants: {
       variant: {

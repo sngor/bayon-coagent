@@ -76,15 +76,6 @@ export const NAVIGATION_CONFIG: NavigationConfig = {
             featureId: 'research'
         },
 
-        // Market Intelligence (Market trends and opportunities)
-        {
-            href: '/market',
-            icon: BarChart3,
-            filledIcon: BarChart3,
-            label: 'Market',
-            featureId: 'market'
-        },
-
         // Deal Analysis Tools
         {
             href: '/tools',

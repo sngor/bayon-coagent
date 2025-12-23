@@ -10,6 +10,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { getCognitoClient, CognitoUser, AuthSession } from './cognito-client';
+import { setSessionCookieAction } from '@/app/actions';
 
 interface AuthContextValue {
     user: CognitoUser | null;
@@ -60,19 +61,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 // Fetch user information
                 try {
                     const currentUser = await cognitoClient.getCurrentUser(currentSession.accessToken);
-                    // Set session cookie for server-side authentication
-                    try {
-                        const { setSessionCookieAction } = await import('@/app/actions');
-                        await setSessionCookieAction(
-                            currentSession.accessToken,
-                            currentSession.idToken,
-                            currentSession.refreshToken,
-                            currentSession.expiresAt
-                        );
-                    } catch (cookieError) {
+                    
+                    // Set session cookie for server-side authentication (async, non-blocking)
+                    setSessionCookieAction(
+                        currentSession.accessToken,
+                        currentSession.idToken,
+                        currentSession.refreshToken,
+                        currentSession.expiresAt
+                    ).catch(cookieError => {
                         console.error('Failed to set session cookie on load:', cookieError);
                         // Don't throw - cookie setting shouldn't block session load
-                    }
+                    });
 
                     setUser(currentUser);
                 } catch (userError) {
@@ -110,19 +109,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
             // Fetch user information
             const currentUser = await cognitoClient.getCurrentUser(newSession.accessToken);
-            // Set session cookie for server-side authentication
-            try {
-                const { setSessionCookieAction } = await import('@/app/actions');
-                await setSessionCookieAction(
-                    newSession.accessToken,
-                    newSession.idToken,
-                    newSession.refreshToken,
-                    newSession.expiresAt
-                );
-            } catch (cookieError) {
+            
+            // Set session cookie for server-side authentication (async, non-blocking)
+            setSessionCookieAction(
+                newSession.accessToken,
+                newSession.idToken,
+                newSession.refreshToken,
+                newSession.expiresAt
+            ).catch(cookieError => {
                 console.error('Failed to set session cookie:', cookieError);
                 // Don't throw - cookie setting shouldn't block login
-            }
+            });
 
             setUser(currentUser);
 
@@ -252,18 +249,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
             const newSession = await cognitoClient.refreshSession(session.refreshToken);
             setSession(newSession);
 
-            // Set session cookie for server-side authentication
-            try {
-                const { setSessionCookieAction } = await import('@/app/actions');
-                await setSessionCookieAction(
-                    newSession.accessToken,
-                    newSession.idToken,
-                    newSession.refreshToken,
-                    newSession.expiresAt
-                );
-            } catch (cookieError) {
+            // Set session cookie for server-side authentication (async, non-blocking)
+            setSessionCookieAction(
+                newSession.accessToken,
+                newSession.idToken,
+                newSession.refreshToken,
+                newSession.expiresAt
+            ).catch(cookieError => {
                 console.error('Failed to set session cookie on refresh:', cookieError);
-            }
+            });
 
             // Fetch updated user information
             const currentUser = await cognitoClient.getCurrentUser(newSession.accessToken);

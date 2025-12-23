@@ -86,11 +86,12 @@ Animation utilities and patterns:
 
 Mobile-specific optimizations:
 
-- Touch target sizes
+- Touch target sizes (44x44px minimum)
 - Momentum scrolling
 - Responsive layouts
 - Touch feedback
 - Mobile-first approach
+- **Sidebar mobile width optimization** (prevents full-screen overlay)
 
 #### [Bundle Analysis](./bundle-analysis.md)
 

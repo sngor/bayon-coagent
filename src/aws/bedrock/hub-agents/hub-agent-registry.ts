@@ -26,7 +26,10 @@ export type HubAgentType =
     | 'market-intelligence'
     | 'tools-financial'
     | 'library-curator'
-    | 'assistant-general';
+    | 'assistant-general'
+    | 'dashboard-overview'
+    | 'client-relationship'
+    | 'event-coordinator';
 
 /**
  * Hub agent configuration
@@ -175,10 +178,17 @@ export class HubAgentRegistry {
     }
 
     /**
-     * Get agent by hub name (O(1) lookup)
+     * Get agent by hub name (O(1) lookup) with fallback
      */
     static getAgentByHub(hubName: string): HubAgentConfig | undefined {
-        return this.cache.getAgentByHub(hubName);
+        const agent = this.cache.getAgentByHub(hubName);
+        
+        // If no specific agent found, try fallback to general assistant
+        if (!agent && hubName !== 'assistant') {
+            return this.cache.getAgentByHub('assistant');
+        }
+        
+        return agent;
     }
 
     /**

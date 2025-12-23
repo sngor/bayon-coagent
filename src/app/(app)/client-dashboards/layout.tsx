@@ -2,6 +2,7 @@
 
 import { HubLayoutWithFavorites } from '@/components/hub/hub-layout-with-favorites';
 import { FeatureGuard } from '@/components/feature-guard';
+import { EnhancedAgentIntegration } from '@/components/enhanced-agents';
 import { Users, LayoutDashboard, BarChart3 } from 'lucide-react';
 
 const clientDashboardTabs = [
@@ -20,6 +21,11 @@ export default function ClientDashboardsLayout({ children }: { children: React.R
                 tabsVariant="pills"
             >
                 {children}
+                <EnhancedAgentIntegration
+                    hubContext="client-dashboards"
+                    position="bottom-right"
+                    showNotifications={true}
+                />
             </HubLayoutWithFavorites>
         </FeatureGuard>
     );

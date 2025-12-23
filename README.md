@@ -78,7 +78,15 @@ Turn ideas into polished content in minutes:
 
 ### 🔍 Research - AI-Powered Research Hub
 
-Get comprehensive research and insights on any market topic with AI-powered research capabilities.
+Get comprehensive research and insights on any market topic with AI-powered research capabilities and market intelligence:
+
+- **Research Agent**: Multi-step research workflows with web search integration
+- **Market Insights**: Market trend analysis and life event predictions to identify potential clients
+- **News**: Real estate news aggregation with location-based filtering
+- **Opportunities**: Investment opportunity identification and analysis
+- **Analytics**: Market data analysis and performance tracking
+- **Alerts**: Market alerts and notifications for changes
+- **Knowledge Base**: Centralized knowledge management and storage
 
 ### 📊 Market - Market Intelligence Hub
 
@@ -134,9 +142,10 @@ Bayon CoAgent operates on a freemium model with professional trials:
 - **Free Tier**: Limited AI generations and basic features
 - **7-Day Professional Trial**: Full access to all premium features
 - **Automated Notifications**: Email reminders at 3-day and 1-day marks
-- **Seamless Upgrades**: Stripe-powered subscription management
+- **Seamless Upgrades**: Stripe-powered subscription management with robust error handling
 - **Usage Tracking**: Monthly limits and feature gates
 - **Trial Management**: Automated expiry handling via Lambda functions
+- **Defensive Architecture**: Error-safe plan validation and graceful fallbacks
 
 ## 🛠 Tech Stack
 

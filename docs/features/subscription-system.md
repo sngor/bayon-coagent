@@ -11,12 +11,13 @@ The subscription system supports:
 - **Automated Trial Management**: Email notifications and expiry handling
 - **Stripe Integration**: Secure payment processing via EventBridge
 - **Usage Tracking**: Monthly limits and feature gates
+- **Defensive Error Handling**: Robust plan validation and fallback mechanisms
 
 ## Architecture
 
 ### Components
 
-1. **Frontend**: React components for subscription management
+1. **Frontend**: React components for subscription management with error-safe plan handling
 2. **API Routes**: Next.js API routes for subscription operations
 3. **Lambda Functions**: Automated background processing
 4. **EventBridge**: Event-driven architecture for Stripe integration
@@ -29,6 +30,76 @@ The subscription system supports:
 User Signs Up → 7-Day Trial Starts → Daily Trial Check → Email Notifications → Trial Expires → Free Tier
                                                      ↓
                                               User Upgrades → Stripe Payment → EventBridge → Update Subscription
+```
+
+## Subscription Management Components
+
+### Core Components
+
+The subscription system includes several React components for managing user subscriptions:
+
+#### `SubscriptionManagement` (`src/components/subscription-management.tsx`)
+- **Purpose**: Main subscription management interface
+- **Features**: 
+  - Current subscription status display
+  - Plan upgrade/downgrade functionality
+  - Usage limits visualization
+  - Trial countdown and notifications
+  - **Error Handling**: Defensive plan validation to prevent runtime errors when subscription plans don't match configuration
+
+#### `UsageLimitsSection` (`src/components/subscription/usage-limits-section.tsx`)
+- **Purpose**: Display usage limits and progress for free tier and trial users
+- **Features**:
+  - Real-time usage tracking with progress bars
+  - Visual indicators for near-limit and at-limit states
+  - Trial vs. free tier differentiation
+  - Upgrade prompts and messaging
+
+#### `PlanComparisonTable` (`src/components/subscription/plan-comparison-table.tsx`)
+- **Purpose**: Compare features across all subscription tiers
+- **Features**:
+  - Comprehensive feature comparison matrix
+  - Accessibility-compliant table structure
+  - Live chat access level explanations
+  - Responsive design for mobile devices
+
+### Error Handling and Data Validation
+
+The subscription components implement defensive programming patterns to handle edge cases:
+
+```typescript
+// Example: Safe plan name retrieval with fallback
+const getPlanName = (plan: SubscriptionPlan | null): string => {
+    return plan && plan in SUBSCRIPTION_PLANS ? SUBSCRIPTION_PLANS[plan].name : 'Free Tier';
+};
+```
+
+**Common Edge Cases Handled**:
+- Invalid or deprecated plan names in user data
+- Missing subscription configuration
+- Network failures during plan retrieval
+- Data corruption or type mismatches
+
+### Usage Data Management
+
+Usage limits are managed through constants and helper functions:
+
+```typescript
+// From src/lib/constants/subscription-constants.ts
+export const SUBSCRIPTION_CONSTANTS = {
+    USAGE_THRESHOLDS: {
+        NEAR_LIMIT: 80, // 80% of limit
+        AT_LIMIT: 100,  // 100% of limit
+    },
+    TRIAL_USAGE_LIMITS: {
+        AI_CONTENT_GENERATION: { used: 12, limit: 100 },
+        // ... other limits
+    },
+    FREE_TIER_USAGE_LIMITS: {
+        AI_CONTENT_GENERATION: { used: 8, limit: 10 },
+        // ... other limits
+    },
+};
 ```
 
 ## Trial Notifications System
@@ -247,6 +318,32 @@ aws dynamodb scan --table-name BayonCoAgent-production \
 - **Data Privacy**: Comply with email marketing regulations
 - **Access Control**: Secure admin endpoints
 - **Audit Logging**: Track all subscription changes
+- **Plan Validation**: Defensive checks to prevent runtime errors from invalid subscription data
+
+## Recent Improvements
+
+### Defensive Plan Validation (December 2024)
+Enhanced subscription management components with robust error handling:
+
+- **Problem**: Runtime errors could occur when subscription plan data in the database doesn't match the current plan configuration
+- **Solution**: Added type guards and validation checks before accessing plan properties
+- **Implementation**: 
+  ```typescript
+  // Before: Direct access could cause runtime errors
+  SUBSCRIPTION_PLANS[subscriptionStatus.plan].name
+  
+  // After: Safe access with fallback
+  subscriptionStatus.plan && subscriptionStatus.plan in SUBSCRIPTION_PLANS 
+    ? SUBSCRIPTION_PLANS[subscriptionStatus.plan].name 
+    : 'Free Tier'
+  ```
+- **Benefits**: 
+  - Prevents crashes when deprecated plans exist in user data
+  - Graceful fallback to "Free Tier" display
+  - Improved user experience during plan migrations
+  - Better error resilience in production
+
+This improvement affects the main subscription management component and ensures the platform remains stable even when subscription data inconsistencies occur.
 
 ## Related Documentation
 

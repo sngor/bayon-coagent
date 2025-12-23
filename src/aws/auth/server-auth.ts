@@ -15,13 +15,35 @@ import { getCognitoClient } from './cognito-client';
 export async function getCurrentUserId(): Promise<string | null> {
   try {
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('cognito_session');
     
-    if (!sessionCookie) {
-      return null;
+    // Try to get session from chunked cookies first
+    const chunkCountCookie = cookieStore.get('cognito_session_chunks');
+    let sessionString: string;
+    
+    if (chunkCountCookie) {
+      // Reconstruct session from chunks
+      const chunkCount = parseInt(chunkCountCookie.value);
+      const chunks: string[] = [];
+      
+      for (let i = 0; i < chunkCount; i++) {
+        const chunkCookie = cookieStore.get(`cognito_session_${i}`);
+        if (!chunkCookie) {
+          return null; // Missing chunk
+        }
+        chunks.push(chunkCookie.value);
+      }
+      
+      sessionString = chunks.join('');
+    } else {
+      // Try single cookie
+      const sessionCookie = cookieStore.get('cognito_session');
+      if (!sessionCookie) {
+        return null;
+      }
+      sessionString = sessionCookie.value;
     }
 
-    const session = JSON.parse(sessionCookie.value);
+    const session = JSON.parse(sessionString);
     
     if (!session.accessToken) {
       return null;
@@ -177,13 +199,35 @@ export async function getCurrentUserWithRoles() {
 export async function getCurrentUserServer(): Promise<{ id: string; email: string } | null> {
   try {
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('cognito_session');
     
-    if (!sessionCookie) {
-      return null;
+    // Try to get session from chunked cookies first
+    const chunkCountCookie = cookieStore.get('cognito_session_chunks');
+    let sessionString: string;
+    
+    if (chunkCountCookie) {
+      // Reconstruct session from chunks
+      const chunkCount = parseInt(chunkCountCookie.value);
+      const chunks: string[] = [];
+      
+      for (let i = 0; i < chunkCount; i++) {
+        const chunkCookie = cookieStore.get(`cognito_session_${i}`);
+        if (!chunkCookie) {
+          return null; // Missing chunk
+        }
+        chunks.push(chunkCookie.value);
+      }
+      
+      sessionString = chunks.join('');
+    } else {
+      // Try single cookie
+      const sessionCookie = cookieStore.get('cognito_session');
+      if (!sessionCookie) {
+        return null;
+      }
+      sessionString = sessionCookie.value;
     }
 
-    const session = JSON.parse(sessionCookie.value);
+    const session = JSON.parse(sessionString);
     
     if (!session.accessToken) {
       return null;
