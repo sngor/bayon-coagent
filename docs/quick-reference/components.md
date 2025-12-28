@@ -11,12 +11,12 @@ Complete reference for UI components in the Bayon CoAgent platform.
 ```typescript
 import { Button } from "@/components/ui/button";
 
-<Button variant="default" size="md">
+<Button variant="default" size="default">
   Click me
 </Button>;
 
-// Variants: default, destructive, outline, secondary, ghost, link
-// Sizes: default, sm, lg, icon
+// Variants: default, primary, success, warning, destructive, outline, ghost, link, ai
+// Sizes: default, sm, lg, icon, xs
 ```
 
 #### Input

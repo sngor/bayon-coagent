@@ -39,7 +39,6 @@ import { STICKY_POSITIONS } from '@/lib/utils/common';
 import { FeaturedTestimonialSelector } from '@/components/featured-testimonial-selector';
 import type { Testimonial } from '@/lib/types/common/common';
 import { CardGradientMesh } from '@/components/ui/gradient-mesh';
-import { BrandProfileLoading } from '@/components/ui/page-loading';
 import { ProfileSkeleton } from '@/components/ui/skeletons';
 import { TestimonialSkeleton } from '@/components/ui/skeleton-loader';
 import { ErrorState, LoadingTimeout } from '@/components/ui/error-state';

@@ -88,10 +88,8 @@ export function HubLayout({
             {/* Hub Tabs */}
             {tabs && tabs.length > 0 && (
                 <div className="sticky top-24 z-50 -mt-4">
-                    <div className="flex justify-start">
-                        <div className={isHeaderCovered ? 'animate-in fade-in slide-in-from-top-2 duration-200' : ''}>
-                            <StaticHubTabs tabs={tabs} activeTab="" variant={tabsVariant} isSticky={isHeaderCovered} />
-                        </div>
+                    <div className={isHeaderCovered ? 'animate-in fade-in slide-in-from-top-2 duration-200' : ''}>
+                        <StaticHubTabs tabs={tabs} activeTab="" variant={tabsVariant} isSticky={isHeaderCovered} />
                     </div>
                 </div>
             )}

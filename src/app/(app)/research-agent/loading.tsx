@@ -1,5 +1,5 @@
-import { ResearchAgentLoading } from '@/components/ui/page-loading';
+import { PageLoading } from '@/components/ui/page-loading';
 
 export default function Loading() {
-    return <ResearchAgentLoading />;
+    return <PageLoading text="Loading research..." />;
 }

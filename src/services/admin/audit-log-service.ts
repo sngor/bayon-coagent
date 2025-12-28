@@ -104,6 +104,7 @@ export class AuditLogService {
             const keys = getAdminAuditLogKeys('', '', 0, filter.adminId);
             const result = await this.repository.query(
                 keys.GSI1PK!,
+                undefined,
                 {
                     indexName: 'GSI1',
                     limit,
@@ -111,13 +112,14 @@ export class AuditLogService {
                 }
             );
 
-            entries.push(...result.items.map(item => item.Data as AuditLogEntry));
+            entries.push(...result.items as AuditLogEntry[]);
         }
         // If filtering by action type, use GSI2
         else if (filter?.actionType) {
             const keys = getAdminAuditLogKeys('', '', 0, undefined, filter.actionType);
             const result = await this.repository.query(
                 keys.GSI2PK!,
+                undefined,
                 {
                     indexName: 'GSI2',
                     limit,
@@ -125,7 +127,7 @@ export class AuditLogService {
                 }
             );
 
-            entries.push(...result.items.map(item => item.Data as AuditLogEntry));
+            entries.push(...result.items as AuditLogEntry[]);
         }
         // Otherwise, query by date range
         else {
@@ -140,13 +142,14 @@ export class AuditLogService {
 
                 const result = await this.repository.query(
                     keys.PK,
+                    undefined,
                     {
                         limit: limit - entries.length,
                         scanIndexForward: false, // Most recent first
                     }
                 );
 
-                entries.push(...result.items.map(item => item.Data as AuditLogEntry));
+                entries.push(...result.items as AuditLogEntry[]);
 
                 currentDate.setDate(currentDate.getDate() + 1);
             }

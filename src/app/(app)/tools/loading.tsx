@@ -1,5 +1,5 @@
-import { ToolsCalculatorLoading } from '@/components/ui/page-loading';
+import { PageLoading } from '@/components/ui/page-loading';
 
 export default function Loading() {
-    return <ToolsCalculatorLoading />;
+    return <PageLoading text="Loading tools..." />;
 }

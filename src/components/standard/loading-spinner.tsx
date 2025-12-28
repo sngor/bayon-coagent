@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { cn } from '@/lib/utils/common';
+import { cn } from '@/lib/utils';
 import { Loading } from '@/components/ui/loading';
 
 export interface StandardLoadingSpinnerProps {

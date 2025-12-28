@@ -2,6 +2,15 @@
 
 ## December 2024
 
+### Technical Fixes
+
+#### Audit Log Service Query Parameter Fix
+- **Fixed**: DynamoDB query method signature in `AuditLogService.getAuditLog()`
+- **Change**: Added missing `undefined` parameter to `repository.query()` call when filtering by admin ID
+- **Impact**: Resolves potential query execution issues when retrieving audit logs by admin
+- **Location**: `src/services/admin/audit-log-service.ts` line 107
+- **Details**: The DynamoDB repository query method requires explicit sort key parameter (or `undefined`) when querying GSI1
+
 ### New Features
 
 #### Super Admin Test Page

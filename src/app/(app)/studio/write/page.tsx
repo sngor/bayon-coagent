@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { PageHeader, CardHeaderStandard } from '@/components/ui';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -443,18 +444,14 @@ export default function StudioWritePage() {
     return (
         <div className="space-y-8">
             {/* Header */}
+            <PageHeader
+                title="Studio Write"
+                description="Create high-quality content with AI assistance"
+                actions={<UsageBadge feature="aiContentGeneration" />}
+            />
+
+            {/* Content Type Selector */}
             <Card>
-                <CardHeader>
-                    <div className="mb-6">
-                        <div className="flex items-center gap-3 mb-2">
-                            <h1 className="text-2xl font-bold">Studio Write</h1>
-                            <UsageBadge feature="aiContentGeneration" />
-                        </div>
-                        <p className="text-muted-foreground">
-                            Create high-quality content with AI assistance
-                        </p>
-                    </div>
-                </CardHeader>
                 <CardContent>
                     <div className="flex items-center gap-4">
                         <Label htmlFor="content-type" className="text-sm font-medium whitespace-nowrap">

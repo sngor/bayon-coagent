@@ -39,6 +39,7 @@ Visit `http://localhost:3000` to get started.
 
 - [📋 Commands](./docs/quick-reference/commands.md) - All npm scripts
 - [🎨 Components](./docs/quick-reference/components.md) - UI component library
+- [🔄 Loading States](./docs/loading-states.md) - Loading state system and patterns
 - [⚙️ Configuration](./docs/quick-reference/configuration.md) - Environment setup
 - [🐛 Troubleshooting](./docs/troubleshooting/common-issues.md) - Common problems
 
@@ -225,6 +226,31 @@ Bayon CoAgent operates on a freemium model with professional trials:
 ├── config/               # Configuration files
 └── public/               # Static assets
 ```
+
+## 🎨 UI Standards
+
+### Header Consistency
+
+All page and card headers now follow standardized patterns for visual consistency:
+
+```bash
+# Check for header consistency issues
+node scripts/fix-header-consistency.js
+
+# View header styling guide
+cat docs/ui-standards/header-styling-guide.md
+```
+
+**Standard Components:**
+- `PageHeader` - For main page titles with icons and actions
+- `CardHeaderStandard` - For consistent card headers
+- `SectionHeader` - For section titles within pages
+
+**Typography Hierarchy:**
+- Page titles: `text-2xl md:text-3xl font-bold tracking-tight font-headline`
+- Card titles: `text-xl font-semibold font-headline`
+- Section titles: `text-lg md:text-xl font-semibold font-headline`
+- Descriptions: `text-base text-muted-foreground`
 
 ## 🔧 Development
 

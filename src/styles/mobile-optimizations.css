@@ -39,7 +39,6 @@
 button:not(.touch-target-override),
 [role="button"]:not(.touch-target-override),
 a[role="button"]:not(.touch-target-override) {
-  min-height: 44px;
   touch-action: manipulation;
 }
 
@@ -279,8 +278,6 @@ select {
 
 /* Touch-optimized switches and toggles */
 [role="switch"] {
-  min-height: 44px;
-  min-width: 44px;
   touch-action: manipulation;
 }
 

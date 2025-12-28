@@ -164,9 +164,11 @@ class MaintenanceWindowRepository {
         const result = await this.repository.query<MaintenanceWindow>(
             `MAINTENANCE#${status}`,
             '',
-            limit,
-            lastKey,
-            'GSI1'
+            {
+                limit,
+                lastEvaluatedKey: lastKey ? JSON.parse(lastKey) : undefined,
+                indexName: 'GSI1'
+            }
         );
 
         return {
@@ -182,8 +184,10 @@ class MaintenanceWindowRepository {
         const result = await this.repository.query<MaintenanceWindow>(
             'CONFIG#MAINTENANCE',
             'WINDOW#',
-            limit,
-            lastKey
+            {
+                limit,
+                lastEvaluatedKey: lastKey ? JSON.parse(lastKey) : undefined
+            }
         );
 
         return {

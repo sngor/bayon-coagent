@@ -4,6 +4,48 @@ Quick reference for all standard components with API documentation and usage exa
 
 ## Navigation
 
+### Hub Components
+
+The hub-based navigation system provides consistent layout and navigation across all major feature areas.
+
+**HubTabs:**
+```tsx
+import { HubTabs } from '@/components/hub/hub-tabs';
+
+<HubTabs 
+  tabs={tabs}
+  activeTab="overview"
+  variant="default" // default | pills | underline
+  isSticky={false}
+/>
+```
+
+**Features:**
+- Responsive horizontal scrolling with visual indicators
+- Keyboard navigation (arrow keys)
+- Auto-centering of active tab
+- Badge support for tab items
+- Three visual variants (default, pills, underline)
+- Memoized performance optimizations
+
+**HubLayout:**
+```tsx
+import { HubLayout } from '@/components/hub/hub-layout';
+
+<HubLayout
+  title="Brand Hub"
+  description="Build your professional brand"
+  icon={Palette}
+  tabs={tabs}
+  tabsVariant="default"
+  actions={<Button>New Campaign</Button>}
+>
+  {children}
+</HubLayout>
+```
+
+See [Hub Components Documentation](./components/hub-components.md) for complete API reference.
+
 ### Sidebar
 
 Application sidebar with responsive mobile optimization and collapsible states.
@@ -21,6 +63,7 @@ Application sidebar with responsive mobile optimization and collapsible states.
 - Smooth transitions between expanded/collapsed states
 - Tooltip support for collapsed state
 - Responsive gap spacing (4 units default, 3 units on md+ screens)
+- Improved vertical alignment in collapsed state with flexbox centering
 
 **Configuration:**
 ```typescript
@@ -328,6 +371,42 @@ import { Button } from "@/components/ui/button";
 - `lg` - Large (h-11, px-8)
 
 ## Common Patterns
+
+### Content Type Selector
+
+A common pattern for selecting different content types or modes within a feature:
+
+```tsx
+<Card>
+  <CardContent>
+    <div className="flex items-center gap-4">
+      <Label htmlFor="content-type" className="text-sm font-medium whitespace-nowrap">
+        Content Type:
+      </Label>
+      <Select value={activeTab} onValueChange={setActiveTab}>
+        <SelectTrigger id="content-type" className="w-full max-w-md">
+          <SelectValue placeholder="Select content type" />
+        </SelectTrigger>
+        <SelectContent>
+          {contentTypes.map((type) => {
+            const Icon = type.icon;
+            return (
+              <SelectItem key={type.id} value={type.id}>
+                <div className="flex items-center gap-2">
+                  <Icon className="w-4 h-4" />
+                  <span>{type.title}</span>
+                </div>
+              </SelectItem>
+            );
+          })}
+        </SelectContent>
+      </Select>
+    </div>
+  </CardContent>
+</Card>
+```
+
+**Usage:** Studio Write, Studio Describe, and other features with multiple content generation modes.
 
 ### List with Search
 

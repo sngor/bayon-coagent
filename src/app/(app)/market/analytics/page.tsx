@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { PageHeader } from '@/components/ui';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -252,24 +253,23 @@ export default function MarketAnalyticsPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Market Analytics</h1>
-                    <p className="text-muted-foreground">
-                        Comprehensive market data analysis and performance tracking
-                    </p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={exportReport}>
-                        <Download className="h-4 w-4 mr-2" />
-                        Export Report
-                    </Button>
-                    <Button onClick={refreshAnalytics} disabled={isLoading}>
-                        <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                        Refresh
-                    </Button>
-                </div>
-            </div>
+            <PageHeader
+                title="Market Analytics"
+                description="Comprehensive market data analysis and performance tracking"
+                icon={BarChart3}
+                actions={
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" onClick={exportReport}>
+                            <Download className="h-4 w-4 mr-2" />
+                            Export Report
+                        </Button>
+                        <Button onClick={refreshAnalytics} disabled={isLoading}>
+                            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                            Refresh
+                        </Button>
+                    </div>
+                }
+            />
 
             {/* Filters */}
             <Card>

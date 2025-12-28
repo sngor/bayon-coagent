@@ -533,16 +533,36 @@ Base UI primitives built on Radix UI. These are the foundation of the design sys
 
 #### Button
 
+Enhanced button component with neumorphic design that provides tactile feedback and depth.
+
 ```tsx
 import { Button } from "@/components/ui/button";
 
 <Button variant="default" size="default">
   Click me
 </Button>;
+
+// AI-themed button (Studio/Research hubs)
+<Button variant="ai" size="lg">
+  Generate Content
+</Button>
+
+// Form actions pattern
+<div className="flex gap-2">
+  <Button variant="outline" onClick={onCancel}>Cancel</Button>
+  <Button variant="primary" onClick={onSave}>Save</Button>
+</div>
 ```
 
-**Variants:** default, ai, outline, ghost, destructive, link, secondary
-**Sizes:** default, sm, lg, icon
+**Variants:** default, primary, success, warning, destructive, outline, ghost, link, ai
+**Sizes:** default, sm, lg, icon, xs
+
+**Features:**
+- Neumorphic raised/pressed states with soft shadows
+- Smooth transitions and hover effects (200ms duration)
+- Accessibility support with focus states
+- Dark mode compatibility
+- Touch-optimized with proper sizing
 
 #### Input
 
@@ -662,11 +682,51 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 #### Switch
 
+Enhanced switch component with realistic toggle design that provides smooth animations and tactile feedback.
+
 ```tsx
 import { Switch } from "@/components/ui/switch";
 
-<Switch checked={enabled} onCheckedChange={setEnabled} />;
+// Basic usage
+<Switch checked={enabled} onCheckedChange={setEnabled} />
+
+// Disabled state
+<Switch disabled checked={false} />
+
+// With form integration
+<div className="flex items-center space-x-2">
+  <Switch id="notifications" checked={enabled} onCheckedChange={setEnabled} />
+  <Label htmlFor="notifications">Enable notifications</Label>
+</div>
+
+// In settings forms (Brand/Settings hubs pattern)
+<div className="flex items-center justify-between">
+  <div className="space-y-0.5">
+    <Label htmlFor="dark-mode">Dark Mode</Label>
+    <p className="text-sm text-muted-foreground">
+      Toggle between light and dark themes
+    </p>
+  </div>
+  <Switch id="dark-mode" checked={darkMode} onCheckedChange={setDarkMode} />
+</div>
 ```
+
+**Features:**
+- **Horizontal Toggle**: Standard horizontal toggle switch (12×7) with left-to-right thumb movement
+- **Physical Realism**: Recessed track with enhanced inset shadows for realistic depth
+- **Smooth Animations**: 300ms transitions with ease-in-out timing for natural movement
+- **Color States**: Green gradient when active, transparent when inactive with proper contrast
+- **Enhanced Shadows**: Layered inset shadows for realistic depth and recessed appearance
+- **Dark Mode**: Automatically adapts colors for dark theme compatibility
+- **Accessibility**: Full keyboard support and screen reader compatibility
+- **Touch Optimized**: Mobile-friendly with proper touch targets
+
+**Design Details:**
+- **Track**: Horizontal rounded rectangle (12×7) with transparent background when off, green gradient when on
+- **Thumb**: Square toggle (5×5) with horizontal translation movement and subtle texture
+- **Movement**: Moves from left (off) to right (on) with smooth transform animations
+- **Colors**: Green gradients for active state, transparent for inactive state
+- **Shadows**: Enhanced layered inset shadows with rgba values for realistic depth perception
 
 #### Slider
 
@@ -680,6 +740,8 @@ import { Slider } from "@/components/ui/slider";
 
 #### Card
 
+Enhanced card component with interactive features and multiple variants.
+
 ```tsx
 import {
   Card,
@@ -690,6 +752,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 
+// Basic card
 <Card>
   <CardHeader>
     <CardTitle>Title</CardTitle>
@@ -697,7 +760,121 @@ import {
   </CardHeader>
   <CardContent>Content</CardContent>
   <CardFooter>Footer</CardFooter>
-</Card>;
+</Card>
+
+// Interactive card with hover effects
+<Card interactive hoverEffect="lift" onClick={handleClick}>
+  <CardHeader>
+    <CardTitle>Clickable Card</CardTitle>
+    <CardDescription>This card responds to interactions</CardDescription>
+  </CardHeader>
+  <CardContent>Interactive content</CardContent>
+</Card>
+
+// Different variants
+<Card variant="elevated">Elevated card with shadow</Card>
+<Card variant="floating">Floating card effect</Card>
+<Card variant="modal">Modal-style card</Card>
+<Card variant="premium">Premium styled card</Card>
+<Card variant="bordered">Card with visible border</Card>
+<Card variant="glass">Glassmorphism effect card</Card>
+
+// Different hover effects
+<Card interactive hoverEffect="glow">Glow on hover</Card>
+<Card interactive hoverEffect="scale">Scale on hover</Card>
+<Card interactive hoverEffect="none">No hover effect</Card>
+```
+
+**Props:**
+
+- `interactive` (boolean): Makes the card clickable with cursor pointer
+- `variant` ('base' | 'elevated' | 'floating' | 'modal' | 'premium' | 'bordered' | 'glass'): Visual style variant
+- `hoverEffect` ('lift' | 'glow' | 'scale' | 'none'): Hover animation effect (defaults to 'lift' for interactive cards)
+
+**Features:**
+
+- **Interactive States**: Clickable cards with proper cursor and hover feedback
+- **Multiple Variants**: Different visual styles for various use cases
+- **Hover Effects**: Smooth animations with 300ms duration and ease-out timing
+- **Accessibility**: Maintains focus states and keyboard navigation
+- **Responsive**: Works across all device sizes
+
+**Common Usage Patterns:**
+
+```tsx
+// Content Type Selector (Studio Write pattern)
+<Card>
+  <CardContent>
+    <div className="flex items-center gap-4">
+      <Label htmlFor="content-type" className="text-sm font-medium whitespace-nowrap">
+        Content Type:
+      </Label>
+      <Select value={activeTab} onValueChange={setActiveTab}>
+        <SelectTrigger id="content-type" className="w-full max-w-md">
+          <SelectValue placeholder="Select content type" />
+        </SelectTrigger>
+        <SelectContent>
+          {contentTypes.map((type) => (
+            <SelectItem key={type.id} value={type.id}>
+              <div className="flex items-center gap-2">
+                <Icon className="w-4 h-4" />
+                <span>{type.title}</span>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  </CardContent>
+</Card>
+
+// Interactive Feature Card (Dashboard pattern)
+<Card interactive hoverEffect="lift" onClick={() => navigate('/studio/write')}>
+  <CardHeader>
+    <CardTitle className="flex items-center gap-2">
+      <FileText className="w-5 h-5" />
+      Content Generator
+    </CardTitle>
+    <CardDescription>Create AI-powered content in minutes</CardDescription>
+  </CardHeader>
+  <CardContent>
+    <p className="text-sm text-muted-foreground">
+      Generate blog posts, social media content, and more
+    </p>
+  </CardContent>
+</Card>
+
+// Form Section Card
+<Card>
+  <CardHeader>
+    <CardTitle>Section Title</CardTitle>
+    <CardDescription>Section description</CardDescription>
+  </CardHeader>
+  <CardContent>
+    <form className="space-y-4">
+      {/* Form fields */}
+    </form>
+  </CardContent>
+</Card>
+
+// Output Display Card
+<Card className="lg:col-span-2">
+  <CardHeader>
+    <CardTitle>Generated Content</CardTitle>
+  </CardHeader>
+  <CardContent>
+    {/* Content display area */}
+  </CardContent>
+</Card>
+
+// Premium Feature Card
+<Card variant="premium" interactive hoverEffect="glow">
+  <CardHeader>
+    <CardTitle>Premium Feature</CardTitle>
+    <CardDescription>Unlock advanced capabilities</CardDescription>
+  </CardHeader>
+  <CardContent>Premium content</CardContent>
+</Card>
 ```
 
 #### Separator
@@ -987,15 +1164,97 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 #### Toast
 
+Enhanced toast notification system with multiple variants and smooth animations.
+
 ```tsx
 import { useToast } from "@/hooks/use-toast";
 
 const { toast } = useToast();
 
+// Basic usage
 toast({
   title: "Success",
   description: "Operation completed",
   variant: "default",
+});
+
+// Success toast
+toast({
+  title: "Content Saved",
+  description: "Your blog post has been saved to drafts.",
+  variant: "success"
+});
+
+// AI-themed toast (Studio/Research hubs)
+toast({
+  title: "AI Analysis Complete",
+  description: "Your market research is ready.",
+  variant: "ai"
+});
+
+// Warning toast
+toast({
+  title: "Profile Incomplete",
+  description: "Please complete your profile to continue.",
+  variant: "warning"
+});
+
+// Error toast
+toast({
+  title: "Upload Failed",
+  description: "Please try again or contact support.",
+  variant: "destructive"
+});
+
+// Toast with action
+toast({
+  title: "Content saved",
+  description: "Your blog post has been saved to drafts.",
+  action: <ToastAction altText="View">View</ToastAction>
+});
+```
+
+**Variants:** default, destructive, success, warning, ai
+
+**Features:**
+- **Multiple Visual Variants**: Different colors and styles for various message types
+- **Swipe-to-Dismiss**: Touch-friendly dismissal on mobile devices
+- **Smooth Animations**: Slide-in/slide-out animations with proper timing
+- **Auto-Dismiss**: Configurable duration with manual dismiss option
+- **Action Support**: Interactive buttons for follow-up actions
+- **Accessibility**: Full ARIA support and screen reader compatibility
+- **Responsive Design**: Mobile-optimized positioning and interactions
+- **Dark Mode**: Automatic color adaptation for dark themes
+
+**Usage Patterns:**
+
+```tsx
+// Success feedback (common in Studio/Brand hubs)
+toast({
+  title: "Generated Successfully",
+  description: "Your content is ready to use.",
+  variant: "success"
+});
+
+// AI operation completion (Research/Studio hubs)
+toast({
+  title: "AI Processing Complete",
+  description: "Your analysis has been generated.",
+  variant: "ai"
+});
+
+// Warning notifications (Profile/Settings)
+toast({
+  title: "Action Required",
+  description: "Please verify your email address.",
+  variant: "warning"
+});
+
+// Error handling (all hubs)
+toast({
+  title: "Something went wrong",
+  description: "Please try again or contact support.",
+  variant: "destructive"
 });
 ```
 

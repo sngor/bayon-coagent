@@ -55,10 +55,12 @@ interface OAuthTokenData {
   agentProfileId: string;
   accessToken: string;
   refreshToken: string;
-  expiryDate: number;
+  expiryDate: number; // Unix timestamp in milliseconds (calculated from expiresIn)
   provider?: string;
 }
 ```
+
+**Note**: The `expiryDate` is calculated by adding the `expiresIn` value (in seconds) from the OAuth response to the current timestamp, converted to milliseconds: `Date.now() + (expiresIn * 1000)`.
 
 ### Example DynamoDB Item
 
@@ -93,7 +95,8 @@ interface OAuthTokenData {
 1. Callback page receives authorization code
 2. `exchangeGoogleTokenAction` is called with the code
 3. Code is exchanged for access and refresh tokens via Google's token endpoint
-4. Tokens are stored in DynamoDB using `storeOAuthTokens()`
+4. Token expiry is calculated: `Date.now() + (expiresIn * 1000)` (converting seconds to milliseconds)
+5. Tokens are stored in DynamoDB using `storeOAuthTokens()`
 
 ### 3. Token Retrieval
 
@@ -152,9 +155,9 @@ const tokens = await getOAuthTokens(userId, "GOOGLE_BUSINESS");
 ```typescript
 const tokenData = {
   agentProfileId: user.id,
-  accessToken: result.data.accessToken,
-  refreshToken: result.data.refreshToken,
-  expiryDate: result.data.expiryDate,
+  accessToken: result.accessToken,
+  refreshToken: result.refreshToken || '',
+  expiryDate: Date.now() + (result.expiresIn * 1000), // Convert seconds to milliseconds
 };
 
 await storeOAuthTokens(user.id, tokenData, "GOOGLE_BUSINESS");

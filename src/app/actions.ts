@@ -1,6 +1,6 @@
 'use server';
 
-import { getCurrentUserId } from '@/aws/auth/server-auth';
+import { getCurrentUserId, getCurrentUserServer } from '@/aws/auth/server-auth';
 import { cookies } from 'next/headers';
 
 // Session cookie configuration constants
@@ -532,7 +532,7 @@ export async function generateDescriptionAction(
 
   try {
     const descriptionInput: GenerateListingDescriptionInput = {
-      propertyDetails: validatedFields.data.propertyDescription,
+      property_details: validatedFields.data.propertyDescription,
     };
     const faqInput: GenerateListingFaqsInput = {
       propertyDescription: validatedFields.data.propertyDescription,
@@ -633,8 +633,8 @@ export async function exchangeGoogleTokenAction(
     const tokenData = {
       agentProfileId: validatedFields.data.userId,
       accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
-      expiryDate: result.expiryDate,
+      refreshToken: result.refreshToken || '',
+      expiryDate: Date.now() + (result.expiresIn * 1000), // Convert seconds to milliseconds and add to current time
     };
 
     await storeOAuthTokens(validatedFields.data.userId, tokenData, 'GOOGLE_BUSINESS');
@@ -1099,8 +1099,8 @@ export async function generateSocialProofAction(
         `USER#${user.id}`,
         `TESTIMONIAL#${testimonialId}`
       );
-      if (testimonialData?.Data) {
-        testimonials.push(testimonialData.Data);
+      if (testimonialData) {
+        testimonials.push(testimonialData);
       }
     }
 
@@ -1497,7 +1497,7 @@ export async function exportNeighborhoodProfileAction(
     const profileKeys = getNeighborhoodProfileKeys(user.id, profileId);
     const profileResult = await repository.get(profileKeys.PK, profileKeys.SK);
 
-    if (!profileResult || !profileResult.Data) {
+    if (!profileResult) {
       return {
         message: 'Neighborhood profile not found',
         data: null,
@@ -1505,12 +1505,12 @@ export async function exportNeighborhoodProfileAction(
       };
     }
 
-    const profile = profileResult.Data as NeighborhoodProfile;
+    const profile = profileResult as NeighborhoodProfile;
 
     // Get user profile for branding information
     const userProfileKeys = getProfileKeys(user.id);
     const userProfileResult = await repository.get(userProfileKeys.PK, userProfileKeys.SK);
-    const agentProfile = userProfileResult?.Data as Profile || {};
+    const agentProfile = userProfileResult as Profile || {};
 
     // Get AI output from the profile or regenerate if needed
     const aiOutput = {
@@ -1657,7 +1657,7 @@ export async function regenerateNeighborhoodProfileAction(
     const profileKeys = getNeighborhoodProfileKeys(user.id, profileId);
     const profileResult = await repository.get(profileKeys.PK, profileKeys.SK);
 
-    if (!profileResult || !profileResult.Data) {
+    if (!profileResult) {
       return {
         message: 'Neighborhood profile not found',
         data: null,
@@ -1665,7 +1665,7 @@ export async function regenerateNeighborhoodProfileAction(
       };
     }
 
-    const existingProfile = profileResult.Data as NeighborhoodProfile;
+    const existingProfile = profileResult as NeighborhoodProfile;
 
     // Step 1: Re-aggregate data with updated information
     const aggregatedData = await aggregateNeighborhoodData(existingProfile.location);

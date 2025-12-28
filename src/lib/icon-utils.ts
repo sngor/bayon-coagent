@@ -21,7 +21,16 @@ import {
     Bell,
     Gift,
     Plug,
-    Zap
+    Zap,
+    UserCheck,
+    Play,
+    Star,
+    GraduationCap,
+    Shield,
+    ShieldCheck,
+    HelpCircle,
+    UserPlus,
+    Mail
 } from 'lucide-react';
 import { type LucideIcon } from 'lucide-react';
 
@@ -52,7 +61,16 @@ export const ICON_MAP: Record<string, LucideIcon> = {
     Bell,
     Gift,
     Plug,
-    Zap
+    Zap,
+    UserCheck,
+    Play,
+    Star,
+    GraduationCap,
+    Shield,
+    ShieldCheck,
+    HelpCircle,
+    UserPlus,
+    Mail
 };
 
 /**

@@ -51,7 +51,9 @@ Complete documentation for the Bayon CoAgent platform.
 ### Development
 
 - [Component Reference](./quick-reference/components.md) - UI component library
+- [Loading States](./loading-states.md) - Loading state system and patterns
 - [Enhanced Agents](./quick-reference/enhanced-agents.md) - Hub-specific AI assistance
+- [Studio Write](./quick-reference/studio-write.md) - Content generation quick reference
 - [Configuration Reference](./quick-reference/configuration.md) - Environment setup
 - [API Reference](./quick-reference/api.md) - Server actions and endpoints
 - [Image Analysis API](./api/image-analysis-service.md) - Virtual staging and image processing

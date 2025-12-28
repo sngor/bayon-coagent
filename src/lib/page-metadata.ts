@@ -20,7 +20,9 @@ export const HUB_CATEGORIES = [
     'Tools',
     'Library',
     'Client Management',
+    'Open House',
     'Learning',
+    'Admin & Support',
     'Settings',
     'Other'
 ] as const;
@@ -53,6 +55,15 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
     },
 
     // Studio Hub
+    '/studio': {
+        id: 'studio',
+        title: 'Studio Hub',
+        description: 'Content creation and design',
+        href: '/studio',
+        icon: 'PenTool',
+        color: 'bg-blue-500',
+        gradient: 'from-blue-500 to-blue-600'
+    },
     '/studio/write': {
         id: 'studio-write',
         title: 'Write Content',
@@ -100,6 +111,15 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
     },
 
     // Brand Hub
+    '/brand': {
+        id: 'brand',
+        title: 'Brand Hub',
+        description: 'Brand identity and strategy',
+        href: '/brand',
+        icon: 'Award',
+        color: 'bg-emerald-500',
+        gradient: 'from-emerald-500 to-emerald-600'
+    },
     '/brand/profile': {
         id: 'brand-profile',
         title: 'Brand Profile',
@@ -154,8 +174,26 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
         color: 'bg-orange-500',
         gradient: 'from-orange-500 to-orange-600'
     },
+    '/brand/integrations': {
+        id: 'brand-integrations',
+        title: 'Brand Integrations',
+        description: 'Connect Google Business Profile and other services',
+        href: '/brand/integrations',
+        icon: 'Plug',
+        color: 'bg-blue-500',
+        gradient: 'from-blue-500 to-blue-600'
+    },
 
     // Research Hub
+    '/research': {
+        id: 'research',
+        title: 'Research Hub',
+        description: 'AI-powered research and insights',
+        href: '/research',
+        icon: 'Search',
+        color: 'bg-green-500',
+        gradient: 'from-green-500 to-green-600'
+    },
     '/research/agent': {
         id: 'research-agent',
         title: 'Research Agent',
@@ -183,6 +221,51 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
         color: 'bg-teal-500',
         gradient: 'from-teal-500 to-teal-600'
     },
+    '/research/insights': {
+        id: 'research-insights',
+        title: 'Research Insights',
+        description: 'Market insights and analysis',
+        href: '/research/insights',
+        icon: 'TrendingUp',
+        color: 'bg-violet-500',
+        gradient: 'from-violet-500 to-violet-600'
+    },
+    '/research/news': {
+        id: 'research-news',
+        title: 'Research News',
+        description: 'Latest market news and trends',
+        href: '/research/news',
+        icon: 'Newspaper',
+        color: 'bg-blue-500',
+        gradient: 'from-blue-500 to-blue-600'
+    },
+    '/research/analytics': {
+        id: 'research-analytics',
+        title: 'Research Analytics',
+        description: 'Advanced research analytics',
+        href: '/research/analytics',
+        icon: 'BarChart3',
+        color: 'bg-purple-500',
+        gradient: 'from-purple-500 to-purple-600'
+    },
+    '/research/opportunities': {
+        id: 'research-opportunities',
+        title: 'Research Opportunities',
+        description: 'Market opportunities and trends',
+        href: '/research/opportunities',
+        icon: 'TrendingUp',
+        color: 'bg-green-500',
+        gradient: 'from-green-500 to-green-600'
+    },
+    '/research/alerts': {
+        id: 'research-alerts',
+        title: 'Research Alerts',
+        description: 'Market alerts and notifications',
+        href: '/research/alerts',
+        icon: 'Bell',
+        color: 'bg-red-500',
+        gradient: 'from-red-500 to-red-600'
+    },
 
     // Legacy Research Routes (for backward compatibility)
     '/research-agent': {
@@ -205,6 +288,15 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
     },
 
     // Market Hub (Intelligence)
+    '/market': {
+        id: 'market',
+        title: 'Market Hub',
+        description: 'Market intelligence and trends',
+        href: '/market',
+        icon: 'TrendingUp',
+        color: 'bg-violet-500',
+        gradient: 'from-violet-500 to-violet-600'
+    },
     '/market/insights': {
         id: 'market-insights',
         title: 'Market Insights',
@@ -213,6 +305,24 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
         icon: 'TrendingUp',
         color: 'bg-violet-500',
         gradient: 'from-violet-500 to-violet-600'
+    },
+    '/market/news': {
+        id: 'market-news',
+        title: 'Market News',
+        description: 'Latest real estate news and trends',
+        href: '/market/news',
+        icon: 'Newspaper',
+        color: 'bg-blue-500',
+        gradient: 'from-blue-500 to-blue-600'
+    },
+    '/market/analytics': {
+        id: 'market-analytics',
+        title: 'Market Analytics',
+        description: 'Advanced market analysis',
+        href: '/market/analytics',
+        icon: 'BarChart3',
+        color: 'bg-purple-500',
+        gradient: 'from-purple-500 to-purple-600'
     },
     '/market/opportunities': {
         id: 'market-opportunities',
@@ -223,14 +333,14 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
         color: 'bg-green-500',
         gradient: 'from-green-500 to-green-600'
     },
-    '/market/analytics': {
-        id: 'market-analytics',
-        title: 'Market Analytics',
-        description: 'Advanced market analysis',
-        href: '/market/analytics',
-        icon: 'BarChart3',
-        color: 'bg-purple-500',
-        gradient: 'from-purple-500 to-purple-600'
+    '/market/alerts': {
+        id: 'market-alerts',
+        title: 'Market Alerts',
+        description: 'Price changes and new listings',
+        href: '/market/alerts',
+        icon: 'Bell',
+        color: 'bg-red-500',
+        gradient: 'from-red-500 to-red-600'
     },
 
     // Intelligence Hub (Legacy Market Routes)
@@ -308,6 +418,15 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
     },
 
     // Tools Hub
+    '/tools': {
+        id: 'tools',
+        title: 'Tools Hub',
+        description: 'Deal analysis and calculations',
+        href: '/tools',
+        icon: 'Calculator',
+        color: 'bg-purple-500',
+        gradient: 'from-purple-500 to-purple-600'
+    },
     '/tools/calculator': {
         id: 'tools-calculator',
         title: 'Mortgage Calculator',
@@ -346,6 +465,15 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
     },
 
     // Library Hub
+    '/library': {
+        id: 'library',
+        title: 'Library Hub',
+        description: 'Content and knowledge management',
+        href: '/library',
+        icon: 'FileText',
+        color: 'bg-amber-500',
+        gradient: 'from-amber-500 to-amber-600'
+    },
     '/library/content': {
         id: 'library-content',
         title: 'Content Library',
@@ -412,7 +540,72 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
         gradient: 'from-pink-500 to-pink-600'
     },
 
+    // Open House Hub
+    '/open-house': {
+        id: 'open-house',
+        title: 'Open House Hub',
+        description: 'Event management and planning',
+        href: '/open-house',
+        icon: 'Home',
+        color: 'bg-indigo-500',
+        gradient: 'from-indigo-500 to-indigo-600'
+    },
+    '/open-house/sessions': {
+        id: 'open-house-sessions',
+        title: 'Open House Sessions',
+        description: 'Manage open house events',
+        href: '/open-house/sessions',
+        icon: 'Calendar',
+        color: 'bg-indigo-500',
+        gradient: 'from-indigo-500 to-indigo-600'
+    },
+    '/open-house/check-in': {
+        id: 'open-house-check-in',
+        title: 'Check-In System',
+        description: 'Visitor check-in and tracking',
+        href: '/open-house/check-in',
+        icon: 'UserCheck',
+        color: 'bg-green-500',
+        gradient: 'from-green-500 to-green-600'
+    },
+    '/open-house/analytics': {
+        id: 'open-house-analytics',
+        title: 'Open House Analytics',
+        description: 'Event performance and insights',
+        href: '/open-house/analytics',
+        icon: 'BarChart3',
+        color: 'bg-purple-500',
+        gradient: 'from-purple-500 to-purple-600'
+    },
+    '/open-house/templates': {
+        id: 'open-house-templates',
+        title: 'Event Templates',
+        description: 'Reusable event templates',
+        href: '/open-house/templates',
+        icon: 'FileText',
+        color: 'bg-orange-500',
+        gradient: 'from-orange-500 to-orange-600'
+    },
+    '/open-house/sequences': {
+        id: 'open-house-sequences',
+        title: 'Follow-up Sequences',
+        description: 'Automated follow-up campaigns',
+        href: '/open-house/sequences',
+        icon: 'Mail',
+        color: 'bg-blue-500',
+        gradient: 'from-blue-500 to-blue-600'
+    },
+
     // Learning & Training
+    '/learning': {
+        id: 'learning',
+        title: 'Learning Hub',
+        description: 'Skill development and training',
+        href: '/learning',
+        icon: 'BookOpen',
+        color: 'bg-indigo-500',
+        gradient: 'from-indigo-500 to-indigo-600'
+    },
     '/learning/lessons': {
         id: 'learning-lessons',
         title: 'Learning Center',
@@ -422,6 +615,24 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
         color: 'bg-indigo-500',
         gradient: 'from-indigo-500 to-indigo-600'
     },
+    '/learning/tutorials': {
+        id: 'learning-tutorials',
+        title: 'Video Tutorials',
+        description: 'Video-based learning content',
+        href: '/learning/tutorials',
+        icon: 'Play',
+        color: 'bg-red-500',
+        gradient: 'from-red-500 to-red-600'
+    },
+    '/learning/role-play': {
+        id: 'learning-role-play',
+        title: 'Role-Play Scenarios',
+        description: 'AI-powered practice scenarios',
+        href: '/learning/role-play',
+        icon: 'Users',
+        color: 'bg-green-500',
+        gradient: 'from-green-500 to-green-600'
+    },
     '/learning/ai-plan': {
         id: 'learning-ai-plan',
         title: 'AI Training Plan',
@@ -430,6 +641,89 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
         icon: 'Brain',
         color: 'bg-purple-500',
         gradient: 'from-purple-500 to-purple-600'
+    },
+    '/learning/best-practices': {
+        id: 'learning-best-practices',
+        title: 'Best Practices',
+        description: 'Industry best practices and tips',
+        href: '/learning/best-practices',
+        icon: 'Star',
+        color: 'bg-yellow-500',
+        gradient: 'from-yellow-500 to-yellow-600'
+    },
+    '/learning/certification': {
+        id: 'learning-certification',
+        title: 'Certification',
+        description: 'Achievement tracking and certificates',
+        href: '/learning/certification',
+        icon: 'Award',
+        color: 'bg-orange-500',
+        gradient: 'from-orange-500 to-orange-600'
+    },
+    '/learning/community': {
+        id: 'learning-community',
+        title: 'Learning Community',
+        description: 'Community discussions and knowledge sharing',
+        href: '/learning/community',
+        icon: 'MessageSquare',
+        color: 'bg-teal-500',
+        gradient: 'from-teal-500 to-teal-600'
+    },
+    '/learning/courses': {
+        id: 'learning-courses',
+        title: 'Structured Courses',
+        description: 'Comprehensive learning programs',
+        href: '/learning/courses',
+        icon: 'GraduationCap',
+        color: 'bg-blue-500',
+        gradient: 'from-blue-500 to-blue-600'
+    },
+
+    // Admin & Support
+    '/admin': {
+        id: 'admin',
+        title: 'Admin Panel',
+        description: 'System administration and management',
+        href: '/admin',
+        icon: 'Shield',
+        color: 'bg-red-500',
+        gradient: 'from-red-500 to-red-600'
+    },
+    '/super-admin': {
+        id: 'super-admin',
+        title: 'Super Admin Panel',
+        description: 'Advanced system management',
+        href: '/super-admin',
+        icon: 'ShieldCheck',
+        color: 'bg-red-600',
+        gradient: 'from-red-600 to-red-700'
+    },
+    '/support': {
+        id: 'support',
+        title: 'Support Center',
+        description: 'Help and support resources',
+        href: '/support',
+        icon: 'HelpCircle',
+        color: 'bg-blue-500',
+        gradient: 'from-blue-500 to-blue-600'
+    },
+    '/analytics': {
+        id: 'analytics',
+        title: 'Analytics Dashboard',
+        description: 'Performance analytics and insights',
+        href: '/analytics',
+        icon: 'BarChart3',
+        color: 'bg-purple-500',
+        gradient: 'from-purple-500 to-purple-600'
+    },
+    '/onboarding': {
+        id: 'onboarding',
+        title: 'Onboarding',
+        description: 'User onboarding and setup',
+        href: '/onboarding',
+        icon: 'UserPlus',
+        color: 'bg-green-500',
+        gradient: 'from-green-500 to-green-600'
     },
 
     // Settings
@@ -441,6 +735,15 @@ export const PAGE_METADATA: Record<string, PageMetadata> = {
         icon: 'Settings',
         color: 'bg-gray-500',
         gradient: 'from-gray-500 to-gray-600'
+    },
+    '/settings/notifications': {
+        id: 'settings-notifications',
+        title: 'Notification Settings',
+        description: 'Manage notification preferences',
+        href: '/settings/notifications',
+        icon: 'Bell',
+        color: 'bg-blue-500',
+        gradient: 'from-blue-500 to-blue-600'
     },
     '/integrations': {
         id: 'integrations',
@@ -466,7 +769,9 @@ export function getCategoryForPage(href: string): HubCategory {
     if (href.startsWith('/tools')) return 'Tools';
     if (href.startsWith('/library')) return 'Library';
     if (href.startsWith('/client')) return 'Client Management';
+    if (href.startsWith('/open-house')) return 'Open House';
     if (href.startsWith('/learning')) return 'Learning';
+    if (href.startsWith('/admin') || href.startsWith('/super-admin') || href.startsWith('/support') || href.startsWith('/analytics') || href.startsWith('/onboarding')) return 'Admin & Support';
     if (href.startsWith('/settings') || href.startsWith('/integrations')) return 'Settings';
     return 'Other';
 }

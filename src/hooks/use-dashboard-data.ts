@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useReducer } from 'react';
+import { useUser } from '@/aws/auth';
 import { getDashboardData } from '@/app/(app)/dashboard/actions';
 import { getUserWorkflowInstances } from '@/app/workflow-actions';
 import { WorkflowStatus } from '@/types/workflows';
 
-interface DashboardData {
+interface DashboardState {
     agentProfile: any;
     allReviews: any[];
     recentReviews: any[];
@@ -11,69 +12,168 @@ interface DashboardData {
     brandAudit: any;
     competitors: any[];
     announcements: any[];
+    workflowInstances: any[];
 }
 
-export function useDashboardData(userId: string | undefined) {
-    const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-    const [workflowInstances, setWorkflowInstances] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+interface DashboardLoadingState {
+    dashboard: boolean;
+    workflows: boolean;
+}
 
+interface DashboardErrorState {
+    dashboard: string | null;
+    workflows: string | null;
+}
+
+type DashboardAction = 
+    | { type: 'SET_LOADING'; payload: { key: keyof DashboardLoadingState; value: boolean } }
+    | { type: 'SET_ERROR'; payload: { key: keyof DashboardErrorState; value: string | null } }
+    | { type: 'SET_DASHBOARD_DATA'; payload: Partial<DashboardState> }
+    | { type: 'SET_WORKFLOW_INSTANCES'; payload: any[] };
+
+const initialState = {
+    data: {
+        agentProfile: null,
+        allReviews: [],
+        recentReviews: [],
+        latestPlan: null,
+        brandAudit: null,
+        competitors: [],
+        announcements: [],
+        workflowInstances: [],
+    } as DashboardState,
+    loading: {
+        dashboard: true,
+        workflows: true,
+    } as DashboardLoadingState,
+    errors: {
+        dashboard: null,
+        workflows: null,
+    } as DashboardErrorState,
+};
+
+function dashboardReducer(state: typeof initialState, action: DashboardAction) {
+    switch (action.type) {
+        case 'SET_LOADING':
+            return {
+                ...state,
+                loading: {
+                    ...state.loading,
+                    [action.payload.key]: action.payload.value,
+                },
+            };
+        case 'SET_ERROR':
+            return {
+                ...state,
+                errors: {
+                    ...state.errors,
+                    [action.payload.key]: action.payload.value,
+                },
+            };
+        case 'SET_DASHBOARD_DATA':
+            return {
+                ...state,
+                data: {
+                    ...state.data,
+                    ...action.payload,
+                },
+            };
+        case 'SET_WORKFLOW_INSTANCES':
+            return {
+                ...state,
+                data: {
+                    ...state.data,
+                    workflowInstances: action.payload,
+                },
+            };
+        default:
+            return state;
+    }
+}
+
+export function useDashboardData() {
+    const { user } = useUser();
+    const [state, dispatch] = useReducer(dashboardReducer, initialState);
+
+    // Fetch dashboard data
     useEffect(() => {
-        if (!userId) return;
+        if (!user) return;
 
         const fetchData = async () => {
-            setIsLoading(true);
-            setError(null);
-
+            dispatch({ type: 'SET_LOADING', payload: { key: 'dashboard', value: true } });
+            
             try {
-                // Fetch dashboard data and workflows in parallel
-                const [dashboardResult, workflowResult] = await Promise.all([
-                    getDashboardData(userId),
-                    getUserWorkflowInstances().catch(() => ({ message: 'error', data: [] }))
-                ]);
+                const result = await getDashboardData(user.id);
 
-                if (dashboardResult.success && dashboardResult.data) {
-                    setDashboardData({
-                        agentProfile: dashboardResult.data.agentProfile,
-                        allReviews: dashboardResult.data.allReviews,
-                        recentReviews: dashboardResult.data.recentReviews,
-                        latestPlan: dashboardResult.data.latestPlan,
-                        brandAudit: dashboardResult.data.brandAudit,
-                        competitors: dashboardResult.data.competitors,
-                        announcements: dashboardResult.data.announcements || [],
+                if (result.success && result.data) {
+                    dispatch({
+                        type: 'SET_DASHBOARD_DATA',
+                        payload: {
+                            agentProfile: result.data.agentProfile,
+                            allReviews: result.data.allReviews,
+                            recentReviews: result.data.recentReviews,
+                            latestPlan: result.data.latestPlan,
+                            brandAudit: result.data.brandAudit,
+                            competitors: result.data.competitors,
+                            announcements: result.data.announcements || [],
+                        },
                     });
+                    dispatch({ type: 'SET_ERROR', payload: { key: 'dashboard', value: null } });
                 } else {
-                    setError(dashboardResult.error || 'Failed to load dashboard');
+                    dispatch({ 
+                        type: 'SET_ERROR', 
+                        payload: { key: 'dashboard', value: result.error || 'Failed to load dashboard' } 
+                    });
                 }
-
-                if (workflowResult.message === 'success' && workflowResult.data) {
-                    const filteredInstances = workflowResult.data.filter(
-                        instance => instance.status !== WorkflowStatus.ARCHIVED
-                    );
-                    setWorkflowInstances(filteredInstances);
-                }
-            } catch (err) {
-                setError('Failed to load dashboard data');
-                console.error('Dashboard data fetch error:', err);
+            } catch (error) {
+                dispatch({ 
+                    type: 'SET_ERROR', 
+                    payload: { key: 'dashboard', value: 'Failed to load dashboard' } 
+                });
             } finally {
-                setIsLoading(false);
+                dispatch({ type: 'SET_LOADING', payload: { key: 'dashboard', value: false } });
             }
         };
 
         fetchData();
-    }, [userId]);
+    }, [user]);
+
+    // Fetch workflow instances
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchWorkflows = async () => {
+            dispatch({ type: 'SET_LOADING', payload: { key: 'workflows', value: true } });
+            
+            try {
+                const result = await getUserWorkflowInstances();
+
+                if (result.message === 'success' && result.data) {
+                    const filteredInstances = result.data.filter(
+                        instance => instance.status !== WorkflowStatus.ARCHIVED
+                    );
+                    dispatch({ type: 'SET_WORKFLOW_INSTANCES', payload: filteredInstances });
+                }
+                dispatch({ type: 'SET_ERROR', payload: { key: 'workflows', value: null } });
+            } catch (error) {
+                console.error('Error fetching workflow instances:', error);
+                dispatch({ 
+                    type: 'SET_ERROR', 
+                    payload: { key: 'workflows', value: 'Failed to load workflows' } 
+                });
+            } finally {
+                dispatch({ type: 'SET_LOADING', payload: { key: 'workflows', value: false } });
+            }
+        };
+
+        fetchWorkflows();
+    }, [user]);
 
     return {
-        dashboardData,
-        workflowInstances,
-        isLoading,
-        error,
-        refetch: () => {
-            if (userId) {
-                setIsLoading(true);
-                // Re-trigger the effect by updating a dependency
-            }
-        }
+        data: state.data,
+        loading: state.loading,
+        errors: state.errors,
+        isLoading: state.loading.dashboard || state.loading.workflows,
+        hasError: !!state.errors.dashboard || !!state.errors.workflows,
     };
 }

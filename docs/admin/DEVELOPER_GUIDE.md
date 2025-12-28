@@ -528,6 +528,92 @@ const metrics = await analyticsService.getPlatformMetrics(
 - `updateTicketStatus(ticketId, status, adminId, resolutionNote?): Promise<void>`
 - `assignTicket(ticketId, adminId): Promise<void>`
 
+#### AuditLogService
+
+**Location**: `src/services/admin/audit-log-service.ts`
+
+**Purpose**: Provides comprehensive audit logging for all administrative actions with immutable entries, IP tracking, and flexible querying capabilities.
+
+**Key Features**:
+- Immutable audit log entries (no updates allowed)
+- IP address and user agent tracking
+- Multiple query patterns (by admin, action type, date range)
+- Export functionality (JSON/CSV)
+- Helper methods for common action types
+- 90-day TTL for compliance
+
+**Methods**:
+
+- `createAuditLog(entry): Promise<AuditLogEntry>` - Creates immutable audit log entry
+- `getAuditLog(filter?): Promise<{ entries: AuditLogEntry[]; lastKey?: string }>` - Query logs with filtering
+- `exportAuditLog(filter?, format?): Promise<string>` - Export logs as JSON or CSV
+- `getAuditLogStats(startDate, endDate): Promise<AuditLogStats>` - Get statistics and metrics
+
+**Helper Methods**:
+- `logUserAction()` - Log user management actions (create, update, delete, role changes)
+- `logContentAction()` - Log content moderation actions (approve, flag, hide, delete)
+- `logConfigAction()` - Log configuration changes (feature flags, settings, integrations)
+- `logTicketAction()` - Log support ticket actions (create, update, close, assign)
+- `logBillingAction()` - Log billing actions (trial extensions, refunds, cancellations)
+
+**Query Patterns**:
+- By admin ID: Uses GSI1 for efficient admin-specific queries
+- By action type: Uses GSI2 for action-type filtering
+- By date range: Queries primary table with date-based partitioning
+
+**Example**:
+
+```typescript
+import { auditLogService } from "@/services/admin/audit-log-service";
+
+// Create audit log entry
+await auditLogService.createAuditLog({
+  adminId: "admin-123",
+  adminEmail: "admin@example.com",
+  adminRole: "superadmin",
+  actionType: "user_role_change",
+  resourceType: "user",
+  resourceId: "user-456",
+  description: "Changed user role from User to Admin",
+  beforeValue: { role: "User" },
+  afterValue: { role: "Admin" },
+  ipAddress: "192.168.1.1",
+  userAgent: "Mozilla/5.0...",
+});
+
+// Query logs by admin
+const adminLogs = await auditLogService.getAuditLog({
+  adminId: "admin-123",
+  limit: 50,
+});
+
+// Export logs as CSV
+const csvData = await auditLogService.exportAuditLog(
+  { startDate: new Date("2024-01-01"), endDate: new Date("2024-01-31") },
+  "csv"
+);
+
+// Use helper method for user actions
+await auditLogService.logUserAction(
+  "admin-123",
+  "admin@example.com",
+  "superadmin",
+  "role_change",
+  "user-456",
+  "Promoted user to Admin role",
+  { role: "User" },
+  { role: "Admin" },
+  "192.168.1.1",
+  "Mozilla/5.0..."
+);
+```
+
+**Database Schema**:
+- Primary Key: `AUDIT#<date>` / `<timestamp>#<auditId>`
+- GSI1: Admin queries (`ADMIN#<adminId>` / `<timestamp>#<auditId>`)
+- GSI2: Action type queries (`ACTION#<actionType>` / `<timestamp>#<auditId>`)
+- TTL: 90 days from creation
+
 ---
 
 ## Server Actions
@@ -632,8 +718,17 @@ if (!superAdmin) {
   return { success: false, error: "SuperAdmin role required" };
 }
 
-// Get current user
-const user = await getCurrentUser();
+// Get current user (full object with id and email)
+const user = await getCurrentUserServer();
+if (!user) {
+  return { success: false, error: "Authentication required" };
+}
+
+// Get current user ID only (lightweight)
+const userId = await getCurrentUserId();
+if (!userId) {
+  return { success: false, error: "Authentication required" };
+}
 ```
 
 ### Validation Patterns
@@ -1852,6 +1947,92 @@ setInterval(() => {
 // Use WeakMap for object references
 const cache = new WeakMap();
 ```
+
+---
+
+## OAuth Integration & Token Management
+
+### Google Business Profile Integration
+
+The platform integrates with Google Business Profile to allow agents to import reviews and manage their business presence. The OAuth flow has been optimized for proper token expiry handling.
+
+#### Token Exchange Process
+
+When users connect their Google Business Profile:
+
+1. User initiates OAuth flow via "Connect" button
+2. User is redirected to Google's consent screen
+3. Google redirects back with authorization code
+4. `exchangeGoogleTokenAction` exchanges code for tokens
+5. Tokens are stored in DynamoDB with proper expiry calculation
+
+#### Token Expiry Calculation
+
+**Critical Implementation Detail**: Google's OAuth response includes `expiresIn` as seconds, but JavaScript timestamps use milliseconds. The token expiry is calculated as:
+
+```typescript
+const tokenData = {
+  agentProfileId: userId,
+  accessToken: result.accessToken,
+  refreshToken: result.refreshToken || '',
+  expiryDate: Date.now() + (result.expiresIn * 1000), // Convert seconds to milliseconds
+};
+```
+
+This ensures accurate token expiry tracking and prevents premature token refresh attempts.
+
+#### Token Storage Schema
+
+```typescript
+// DynamoDB Key Pattern
+PK: "OAUTH#<userId>"
+SK: "GOOGLE_BUSINESS"
+EntityType: "OAuthToken"
+
+// Token Data Structure
+interface OAuthTokenData {
+  agentProfileId: string;
+  accessToken: string;
+  refreshToken: string;
+  expiryDate: number; // Unix timestamp in milliseconds
+  provider?: string;
+}
+```
+
+#### Automatic Token Refresh
+
+The system automatically refreshes tokens when:
+- Tokens are expired
+- Tokens will expire within 5 minutes (buffer time)
+
+```typescript
+// Check if refresh is needed
+const validTokens = await getValidOAuthTokens(userId, 'GOOGLE_BUSINESS');
+if (validTokens) {
+  // Use validTokens.accessToken for API calls
+}
+```
+
+#### Error Handling
+
+OAuth integration includes comprehensive error handling:
+
+- **Token not found**: Returns `null`, user needs to reconnect
+- **Refresh failed**: Logs error, returns `null`, user needs to re-authenticate
+- **Network errors**: Throws descriptive error messages
+- **Invalid refresh token**: User needs to re-authenticate
+
+#### Security Considerations
+
+- Tokens are stored with user-scoped partition keys
+- Only authenticated users can access their own tokens
+- 5-minute expiry buffer prevents API calls with expired tokens
+- Failed refresh attempts are logged for monitoring
+
+### See Also
+
+- [OAuth Implementation Guide](../aws/dynamodb/OAUTH_IMPLEMENTATION.md) - Detailed technical implementation
+- [Google Integration Setup](../guides/GOOGLE_INTEGRATION_GUIDE.md) - Setup instructions for developers
 
 ---
 

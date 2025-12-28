@@ -1,5 +1,5 @@
-import { MarketIntelligenceLoading } from '@/components/ui/page-loading';
+import { PageLoading } from '@/components/ui/page-loading';
 
 export default function Loading() {
-    return <MarketIntelligenceLoading />;
+    return <PageLoading text="Loading analytics..." />;
 }

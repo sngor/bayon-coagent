@@ -1,5 +1,8 @@
 /* Fonts are loaded via Next.js font optimization in layout.tsx */
 
+/* Import Neumorphism Design System */
+@import '../components/ui/neumorphism.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -1146,6 +1149,38 @@ body {
 
   .light-reflect-animated:hover::before {
     left: 100%;
+  }
+
+  /* Scrollbar utilities */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Safari and Chrome */
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: hsl(var(--scrollbar-track));
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--scrollbar-thumb));
+    border-radius: 2px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--scrollbar-thumb) / 0.8);
   }
 
   /* Card-specific light reflects */
@@ -2782,7 +2817,7 @@ body {
 
   /* Enhanced mobile touch targets */
   .touch-target {
-    @apply min-h-[44px] min-w-[44px];
+    @apply min-w-[44px];
   }
 
   .touch-target-lg {

@@ -23,7 +23,6 @@ export default function PerformanceMonitoringPage() {
             <PageHeader
                 title="Performance Monitoring"
                 description="Real-time performance metrics and trends"
-                icon={Activity}
                 variant="default"
             />
 

@@ -1,5 +1,5 @@
-import { StudioWriteLoading } from '@/components/ui/page-loading';
+import { PageLoading } from '@/components/ui/page-loading';
 
 export default function Loading() {
-    return <StudioWriteLoading />;
+    return <PageLoading text="Loading studio..." />;
 }

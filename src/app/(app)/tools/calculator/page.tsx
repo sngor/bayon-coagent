@@ -1,8 +1,10 @@
 'use client';
 
 import { ContentSection, FeatureBanner } from '@/components/ui';
+import { PageHeader } from '@/components/ui';
 import { MortgageCalculator } from '@/features/calculators/components/mortgage-calculator';
 import { Button } from '@/components/ui/button';
+import { Calculator } from 'lucide-react';
 
 import { useToast } from '@/hooks/use-toast';
 
@@ -24,14 +26,16 @@ export default function MortgageCalculatorPage() {
 
     return (
         <div className="space-y-6">
-            <Card>
-                <CardHeader>
-                    <div>
-                        <CardTitle className="font-headline text-2xl">Mortgage Calculator</CardTitle>
-                        <CardDescription>Calculate payments and rates</CardDescription>
-                    </div>
-                </CardHeader>
-            </Card>
+            <PageHeader
+                title="Mortgage Calculator"
+                description="Calculate payments and rates for your clients"
+                icon={Calculator}
+                actions={
+                    <Button onClick={handleShare}>
+                        Share Calculator
+                    </Button>
+                }
+            />
             <FeatureBanner
                 title="Mortgage Calculator Best Practices"
                 description="Help clients understand their buying power and monthly commitments"

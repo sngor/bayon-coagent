@@ -4,6 +4,79 @@ This document tracks major feature implementations and integrations in the Bayon
 
 ## Recent Implementations
 
+### OAuth Token Expiry Calculation Fix ✅
+
+**Status**: Complete - Fixed Google Business Profile token expiry handling
+
+Fixed a critical issue in OAuth token expiry calculation that was causing premature token refresh attempts:
+
+**Problem**: Google's OAuth response includes `expiresIn` as seconds, but JavaScript timestamps use milliseconds. The previous implementation was incorrectly storing the expiry time, leading to authentication issues.
+
+**Solution**: Implemented proper time conversion in the token exchange process:
+
+```typescript
+// Before: Incorrect expiry calculation
+const tokenData = {
+  agentProfileId: validatedFields.data.userId,
+  accessToken: result.accessToken,
+  refreshToken: result.refreshToken,
+  expiryDate: result.expiryDate, // This was undefined or incorrect
+};
+
+// After: Proper expiry calculation
+const tokenData = {
+  agentProfileId: validatedFields.data.userId,
+  accessToken: result.accessToken,
+  refreshToken: result.refreshToken || '',
+  expiryDate: Date.now() + (result.expiresIn * 1000), // Convert seconds to milliseconds
+};
+```
+
+**Changes**:
+
+- **Accurate Expiry Calculation**: Properly converts Google's `expiresIn` (seconds) to JavaScript timestamp (milliseconds)
+- **Null Safety**: Added fallback for missing refresh tokens (`|| ''`)
+- **Consistent Token Management**: Ensures tokens are refreshed at the correct time
+- **Improved Reliability**: Prevents authentication failures due to incorrect expiry times
+
+**Files Updated**:
+
+- `src/app/actions.ts` - Fixed `exchangeGoogleTokenAction` token expiry calculation
+- `src/aws/dynamodb/OAUTH_IMPLEMENTATION.md` - Updated documentation with correct token handling
+- `docs/admin/DEVELOPER_GUIDE.md` - Added OAuth integration section with technical details
+
+**Impact**:
+
+- **Prevents Authentication Failures**: Eliminates premature token refresh attempts
+- **Improved User Experience**: Google Business Profile integration works reliably
+- **Better Token Management**: Accurate expiry tracking enables proper refresh timing
+- **Production Stability**: Reduces OAuth-related errors in production environment
+
+**Technical Details**:
+
+- Google OAuth returns `expiresIn` as seconds (typically 3600 for 1 hour)
+- JavaScript `Date.now()` returns milliseconds since Unix epoch
+- Conversion formula: `Date.now() + (expiresIn * 1000)`
+- This ensures tokens are refreshed 5 minutes before actual expiry (buffer time)
+
+### Sidebar Alignment Enhancement ✅
+
+**Status**: Complete - Improved visual alignment in collapsed sidebar state
+
+Enhanced the sidebar component's collapsed state styling to provide better vertical alignment of menu buttons:
+
+**Changes**:
+
+- **Improved Alignment**: Added flexbox centering properties to collapsed sidebar menu buttons
+- **Visual Consistency**: Menu buttons now properly center vertically when sidebar is collapsed
+- **Better UX**: Enhanced visual appearance maintains professional look in icon-only mode
+- **Responsive Design**: Alignment improvements work across all screen sizes
+
+**Technical Details**:
+- Added `group-data-[state=collapsed]/sidebar-wrapper:flex` and `group-data-[state=collapsed]/sidebar-wrapper:items-center` classes
+- Maintains existing functionality while improving visual presentation
+- No breaking changes to existing sidebar behavior
+
 ### Session Cookie Chunking Enhancement ✅
 
 **Status**: Complete - Enhanced authentication system to handle large JWT tokens

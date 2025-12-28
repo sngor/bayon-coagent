@@ -15,6 +15,11 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default', isStic
     const [showLeftIndicator, setShowLeftIndicator] = useState(false);
     const [showRightIndicator, setShowRightIndicator] = useState(false);
 
+    // Memoize the current tab calculation to prevent unnecessary re-renders
+    const currentTab = useMemo(() => {
+        return activeTab || tabs.find(tab => pathname.startsWith(tab.href))?.id || tabs[0]?.id;
+    }, [activeTab, tabs, pathname]);
+
     // Check scroll position to show/hide indicators
     const checkScroll = useCallback(() => {
         const container = scrollContainerRef.current;
@@ -25,9 +30,40 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default', isStic
         setShowRightIndicator(scrollLeft < scrollWidth - clientWidth - 10);
     }, []);
 
+    // Scroll to active tab when it changes
+    const scrollToActiveTab = useCallback(() => {
+        const container = scrollContainerRef.current;
+        const tabsContainer = tabsRef.current;
+        if (!container || !tabsContainer) return;
+
+        const activeTabIndex = tabs.findIndex(tab => tab.id === currentTab);
+        if (activeTabIndex === -1) return;
+
+        const activeTabElement = tabsContainer.children[activeTabIndex] as HTMLElement;
+        if (!activeTabElement) return;
+
+        const containerRect = container.getBoundingClientRect();
+        const tabRect = activeTabElement.getBoundingClientRect();
+        
+        // Check if tab is fully visible
+        const isTabVisible = 
+            tabRect.left >= containerRect.left && 
+            tabRect.right <= containerRect.right;
+
+        if (!isTabVisible) {
+            // Scroll to center the active tab
+            const scrollLeft = activeTabElement.offsetLeft - (container.clientWidth / 2) + (activeTabElement.clientWidth / 2);
+            container.scrollTo({
+                left: Math.max(0, scrollLeft),
+                behavior: 'smooth'
+            });
+        }
+    }, [tabs, currentTab]);
+
     // Check scroll on mount and when tabs change
     useEffect(() => {
         checkScroll();
+        scrollToActiveTab();
         const container = scrollContainerRef.current;
         if (!container) return;
 
@@ -38,12 +74,7 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default', isStic
             container.removeEventListener('scroll', checkScroll);
             window.removeEventListener('resize', checkScroll);
         };
-    }, [checkScroll, tabs]);
-
-    // Memoize the current tab calculation to prevent unnecessary re-renders
-    const currentTab = useMemo(() => {
-        return activeTab || tabs.find(tab => pathname.startsWith(tab.href))?.id || tabs[0]?.id;
-    }, [activeTab, tabs, pathname]);
+    }, [checkScroll, scrollToActiveTab, tabs, currentTab]);
 
     // Memoize the tab click handler
     const handleTabClick = useCallback((tab: typeof tabs[0]) => {
@@ -79,28 +110,32 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default', isStic
 
         const variantStyles = {
             default: {
-                tab: 'px-4 py-2 rounded-full border-none bg-transparent',
-                container: 'inline-flex items-center gap-1 overflow-x-auto scrollbar-hide rounded-full p-1.5 transition-all duration-200'
+                tab: 'px-4 py-2 rounded-full border-none bg-transparent whitespace-nowrap',
+                container: 'overflow-x-auto scrollbar-hide rounded-full p-1.5 transition-all duration-200',
+                wrapper: 'mx-4 sm:mx-6'
             },
             pills: {
-                tab: 'px-4 py-2 rounded-full border-none bg-transparent',
-                container: 'inline-flex items-center gap-1 overflow-x-auto scrollbar-hide rounded-full p-1.5 transition-all duration-200'
+                tab: 'px-4 py-2 rounded-full border-none bg-transparent whitespace-nowrap',
+                container: 'overflow-x-auto scrollbar-hide rounded-full p-1.5 transition-all duration-200',
+                wrapper: 'mx-4 sm:mx-6'
             },
             underline: {
-                tab: 'px-4 py-2 rounded-none border-b-2 border-transparent bg-transparent',
-                container: 'inline-flex items-center gap-1 overflow-x-auto scrollbar-hide border-b border-border'
+                tab: 'px-4 py-2 rounded-none border-b-2 border-transparent bg-transparent whitespace-nowrap',
+                container: 'overflow-x-auto scrollbar-hide border-b border-border px-1.5',
+                wrapper: 'mx-4 sm:mx-6'
             }
         };
 
         return {
             base: baseStyles,
             tab: variantStyles[variant].tab,
-            container: variantStyles[variant].container
+            container: variantStyles[variant].container,
+            wrapper: variantStyles[variant].wrapper
         };
     }, [variant]);
 
     return (
-        <div className="relative">
+        <div className={cn("relative", styles.wrapper)}>
             {/* Left scroll indicator */}
             {showLeftIndicator && (
                 <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none z-10 rounded-l-full" />
@@ -111,12 +146,13 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default', isStic
                 ref={scrollContainerRef}
                 className={cn(
                     styles.container,
+                    'scroll-smooth touch-pan-x', // Add smooth scrolling via CSS
                     isSticky
                         ? 'bg-background/95 backdrop-blur-xl border border-border/20 shadow-sm'
                         : 'bg-transparent'
                 )}
             >
-                <div ref={tabsRef} className="flex items-center gap-1" role="tablist">
+                <div ref={tabsRef} className="inline-flex items-center gap-1 min-w-max" role="tablist">
                     {tabs.map((tab, index) => {
                         const isActive = tab.id === currentTab;
                         const Icon = tab.icon;
@@ -145,7 +181,7 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default', isStic
                                 )}
                             >
                                 {Icon && <Icon className={ICON_SIZES.sm} aria-hidden="true" />}
-                                <span className="whitespace-nowrap">{tab.label}</span>
+                                <span>{tab.label}</span>
                                 {tab.badge !== undefined && (
                                     <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5" aria-label={`${tab.badge} items`}>
                                         {tab.badge}

@@ -33,7 +33,6 @@ import { migrateChatHistoryToServer, hasLocalChatHistory } from '@/lib/migrate-c
 import { toast } from '@/hooks/use-toast';
 import type { ChatSession, ChatMessage } from '@/app/chat-history-actions';
 import type { Message } from '@/components/bayon-assistant/chat-interface';
-import { AssistantChatLoading } from '@/components/ui/page-loading';
 
 export default function AssistantPage() {
     const { user } = useUser();

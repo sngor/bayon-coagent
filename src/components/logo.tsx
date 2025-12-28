@@ -4,15 +4,24 @@
 import { cn } from "@/lib/utils/common";
 import { useSidebar } from "./ui/sidebar";
 import Image from "next/image";
+import { useContext } from "react";
 
 interface LogoProps {
   className?: string;
+  forceExpanded?: boolean;
 }
 
-export function Logo({ className }: LogoProps) {
+export function Logo({ className, forceExpanded = false }: LogoProps) {
   // Safely access the sidebar context. It will be null on pages without a SidebarProvider.
-  const sidebar = useSidebar();
-  const state = sidebar?.state;
+  let sidebar;
+  try {
+    sidebar = useSidebar();
+  } catch (error) {
+    // useSidebar throws an error if used outside SidebarProvider
+    sidebar = null;
+  }
+  
+  const state = forceExpanded ? 'expanded' : (sidebar?.state || 'expanded');
 
   const LogoImage = ({ size }: { size: number }) => (
     <Image

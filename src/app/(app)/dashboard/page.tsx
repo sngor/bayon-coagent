@@ -23,7 +23,7 @@ import {
 } from '@/components/ui';
 import { StandardEmptyState } from '@/components/ui/reusable';
 import { LoadingState } from '@/components/ui/loading-state';
-import { DashboardLoading } from '@/components/ui/page-loading';
+import { PageLoading } from '@/components/ui/page-loading';
 
 
 import {
@@ -306,7 +306,7 @@ export default function DashboardPage() {
 
     // Show loading state while dashboard is loading
     if (isLoadingDashboard && !dashboardData) {
-        return <DashboardLoading />;
+        return <PageLoading text="Loading dashboard..." />;
     }
 
     // Show error state if dashboard failed to load
@@ -333,42 +333,7 @@ export default function DashboardPage() {
         <div className="space-y-6 md:space-y-8">
             <InvitationBanner />
 
-            {/* Welcome Message for New Users */}
-            {!isLoadingProfile && completionPercentage < 100 && (
-                <div className="animate-fade-in-up animate-delay-50">
-                    <Card className="relative overflow-hidden border-primary/20 shadow-xl hover:shadow-2xl transition-shadow duration-300 bg-gradient-to-br from-primary/5 via-purple-500/5 to-background">
-                        <div className="absolute inset-0 bg-grid-white/5 [mask-image:radial-gradient(white,transparent_85%)]" />
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-full blur-3xl" />
-                        <div className="relative flex flex-col md:flex-row items-start gap-6 p-6 md:p-8 z-10">
-                            <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-gradient-to-br from-primary via-purple-600 to-purple-700 flex items-center justify-center shadow-xl ring-4 ring-primary/10">
-                                <Sparkles className="w-8 h-8 text-white" />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="font-bold text-2xl mb-3 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                                    Welcome to Bayon Coagent! 🎉
-                                </h3>
-                                <p className="text-muted-foreground mb-6 text-base leading-relaxed">
-                                    You're {completionPercentage}% of the way there. Complete your profile to unlock personalized AI strategies, market insights, and powerful content creation tools.
-                                </p>
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    <Button asChild size="lg" className="shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105">
-                                        <Link href="/brand/profile">
-                                            <Target className="w-5 h-5 mr-2" />
-                                            Complete Your Profile
-                                        </Link>
-                                    </Button>
-                                    <Button variant="outline" size="lg" asChild className="bg-background/50 backdrop-blur-sm hover:bg-background/80 shadow-sm hover:shadow-md transition-all duration-300">
-                                        <Link href="/assistant">
-                                            <MessageSquare className="w-5 h-5 mr-2" />
-                                            Get Help from AI
-                                        </Link>
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    </Card>
-                </div>
-            )}
+
 
             {/* Profile Completion Banner */}
             {agentProfile && completionPercentage >= 50 && completionPercentage < 100 && !isBannerDismissed && (

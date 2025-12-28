@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { PageHeader } from '@/components/ui';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -241,24 +242,23 @@ export default function MarketInsightsPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Market Insights</h1>
-                    <p className="text-muted-foreground">
-                        Track market trends and life event predictions to identify opportunities
-                    </p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={exportData}>
-                        <Download className="h-4 w-4 mr-2" />
-                        Export
-                    </Button>
-                    <Button variant="outline" onClick={refreshData} disabled={isLoading}>
-                        <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                        Refresh
-                    </Button>
-                </div>
-            </div>
+            <PageHeader
+                title="Market Insights"
+                description="Track market trends and life event predictions to identify opportunities"
+                icon={TrendingUp}
+                actions={
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" onClick={exportData}>
+                            <Download className="h-4 w-4 mr-2" />
+                            Export
+                        </Button>
+                        <Button variant="outline" onClick={refreshData} disabled={isLoading}>
+                            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                            Refresh
+                        </Button>
+                    </div>
+                }
+            />
 
             {/* Filters */}
             <Card>

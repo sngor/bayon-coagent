@@ -11,6 +11,7 @@
  * - Check-in logging (Req 9.5)
  */
 
+import { PageHeader } from '@/components/ui';
 import { useState } from 'react';
 import { MapPin, Navigation, Bell, CheckCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -59,15 +60,11 @@ export default function LocationServicesPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="space-y-2">
-                <h1 className="text-3xl font-bold flex items-center gap-2">
-                    <MapPin className="h-8 w-8" />
-                    Location Services
-                </h1>
-                <p className="text-muted-foreground">
-                    Location-based features to enhance your mobile workflow
-                </p>
-            </div>
+            <PageHeader
+                title="Location Services"
+                description="Location-based features to enhance your mobile workflow"
+                icon={MapPin}
+            />
 
             {/* Tabs */}
             <Tabs defaultValue="reminders" className="space-y-6">
