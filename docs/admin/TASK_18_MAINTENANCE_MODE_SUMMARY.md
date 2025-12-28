@@ -298,6 +298,7 @@ if (banner?.show) {
 
 - `src/features/admin/actions/admin-actions.ts` - Added maintenance mode server actions
 - `src/aws/dynamodb/keys.ts` - Already had maintenance window keys defined
+- `src/services/admin/maintenance-mode-service.ts` - Updated to use new DynamoDB repository query method signature (Dec 2024)
 
 ## Notes
 

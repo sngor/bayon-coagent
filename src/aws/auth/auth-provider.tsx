@@ -8,9 +8,10 @@
  * authentication state to the entire application.
  */
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { getCognitoClient, CognitoUser, AuthSession } from './cognito-client';
 import { setSessionCookieAction } from '@/app/actions';
+import { validateConfig } from '@/aws/config';
 
 interface AuthContextValue {
     user: CognitoUser | null;
@@ -43,7 +44,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
 
-    const cognitoClient = getCognitoClient();
+    const cognitoClient = useMemo(() => getCognitoClient(), []);
+
+    // Validate environment configuration on startup
+    useEffect(() => {
+        try {
+            const { valid, errors } = validateConfig();
+            if (!valid && process.env.NODE_ENV === 'development') {
+                console.error('AWS Configuration Errors:', errors);
+                // In development, show warnings but don't block the app
+                errors.forEach(error => console.warn(`⚠️ ${error}`));
+            }
+        } catch (configError) {
+            console.error('Failed to validate AWS configuration:', configError);
+        }
+    }, []);
 
     /**
      * Load the current session and user on mount
@@ -94,7 +109,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } finally {
             setIsLoading(false);
         }
-    }, []); // Remove cognitoClient dependency to prevent infinite re-renders
+    }, [cognitoClient]); // Add cognitoClient dependency
 
     /**
      * Sign in with email and password
@@ -138,7 +153,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } finally {
             setIsLoading(false);
         }
-    }, []); // Remove cognitoClient dependency
+    }, [cognitoClient]); // Add cognitoClient dependency
 
     /**
      * Sign up with email and password
@@ -164,7 +179,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } finally {
             setIsLoading(false);
         }
-    }, []); // Remove cognitoClient dependency
+    }, [cognitoClient]); // Add cognitoClient dependency
 
     /**
      * Confirm sign up with verification code
@@ -182,7 +197,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } finally {
             setIsLoading(false);
         }
-    }, []); // Remove cognitoClient dependency
+    }, [cognitoClient]); // Add cognitoClient dependency
 
     /**
      * Resend confirmation code
@@ -200,7 +215,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } finally {
             setIsLoading(false);
         }
-    }, []); // Remove cognitoClient dependency
+    }, [cognitoClient]); // Add cognitoClient dependency
 
     /**
      * Sign out the current user
@@ -235,7 +250,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } finally {
             setIsLoading(false);
         }
-    }, [session?.accessToken]); // Only depend on accessToken, not entire session
+    }, [cognitoClient, session?.accessToken]); // Add cognitoClient dependency
 
     /**
      * Manually refresh the session
@@ -270,7 +285,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setUser(null);
             throw error;
         }
-    }, [session?.refreshToken]); // Only depend on refreshToken, not the entire session object
+    }, [cognitoClient, session?.refreshToken]); // Add cognitoClient dependency
 
     /**
      * Set up automatic token refresh

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 
 interface StreamingContentProps {
@@ -77,7 +78,7 @@ export function StreamingContent({
                     <div
                         className="prose prose-sm max-w-none dark:prose-invert"
                         dangerouslySetInnerHTML={{
-                            __html: marked(displayedContent)
+                            __html: DOMPurify.sanitize(marked(displayedContent))
                         }}
                     />
                 ) : (

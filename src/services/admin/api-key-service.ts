@@ -1,5 +1,6 @@
 import { getRepository } from "@/aws/dynamodb/repository";
 import { getAPIKeyKeys } from "@/aws/dynamodb";
+import { wrapDynamoDBError } from "@/aws/dynamodb/errors";
 import crypto from "crypto";
 
 export interface APIKey {
@@ -116,26 +117,31 @@ export class APIKeyService {
      * Validates an API key and returns the key details if valid
      */
     async validateAPIKey(plainKey: string): Promise<APIKey | null> {
-        const keyHash = this.hashAPIKey(plainKey);
+        try {
+            const keyHash = this.hashAPIKey(plainKey);
 
-        // Query all active API keys and find matching hash
-        const result = await this.repository.query<APIKey>(
-            "APIKEYS#ACTIVE",
-            ""
-        );
+            // Query all active API keys and find matching hash
+            const result = await this.repository.query<APIKey>(
+                "APIKEYS#ACTIVE",
+                "",
+                { indexName: "GSI1" }
+            );
 
-        const matchingKey = result.items.find(
-            (item) => item.keyHash === keyHash && item.status === "active"
-        );
+            const matchingKey = result.items.find(
+                (item) => item.keyHash === keyHash && item.status === "active"
+            );
 
-        if (!matchingKey) {
-            return null;
+            if (!matchingKey) {
+                return null;
+            }
+
+            // Update last used timestamp
+            await this.updateLastUsed(matchingKey.keyId);
+
+            return matchingKey;
+        } catch (error: any) {
+            throw wrapDynamoDBError(error);
         }
-
-        // Update last used timestamp
-        await this.updateLastUsed(matchingKey.keyId);
-
-        return matchingKey;
     }
 
     /**
@@ -159,23 +165,22 @@ export class APIKeyService {
         const status = options?.status || "active";
         const limit = options?.limit || 50;
 
-        const result = await this.repository.query({
-            IndexName: "GSI1",
-            KeyConditionExpression: "GSI1PK = :pk",
-            ExpressionAttributeValues: {
-                ":pk": `APIKEYS#${status.toUpperCase()}`,
-            },
-            Limit: limit,
-            ExclusiveStartKey: options?.lastKey
-                ? JSON.parse(options.lastKey)
-                : undefined,
-            ScanIndexForward: false, // Most recent first
-        });
+        // Use the correct query method signature
+        const result = await this.repository.query<APIKey>(
+            `APIKEYS#${status.toUpperCase()}`,
+            undefined,
+            {
+                indexName: "GSI1",
+                limit: limit,
+                exclusiveStartKey: options?.lastKey ? JSON.parse(options.lastKey) : undefined,
+                scanIndexForward: false, // Most recent first
+            }
+        );
 
         return {
-            keys: (result.Items?.map((item) => item.Data) as APIKey[]) || [],
-            lastKey: result.LastEvaluatedKey
-                ? JSON.stringify(result.LastEvaluatedKey)
+            keys: result.items || [],
+            lastKey: result.lastEvaluatedKey
+                ? JSON.stringify(result.lastEvaluatedKey)
                 : undefined,
         };
     }
@@ -186,16 +191,13 @@ export class APIKeyService {
     async getAPIUsage(keyId: string): Promise<APIUsageMetrics | null> {
         // Get the API key details
         const keys = getAPIKeyKeys(keyId);
-        const keyResult = await this.repository.get({
-            PK: keys.PK,
-            SK: keys.SK,
-        });
+        const keyResult = await this.repository.get<APIKey>(keys.PK, keys.SK);
 
-        if (!keyResult?.Item) {
+        if (!keyResult) {
             return null;
         }
 
-        const apiKey = keyResult.Item.Data as APIKey;
+        const apiKey = keyResult;
 
         // Get usage metrics from analytics events
         const now = Date.now();
@@ -204,38 +206,41 @@ export class APIKeyService {
         const oneMonthAgo = now - 2592000000;
 
         // Query analytics events for this API key
-        const usageResult = await this.repository.query({
-            IndexName: "GSI1",
-            KeyConditionExpression: "GSI1PK = :pk AND GSI1SK > :timestamp",
-            ExpressionAttributeValues: {
-                ":pk": `APIKEY#${keyId}#USAGE`,
-                ":timestamp": oneMonthAgo,
-            },
-        });
+        const usageResult = await this.repository.query<any>(
+            `APIKEY#${keyId}#USAGE`,
+            undefined,
+            {
+                indexName: "GSI1",
+                filterExpression: "GSI1SK > :timestamp",
+                expressionAttributeValues: {
+                    ":timestamp": oneMonthAgo,
+                },
+            }
+        );
 
-        const events = usageResult.Items || [];
+        const events = usageResult.items || [];
 
         // Calculate metrics
         const totalRequests = events.length;
         const requestsToday = events.filter(
-            (e) => e.Data.timestamp > oneDayAgo
+            (e: any) => e.timestamp > oneDayAgo
         ).length;
         const requestsThisWeek = events.filter(
-            (e) => e.Data.timestamp > oneWeekAgo
+            (e: any) => e.timestamp > oneWeekAgo
         ).length;
         const requestsThisMonth = events.length;
 
         // Calculate usage by endpoint
         const usageByEndpoint: Record<string, number> = {};
-        events.forEach((event) => {
-            const endpoint = event.Data.endpoint || "unknown";
+        events.forEach((event: any) => {
+            const endpoint = event.endpoint || "unknown";
             usageByEndpoint[endpoint] = (usageByEndpoint[endpoint] || 0) + 1;
         });
 
         // Calculate rate limit status (example: 1000 requests per hour)
         const oneHourAgo = now - 3600000;
         const requestsThisHour = events.filter(
-            (e) => e.Data.timestamp > oneHourAgo
+            (e: any) => e.timestamp > oneHourAgo
         ).length;
         const rateLimit = 1000;
         const remaining = Math.max(0, rateLimit - requestsThisHour);
@@ -265,40 +270,39 @@ export class APIKeyService {
         const keys = getAPIKeyKeys(keyId);
 
         // Get current key data
-        const result = await this.repository.get({
-            PK: keys.PK,
-            SK: keys.SK,
-        });
+        const result = await this.repository.get<APIKey>(keys.PK, keys.SK);
 
-        if (!result?.Item) {
+        if (!result) {
             throw new Error("API key not found");
         }
 
-        const apiKey = result.Item.Data as APIKey;
+        const apiKey = result;
 
         if (apiKey.status === "revoked") {
             throw new Error("API key is already revoked");
         }
 
         // Update key status
-        await this.repository.update({
-            PK: keys.PK,
-            SK: keys.SK,
-            UpdateExpression:
-                "SET #data.#status = :status, #data.#revokedAt = :timestamp, #data.#revokedBy = :revokedBy, GSI1PK = :gsi1pk",
-            ExpressionAttributeNames: {
-                "#data": "Data",
-                "#status": "status",
-                "#revokedAt": "revokedAt",
-                "#revokedBy": "revokedBy",
+        await this.repository.update<APIKey>(
+            keys.PK,
+            keys.SK,
+            {
+                status: "revoked",
+                revokedAt: Date.now(),
+                revokedBy: revokedBy,
             },
-            ExpressionAttributeValues: {
-                ":status": "revoked",
-                ":timestamp": Date.now(),
-                ":revokedBy": revokedBy,
-                ":gsi1pk": "APIKEYS#REVOKED",
-            },
-        });
+            {
+                expressionAttributeNames: {
+                    "#data": "Data",
+                    "#status": "status",
+                    "#revokedAt": "revokedAt",
+                    "#revokedBy": "revokedBy",
+                },
+                expressionAttributeValues: {
+                    ":gsi1pk": "APIKEYS#REVOKED",
+                },
+            }
+        );
 
         // Create audit log
         await this.createAuditLog({
@@ -324,19 +328,22 @@ export class APIKeyService {
         const endDate = options?.endDate || new Date();
         const limit = options?.limit || 100;
 
-        const result = await this.repository.query({
-            IndexName: "GSI1",
-            KeyConditionExpression: "GSI1PK = :pk AND GSI1SK BETWEEN :start AND :end",
-            ExpressionAttributeValues: {
-                ":pk": "ALERTS#RATE_LIMIT",
-                ":start": startDate.getTime(),
-                ":end": endDate.getTime(),
-            },
-            Limit: limit,
-            ScanIndexForward: false, // Most recent first
-        });
+        const result = await this.repository.query<RateLimitAlert>(
+            "ALERTS#RATE_LIMIT",
+            undefined,
+            {
+                indexName: "GSI1",
+                filterExpression: "GSI1SK BETWEEN :start AND :end",
+                expressionAttributeValues: {
+                    ":start": startDate.getTime(),
+                    ":end": endDate.getTime(),
+                },
+                limit: limit,
+                scanIndexForward: false, // Most recent first
+            }
+        );
 
-        return (result.Items?.map((item) => item.Data) as RateLimitAlert[]) || [];
+        return result.items || [];
     }
 
     /**
@@ -367,7 +374,9 @@ export class APIKeyService {
             EntityType: "RateLimitAlert",
             Data: alert,
             GSI1PK: "ALERTS#RATE_LIMIT",
-            GSI1SK: timestamp,
+            GSI1SK: timestamp.toString(),
+            CreatedAt: timestamp,
+            UpdatedAt: timestamp,
         });
     }
 
@@ -375,14 +384,13 @@ export class APIKeyService {
      * Gets all third-party integrations
      */
     async getIntegrations(): Promise<ThirdPartyIntegration[]> {
-        const result = await this.repository.query({
-            KeyConditionExpression: "PK = :pk",
-            ExpressionAttributeValues: {
-                ":pk": "CONFIG#INTEGRATIONS",
-            },
-        });
+        const result = await this.repository.query<ThirdPartyIntegration>(
+            "CONFIG#INTEGRATIONS",
+            undefined,
+            {}
+        );
 
-        return (result.Items?.map((item) => item.Data) as ThirdPartyIntegration[]) || [];
+        return result.items || [];
     }
 
     /**
@@ -393,21 +401,14 @@ export class APIKeyService {
         status: "active" | "inactive" | "error",
         updatedBy: string
     ): Promise<void> {
-        await this.repository.update({
-            PK: "CONFIG#INTEGRATIONS",
-            SK: `INTEGRATION#${integrationId}`,
-            UpdateExpression:
-                "SET #data.#status = :status, #data.#lastSync = :timestamp",
-            ExpressionAttributeNames: {
-                "#data": "Data",
-                "#status": "status",
-                "#lastSync": "lastSync",
-            },
-            ExpressionAttributeValues: {
-                ":status": status,
-                ":timestamp": Date.now(),
-            },
-        });
+        await this.repository.update<ThirdPartyIntegration>(
+            "CONFIG#INTEGRATIONS",
+            `INTEGRATION#${integrationId}`,
+            {
+                status: status,
+                lastSync: Date.now(),
+            }
+        );
 
         // Create audit log
         await this.createAuditLog({
@@ -448,7 +449,9 @@ export class APIKeyService {
                 details: entry.details,
             },
             GSI1PK: `ADMIN#${entry.adminId}`,
-            GSI1SK: timestamp,
+            GSI1SK: timestamp.toString(),
+            CreatedAt: timestamp,
+            UpdatedAt: timestamp,
         });
     }
 }

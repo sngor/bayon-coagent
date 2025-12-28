@@ -33,6 +33,7 @@ interface HubTab {
 #### Features
 
 - **Responsive Design**: Automatically handles overflow with horizontal scrolling
+- **Mobile-First Margins**: Progressive margin system (0 → 4 → 6) for optimal mobile experience
 - **Keyboard Navigation**: Arrow key navigation with proper focus management
 - **Visual Indicators**: Gradient scroll indicators show when content is scrollable
 - **Auto-centering**: Active tab automatically scrolls into view
@@ -62,9 +63,24 @@ const tabs = [
 
 #### Variants
 
-1. **Default**: Rounded pill-style tabs with background highlighting
+1. **Default**: Rounded pill-style tabs with background highlighting and subtle borders
+   - Active: Blue background with matching border (`bg-blue-50 border-blue-200`)
+   - Inactive: Transparent background with subtle hover effects
 2. **Pills**: Similar to default with subtle styling differences
 3. **Underline**: Bottom-border style tabs with underline highlighting
+   - Active: Blue underline border (`border-blue-600`)
+   - Inactive: Transparent border with hover effects
+
+**Note**: The AnimatedTabs component (used in tech stack guidelines) features fully rounded pill styling with `rounded-full` borders for a modern, polished appearance.
+
+#### Recent Updates
+
+- **Enhanced Active State Styling**: Added border styling to active tabs in default variant for better visual distinction
+- **ARIA Compliance Improvements**: 
+  - Fixed `aria-selected` attribute to use boolean values instead of strings for better accessibility compliance
+  - Maintained proper `tablist` and `tab` role hierarchy for screen reader compatibility
+  - Enhanced keyboard navigation with proper focus management
+- **Performance Optimizations**: Removed unused refs and improved memoization for better rendering performance
 
 ### HubLayout
 
@@ -186,9 +202,12 @@ Level 2: Hub Tabs (Horizontal) - 4-8 tabs per hub
 
 ### Responsive Margins
 
-All hub components use consistent responsive margins:
-- Mobile: `mx-4` (16px)
-- Desktop: `mx-6` (24px) on `sm:` breakpoint and above
+All hub components use consistent responsive margins for optimal mobile experience:
+- Mobile (< 640px): `mx-0` (0px) - Full width utilization
+- Small screens (≥ 640px): `mx-4` (16px)  
+- Medium+ screens (≥ 768px): `mx-6` (24px)
+
+This progressive margin system ensures maximum screen real estate usage on mobile devices while maintaining appropriate spacing on larger screens.
 
 ### Theme Integration
 
@@ -207,9 +226,10 @@ Components integrate with the application's design system:
 
 ### ARIA Support
 
-- Proper `role="tablist"` and `role="tab"` attributes
-- `aria-controls` and `aria-selected` for screen readers
+- Proper `role="tablist"` and `role="tab"` attributes with correct hierarchy
+- `aria-controls` and `aria-selected` for screen readers (using boolean values for compliance)
 - `tabindex` management for keyboard navigation
+- Descriptive `aria-label` attributes for context
 
 ### Keyboard Navigation
 

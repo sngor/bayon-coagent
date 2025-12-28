@@ -2,20 +2,57 @@
 
 ## Overview
 
-The hub tabs component has been enhanced to provide a smooth scrolling experience on small screens where tab content may overflow the container width.
+The hub tabs component has been enhanced to provide a smooth scrolling experience on small screens where tab content may overflow the container width. The component has been refactored for better maintainability, performance, and accessibility.
+
+## Architecture Improvements
+
+### 1. Separation of Concerns
+The component has been split into focused modules:
+
+- **`hub-tabs.tsx`**: Main component with presentation logic
+- **`use-tab-scroll.ts`**: Custom hook handling all scroll-related logic
+- **`tab-styles.ts`**: Centralized styling utilities and variant management
+
+### 2. Custom Hook Pattern
+The scroll logic has been extracted into `useTabScroll` hook:
+
+```tsx
+const { scrollContainerRef, tabsRef, showLeftIndicator, showRightIndicator } = useTabScroll({
+    tabs,
+    currentTab
+});
+```
+
+This provides:
+- Better testability
+- Reusable scroll logic
+- Cleaner component code
+- Proper separation of concerns
+
+### 3. Styling Utilities
+Centralized styling system in `tab-styles.ts`:
+
+```tsx
+// Get styles for a variant
+const styles = getTabStyles(variant);
+
+// Get classes for a specific tab state
+const className = getTabClasses(variant, isActive);
+```
 
 ## Key Features
 
 ### 1. Horizontal Scrolling
 - **Smooth scrolling**: Uses `scroll-behavior: smooth` for animated scrolling
-- **Touch-friendly**: Includes `-webkit-overflow-scrolling: touch` for iOS devices
+- **Touch-friendly**: Includes `touch-pan-x` for optimal mobile scrolling
 - **Hidden scrollbars**: Uses custom `scrollbar-hide` utility to hide scrollbars while maintaining functionality
 
 ### 2. Responsive Margins & Layout Structure
-- **Wrapper-based margins**: `mx-4` (16px) on mobile, `mx-6` (24px) on larger screens (`sm:mx-6`)
+- **Progressive margins**: `mx-0` on mobile, `mx-4` on small screens, `mx-6` on medium+ screens
+- **Mobile-first approach**: Zero margins on mobile (< 640px) for full-width utilization
 - **Variant-specific styling**: Each variant (default, pills, underline) has its own container and wrapper styles
 - **Consistent spacing**: Maintains visual balance across all screen sizes and variants
-- **Memoized styles**: Styles are calculated once and memoized to prevent unnecessary re-renders
+- **Optimized performance**: Styles are calculated once and memoized to prevent unnecessary re-renders
 
 ### 3. Scroll Indicators
 - **Left indicator**: Gradient fade showing when content is scrollable to the left
@@ -28,119 +65,85 @@ The hub tabs component has been enhanced to provide a smooth scrolling experienc
 - **Visibility detection**: Only scrolls if the active tab is not fully visible
 - **Smooth animation**: Uses `scrollTo` with smooth behavior for better UX
 
+### 5. Accessibility Improvements
+- **Proper ARIA attributes**: Fixed `aria-selected` boolean values
+- **Keyboard navigation**: Arrow key support with proper focus management
+- **Screen reader support**: Comprehensive labeling and role definitions
+- **Focus management**: Proper tab order and focus indicators
+
 ## Technical Implementation
 
+### Performance Optimizations
+
+1. **Memoized Callbacks**: All event handlers are memoized to prevent unnecessary re-renders
+2. **Throttled Scroll**: Scroll detection uses `requestAnimationFrame` for optimal performance
+3. **Memoized Styles**: Style calculations are cached and only recalculated when variant changes
+4. **Efficient Re-renders**: Component only re-renders when necessary dependencies change
+
 ### Style Architecture
-The component now uses a memoized style system that separates concerns:
-
 ```tsx
-const styles = useMemo(() => {
-  const baseStyles = 'inline-flex items-center gap-2 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
-
-  const variantStyles = {
-    default: {
-      tab: 'px-4 py-2 rounded-full border-none bg-transparent whitespace-nowrap',
-      container: 'overflow-x-auto scrollbar-hide rounded-full p-1.5 transition-all duration-200',
-      wrapper: 'mx-4 sm:mx-6'
-    },
-    pills: {
-      tab: 'px-4 py-2 rounded-full border-none bg-transparent whitespace-nowrap',
-      container: 'overflow-x-auto scrollbar-hide rounded-full p-1.5 transition-all duration-200',
-      wrapper: 'mx-4 sm:mx-6'
-    },
-    underline: {
-      tab: 'px-4 py-2 rounded-none border-b-2 border-transparent bg-transparent whitespace-nowrap',
-      container: 'overflow-x-auto scrollbar-hide border-b border-border px-1.5',
-      wrapper: 'mx-4 sm:mx-6'
-    }
-  };
-
-  return {
-    base: baseStyles,
-    tab: variantStyles[variant].tab,
-    container: variantStyles[variant].container,
-    wrapper: variantStyles[variant].wrapper
-  };
-}, [variant]);
+const styles = useMemo(() => getTabStyles(variant), [variant]);
 ```
 
-### CSS Classes Added
-```css
-/* Scrollbar utilities */
-.scrollbar-hide {
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
-}
+The styling system supports three variants with responsive margins:
+- **default**: Rounded tabs with background colors
+- **pills**: Similar to default with pill-shaped styling  
+- **underline**: Bottom border tabs for minimal design
 
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Safari and Chrome */
-}
-```
+All variants use the progressive margin system: `mx-0 sm:mx-4 md:mx-6` for optimal mobile experience.
 
 ### Component Structure
 ```tsx
 <div className={cn("relative", styles.wrapper)}>
   {/* Left scroll indicator */}
-  {showLeftIndicator && (
-    <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent pointer-events-none z-10 rounded-l-full" />
-  )}
+  {showLeftIndicator && <div className="gradient-fade-left" />}
   
   {/* Scrollable container */}
-  <div
-    ref={scrollContainerRef}
-    className={cn(
-      styles.container,
-      'scroll-smooth touch-pan-x',
-      isSticky ? 'bg-background/95 backdrop-blur-xl border border-border/20 shadow-sm' : 'bg-transparent'
-    )}
-  >
-    <div ref={tabsRef} className="inline-flex items-center gap-1 min-w-max" role="tablist">
-      {/* Tab buttons with whitespace-nowrap */}
+  <div ref={scrollContainerRef} className={styles.container}>
+    <div ref={tabsRef} role="tablist">
+      {/* Tab buttons */}
     </div>
   </div>
   
   {/* Right scroll indicator */}
-  {showRightIndicator && (
-    <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none z-10 rounded-r-full" />
-  )}
+  {showRightIndicator && <div className="gradient-fade-right" />}
 </div>
 ```
 
 ### Key Improvements
 
-1. **Performance Optimized**
-   - Memoized callbacks and styles to prevent unnecessary re-renders
+1. **Code Organization**
+   - Extracted scroll logic into reusable hook
+   - Centralized styling utilities
+   - Cleaner, more focused main component
+   - Better separation of concerns
+
+2. **Performance**
+   - Memoized callbacks and styles prevent unnecessary re-renders
    - Efficient scroll detection with proper cleanup
-   - Variant-specific style calculation with memoization
+   - Optimized container width with `w-fit`
 
-2. **Improved Layout Structure**
-   - Separated wrapper, container, and tab styling concerns
-   - Consistent margin handling across all variants
-   - Better separation of layout and visual styling
-
-3. **Enhanced Styling System**
-   - Variant-specific styles for default, pills, and underline tabs
-   - Consistent whitespace handling with `whitespace-nowrap`
-   - Improved container styling with proper padding and borders
+3. **Maintainability**
+   - Modular architecture makes testing easier
+   - Clear separation between presentation and logic
+   - Consistent styling patterns across variants
+   - Well-documented interfaces
 
 4. **Accessibility**
-   - Maintains keyboard navigation (arrow keys)
-   - Proper ARIA attributes and roles
-   - Focus management when navigating with keyboard
+   - Fixed ARIA attribute values
+   - Proper keyboard navigation
+   - Screen reader compatibility
+   - Focus management
 
 5. **Mobile-First Design**
-   - Touch-friendly scrolling on mobile devices
-   - Responsive margins that adapt to screen size
-   - Smooth animations that work across devices
-
-6. **Visual Polish**
-   - Gradient indicators provide clear visual feedback
-   - Smooth transitions and animations
-   - Consistent styling across all variants (default, pills, underline)
+   - Progressive margin system (0 → 4 → 6) for optimal mobile experience
+   - Full-width utilization on mobile devices (< 640px)
+   - Touch-optimized scrolling
+   - Responsive behavior across all devices
 
 ## Usage
 
-The component automatically handles scrolling behavior. No additional props or configuration needed:
+The component automatically handles scrolling behavior with the improved architecture:
 
 ```tsx
 <HubTabs 
@@ -160,9 +163,17 @@ The component automatically handles scrolling behavior. No additional props or c
 
 ## Testing
 
-Test the scrolling behavior by:
+The modular architecture makes testing easier:
+
+1. **Unit test the hook**: Test scroll logic in isolation
+2. **Test styling utilities**: Verify variant styles are correct
+3. **Integration tests**: Test component behavior with different props
+4. **Accessibility tests**: Verify ARIA attributes and keyboard navigation
+
+Test scenarios:
 1. Reducing browser width to force tab overflow
 2. Verifying scroll indicators appear/disappear correctly
 3. Testing touch scrolling on mobile devices
 4. Confirming active tab auto-centering works
 5. Testing keyboard navigation (arrow keys)
+6. Verifying ARIA attributes are properly set

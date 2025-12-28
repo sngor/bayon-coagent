@@ -285,7 +285,7 @@ const faqPrompt = definePrompt({
 ```typescript
 const keywordPrompt = definePrompt({
   name: 'getKeywordRankings',
-  inputSchema: GetKeywordRankingsInputSchema,
+  inputSchema: GetKeywordRankingsInputSchema, // Expects { keywords: string[], location: string }
   outputSchema: GetKeywordRankingsOutputSchema,
   options: MODEL_CONFIGS.ANALYTICAL, // ← CHANGE THIS
   prompt: `Analyze and rank the following keywords...`
@@ -296,7 +296,7 @@ const keywordPrompt = definePrompt({
 ```typescript
 const keywordPrompt = definePrompt({
   name: 'getKeywordRankings',
-  inputSchema: GetKeywordRankingsInputSchema,
+  inputSchema: GetKeywordRankingsInputSchema, // Expects { keywords: string[], location: string }
   outputSchema: GetKeywordRankingsOutputSchema,
   options: MODEL_CONFIGS.SIMPLE, // ✅ Structured data task
   prompt: `Analyze and rank the following keywords...`

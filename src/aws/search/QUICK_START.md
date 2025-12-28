@@ -179,8 +179,16 @@ console.log(competitors.competitors);
 import { getKeywordRankings } from "@/aws/bedrock/flows";
 
 const rankings = await getKeywordRankings({
-  keyword: "luxury real estate",
+  keywords: ["luxury real estate", "best realtor"],
   location: "Seattle, WA",
+  domain: "myrealestate.com", // optional
+  competitors: ["competitor1.com", "competitor2.com"] // optional
+});
+
+console.log(rankings.rankings); // Array of keyword ranking data
+console.log(rankings.averagePosition); // Average ranking position
+console.log(rankings.topRankingKeywords); // Keywords ranking in top 10
+```
 });
 
 console.log(rankings.rankings);

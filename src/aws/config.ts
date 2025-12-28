@@ -133,8 +133,8 @@ function getEnvironment(): Environment {
 export function getAWSConfig(): AWSConfig {
   const environment = getEnvironment();
   const isLocal = environment === 'local';
-  // HARDCODE REGION TO BYPASS ALL ENVIRONMENT ISSUES
-  const region = 'us-west-2';
+  // Use environment variables for region with fallback
+  const region = process.env.AWS_REGION || process.env.NEXT_PUBLIC_AWS_REGION || 'us-west-2';
 
   return {
     region,
@@ -142,14 +142,34 @@ export function getAWSConfig(): AWSConfig {
     appUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
 
     cognito: {
-      userPoolId: process.env.COGNITO_USER_POOL_ID || process.env.NEXT_PUBLIC_USER_POOL_ID || 'us-west-2_wqsUAbADO',
-      clientId: process.env.COGNITO_CLIENT_ID || process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || '33grpfrfup7q9jkmumv77ffdce',
+      userPoolId: process.env.COGNITO_USER_POOL_ID || process.env.NEXT_PUBLIC_USER_POOL_ID || (() => {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('COGNITO_USER_POOL_ID not set, using fallback for development');
+        }
+        return 'us-west-2_wqsUAbADO';
+      })(),
+      clientId: process.env.COGNITO_CLIENT_ID || process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || (() => {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('COGNITO_CLIENT_ID not set, using fallback for development');
+        }
+        return '33grpfrfup7q9jkmumv77ffdce';
+      })(),
       endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
 
     clientCognito: {
-      userPoolId: process.env.COGNITO_USER_POOL_ID || process.env.NEXT_PUBLIC_USER_POOL_ID || 'us-west-2_wqsUAbADO',
-      clientId: process.env.COGNITO_CLIENT_ID || process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || '33grpfrfup7q9jkmumv77ffdce',
+      userPoolId: process.env.COGNITO_USER_POOL_ID || process.env.NEXT_PUBLIC_USER_POOL_ID || (() => {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('COGNITO_USER_POOL_ID not set, using fallback for development');
+        }
+        return 'us-west-2_wqsUAbADO';
+      })(),
+      clientId: process.env.COGNITO_CLIENT_ID || process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || (() => {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('COGNITO_CLIENT_ID not set, using fallback for development');
+        }
+        return '33grpfrfup7q9jkmumv77ffdce';
+      })(),
       endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
 

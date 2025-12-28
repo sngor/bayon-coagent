@@ -885,10 +885,17 @@ import { Separator } from "@/components/ui/separator";
 <Separator orientation="horizontal" />;
 ```
 
-#### Tabs
+### AnimatedTabs (shadcn/ui Enhanced)
+
+Enhanced tab component with animated indicator and fully rounded pill styling. This is the recommended tab component per tech stack guidelines.
 
 ```tsx
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  AnimatedTabs as Tabs,
+  AnimatedTabsContent as TabsContent,
+  AnimatedTabsList as TabsList,
+  AnimatedTabsTrigger as TabsTrigger,
+} from "@/components/ui/animated-tabs";
 
 <Tabs defaultValue="tab1">
   <TabsList>
@@ -897,8 +904,50 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
   </TabsList>
   <TabsContent value="tab1">Content 1</TabsContent>
   <TabsContent value="tab2">Content 2</TabsContent>
-</Tabs>;
+</Tabs>
 ```
+
+**Features:**
+- **Animated Indicator**: Smooth sliding indicator that follows the active tab with precise positioning
+- **Fully Rounded Design**: Uses `rounded-full` for modern pill-style appearance
+- **Automatic Positioning**: Indicator automatically positions and sizes to match the active tab dimensions exactly
+- **Smooth Transitions**: 300ms ease-out transitions for natural movement
+- **Responsive**: Works across all device sizes with proper touch targets
+- **Accessibility**: Full keyboard support and screen reader compatibility
+- **Dynamic Styling**: Uses inline styles for optimal performance with transform and width properties
+
+**Design Details:**
+- **Container**: Fully rounded (`rounded-full`) with muted background, subtle border, and 1.5rem padding
+- **Indicator**: Animated background element with matching `rounded-full` styling, shadow, and precise positioning that matches the active tab dimensions exactly
+- **Triggers**: Individual tab buttons with optimized padding (1rem horizontal, 0.625rem vertical) and hover states for balanced touch targets and visual density
+- **Transitions**: Smooth 300ms animations for indicator movement and size changes
+- **Performance**: Uses inline styles for dynamic positioning with transform and width properties
+
+**Usage Patterns:**
+```tsx
+// Page-level tab navigation (Calculator, Reimagine)
+<Tabs defaultValue="mortgage" className="w-full">
+  <TabsList className="grid w-full grid-cols-3">
+    <TabsTrigger value="mortgage">Mortgage</TabsTrigger>
+    <TabsTrigger value="affordability">Affordability</TabsTrigger>
+    <TabsTrigger value="refinance">Refinance</TabsTrigger>
+  </TabsList>
+  <TabsContent value="mortgage">{/* Content */}</TabsContent>
+</Tabs>
+
+// Section toggles within features
+<Tabs defaultValue="basic" className="w-full max-w-md">
+  <TabsList>
+    <TabsTrigger value="basic">Basic</TabsTrigger>
+    <TabsTrigger value="advanced">Advanced</TabsTrigger>
+  </TabsList>
+  <TabsContent value="basic">{/* Basic form */}</TabsContent>
+  <TabsContent value="advanced">{/* Advanced form */}</TabsContent>
+</Tabs>
+```
+
+**Tech Stack Requirement:**
+Always use `AnimatedTabs` components instead of standard `Tabs` components for consistent animated transitions and styling across the application.
 
 #### Accordion
 

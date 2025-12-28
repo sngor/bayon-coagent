@@ -14,13 +14,13 @@ const nextConfig: NextConfig = {
   // Set the output file tracing root to silence workspace warning
   outputFileTracingRoot: __dirname,
 
-  // Temporarily ignore TypeScript errors for production deployment
-  // TODO: Fix remaining TypeScript errors and re-enable strict checking
+  // Enable TypeScript and ESLint checking for better code quality
+  // Note: Fix TypeScript errors before deploying to production
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
 
   // Standard page extensions (test files excluded via webpack rules)

@@ -1092,10 +1092,10 @@ export async function generateSocialProofAction(
 
     // Fetch testimonials from DynamoDB
     const repository = getRepository();
-    const testimonials = [];
+    const testimonials: any[] = [];
 
     for (const testimonialId of testimonialIds) {
-      const testimonialData = await repository.get(
+      const testimonialData = await repository.get<any>(
         `USER#${user.id}`,
         `TESTIMONIAL#${testimonialId}`
       );
@@ -1760,7 +1760,7 @@ export async function generateMarketUpdateAction(
     );
     return {
       message: 'success',
-      data: result.marketUpdate,
+      data: result,
       errors: {},
     };
   } catch (error) {
@@ -1875,7 +1875,8 @@ export async function generateVideoScriptAction(
   }
 }
 
-const keywordRankingSchema = z.object({
+// Schema for single keyword input (UI form)
+const keywordRankingFormSchema = z.object({
   keyword: z.string().min(3, 'Please provide a keyword to search.'),
   location: z
     .string()
@@ -1886,7 +1887,7 @@ export async function getKeywordRankingsAction(
   prevState: any,
   formData: FormData
 ) {
-  const validatedFields = keywordRankingSchema.safeParse({
+  const validatedFields = keywordRankingFormSchema.safeParse({
     keyword: formData.get('keyword'),
     location: formData.get('location'),
   });
@@ -1903,18 +1904,26 @@ export async function getKeywordRankingsAction(
   }
 
   try {
-    const result = await getKeywordRankings(
-      validatedFields.data as GetKeywordRankingsInput
-    );
-    // Add the original keyword to the result data for display purposes
-    const dataWithKeyword = result.rankings.map((r: any) => ({
-      ...r,
-      keyword: validatedFields.data.keyword,
+    // Transform single keyword form input to API input format
+    const apiInput: GetKeywordRankingsInput = {
+      keywords: [validatedFields.data.keyword],
+      location: validatedFields.data.location,
+    };
+
+    const result = await getKeywordRankings(apiInput);
+    
+    // Type-safe data transformation
+    const dataWithOriginalKeyword = result.rankings.map((ranking): KeywordRanking & { originalKeyword: string } => ({
+      ...ranking,
+      originalKeyword: validatedFields.data.keyword,
     }));
 
     return {
       message: 'success',
-      data: dataWithKeyword,
+      data: {
+        ...result,
+        rankings: dataWithOriginalKeyword,
+      },
       errors: {},
     };
   } catch (error) {
@@ -2248,7 +2257,12 @@ export async function generateNewListingDescriptionAction(
     }
 
     // const result = await generateNewListingDescription(validated.data);
-    const result = { description: 'New listing description generation temporarily disabled', features: [], callToAction: '' };
+    const result = { 
+      description: 'New listing description generation temporarily disabled', 
+      features: [], 
+      callToAction: '',
+      wordCount: 0
+    };
     return {
       message: 'success',
       data: result,
@@ -2287,7 +2301,12 @@ export async function optimizeListingDescriptionAction(
     }
 
     // const result = await optimizeListingDescription(validated.data);
-    const result = { description: 'Listing description optimization temporarily disabled', features: [], callToAction: '' };
+    const result = { 
+      description: 'Listing description optimization temporarily disabled', 
+      features: [], 
+      callToAction: '',
+      wordCount: 0
+    };
     return {
       message: 'success',
       data: result,
@@ -2553,7 +2572,7 @@ export async function checkAdminStatusAction(userId: string): Promise<{
           role,
           groups,
           cognitoGroupsAuth: true,
-          ...profileData,
+          ...(profileData || {}),
         },
       };
     } catch (cognitoError) {
@@ -2567,7 +2586,7 @@ export async function checkAdminStatusAction(userId: string): Promise<{
       const result = await repository.get(profileKeys.PK, profileKeys.SK);
       const profileData = result;
 
-      const role = profileData?.role || 'user';
+      const role = (profileData as any)?.role || 'user';
       const isAdmin = role === 'admin' || role === 'super_admin';
 
       return {
@@ -2788,7 +2807,7 @@ export async function createSuperAdminAction(
     let existingProfile: any = {};
     try {
       const result = await repository.get(profileKeys.PK, profileKeys.SK);
-      existingProfile = (result as any)?.Data || {};
+      existingProfile = result || {};
     } catch (error) {
       // Profile doesn't exist, will create new one
     }
@@ -2808,7 +2827,7 @@ export async function createSuperAdminAction(
     const agentKeys = getAgentProfileKeys(userId, 'main');
     try {
       const agentResult = await repository.get(agentKeys.PK, agentKeys.SK);
-      const existingAgentProfile = (agentResult as any)?.Data || {};
+      const existingAgentProfile = agentResult || {};
 
       const updatedAgentProfile = {
         ...existingAgentProfile,
@@ -3111,10 +3130,10 @@ export async function updateFeedbackStatusAction(
       };
     }
 
-    const sortKey = `${feedbackId}#${feedbackItem.userId}`;
+    const sortKey = `${feedbackId}#${(feedbackItem as any).userId}`;
 
     // Update the feedback status
-    await repository.update('FEEDBACK', sortKey, 'Feedback', {
+    await repository.update('FEEDBACK', sortKey, {
       status: newStatus,
       updatedAt: new Date().toISOString(),
     });
@@ -3631,7 +3650,7 @@ export async function saveProfileAction(
       SK: keys.SK,
       EntityType: 'RealEstateAgentProfile' as const,
       Data: profile,
-      CreatedAt: existingProfile?.CreatedAt || Date.now(),
+      CreatedAt: (existingProfile as any)?.CreatedAt || Date.now(),
       UpdatedAt: Date.now(),
     };
 
@@ -5289,7 +5308,7 @@ export async function getRecentActivityAction(userId?: string): Promise<{
     const activities: any[] = [];
 
     // Add content items
-    contentResult.items.forEach((item) => {
+    contentResult.items.forEach((item: any) => {
       activities.push({
         id: item.SK,
         type: 'content',
@@ -5301,7 +5320,7 @@ export async function getRecentActivityAction(userId?: string): Promise<{
     });
 
     // Add research reports
-    reportsResult.items.forEach((item) => {
+    reportsResult.items.forEach((item: any) => {
       activities.push({
         id: item.SK,
         type: 'report',
@@ -5312,7 +5331,7 @@ export async function getRecentActivityAction(userId?: string): Promise<{
     });
 
     // Add marketing plans
-    plansResult.items.forEach((item) => {
+    plansResult.items.forEach((item: any) => {
       activities.push({
         id: item.SK,
         type: 'plan',
@@ -5323,7 +5342,7 @@ export async function getRecentActivityAction(userId?: string): Promise<{
     });
 
     // Add image edits
-    editsResult.items.forEach((item) => {
+    editsResult.items.forEach((item: any) => {
       activities.push({
         id: item.SK,
         type: 'edit',

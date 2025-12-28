@@ -95,6 +95,17 @@ DYNAMODB_TABLE_NAME=BayonCoAgent-local
 S3_BUCKET_NAME=bayon-coagent-local
 ```
 
+## Configuration Validation
+
+The application automatically validates AWS configuration on startup to prevent runtime errors. See [AWS Configuration Validation](./aws-configuration-validation.md) for detailed information about:
+
+- Automatic validation of required environment variables
+- Bedrock model ID validation against approved inference profiles
+- Development vs production behavior
+- Troubleshooting configuration issues
+
+In development, configuration warnings are displayed in the console but don't block the application. Missing configurations use fallback values where possible.
+
 ## How It Works
 
 The `src/aws/config.ts` module automatically detects the environment:

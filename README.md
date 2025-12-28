@@ -39,6 +39,7 @@ Visit `http://localhost:3000` to get started.
 
 - [📋 Commands](./docs/quick-reference/commands.md) - All npm scripts
 - [🎨 Components](./docs/quick-reference/components.md) - UI component library
+- [🔑 API Keys](./docs/quick-reference/api-key-service.md) - API key management service
 - [🔄 Loading States](./docs/loading-states.md) - Loading state system and patterns
 - [⚙️ Configuration](./docs/quick-reference/configuration.md) - Environment setup
 - [🐛 Troubleshooting](./docs/troubleshooting/common-issues.md) - Common problems
@@ -322,18 +323,9 @@ npm run deploy:test        # Test deployment
 ./scripts/test-api-endpoints.sh  # Test all API endpoints
 ```
 
-#### Migration & Setup
+#### Setup & Administration
 
 ```bash
-# Data Migration
-npm run migrate:export     # Export from Firestore
-npm run migrate:transform  # Transform data
-npm run migrate:import     # Import to DynamoDB
-npm run migrate:storage    # Migrate storage
-npm run migrate:validate   # Validate migration
-npm run migrate:rollback   # Rollback migration
-npm run migrate:all        # Run complete migration
-
 # Service Setup
 npm run admin:create       # Create super admin user
 npm run setup:secrets      # Setup AWS Secrets Manager
@@ -381,19 +373,22 @@ DYNAMODB_TABLE_NAME=BayonCoAgent-local
 S3_BUCKET_NAME=bayon-coagent-local
 
 # Bedrock Configuration (uses real AWS)
-BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
+BEDROCK_MODEL_ID=us.anthropic.claude-3-5-sonnet-20241022-v2:0
 BEDROCK_REGION=us-east-1
 
 # External APIs
 TAVILY_API_KEY=your-tavily-api-key
 NEWS_API_KEY=your-news-api-key
 BRIDGE_API_KEY=your-bridge-api-key
+GOOGLE_AI_API_KEY=your-google-ai-api-key
 
 # Google OAuth
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 GOOGLE_REDIRECT_URI=http://localhost:3000/api/oauth/google/callback
 ```
+
+**Configuration Validation**: The application automatically validates AWS configuration on startup and displays helpful warnings in development mode for missing or invalid settings. See [AWS Configuration Validation](./docs/aws-configuration-validation.md) for details.
 
 ## 🚀 Deployment
 

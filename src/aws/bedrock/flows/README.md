@@ -21,7 +21,7 @@ The following flows have been successfully migrated to Bedrock:
 11. **analyze-multiple-reviews** - Analyzes sentiment across multiple reviews
 12. **analyze-review-sentiment** - Analyzes sentiment of individual reviews
 13. **find-competitors** - Identifies and enriches competitor data
-14. **get-keyword-rankings** - Estimates local keyword rankings
+14. **get-keyword-rankings** - Analyzes local keyword rankings for competitive positioning
 15. **get-real-estate-news** - Fetches news from NewsAPI (no AI)
 16. **get-zillow-reviews** - Fetches reviews from Bridge API (no AI)
 17. **exchange-google-token** - Handles OAuth token exchange (no AI)

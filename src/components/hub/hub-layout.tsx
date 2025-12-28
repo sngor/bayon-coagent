@@ -73,7 +73,7 @@ export function HubLayout({
     }, [setHeaderInfo]);
 
     return (
-        <div ref={layoutRef} className="space-y-6">
+        <div ref={layoutRef} className="space-y-4">
             {/* Hub Header using consistent PageHeader component */}
             <div ref={headerRef}>
                 <PageHeader
@@ -87,7 +87,7 @@ export function HubLayout({
 
             {/* Hub Tabs */}
             {tabs && tabs.length > 0 && (
-                <div className="sticky top-24 z-50 -mt-4">
+                <div className="sticky top-24 z-50 -mt-2">
                     <div className={isHeaderCovered ? 'animate-in fade-in slide-in-from-top-2 duration-200' : ''}>
                         <StaticHubTabs tabs={tabs} activeTab="" variant={tabsVariant} isSticky={isHeaderCovered} />
                     </div>

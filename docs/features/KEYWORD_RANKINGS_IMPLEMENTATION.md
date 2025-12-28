@@ -9,6 +9,7 @@ The Local Keyword Rankings feature in the Brand → Competitors page is now full
 1. **Schema Mismatch**: Fixed inconsistency between the output schema (`agency`) and TypeScript type (`agencyName`)
 2. **Type Alignment**: Updated all components to use consistent field names across the stack
 3. **Optional URL Field**: Made the `url` field optional since it may not always be available
+4. **API Parameter Mapping**: Updated server action to properly map form data to API input format
 
 ### Changes Made
 
@@ -17,6 +18,7 @@ The Local Keyword Rankings feature in the Brand → Competitors page is now full
 - `src/ai/schemas/keyword-ranking-schemas.ts` - Changed `agency` to `agencyName` in output schema
 - `src/lib/types.ts` - Added optional `url` field to KeywordRanking type
 - `src/aws/bedrock/flows/get-keyword-rankings.ts` - Updated prompt to use `agencyName` consistently
+- `src/app/actions.ts` - Updated `getKeywordRankingsAction` to properly transform single keyword form input to API array format
 
 ## How It Works
 
@@ -30,11 +32,14 @@ The Local Keyword Rankings feature in the Brand → Competitors page is now full
 
 ### Technical Flow
 
-1. **Input**: Keyword + Location (from user profile)
-2. **Web Search**: Uses Tavily API to search Google for the keyword + location
-3. **AI Analysis**: Claude analyzes search results to identify top 5 real estate agents
-4. **Fallback**: If search fails, AI uses general market knowledge
-5. **Display**: Shows ranked list with agent name, agency, and rank position
+1. **Form Input**: User enters single keyword + location (from user profile)
+2. **Server Action**: `getKeywordRankingsAction` validates input and transforms to API format
+3. **API Transformation**: Single keyword converted to array format: `{ keywords: [keyword], location }`
+4. **Web Search**: Uses Tavily API to search Google for the keyword + location
+5. **AI Analysis**: Claude analyzes search results to identify top 5 real estate agents
+6. **Fallback**: If search fails, AI uses general market knowledge
+7. **Response Processing**: Rankings mapped with original keyword for display context
+8. **Display**: Shows ranked list with agent name, agency, and rank position
 
 ### Requirements
 

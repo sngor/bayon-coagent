@@ -18,7 +18,9 @@ The admin platform uses the existing single-table design pattern with the follow
 - **ABTestConfig**: A/B test configuration
 - **ABTestAssignment**: User A/B test assignments
 - **MaintenanceWindow**: Scheduled maintenance windows
-- **APIKey**: API key management
+- **APIKey**: API key management for third-party integrations
+- **RateLimitAlert**: API rate limit violation tracking
+- **ThirdPartyIntegration**: External service integration status
 - **UserFeedback**: User feedback submissions
 
 ## Table Structure
@@ -313,6 +315,84 @@ The admin platform uses the existing single-table design pattern with the follow
 2. Query logs by admin: Query GSI1 by admin ID
 3. Query logs by action type: Query GSI2 by action type
 
+### API Keys
+
+**Purpose**: Manage API keys for third-party integrations and external access
+
+**Primary Key Pattern**:
+
+- PK: `APIKEY#<keyId>`
+- SK: `METADATA`
+
+**GSI1 Pattern** (Query by Status):
+
+- GSI1PK: `APIKEYS#<status>` (e.g., `APIKEYS#ACTIVE`, `APIKEYS#REVOKED`)
+- GSI1SK: `<createdAt>`
+
+**Attributes**:
+
+```typescript
+{
+  keyId: string;
+  name: string;
+  keyHash: string; // SHA-256 hash of the actual key
+  createdAt: number;
+  createdBy: string;
+  lastUsed?: number;
+  status: "active" | "revoked";
+  revokedAt?: number;
+  revokedBy?: string;
+  permissions: string[];
+}
+```
+
+**Security Features**:
+
+- Keys are stored as SHA-256 hashes, never in plain text
+- Plain key is only shown once during generation
+- Automatic usage tracking and rate limiting (1000 req/hour default)
+- Comprehensive audit logging for all key operations
+
+**Access Patterns**:
+
+1. Get API key by ID: Get by PK + SK
+2. Query keys by status: Query GSI1 by status
+3. Validate key: Hash provided key and search by hash
+4. Track usage: Update lastUsed timestamp on each use
+
+### Rate Limit Alerts
+
+**Purpose**: Track API key rate limit violations
+
+**Primary Key Pattern**:
+
+- PK: `ALERT#<alertId>`
+- SK: `METADATA`
+
+**GSI1 Pattern** (Query by Type):
+
+- GSI1PK: `ALERTS#RATE_LIMIT`
+- GSI1SK: `<timestamp>`
+
+**Attributes**:
+
+```typescript
+{
+  alertId: string;
+  keyId: string;
+  keyName: string;
+  timestamp: number;
+  limitExceeded: number;
+  currentUsage: number;
+  limit: number;
+}
+```
+
+**Access Patterns**:
+
+1. Query rate limit alerts: Query GSI1 by alert type
+2. Query alerts by date range: Use GSI1SK filter
+
 ## Global Secondary Indexes (GSI)
 
 The admin platform uses the existing GSI structure:
@@ -391,5 +471,5 @@ To test the schema locally:
 1. **Access Control**: All admin operations require Admin or SuperAdmin role
 2. **Audit Logging**: All admin actions are logged with IP and user agent
 3. **Data Retention**: Sensitive data is automatically deleted after 90 days
-4. **API Keys**: Stored as hashed values, never in plain text
+4. **API Keys**: Stored as SHA-256 hashes, never in plain text, with comprehensive rate limiting and usage tracking
 5. **PII Protection**: User data is encrypted at rest and in transit

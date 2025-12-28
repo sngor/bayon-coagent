@@ -288,27 +288,31 @@ export class MaintenanceModeService {
             const result = await this.repository.query<MaintenanceWindow>(
                 `MAINTENANCE#${options.status}`,
                 '',
-                limit,
-                options?.lastKey,
-                'GSI1'
+                {
+                    limit,
+                    exclusiveStartKey: options?.lastKey ? JSON.parse(options.lastKey) : undefined,
+                    indexName: 'GSI1'
+                }
             );
 
             return {
                 windows: result.items,
-                lastKey: result.lastKey,
+                lastKey: result.lastEvaluatedKey ? JSON.stringify(result.lastEvaluatedKey) : undefined,
             };
         } else {
             // Query all windows
             const result = await this.repository.query<MaintenanceWindow>(
                 'CONFIG#MAINTENANCE',
                 'WINDOW#',
-                limit,
-                options?.lastKey
+                {
+                    limit,
+                    exclusiveStartKey: options?.lastKey ? JSON.parse(options.lastKey) : undefined
+                }
             );
 
             return {
                 windows: result.items,
-                lastKey: result.lastKey,
+                lastKey: result.lastEvaluatedKey ? JSON.stringify(result.lastEvaluatedKey) : undefined,
             };
         }
     }
@@ -347,15 +351,6 @@ export class MaintenanceModeService {
         }
 
         return null;
-    }
-
-    /**
-     * Checks if maintenance mode is currently active
-     * Validates: Requirements 15.2
-     */
-    async isMaintenanceModeActive(): Promise<boolean> {
-        const currentWindow = await this.getCurrentMaintenanceWindow();
-        return currentWindow !== null;
     }
 
     /**
