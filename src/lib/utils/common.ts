@@ -14,3 +14,22 @@ export const STICKY_POSITIONS = {
   // For elements that should stick at the very top
   TOP: 'top-0',
 } as const
+
+/**
+ * Format a number as currency (USD)
+ */
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+/**
+ * Format a number with commas for thousands
+ */
+export function formatNumber(num: number): string {
+  return new Intl.NumberFormat('en-US').format(num);
+}

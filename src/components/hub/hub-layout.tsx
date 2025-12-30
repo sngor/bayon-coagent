@@ -49,7 +49,6 @@ export function HubLayout({
                 // Update sticky header state
                 setHeaderInfo({
                     title,
-                    icon,
                     isVisible: isCovered
                 });
             },
@@ -63,12 +62,12 @@ export function HubLayout({
         observer.observe(headerRef.current);
 
         return () => observer.disconnect();
-    }, [title, icon, setHeaderInfo]);
+    }, [title, setHeaderInfo]);
 
     // Clear sticky header when component unmounts
     useEffect(() => {
         return () => {
-            setHeaderInfo({ title: '', icon: undefined, isVisible: false });
+            setHeaderInfo({ title: '', isVisible: false });
         };
     }, [setHeaderInfo]);
 

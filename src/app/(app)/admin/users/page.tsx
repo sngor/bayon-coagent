@@ -40,8 +40,7 @@ import { BulkOperationsPanel } from '@/components/admin/bulk-operations-panel';
 
 export default function AdminUsersPage() {
     const headerRef = useAdminStickyHeader({
-        title: 'Team Management',
-        icon: Users
+        title: 'Team Management'
     });
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState<any[]>([]);

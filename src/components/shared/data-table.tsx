@@ -136,7 +136,7 @@ export function DataTable<T extends Record<string, any>>({
                                 <div className="flex gap-2 pt-2 border-t">
                                     {actions.map((action, actionIdx) => (
                                         <Button
-                                            key={actionIdx}
+                                            key={`mobile-action-${action.label || actionIdx}`}
                                             variant={action.variant || 'outline'}
                                             size="sm"
                                             onClick={() => action.onClick(item)}
@@ -235,7 +235,7 @@ export function DataTable<T extends Record<string, any>>({
                                                 <DropdownMenuContent align="end">
                                                     {actions.map((action, actionIdx) => (
                                                         <DropdownMenuItem
-                                                            key={actionIdx}
+                                                            key={`desktop-action-${action.label || actionIdx}`}
                                                             onClick={() => action.onClick(item)}
                                                             className={action.variant === 'destructive' ? 'text-destructive' : ''}
                                                         >

@@ -64,8 +64,7 @@ import { useToast } from "@/hooks/use-toast"
 
 export default function UsersClient() {
     const headerRef = useAdminStickyHeader({
-        title: 'User Management',
-        icon: Users
+        title: 'User Management'
     });
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState<any[]>([]);

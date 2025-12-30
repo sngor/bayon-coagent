@@ -2706,6 +2706,25 @@ body {
   }
 
   /* Bold CTA text styles */
+
+  /* Sidebar collapsed menu centering fix */
+  [data-sidebar="menu-button"][data-state="collapsed"],
+  .group\/sidebar-wrapper[data-state="collapsed"] [data-sidebar="menu-button"] {
+    justify-content: center !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  
+  /* Hide all elements except the icon in collapsed state */
+  .group\/sidebar-wrapper[data-state="collapsed"] [data-sidebar="menu-button"] > *:not(svg) {
+    display: none !important;
+  }
+  
+  /* Ensure icons are centered in collapsed state */
+  .group\/sidebar-wrapper[data-state="collapsed"] [data-sidebar="menu-button"] svg {
+    margin: 0 auto !important;
+    display: block !important;
+  }
   .text-bold-cta {
     font-size: 1.125rem;
     /* 18px */
@@ -3252,4 +3271,12 @@ body {
   .delay-1000 {
     animation-delay: 1000ms;
   }
+}
+/* Hub Tabs Active Border Override */
+.hub-tab-active {
+  border: 1px solid #1e3a8a !important; /* blue-900 */
+}
+
+.dark .hub-tab-active {
+  border-color: #1e3a8a !important; /* blue-900 in dark mode too */
 }

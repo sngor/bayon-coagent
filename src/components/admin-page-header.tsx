@@ -86,7 +86,6 @@ const pageHeaders = {
 export function AdminPageHeader() {
     const pathname = usePathname();
     const header = pageHeaders[pathname as keyof typeof pageHeaders] || pageHeaders['/super-admin'];
-    const IconComponent = header.icon;
     const headerRef = useRef<HTMLDivElement>(null);
     const { setHeaderInfo } = useStickyHeader();
 
@@ -103,7 +102,6 @@ export function AdminPageHeader() {
                 // Update sticky header state
                 setHeaderInfo({
                     title: header.title,
-                    icon: IconComponent,
                     isVisible: isCovered
                 });
             },
@@ -117,27 +115,22 @@ export function AdminPageHeader() {
         observer.observe(headerRef.current);
 
         return () => observer.disconnect();
-    }, [header.title, IconComponent, setHeaderInfo]);
+    }, [header.title, setHeaderInfo]);
 
     // Clear sticky header when component unmounts
     useEffect(() => {
         return () => {
-            setHeaderInfo({ title: '', icon: undefined, isVisible: false });
+            setHeaderInfo({ title: '', isVisible: false });
         };
     }, [setHeaderInfo]);
 
     return (
         <div ref={headerRef} className="flex items-start justify-between border-b pb-6">
-            <div className="flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-xl">
-                    <IconComponent className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                    <h1 className="font-headline text-3xl font-bold tracking-tight">{header.title}</h1>
-                    <p className="text-muted-foreground text-lg mt-1">
-                        {header.description}
-                    </p>
-                </div>
+            <div>
+                <h1 className="font-headline text-3xl font-bold tracking-tight">{header.title}</h1>
+                <p className="text-muted-foreground text-lg mt-1">
+                    {header.description}
+                </p>
             </div>
 
         </div>

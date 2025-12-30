@@ -43,7 +43,7 @@ export function IntelligentEmptyState({
                         const ActionIcon = action.icon;
                         return (
                             <Button
-                                key={index}
+                                key={`${action.label}-${index}`}
                                 variant={action.variant || 'default'}
                                 onClick={action.onClick}
                             >

@@ -13,12 +13,6 @@ export interface CognitoConfig {
   endpoint?: string;
 }
 
-export interface ClientCognitoConfig {
-  userPoolId: string;
-  clientId: string;
-  endpoint?: string;
-}
-
 export interface DynamoDBConfig {
   tableName: string;
   endpoint?: string;
@@ -91,7 +85,7 @@ export interface AWSConfig {
   environment: Environment;
   appUrl: string;
   cognito: CognitoConfig;
-  clientCognito: ClientCognitoConfig;
+  clientCognito: CognitoConfig;
   dynamodb: DynamoDBConfig;
   s3: S3Config;
   bedrock: BedrockConfig;
@@ -128,6 +122,49 @@ function getEnvironment(): Environment {
 }
 
 /**
+ * Helper function to get environment variable with fallback and optional warning
+ */
+function getEnvVar(
+  primary: string,
+  secondary?: string,
+  fallback?: string,
+  warnOnFallback = false
+): string {
+  const value = process.env[primary] || (secondary ? process.env[secondary] : undefined) || fallback;
+  
+  if (!value) {
+    throw new Error(`Environment variable ${primary}${secondary ? ` or ${secondary}` : ''} is required`);
+  }
+  
+  if (warnOnFallback && value === fallback && process.env.NODE_ENV === 'development') {
+    console.warn(`${primary}${secondary ? ` or ${secondary}` : ''} not set, using fallback for development`);
+  }
+  
+  return value;
+}
+
+/**
+ * Creates Cognito configuration with fallback values
+ */
+function createCognitoConfig(isLocal: boolean): CognitoConfig {
+  return {
+    userPoolId: getEnvVar(
+      'COGNITO_USER_POOL_ID',
+      'NEXT_PUBLIC_USER_POOL_ID',
+      'us-west-2_wqsUAbADO',
+      true
+    ),
+    clientId: getEnvVar(
+      'COGNITO_CLIENT_ID',
+      'NEXT_PUBLIC_USER_POOL_CLIENT_ID',
+      '33grpfrfup7q9jkmumv77ffdce',
+      true
+    ),
+    endpoint: isLocal ? 'http://localhost:4566' : undefined,
+  };
+}
+
+/**
  * Gets the AWS configuration based on the current environment
  */
 export function getAWSConfig(): AWSConfig {
@@ -136,59 +173,35 @@ export function getAWSConfig(): AWSConfig {
   // Use environment variables for region with fallback
   const region = process.env.AWS_REGION || process.env.NEXT_PUBLIC_AWS_REGION || 'us-west-2';
 
+  // Create shared Cognito configuration
+  const cognitoConfig = createCognitoConfig(isLocal);
+
   return {
     region,
     environment,
-    appUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+    appUrl: getEnvVar('NEXT_PUBLIC_APP_URL', undefined, 'http://localhost:3000'),
 
-    cognito: {
-      userPoolId: process.env.COGNITO_USER_POOL_ID || process.env.NEXT_PUBLIC_USER_POOL_ID || (() => {
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('COGNITO_USER_POOL_ID not set, using fallback for development');
-        }
-        return 'us-west-2_wqsUAbADO';
-      })(),
-      clientId: process.env.COGNITO_CLIENT_ID || process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || (() => {
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('COGNITO_CLIENT_ID not set, using fallback for development');
-        }
-        return '33grpfrfup7q9jkmumv77ffdce';
-      })(),
-      endpoint: isLocal ? 'http://localhost:4566' : undefined,
-    },
-
-    clientCognito: {
-      userPoolId: process.env.COGNITO_USER_POOL_ID || process.env.NEXT_PUBLIC_USER_POOL_ID || (() => {
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('COGNITO_USER_POOL_ID not set, using fallback for development');
-        }
-        return 'us-west-2_wqsUAbADO';
-      })(),
-      clientId: process.env.COGNITO_CLIENT_ID || process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || (() => {
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('COGNITO_CLIENT_ID not set, using fallback for development');
-        }
-        return '33grpfrfup7q9jkmumv77ffdce';
-      })(),
-      endpoint: isLocal ? 'http://localhost:4566' : undefined,
-    },
+    cognito: cognitoConfig,
+    clientCognito: cognitoConfig,
 
     dynamodb: {
-      tableName: process.env.DYNAMODB_TABLE_NAME || 'BayonCoAgent',
+      tableName: getEnvVar('DYNAMODB_TABLE_NAME', undefined, 'BayonCoAgent'),
       endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
 
     s3: {
-      bucketName: process.env.S3_BUCKET_NAME || 'bayon-coagent-storage',
-      region: process.env.S3_REGION || region, // Use same region as main AWS region
+      bucketName: getEnvVar('S3_BUCKET_NAME', undefined, 'bayon-coagent-storage'),
+      region: getEnvVar('S3_REGION', undefined, region),
       endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
 
     bedrock: {
-      modelId:
-        process.env.BEDROCK_MODEL_ID ||
-        'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
-      region: process.env.BEDROCK_REGION || region,
+      modelId: getEnvVar(
+        'BEDROCK_MODEL_ID',
+        undefined,
+        'us.anthropic.claude-3-5-sonnet-20241022-v2:0'
+      ),
+      region: getEnvVar('BEDROCK_REGION', undefined, region),
       endpoint: undefined, // Bedrock typically doesn't have local emulation
     },
 
@@ -197,14 +210,14 @@ export function getAWSConfig(): AWSConfig {
     },
 
     ses: {
-      region: process.env.SES_REGION || region,
-      fromEmail: process.env.SES_FROM_EMAIL || 'noreply@bayoncoagent.com',
+      region: getEnvVar('SES_REGION', undefined, region),
+      fromEmail: getEnvVar('SES_FROM_EMAIL', undefined, 'noreply@bayoncoagent.com'),
       replyToEmail: process.env.SES_REPLY_TO_EMAIL,
       endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
 
     sns: {
-      region: process.env.SNS_REGION || region,
+      region: getEnvVar('SNS_REGION', undefined, region),
       platformApplicationArn: process.env.SNS_PLATFORM_APPLICATION_ARN,
       endpoint: isLocal ? 'http://localhost:4566' : undefined,
     },
@@ -297,7 +310,9 @@ export function validateConfig(): { valid: boolean; errors: string[] } {
     );
   }
 
-  if (!config.googleAI.apiKey) {
+  // Only validate Google AI API key if it's actually needed for the current environment
+  // In development, this is optional and shouldn't block the app
+  if (!config.googleAI.apiKey && process.env.NODE_ENV === 'production') {
     errors.push('GOOGLE_AI_API_KEY is not set (required for Gemini image generation)');
   }
 
@@ -315,8 +330,9 @@ let cachedConfig: AWSConfig | null = null;
  * This ensures configuration is only computed once per application lifecycle
  */
 export function getConfig(): AWSConfig {
-  // Temporarily disable caching to ensure fresh config
-  cachedConfig = getAWSConfig();
+  if (!cachedConfig) {
+    cachedConfig = getAWSConfig();
+  }
   return cachedConfig;
 }
 

@@ -20,7 +20,7 @@ export function HubBreadcrumbs({ items, separator }: HubBreadcrumbsProps) {
                     const Icon = item.icon;
 
                     return (
-                        <li key={index} className="flex items-center gap-2">
+                        <li key={item.href ? `${item.href}-${index}` : `breadcrumb-${index}`} className="flex items-center gap-2">
                             {index > 0 && <span className="flex-shrink-0">{Separator}</span>}
                             {item.href && !isLast ? (
                                 <Link

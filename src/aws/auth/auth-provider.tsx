@@ -50,10 +50,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     useEffect(() => {
         try {
             const { valid, errors } = validateConfig();
-            if (!valid && process.env.NODE_ENV === 'development') {
-                console.error('AWS Configuration Errors:', errors);
-                // In development, show warnings but don't block the app
-                errors.forEach(error => console.warn(`⚠️ ${error}`));
+            if (!valid) {
+                if (process.env.NODE_ENV === 'development') {
+                    // In development, only show warnings for critical errors
+                    const criticalErrors = errors.filter(error => 
+                        !error.includes('GOOGLE_AI_API_KEY') // Google AI is optional in dev
+                    );
+                    if (criticalErrors.length > 0) {
+                        console.warn('AWS Configuration Warnings:', criticalErrors);
+                        criticalErrors.forEach(error => console.warn(`⚠️ ${error}`));
+                    }
+                } else {
+                    // In production, log all errors
+                    console.error('AWS Configuration Errors:', errors);
+                }
             }
         } catch (configError) {
             console.error('Failed to validate AWS configuration:', configError);

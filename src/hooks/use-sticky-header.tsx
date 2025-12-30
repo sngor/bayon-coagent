@@ -1,11 +1,9 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { LucideIcon } from 'lucide-react';
 
 interface StickyHeaderInfo {
     title: string;
-    icon?: LucideIcon;
     isVisible: boolean;
 }
 
@@ -19,7 +17,6 @@ const StickyHeaderContext = createContext<StickyHeaderContextType | undefined>(u
 export function StickyHeaderProvider({ children }: { children: ReactNode }) {
     const [headerInfo, setHeaderInfo] = useState<StickyHeaderInfo>({
         title: '',
-        icon: undefined,
         isVisible: false
     });
 

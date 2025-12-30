@@ -2,14 +2,12 @@
 
 import { useRef, useEffect } from 'react';
 import { useStickyHeader } from '@/hooks/use-sticky-header';
-import { LucideIcon } from 'lucide-react';
 
 interface UseAdminStickyHeaderProps {
     title: string;
-    icon: LucideIcon;
 }
 
-export function useAdminStickyHeader({ title, icon }: UseAdminStickyHeaderProps) {
+export function useAdminStickyHeader({ title }: UseAdminStickyHeaderProps) {
     const headerRef = useRef<HTMLDivElement>(null);
     const { setHeaderInfo } = useStickyHeader();
 
@@ -24,7 +22,6 @@ export function useAdminStickyHeader({ title, icon }: UseAdminStickyHeaderProps)
 
                 setHeaderInfo({
                     title,
-                    icon,
                     isVisible: isCovered
                 });
             },
@@ -36,12 +33,12 @@ export function useAdminStickyHeader({ title, icon }: UseAdminStickyHeaderProps)
 
         observer.observe(headerRef.current);
         return () => observer.disconnect();
-    }, [title, icon, setHeaderInfo]);
+    }, [title, setHeaderInfo]);
 
     // Clear sticky header when component unmounts
     useEffect(() => {
         return () => {
-            setHeaderInfo({ title: '', icon: undefined, isVisible: false });
+            setHeaderInfo({ title: '', isVisible: false });
         };
     }, [setHeaderInfo]);
 

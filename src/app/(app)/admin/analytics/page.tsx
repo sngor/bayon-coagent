@@ -43,8 +43,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'
 
 export default function AnalyticsDashboardPage() {
     const headerRef = useAdminStickyHeader({
-        title: 'Team Analytics',
-        icon: BarChart3
+        title: 'Team Analytics'
     });
     const [metrics, setMetrics] = useState<PlatformMetrics | null>(null);
     const [isLoading, setIsLoading] = useState(true);

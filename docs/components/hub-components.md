@@ -4,6 +4,8 @@
 
 The hub components provide a consistent navigation and layout system for the Bayon Coagent application. They implement the hub-based architecture where each major feature area (Brand, Studio, Market, etc.) has its own dedicated hub with tabbed navigation.
 
+**Note**: As of the latest update, icons have been removed from all page headers across the application for a cleaner, more focused design approach.
+
 ## Components
 
 ### HubTabs
@@ -64,18 +66,29 @@ const tabs = [
 #### Variants
 
 1. **Default**: Rounded pill-style tabs with background highlighting and subtle borders
-   - Active: Blue background with matching border (`bg-blue-50 border-blue-200`)
-   - Inactive: Transparent background with subtle hover effects
-2. **Pills**: Similar to default with subtle styling differences
+   - Active: Light blue background with dark blue text and border (`bg-blue-50 text-blue-900 border-blue-900`)
+   - Dark mode: Dark blue background with light blue text and border (`dark:bg-blue-950/50 dark:text-blue-100 dark:border-blue-100`)
+   - Inactive: Transparent background with subtle hover effects (`hover:bg-muted/50`)
+2. **Pills**: Identical styling to default variant with rounded pill-style tabs
+   - Active: Light blue background with dark blue text and border (`bg-blue-50 text-blue-900 border-blue-900`)
+   - Dark mode: Dark blue background with light blue text and border (`dark:bg-blue-950/50 dark:text-blue-100 dark:border-blue-100`)
+   - Inactive: Transparent background with hover effects (`hover:bg-muted/50`)
 3. **Underline**: Bottom-border style tabs with underline highlighting
-   - Active: Blue underline border (`border-blue-600`)
-   - Inactive: Transparent border with hover effects
+   - Active: Dark blue underline border and text (`border-blue-900 text-blue-900`)
+   - Dark mode: Light blue underline border and text (`dark:border-blue-100 dark:text-blue-100`)
+   - Inactive: Transparent border with hover effects (`hover:border-muted-foreground/50`)
+
+**Design System Integration**: Tab styling uses specific blue color values (`blue-50`, `blue-900`, `blue-950`, `blue-100`) for consistent visual appearance across light and dark themes, ensuring optimal contrast and readability.
 
 **Note**: The AnimatedTabs component (used in tech stack guidelines) features fully rounded pill styling with `rounded-full` borders for a modern, polished appearance.
 
 #### Recent Updates
 
-- **Enhanced Active State Styling**: Added border styling to active tabs in default variant for better visual distinction
+- **Icon Removal from Headers**: Removed icons from all page headers for a cleaner, more focused design approach
+- **Color Standardization**: Updated tab styling to use specific blue color values (`blue-50`, `blue-900`, `blue-950`, `blue-100`) instead of CSS custom properties for consistent visual appearance across all themes and better contrast ratios
+- **Enhanced Dark Mode Support**: Improved dark mode styling with dedicated color values (`dark:bg-blue-950/50`, `dark:text-blue-100`, `dark:border-blue-100`) for optimal readability
+- **Visual Consistency**: All tab variants now use the same blue color palette for unified brand appearance across the application
+- **Enhanced Variant Support**: Added proper `pills` variant with distinct styling (solid background vs. outlined default variant)
 - **ARIA Compliance Improvements**: 
   - Fixed `aria-selected` attribute to use boolean values instead of strings for better accessibility compliance
   - Maintained proper `tablist` and `tab` role hierarchy for screen reader compatibility
@@ -92,13 +105,15 @@ Provides consistent layout structure for all hub pages.
 interface HubLayoutProps {
   title: string;
   description?: string;
-  icon: LucideIcon;
+  icon: LucideIcon; // Note: Icon is still passed but not displayed in header
   tabs?: HubTab[];
   children: React.ReactNode;
   actions?: React.ReactNode;
   tabsVariant?: 'default' | 'pills' | 'underline';
 }
 ```
+
+**Important**: While the `icon` prop is still required for backward compatibility and potential sticky header functionality, icons are no longer displayed in the page headers.
 
 #### Usage
 
@@ -109,7 +124,7 @@ import { Palette } from 'lucide-react';
 <HubLayout
   title="Brand Hub"
   description="Build your professional brand and market presence"
-  icon={Palette}
+  icon={Palette} // Still required but not displayed
   tabs={brandTabs}
   tabsVariant="default"
   actions={<Button>New Campaign</Button>}
@@ -120,7 +135,7 @@ import { Palette } from 'lucide-react';
 
 ### HubHeader
 
-Displays hub title, description, icon, and optional actions.
+Displays hub title, description, and optional actions (icons removed).
 
 #### Props
 
@@ -128,7 +143,6 @@ Displays hub title, description, icon, and optional actions.
 interface HubHeaderProps {
   title: string;
   description?: string;
-  icon: LucideIcon;
   actions?: React.ReactNode;
 }
 ```
@@ -161,7 +175,7 @@ Level 1: Main Navigation (Sidebar) - 11 primary hubs
 ├─ Dashboard (Overview hub)
 ├─ Assistant (AI chat hub)  
 ├─ Brand (7 tabs: Profile, Audit, Competitors, Strategy, Calendar, Integrations, Testimonials)
-├─ Studio (5 tabs: Write, Describe, Reimagine, Open House, Post Cards)
+├─ Studio (4 tabs: Write, Describe, Reimagine, Post Cards)
 ├─ Research (Unified research capabilities)
 ├─ Market (5 tabs: Insights, News, Analytics, Opportunities, Alerts)
 ├─ Tools (4 tabs: Calculator, ROI, Valuation, Document Scanner)
@@ -189,11 +203,10 @@ Level 2: Hub Tabs (Horizontal) - 4-8 tabs per hub
 │  ├─ /calendar/
 │  ├─ /integrations/
 │  └─ /testimonials/
-├─ /studio/             # Content creation hub with 5 tabs
+├─ /studio/             # Content creation hub with 4 tabs
 │  ├─ /write/
 │  ├─ /describe/
 │  ├─ /reimagine/
-│  ├─ /open-house/
 │  └─ /post-cards/
 └─ ... (other hubs)
 ```

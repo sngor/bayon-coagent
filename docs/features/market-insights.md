@@ -2,49 +2,93 @@
 
 ## Overview
 
-The Market Insights feature provides comprehensive market trend analysis and life event predictions to help real estate agents identify potential clients and market opportunities. Located at `/research/insights`, it offers an interactive dashboard with filtering capabilities and real-time data visualization.
+The Market Insights feature provides AI-powered market intelligence and trend analysis to help real estate agents identify opportunities and potential clients. Located at `/market/insights`, it offers an interactive dashboard with advanced filtering, real-time data visualization, and actionable insights with alert creation capabilities. The system intelligently integrates with real MLS data when available, providing accurate market analysis based on actual listing information.
 
 ## Features
 
 ### Market Trends Analysis
 
-Track and analyze market trends across four key categories:
+Advanced AI-powered market trend analysis that leverages real MLS data when available, falling back to intelligent mock data for comprehensive insights across four key categories:
 
-- **Pricing**: Home price changes and market valuations
-- **Inventory**: Available homes and supply/demand dynamics
-- **Demand**: Buyer activity and market interest levels
-- **Demographics**: Population and buyer demographic shifts
+- **Pricing**: Home price changes, market valuations, and pricing trends based on actual listing data
+- **Inventory**: Available homes, supply/demand dynamics, and listing patterns from MLS feeds
+- **Demand**: Buyer activity, market interest levels, and purchasing behavior analysis
+- **Demographics**: Population shifts, buyer demographic changes, and market composition
+
+**Real MLS Data Integration**:
+- Automatically detects and uses connected MLS data sources for accurate analysis
+- Analyzes recent listings vs. historical data for price trend calculations
+- Calculates inventory ratios from active vs. sold listings
+- Identifies property type trends from actual market data
+- Provides confidence scores based on data quality and sample size
 
 Each trend includes:
-- Trend direction (up/down/stable) with visual indicators
-- Percentage change with confidence scores
+- Trend direction (up/down/stable) with visual indicators and icons
+- Percentage change with confidence scores and progress bars
+- Impact assessment (high/medium/low) with color-coded badges
 - Timeframe context and location specificity
-- Detailed descriptions and market implications
+- Detailed descriptions and actionable insights
+- Source attribution (MLS Data vs. Market Analysis) and last updated timestamps
+- Alert creation capabilities for monitoring changes
 
 ### Life Event Predictions
 
-Predict life events that typically trigger real estate transactions:
+AI-powered predictions of life events that typically trigger real estate transactions, enhanced with market data analysis when MLS connections are available:
 
-- **Marriages**: Newlyweds entering the housing market
-- **Job Changes**: Relocations and career transitions
-- **Retirements**: Downsizing and retirement community moves
-- **Divorces**: Property divisions and housing changes
-- **Births**: Family growth requiring larger homes
-- **Deaths**: Estate sales and inheritance situations
+- **Marriage**: Newlyweds entering the housing market
+- **Divorce**: Property divisions and housing changes
+- **Job Change**: Relocations and career transitions
+- **Retirement**: Downsizing and retirement community moves
+- **New Baby**: Family growth requiring larger homes
+- **Empty Nest**: Children leaving home, potential downsizing
+
+**Enhanced with Real Data**:
+- Average price predictions adjusted based on actual market data
+- Client potential estimates calibrated to local market conditions
+- Demographic analysis integrated with listing patterns
+- Seasonal trend adjustments based on historical MLS data
 
 Each prediction includes:
-- Predicted count for the specified timeframe
-- Confidence percentage based on data analysis
+- Predicted count and probability percentages
+- Potential client estimates and average price ranges (adjusted for local market)
+- Confidence scores with visual progress indicators
 - Market impact assessment (high/medium/low)
-- Actionable insights for targeting potential clients
+- Timeframe predictions and location specificity
+- Campaign creation and content generation actions
+- Detailed descriptions for targeting strategies
 
-### Interactive Dashboard
+### Active Market Alerts
 
-- **Tabbed Interface**: Smooth animated transitions between Market Trends and Life Events
-- **Filtering Controls**: Location and timeframe selection
-- **Quick Stats**: Overview cards showing key market metrics
-- **Export Functionality**: Generate reports for client presentations
-- **Real-Time Updates**: Refresh data with latest market information
+Real-time monitoring and alert system for market changes, powered by actual MLS data analysis when available:
+
+- **Price Change Alerts**: Monitor significant price movements and reductions
+- **New Listing Alerts**: Track new properties and listing surges in target areas
+- **Market Shift Alerts**: Detect broader market trend changes
+- **Opportunity Alerts**: Identify emerging investment opportunities
+
+**Real-Time MLS Integration**:
+- Automatically detects significant price drops from MLS data
+- Monitors new listing volumes and identifies surges
+- Analyzes market velocity changes and inventory shifts
+- Provides data-driven urgency levels based on actual market conditions
+
+Each alert includes:
+- Urgency levels (high/medium/low) with color-coded indicators
+- Detailed descriptions and location context
+- Action requirements and dismissal options
+- Creation timestamps and priority sorting
+- Integration with notification systems
+- Source attribution (MLS Data vs. Market Analysis)
+
+### Enhanced Interactive Dashboard
+
+- **Animated Tabbed Interface**: Smooth transitions between Trends, Life Events, and Alerts
+- **Advanced Filtering**: Location, timeframe, and category-specific filters
+- **Real-Time Updates**: Live data refresh with loading states and timestamps
+- **Export Functionality**: Generate comprehensive reports for client presentations
+- **Alert Management**: Create, monitor, and manage market alerts
+- **Empty State Handling**: Intelligent empty states with actionable guidance
+- **Loading States**: Standard loading components for better UX
 
 ## User Interface
 
@@ -54,107 +98,148 @@ Each prediction includes:
 ┌─────────────────────────────────────────────────────────┐
 │ Header: Market Insights + Export/Refresh Controls      │
 ├─────────────────────────────────────────────────────────┤
-│ Filters: Location | Timeframe | Analyze Button         │
+│ Filters: Location | Timeframe | Last Updated Time      │
 ├─────────────────────────────────────────────────────────┤
-│ Tabs: [Market Trends] [Life Event Predictions]         │
+│ Tabs: [Market Trends] [Life Events] [Active Alerts]    │
 ├─────────────────────────────────────────────────────────┤
-│ Content: Trend/Event Cards with Details                │
-├─────────────────────────────────────────────────────────┤
-│ Quick Stats: 4 Metric Cards (Price, Activity, etc.)    │
+│ Content: Enhanced Cards with Actions & Progress Bars   │
+│ - Trend Cards: Icons, Confidence, Impact, Alerts       │
+│ - Event Cards: Predictions, Campaigns, Content Gen     │
+│ - Alert Cards: Urgency, Actions, Dismissal             │
 └─────────────────────────────────────────────────────────┘
 ```
 
 ### Component Architecture
 
 ```typescript
-ResearchInsightsPage
-├── Header (Title + Action Buttons)
-├── MarketInsightsFilters
-│   ├── Location Select
-│   ├── Timeframe Select
-│   └── Analyze Button
-├── AnimatedTabs
-│   ├── MarketTrendsTab
-│   │   └── Trend Cards (with icons, percentages, confidence)
-│   └── LifeEventsTab
-│       └── Event Cards (with predictions, impact, actions)
-└── MarketStatsCards
-    └── 4 Quick Stat Cards
+MarketInsightsPage
+├── PageHeader (Title + Export/Refresh Actions)
+├── FiltersCard
+│   ├── Location Select (All/Downtown/Suburbs/Waterfront/Historic)
+│   ├── Timeframe Select (7d/30d/90d/1y)
+│   └── Last Updated Timestamp
+├── AnimatedTabs (3 tabs with smooth transitions)
+│   ├── TrendsTab
+│   │   ├── IntelligentEmptyState (when no data)
+│   │   └── TrendCards
+│   │       ├── Trend Icons & Badges (impact, percentage)
+│   │       ├── Progress Bars (confidence scores)
+│   │       ├── Metadata Grid (location, category, source)
+│   │       └── Action Buttons (Create Alert, View Details)
+│   ├── LifeEventsTab
+│   │   ├── IntelligentEmptyState (when no data)
+│   │   └── EventCards
+│   │       ├── Event Icons & Probability Badges
+│   │       ├── Metrics Grid (clients, price, timeframe)
+│   │       └── Action Buttons (Create Campaign, Generate Content)
+│   └── AlertsTab
+│       ├── IntelligentEmptyState (when no alerts)
+│       └── AlertCards
+│           ├── Urgency Indicators (color-coded borders)
+│           ├── Alert Metadata (location, timestamp)
+│           └── Action Buttons (Take Action, Dismiss)
+└── StandardLoadingState (during data fetching)
 ```
 
 ## Technical Implementation
 
 ### Core Components
 
-#### 1. Main Page Component (`/src/app/(app)/research/insights/page.tsx`)
+#### 1. Main Page Component (`/src/app/(app)/market/insights/page.tsx`)
 
 ```typescript
 'use client';
 
-export default function ResearchInsightsPage() {
-    const { trends, lifeEvents, isLoading, refreshData, exportData, analyzeMarket } = useMarketInsights();
-    const [filters, setFilters] = useState<MarketInsightsFilters>({
-        location: 'Seattle, WA',
-        timeframe: '3months'
-    });
-    const [activeTab, setActiveTab] = useState<MarketInsightsTab>('trends');
-
-    // Component implementation with filtering, tab management, and data operations
-}
-```
-
-#### 2. Market Insights Filters (`/src/components/market-insights/market-insights-filters.tsx`)
-
-Provides location and timeframe selection controls with an analyze button.
-
-```typescript
-interface MarketInsightsFiltersProps {
-    filters: MarketInsightsFilters;
-    onFiltersChange: (filters: MarketInsightsFilters) => void;
-    onAnalyze: () => void;
-}
-```
-
-#### 3. Market Trends Tab (`/src/components/market-insights/market-trends-tab.tsx`)
-
-Displays market trend analysis cards with trend indicators and confidence scores.
-
-```typescript
-interface MarketTrendsTabProps {
+interface MarketInsightsState {
     trends: MarketTrend[];
+    lifeEvents: LifeEvent[];
+    alerts: MarketAlert[];
+    isLoading: boolean;
+    lastUpdated: string | null;
+    selectedLocation: string;
+    selectedTimeframe: string;
+    activeTab: string;
+}
+
+export default function MarketInsightsPage() {
+    const { user } = useUser();
+    const [state, setState] = useState<MarketInsightsState>({
+        trends: [],
+        lifeEvents: [],
+        alerts: [],
+        isLoading: false,
+        lastUpdated: null,
+        selectedLocation: 'all',
+        selectedTimeframe: '30d',
+        activeTab: 'trends'
+    });
+
+    // Enhanced functionality:
+    // - Server action integration for data fetching
+    // - Alert creation and management
+    // - Filtered data with useMemo optimization
+    // - Loading states and error handling
+    // - Empty state management
 }
 ```
 
-#### 4. Life Events Tab (`/src/components/market-insights/life-events-tab.tsx`)
-
-Shows life event predictions with market impact assessments and action buttons.
+#### 2. Server Actions Integration (`/src/app/actions.ts`)
 
 ```typescript
-interface LifeEventsTabProps {
-    lifeEvents: LifeEvent[];
+// Market insights data fetching
+export async function generateMarketInsightsAction(params: {
+    location: string;
+    timeframe: string;
+    includeLifeEvents: boolean;
+    includeAlerts: boolean;
+}) {
+    // AI-powered market analysis
+    // Returns structured data with trends, events, and alerts
+}
+
+// Alert management
+export async function saveMarketAlertAction(alertData: {
+    type: 'price_change' | 'new_listing' | 'market_shift' | 'opportunity';
+    title: string;
+    description: string;
+    location: string;
+    criteria: AlertCriteria;
+}) {
+    // Save alert configuration for monitoring
 }
 ```
 
-#### 5. Market Stats Cards (`/src/components/market-insights/market-stats-cards.tsx`)
+#### 3. Enhanced UI Components
 
-Quick overview statistics with trend indicators for key market metrics.
+**IntelligentEmptyState**: Context-aware empty states with actionable guidance
+```typescript
+<IntelligentEmptyState
+    icon={BarChart3}
+    title="No market trends available"
+    description="Market trend data will appear here once analysis is complete."
+    action={
+        <Button onClick={loadMarketData} disabled={state.isLoading}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Load Trends
+        </Button>
+    }
+/>
+```
+
+**StandardLoadingState**: Consistent loading experience
+```typescript
+<StandardLoadingState title="Loading market insights..." />
+```
+
+**Progress Indicators**: Visual confidence and probability displays
+```typescript
+<Progress value={trend.confidence} className="w-16" />
+<span className="text-sm">{trend.confidence}%</span>
+```
 
 ### Data Management
 
-#### Custom Hook (`/src/hooks/use-market-insights.ts`)
-
-```typescript
-export function useMarketInsights(): UseMarketInsightsReturn {
-    const [trends, setTrends] = useState<MarketTrend[]>(MOCK_TRENDS);
-    const [lifeEvents, setLifeEvents] = useState<LifeEvent[]>(MOCK_LIFE_EVENTS);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    // Methods: refreshData, exportData, analyzeMarket
-}
-```
-
-#### Type Definitions (`/src/lib/types/market-insights.ts`)
+#### Enhanced Type Definitions
 
 ```typescript
 interface MarketTrend {
@@ -167,59 +252,128 @@ interface MarketTrend {
     category: 'pricing' | 'inventory' | 'demand' | 'demographics';
     location: string;
     confidence: number;
+    impact: 'high' | 'medium' | 'low';
+    actionable: boolean;
+    source: string;
+    lastUpdated: string;
 }
 
 interface LifeEvent {
     id: string;
-    type: 'marriage' | 'divorce' | 'job_change' | 'retirement' | 'birth' | 'death';
+    type: 'marriage' | 'divorce' | 'job_change' | 'retirement' | 'new_baby' | 'empty_nest';
     location: string;
-    predictedCount: number;
+    probability: number;
     timeframe: string;
-    confidence: number;
-    marketImpact: 'high' | 'medium' | 'low';
+    potentialClients: number;
+    averagePrice: number;
     description: string;
+}
+
+interface MarketAlert {
+    id: string;
+    type: 'price_change' | 'new_listing' | 'market_shift' | 'opportunity';
+    title: string;
+    description: string;
+    location: string;
+    urgency: 'high' | 'medium' | 'low';
+    createdAt: string;
+    actionRequired: boolean;
 }
 ```
 
-#### Utility Functions (`/src/lib/utils/market-insights-utils.ts`)
+#### State Management with useMemo Optimization
 
-Helper functions for display formatting:
-- `getTrendIcon()`: Returns appropriate trend icon component
-- `getTrendColor()`: Returns color class for trend indicators
-- `getLifeEventIcon()`: Returns emoji icon for life event types
-- `getLifeEventLabel()`: Returns human-readable labels
-- `getImpactColor()`: Returns color class for market impact levels
+```typescript
+const filteredTrends = useMemo(() => {
+    return state.trends.filter(trend => 
+        state.selectedLocation === 'all' || trend.location === state.selectedLocation
+    );
+}, [state.trends, state.selectedLocation]);
 
-### Mock Data (`/src/lib/data/market-insights-mock.ts`)
+const filteredLifeEvents = useMemo(() => {
+    return state.lifeEvents.filter(event => 
+        state.selectedLocation === 'all' || event.location === state.selectedLocation
+    );
+}, [state.lifeEvents, state.selectedLocation]);
+```
 
-Sample data for development and testing:
-- `MOCK_TRENDS`: Sample market trend data
-- `MOCK_LIFE_EVENTS`: Sample life event predictions
-- `LOCATION_OPTIONS`: Available location filters
-- `TIMEFRAME_OPTIONS`: Available timeframe filters
+#### Enhanced Utility Functions
+
+```typescript
+// Trend visualization helpers
+const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
+    switch (trend) {
+        case 'up': return <TrendingUp className="h-4 w-4 text-green-500" />;
+        case 'down': return <TrendingDown className="h-4 w-4 text-red-500" />;
+        default: return <BarChart3 className="h-4 w-4 text-blue-500" />;
+    }
+};
+
+// Life event visualization helpers
+const getLifeEventIcon = (type: LifeEvent['type']) => {
+    const icons = {
+        marriage: '💒',
+        divorce: '💔',
+        job_change: '💼',
+        retirement: '🏖️',
+        new_baby: '👶',
+        empty_nest: '🏠'
+    };
+    return icons[type] || '📊';
+};
+
+// Alert management helpers
+const handleCreateAlert = async (trend: MarketTrend) => {
+    await saveMarketAlertAction({
+        type: 'market_shift',
+        title: `${trend.title} Alert`,
+        description: `Monitor changes in ${trend.title.toLowerCase()}`,
+        location: trend.location,
+        criteria: {
+            category: trend.category,
+            threshold: trend.percentage,
+            direction: trend.trend
+        }
+    });
+};
+```
 
 ## User Experience
 
 ### Key User Flows
 
 1. **View Market Trends**
-   - Navigate to Research → Insights
+   - Navigate to Market → Insights
    - Select location and timeframe filters
-   - Click "Analyze Market" to refresh data
-   - Review trend cards with confidence scores
-   - Share insights with clients
+   - Review trend cards with confidence scores and impact levels
+   - Create alerts for important trends
+   - View detailed trend information
 
 2. **Analyze Life Events**
-   - Switch to "Life Event Predictions" tab
-   - Review predicted events and counts
-   - Assess market impact levels
-   - Set reminders for follow-up
-   - Target specific audiences
+   - Switch to "Life Events" tab
+   - Review predicted events with probability scores
+   - Assess potential client counts and price ranges
+   - Create targeted campaigns for specific events
+   - Generate content for life event marketing
 
-3. **Export Reports**
-   - Click "Export" button in header
-   - Generate comprehensive market report
-   - Use for client presentations and marketing
+3. **Monitor Market Alerts**
+   - Switch to "Active Alerts" tab
+   - Review urgent market changes and opportunities
+   - Take action on high-priority alerts
+   - Dismiss completed or irrelevant alerts
+   - Track alert history and performance
+
+4. **Create Market Alerts**
+   - From any trend card, click "Create Alert"
+   - Configure alert criteria and thresholds
+   - Set notification preferences
+   - Monitor alert status and updates
+
+5. **Export Market Reports**
+   - Click "Export Report" button in header
+   - Generate comprehensive market analysis
+   - Use for client presentations and marketing materials
+   - Share insights with team members
 
 ### Responsive Design
 
@@ -229,36 +383,60 @@ Sample data for development and testing:
 
 ## Integration Points
 
-### Research Hub Integration
+### Market Hub Integration
 
-The Market Insights feature is integrated into the Research Hub at `/research/insights` and follows the hub's navigation structure and design patterns.
+The Market Insights feature is the flagship component of the Market Intelligence Hub at `/market/insights` and follows the hub's navigation structure and design patterns. It integrates seamlessly with other Market hub features:
+
+- **Market News**: Cross-reference trends with current news
+- **Market Analytics**: Deep-dive analysis of trend data
+- **Market Opportunities**: Convert insights into actionable opportunities
+- **Market Alerts**: Centralized alert management system
 
 ### Component Library Integration
 
 - Uses `AnimatedTabs` for smooth transitions (following UI standards)
-- Implements shadcn/ui components for consistency
-- Follows design system color and typography guidelines
+- Implements `IntelligentEmptyState` for better UX when no data is available
+- Uses `StandardLoadingState` for consistent loading experiences
+- Follows shadcn/ui components for design consistency
+- Implements `Progress` components for confidence visualization
+- Uses `Alert` components for market alert displays
 
-### Future API Integration
+### Server Actions Integration
 
-The current implementation uses mock data but is structured for easy API integration:
+The implementation leverages Next.js Server Actions for data operations:
 
 ```typescript
-// Future API integration points
-const refreshData = async () => {
-    const response = await fetch('/api/market-insights/trends');
-    const data = await response.json();
-    setTrends(data.trends);
-    setLifeEvents(data.lifeEvents);
+// Market data fetching
+const loadMarketData = async () => {
+    const result = await generateMarketInsightsAction({
+        location: state.selectedLocation,
+        timeframe: state.selectedTimeframe,
+        includeLifeEvents: true,
+        includeAlerts: true
+    });
+};
+
+// Alert creation
+const handleCreateAlert = async (trend: MarketTrend) => {
+    await saveMarketAlertAction({
+        type: 'market_shift',
+        title: `${trend.title} Alert`,
+        description: `Monitor changes in ${trend.title.toLowerCase()}`,
+        location: trend.location,
+        criteria: { /* alert criteria */ }
+    });
 };
 ```
 
 ## Performance Considerations
 
-- **Lazy Loading**: Components load on-demand
-- **Optimistic Updates**: UI updates immediately while API calls process
-- **Error Handling**: Graceful fallbacks for failed data requests
-- **Caching**: Mock data cached in memory for development
+- **Optimized Filtering**: Uses `useMemo` for efficient data filtering
+- **Lazy Loading**: Components and data load on-demand
+- **Optimistic Updates**: UI updates immediately while server actions process
+- **Error Handling**: Graceful fallbacks with toast notifications
+- **Loading States**: Proper loading indicators for better UX
+- **Memory Management**: Efficient state management with minimal re-renders
+- **Server Actions**: Leverages Next.js Server Actions for optimal performance
 
 ## Accessibility
 
@@ -299,26 +477,37 @@ describe('MarketInsightsPage', () => {
 
 ### Planned Features
 
-1. **Real-Time Data Integration**: Connect to live market data APIs
-2. **Advanced Filtering**: Additional filter options (price ranges, property types)
-3. **Predictive Analytics**: Enhanced AI-powered predictions
-4. **Client Targeting**: Direct integration with CRM for lead generation
-5. **Custom Alerts**: Set up automated notifications for market changes
-6. **Historical Trends**: View long-term market trend analysis
-7. **Comparative Analysis**: Compare multiple markets side-by-side
+1. **Real-Time Data Integration**: Connect to live market data APIs and MLS systems
+2. **Advanced AI Analytics**: Enhanced machine learning models for predictions
+3. **Custom Alert Rules**: User-defined alert criteria and notification preferences
+4. **Comparative Analysis**: Side-by-side market comparisons and benchmarking
+5. **Historical Trend Analysis**: Long-term trend visualization and pattern recognition
+6. **Integration with CRM**: Direct lead generation from life event predictions
+7. **Mobile Push Notifications**: Real-time alerts on mobile devices
+8. **Collaborative Features**: Share insights and alerts with team members
+9. **API Integrations**: Connect with third-party market data providers
+10. **Advanced Visualizations**: Interactive charts, graphs, and heat maps
 
 ### Technical Improvements
 
-1. **API Integration**: Replace mock data with real market data
-2. **Caching Strategy**: Implement Redis caching for performance
-3. **Real-Time Updates**: WebSocket integration for live data
-4. **Advanced Visualizations**: Charts and graphs for trend analysis
-5. **Export Formats**: PDF, Excel, and PowerPoint export options
+1. **Real-Time Updates**: WebSocket integration for live market data
+2. **Advanced Caching**: Redis caching for improved performance
+3. **Predictive Analytics**: Enhanced AI models for better predictions
+4. **Data Visualization**: Interactive charts and trend visualizations
+5. **Export Enhancements**: PDF, Excel, and PowerPoint export formats
+6. **Notification System**: Email and SMS alert delivery
+7. **Performance Optimization**: Further optimization for large datasets
+8. **Accessibility Improvements**: Enhanced screen reader support and keyboard navigation
 
 ## Related Documentation
 
-- [Research Hub Overview](./research-hub.md)
+- [Market Hub Overview](../app/market-hub.md)
+- [Server Actions Guide](../api/server-actions.md)
 - [Component Library](../design-system/components.md)
 - [Animation System](../design-system/animation-system.md)
 - [Responsive Design Guidelines](../design-system/mobile-optimizations.md)
-- [API Integration Guide](../api/market-data-integration.md)
+- [Market Intelligence API](../api/market-intelligence.md)
+- [Alert System Documentation](./market-alerts.md)
+- [Empty States Guide](../design-system/empty-states.md)
+- [Loading States Guide](../design-system/loading-states.md)
+- [Tools Hub - Mortgage Calculator](./mortgage-calculator.md)

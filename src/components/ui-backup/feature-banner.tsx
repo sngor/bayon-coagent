@@ -131,7 +131,7 @@ export function FeatureBanner({
                         {tips && tips.length > 0 && (
                             <div className="space-y-2.5">
                                 {tips.map((tip, index) => (
-                                    <div key={index} className="flex items-start gap-2.5">
+                                    <div key={`tip-${index}-${tip.slice(0, 20)}`} className="flex items-start gap-2.5">
                                         <ArrowRight className={cn('h-3.5 w-3.5 mt-0.5 flex-shrink-0', styles.icon)} />
                                         <span className={cn('text-sm leading-relaxed', styles.description)}>
                                             {tip}

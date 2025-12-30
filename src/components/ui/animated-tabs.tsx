@@ -59,7 +59,7 @@ const AnimatedTabsList = React.forwardRef<
         <TabsPrimitive.List
             ref={tabsRef}
             className={cn(
-                'relative inline-flex h-auto w-fit justify-start gap-1.5 rounded-lg bg-muted border border-border/50 p-1.5 overflow-x-auto',
+                'relative inline-flex h-auto w-fit justify-start gap-1.5 rounded-full bg-muted border border-border/50 p-1.5 overflow-x-auto',
                 className
             )}
             style={{ boxShadow: 'inset 0 2px 4px 0 rgb(0 0 0 / 0.1)' }}
@@ -68,7 +68,7 @@ const AnimatedTabsList = React.forwardRef<
             {/* Animated indicator */}
             {indicatorStyle.width > 0 && (
                 <div
-                    className="absolute top-1.5 bottom-1.5 rounded-md bg-background shadow-md transition-all duration-300 ease-out pointer-events-none"
+                    className="absolute top-1.5 bottom-1.5 rounded-full bg-background shadow-md transition-all duration-300 ease-out pointer-events-none"
                     style={{
                         left: `${indicatorStyle.left}px`,
                         width: `${indicatorStyle.width}px`,
@@ -88,7 +88,7 @@ const AnimatedTabsTrigger = React.forwardRef<
     <TabsPrimitive.Trigger
         ref={ref}
         className={cn(
-            'relative z-10 flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors',
+            'relative z-10 flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors',
             'hover:text-foreground',
             'data-[state=active]:text-foreground data-[state=active]:font-medium',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',

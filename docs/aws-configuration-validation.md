@@ -41,7 +41,7 @@ The `validateConfig()` function in `src/aws/config.ts` checks:
    - Validates against approved model list
 
 5. **Google AI Configuration**
-   - `GOOGLE_AI_API_KEY` (required for Gemini image generation)
+   - `GOOGLE_AI_API_KEY` (required for Gemini image generation in production, optional in development)
 
 ### Valid Bedrock Models
 

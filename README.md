@@ -75,7 +75,6 @@ Turn ideas into polished content in minutes:
 - **Write**: AI content generation for blog posts, social media, market updates
 - **Describe**: Persona-driven listing descriptions
 - **Reimagine**: AI-powered image editing (virtual staging, day-to-dusk, enhancement)
-- **Open House**: Create open house materials and flyers
 - **Post Cards**: Design marketing postcards
 
 ### 🔍 Research - AI-Powered Research Hub
@@ -92,19 +91,20 @@ Get comprehensive research and insights on any market topic with AI-powered rese
 
 ### 📊 Market - Market Intelligence Hub
 
-Track trends and opportunities:
+Track market trends and opportunities with AI-powered insights:
 
-- **Insights**: Market trend analysis and life event predictions
-- **News**: Real estate news and market updates
+- **Insights**: Advanced market trend analysis with life event predictions, alert creation, and actionable intelligence
+- **News**: Stay updated with latest real estate news and market trends, filterable by location
 - **Analytics**: Market data analysis and performance tracking
-- **Opportunities**: Investment opportunity identification
+- **Opportunities**: Investment opportunity identification and life event predictions
+- **Alerts**: Market alerts and notifications for price changes and new listings
 - **Alerts**: Market alerts and notifications
 
 ### 🧮 Tools - Deal Analysis Hub
 
-Analyze deals and crunch numbers:
+Analyze deals and crunch numbers like a pro:
 
-- **Calculator**: Mortgage calculator with amortization schedules
+- **Calculator**: Advanced mortgage calculator with payment breakdown, affordability analysis, and loan comparison
 - **ROI**: Renovation ROI calculator for investment analysis
 - **Valuation**: AI-powered property valuation tool
 - **Document Scanner**: Scan and process real estate documents
@@ -122,7 +122,15 @@ Everything you've created, ready when you need it:
 Manage client relationships, dashboards, and communications.
 
 ### 🏠 Open House - Event Management Hub
-Plan, manage, and track open house events and activities.
+
+Comprehensive open house event management system:
+
+- **Event Planning**: Create and schedule events with detailed property information
+- **Event Templates**: Pre-configured templates for different event types
+- **Attendee Tracking**: Monitor registrations, attendance, and lead generation
+- **Performance Analytics**: Track views, inquiries, conversions, and ROI
+- **Marketing Materials**: Generate flyers, signage, and promotional content
+- **Status Management**: Track events from planning to completion
 
 ### 🎓 Learning - Skill Development Hub
 
@@ -380,7 +388,7 @@ BEDROCK_REGION=us-east-1
 TAVILY_API_KEY=your-tavily-api-key
 NEWS_API_KEY=your-news-api-key
 BRIDGE_API_KEY=your-bridge-api-key
-GOOGLE_AI_API_KEY=your-google-ai-api-key
+GOOGLE_AI_API_KEY=your-google-ai-api-key  # Optional in development, required in production
 
 # Google OAuth
 GOOGLE_CLIENT_ID=your-google-client-id

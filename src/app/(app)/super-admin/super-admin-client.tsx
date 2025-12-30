@@ -142,8 +142,7 @@ function SuperAdminDashboard() {
     };
 
     const headerRef = useAdminStickyHeader({
-        title: 'Super Admin Dashboard',
-        icon: Shield
+        title: 'Super Admin Dashboard'
     });
 
     return (

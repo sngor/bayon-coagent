@@ -7,7 +7,6 @@ import { LucideIcon } from 'lucide-react';
 interface SuperAdminPageHeaderProps {
     title: string;
     description: string;
-    icon?: LucideIcon;
     action?: {
         label: string;
         onClick: () => void;
@@ -19,15 +18,13 @@ interface SuperAdminPageHeaderProps {
 export function SuperAdminPageHeader({
     title,
     description,
-    icon: Icon,
     action,
     children
 }: SuperAdminPageHeaderProps) {
     return (
         <div className="flex items-center justify-between">
             <div>
-                <h1 className="text-3xl font-bold flex items-center gap-2">
-                    {Icon && <Icon className="h-8 w-8 text-blue-600" />}
+                <h1 className="text-3xl font-bold">
                     {title}
                 </h1>
                 <p className="text-muted-foreground">{description}</p>

@@ -23,21 +23,16 @@ export function AdminHeader({ role, lastUpdated, isRefreshing, onRefresh }: Admi
     return (
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                        <Shield className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-                        <div className="flex items-center gap-2 mt-1">
-                            <RoleBadge role={role} size="sm" />
-                            {lastUpdated && (
-                                <div className="inline-flex items-center px-2 py-1 rounded-md bg-muted text-xs">
-                                    <Clock className="mr-1 h-3 w-3" />
-                                    Updated {lastUpdated}
-                                </div>
-                            )}
-                        </div>
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+                    <div className="flex items-center gap-2 mt-1">
+                        <RoleBadge role={role} size="sm" />
+                        {lastUpdated && (
+                            <div className="inline-flex items-center px-2 py-1 rounded-md bg-muted text-xs">
+                                <Clock className="mr-1 h-3 w-3" />
+                                Updated {lastUpdated}
+                            </div>
+                        )}
                     </div>
                 </div>
                 <p className="text-muted-foreground max-w-2xl">
