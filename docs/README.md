@@ -6,66 +6,50 @@ Complete documentation for the Bayon CoAgent platform.
 
 **New to the project?** Start here:
 
-- [Getting Started Guide](./guides/getting-started.md) - Complete setup and first steps
-- [Architecture Overview](./guides/architecture.md) - System design and structure
-- [Development Workflow](./guides/development.md) - Day-to-day development process
+- [Getting Started Guide](./GETTING_STARTED.md) - Complete setup and first steps
+- [Architecture Overview](./ARCHITECTURE.md) - System design and structure
+- [Development Workflow](./DEVELOPMENT.md) - Day-to-day development process
+- [Deployment Guide](./DEPLOYMENT.md) - Production deployment process
+- [Troubleshooting Guide](./TROUBLESHOOTING.md) - Common problems and solutions
 
 ## 📚 Core Documentation
 
-### Setup & Configuration
+### Essential Guides
 
-- [Getting Started](./guides/getting-started.md) - Complete setup guide
-- [Environment Variables](./guides/environment-variables.md) - Configuration reference
-- [AWS Local Development](./aws-local-development.md) - LocalStack setup
-- [Authentication Setup](./guides/auth-setup.md) - Cognito configuration
+- [Getting Started](./GETTING_STARTED.md) - Complete setup guide
+- [Architecture](./ARCHITECTURE.md) - System architecture and design
+- [Development](./DEVELOPMENT.md) - Development workflow and patterns
+- [Deployment](./DEPLOYMENT.md) - Production deployment process
+- [Troubleshooting](./TROUBLESHOOTING.md) - Common issues and solutions
 
-### Architecture & Design
+### Quick References
 
-- [Architecture Overview](./guides/architecture.md) - System architecture
-- [Project Structure](./guides/project-structure.md) - File organization
-- [Hub Architecture](./guides/hub-integration.md) - Hub-based navigation
-- [Database Design](./guides/database-design.md) - DynamoDB schema
-
-### Development
-
-- [Development Guide](./guides/development.md) - Development workflow
-- [Component Library](./component-library.md) - UI components
-- [Best Practices](./best-practices.md) - Development guidelines
-- [Performance Guide](./guides/performance.md) - Optimization techniques
-
-### Deployment
-
-- [Deployment Guide](./deployment/deployment.md) - Production deployment
-- [SAM Deployment](./deployment/sam-deployment.md) - AWS SAM guide
-- [Amplify Deployment](./guides/amplify-deployment.md) - AWS Amplify guide
-- [Deployment Checklist](./deployment/checklist.md) - Pre-deployment checks
+- [Commands](./quick-reference/commands.md) - All npm scripts and CLI commands
+- [Components](./quick-reference/components.md) - UI component library reference
+- [Configuration](./quick-reference/configuration.md) - Environment and config setup
+- [API Reference](./quick-reference/api.md) - Server actions and endpoints
 
 ## 🔧 Quick References
 
 ### Commands & Scripts
 
 - [NPM Scripts Reference](./quick-reference/commands.md) - All available commands
-- [LocalStack Commands](./quick-reference/localstack.md) - Local AWS development
-- [Deployment Commands](./quick-reference/deployment.md) - Production deployment
+- [LocalStack Commands](./quick-reference/commands.md#localstack-local-aws) - Local AWS development
+- [Deployment Commands](./quick-reference/commands.md#infrastructure--deployment) - Production deployment
 
 ### Development
 
 - [Component Reference](./quick-reference/components.md) - UI component library
-- [Loading States](./loading-states.md) - Loading state system and patterns
-- [Enhanced Agents](./quick-reference/enhanced-agents.md) - Hub-specific AI assistance
-- [Studio Write](./quick-reference/studio-write.md) - Content generation quick reference
 - [Configuration Reference](./quick-reference/configuration.md) - Environment setup
 - [API Reference](./quick-reference/api.md) - Server actions and endpoints
-- [Image Analysis API](./api/image-analysis-service.md) - Virtual staging and image processing
 - [Database Reference](./quick-reference/database.md) - DynamoDB operations
-- [Trial Notifications](./quick-reference/trial-notifications.md) - Trial notification system
 
 ### Troubleshooting
 
-- [Common Issues](./troubleshooting/common-issues.md) - Frequent problems and solutions
-- [LocalStack Issues](./troubleshooting/localstack.md) - Local development problems
-- [Deployment Issues](./troubleshooting/deployment.md) - Production deployment problems
-- [Performance Issues](./troubleshooting/performance.md) - Performance debugging
+- [Common Issues](./TROUBLESHOOTING.md) - Frequent problems and solutions
+- [LocalStack Issues](./TROUBLESHOOTING.md#localstack-problems) - Local development problems
+- [Deployment Issues](./TROUBLESHOOTING.md#deployment-issues) - Production deployment problems
+- [Performance Issues](./TROUBLESHOOTING.md#performance-issues) - Performance debugging
 
 ## 🎯 Feature Documentation
 

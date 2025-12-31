@@ -1,189 +1,302 @@
-# NPM Scripts Reference
+# Commands Reference
 
-Complete reference for all available npm scripts in the Bayon CoAgent project.
+## Development Commands
 
-## 🚀 Development
-
-### Core Development Commands
+### Basic Development
 
 ```bash
-npm run dev                 # Start Next.js development server (port 3000)
-npm run build              # Build production bundle
-npm run build:fast         # Fast build (skips env validation)
-npm run build:analyze      # Build with bundle analysis
-npm run start              # Start production server
-npm run lint               # Run ESLint
-npm run typecheck          # Run TypeScript type checking
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm run start
+
+# Type checking
+npm run typecheck
+
+# Linting
+npm run lint
+npm run lint:fix
+
+# Testing
+npm test
+npm run test:watch
+npm run test:coverage
 ```
 
-### Analysis & Optimization
+### LocalStack (Local AWS)
 
 ```bash
-npm run analyze            # Analyze bundle size
-npm run bundle:check       # Check bundle size limits
-npm run bundle:track       # Track bundle size changes
-npm run lighthouse         # Run Lighthouse performance test
-npm run lighthouse:prod    # Run Lighthouse on production URL
-npm run lighthouse:ci      # Run Lighthouse CI
-node scripts/analyze-typescript-errors.js  # Analyze and categorize TypeScript errors
+# Start LocalStack services
+npm run localstack:start
+
+# Stop LocalStack services
+npm run localstack:stop
+
+# Initialize AWS resources
+npm run localstack:init
+
+# View LocalStack logs
+npm run localstack:logs
+
+# Verify local setup
+npm run verify:setup
 ```
 
-## 🐳 LocalStack (Local AWS)
-
-### Container Management
+### Build & Analysis
 
 ```bash
-npm run localstack:start   # Start LocalStack in Docker
-npm run localstack:stop    # Stop LocalStack
-npm run localstack:logs    # View LocalStack logs
+# Production build
+npm run build
+
+# Fast build (skip validation)
+npm run build:fast
+
+# Build with bundle analysis
+npm run build:analyze
+
+# Check bundle size
+npm run bundle:check
+
+# Track bundle size changes
+npm run bundle:track
 ```
 
-### AWS Resource Management
+### Testing & Quality
 
 ```bash
-npm run localstack:init    # Initialize AWS resources (DynamoDB, S3, Cognito)
-npm run verify:setup       # Verify local development setup
+# Run all tests
+npm test
+
+# Watch mode
+npm run test:watch
+
+# Coverage report
+npm run test:coverage
+
+# Lighthouse performance tests
+npm run lighthouse
+
+# Lighthouse CI
+npm run lighthouse:ci
+
+# Security check
+npm run security:check
 ```
 
-**Important**: After running `localstack:init`, copy the Cognito User Pool ID and Client ID to your `.env.local` file.
+## Infrastructure & Deployment
 
-## 🧪 Testing
-
-### Test Execution
+### SAM Deployment
 
 ```bash
-npm test                   # Run Jest tests
-npm run test:watch         # Run tests in watch mode
-npm run test:coverage      # Generate coverage report
+# Validate SAM templates
+npm run sam:validate
+
+# Deploy to development
+npm run sam:deploy:dev
+
+# Deploy to production
+npm run sam:deploy:prod
+
+# Destroy development stack
+npm run sam:destroy:dev
+
+# Destroy production stack
+npm run sam:destroy:prod
+
+# View stack outputs
+npm run sam:outputs
+
+# Update environment from SAM outputs
+npm run sam:update-env
 ```
 
-### Verification Scripts
+### CDK Infrastructure (Alternative)
 
 ```bash
-npm run verify:setup       # Verify local development setup
-npm run verify:bedrock-models  # Verify Bedrock model access
-npm run verify:reimagine    # Verify image processing setup
-npm run verify:xray        # Verify X-Ray tracing setup
-npm run verify:sqs         # Verify SQS queues
-npm run verify:secrets     # Verify AWS Secrets Manager
-npm run verify:eventbridge # Verify EventBridge setup
-```
+# Validate infrastructure
+npm run infra:validate
 
-## 🚀 Deployment
+# Deploy development infrastructure
+npm run infra:deploy:dev
 
-### SAM (Serverless Application Model)
-
-```bash
-npm run sam:validate       # Validate SAM template
-npm run sam:deploy:dev     # Deploy to development environment
-npm run sam:deploy:prod    # Deploy to production environment
-npm run sam:destroy:dev    # Destroy development infrastructure
-npm run sam:destroy:prod   # Destroy production infrastructure
-npm run sam:outputs        # Show CloudFormation stack outputs
-npm run sam:update-env     # Update environment from SAM outputs
+# Deploy production infrastructure
+npm run infra:deploy:prod
 ```
 
 ### Amplify Deployment
 
 ```bash
-npm run deploy:amplify     # Deploy to AWS Amplify Hosting
-npm run deploy:test <url>  # Test deployment at specified URL
+# Deploy to AWS Amplify
+npm run deploy:amplify
+
+# Test deployment
+npm run deploy:test
 ```
 
-## 🔄 Data Migration
+## Service Management
 
-### Firebase to AWS Migration
+### Admin & Setup
 
 ```bash
-npm run migrate:export     # Export data from Firestore
-npm run migrate:transform  # Transform data to DynamoDB format
-npm run migrate:import     # Import data to DynamoDB
-npm run migrate:storage    # Migrate files from Firebase Storage to S3
-npm run migrate:validate   # Validate migration completeness
-npm run migrate:rollback   # Rollback migration (delete AWS data)
-npm run migrate:all        # Run complete migration pipeline
+# Create super admin user
+npm run admin:create
+
+# Setup AWS Secrets Manager
+npm run setup:secrets
+
+# Verify secrets configuration
+npm run verify:secrets
+
+# Clear authentication session
+npm run clear-auth
 ```
 
-## 🔧 Configuration & Setup
-
-### AWS Services Configuration
+### Service Verification
 
 ```bash
-npm run setup:secrets      # Setup AWS Secrets Manager
-npm run setup:reimagine-monitoring  # Setup image processing monitoring
-npm run setup:onboarding-monitoring # Setup onboarding monitoring
+# Verify Bedrock models
+npm run verify:bedrock-models
+
+# Verify Reimagine setup
+npm run verify:reimagine
+
+# Verify X-Ray tracing
+npm run verify:xray
+
+# Verify SQS queues
+npm run verify:sqs
+
+# Verify EventBridge
+npm run verify:eventbridge
 ```
 
-### S3 Configuration
+### Configuration
 
 ```bash
-npm run reimagine:configure-s3     # Configure S3 lifecycle policies
-npm run configure:reimagine-s3     # Configure S3 for image processing
+# Configure Reimagine S3
+npm run configure:reimagine-s3
+
+# Setup Reimagine monitoring
+npm run setup:reimagine-monitoring
+
+# Setup onboarding monitoring
+npm run setup:onboarding-monitoring
 ```
 
-## 👤 User Management
+## API & Testing
 
-### Admin Operations
+### API Testing
 
 ```bash
-npm run admin:create       # Create super admin user
-npm run clear-auth         # Clear authentication session
+# Test all API endpoints
+./scripts/test-api-endpoints.sh
+
+# Test specific endpoint
+curl http://localhost:3000/api/health
 ```
 
-## 🔍 Monitoring & Debugging
-
-### Queue Management
+### Database Operations
 
 ```bash
-npm run verify:sqs         # Verify SQS queues
-npm run verify:sqs:send    # Test SQS message sending
+# Run database migrations (if any)
+npm run db:migrate
+
+# Seed test data
+npm run db:seed
+
+# Reset local database
+npm run db:reset
 ```
 
-### EventBridge
+## Monitoring & Debugging
+
+### Logs & Monitoring
 
 ```bash
-npm run verify:eventbridge      # Verify EventBridge setup (dev)
-npm run verify:eventbridge:prod # Verify EventBridge setup (prod)
+# View application logs
+npm run logs
+
+# View LocalStack logs
+npm run localstack:logs
+
+# Monitor performance
+npm run monitor
+
+# Check system health
+npm run health:check
 ```
 
-## 🛡️ Security
-
-### Security Checks
+### Debugging
 
 ```bash
-npm run security:check     # Check for exposed secrets
-npm run prepare           # Setup Husky git hooks
+# Debug TypeScript errors
+node scripts/analyze-typescript-errors.js
+
+# Debug build issues
+npm run build -- --debug
+
+# Debug tests
+npm run test -- --verbose
+
+# Debug LocalStack
+docker logs localstack_main
 ```
 
-### Service Worker
+## Utility Scripts
+
+### Code Quality
 
 ```bash
-npm run clear:sw          # Clear service worker cache
+# Format code
+npm run format
+
+# Check code style
+npm run style:check
+
+# Fix code style
+npm run style:fix
+
+# Analyze dependencies
+npm run deps:analyze
+
+# Update dependencies
+npm run deps:update
 ```
 
-## 📊 Performance Testing
-
-### Lighthouse Testing
+### Performance
 
 ```bash
-npm run lighthouse                    # Test local development
-npm run lighthouse:prod              # Test production URL
-npm run lighthouse:ci                # Run CI pipeline
-npm run lighthouse:ci:collect        # Collect performance data
-npm run lighthouse:ci:assert         # Assert performance thresholds
-npm run lighthouse:ci:upload         # Upload results
+# Performance profiling
+npm run profile
+
+# Memory usage analysis
+npm run memory:analyze
+
+# Bundle size analysis
+npm run bundle:analyze
+
+# Lighthouse audit
+npm run audit:performance
 ```
 
-## 🔧 Utility Scripts
-
-### Development Utilities
+### Security
 
 ```bash
-npm run clear:sw           # Clear service worker
-npm run clear-auth         # Clear authentication session
-node scripts/analyze-typescript-errors.js  # Analyze TypeScript errors with categorization
-node scripts/fix-typescript-errors.js      # Auto-fix common TypeScript errors
-node scripts/fix-console-logging.js        # Replace console.log with proper logging
+# Security audit
+npm audit
+
+# Fix security issues
+npm audit fix
+
+# Check for secrets in code
+npm run security:scan
+
+# Validate security headers
+npm run security:headers
 ```
 
 ## Environment-Specific Commands
@@ -191,171 +304,299 @@ node scripts/fix-console-logging.js        # Replace console.log with proper log
 ### Development Environment
 
 ```bash
-# Start development session
-npm run localstack:start
-npm run localstack:init
-npm run dev
+# Start full development environment
+npm run dev:full
 
-# Verify everything is working
-npm run verify:setup
+# Reset development environment
+npm run dev:reset
+
+# Clean development cache
+npm run dev:clean
 ```
 
 ### Production Environment
 
 ```bash
-# Deploy infrastructure
-npm run sam:deploy:prod
+# Production health check
+npm run prod:health
 
-# Deploy application
-npm run deploy:amplify
+# Production deployment verification
+npm run prod:verify
 
-# Test deployment
-npm run deploy:test https://your-domain.com
+# Production rollback
+npm run prod:rollback
 ```
 
-## Command Combinations
-
-### Full Local Setup
+### Staging Environment
 
 ```bash
-# Complete local development setup
+# Deploy to staging
+npm run staging:deploy
+
+# Test staging environment
+npm run staging:test
+
+# Promote staging to production
+npm run staging:promote
+```
+
+## Docker Commands
+
+### Container Management
+
+```bash
+# Build Docker image
+docker build -t bayon-coagent .
+
+# Run container
+docker run -p 3000:3000 bayon-coagent
+
+# View running containers
+docker ps
+
+# Stop all containers
+docker stop $(docker ps -q)
+
+# Clean up containers
+docker system prune
+```
+
+### LocalStack Docker
+
+```bash
+# Start LocalStack container
+docker-compose up localstack
+
+# Stop LocalStack container
+docker-compose down
+
+# View LocalStack logs
+docker-compose logs localstack
+
+# Restart LocalStack
+docker-compose restart localstack
+```
+
+## Git & Version Control
+
+### Branch Management
+
+```bash
+# Create feature branch
+git checkout -b feature/new-feature
+
+# Switch to main branch
+git checkout main
+
+# Merge feature branch
+git merge feature/new-feature
+
+# Delete feature branch
+git branch -d feature/new-feature
+```
+
+### Release Management
+
+```bash
+# Create release tag
+git tag -a v1.0.0 -m "Release version 1.0.0"
+
+# Push tags
+git push origin --tags
+
+# Create release branch
+git checkout -b release/v1.0.0
+```
+
+## Troubleshooting Commands
+
+### Common Issues
+
+```bash
+# Clear all caches
+npm run clean:all
+
+# Reinstall dependencies
+rm -rf node_modules package-lock.json
 npm install
+
+# Reset TypeScript cache
+rm -rf .next/cache
+npm run dev
+
+# Fix permission issues
+sudo chown -R $(whoami) node_modules
+```
+
+### LocalStack Issues
+
+```bash
+# Reset LocalStack
+npm run localstack:stop
+docker system prune -f
 npm run localstack:start
 npm run localstack:init
-npm run verify:setup
-npm run dev
 ```
 
-### Pre-Deployment Checks
+### Build Issues
 
 ```bash
-# Run all checks before deploying
-npm run lint
-npm run typecheck
-npm test
+# Clear Next.js cache
+rm -rf .next
+
+# Clear npm cache
+npm cache clean --force
+
+# Rebuild from scratch
+npm run clean
+npm install
 npm run build
-npm run security:check
 ```
 
-### Performance Analysis
+## Custom Scripts
+
+### Project-Specific
 
 ```bash
-# Analyze application performance
-npm run build:analyze
-npm run bundle:check
-npm run lighthouse
+# Generate API documentation
+npm run docs:api
+
+# Update component library
+npm run components:update
+
+# Sync with design system
+npm run design:sync
+
+# Generate changelog
+npm run changelog:generate
 ```
 
-## Script Categories
-
-### 🏗️ Build & Development
-
-- `dev`, `build`, `start`, `lint`, `typecheck`
-
-### 🐳 LocalStack & AWS
-
-- `localstack:*`, `sam:*`, `verify:*`
-
-### 🧪 Testing & Quality
-
-- `test`, `test:*`, `lighthouse`, `security:check`
-
-### 🚀 Deployment
-
-- `deploy:*`, `sam:deploy:*`
-
-### 🔄 Migration
-
-- `migrate:*`
-
-### ⚙️ Configuration
-
-- `setup:*`, `configure:*`, `admin:*`
-
-## Tips
-
-### Parallel Execution
-
-Some commands can be run in parallel for faster development:
+### Data Management
 
 ```bash
-# Terminal 1: Start LocalStack
-npm run localstack:start
+# Export user data
+npm run data:export
 
-# Terminal 2: Start dev server (after LocalStack is ready)
-npm run dev
+# Import test data
+npm run data:import
 
-# Terminal 3: Run tests in watch mode
-npm run test:watch
+# Backup database
+npm run db:backup
+
+# Restore database
+npm run db:restore
 ```
 
-### Environment Variables
+## Environment Variables
 
-Many commands respect environment variables:
+### Required for Development
 
 ```bash
-# Use different port for dev server
-PORT=3001 npm run dev
+# Check required environment variables
+npm run env:check
 
-# Skip environment validation for faster builds
-SKIP_ENV_VALIDATION=true npm run build
+# Generate environment template
+npm run env:template
 
-# Enable bundle analysis
-ANALYZE=true npm run build
+# Validate environment configuration
+npm run env:validate
 ```
 
-### Debugging
-
-Add debugging to any command:
+### AWS Configuration
 
 ```bash
-# Debug Next.js
-DEBUG=* npm run dev
+# Configure AWS CLI
+aws configure
 
-# Verbose npm output
-npm run build --verbose
+# Check AWS credentials
+aws sts get-caller-identity
 
-# Node.js debugging
-NODE_OPTIONS="--inspect" npm run dev
+# List AWS profiles
+aws configure list-profiles
 ```
 
-## Common Workflows
+## Performance Monitoring
 
-### Daily Development
+### Metrics Collection
 
 ```bash
-npm run localstack:start
-npm run dev
-# Make changes, test, commit
-npm run localstack:stop  # Optional
+# Collect performance metrics
+npm run metrics:collect
+
+# Generate performance report
+npm run metrics:report
+
+# Monitor real-time performance
+npm run metrics:monitor
 ```
 
-### Feature Development
+### Optimization
 
 ```bash
-npm run typecheck        # Check types
-npm run lint            # Check code style
-npm test               # Run tests
-npm run build          # Test build
+# Optimize images
+npm run images:optimize
+
+# Optimize bundle
+npm run bundle:optimize
+
+# Optimize database queries
+npm run db:optimize
 ```
 
-### Deployment Preparation
+## Backup & Recovery
+
+### Data Backup
 
 ```bash
-npm run lint
-npm run typecheck
-npm test
-npm run build
-npm run security:check
-npm run sam:deploy:dev  # Test in dev first
+# Backup all data
+npm run backup:all
+
+# Backup user data
+npm run backup:users
+
+# Backup configuration
+npm run backup:config
 ```
 
-### Troubleshooting
+### Recovery
 
 ```bash
-npm run verify:setup    # Check local setup
-npm run localstack:logs # Check LocalStack logs
-npm run clear:sw       # Clear service worker
-npm run clear-auth     # Clear auth session
-node scripts/analyze-typescript-errors.js  # Analyze TypeScript errors
+# Restore from backup
+npm run restore:backup
+
+# Restore specific data
+npm run restore:users
+
+# Emergency recovery
+npm run recovery:emergency
 ```
+
+## Integration Testing
+
+### End-to-End Testing
+
+```bash
+# Run E2E tests
+npm run test:e2e
+
+# Run E2E tests in headless mode
+npm run test:e2e:headless
+
+# Run specific E2E test
+npm run test:e2e -- --spec="login.spec.ts"
+```
+
+### API Integration Testing
+
+```bash
+# Test API integrations
+npm run test:integration
+
+# Test external APIs
+npm run test:external
+
+# Test webhook endpoints
+npm run test:webhooks
+```
+
+This comprehensive command reference covers all available npm scripts and common operations for the Bayon CoAgent project. Use these commands for development, testing, deployment, and maintenance tasks.

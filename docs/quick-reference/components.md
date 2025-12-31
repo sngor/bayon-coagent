@@ -1,22 +1,31 @@
-# Component Reference
+# Component Library Reference
 
-Complete reference for UI components in the Bayon CoAgent platform.
+## UI Components (shadcn/ui)
 
-## 🎨 shadcn/ui Components
-
-### Form Components
+### Basic Components
 
 #### Button
 
 ```typescript
 import { Button } from "@/components/ui/button";
 
-<Button variant="default" size="default">
-  Click me
-</Button>;
+// Variants
+<Button variant="default">Default</Button>
+<Button variant="destructive">Delete</Button>
+<Button variant="outline">Outline</Button>
+<Button variant="secondary">Secondary</Button>
+<Button variant="ghost">Ghost</Button>
+<Button variant="link">Link</Button>
 
-// Variants: default, primary, success, warning, destructive, outline, ghost, link, ai
-// Sizes: default, sm, lg, icon, xs
+// Sizes
+<Button size="default">Default</Button>
+<Button size="sm">Small</Button>
+<Button size="lg">Large</Button>
+<Button size="icon">🔍</Button>
+
+// States
+<Button disabled>Disabled</Button>
+<Button loading>Loading...</Button>
 ```
 
 #### Input
@@ -24,7 +33,10 @@ import { Button } from "@/components/ui/button";
 ```typescript
 import { Input } from "@/components/ui/input";
 
-<Input type="text" placeholder="Enter text..." className="w-full" />;
+<Input type="text" placeholder="Enter text..." />
+<Input type="email" placeholder="Email address" />
+<Input type="password" placeholder="Password" />
+<Input disabled placeholder="Disabled input" />
 ```
 
 #### Textarea
@@ -32,7 +44,8 @@ import { Input } from "@/components/ui/input";
 ```typescript
 import { Textarea } from "@/components/ui/textarea";
 
-<Textarea placeholder="Enter description..." rows={4} />;
+<Textarea placeholder="Enter your message..." />
+<Textarea rows={5} placeholder="Larger textarea" />
 ```
 
 #### Select
@@ -48,53 +61,14 @@ import {
 
 <Select>
   <SelectTrigger>
-    <SelectValue placeholder="Select option" />
+    <SelectValue placeholder="Select an option" />
   </SelectTrigger>
   <SelectContent>
     <SelectItem value="option1">Option 1</SelectItem>
     <SelectItem value="option2">Option 2</SelectItem>
+    <SelectItem value="option3">Option 3</SelectItem>
   </SelectContent>
-</Select>;
-```
-
-#### Checkbox
-
-```typescript
-import { Checkbox } from "@/components/ui/checkbox";
-
-<Checkbox id="terms" />
-<label htmlFor="terms">Accept terms</label>
-```
-
-#### Radio Group
-
-```typescript
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-
-<RadioGroup defaultValue="option1">
-  <div className="flex items-center space-x-2">
-    <RadioGroupItem value="option1" id="r1" />
-    <Label htmlFor="r1">Option 1</Label>
-  </div>
-</RadioGroup>;
-```
-
-#### Switch
-
-```typescript
-import { Switch } from "@/components/ui/switch";
-
-<Switch id="notifications" />
-<Label htmlFor="notifications">Enable notifications</Label>
-```
-
-#### Slider
-
-```typescript
-import { Slider } from "@/components/ui/slider";
-
-<Slider defaultValue={[50]} max={100} step={1} className="w-full" />;
+</Select>
 ```
 
 ### Layout Components
@@ -114,7 +88,7 @@ import {
 <Card>
   <CardHeader>
     <CardTitle>Card Title</CardTitle>
-    <CardDescription>Card description</CardDescription>
+    <CardDescription>Card description goes here</CardDescription>
   </CardHeader>
   <CardContent>
     <p>Card content</p>
@@ -122,34 +96,10 @@ import {
   <CardFooter>
     <Button>Action</Button>
   </CardFooter>
-</Card>;
+</Card>
 ```
 
-#### Separator
-
-```typescript
-import { Separator } from "@/components/ui/separator";
-
-<div>
-  <p>Content above</p>
-  <Separator className="my-4" />
-  <p>Content below</p>
-</div>;
-```
-
-#### Scroll Area
-
-```typescript
-import { ScrollArea } from "@/components/ui/scroll-area";
-
-<ScrollArea className="h-72 w-48 rounded-md border">
-  <div className="p-4">{/* Scrollable content */}</div>
-</ScrollArea>;
-```
-
-### Navigation Components
-
-#### Tabs (Use AnimatedTabs)
+#### Tabs
 
 ```typescript
 import {
@@ -165,91 +115,12 @@ import {
     <TabsTrigger value="tab2">Tab 2</TabsTrigger>
   </TabsList>
   <TabsContent value="tab1">
-    <p>Tab 1 content</p>
+    <p>Content for tab 1</p>
   </TabsContent>
   <TabsContent value="tab2">
-    <p>Tab 2 content</p>
+    <p>Content for tab 2</p>
   </TabsContent>
-</Tabs>;
-```
-
-#### Dropdown Menu
-
-```typescript
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-<DropdownMenu>
-  <DropdownMenuTrigger asChild>
-    <Button variant="outline">Open</Button>
-  </DropdownMenuTrigger>
-  <DropdownMenuContent>
-    <DropdownMenuItem>Item 1</DropdownMenuItem>
-    <DropdownMenuItem>Item 2</DropdownMenuItem>
-  </DropdownMenuContent>
-</DropdownMenu>;
-```
-
-#### Menubar
-
-```typescript
-import {
-  Menubar,
-  MenubarContent,
-  MenubarItem,
-  MenubarMenu,
-  MenubarTrigger,
-} from "@/components/ui/menubar";
-
-<Menubar>
-  <MenubarMenu>
-    <MenubarTrigger>File</MenubarTrigger>
-    <MenubarContent>
-      <MenubarItem>New</MenubarItem>
-      <MenubarItem>Open</MenubarItem>
-    </MenubarContent>
-  </MenubarMenu>
-</Menubar>;
-```
-
-### Feedback Components
-
-#### Alert Dialog
-
-```typescript
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-
-<AlertDialog>
-  <AlertDialogTrigger asChild>
-    <Button variant="destructive">Delete</Button>
-  </AlertDialogTrigger>
-  <AlertDialogContent>
-    <AlertDialogHeader>
-      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-      <AlertDialogDescription>
-        This action cannot be undone.
-      </AlertDialogDescription>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <AlertDialogCancel>Cancel</AlertDialogCancel>
-      <AlertDialogAction>Delete</AlertDialogAction>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>;
+</Tabs>
 ```
 
 #### Dialog
@@ -259,6 +130,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -273,65 +145,140 @@ import {
       <DialogTitle>Dialog Title</DialogTitle>
       <DialogDescription>Dialog description</DialogDescription>
     </DialogHeader>
-    {/* Dialog content */}
+    <div>Dialog content</div>
+    <DialogFooter>
+      <Button>Save</Button>
+    </DialogFooter>
   </DialogContent>
-</Dialog>;
+</Dialog>
 ```
 
-#### Toast
-
-```typescript
-import { useToast } from "@/hooks/use-toast";
-
-function Component() {
-  const { toast } = useToast();
-
-  return (
-    <Button
-      onClick={() => {
-        toast({
-          title: "Success",
-          description: "Operation completed successfully",
-        });
-      }}
-    >
-      Show Toast
-    </Button>
-  );
-}
-```
-
-#### Tooltip
+#### Sheet
 
 ```typescript
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
-<TooltipProvider>
-  <Tooltip>
-    <TooltipTrigger asChild>
-      <Button variant="outline">Hover me</Button>
-    </TooltipTrigger>
-    <TooltipContent>
-      <p>Tooltip content</p>
-    </TooltipContent>
-  </Tooltip>
-</TooltipProvider>;
+<Sheet>
+  <SheetTrigger asChild>
+    <Button>Open Sheet</Button>
+  </SheetTrigger>
+  <SheetContent>
+    <SheetHeader>
+      <SheetTitle>Sheet Title</SheetTitle>
+      <SheetDescription>Sheet description</SheetDescription>
+    </SheetHeader>
+    <div>Sheet content</div>
+  </SheetContent>
+</Sheet>
 ```
 
-#### Progress
+### Navigation Components
+
+#### Breadcrumb
 
 ```typescript
-import { Progress } from "@/components/ui/progress";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 
-<Progress value={33} className="w-full" />;
+<Breadcrumb>
+  <BreadcrumbList>
+    <BreadcrumbItem>
+      <BreadcrumbLink href="/">Home</BreadcrumbLink>
+    </BreadcrumbItem>
+    <BreadcrumbSeparator />
+    <BreadcrumbItem>
+      <BreadcrumbLink href="/studio">Studio</BreadcrumbLink>
+    </BreadcrumbItem>
+    <BreadcrumbSeparator />
+    <BreadcrumbItem>
+      <BreadcrumbPage>Write</BreadcrumbPage>
+    </BreadcrumbItem>
+  </BreadcrumbList>
+</Breadcrumb>
 ```
 
-### Display Components
+#### Navigation Menu
+
+```typescript
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
+
+<NavigationMenu>
+  <NavigationMenuList>
+    <NavigationMenuItem>
+      <NavigationMenuTrigger>Features</NavigationMenuTrigger>
+      <NavigationMenuContent>
+        <NavigationMenuLink href="/studio">Studio</NavigationMenuLink>
+        <NavigationMenuLink href="/brand">Brand</NavigationMenuLink>
+      </NavigationMenuContent>
+    </NavigationMenuItem>
+  </NavigationMenuList>
+</NavigationMenu>
+```
+
+### Data Display Components
+
+#### Table
+
+```typescript
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+<Table>
+  <TableCaption>A list of your recent content.</TableCaption>
+  <TableHeader>
+    <TableRow>
+      <TableHead>Title</TableHead>
+      <TableHead>Type</TableHead>
+      <TableHead>Created</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    <TableRow>
+      <TableCell>Blog Post Title</TableCell>
+      <TableCell>Blog</TableCell>
+      <TableCell>2024-01-01</TableCell>
+    </TableRow>
+  </TableBody>
+</Table>
+```
+
+#### Badge
+
+```typescript
+import { Badge } from "@/components/ui/badge";
+
+<Badge variant="default">Default</Badge>
+<Badge variant="secondary">Secondary</Badge>
+<Badge variant="destructive">Error</Badge>
+<Badge variant="outline">Outline</Badge>
+```
 
 #### Avatar
 
@@ -341,61 +288,139 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 <Avatar>
   <AvatarImage src="/avatar.jpg" alt="User" />
   <AvatarFallback>JD</AvatarFallback>
-</Avatar>;
+</Avatar>
 ```
 
-#### Badge
+### Feedback Components
+
+#### Alert
 
 ```typescript
-import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
-<Badge variant="default">Badge</Badge>;
-// Variants: default, secondary, destructive, outline
+<Alert>
+  <AlertCircle className="h-4 w-4" />
+  <AlertTitle>Heads up!</AlertTitle>
+  <AlertDescription>
+    You can add components to your app using the cli.
+  </AlertDescription>
+</Alert>
+
+<Alert variant="destructive">
+  <AlertCircle className="h-4 w-4" />
+  <AlertTitle>Error</AlertTitle>
+  <AlertDescription>Something went wrong.</AlertDescription>
+</Alert>
 ```
 
-#### Accordion
+#### Toast
 
 ```typescript
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { useToast } from "@/hooks/use-toast";
 
-<Accordion type="single" collapsible>
-  <AccordionItem value="item-1">
-    <AccordionTrigger>Question 1</AccordionTrigger>
-    <AccordionContent>Answer 1</AccordionContent>
-  </AccordionItem>
-</Accordion>;
+const { toast } = useToast();
+
+// Success toast
+toast({
+  title: "Success",
+  description: "Content created successfully",
+});
+
+// Error toast
+toast({
+  title: "Error",
+  description: "Failed to create content",
+  variant: "destructive",
+});
+
+// Custom toast
+toast({
+  title: "Custom Toast",
+  description: "With custom styling",
+  duration: 5000,
+});
 ```
 
-#### Collapsible
+#### Progress
 
 ```typescript
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Progress } from "@/components/ui/progress";
 
-<Collapsible>
-  <CollapsibleTrigger>Toggle</CollapsibleTrigger>
-  <CollapsibleContent>Collapsible content</CollapsibleContent>
-</Collapsible>;
+<Progress value={33} className="w-full" />
+<Progress value={66} className="w-full" />
+<Progress value={100} className="w-full" />
 ```
 
-## 🏠 Hub Components
+### Form Components
+
+#### Label
+
+```typescript
+import { Label } from "@/components/ui/label";
+
+<Label htmlFor="email">Email</Label>
+<Input id="email" type="email" />
+```
+
+#### Checkbox
+
+```typescript
+import { Checkbox } from "@/components/ui/checkbox";
+
+<div className="flex items-center space-x-2">
+  <Checkbox id="terms" />
+  <Label htmlFor="terms">Accept terms and conditions</Label>
+</div>
+```
+
+#### Radio Group
+
+```typescript
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
+<RadioGroup defaultValue="option-one">
+  <div className="flex items-center space-x-2">
+    <RadioGroupItem value="option-one" id="option-one" />
+    <Label htmlFor="option-one">Option One</Label>
+  </div>
+  <div className="flex items-center space-x-2">
+    <RadioGroupItem value="option-two" id="option-two" />
+    <Label htmlFor="option-two">Option Two</Label>
+  </div>
+</RadioGroup>
+```
+
+#### Switch
+
+```typescript
+import { Switch } from "@/components/ui/switch";
+
+<div className="flex items-center space-x-2">
+  <Switch id="airplane-mode" />
+  <Label htmlFor="airplane-mode">Airplane Mode</Label>
+</div>
+```
+
+## Hub Components
 
 ### Hub Layout
 
 ```typescript
 import { HubLayout } from "@/components/hub/hub-layout";
+import { Search } from "lucide-react";
 
-<HubLayout title="Hub Title" description="Hub description" icon={<Icon />}>
+<HubLayout
+  title="Research Hub"
+  description="AI-powered research capabilities"
+  icon={Search}
+  tabs={[
+    { id: 'agent', label: 'Research Agent', href: '/research/agent' },
+    { id: 'reports', label: 'Reports', href: '/research/reports' },
+  ]}
+>
   {children}
-</HubLayout>;
+</HubLayout>
 ```
 
 ### Hub Tabs
@@ -403,399 +428,377 @@ import { HubLayout } from "@/components/hub/hub-layout";
 ```typescript
 import { HubTabs } from "@/components/hub/hub-tabs";
 
-<HubTabs
-  tabs={[
-    { id: "tab1", label: "Tab 1", href: "/hub/tab1", icon: User },
-    { id: "tab2", label: "Tab 2", href: "/hub/tab2", badge: 5 },
-  ]}
-  variant="pills"
-  isSticky={true}
-/>;
+const tabs = [
+  { id: 'write', label: 'Write', href: '/studio/write' },
+  { id: 'describe', label: 'Describe', href: '/studio/describe' },
+  { id: 'reimagine', label: 'Reimagine', href: '/studio/reimagine' },
+];
+
+<HubTabs tabs={tabs} currentTab="write" />
 ```
 
 ### Hub Header
 
 ```typescript
 import { HubHeader } from "@/components/hub/hub-header";
+import { Palette } from "lucide-react";
 
 <HubHeader
-  title="Hub Title"
-  description="Hub description"
-  icon={<Icon />}
-  actions={<Button>Action</Button>}
-/>;
-```
-
-### Hub Breadcrumbs
-
-```typescript
-import { HubBreadcrumbs } from "@/components/hub/hub-breadcrumbs";
-
-<HubBreadcrumbs
-  items={[
-    { label: "Home", href: "/" },
-    { label: "Hub", href: "/hub" },
-    { label: "Current Page" },
-  ]}
-/>;
-```
-
-## 🎯 Custom Components
-
-### Search Input
-
-```typescript
-import { SearchInput } from "@/components/ui/search-input";
-
-<SearchInput
-  placeholder="Search..."
-  onSearch={(query) => console.log(query)}
-  debounceMs={300}
-/>;
-```
-
-### Metric Card
-
-```typescript
-import { MetricCard } from "@/components/ui/metric-card";
-
-<MetricCard
-  title="Total Revenue"
-  value={125000}
-  format="currency"
-  trend={{ value: 12, direction: "up" }}
-  sparklineData={[100, 120, 110, 125]}
-/>;
-```
-
-### Sparkline
-
-```typescript
-import { Sparkline } from "@/components/ui/sparkline";
-
-<Sparkline
-  data={[1, 5, 3, 8, 2, 7, 4]}
-  type="line"
-  color="blue"
-  className="w-20 h-8"
-/>;
-```
-
-### Intelligent Empty State
-
-```typescript
-import { IntelligentEmptyState } from "@/components/ui/intelligent-empty-state";
-
-<IntelligentEmptyState
-  icon={<FileIcon />}
-  title="No content yet"
-  description="Create your first piece of content to get started"
-  action={{
-    label: "Create Content",
-    onClick: () => navigate("/studio/write"),
-  }}
-  variant="card"
-/>;
-```
-
-### Usage Tracking
-
-```typescript
-import { UsageTracking } from "@/components/ui/usage-tracking";
-
-<UsageTracking
-  title="API Usage"
-  current={750}
-  limit={1000}
-  period="monthly"
-  resetDate="2024-02-01"
-/>;
-```
-
-### Profile Completion Banner
-
-```typescript
-import { ProfileCompletionBanner } from "@/components/profile-completion-banner";
-
-<ProfileCompletionBanner
-  completionPercentage={75}
-  missingFields={["phone", "bio"]}
-  variant="banner"
-/>;
-```
-
-## 🎨 Real Estate Icons
-
-### Custom Icons
-
-```typescript
-import {
-  ContentIcon,
-  AISparkleIcon,
-  RealEstateIcon
-} from "@/components/ui/real-estate-icons";
-
-<ContentIcon className="w-6 h-6" />
-<AISparkleIcon className="w-6 h-6 animate-pulse" />
-<RealEstateIcon className="w-6 h-6" />
-```
-
-## 📊 Data Display Components
-
-### Market Insights Components
-
-#### Market Insights Filters
-
-```typescript
-import { MarketInsightsFilters } from "@/components/market-insights/market-insights-filters";
-
-<MarketInsightsFilters
-  filters={{ location: 'Seattle, WA', timeframe: '3months' }}
-  onFiltersChange={(filters) => setFilters(filters)}
-  onAnalyze={() => analyzeMarket()}
+  title="Studio Hub"
+  description="Create professional content in minutes"
+  icon={Palette}
+  actions={
+    <Button>
+      <Plus className="h-4 w-4 mr-2" />
+      New Content
+    </Button>
+  }
 />
 ```
 
-#### Market Trends Tab
+## Custom Components
+
+### Loading States
 
 ```typescript
-import { MarketTrendsTab } from "@/components/market-insights/market-trends-tab";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 
-<MarketTrendsTab trends={marketTrends} />
+// Spinner
+<LoadingSpinner size="sm" />
+<LoadingSpinner size="md" />
+<LoadingSpinner size="lg" />
+
+// Skeleton
+<LoadingSkeleton className="h-4 w-full" />
+<LoadingSkeleton className="h-8 w-32" />
 ```
 
-#### Life Events Tab
+### Empty States
 
 ```typescript
-import { LifeEventsTab } from "@/components/market-insights/life-events-tab";
+import { EmptyState } from "@/components/ui/empty-state";
+import { FileText } from "lucide-react";
 
-<LifeEventsTab lifeEvents={lifeEventPredictions} />
+<EmptyState
+  icon={FileText}
+  title="No content yet"
+  description="Create your first piece of content to get started"
+  action={
+    <Button>
+      <Plus className="h-4 w-4 mr-2" />
+      Create Content
+    </Button>
+  }
+/>
 ```
 
-#### Market Stats Cards
+### Error Boundary
 
 ```typescript
-import { MarketStatsCards } from "@/components/market-insights/market-stats-cards";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 
-<MarketStatsCards />
-```
-
-### Responsive Table
-
-```typescript
-import { ResponsiveTable } from "@/components/ui/responsive-table";
-
-<ResponsiveTable
-  data={tableData}
-  columns={[
-    { key: "name", label: "Name", sortable: true },
-    { key: "email", label: "Email" },
-    {
-      key: "status",
-      label: "Status",
-      render: (value) => <Badge>{value}</Badge>,
-    },
-  ]}
-  mobileCardRender={(item) => (
-    <Card>
-      <CardContent>
-        <h3>{item.name}</h3>
-        <p>{item.email}</p>
-      </CardContent>
-    </Card>
-  )}
-/>;
+<ErrorBoundary fallback={<div>Something went wrong</div>}>
+  <YourComponent />
+</ErrorBoundary>
 ```
 
 ### Virtual Scroll
 
 ```typescript
-import { VirtualScroll } from "@/components/ui/virtual-scroll";
+import { VirtualScrollList } from "@/components/ui/virtual-scroll";
 
-<VirtualScroll
-  items={largeDataSet}
+<VirtualScrollList
+  items={largeItemList}
   itemHeight={60}
   containerHeight={400}
   renderItem={({ item, index }) => (
     <div key={index} className="p-4 border-b">
-      {item.name}
+      {item.title}
     </div>
   )}
-/>;
+/>
 ```
 
-## 🎭 Animation Components
+## Form Patterns
 
-### Animated Number
-
-```typescript
-import { AnimatedNumber } from "@/components/ui/animated-number";
-
-<AnimatedNumber value={1250} format="currency" duration={1000} />;
-```
-
-### Celebration
+### Basic Form
 
 ```typescript
-import { Celebration } from "@/components/ui/celebration";
+import { useFormState } from "react-dom";
+import { createContentAction } from "@/app/actions";
 
-<Celebration trigger={showCelebration} type="confetti" duration={3000} />;
-```
+export function ContentForm() {
+  const [state, formAction] = useFormState(createContentAction, null);
 
-### Loading States
-
-```typescript
-import { AILoadingState } from "@/components/ai-loading-state";
-
-<AILoadingState
-  operation="blog-post-generation"
-  stage="generating"
-  progress={45}
-  message="Creating your blog post..."
-/>;
-```
-
-## 🔧 Utility Components
-
-### Error Boundary
-
-```typescript
-import { ErrorBoundary, AIErrorBoundary } from "@/components/error-boundary";
-
-<ErrorBoundary>
-  <YourComponent />
-</ErrorBoundary>
-
-<AIErrorBoundary>
-  <AIComponent />
-</AIErrorBoundary>
-```
-
-### Contextual Tooltip
-
-```typescript
-import { ContextualTooltip } from "@/components/ui/contextual-tooltip";
-
-<ContextualTooltip
-  content="This helps you create better content"
-  context="content-creation"
-  placement="top"
->
-  <Button>Create Content</Button>
-</ContextualTooltip>;
-```
-
-## 📱 Mobile Components
-
-### Mobile Optimized Components
-
-All components are mobile-optimized by default. Use these hooks for responsive behavior:
-
-```typescript
-import { useMobile, useTablet } from "@/hooks/use-mobile";
-
-function ResponsiveComponent() {
-  const isMobile = useMobile();
-  const isTablet = useTablet();
-
-  if (isMobile) {
-    return <MobileLayout />;
-  }
-
-  if (isTablet) {
-    return <TabletLayout />;
-  }
-
-  return <DesktopLayout />;
+  return (
+    <form action={formAction} className="space-y-4">
+      <div>
+        <Label htmlFor="title">Title</Label>
+        <Input id="title" name="title" required />
+      </div>
+      
+      <div>
+        <Label htmlFor="content">Content</Label>
+        <Textarea id="content" name="content" required />
+      </div>
+      
+      <div>
+        <Label htmlFor="type">Type</Label>
+        <Select name="type">
+          <SelectTrigger>
+            <SelectValue placeholder="Select type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="blog">Blog Post</SelectItem>
+            <SelectItem value="social">Social Media</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <Button type="submit">Create Content</Button>
+      
+      {state?.message && (
+        <Alert variant={state.data ? "default" : "destructive"}>
+          <AlertDescription>{state.message}</AlertDescription>
+        </Alert>
+      )}
+    </form>
+  );
 }
 ```
 
-## 🎨 Styling Guidelines
-
-### Component Styling
+### Form with Validation
 
 ```typescript
-// Use cn() utility for conditional classes
-import { cn } from "@/lib/utils";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
-<Button
-  className={cn(
-    "base-styles",
-    variant === "primary" && "primary-styles",
-    disabled && "disabled-styles"
-  )}
->
-  Button
-</Button>;
+const formSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  content: z.string().min(10, "Content must be at least 10 characters"),
+  type: z.enum(["blog", "social"]),
+});
+
+export function ValidatedForm() {
+  const form = useForm({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: "",
+      content: "",
+      type: "blog",
+    },
+  });
+
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+    // Handle form submission
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Title</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <Button type="submit">Submit</Button>
+      </form>
+    </Form>
+  );
+}
 ```
 
-### Design Tokens
+## Animation Components
+
+### Framer Motion Wrappers
 
 ```typescript
-// Use CSS variables for consistent theming
-<div className="bg-background text-foreground border-border">
+import { motion } from "framer-motion";
+
+// Fade in animation
+<motion.div
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  transition={{ duration: 0.3 }}
+>
   Content
+</motion.div>
+
+// Slide in animation
+<motion.div
+  initial={{ x: -20, opacity: 0 }}
+  animate={{ x: 0, opacity: 1 }}
+  transition={{ duration: 0.3 }}
+>
+  Content
+</motion.div>
+
+// Stagger children
+<motion.div
+  initial="hidden"
+  animate="visible"
+  variants={{
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  }}
+>
+  {items.map((item, index) => (
+    <motion.div
+      key={index}
+      variants={{
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 }
+      }}
+    >
+      {item}
+    </motion.div>
+  ))}
+</motion.div>
+```
+
+## Responsive Patterns
+
+### Mobile-First Design
+
+```typescript
+// Responsive classes
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  {/* Content */}
 </div>
 
-// Color palette
-<div className="bg-primary text-primary-foreground">Primary</div>
-<div className="bg-secondary text-secondary-foreground">Secondary</div>
-<div className="bg-muted text-muted-foreground">Muted</div>
+// Responsive text
+<h1 className="text-2xl md:text-3xl lg:text-4xl font-bold">
+  Responsive Heading
+</h1>
+
+// Responsive spacing
+<div className="p-4 md:p-6 lg:p-8">
+  {/* Content */}
+</div>
 ```
 
-### Animation Classes
+### Conditional Rendering
 
 ```typescript
-// Use predefined animation classes
-<div className="animate-fade-in">Fade in</div>
-<div className="animate-slide-up">Slide up</div>
-<div className="animate-pulse">Pulse</div>
-<div className="animate-spin">Spin</div>
-```
+import { useIsMobile } from "@/hooks/use-mobile";
 
-## 🔍 Component Development
+export function ResponsiveComponent() {
+  const isMobile = useIsMobile();
 
-### Creating New Components
+  if (isMobile) {
+    return <MobileView />;
+  }
 
-1. **Use TypeScript** for all components
-2. **Export from index** for clean imports
-3. **Include JSDoc** for documentation
-4. **Add Storybook stories** for testing
-5. **Follow naming conventions**
-
-```typescript
-// components/ui/my-component.tsx
-interface MyComponentProps {
-  /** Component title */
-  title: string;
-  /** Optional description */
-  description?: string;
-  /** Click handler */
-  onClick?: () => void;
+  return <DesktopView />;
 }
+```
 
-export function MyComponent({ title, description, onClick }: MyComponentProps) {
+## Accessibility Patterns
+
+### Keyboard Navigation
+
+```typescript
+import { useKeyboardNavigation } from "@/hooks/use-keyboard-navigation";
+
+export function NavigableList({ items }: { items: any[] }) {
+  const { focusedIndex, handleKeyDown } = useKeyboardNavigation(items.length);
+
   return (
-    <div className="p-4 border rounded-lg">
-      <h3 className="font-semibold">{title}</h3>
-      {description && <p className="text-muted-foreground">{description}</p>}
-      {onClick && <Button onClick={onClick}>Action</Button>}
+    <div onKeyDown={handleKeyDown} tabIndex={0}>
+      {items.map((item, index) => (
+        <div
+          key={index}
+          className={cn(
+            "p-2 cursor-pointer",
+            focusedIndex === index && "bg-accent"
+          )}
+          tabIndex={-1}
+        >
+          {item.title}
+        </div>
+      ))}
     </div>
   );
 }
 ```
 
-### Component Testing
+### Screen Reader Support
 
 ```typescript
-// __tests__/my-component.test.tsx
-import { render, screen } from "@testing-library/react";
-import { MyComponent } from "../my-component";
+// ARIA labels and descriptions
+<Button aria-label="Close dialog">
+  <X className="h-4 w-4" />
+</Button>
 
-test("renders component with title", () => {
-  render(<MyComponent title="Test Title" />);
-  expect(screen.getByText("Test Title")).toBeInTheDocument();
+<div aria-describedby="help-text">
+  <Input />
+  <p id="help-text" className="sr-only">
+    Enter your email address
+  </p>
+</div>
+
+// Live regions for dynamic content
+<div aria-live="polite" aria-atomic="true">
+  {status && <p>{status}</p>}
+</div>
+```
+
+## Performance Patterns
+
+### Memoization
+
+```typescript
+import { memo, useMemo } from "react";
+
+// Memoized component
+const ExpensiveComponent = memo(({ data }: { data: any[] }) => {
+  const processedData = useMemo(() => {
+    return data.map(item => ({
+      ...item,
+      processed: expensiveCalculation(item)
+    }));
+  }, [data]);
+
+  return (
+    <div>
+      {processedData.map(item => (
+        <div key={item.id}>{item.processed}</div>
+      ))}
+    </div>
+  );
 });
 ```
 
-This component reference provides a comprehensive guide to all available UI components in the Bayon CoAgent platform.
+### Lazy Loading
+
+```typescript
+import { lazy, Suspense } from "react";
+
+const HeavyComponent = lazy(() => import("./heavy-component"));
+
+export function LazyWrapper() {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <HeavyComponent />
+    </Suspense>
+  );
+}
+```
+
+This component library reference provides comprehensive examples of all available UI components and patterns used in Bayon CoAgent. Use these examples as templates for building consistent, accessible, and performant user interfaces.

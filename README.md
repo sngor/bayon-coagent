@@ -26,23 +26,22 @@ Visit `http://localhost:3000` to get started.
 
 ## 📚 Documentation
 
-**New to the project?** Start with the [Getting Started Guide](./docs/guides/getting-started.md)
+**New to the project?** Start with the [Getting Started Guide](./docs/GETTING_STARTED.md)
 
 ### Essential Guides
 
-- [🏁 Getting Started](./docs/guides/getting-started.md) - Complete setup guide
-- [🏗️ Architecture](./docs/guides/architecture.md) - System design overview
-- [🚀 Deployment](./docs/deployment/deployment.md) - Production deployment
-- [🔧 Development](./docs/guides/development.md) - Development workflow
+- [🏁 Getting Started](./docs/GETTING_STARTED.md) - Complete setup and first steps
+- [🏗️ Architecture](./docs/ARCHITECTURE.md) - System design and structure  
+- [🔧 Development](./docs/DEVELOPMENT.md) - Development workflow and patterns
+- [🚀 Deployment](./docs/DEPLOYMENT.md) - Production deployment process
+- [🐛 Troubleshooting](./docs/TROUBLESHOOTING.md) - Common problems and solutions
 
 ### Quick References
 
 - [📋 Commands](./docs/quick-reference/commands.md) - All npm scripts
 - [🎨 Components](./docs/quick-reference/components.md) - UI component library
-- [🔑 API Keys](./docs/quick-reference/api-key-service.md) - API key management service
-- [🔄 Loading States](./docs/loading-states.md) - Loading state system and patterns
 - [⚙️ Configuration](./docs/quick-reference/configuration.md) - Environment setup
-- [🐛 Troubleshooting](./docs/troubleshooting/common-issues.md) - Common problems
+- [🔑 API Reference](./docs/quick-reference/api.md) - Server actions and endpoints
 
 See [docs/README.md](./docs/README.md) for complete documentation index.
 

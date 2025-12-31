@@ -1,24 +1,22 @@
 # Configuration Reference
 
-Complete reference for environment variables and configuration in the Bayon CoAgent platform.
+## Environment Variables
 
-## 🌍 Environment Variables
-
-### Local Development (.env.local)
+### Development Environment (.env.local)
 
 ```bash
-# Environment Configuration
+# Environment
 NODE_ENV=development
 USE_LOCAL_AWS=true
 
-# AWS Configuration (LocalStack)
+# AWS Configuration
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=test
 AWS_SECRET_ACCESS_KEY=test
 
-# AWS Services (LocalStack endpoints)
-COGNITO_USER_POOL_ID=us-east-1_XXXXXXXXX    # From localstack:init
-COGNITO_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx # From localstack:init
+# AWS Services (LocalStack)
+COGNITO_USER_POOL_ID=us-east-1_xxxxxxxxx
+COGNITO_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx
 DYNAMODB_TABLE_NAME=BayonCoAgent-local
 S3_BUCKET_NAME=bayon-coagent-local
 
@@ -30,89 +28,146 @@ BEDROCK_REGION=us-east-1
 TAVILY_API_KEY=your-tavily-api-key
 NEWS_API_KEY=your-news-api-key
 BRIDGE_API_KEY=your-bridge-api-key
+GOOGLE_AI_API_KEY=your-google-ai-api-key
 
-# Google OAuth (optional for local development)
+# Google OAuth
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 GOOGLE_REDIRECT_URI=http://localhost:3000/api/oauth/google/callback
 
-# Development Features
-DEBUG=false
-SKIP_ENV_VALIDATION=false
-ANALYZE=false
+# Stripe (optional)
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 ```
 
-### Production (.env.production)
+### Production Environment (.env.production)
 
 ```bash
-# Environment Configuration
+# Environment
 NODE_ENV=production
 USE_LOCAL_AWS=false
 
-# AWS Configuration (uses IAM roles in production)
-AWS_REGION=us-east-1
+# Application
+NEXT_PUBLIC_APP_URL=https://bayoncoagent.com
 
-# AWS Services (Production resources)
-COGNITO_USER_POOL_ID=us-east-1_XXXXXXXXX
-COGNITO_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx
+# AWS Configuration
+AWS_REGION=us-east-1
+# AWS credentials handled by IAM roles in production
+
+# AWS Services (Production)
+COGNITO_USER_POOL_ID=us-east-1_PROD_POOL_ID
+COGNITO_CLIENT_ID=PROD_CLIENT_ID
 DYNAMODB_TABLE_NAME=BayonCoAgent-prod
-S3_BUCKET_NAME=bayon-coagent-storage-prod
+S3_BUCKET_NAME=bayon-coagent-prod-bucket
 
 # Bedrock Configuration
 BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
 BEDROCK_REGION=us-east-1
 
-# External APIs (use AWS Secrets Manager in production)
-TAVILY_API_KEY=your-tavily-api-key
-NEWS_API_KEY=your-news-api-key
-BRIDGE_API_KEY=your-bridge-api-key
+# External APIs (stored in AWS Secrets Manager)
+TAVILY_API_KEY=prod-tavily-key
+NEWS_API_KEY=prod-news-key
+BRIDGE_API_KEY=prod-bridge-key
+GOOGLE_AI_API_KEY=prod-google-ai-key
 
 # Google OAuth
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_REDIRECT_URI=https://yourdomain.com/api/oauth/google/callback
+GOOGLE_CLIENT_ID=prod-google-client-id
+GOOGLE_CLIENT_SECRET=prod-google-client-secret
+GOOGLE_REDIRECT_URI=https://bayoncoagent.com/api/oauth/google/callback
 
-# Production Features
-NEXT_TELEMETRY_DISABLED=1
+# Stripe
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
+
+# Security
+NEXTAUTH_SECRET=your-nextauth-secret
+NEXTAUTH_URL=https://bayoncoagent.com
 ```
 
-## 🔧 Configuration Files
+## Configuration Files
 
 ### Next.js Configuration (next.config.ts)
 
 ```typescript
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   // Enable experimental features
   experimental: {
-    serverActions: {
-      allowedOrigins: ["localhost:3000", "yourdomain.com"],
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
     },
   },
 
   // Image optimization
   images: {
-    formats: ["image/avif", "image/webp"],
-    domains: ["localhost", "yourdomain.com"],
+    formats: ['image/avif', 'image/webp'],
+    domains: ['localhost', 'bayoncoagent.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.amazonaws.com',
+      },
+    ],
   },
 
-  // Bundle optimization
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-      };
-    }
-    return config;
-  },
+  // Bundle analyzer (conditional)
+  ...(process.env.ANALYZE === 'true' && {
+    webpack: (config: any) => {
+      config.plugins.push(
+        new (require('@next/bundle-analyzer'))({
+          enabled: true,
+        })
+      );
+      return config;
+    },
+  }),
 
   // Environment variables validation
   env: {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
+  },
+
+  // Redirects
+  async redirects() {
+    return [
+      {
+        source: '/content-engine',
+        destination: '/studio/write',
+        permanent: true,
+      },
+      {
+        source: '/intelligence',
+        destination: '/market',
+        permanent: true,
+      },
+    ];
+  },
+
+  // Headers
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+        ],
+      },
+    ];
   },
 };
 
@@ -124,8 +179,7 @@ export default nextConfig;
 ```json
 {
   "compilerOptions": {
-    "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "ES6"],
+    "lib": ["dom", "dom.iterable", "es6"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -147,7 +201,12 @@ export default nextConfig;
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
   "exclude": ["node_modules"]
 }
 ```
@@ -155,83 +214,83 @@ export default nextConfig;
 ### Tailwind Configuration (tailwind.config.ts)
 
 ```typescript
-import type { Config } from "tailwindcss";
+import type { Config } from 'tailwindcss';
 
 const config: Config = {
-  darkMode: ["class"],
+  darkMode: ['class'],
   content: [
-    "./pages/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./app/**/*.{ts,tsx}",
-    "./src/**/*.{ts,tsx}",
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
   ],
-  prefix: "",
+  prefix: '',
   theme: {
     container: {
       center: true,
-      padding: "2rem",
+      padding: '2rem',
       screens: {
-        "2xl": "1400px",
+        '2xl': '1400px',
       },
     },
     extend: {
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
         },
         destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
         },
         muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
         },
         popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
         },
         card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
       },
       keyframes: {
-        "accordion-down": {
-          from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
+        'accordion-down': {
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
         },
-        "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
+        'accordion-up': {
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
         },
       },
       animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up': 'accordion-up 0.2s ease-out',
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require('tailwindcss-animate')],
 };
 
 export default config;
@@ -241,165 +300,65 @@ export default config;
 
 ```json
 {
-  "extends": ["next/core-web-vitals", "next/typescript"],
+  "extends": [
+    "next/core-web-vitals",
+    "@typescript-eslint/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
   "rules": {
     "@typescript-eslint/no-unused-vars": "error",
     "@typescript-eslint/no-explicit-any": "warn",
-    "prefer-const": "error",
-    "no-var": "error"
-  }
+    "@typescript-eslint/prefer-const": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "no-console": "warn"
+  },
+  "ignorePatterns": [
+    "node_modules/",
+    ".next/",
+    "out/",
+    "build/"
+  ]
 }
 ```
 
 ### Jest Configuration (jest.config.js)
 
 ```javascript
-const nextJest = require("next/jest");
+const nextJest = require('next/jest');
 
 const createJestConfig = nextJest({
-  dir: "./",
+  // Provide the path to your Next.js app to load next.config.js and .env files
+  dir: './',
 });
 
+// Add any custom config to be passed to Jest
 const customJestConfig = {
-  setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
-  testEnvironment: "jest-environment-jsdom",
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  testEnvironment: 'jest-environment-jsdom',
   moduleNameMapping: {
-    "^@/(.*)$": "<rootDir>/src/$1",
+    '^@/(.*)$': '<rootDir>/src/$1',
   },
-  testPathIgnorePatterns: ["<rootDir>/.next/", "<rootDir>/node_modules/"],
-  collectCoverageFrom: ["src/**/*.{js,jsx,ts,tsx}", "!src/**/*.d.ts"],
+  collectCoverageFrom: [
+    'src/**/*.{js,jsx,ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/**/*.stories.{js,jsx,ts,tsx}',
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70,
+    },
+  },
 };
 
+// createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
 module.exports = createJestConfig(customJestConfig);
 ```
 
-## 🐳 Docker Configuration
-
-### Docker Compose (docker-compose.yml)
-
-```yaml
-version: "3.8"
-
-services:
-  localstack:
-    container_name: localstack_main
-    image: localstack/localstack:latest
-    ports:
-      - "4566:4566"
-      - "4510-4559:4510-4559"
-    environment:
-      - SERVICES=dynamodb,s3,cognito-idp,sts,iam
-      - DEBUG=1
-      - DATA_DIR=/tmp/localstack/data
-      - DOCKER_HOST=unix:///var/run/docker.sock
-      - HOST_TMP_FOLDER=${TMPDIR:-/tmp/}localstack
-    volumes:
-      - "./localstack-data:/tmp/localstack"
-      - "/var/run/docker.sock:/var/run/docker.sock"
-```
-
-## ☁️ AWS Configuration
-
-### SAM Template (template.yaml)
-
-```yaml
-AWSTemplateFormatVersion: "2010-09-09"
-Transform: AWS::Serverless-2016-10-31
-Description: Bayon CoAgent Infrastructure
-
-Parameters:
-  Environment:
-    Type: String
-    Default: development
-    AllowedValues: [development, staging, production]
-
-Globals:
-  Function:
-    Timeout: 30
-    Runtime: nodejs18.x
-    Environment:
-      Variables:
-        NODE_ENV: !Ref Environment
-
-Resources:
-  # DynamoDB Table
-  DynamoDBTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: !Sub "BayonCoAgent-${Environment}"
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: PK
-          AttributeType: S
-        - AttributeName: SK
-          AttributeType: S
-      KeySchema:
-        - AttributeName: PK
-          KeyType: HASH
-        - AttributeName: SK
-          KeyType: RANGE
-
-  # S3 Bucket
-  S3Bucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub "bayon-coagent-storage-${Environment}"
-      CorsConfiguration:
-        CorsRules:
-          - AllowedHeaders: ["*"]
-            AllowedMethods: [GET, PUT, POST, DELETE]
-            AllowedOrigins: ["*"]
-
-  # Cognito User Pool
-  CognitoUserPool:
-    Type: AWS::Cognito::UserPool
-    Properties:
-      UserPoolName: !Sub "BayonCoAgent-${Environment}"
-      AutoVerifiedAttributes:
-        - email
-      Policies:
-        PasswordPolicy:
-          MinimumLength: 8
-          RequireUppercase: true
-          RequireLowercase: true
-          RequireNumbers: true
-
-  # Cognito User Pool Client
-  CognitoUserPoolClient:
-    Type: AWS::Cognito::UserPoolClient
-    Properties:
-      UserPoolId: !Ref CognitoUserPool
-      ClientName: !Sub "BayonCoAgent-Client-${Environment}"
-      GenerateSecret: false
-      ExplicitAuthFlows:
-        - ALLOW_USER_SRP_AUTH
-        - ALLOW_REFRESH_TOKEN_AUTH
-
-Outputs:
-  DynamoDBTableName:
-    Description: DynamoDB Table Name
-    Value: !Ref DynamoDBTable
-    Export:
-      Name: !Sub "${AWS::StackName}-DynamoDBTable"
-
-  S3BucketName:
-    Description: S3 Bucket Name
-    Value: !Ref S3Bucket
-    Export:
-      Name: !Sub "${AWS::StackName}-S3Bucket"
-
-  CognitoUserPoolId:
-    Description: Cognito User Pool ID
-    Value: !Ref CognitoUserPool
-    Export:
-      Name: !Sub "${AWS::StackName}-UserPoolId"
-
-  CognitoClientId:
-    Description: Cognito Client ID
-    Value: !Ref CognitoUserPoolClient
-    Export:
-      Name: !Sub "${AWS::StackName}-ClientId"
-```
+## AWS Configuration
 
 ### SAM Configuration (samconfig.toml)
 
@@ -407,16 +366,23 @@ Outputs:
 version = 0.1
 
 [default]
+[default.global]
 [default.global.parameters]
 stack_name = "bayon-coagent"
+region = "us-east-1"
+confirm_changeset = true
+resolve_s3 = true
+s3_prefix = "bayon-coagent"
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+image_repositories = []
 
+[default.build]
 [default.build.parameters]
 cached = true
 parallel = true
 
-[default.validate.parameters]
-lint = true
-
+[default.deploy]
 [default.deploy.parameters]
 capabilities = "CAPABILITY_IAM"
 confirm_changeset = true
@@ -426,231 +392,292 @@ region = "us-east-1"
 image_repositories = []
 
 [development]
+[development.deploy]
 [development.deploy.parameters]
-stack_name = "bayon-coagent-development"
+stack_name = "bayon-coagent-dev"
 parameter_overrides = "Environment=development"
 
 [production]
+[production.deploy]
 [production.deploy.parameters]
-stack_name = "bayon-coagent-production"
+stack_name = "bayon-coagent-prod"
 parameter_overrides = "Environment=production"
 ```
 
-## 🔐 Security Configuration
+### AWS CLI Configuration
 
-### Environment Variable Validation
+```bash
+# Configure AWS CLI
+aws configure
+
+# Or set environment variables
+export AWS_ACCESS_KEY_ID=your-access-key
+export AWS_SECRET_ACCESS_KEY=your-secret-key
+export AWS_DEFAULT_REGION=us-east-1
+
+# For LocalStack development
+export AWS_ENDPOINT_URL=http://localhost:4566
+```
+
+## Docker Configuration
+
+### Docker Compose (docker-compose.yml)
+
+```yaml
+version: '3.8'
+
+services:
+  localstack:
+    container_name: localstack_main
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566"
+      - "4571:4571"
+    environment:
+      - SERVICES=dynamodb,s3,cognito-idp,events,lambda,logs
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - HOST_TMP_FOLDER=${TMPDIR:-/tmp}/localstack
+    volumes:
+      - "${TMPDIR:-/tmp}/localstack:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./scripts/init-localstack.sh:/etc/localstack/init/ready.d/init-localstack.sh"
+    networks:
+      - localstack-network
+
+networks:
+  localstack-network:
+    driver: bridge
+```
+
+### Dockerfile
+
+```dockerfile
+FROM node:18-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Install dependencies based on the preferred package manager
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/public ./public
+
+# Set the correct permission for prerender cache
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
+
+# Automatically leverage output traces to reduce image size
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+CMD ["node", "server.js"]
+```
+
+## Package Configuration
+
+### Package.json Scripts
+
+```json
+{
+  "scripts": {
+    "dev": "next dev --turbo",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "localstack:start": "docker-compose up -d localstack",
+    "localstack:stop": "docker-compose down",
+    "localstack:init": "./scripts/init-localstack.sh",
+    "localstack:logs": "docker-compose logs -f localstack",
+    "verify:setup": "node scripts/verify-setup.js",
+    "sam:validate": "sam validate --template template.yaml",
+    "sam:deploy:dev": "sam deploy --config-env development",
+    "sam:deploy:prod": "sam deploy --config-env production",
+    "sam:outputs": "sam list stack-outputs --stack-name bayon-coagent-prod",
+    "deploy:amplify": "./scripts/deploy-amplify.sh",
+    "admin:create": "node scripts/create-admin.js",
+    "build:analyze": "ANALYZE=true npm run build",
+    "lighthouse": "lighthouse http://localhost:3000 --output=html --output-path=./lighthouse-report.html"
+  }
+}
+```
+
+## IDE Configuration
+
+### VS Code Settings (.vscode/settings.json)
+
+```json
+{
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "tailwindCSS.experimental.classRegex": [
+    ["cn\\(([^)]*)\\)", "'([^']*)'"],
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
+  ],
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "emmet.includeLanguages": {
+    "typescript": "html",
+    "typescriptreact": "html"
+  }
+}
+```
+
+### VS Code Extensions (.vscode/extensions.json)
+
+```json
+{
+  "recommendations": [
+    "bradlc.vscode-tailwindcss",
+    "ms-vscode.vscode-typescript-next",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-eslint",
+    "formulahendry.auto-rename-tag",
+    "christian-kohler.path-intellisense",
+    "ms-vscode.vscode-json",
+    "redhat.vscode-yaml",
+    "ms-vscode.vscode-docker"
+  ]
+}
+```
+
+## Security Configuration
+
+### Content Security Policy
 
 ```typescript
-// src/lib/env.ts
-import { z } from "zod";
+// next.config.ts
+const securityHeaders = [
+  {
+    key: 'Content-Security-Policy',
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https:",
+      "font-src 'self'",
+      "connect-src 'self' https://api.anthropic.com https://bedrock-runtime.us-east-1.amazonaws.com",
+    ].join('; '),
+  },
+  {
+    key: 'X-Frame-Options',
+    value: 'DENY',
+  },
+  {
+    key: 'X-Content-Type-Options',
+    value: 'nosniff',
+  },
+  {
+    key: 'Referrer-Policy',
+    value: 'origin-when-cross-origin',
+  },
+];
+```
+
+### Environment Validation
+
+```typescript
+// src/lib/env-validation.ts
+import { z } from 'zod';
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "staging", "production"]),
-  USE_LOCAL_AWS: z.string().transform((val) => val === "true"),
-  AWS_REGION: z.string(),
-  COGNITO_USER_POOL_ID: z.string(),
-  COGNITO_CLIENT_ID: z.string(),
-  DYNAMODB_TABLE_NAME: z.string(),
-  S3_BUCKET_NAME: z.string(),
-  BEDROCK_MODEL_ID: z.string(),
-  TAVILY_API_KEY: z.string().optional(),
-  NEWS_API_KEY: z.string().optional(),
-  BRIDGE_API_KEY: z.string().optional(),
+  NODE_ENV: z.enum(['development', 'production', 'test']),
+  USE_LOCAL_AWS: z.string().transform(val => val === 'true'),
+  AWS_REGION: z.string().min(1),
+  COGNITO_USER_POOL_ID: z.string().min(1),
+  COGNITO_CLIENT_ID: z.string().min(1),
+  DYNAMODB_TABLE_NAME: z.string().min(1),
+  S3_BUCKET_NAME: z.string().min(1),
+  BEDROCK_MODEL_ID: z.string().min(1),
+  TAVILY_API_KEY: z.string().min(1),
 });
 
 export const env = envSchema.parse(process.env);
 ```
 
-### AWS Configuration
+## Performance Configuration
+
+### Bundle Optimization
 
 ```typescript
-// src/aws/config.ts
-import { env } from "@/lib/env";
-
-export function getAWSConfig() {
-  const config: any = {
-    region: env.AWS_REGION,
-  };
-
-  if (env.USE_LOCAL_AWS) {
-    config.endpoint = "http://localhost:4566";
-    config.credentials = {
-      accessKeyId: "test",
-      secretAccessKey: "test",
-    };
-  }
-
-  return config;
-}
-```
-
-## 📱 PWA Configuration
-
-> **Note**: PWA features are disabled by default. Service worker registration and background sync are disabled to prevent 404 errors when service worker files are not present.
-
-### Enabling PWA Features
-
-To enable PWA functionality:
-
-#### 1. Environment Variable
-
-```bash
-# .env.local (development) or .env.production (production)
-NEXT_PUBLIC_ENABLE_SERVICE_WORKER=true
-```
-
-#### 2. Service Worker File
-
-Create a service worker file in the `public` directory:
-
-```javascript
-// public/sw.js - Basic service worker
-self.addEventListener('install', (event) => {
-  console.log('Service worker installing...');
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', (event) => {
-  console.log('Service worker activating...');
-  event.waitUntil(clients.claim());
-});
-
-// Add caching, push notifications, background sync as needed
-```
-
-### Manifest (public/manifest.json)
-
-```json
-{
-  "name": "Bayon CoAgent",
-  "short_name": "CoAgent",
-  "description": "AI-powered success platform for real estate agents",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000000",
-  "icons": [
-    {
-      "src": "/icon-192x192.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml"
-    },
-    {
-      "src": "/icon-512x512.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml"
-    }
-  ]
-}
-```
-
-### Current Status
-
-- **PWA Manager**: Disabled by default, requires service worker
-- **Background Sync**: Disabled by default, requires service worker
-- **Push Notifications**: Available when service worker is enabled
-- **Install Prompt**: Available when PWA criteria are met
-- **Offline Caching**: Requires custom service worker implementation
-
-## 🔍 Monitoring Configuration
-
-### CloudWatch Configuration
-
-```typescript
-// src/aws/logging/cloudwatch.ts
-import {
-  CloudWatchLogsClient,
-  PutLogEventsCommand,
-} from "@aws-sdk/client-cloudwatch-logs";
-import { getAWSConfig } from "../config";
-
-const client = new CloudWatchLogsClient(getAWSConfig());
-
-export async function logEvent(logGroupName: string, message: string) {
-  const command = new PutLogEventsCommand({
-    logGroupName,
-    logStreamName: `app-${new Date().toISOString().split("T")[0]}`,
-    logEvents: [
-      {
-        timestamp: Date.now(),
-        message: JSON.stringify({
-          timestamp: new Date().toISOString(),
-          message,
-          environment: process.env.NODE_ENV,
-        }),
-      },
+// next.config.ts
+const nextConfig = {
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      '@radix-ui/react-icons',
+      'recharts',
+      'framer-motion',
     ],
-  });
-
-  await client.send(command);
-}
-```
-
-## 🚀 Performance Configuration
-
-### Bundle Analysis Configuration
-
-```javascript
-// next.config.js (bundle analyzer)
-const withBundleAnalyzer = require("@next/bundle-analyzer")({
-  enabled: process.env.ANALYZE === "true",
-});
-
-module.exports = withBundleAnalyzer({
-  // Your Next.js config
-});
-```
-
-### Lighthouse CI Configuration (.lighthouserc.js)
-
-```javascript
-module.exports = {
-  ci: {
-    collect: {
-      url: ["http://localhost:3000"],
-      startServerCommand: "npm run start",
-    },
-    assert: {
-      assertions: {
-        "categories:performance": ["warn", { minScore: 0.9 }],
-        "categories:accessibility": ["error", { minScore: 0.9 }],
-        "categories:best-practices": ["warn", { minScore: 0.9 }],
-        "categories:seo": ["warn", { minScore: 0.9 }],
+  },
+  
+  webpack: (config: any) => {
+    // Optimize bundle splitting
+    config.optimization.splitChunks = {
+      chunks: 'all',
+      cacheGroups: {
+        vendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all',
+        },
       },
-    },
-    upload: {
-      target: "temporary-public-storage",
-    },
+    };
+    
+    return config;
   },
 };
 ```
 
-## 📋 Configuration Checklist
+### Image Optimization
 
-### Local Development Setup
+```typescript
+// next.config.ts
+const nextConfig = {
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 60,
+  },
+};
+```
 
-- [ ] Copy `.env.example` to `.env.local`
-- [ ] Update Cognito IDs from `localstack:init`
-- [ ] Add external API keys
-- [ ] Verify LocalStack is running
-- [ ] Run `npm run verify:setup`
-
-### Production Deployment
-
-- [ ] Configure production environment variables
-- [ ] Set up AWS IAM roles and policies
-- [ ] Deploy infrastructure with SAM
-- [ ] Update environment variables with real AWS resources
-- [ ] Configure domain and SSL certificates
-- [ ] Set up monitoring and alerting
-
-### Security Checklist
-
-- [ ] Never commit `.env.local` or `.env.production`
-- [ ] Use AWS Secrets Manager for production secrets
-- [ ] Enable HTTPS in production
-- [ ] Configure CORS properly
-- [ ] Set up rate limiting
-- [ ] Enable AWS WAF protection
-
-This configuration reference provides comprehensive guidance for setting up and configuring the Bayon CoAgent platform across all environments.
+This configuration reference provides comprehensive setup information for all aspects of the Bayon CoAgent project. Use these configurations as templates and adjust them based on your specific requirements.
