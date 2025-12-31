@@ -11,7 +11,7 @@ import {
     getAggregatedMetrics,
     getAllListingsMetrics,
     getMetricsForDateRange,
-} from './performance-metrics-actions';
+} from '@/services/monitoring/performance-metrics-actions';
 
 /**
  * Example: Recording a view event
@@ -117,7 +117,7 @@ async function exampleGetMonthlyMetrics() {
         // Daily breakdown
         if (result.metrics.dailyBreakdown) {
             console.log('\nDaily Breakdown:');
-            result.metrics.dailyBreakdown.forEach((day) => {
+            result.metrics.dailyBreakdown.forEach((day: any) => {
                 if (day.views > 0 || day.shares > 0 || day.inquiries > 0) {
                     console.log(
                         `${day.date}: ${day.views} views, ${day.shares} shares, ${day.inquiries} inquiries`
@@ -140,7 +140,7 @@ async function exampleGetAllListingsMetrics() {
 
     if (result.metricsByListing) {
         console.log('Metrics for all listings:');
-        Object.entries(result.metricsByListing).forEach(([listingId, metrics]) => {
+        Object.entries(result.metricsByListing).forEach(([listingId, metrics]: [string, any]) => {
             console.log(`\nListing ${listingId}:`);
             console.log(`  Views: ${metrics.totalViews}`);
             console.log(`  Shares: ${metrics.totalShares}`);
@@ -164,7 +164,7 @@ async function exampleGetCustomDateRange() {
 
     if (result.metrics) {
         console.log(`Metrics from ${startDate} to ${endDate}:`);
-        result.metrics.forEach((day) => {
+        result.metrics.forEach((day: any) => {
             console.log(
                 `${day.date}: ${day.views} views, ${day.shares} shares, ${day.inquiries} inquiries`
             );

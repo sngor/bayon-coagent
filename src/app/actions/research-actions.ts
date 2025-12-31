@@ -92,10 +92,8 @@ export async function runResearchAgentAction(prevState: any, formData: FormData)
         };
 
     } catch (error) {
-        const errorMessage = handleError(error, { 
-            context: { operation: 'research' },
-            fallbackMessage: 'An unexpected error occurred during research.'
-        });
+        console.error('Research failed:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred during research.';
         return {
             message: `Research failed: ${errorMessage}`,
             errors: {},

@@ -36,14 +36,18 @@ export async function enhancedWriteAction(
             contentType,
             topic,
             userId: user.id,
-            tone: options?.tone || 'professional',
-            targetAudience: options?.targetAudience || 'general',
+            length: "medium" as const,
+            tone: (options?.tone || 'professional') as "professional" | "friendly" | "promotional" | "authoritative" | "conversational" | "educational",
+            targetAudience: (options?.targetAudience || 'general') as "buyers" | "sellers" | "investors" | "general" | "agents",
             platforms: options?.platforms as any,
             location: options?.location,
             includeWebSearch: true,
             includeSEO: true,
             includeHashtags: contentType === 'social-media',
             saveToLibrary: true,
+            generateVariations: 1,
+            searchDepth: "advanced" as const,
+            includeData: true,
         });
 
         return {
@@ -75,10 +79,10 @@ export async function enhancedDescribeAction(
     try {
         // Use intelligent listing description with market analysis
         const result = await generateIntelligentListingDescription({
-            propertyType: propertyDetails.propertyType,
+            propertyType: propertyDetails.propertyType as "commercial" | "land" | "single-family" | "condo" | "townhouse" | "multi-family" | "luxury-estate",
             location: propertyDetails.location,
             keyFeatures: propertyDetails.keyFeatures,
-            buyerPersona: propertyDetails.buyerPersona || 'general-buyer',
+            buyerPersona: (propertyDetails.buyerPersona || 'general-buyer') as "first-time-buyer" | "growing-family" | "empty-nester" | "luxury-buyer" | "investor" | "downsizer",
             writingStyle: 'professional',
             userId: user.id,
             includeMarketAnalysis: true,
@@ -89,8 +93,8 @@ export async function enhancedDescribeAction(
 
         return {
             success: result.success,
-            descriptions: result.descriptions,
-            marketInsights: result.marketInsights,
+            description: result.description,
+            marketInsights: result.competitiveAdvantages || [],
             seoKeywords: result.seoKeywords,
             source: 'enhanced-strands-agent',
         };
@@ -119,6 +123,7 @@ export async function enhancedReimagineAction(
         const result = await executeImageAnalysis({
             analysisType: imageDetails.analysisType as any,
             userId: user.id,
+            targetAudience: "buyers" as const,
             imageUrl: imageDetails.imageUrl,
             imageBase64: imageDetails.imageBase64,
             imageDescription: imageDetails.imageDescription,
@@ -129,6 +134,7 @@ export async function enhancedReimagineAction(
             includeEnhancementSuggestions: true,
             includeStagingRecommendations: imageDetails.analysisType === 'virtual-staging',
             generateVariations: imageDetails.analysisType === 'virtual-staging' ? 2 : 1,
+            saveResults: true,
         });
 
         return {
@@ -213,8 +219,13 @@ export async function enhancedCompetitorAnalysisAction(
             location,
             userId: user.id,
             specialization,
+            brandPersonality: 'professional-expert' as const,
             includeCompetitorAnalysis: true,
             includeMarketResearch: true,
+            includeContentStrategy: true,
+            includeSWOTAnalysis: true,
+            includeActionPlan: true,
+            targetClientTypes: ['buyers', 'sellers'],
         });
 
         return {
@@ -257,7 +268,7 @@ export async function enhancedResearchAction(
                 searchDepth: options?.searchDepth || 'advanced',
                 includeMarketAnalysis: options?.includeMarketAnalysis ?? true,
                 includeRecommendations: true,
-                targetAudience: options?.targetAudience || 'agents',
+                targetAudience: (options?.targetAudience || 'agents') as "buyers" | "sellers" | "investors" | "agents",
             }
         );
 
@@ -306,6 +317,8 @@ export async function enhancedMarketInsightsAction(
             includeWebResearch: true,
             includeHistoricalData: true,
             includePredictiveModeling: true,
+            includeCompetitiveAnalysis: true,
+            includeInvestmentMetrics: true,
         });
 
         return {

@@ -93,9 +93,10 @@ export async function createNotificationAction(
     prevState: any,
     formData: FormData
 ): Promise<ServerActionResponse<{ notificationId: string }>> {
+    let user: any = null;
     try {
         // Authentication check - following established pattern
-        const user = await getCurrentUserServer();
+        user = await getCurrentUserServer();
         if (!user?.id) {
             return createErrorResponse('Authentication required', {
                 auth: ['You must be logged in to create notifications']
@@ -166,7 +167,7 @@ export async function createNotificationAction(
         return createSuccessResponse({ notificationId });
 
     } catch (error) {
-        logger.error('Failed to create notification:', error, {
+        logger.error('Failed to create notification:', error as Error, {
             userId: user?.id,
             operation: 'createNotificationAction'
         });

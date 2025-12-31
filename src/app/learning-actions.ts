@@ -440,7 +440,7 @@ async function issueCertificate(
 
         const repository = getRepository();
         const keys = getCertificateKeys(userId, certificateId);
-        await repository.create(keys.PK, keys.SK, 'TrainingCertificate', certificate);
+        await repository.create(keys.PK, keys.SK, 'TrainingCertificate' as any, certificate);
 
         return { success: true, certificate };
     } catch (error) {

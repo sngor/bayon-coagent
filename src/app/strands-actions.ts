@@ -52,7 +52,7 @@ export async function executeResearchAction(
     try {
         // Get current user (required for all authenticated actions)
         const user = await getCurrentUser();
-        if (!user?.userId) {
+        if (!user?.id) {
             return {
                 success: false,
                 message: 'Authentication required',
@@ -66,7 +66,7 @@ export async function executeResearchAction(
         // Prepare Strands input
         const strandsInput = StrandsResearchInputSchema.parse({
             ...validatedInput,
-            userId: user.userId,
+            userId: user.id,
         });
 
         // Execute research with fallback
@@ -88,7 +88,7 @@ export async function executeResearchAction(
 
                 // Create report entry following the DynamoDB single-table design
                 const reportData = {
-                    userId: user.userId,
+                    userId: user.id,
                     type: 'research-report' as const,
                     title: validatedInput.topic,
                     content: result.report,
@@ -100,8 +100,16 @@ export async function executeResearchAction(
                     updatedAt: new Date().toISOString(),
                 };
 
-                const savedReport = await repository.createItem('REPORT', reportData);
-                reportId = savedReport.id;
+                const reportId = `report-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+                await repository.create(
+                    `USER#${user.id}`,
+                    `REPORT#${reportId}`,
+                    'Report' as any,
+                    {
+                        ...reportData,
+                        id: reportId,
+                    }
+                );
 
                 // Revalidate the Reports page in the Library Hub
                 revalidatePath('/library/reports');
@@ -131,7 +139,7 @@ export async function executeResearchAction(
             return {
                 success: false,
                 message: 'Invalid input provided',
-                errors: error.flatten().fieldErrors,
+                errors: error.flatten().fieldErrors as Record<string, string[]>,
             };
         }
 
@@ -153,7 +161,7 @@ export async function checkStrandsHealthAction(): Promise<ActionResponse<{
 }>> {
     try {
         const user = await getCurrentUser();
-        if (!user?.userId) {
+        if (!user?.id) {
             return {
                 success: false,
                 message: 'Authentication required',
@@ -198,7 +206,7 @@ export async function getResearchHistoryAction(
 }>>> {
     try {
         const user = await getCurrentUser();
-        if (!user?.userId) {
+        if (!user?.id) {
             return {
                 success: false,
                 message: 'Authentication required',
@@ -210,17 +218,17 @@ export async function getResearchHistoryAction(
         // Query user's research reports
         const reports = await repository.queryItems(
             'USER',
-            user.userId,
+            user.id,
             {
-                beginsWith: 'REPORT#',
+                startsWith: 'REPORT#',
                 limit,
                 sortOrder: 'desc', // Most recent first
             }
         );
 
-        const formattedReports = reports
-            .filter(report => report.type === 'research-report')
-            .map(report => ({
+        const formattedReports = reports.items
+            .filter((report: any) => report.type === 'research-report')
+            .map((report: any) => ({
                 id: report.id,
                 title: report.title || 'Untitled Research',
                 createdAt: report.createdAt,

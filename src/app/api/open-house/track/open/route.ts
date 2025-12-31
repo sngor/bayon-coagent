@@ -39,14 +39,13 @@ export async function GET(request: NextRequest) {
         const repository = getRepository();
 
         // Get the follow-up content to find the userId
-        const followUpContent = await repository.query<FollowUpContent>({
-            IndexName: undefined,
-            KeyConditionExpression: 'begins_with(SK, :sk)',
-            ExpressionAttributeValues: {
-                ':sk': `FOLLOWUP#${sessionId}#${visitorId}`,
-            },
-            Limit: 1,
-        });
+        const followUpContent = await repository.query<FollowUpContent>(
+            'FOLLOWUP', // PK
+            `${sessionId}#${visitorId}`, // SK prefix
+            {
+                limit: 1
+            }
+        );
 
         if (followUpContent.items.length > 0) {
             const content = followUpContent.items[0];

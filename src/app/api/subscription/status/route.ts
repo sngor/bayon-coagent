@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
         const now = new Date();
         let subscriptionStatus = {
             isActive: false,
-            plan: 'free' as const,
+            plan: 'free' as 'free' | 'professional' | 'enterprise',
             status: null as string | null,
             trialEndsAt: null as Date | null,
             isInTrial: false,

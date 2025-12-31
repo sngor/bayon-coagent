@@ -150,7 +150,7 @@ export async function getSystemAlertsAction() {
         // TODO: Replace with actual alerts from monitoring system
         // This would query CloudWatch alarms, application logs, etc.
 
-        const alerts = [
+        const alerts: any[] = [
             // Simulate no alerts for healthy system
         ];
 

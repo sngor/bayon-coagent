@@ -12,7 +12,16 @@ export async function POST(request: NextRequest) {
     try {
         // Verify user is authenticated and has super admin role
         const user = await getCurrentUser();
-        if (!user || user.role !== 'super_admin') {
+        if (!user) {
+            return NextResponse.json(
+                { error: 'Unauthorized - Authentication required' },
+                { status: 401 }
+            );
+        }
+
+        // Check role from user attributes
+        const userRole = user.attributes?.['custom:role'] || 'user';
+        if (userRole !== 'super_admin') {
             return NextResponse.json(
                 { error: 'Unauthorized - Super Admin access required' },
                 { status: 403 }

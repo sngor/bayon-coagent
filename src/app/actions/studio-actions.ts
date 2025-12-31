@@ -29,9 +29,13 @@ const describeListingSchema = z.object({
 });
 
 const reimagineImageSchema = z.object({
-    imageUrl: z.string().url('Valid image URL required'),
+    imageData: z.string().min(1, 'Image data required'), // Base64 encoded image
+    imageFormat: z.enum(['jpeg', 'png', 'webp']).default('jpeg'),
     enhancement: z.enum(['virtual-staging', 'day-to-dusk', 'enhancement', 'item-removal', 'renovation']),
     customPrompt: z.string().optional(),
+    brightness: z.number().optional(),
+    contrast: z.number().optional(),
+    saturation: z.number().optional(),
 });
 
 /**
@@ -62,8 +66,8 @@ export const generateContentAction = withErrorHandling(
             case 'blog-post':
                 result = await generateBlogPost({
                     topic: validatedInput.topic,
-                    tone: validatedInput.tone,
-                    targetAudience: validatedInput.targetAudience,
+                    includeWebSearch: true,
+                    searchDepth: 'basic'
                 });
                 break;
 
@@ -78,8 +82,9 @@ export const generateContentAction = withErrorHandling(
 
             case 'market-update':
                 result = await generateMarketUpdate({
-                    topic: validatedInput.topic,
-                    targetAudience: validatedInput.targetAudience,
+                    location: 'General Market', // Default location
+                    timePeriod: 'Current', // Default time period
+                    audience: validatedInput.targetAudience,
                 });
                 break;
 
@@ -87,7 +92,7 @@ export const generateContentAction = withErrorHandling(
                 result = await generateVideoScript({
                     topic: validatedInput.topic,
                     tone: validatedInput.tone,
-                    duration: 'medium',
+                    audience: validatedInput.targetAudience || 'General',
                 });
                 break;
 
@@ -102,12 +107,40 @@ export const generateContentAction = withErrorHandling(
                 throw new Error(`Unsupported content type: ${validatedInput.contentType}`);
         }
 
+        // Extract content based on the result type
+        let content = '';
+        let title = '';
+        
+        if ('blogPost' in result) {
+            content = result.blogPost;
+            title = `Blog Post - ${validatedInput.topic}`;
+        } else if ('posts' in result && Array.isArray(result.posts) && result.posts.length > 0) {
+            const firstPost = result.posts[0];
+            content = (firstPost && typeof firstPost === 'object' && 'content' in firstPost) ? 
+                     firstPost.content : 
+                     (typeof firstPost === 'string' ? firstPost : JSON.stringify(firstPost));
+            title = `Social Media - ${validatedInput.topic}`;
+        } else if ('script' in result) {
+            // Handle script object or string
+            content = typeof result.script === 'string' ? result.script : 
+                     (typeof result.script === 'object' && result.script?.title ? 
+                      `${result.script.title}\n\n${result.script.content || ''}` : 
+                      JSON.stringify(result.script));
+            title = `Video Script - ${validatedInput.topic}`;
+        } else if ('neighborhoodGuide' in result) {
+            content = result.neighborhoodGuide;
+            title = `Neighborhood Guide - ${validatedInput.topic}`;
+        } else if ('content' in result) {
+            content = result.content;
+            title = result.title || `${validatedInput.contentType} - ${validatedInput.topic}`;
+        }
+
         return {
             success: true,
             message: 'Content generated successfully',
             data: {
-                content: result.content || result.blogPost || result.posts?.[0]?.content || result.script || result.neighborhoodGuide,
-                title: result.title || `${validatedInput.contentType} - ${validatedInput.topic}`,
+                content,
+                title,
                 metadata: {
                     contentType: validatedInput.contentType,
                     generatedAt: new Date().toISOString(),
@@ -140,8 +173,7 @@ export const describeListingAction = withErrorHandling(
         // Run description and FAQ generation in parallel
         const [descriptionResult, faqResult] = await Promise.all([
             generateListingDescription({
-                propertyDetails: validatedInput.propertyDescription,
-                buyerPersona: validatedInput.buyerPersona,
+                property_details: validatedInput.propertyDescription,
             }),
             generateListingFaqs({
                 propertyDescription: validatedInput.propertyDescription,
@@ -153,7 +185,10 @@ export const describeListingAction = withErrorHandling(
             message: 'Listing description generated successfully',
             data: {
                 description: descriptionResult.description,
-                faqs: faqResult.faqs,
+                faqs: faqResult.faqs.map(faq => ({
+                    question: faq.q,
+                    answer: faq.a
+                })),
             },
         };
     },
@@ -165,7 +200,8 @@ export const describeListingAction = withErrorHandling(
  */
 export const reimagineImageAction = withErrorHandling(
     async (input: z.infer<typeof reimagineImageSchema>): Promise<ActionResponse<{
-        imageUrl: string;
+        imageData: string;
+        imageFormat: string;
         enhancementType: string;
     }>> => {
         const user = await getCurrentUserServer();
@@ -176,19 +212,25 @@ export const reimagineImageAction = withErrorHandling(
         const validatedInput = reimagineImageSchema.parse(input);
 
         // Import image enhancement service
-        const { enhanceImage } = await import('@/services/image-enhancement');
+        const { enhanceImage } = await import('@/aws/bedrock/flows/reimagine-enhance');
 
         const result = await enhanceImage({
-            imageUrl: validatedInput.imageUrl,
-            enhancement: validatedInput.enhancement,
-            customPrompt: validatedInput.customPrompt,
+            imageData: validatedInput.imageData, // Expecting base64 data
+            imageFormat: validatedInput.imageFormat || 'jpeg',
+            params: {
+                autoAdjust: true,
+                brightness: validatedInput.brightness,
+                contrast: validatedInput.contrast,
+                saturation: validatedInput.saturation,
+            }
         });
 
         return {
             success: true,
             message: 'Image reimagined successfully',
             data: {
-                imageUrl: result.enhancedImageUrl,
+                imageData: result.enhancedImageData,
+                imageFormat: result.imageFormat,
                 enhancementType: validatedInput.enhancement,
             },
         };

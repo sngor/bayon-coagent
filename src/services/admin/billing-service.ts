@@ -50,6 +50,29 @@ class BillingService {
         return true;
     }
 
+    async getBillingAnalytics(timeRange: string = '30d'): Promise<any> {
+        // Mock implementation - returns sample analytics data
+        return {
+            revenueGrowth: {
+                current: 12500,
+                previous: 10000,
+                percentage: 25,
+            },
+            subscriptionMetrics: {
+                totalSubscriptions: 150,
+                newSubscriptions: 25,
+                churnRate: 5.2,
+            },
+            planDistribution: {
+                free: 45,
+                pro: 85,
+                enterprise: 20,
+            },
+            monthlyRecurringRevenue: 12500,
+            averageRevenuePerUser: 83.33,
+        };
+    }
+
     async cancelSubscription(userId: string): Promise<boolean> {
         // Mock implementation
         return true;

@@ -19,7 +19,7 @@ export default function ProfilePage() {
     const { user } = useUser();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
-    const formRef = useRef<HTMLFormElement>(null);
+    const formRef = useRef<HTMLDivElement>(null);
 
     const userId = user?.id || '';
 

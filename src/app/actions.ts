@@ -415,65 +415,16 @@ const guideSchema = z.object({
  * @param defaultMessage Fallback message if error type is unknown
  * @returns User-friendly error message
  */
-const handleAWSError = (error: any, defaultMessage: string): string => {
-  const isDev = process.env.NODE_ENV === 'development';
-  const originalErrorMessage = error instanceof Error ? error.message : String(error);
-  const devSuffix = isDev ? ` (Error: ${originalErrorMessage})` : '';
+import { validateFormData, createSuccessResponse, createErrorResponse } from '@/lib/form-validation';
+import { handleAWSError } from './actions/error-handling';
+import { generateNeighborhoodGuide } from '@/aws/bedrock/flows/content-flows';
+import { z } from 'zod';
 
-  if (error instanceof Error) {
-    const lowerCaseMessage = error.message.toLowerCase();
+// Import the enhanced error handling
+const { handleAWSError: enhancedHandleAWSError } = require('./actions/error-handling');
 
-    // Bedrock-specific errors
-    if (lowerCaseMessage.includes('throttl') || lowerCaseMessage.includes('rate')) {
-      return 'The AI service is currently busy. Please try again in a moment.' + devSuffix;
-    }
-    if (lowerCaseMessage.includes('filtered') || lowerCaseMessage.includes('content policy')) {
-      return 'The AI was unable to process this request due to safety filters. Please try a different topic.' + devSuffix;
-    }
-    if (lowerCaseMessage.includes('validation') || lowerCaseMessage.includes('invalid')) {
-      return 'The request contains invalid data. Please check your input and try again.' + devSuffix;
-    }
-    if (lowerCaseMessage.includes('timeout') || lowerCaseMessage.includes('timed out')) {
-      return 'The request took too long to process. Please try again.' + devSuffix;
-    }
-    if (lowerCaseMessage.includes('empty')) {
-      return 'The AI returned an empty response. Please try refining your topic.' + devSuffix;
-    }
-    if (lowerCaseMessage.includes('real estate')) {
-      return 'The topic provided is not related to real estate. Please provide a real estate topic.' + devSuffix;
-    }
-
-    // DynamoDB errors
-    if (lowerCaseMessage.includes('dynamodb') || lowerCaseMessage.includes('provisioned throughput')) {
-      return 'Database service is temporarily unavailable. Please try again.' + devSuffix;
-    }
-
-    // S3 errors
-    if (lowerCaseMessage.includes('s3') || lowerCaseMessage.includes('bucket')) {
-      return 'File storage service is temporarily unavailable. Please try again.' + devSuffix;
-    }
-
-    // Cognito errors
-    if (lowerCaseMessage.includes('cognito') || lowerCaseMessage.includes('authentication')) {
-      return 'Authentication service error. Please try signing in again.' + devSuffix;
-    }
-
-    // Network errors
-    if (lowerCaseMessage.includes('network') || lowerCaseMessage.includes('econnrefused')) {
-      return 'Network connection error. Please check your internet connection and try again.' + devSuffix;
-    }
-
-    // Return the original error message if it's user-friendly
-    if (error.message && error.message.length < 200 && !error.message.includes('Error:')) {
-      return error.message;
-    }
-  }
-
-  // Log the full error for debugging
-  console.error('AWS Service Error:', error);
-
-  return defaultMessage + devSuffix;
-}
+// Use the enhanced error handler
+const handleAWSError = enhancedHandleAWSError;
 
 export async function generateGuideAction(prevState: any, formData: FormData) {
   // Convert FormData to object for validation
@@ -499,8 +450,8 @@ export async function generateGuideAction(prevState: any, formData: FormData) {
       idxFeedUrl: validation.data.idxFeedUrl,
     });
   } catch (error) {
-    const errorMessage = handleAWSError(error, 'An unexpected error occurred while generating the guide.');
-    return createErrorResponse(`Failed to generate guide: ${errorMessage}`, {}, prevState.data);
+    const errorResponse = handleAWSError(error, 'An unexpected error occurred while generating the guide.');
+    return createErrorResponse(`Failed to generate guide: ${errorResponse.message}`, {}, prevState.data);
   }
 }
 

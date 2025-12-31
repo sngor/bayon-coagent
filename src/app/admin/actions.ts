@@ -18,13 +18,13 @@ import { z } from 'zod';
 import { getCurrentUserServer } from '@/aws/auth/server-auth';
 import { getRepository } from '@/aws/dynamodb/repository';
 import { getCognitoClient } from '@/aws/auth/cognito-client';
-import { hasSuperAdminAccess } from '@/aws/auth/role-utils';
+import { hasSuperAdminAccess, type UserRole as AuthUserRole } from '@/aws/auth/role-utils';
 import { createLogger } from '@/aws/logging/logger';
 import {
     sendRoleAssignmentEmail,
     sendRoleRevocationEmail,
     sendRoleChangeEmail,
-    type UserRole
+    type UserRole as EmailUserRole
 } from '@/services/email/role-notification-service';
 import { randomUUID } from 'crypto';
 
@@ -137,8 +137,17 @@ export async function assignRole(
             );
         }
 
-        // Authorization check
-        const userRole = (currentUser.attributes?.['custom:role'] as UserRole) || 'user';
+        // Authorization check - get user role from Cognito
+        const cognitoClient = getCognitoClient();
+        const cognitoUserRole = await cognitoClient.getUserRole(currentUser.id);
+        
+        // Convert between UserRole types
+        const convertToAuthRole = (role: EmailUserRole): AuthUserRole => {
+            if (role === 'superadmin') return 'super_admin';
+            return role as AuthUserRole;
+        };
+        
+        const userRole = convertToAuthRole(cognitoUserRole as EmailUserRole);
         if (!hasSuperAdminAccess(userRole)) {
             logger.warn('Unauthorized role assignment attempt', {
                 operationId,
@@ -313,12 +322,18 @@ export async function assignRole(
 
         // Step 4: Send email notification (non-blocking, failures don't rollback)
         try {
+            // Convert role types for email service
+            const convertToEmailRole = (role: AuthUserRole): EmailUserRole => {
+                if (role === 'super_admin') return 'superadmin';
+                return role as EmailUserRole;
+            };
+
             await sendRoleChangeEmail({
                 recipientEmail: targetUser.Data.email || '',
                 recipientName: targetUser.Data.name || targetUser.Data.email || 'User',
-                oldRole: oldRole as UserRole,
-                newRole: validatedInput.role,
-                changedBy: currentUser.attributes?.given_name || currentUser.email,
+                oldRole: convertToEmailRole(oldRole as AuthUserRole),
+                newRole: convertToEmailRole(validatedInput.role as AuthUserRole),
+                changedBy: currentUser.email,
                 changedByEmail: currentUser.email,
             });
 
@@ -450,8 +465,17 @@ export async function revokeRole(
             );
         }
 
-        // Authorization check
-        const userRole = (currentUser.attributes?.['custom:role'] as UserRole) || 'user';
+        // Authorization check - get user role from Cognito
+        const cognitoClient = getCognitoClient();
+        const cognitoUserRole = await cognitoClient.getUserRole(currentUser.id);
+        
+        // Convert between UserRole types
+        const convertToAuthRole = (role: EmailUserRole): AuthUserRole => {
+            if (role === 'superadmin') return 'super_admin';
+            return role as AuthUserRole;
+        };
+        
+        const userRole = convertToAuthRole(cognitoUserRole as EmailUserRole);
         if (!hasSuperAdminAccess(userRole)) {
             logger.warn('Unauthorized role revocation attempt', {
                 operationId,
@@ -636,12 +660,18 @@ export async function revokeRole(
 
         // Step 4: Send email notification (non-blocking, failures don't rollback)
         try {
+            // Convert role types for email service
+            const convertToEmailRole = (role: AuthUserRole): EmailUserRole => {
+                if (role === 'super_admin') return 'superadmin';
+                return role as EmailUserRole;
+            };
+
             await sendRoleChangeEmail({
                 recipientEmail: targetUser.Data.email || '',
                 recipientName: targetUser.Data.name || targetUser.Data.email || 'User',
-                oldRole: oldRole as UserRole,
+                oldRole: convertToEmailRole(oldRole as AuthUserRole),
                 newRole: 'user',
-                changedBy: currentUser.attributes?.given_name || currentUser.email,
+                changedBy: currentUser.email,
                 changedByEmail: currentUser.email,
             });
 
@@ -824,7 +854,12 @@ async function rollbackCognitoUpdate(
         });
 
         const cognitoClient = getCognitoClient();
-        await cognitoClient.updateUserRole(userId, previousRole as UserRole);
+        // Convert AuthUserRole to AdminUserRole for cognito client
+        const convertToAdminRole = (role: string): string => {
+            if (role === 'super_admin') return 'superadmin';
+            return role;
+        };
+        await cognitoClient.updateUserRole(userId, convertToAdminRole(previousRole) as any);
 
         logger.info('Cognito rollback successful', {
             operationId,

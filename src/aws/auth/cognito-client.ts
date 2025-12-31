@@ -53,19 +53,28 @@ export class CognitoAuthClient {
   private userPoolId: string;
 
   constructor() {
-    // NUCLEAR OPTION: Hardcode everything for production
-    // This completely bypasses all configuration systems
+    const config = this.getConfig();
     
     const currentHostname = typeof window !== 'undefined' ? window.location.hostname : '';
     
-    // NEW COGNITO USER POOL - FRESH START
-    const region = 'us-west-2';
-    const clientId = '33grpfrfup7q9jkmumv77ffdce';
-    const userPoolId = 'us-west-2_wqsUAbADO';
+    const region = config.region;
+    const clientId = config.clientId;
+    const userPoolId = config.userPoolId;
     
 
 
-    // OLD LOG REMOVED - this was showing us-east-1
+  private getConfig() {
+    // Use environment variables with fallbacks
+    const region = process.env.NEXT_PUBLIC_AWS_REGION || 'us-west-2';
+    const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID;
+    const userPoolId = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID;
+
+    if (!clientId || !userPoolId) {
+      throw new Error('Missing required Cognito configuration. Please set NEXT_PUBLIC_COGNITO_CLIENT_ID and NEXT_PUBLIC_COGNITO_USER_POOL_ID environment variables.');
+    }
+
+    return { region, clientId, userPoolId };
+  }
 
     // Add global debug function for testing
     if (typeof window !== 'undefined') {

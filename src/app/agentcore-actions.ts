@@ -140,7 +140,7 @@ export async function generateContent(input: unknown) {
                 contentType: validated.contentType,
                 input: validated.input,
                 agentProfile: agentProfile || {
-                    name: user.name,
+                    name: user.email, // Use email as name since name is not available
                     email: user.email,
                 },
             },

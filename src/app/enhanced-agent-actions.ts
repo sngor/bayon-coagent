@@ -100,7 +100,7 @@ export async function chatWithHubAgentAction(
 
         // Get user's agent profile
         const agentProfileRepo = getAgentProfileRepository();
-        const agentProfile = await agentProfileRepo.getAgentProfile(user.id);
+        const agentProfile = await agentProfileRepo.getProfile(user.id);
 
         // Get appropriate hub agent
         const hubAgent = HubAgentRegistry.getRecommendedAgent(
@@ -127,7 +127,7 @@ Current User Context:
 Respond as ${hubAgent.name} with your characteristic ${hubAgent.personality} personality.`;
 
         // Generate response using Bedrock with enhanced retry logic
-        const client = getBedrockClient(hubAgent.capabilities.preferredModel);
+        const client = getBedrockClient();
 
         let response;
         let retryCount = 0;
@@ -179,6 +179,10 @@ Respond as ${hubAgent.name} with your characteristic ${hubAgent.personality} per
 
         const conversationId = validatedInput.conversationId || `conv-${Date.now()}`;
 
+        if (!response) {
+            throw new Error('Failed to generate response after all retries');
+        }
+
         return {
             success: true,
             data: {
@@ -220,7 +224,7 @@ export async function initProactiveMonitoringAction(
         }
 
         const agentProfileRepo = getAgentProfileRepository();
-        const agentProfile = await agentProfileRepo.getAgentProfile(user.id);
+        const agentProfile = await agentProfileRepo.getProfile(user.id);
 
         if (!agentProfile) {
             return { success: false, error: 'Agent profile required for proactive monitoring' };
@@ -410,7 +414,7 @@ export async function generateCrossHubInsightsAction(
         const validatedInput = generateCrossHubInsightsSchema.parse(input);
 
         const agentProfileRepo = getAgentProfileRepository();
-        const agentProfile = await agentProfileRepo.getAgentProfile(user.id);
+        const agentProfile = await agentProfileRepo.getProfile(user.id);
 
         if (!agentProfile) {
             return { success: false, error: 'Agent profile required' };
@@ -477,7 +481,7 @@ export async function createOrchestrationPlanAction(
         const validatedConfig = createOrchestrationPlanSchema.parse(planConfig);
 
         const agentProfileRepo = getAgentProfileRepository();
-        const agentProfile = await agentProfileRepo.getAgentProfile(user.id);
+        const agentProfile = await agentProfileRepo.getProfile(user.id);
 
         if (!agentProfile) {
             return { success: false, error: 'Agent profile required' };

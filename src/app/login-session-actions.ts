@@ -6,7 +6,7 @@
 
 import { getRepository } from '@/aws/dynamodb/repository';
 import { getLoginSessionKeys } from '@/aws/dynamodb/keys';
-import { LoginSession, LoginHistory } from '@/lib/types/login-session-types';
+import { LoginSession, parseUserAgent } from '@/lib/types/login-session-types';
 import { headers } from 'next/headers';
 
 /**

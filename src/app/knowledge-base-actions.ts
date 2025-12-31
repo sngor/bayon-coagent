@@ -275,7 +275,7 @@ export async function getUserDocumentsAction(filters?: DocumentFilters): Promise
                 documents = documents.filter(doc => doc.category === filters.category);
             }
             if (filters.type && filters.type !== 'all') {
-                documents = documents.filter(doc => doc.type === filters.type);
+                documents = documents.filter(doc => doc.type === filters.type as any);
             }
             if (filters.search) {
                 const searchLower = filters.search.toLowerCase();

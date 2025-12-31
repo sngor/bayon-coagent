@@ -1,6 +1,7 @@
 'use server';
 
-import { runRentalPotentialAnalysis, type RentalPotentialOutput } from '@/aws/bedrock/flows/rental-potential';
+import { runRentalPotentialAnalysis } from '@/aws/bedrock/flows/rental-potential';
+import type { RentalPotentialOutput } from '@/ai/schemas/rental-potential-schemas';
 
 export interface RentalPotentialState {
     message: string;

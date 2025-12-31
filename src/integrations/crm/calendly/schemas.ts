@@ -150,7 +150,7 @@ export const CalendlyWebhookPayloadSchema = z.object({
             answer: z.string(),
         })).optional(),
         cancellation: z.object({
-            chanceler_type: z.enum(['host', 'invitee']),
+            canceler_type: z.enum(['host', 'invitee']),
             canceled_by: z.string(),
         }).optional(),
     }),

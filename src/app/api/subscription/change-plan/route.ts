@@ -82,9 +82,9 @@ export async function POST(request: NextRequest) {
             },
         };
 
-        // Add coupon if provided
+        // Add coupon if provided (using discount_coupon for Stripe API)
         if (couponId) {
-            updateParams.coupon = couponId;
+            (updateParams as any).coupon = couponId;
         }
 
         const updatedSubscription = await stripe.subscriptions.update(subscriptionId, updateParams);
