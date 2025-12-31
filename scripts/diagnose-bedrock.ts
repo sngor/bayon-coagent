@@ -35,17 +35,17 @@ async function diagnoseBedrock() {
   // Step 3: Check AWS credentials
   console.log('3️⃣ Checking AWS Credentials:');
   const credentials = getAWSCredentials();
-  if (credentials && credentials.accessKeyId && credentials.accessKeyId !== 'test' && credentials.accessKeyId !== 'your-access-key-here') {
+  if (credentials?.accessKeyId && credentials.accessKeyId !== 'test' && credentials.accessKeyId !== 'your-access-key-here') {
     console.log(`   ✅ Access Key ID: ${credentials.accessKeyId.substring(0, 8)}...`);
   } else {
-    console.log(`   ❌ Access Key ID: ${credentials.accessKeyId || 'NOT SET'}`);
+    console.log(`   ❌ Access Key ID: ${credentials?.accessKeyId || 'NOT SET'}`);
     console.log('      Please set AWS_ACCESS_KEY_ID in .env.local');
   }
 
-  if (credentials.secretAccessKey && credentials.secretAccessKey !== 'test' && credentials.secretAccessKey !== 'your-secret-key-here') {
+  if (credentials?.secretAccessKey && credentials.secretAccessKey !== 'test' && credentials.secretAccessKey !== 'your-secret-key-here') {
     console.log(`   ✅ Secret Access Key: ${credentials.secretAccessKey.substring(0, 8)}...\n`);
   } else {
-    console.log(`   ❌ Secret Access Key: ${credentials.secretAccessKey || 'NOT SET'}`);
+    console.log(`   ❌ Secret Access Key: ${credentials?.secretAccessKey || 'NOT SET'}`);
     console.log('      Please set AWS_SECRET_ACCESS_KEY in .env.local\n');
   }
 
@@ -54,7 +54,7 @@ async function diagnoseBedrock() {
   try {
     const client = new BedrockRuntimeClient({
       region: config.bedrock.region,
-      credentials: credentials.accessKeyId && credentials.secretAccessKey
+      credentials: credentials?.accessKeyId && credentials?.secretAccessKey
         ? {
           accessKeyId: credentials.accessKeyId,
           secretAccessKey: credentials.secretAccessKey,
@@ -66,7 +66,7 @@ async function diagnoseBedrock() {
     const { BedrockClient, ListFoundationModelsCommand: BedrockListCommand } = await import('@aws-sdk/client-bedrock');
     const bedrockClient = new BedrockClient({
       region: config.bedrock.region,
-      credentials: credentials.accessKeyId && credentials.secretAccessKey
+      credentials: credentials?.accessKeyId && credentials?.secretAccessKey
         ? {
           accessKeyId: credentials.accessKeyId,
           secretAccessKey: credentials.secretAccessKey,
@@ -116,7 +116,7 @@ async function diagnoseBedrock() {
   // Step 5: Recommendations
   console.log('5️⃣ Recommendations:');
 
-  if (!credentials || credentials.accessKeyId === 'your-access-key-here' || !credentials.accessKeyId) {
+  if (!credentials || credentials?.accessKeyId === 'your-access-key-here' || !credentials?.accessKeyId) {
     console.log('   📝 Update .env.local with your AWS credentials:');
     console.log('      AWS_ACCESS_KEY_ID=your-actual-access-key');
     console.log('      AWS_SECRET_ACCESS_KEY=your-actual-secret-key\n');

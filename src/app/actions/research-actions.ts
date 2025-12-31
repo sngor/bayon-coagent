@@ -7,7 +7,7 @@
 
 import { z } from 'zod';
 import { getCurrentUserServer } from '@/aws/auth/server-auth';
-import { handleAWSError } from '@/lib/error-handling';
+import { handleError } from '@/lib/error-handling';
 import { runResearchAgent } from '@/aws/bedrock/flows/run-research-agent';
 import type { RunResearchAgentOutput } from '@/ai/schemas/research-agent-schemas';
 
@@ -92,7 +92,10 @@ export async function runResearchAgentAction(prevState: any, formData: FormData)
         };
 
     } catch (error) {
-        const errorMessage = handleAWSError(error, 'An unexpected error occurred during research.');
+        const errorMessage = handleError(error, { 
+            context: { operation: 'research' },
+            fallbackMessage: 'An unexpected error occurred during research.'
+        });
         return {
             message: `Research failed: ${errorMessage}`,
             errors: {},

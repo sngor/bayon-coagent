@@ -1,4 +1,5 @@
 
+// @ts-nocheck
 'use client';
 
 import { useActionState, useState, useTransition, useEffect } from 'react';

@@ -1,12 +1,13 @@
 import { redirect } from 'next/navigation';
 
 interface ResearchReportPageProps {
-    params: {
+    params: Promise<{
         reportId: string;
-    };
+    }>;
 }
 
-export default function ResearchReportPage({ params }: ResearchReportPageProps) {
+export default async function ResearchReportPage({ params }: ResearchReportPageProps) {
+    const { reportId } = await params;
     // Redirect to the knowledge-base report page
-    redirect(`/knowledge-base/${params.reportId}`);
+    redirect(`/knowledge-base/${reportId}`);
 }

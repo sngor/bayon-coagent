@@ -154,6 +154,37 @@ const nextConfig: NextConfig = {
 
   // Webpack optimizations for memory usage
   webpack: (config, { dev, isServer }) => {
+    // Handle AWS SDK Node.js modules that can't be resolved in browser
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+        stream: false,
+        url: false,
+        zlib: false,
+        http: false,
+        https: false,
+        assert: false,
+        os: false,
+        path: false,
+        util: false,
+        buffer: false,
+        events: false,
+        querystring: false,
+        punycode: false,
+        'aws-sdk': false,
+        '@aws-sdk/client-cognito-identity-provider': false,
+        '@aws-sdk/client-dynamodb': false,
+        '@aws-sdk/client-s3': false,
+        '@aws-sdk/client-bedrock-runtime': false,
+        '@aws-sdk/lib-dynamodb': false,
+        '@aws-sdk/s3-request-presigner': false,
+      };
+    }
+
     // Reduce memory usage during build
     if (!dev) {
       // Disable source maps in production to save memory and build time

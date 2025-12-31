@@ -275,7 +275,7 @@ export default function ResearchAgentPage() {
                 </div>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <Tabs value={activeTab} onValueChange={(value: string) => setActiveTab(value as 'research' | 'reports' | 'knowledge')}>
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="research">
                         <Search className="mr-2 h-4 w-4" />
@@ -446,12 +446,10 @@ export default function ResearchAgentPage() {
                             icon={FileText}
                             title="No research reports"
                             description="Your saved research reports will appear here"
-                            action={
-                                <Button onClick={() => setActiveTab('research')}>
-                                    <Search className="mr-2 h-4 w-4" />
-                                    Start Research
-                                </Button>
-                            }
+                            action={{
+                                label: "Start Research",
+                                onClick: () => setActiveTab('research')
+                            }}
                         />
                     ) : (
                         <div className="space-y-6">

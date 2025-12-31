@@ -474,7 +474,7 @@ export default function OpenHousePage() {
                 </Card>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <Tabs value={activeTab} onValueChange={(value: string) => setActiveTab(value as 'events' | 'templates' | 'materials' | 'analytics')}>
                 <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="events">
                         <Calendar className="mr-2 h-4 w-4" />

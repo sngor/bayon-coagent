@@ -1161,6 +1161,16 @@ body {
     display: none;  /* Safari and Chrome */
   }
 
+  /* Hub tabs specific scrollbar hiding */
+  .hub-tabs-container {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .hub-tabs-container::-webkit-scrollbar {
+    display: none;  /* Safari and Chrome */
+  }
+
   .scrollbar-thin {
     scrollbar-width: thin;
   }

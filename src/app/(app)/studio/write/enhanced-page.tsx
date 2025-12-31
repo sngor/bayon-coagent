@@ -47,7 +47,8 @@ import {
     PenTool,
     Image,
     Hash,
-    AtSign
+    AtSign,
+    CheckCircle2
 } from 'lucide-react';
 import { useUser } from '@/aws/auth';
 import { generateBlogPostAction, generateSocialPostAction, generateMarketUpdateAction, generateVideoScriptAction, saveContentAction } from '@/app/actions';
@@ -337,7 +338,21 @@ export default function EnhancedStudioWritePage() {
             }
 
             if (result.data) {
-                const content = result.data.content || result.data.post || result.data.script || result.data.update;
+                let content = '';
+                
+                // Handle different response structures
+                if (typeof result.data === 'string') {
+                    content = result.data;
+                } else if (typeof result.data === 'object' && result.data !== null) {
+                    // Try different possible content properties
+                    content = (result.data as any).content || 
+                             (result.data as any).post || 
+                             (result.data as any).script || 
+                             (result.data as any).update ||
+                             (result.data as any).description ||
+                             '';
+                }
+                
                 const wordCount = content.split(' ').length;
                 const readingTime = Math.ceil(wordCount / 200);
                 
@@ -382,12 +397,12 @@ export default function EnhancedStudioWritePage() {
         if (!generatedContent) return;
 
         try {
-            const result = await saveContentAction({
-                type: selectedTemplate?.id || 'content',
-                title: generatedContent.title,
-                content: generatedContent.content,
-                metadata: generatedContent.metadata
-            });
+            const result = await saveContentAction(
+                user?.id || '',
+                generatedContent.content,
+                selectedTemplate?.id || 'content',
+                generatedContent.title
+            );
 
             if (result.data) {
                 setShowSaveDialog(false);
@@ -483,7 +498,7 @@ export default function EnhancedStudioWritePage() {
                 </Card>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <Tabs value={activeTab} onValueChange={(value: string) => setActiveTab(value as 'create' | 'templates' | 'suggestions' | 'analytics')}>
                 <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="create">
                         <Wand2 className="mr-2 h-4 w-4" />

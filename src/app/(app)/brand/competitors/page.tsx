@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useMemo, useState, useEffect, useActionState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { useFormStatus } from 'react-dom';
 import {
   Bar,
   BarChart,
@@ -62,7 +63,6 @@ import { AIMentionsList } from '@/components/ai-mentions-list';
 import { AIVisibilityTrends } from '@/components/ai-visibility-trends';
 import { CompetitorAIComparison } from '@/components/competitor-ai-comparison';
 import { AIContextAnalysis } from '@/components/ai-context-analysis';
-import { useFormStatus } from 'react-dom';
 
 // Chart configuration for review volume visualization
 const chartConfig = {
@@ -103,8 +103,18 @@ const initialFindCompetitorsState: FindCompetitorsState = {
 
 type KeywordRankingsState = {
   message: string;
-  data: KeywordRanking[] | null;
-  errors: any;
+  data: {
+    rankings: any[];
+    totalKeywords: number;
+    averagePosition: number;
+    topRankingKeywords: any[];
+    improvementOpportunities: any[];
+    competitorComparison?: { domain: string; rankings: any[]; }[];
+  } | null;
+  errors: {
+    location?: string[];
+    keyword?: string[];
+  };
 }
 
 const initialKeywordRankingsState: KeywordRankingsState = {
@@ -116,15 +126,14 @@ const initialKeywordRankingsState: KeywordRankingsState = {
 
 
 
-function TrackRankingsButton({ disabled }: { disabled?: boolean }) {
-  const { pending } = useFormStatus();
+function TrackRankingsButton({ disabled, isLoading }: { disabled?: boolean; isLoading?: boolean }) {
   return (
     <StandardFormActions
       primaryAction={{
         label: 'Analyze Keyword',
         type: 'submit',
         variant: 'ai',
-        loading: pending,
+        loading: isLoading,
         disabled: disabled,
       }}
       alignment="left"
@@ -140,7 +149,25 @@ export default function CompetitiveAnalysisPage() {
 
   const [findState, setFindState] = useState(initialFindCompetitorsState);
   const [isLoadingCompetitors, setIsLoadingCompetitors] = useState(false);
-  const [rankingState, rankingFormAction] = useActionState(getKeywordRankingsAction, initialKeywordRankingsState);
+  const [rankingState, setRankingState] = useState(initialKeywordRankingsState);
+  const [isLoadingRankings, setIsLoadingRankings] = useState(false);
+
+  // Handle ranking form submission
+  const handleRankingSubmit = async (formData: FormData) => {
+    setIsLoadingRankings(true);
+    try {
+      const result = await getKeywordRankingsAction(rankingState, formData);
+      setRankingState(result);
+    } catch (error) {
+      setRankingState({
+        message: 'Failed to get rankings',
+        data: null,
+        errors: {}
+      });
+    } finally {
+      setIsLoadingRankings(false);
+    }
+  };
 
   // Memoize DynamoDB keys
   const profilePK = useMemo(() => user ? `USER#${user.id}` : null, [user]);
@@ -596,7 +623,7 @@ export default function CompetitiveAnalysisPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form className="space-y-4" action={rankingFormAction}>
+                  <form className="space-y-4" action={handleRankingSubmit}>
                     <StandardFormField
                       label="Keyword to Analyze"
                       id="keyword"
@@ -606,7 +633,7 @@ export default function CompetitiveAnalysisPage() {
                       <Input id="keyword" name="keyword" placeholder="e.g., best real estate agent Seattle" />
                     </StandardFormField>
                     <input type="hidden" name="location" value={agentProfileData?.address || ''} />
-                    <TrackRankingsButton disabled={isRankingDisabled} />
+                    <TrackRankingsButton disabled={isRankingDisabled} isLoading={isLoadingRankings} />
                     {rankingState.message && rankingState.message !== 'success' && (
                       <StandardErrorDisplay
                         title="Ranking Analysis Failed"
@@ -617,9 +644,9 @@ export default function CompetitiveAnalysisPage() {
                     )}
                   </form>
 
-                  {rankingState.data && rankingState.data.length > 0 && (
+                  {rankingState.data && rankingState.data.rankings.length > 0 && (
                     <div className="mt-6">
-                      <h3 className="font-headline font-medium mb-2">Top 5 Results for "{rankingState.data[0].keyword || 'your keyword'}"</h3>
+                      <h3 className="font-headline font-medium mb-2">Top 5 Results for "{rankingState.data.rankings[0]?.keyword || 'your keyword'}"</h3>
                       <ResponsiveTableWrapper mobileLayout="scroll" showScrollIndicator={true}>
                         <Table>
                           <TableHeader>
@@ -630,7 +657,7 @@ export default function CompetitiveAnalysisPage() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {rankingState.data.map((ranking) => (
+                            {rankingState.data.rankings.slice(0, 5).map((ranking) => (
                               <TableRow key={ranking.rank}>
                                 <TableCell className="text-center font-bold">#{ranking.rank}</TableCell>
                                 <TableCell className="font-medium whitespace-nowrap">{ranking.agentName}</TableCell>

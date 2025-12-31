@@ -111,14 +111,15 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default', isStic
                 ref={scrollContainerRef}
                 className={cn(
                     styles.container,
-                    'scroll-smooth touch-pan-x min-w-0 flex-1 max-w-fit inline-flex items-center gap-1 min-w-max', // Responsive: fit content but allow overflow scrolling
+                    'hub-tabs-container scroll-smooth touch-pan-x flex items-center gap-1 w-fit', // Changed from w-full to w-fit
                     isSticky
-                        ? 'bg-background/95 backdrop-blur-xl border border-border/20 shadow-sm'
+                        ? 'bg-transparent backdrop-blur-xl border border-border/20 shadow-sm'
                         : 'bg-transparent'
                 )}
                 role="tablist" 
                 aria-label="Hub navigation tabs"
             >
+                <div className="flex items-center gap-1 min-w-max">
                 {tabs.map((tab, index) => {
                     const isActive = tab.id === currentTab;
                     const Icon = tab.icon;
@@ -148,6 +149,7 @@ export function HubTabs({ tabs, activeTab, onChange, variant = 'default', isStic
                         </button>
                     );
                 })}
+                </div>
             </div>
 
             {/* Right scroll indicator */}

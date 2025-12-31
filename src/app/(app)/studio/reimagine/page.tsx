@@ -190,7 +190,7 @@ export default function ReimagineToolkitPage() {
             // Check if user can use image enhancements
             if (!canUseFeature('imageEnhancements')) {
                 setProcessingError(getUpgradeMessage('imageEnhancements'));
-                setProcessingStatus('error');
+                setProcessingStatus('failed');
                 return;
             }
 

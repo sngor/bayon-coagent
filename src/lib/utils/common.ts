@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { formatDistanceToNow } from "date-fns"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -32,4 +33,46 @@ export function formatCurrency(amount: number): string {
  */
 export function formatNumber(num: number): string {
   return new Intl.NumberFormat('en-US').format(num);
+}
+
+/**
+ * Format a date as relative time (e.g., "2 hours ago")
+ */
+export function formatDate(timestamp: number | Date | string): string {
+  try {
+    let date: Date;
+    if (typeof timestamp === 'string') {
+      date = new Date(timestamp);
+    } else if (typeof timestamp === 'number') {
+      date = new Date(timestamp);
+    } else {
+      date = timestamp;
+    }
+    return formatDistanceToNow(date, { addSuffix: true });
+  } catch (error) {
+    return 'Unknown';
+  }
+}
+
+/**
+ * Format a time as HH:MM AM/PM
+ */
+export function formatTime(timestamp: number | Date | string): string {
+  try {
+    let date: Date;
+    if (typeof timestamp === 'string') {
+      date = new Date(timestamp);
+    } else if (typeof timestamp === 'number') {
+      date = new Date(timestamp);
+    } else {
+      date = timestamp;
+    }
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch (error) {
+    return 'Unknown';
+  }
 }

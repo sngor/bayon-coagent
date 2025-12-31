@@ -57,7 +57,7 @@ async function setupAlarms(): Promise<void> {
 
   const client = new CloudWatchClient({
     region: config.region,
-    credentials: credentials.accessKeyId && credentials.secretAccessKey
+    credentials: credentials?.accessKeyId && credentials?.secretAccessKey
       ? {
         accessKeyId: credentials.accessKeyId,
         secretAccessKey: credentials.secretAccessKey,
@@ -115,7 +115,7 @@ async function verifySetup(): Promise<void> {
 
   const client = new CloudWatchClient({
     region: config.region,
-    credentials: credentials.accessKeyId && credentials.secretAccessKey
+    credentials: credentials?.accessKeyId && credentials?.secretAccessKey
       ? {
         accessKeyId: credentials.accessKeyId,
         secretAccessKey: credentials.secretAccessKey,

@@ -99,9 +99,10 @@ export function RoleProtectedFeature({
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <div className={cn('opacity-50 cursor-not-allowed', className)}>
-                                {React.Children.map(children, (child) => {
+                                {React.Children.map(children, (child, index) => {
                                     if (React.isValidElement(child)) {
                                         return React.cloneElement(child as React.ReactElement<any>, {
+                                            key: child.key || `disabled-child-${index}`,
                                             disabled: true,
                                             'aria-disabled': true,
                                         });
@@ -123,9 +124,10 @@ export function RoleProtectedFeature({
 
         return (
             <div className={cn('opacity-50 cursor-not-allowed', className)}>
-                {React.Children.map(children, (child) => {
+                {React.Children.map(children, (child, index) => {
                     if (React.isValidElement(child)) {
                         return React.cloneElement(child as React.ReactElement<any>, {
+                            key: child.key || `disabled-child-${index}`,
                             disabled: true,
                             'aria-disabled': true,
                         });

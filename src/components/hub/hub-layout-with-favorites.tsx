@@ -248,8 +248,8 @@ export function HubLayoutWithFavorites({
 
         return (
             <div className="flex items-center gap-2">
-                {actions}
-                {favoritesButton}
+                <div key="actions">{actions}</div>
+                <div key="favorites">{favoritesButton}</div>
             </div>
         );
     }, [actions, enableFavorites, pageMetadata]);

@@ -43,19 +43,19 @@ const BASE_STYLES = 'inline-flex items-center gap-2 text-sm font-medium transiti
 
 const VARIANT_STYLES: Record<TabVariant, VariantConfig> = {
     default: {
-        tab: 'px-4 py-2 rounded-md bg-transparent whitespace-nowrap',
-        container: 'overflow-x-auto scrollbar-thin rounded-md p-1.5 transition-all duration-200',
-        wrapper: 'mx-0 sm:mx-4 md:mx-6'
+        tab: 'px-4 py-2 rounded-md bg-transparent whitespace-nowrap flex-shrink-0',
+        container: 'overflow-x-auto scrollbar-hide rounded-md p-1.5 transition-all duration-200 scroll-smooth',
+        wrapper: 'mx-0' // Remove responsive margins to align with page header
     },
     pills: {
-        tab: 'px-4 py-2 rounded-md bg-transparent whitespace-nowrap',
-        container: 'overflow-x-auto scrollbar-thin rounded-md p-1.5 transition-all duration-200',
-        wrapper: 'mx-0 sm:mx-4 md:mx-6'
+        tab: 'px-4 py-2 rounded-md bg-transparent whitespace-nowrap flex-shrink-0',
+        container: 'overflow-x-auto scrollbar-hide rounded-md p-1.5 transition-all duration-200 scroll-smooth',
+        wrapper: 'mx-0' // Remove responsive margins to align with page header
     },
     underline: {
-        tab: 'px-4 py-2 rounded-none border-b-2 border-transparent bg-transparent whitespace-nowrap',
-        container: 'overflow-x-auto scrollbar-thin border-b border-border px-1.5',
-        wrapper: 'mx-0 sm:mx-4 md:mx-6'
+        tab: 'px-4 py-2 rounded-none border-b-2 border-transparent bg-transparent whitespace-nowrap flex-shrink-0',
+        container: 'overflow-x-auto scrollbar-hide border-b border-border px-1.5 scroll-smooth',
+        wrapper: 'mx-0' // Remove responsive margins to align with page header
     }
 } as const;
 

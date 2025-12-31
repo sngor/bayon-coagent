@@ -32,7 +32,7 @@ async function configureLifecycleRules() {
   const s3Client = new S3Client({
     region: config.region,
     endpoint: config.s3.endpoint,
-    credentials: credentials.accessKeyId && credentials.secretAccessKey
+    credentials: credentials?.accessKeyId && credentials?.secretAccessKey
       ? {
         accessKeyId: credentials.accessKeyId,
         secretAccessKey: credentials.secretAccessKey,
