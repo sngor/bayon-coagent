@@ -391,17 +391,17 @@ export class EmailNotificationService {
             limit: options?.limit || 100,
         });
 
-        let notifications = items.map(item => item.Data as EmailNotification);
+        let notifications = items.map((item: any) => item.Data as EmailNotification);
 
         if (options?.type) {
-            notifications = notifications.filter(n => n.type === options.type);
+            notifications = notifications.filter((n: EmailNotification) => n.type === options.type);
         }
 
         if (options?.status) {
-            notifications = notifications.filter(n => n.status === options.status);
+            notifications = notifications.filter((n: EmailNotification) => n.status === options.status);
         }
 
-        return notifications.sort((a, b) => b.createdAt - a.createdAt);
+        return notifications.sort((a: EmailNotification, b: EmailNotification) => b.createdAt - a.createdAt);
     }
 
     /**

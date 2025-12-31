@@ -113,6 +113,8 @@ export class SystemHealthService {
     private cloudWatchLogsClient: CloudWatchLogsClient;
     private config: ReturnType<typeof getConfig>;
     private cache = getCacheService();
+    private metricsCache = new Map<string, { data: any; timestamp: number }>();
+    private readonly METRICS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
     // CloudWatch configuration
     private readonly NAMESPACE = 'BayonCoAgent';
@@ -173,6 +175,7 @@ export class SystemHealthService {
      * Gets API performance metrics
      */
     private async getAPIMetrics(): Promise<SystemHealthMetrics['apiMetrics']> {
+        const cacheKey = 'api-metrics';
 
         try {
             const now = new Date();
@@ -579,10 +582,10 @@ export class SystemHealthService {
                 return [];
             }
 
-            return data.Datapoints.map(point => ({
+            return data.Datapoints.map((point: any) => ({
                 timestamp: point.Timestamp?.getTime() || Date.now(),
                 value: point.Average || point.Sum || point.Maximum || 0,
-            })).sort((a, b) => a.timestamp - b.timestamp);
+            })).sort((a: any, b: any) => a.timestamp - b.timestamp);
         } catch (error) {
             console.error(`Error fetching ${service} metrics:`, error);
             return [];

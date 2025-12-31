@@ -166,14 +166,14 @@ class MaintenanceWindowRepository {
             '',
             {
                 limit,
-                lastEvaluatedKey: lastKey ? JSON.parse(lastKey) : undefined,
+                exclusiveStartKey: lastKey ? JSON.parse(lastKey) : undefined,
                 indexName: 'GSI1'
             }
         );
 
         return {
             windows: result.items,
-            lastKey: result.lastKey,
+            lastKey: result.lastEvaluatedKey,
         };
     }
 
@@ -186,13 +186,13 @@ class MaintenanceWindowRepository {
             'WINDOW#',
             {
                 limit,
-                lastEvaluatedKey: lastKey ? JSON.parse(lastKey) : undefined
+                exclusiveStartKey: lastKey ? JSON.parse(lastKey) : undefined
             }
         );
 
         return {
             windows: result.items,
-            lastKey: result.lastKey,
+            lastKey: result.lastEvaluatedKey,
         };
     }
 }
@@ -215,7 +215,7 @@ export class MaintenanceModeService {
         const cacheKey = 'maintenance:active';
 
         const cached = this.cache.get<boolean>(cacheKey);
-        if (cached !== undefined) {
+        if (cached !== null) {
             return cached;
         }
 
@@ -231,8 +231,8 @@ export class MaintenanceModeService {
      * Invalidates maintenance cache when status changes
      */
     private invalidateMaintenanceCache(): void {
-        this.cache.delete('maintenance:active');
-        this.cache.delete('maintenance:banner');
+        this.cache.invalidate('maintenance:active');
+        this.cache.invalidate('maintenance:banner');
     }
 
     /**

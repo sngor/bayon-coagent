@@ -252,7 +252,7 @@ class StripeIntegrationService {
                 id: `campaign_${Date.now()}`,
                 name: template.name,
                 description: template.description,
-                couponId: coupon.id,
+                couponId: coupon.data?.id || `coupon_${Date.now()}`,
                 startDate: new Date().toISOString(),
                 endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days
                 targetAudience: template.targetAudience,

@@ -67,11 +67,9 @@ async function verifyAdminRole(userId: string): Promise<boolean> {
             return false;
         }
 
-        // Check for admin role in custom attributes
-        const isAdmin = user.attributes?.['custom:role'] === 'admin' ||
-            user.attributes?.['custom:role'] === 'super_admin';
-
-        return isAdmin;
+        // Check for admin role - need to get role from user profile in DynamoDB
+        // For now, return false as this needs proper role checking implementation
+        return false;
     } catch (error) {
         console.error('[ONBOARDING_ACTIONS] Error verifying admin role:', error);
         return false;

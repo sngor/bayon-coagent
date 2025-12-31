@@ -80,6 +80,10 @@ export const VALID_BEDROCK_MODELS = [
 
 export type ValidBedrockModel = typeof VALID_BEDROCK_MODELS[number];
 
+export interface AmplifyConfig {
+  appUrl: string;
+}
+
 export interface AWSConfig {
   region: string;
   environment: Environment;
@@ -94,6 +98,7 @@ export interface AWSConfig {
   sns: SNSConfig;
   apiGateway: ApiGatewayConfig;
   sqs: SQSConfig;
+  amplify?: AmplifyConfig;
 }
 
 /**
