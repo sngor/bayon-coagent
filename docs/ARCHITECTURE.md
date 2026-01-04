@@ -90,6 +90,53 @@ Level 3: Feature Content
 └─ Individual features and tools within sections
 ```
 
+### Brand Hub Architecture
+
+The Brand Hub is a comprehensive identity and strategy management system with integrated AI visibility optimization:
+
+```
+Brand Hub Structure:
+├─ Profile (Professional identity)
+├─ Audit (NAP consistency + AI visibility)
+├─ Competitors (Discovery + AI comparison)
+├─ Strategy (Marketing plans)
+├─ Calendar (Appointment scheduling)
+├─ Integrations (Third-party connections)
+└─ Testimonials (Client reviews)
+
+AI Visibility Integration:
+├─ Schema Generation Service
+│   ├─ JSON-LD generation
+│   ├─ RDF/XML export
+│   ├─ Microdata embedding
+│   └─ Knowledge graph building
+├─ AI Search Monitor
+│   ├─ Platform monitoring (ChatGPT, Claude, etc.)
+│   ├─ Mention tracking
+│   ├─ Sentiment analysis
+│   └─ Competitive positioning
+├─ Optimization Engine
+│   ├─ Visibility scoring
+│   ├─ Recommendation generation
+│   ├─ Impact analysis
+│   └─ Performance tracking
+└─ Brand Integration Service
+    ├─ Profile sync automation
+    ├─ Testimonial schema generation
+    ├─ NAP consistency coordination
+    └─ Strategy alignment
+```
+
+#### AI Visibility Data Flow
+
+```
+Profile Update → Brand Integration → Schema Regeneration → AI Platform Sync
+     ↓                    ↓                    ↓                    ↓
+Testimonial Add → Review Schema → Knowledge Graph → Monitoring Update
+     ↓                    ↓                    ↓                    ↓
+NAP Audit → Consistency Check → Optimization Rec → Visibility Score
+```
+
 ### Hub Implementation
 
 Each hub follows a consistent pattern:

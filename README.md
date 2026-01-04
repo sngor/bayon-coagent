@@ -60,12 +60,19 @@ Conversational AI assistant for real estate questions, guidance, and support.
 Own your market position and outshine the competition:
 
 - **Profile**: Build professional profile that gets you found and trusted
-- **Audit**: NAP consistency checks and review imports
+- **Audit**: NAP consistency checks, review imports, and AI visibility optimization
 - **Competitors**: AI-powered competitor discovery and keyword ranking
 - **Strategy**: Personalized marketing plans based on market position
 - **Calendar**: Schedule and manage appointments
 - **Integrations**: Connect Google Business Profile and other services
 - **Testimonials**: Manage client testimonials and reviews
+
+**AI Visibility Features:**
+- **Schema Markup Generation**: Automatic JSON-LD, RDF, and microdata generation for enhanced AI discoverability
+- **AI Search Monitoring**: Track mentions across ChatGPT, Claude, Perplexity, Gemini, and Bing Chat
+- **Knowledge Graph Integration**: Semantic data structuring for improved AI understanding
+- **Competitive AI Analysis**: Compare your AI visibility against competitors
+- **Optimization Recommendations**: AI-powered suggestions to improve search visibility
 
 ### 🎨 Studio - Content Creation Hub
 
@@ -195,7 +202,14 @@ Bayon CoAgent operates on a freemium model with professional trials:
 │   │   ├── (app)/         # Authenticated routes (hub structure)
 │   │   │   ├── dashboard/         # Overview hub
 │   │   │   ├── assistant/         # AI chat hub
-│   │   │   ├── brand/             # Brand identity hub
+│   │   │   ├── brand/             # Brand identity hub (with AI visibility)
+│   │   │   │   ├── profile/       # Professional profile management
+│   │   │   │   ├── audit/         # NAP consistency & AI visibility
+│   │   │   │   ├── competitors/   # Competitor analysis & AI comparison
+│   │   │   │   ├── strategy/      # Marketing strategy generation
+│   │   │   │   ├── calendar/      # Appointment scheduling
+│   │   │   │   ├── integrations/  # Third-party integrations
+│   │   │   │   └── testimonials/  # Client testimonials
 │   │   │   ├── studio/            # Content creation hub
 │   │   │   ├── research/          # Research hub (unified)
 │   │   │   ├── research-agent/    # Legacy research agent
@@ -282,6 +296,8 @@ npm run start              # Start production server
 npm run lint               # Run ESLint
 npm run typecheck          # Run TypeScript type checking
 ```
+
+**New AI Visibility Features**: The Brand Hub now includes comprehensive AI visibility optimization with schema generation, AI platform monitoring, and competitive analysis. See [AI Visibility Documentation](./docs/features/AI_VISIBILITY_OPTIMIZATION.md) for details.
 
 #### LocalStack (Local AWS)
 

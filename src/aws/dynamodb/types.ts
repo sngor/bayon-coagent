@@ -219,7 +219,12 @@ export type EntityType =
   | 'TutorialProgress'
   | 'BestPracticeBookmark'
   | 'LearningCertificate'
-  | 'CommunityPost';
+  | 'CommunityPost'
+  | 'OptimizationRecommendation'
+  | 'SchemaMarkup'
+  | 'KnowledgeGraphEntity'
+  | 'AIVisibilityAnalysis'
+  | 'CompetitorAnalysis';
 
 /**
  * Base DynamoDB item structure

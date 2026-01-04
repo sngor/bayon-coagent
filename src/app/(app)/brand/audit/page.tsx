@@ -71,6 +71,7 @@ import { useFormStatus } from 'react-dom';
 import { FirstTimeUseEmptyState } from '@/components/ui/empty-states';
 import { Celebration } from '@/components/ui/celebration';
 import { AIOperationProgress, useAIOperation } from '@/components/ui/ai-operation-progress';
+import { UnifiedBrandDashboard } from '@/components/brand/unified-brand-dashboard';
 
 import type { WebsiteAnalysisResult } from '@/ai/schemas/website-analysis-schemas';
 import { AnalysisResultsDisplay } from '@/components/website-analysis-results-display';
@@ -746,6 +747,9 @@ export default function BrandAuditPage() {
 
     return (
         <div className="space-y-8">
+            {/* Unified Brand Dashboard */}
+            <UnifiedBrandDashboard showDetails={false} />
+
             <div className="space-y-8">
                 {/* Prominent Brand Score Hero Section */}
                 <Card className="bg-gradient-to-br from-primary/5 to-purple-600/5 border-2 border-primary/30">

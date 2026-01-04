@@ -3592,8 +3592,9 @@ export async function saveProfileAction(
     const repository = getRepository();
     const keys = getProfileKeys(userId);
 
-    // Check if profile exists to preserve CreatedAt
+    // Get existing profile for AI visibility sync comparison
     const existingProfile = await repository.get(keys.PK, keys.SK);
+    const previousProfile = existingProfile ? (existingProfile as any).Data : {};
 
     // Always use put to replace the entire profile data
     // This ensures we don't have issues with partial updates
@@ -3608,6 +3609,21 @@ export async function saveProfileAction(
 
     await repository.put(profileData);
 
+    // Trigger AI visibility sync in the background (don't await to avoid blocking the save)
+    // This will be handled by the useProfileAIVisibilitySync hook on the client side
+    // But we can also trigger it server-side for immediate sync
+    try {
+      const { syncProfileAIVisibilityAction } = await import('./actions/ai-visibility-actions');
+      
+      // Run sync in background without blocking the response
+      syncProfileAIVisibilityAction(userId, previousProfile, profile).catch(error => {
+        console.error('Background AI visibility sync failed:', error);
+      });
+    } catch (error) {
+      // Don't fail the profile save if AI visibility sync fails
+      console.error('Failed to trigger AI visibility sync:', error);
+    }
+
     return {
       message: 'success',
       data: profile,
@@ -3618,6 +3634,9 @@ export async function saveProfileAction(
     return {
       message: error.message || 'Failed to save profile',
       errors: {},
+    };
+  }
+}
     };
   }
 }

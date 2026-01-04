@@ -55,6 +55,10 @@ export { findCompetitors, enrichCompetitorData, type FindCompetitorsInput, type 
 // Keyword Rankings
 export { getKeywordRankings, type GetKeywordRankingsInput, type GetKeywordRankingsOutput } from './get-keyword-rankings';
 
+// AI Visibility & Monitoring
+export { analyzeAIMention, type AnalyzeAIMentionInput, type AnalyzeAIMentionOutput } from './analyze-ai-mention';
+export { runAISearchMonitoring, quickAIMonitoring, type AISearchMonitorInput, type AISearchMonitorOutput } from './ai-search-monitor';
+
 // News & Reviews (API integrations, no AI)
 export { getRealEstateNews, type GetRealEstateNewsInput, type GetRealEstateNewsOutput } from './get-real-estate-news';
 export { getZillowReviews, type GetZillowReviewsInput, type GetZillowReviewsOutput } from './get-zillow-reviews';

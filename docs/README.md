@@ -28,6 +28,7 @@ Complete documentation for the Bayon CoAgent platform.
 - [Components](./quick-reference/components.md) - UI component library reference
 - [Configuration](./quick-reference/configuration.md) - Environment and config setup
 - [API Reference](./quick-reference/api.md) - Server actions and endpoints
+- [AI Visibility](./quick-reference/ai-visibility.md) - AI visibility optimization guide
 
 ## 🔧 Quick References
 
@@ -70,6 +71,7 @@ Complete documentation for the Bayon CoAgent platform.
 ### AI & Integrations
 
 - [AI Content Generation](./features/ai-content.md) - Bedrock integration
+- [AI Visibility Optimization](./features/AI_VISIBILITY_OPTIMIZATION.md) - AI search visibility and schema generation
 - [Assistant Integration](./guides/assistant-integration.md) - AI chat assistant
 - [Google Integration](./guides/GOOGLE_INTEGRATION_GUIDE.md) - Business Profile sync
 - [Stripe Integration](./features/STRIPE_INTEGRATION.md) - Payment processing

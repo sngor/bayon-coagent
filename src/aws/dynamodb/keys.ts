@@ -2209,6 +2209,289 @@ export function getOnboardingAnalyticsKeys(
   return keys;
 }
 
+// ==================== AI Visibility Optimization Keys ====================
+
+/**
+ * Generates keys for AIVisibilityScore
+ * Pattern: PK: USER#<userId>, SK: AI_VISIBILITY_SCORE#<calculatedAt>
+ * GSI1: PK: USER#<userId>, SK: AI_SCORE_LATEST (for latest score lookup)
+ */
+export function getAIVisibilityScoreKeys(
+  userId: string,
+  calculatedAt: string,
+  isLatest?: boolean
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `AI_VISIBILITY_SCORE#${calculatedAt}`,
+  };
+
+  // Add GSI1 keys for latest score lookup
+  if (isLatest) {
+    keys.GSI1PK = `USER#${userId}`;
+    keys.GSI1SK = 'AI_SCORE_LATEST';
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for AIMention
+ * Pattern: PK: USER#<userId>, SK: AI_MENTION#<platform>#<timestamp>#<id>
+ * GSI1: PK: USER#<userId>, SK: AI_MENTION_BY_DATE#<timestamp>
+ * GSI2: PK: AI_MENTION#<platform>, SK: <timestamp> (for platform-specific queries)
+ */
+export function getAIMentionKeys(
+  userId: string,
+  mentionId: string,
+  platform: string,
+  timestamp: string
+): DynamoDBKey & {
+  GSI1PK: string;
+  GSI1SK: string;
+  GSI2PK: string;
+  GSI2SK: string;
+} {
+  return {
+    PK: `USER#${userId}`,
+    SK: `AI_MENTION#${platform}#${timestamp}#${mentionId}`,
+    GSI1PK: `USER#${userId}`,
+    GSI1SK: `AI_MENTION_BY_DATE#${timestamp}`,
+    GSI2PK: `AI_MENTION#${platform}`,
+    GSI2SK: timestamp,
+  };
+}
+
+/**
+ * Generates keys for OptimizationRecommendation
+ * Pattern: PK: USER#<userId>, SK: AI_RECOMMENDATION#<priority>#<createdAt>#<id>
+ * GSI1: PK: USER#<userId>, SK: AI_REC_BY_STATUS#<status>#<createdAt>
+ * GSI2: PK: AI_REC#<category>, SK: <createdAt> (for category-based queries)
+ */
+export function getOptimizationRecommendationKeys(
+  userId: string,
+  recommendationId: string,
+  priority: string,
+  createdAt: string,
+  status?: string,
+  category?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+  GSI2PK?: string;
+  GSI2SK?: string;
+} {
+  const keys: DynamoDBKey & {
+    GSI1PK?: string;
+    GSI1SK?: string;
+    GSI2PK?: string;
+    GSI2SK?: string;
+  } = {
+    PK: `USER#${userId}`,
+    SK: `AI_RECOMMENDATION#${priority}#${createdAt}#${recommendationId}`,
+  };
+
+  // Add GSI1 keys for status-based queries
+  if (status) {
+    keys.GSI1PK = `USER#${userId}`;
+    keys.GSI1SK = `AI_REC_BY_STATUS#${status}#${createdAt}`;
+  }
+
+  // Add GSI2 keys for category-based queries
+  if (category) {
+    keys.GSI2PK = `AI_REC#${category}`;
+    keys.GSI2SK = createdAt;
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for SchemaMarkup
+ * Pattern: PK: USER#<userId>, SK: SCHEMA_MARKUP#<schemaType>#<id>
+ * GSI1: PK: USER#<userId>, SK: SCHEMA_BY_TYPE#<schemaType>
+ */
+export function getSchemaMarkupKeys(
+  userId: string,
+  schemaId: string,
+  schemaType: string
+): DynamoDBKey & {
+  GSI1PK: string;
+  GSI1SK: string;
+} {
+  return {
+    PK: `USER#${userId}`,
+    SK: `SCHEMA_MARKUP#${schemaType}#${schemaId}`,
+    GSI1PK: `USER#${userId}`,
+    GSI1SK: `SCHEMA_BY_TYPE#${schemaType}`,
+  };
+}
+
+/**
+ * Generates keys for KnowledgeGraphEntity
+ * Pattern: PK: USER#<userId>, SK: KNOWLEDGE_GRAPH#<entityType>#<id>
+ * GSI1: PK: USER#<userId>, SK: KG_BY_TYPE#<entityType>
+ */
+export function getKnowledgeGraphEntityKeys(
+  userId: string,
+  entityId: string,
+  entityType: string
+): DynamoDBKey & {
+  GSI1PK: string;
+  GSI1SK: string;
+} {
+  return {
+    PK: `USER#${userId}`,
+    SK: `KNOWLEDGE_GRAPH#${entityType}#${entityId}`,
+    GSI1PK: `USER#${userId}`,
+    GSI1SK: `KG_BY_TYPE#${entityType}`,
+  };
+}
+
+/**
+ * Generates keys for AIMonitoringConfig
+ * Pattern: PK: USER#<userId>, SK: AI_MONITORING_CONFIG
+ */
+export function getAIMonitoringConfigKeys(userId: string): DynamoDBKey {
+  return {
+    PK: `USER#${userId}`,
+    SK: 'AI_MONITORING_CONFIG',
+  };
+}
+
+/**
+ * Generates keys for AIMonitoringJob
+ * Pattern: PK: USER#<userId>, SK: AI_MONITORING_JOB#<startedAt>#<id>
+ * GSI1: PK: AI_JOB#<status>, SK: <startedAt> (for job status queries)
+ */
+export function getAIMonitoringJobKeys(
+  userId: string,
+  jobId: string,
+  startedAt: string,
+  status?: string
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `AI_MONITORING_JOB#${startedAt}#${jobId}`,
+  };
+
+  // Add GSI1 keys for status-based queries
+  if (status) {
+    keys.GSI1PK = `AI_JOB#${status}`;
+    keys.GSI1SK = startedAt;
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for WebsiteAnalysis
+ * Pattern: PK: USER#<userId>, SK: WEBSITE_ANALYSIS#<timestamp>
+ * GSI1: PK: USER#<userId>, SK: WEBSITE_ANALYSIS_LATEST (for latest analysis)
+ */
+export function getWebsiteAnalysisKeys(
+  userId: string,
+  timestamp: string,
+  isLatest?: boolean
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `WEBSITE_ANALYSIS#${timestamp}`,
+  };
+
+  // Add GSI1 keys for latest analysis lookup
+  if (isLatest) {
+    keys.GSI1PK = `USER#${userId}`;
+    keys.GSI1SK = 'WEBSITE_ANALYSIS_LATEST';
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for CompetitorAnalysis
+ * Pattern: PK: USER#<userId>, SK: COMPETITOR_ANALYSIS#<timestamp>
+ * GSI1: PK: USER#<userId>, SK: COMPETITOR_ANALYSIS_LATEST
+ */
+export function getCompetitorAnalysisKeys(
+  userId: string,
+  timestamp: string,
+  isLatest?: boolean
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `COMPETITOR_ANALYSIS#${timestamp}`,
+  };
+
+  // Add GSI1 keys for latest analysis lookup
+  if (isLatest) {
+    keys.GSI1PK = `USER#${userId}`;
+    keys.GSI1SK = 'COMPETITOR_ANALYSIS_LATEST';
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for AIVisibilityAnalysis (comprehensive analysis)
+ * Pattern: PK: USER#<userId>, SK: AI_VISIBILITY_ANALYSIS#<timestamp>
+ * GSI1: PK: USER#<userId>, SK: AI_ANALYSIS_LATEST
+ */
+export function getAIVisibilityAnalysisKeys(
+  userId: string,
+  timestamp: string,
+  isLatest?: boolean
+): DynamoDBKey & {
+  GSI1PK?: string;
+  GSI1SK?: string;
+} {
+  const keys: DynamoDBKey & { GSI1PK?: string; GSI1SK?: string } = {
+    PK: `USER#${userId}`,
+    SK: `AI_VISIBILITY_ANALYSIS#${timestamp}`,
+  };
+
+  // Add GSI1 keys for latest analysis lookup
+  if (isLatest) {
+    keys.GSI1PK = `USER#${userId}`;
+    keys.GSI1SK = 'AI_ANALYSIS_LATEST';
+  }
+
+  return keys;
+}
+
+/**
+ * Generates keys for ExportRecord
+ * Pattern: PK: USER#<userId>, SK: EXPORT_RECORD#<exportedAt>#<exportId>
+ * GSI1: PK: USER#<userId>, SK: EXPORT_BY_DATE#<exportedAt>
+ */
+export function getExportRecordKeys(
+  userId: string,
+  exportId: string,
+  exportedAt: string
+): DynamoDBKey & {
+  GSI1PK: string;
+  GSI1SK: string;
+} {
+  return {
+    PK: `USER#${userId}`,
+    SK: `EXPORT_RECORD#${exportedAt}#${exportId}`,
+    GSI1PK: `USER#${userId}`,
+    GSI1SK: `EXPORT_BY_DATE#${exportedAt}`,
+  };
+}
+
 // ==================== Key Factory Functions ====================
 
 /**

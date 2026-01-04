@@ -43,6 +43,7 @@ import { ProfileSkeleton } from '@/components/ui/skeletons';
 import { TestimonialSkeleton } from '@/components/ui/skeleton-loader';
 import { ErrorState, LoadingTimeout } from '@/components/ui/error-state';
 import { useProfileData } from '@/hooks/use-profile-data';
+import { useProfileAIVisibilitySync, useTestimonialAIVisibilitySync } from '@/hooks/use-profile-ai-visibility-sync';
 
 
 const initialBioState = {
@@ -323,6 +324,15 @@ export default function ProfilePage() {
 
     const [bioState, setBioState] = useState(initialBioState);
     const [isGeneratingBio, setIsGeneratingBio] = useState(false);
+
+    // AI Visibility sync hooks
+    useProfileAIVisibilitySync(profile, { 
+        showNotifications: true,
+        debounceMs: 3000 // Wait 3 seconds after changes before syncing
+    });
+    useTestimonialAIVisibilitySync(testimonials, { 
+        showNotifications: true 
+    });
 
     // Detect when checklist becomes sticky
     useEffect(() => {
